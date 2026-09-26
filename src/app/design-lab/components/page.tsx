@@ -1,9 +1,12 @@
 import {
   ArrowUpRight,
   Bell,
+  Calendar,
   ChevronLeft,
   ChevronRight,
+  LayoutGrid,
   Search,
+  Users,
   X,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -15,14 +18,32 @@ import { Chip } from "@/components/ui/chip";
 import { strokeArrow, strokeCard } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
 import { LogoMark } from "@/components/ui/logo-mark";
+import {
+  NavRail,
+  NavRailAction,
+  NavRailDivider,
+  NavRailLink,
+  NavRailLogo,
+  NavRailSpacer,
+} from "@/components/ui/nav-rail";
+import { PageHeader } from "@/components/ui/page-header";
+import { UserPill } from "@/components/ui/user-pill";
 
 import {
   avatarFixtures,
   cardFixtures,
   chipFixtures,
+  miniCalendarLabels,
+  miniCalendarMarkedDates,
+  navRailFixtures,
+  pageHeaderMeta,
   pillFixtures,
+  segmentedControlOptions,
+  userPillFixture,
 } from "../_fixtures/components";
+import { MiniCalendarDemo } from "./mini-calendar-demo";
 import { PillDemo } from "./pill-demo";
+import { SegmentedControlDemo } from "./segmented-control-demo";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -183,6 +204,143 @@ export default function ComponentsCatalogPage() {
             {c.label}
           </Card>
         ))}
+      </Section>
+
+      <Section title="SegmentedControl">
+        <SegmentedControlDemo options={segmentedControlOptions} />
+      </Section>
+
+      <Section title="NavRail — bare">
+        <NavRail variant="bare" aria-label="Principal (bare)">
+          <NavRailLogo label="Ir al inicio" href="#inicio" />
+          {navRailFixtures.map((n) => (
+            <NavRailLink
+              key={n.href}
+              href={n.href}
+              label={n.label}
+              active={n.active}
+              icon={
+                n.label === "Inicio" ? (
+                  <LayoutGrid
+                    aria-hidden="true"
+                    className="size-5.5"
+                    strokeWidth={1.8}
+                  />
+                ) : n.label === "Agenda" ? (
+                  <Calendar
+                    aria-hidden="true"
+                    className="size-5.5"
+                    strokeWidth={1.8}
+                  />
+                ) : (
+                  <Users
+                    aria-hidden="true"
+                    className="size-5.5"
+                    strokeWidth={1.8}
+                  />
+                )
+              }
+            />
+          ))}
+        </NavRail>
+      </Section>
+
+      <Section title="NavRail — panel (Agenda)">
+        <NavRail variant="panel" aria-label="Principal (panel)">
+          <NavRailLogo label="Volver al inicio" href="#inicio" />
+          <NavRailAction label="Nueva reserva" shape="square">
+            <ArrowUpRight
+              aria-hidden="true"
+              className="size-5.5"
+              strokeWidth={strokeCard}
+            />
+          </NavRailAction>
+          <NavRailDivider />
+          <NavRailSpacer />
+          <NavRailAction label="Agregar profesional">
+            <ArrowUpRight
+              aria-hidden="true"
+              className="size-5"
+              strokeWidth={strokeCard}
+            />
+          </NavRailAction>
+        </NavRail>
+      </Section>
+
+      <Section title="PageHeader — desktop + UserPill">
+        <div className="w-full">
+          <PageHeader
+            variant="desktop"
+            title="Inicio"
+            meta={pageHeaderMeta.desktop}
+            actions={
+              <>
+                <IconButton label="Buscar" tone="surface">
+                  <Search
+                    aria-hidden="true"
+                    className="size-5"
+                    strokeWidth={1.9}
+                  />
+                </IconButton>
+                <IconButton
+                  label="Notificaciones (nuevas)"
+                  tone="surface"
+                  badge
+                >
+                  <Bell
+                    aria-hidden="true"
+                    className="size-5"
+                    strokeWidth={1.9}
+                  />
+                </IconButton>
+                <UserPill
+                  name={userPillFixture.name}
+                  initials={userPillFixture.initials}
+                />
+              </>
+            }
+          />
+        </div>
+      </Section>
+
+      <Section title="PageHeader — mobile">
+        <div className="w-90">
+          <PageHeader
+            variant="mobile"
+            title="Hoy"
+            meta={pageHeaderMeta.mobile}
+            actions={
+              <IconButton
+                label="Notificaciones (nuevas)"
+                tone="surface"
+                size={46}
+                badge
+              >
+                <Bell aria-hidden="true" className="size-5" strokeWidth={1.9} />
+              </IconButton>
+            }
+          />
+        </div>
+      </Section>
+
+      <Section title="MiniCalendar — ljus">
+        <div className="w-90">
+          <MiniCalendarDemo
+            variant="light"
+            labels={miniCalendarLabels}
+            markedDates={miniCalendarMarkedDates}
+          />
+        </div>
+      </Section>
+
+      <Section title="MiniCalendar — mörk">
+        <Card as="div" tone="dark" radius="card" padding="md" className="w-77">
+          <MiniCalendarDemo
+            variant="dark"
+            labels={miniCalendarLabels}
+            highlightWeekOf="2026-09-28"
+          />
+        </Card>
       </Section>
     </main>
   );

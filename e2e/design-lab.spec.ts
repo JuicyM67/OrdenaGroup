@@ -76,7 +76,7 @@ test.describe("design lab — komponentkatalog", () => {
 
   test("IconButton är 48×48 som standard", async ({ page }) => {
     await page.goto("/design-lab/components");
-    const button = page.getByRole("button", { name: "Buscar" });
+    const button = page.getByRole("button", { name: "Buscar" }).first();
     const box = await button.boundingBox();
     expect(box?.width).toBe(48);
     expect(box?.height).toBe(48);

@@ -54,3 +54,41 @@ export const cardFixtures = [
   { tone: "peach" as const, label: "peach" },
   { tone: "lime" as const, label: "lime" },
 ];
+
+export const segmentedControlOptions = [
+  { value: "month", label: "Mes" },
+  { value: "week", label: "Semana" },
+  { value: "day", label: "Día" },
+] as const;
+
+export const navRailFixtures = [
+  { href: "/design-lab/main", label: "Inicio", active: true },
+  { href: "/design-lab/agenda", label: "Agenda", active: false },
+  { href: "#clientes", label: "Clientes", active: false },
+] as const;
+
+export const pageHeaderMeta = {
+  desktop: "Viernes 2 de octubre · Barbería Norte, Providencia",
+  mobile: "Viernes 2 de octubre",
+} as const;
+
+export const userPillFixture = { name: "Camila R.", initials: "CR" } as const;
+
+// dayLabel saknas medvetet: det är en funktion och kan inte skickas från serversidans
+// page.tsx till klientkomponenten som faktiskt renderar MiniCalendar (se mini-calendar-demo.tsx).
+export const miniCalendarLabels = {
+  title: "Octubre 2026",
+  weekdays: ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"] as const,
+  prevMonth: "Mes anterior",
+  nextMonth: "Mes siguiente",
+};
+
+export const miniCalendarMarkedDates = new Set([
+  "2026-10-02",
+  "2026-10-03",
+  "2026-10-06",
+  "2026-10-07",
+  "2026-10-09",
+  "2026-10-10",
+  "2026-10-13",
+]);

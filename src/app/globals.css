@@ -5,6 +5,10 @@
    textfärg utan egna props, t.ex. `on-dark:text-on-dark on-dark:focus-visible:outline-lime`. */
 @custom-variant on-dark (&:where([data-surface="dark"], [data-surface="dark"] *));
 
+/* Radix-tillstånd (t.ex. ToggleGroup.Item) utan Tailwinds godtyckliga variant-syntax
+   (data-[state=on]:…, som lint-regeln för rå värden annars felaktigt fångar). */
+@custom-variant toggle-on (&[data-state="on"]);
+
 @layer base {
   body {
     @apply bg-canvas font-sans text-ink antialiased;

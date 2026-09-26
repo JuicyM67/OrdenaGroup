@@ -7,6 +7,8 @@ export type LogoMarkProps = {
   label: string;
   /** Sidostorlek i px. Standard 56 (`size-14`). */
   size?: 40 | 44 | 56;
+  /** Sätts när en omgivande länk/knapp redan har det tillgängliga namnet. */
+  decorative?: boolean;
   className?: string;
 };
 
@@ -22,11 +24,17 @@ const glyphSizeClass: Record<NonNullable<LogoMarkProps["size"]>, string> = {
   56: "size-6.5",
 };
 
-export function LogoMark({ label, size = 56, className }: LogoMarkProps) {
+export function LogoMark({
+  label,
+  size = 56,
+  decorative = false,
+  className,
+}: LogoMarkProps) {
   return (
     <span
-      role="img"
-      aria-label={label}
+      role={decorative ? undefined : "img"}
+      aria-hidden={decorative ? "true" : undefined}
+      aria-label={decorative ? undefined : label}
       className={cn(
         "inline-flex shrink-0 items-center justify-center rounded-icon bg-lime text-ink",
         boxSizeClass[size],
