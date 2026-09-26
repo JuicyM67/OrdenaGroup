@@ -5,10 +5,8 @@ coverage/
 .visual-diff/
 test-results/
 playwright-report/
-.env
-.env.local
-.env.*.local
-.env.production
+.env*
+!.env.example
 .vercel
 supabase/.branches
 supabase/.temp
@@ -16,3 +14,5 @@ supabase/.temp
 /playwright/.cache/
 .DS_Store
 *.log
+next-env.d.ts
+src/types/database.ts.tmp
