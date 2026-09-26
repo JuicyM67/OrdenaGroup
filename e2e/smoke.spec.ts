@@ -33,10 +33,20 @@ test("typsnitten laddas via next/font", async ({ page }) => {
     return { displayFamily, bodyFamily, loadedFamilies };
   });
 
-  expect(result.displayFamily).toMatch(/Bricolage/);
-  expect(result.bodyFamily).toMatch(/Jakarta/);
-  expect(result.loadedFamilies.some((f) => /Bricolage/.test(f))).toBe(true);
-  expect(result.loadedFamilies.some((f) => /Jakarta/.test(f))).toBe(true);
+  const firstFamily = (fontFamily: string) =>
+    fontFamily
+      .split(",")[0]
+      ?.trim()
+      .replace(/^["']|["']$/g, "");
+
+  expect(firstFamily(result.displayFamily)).toBe("Bricolage Grotesque");
+  expect(firstFamily(result.bodyFamily)).toBe("Plus Jakarta Sans");
+  expect(result.loadedFamilies.some((f) => f === "Bricolage Grotesque")).toBe(
+    true,
+  );
+  expect(result.loadedFamilies.some((f) => f === "Plus Jakarta Sans")).toBe(
+    true,
+  );
 });
 
 test("ingen horisontell scroll", async ({ page }) => {
