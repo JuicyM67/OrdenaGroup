@@ -1,8 +1,20 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
 
+/* Låter komponenter på mörk yta (data-surface="dark", se card.tsx) växla fokusring och
+   textfärg utan egna props, t.ex. `on-dark:text-on-dark on-dark:focus-visible:outline-lime`. */
+@custom-variant on-dark (&:where([data-surface="dark"], [data-surface="dark"] *));
+
 @layer base {
   body {
     @apply bg-canvas font-sans text-ink antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      transition-duration: 0ms !important;
+    }
   }
 }

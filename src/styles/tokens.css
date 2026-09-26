@@ -2,9 +2,23 @@
  * Design tokens (Tailwind CSS v4)
  * Källa: docs/design/reference/*.dc.html. Lägg till nya värden HÄR först, aldrig direkt i komponenter.
  * Import i src/app/globals.css:  @import "tailwindcss";  @import "../styles/tokens.css";
+ *
+ * D-015: Tailwinds standardtema är nollställt för färg, radie, skugga, textstorlek,
+ * tracking och leading (se docs/design/DESIGN.md §12). Bara namnen som listas här finns,
+ * t.ex. `bg-white`, `text-sm` och `rounded-lg` genererar ingen CSS längre.
+ * Spacing (4-bas) och font-weight kommer fortfarande från Tailwinds standardtema.
+ * `transparent`, `current` och `rounded-full`/`leading-none` påverkas inte av nollställningen.
  */
 
 @theme {
+  /* ---------- Nollställning (D-015) — måste stå överst i namnrymden ---------- */
+  --color-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --text-*: initial;
+  --tracking-*: initial;
+  --leading-*: initial;
+
   /* ---------- Typsnitt (laddas med next/font, se DESIGN.md §3) ---------- */
   --font-display: var(--font-bricolage), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
@@ -15,6 +29,7 @@
   --color-line: #F1F1EE;          /* tunna avdelare, tidslinjer i kalendern */
   --color-line-strong: #EFEFEA;   /* radavdelare i listor */
   --color-border: #E2E2DC;        /* sekundära knappar */
+  --color-stripe: #FAFAF7;        /* Agenda: randning stängd dag */
 
   /* ---------- Neutrala, mörka ---------- */
   --color-ink: #16161A;           /* text, primärknappar, appens yttre ram */
@@ -23,14 +38,17 @@
   --color-dark-2: #2A2A31;        /* aktiv navpunkt, taggar på mörk yta */
   --color-dark-line: #33333B;
   --color-dark-border: #3A3A42;
+  --color-blocked: #8E8E97;       /* Agenda: prick "Bloqueos y almuerzo" */
 
   /* ---------- Text ---------- */
   --color-muted: #5E5E66;         /* sekundär text på ljus yta (≥4.5:1) */
   --color-subtle: #A3A3AB;        /* inaktiv, datum utanför månad — aldrig brödtext */
+  --color-ink-soft: #3E3E46;      /* Agenda: veckodag, tid i block, "GMT−3" */
   --color-on-dark: #FFFFFF;
   --color-on-dark-soft: #D2D2D9;
   --color-on-dark-muted: #B9B9C2;
   --color-on-dark-subtle: #A9A9B3;
+  --color-on-dark-faint: #6B6B74; /* Agenda: dagar utanför månaden i mörk kalender */
 
   /* ---------- Varumärke / pasteller ---------- */
   --color-lime: #E3F36B;          /* accent: aktivt, CTA på mörk yta, hora flash */
@@ -40,15 +58,29 @@
   --color-lavender: #E6E0F8;
   --color-mint: #BFE3D0;
   --color-lilac-50: #EDE6FD;
+  --color-lilac-100: #E9E1FB;     /* Main: avatartint "JR" (skiljer sig från lilac-50) */
   --color-peach-50: #FBEBD6;
   --color-lime-50: #EEF6C4;
   --color-violet: #7B61E0;        /* datapunkter, dagens datum i agendan */
+  --color-on-lilac-soft: #2E2A3D;
+  --color-on-peach-soft: #3D3020;
+  --color-on-lime-soft: #2F3310;
+  --color-flash-dot: #9DB017;     /* Reserva: dagprick, flash */
+  --color-full-dot: #C77A1E;      /* Reserva: dagprick, fullt */
 
   /* ---------- Semantik (chips) ---------- */
   --color-success-bg: #D5EEDC;  --color-success-fg: #1F6B3A;   /* Confirmada */
   --color-deposit-bg: #FBEBD6;  --color-deposit-fg: #7A4A12;   /* Abono pagado */
   --color-pending-bg: #EDE6FD;  --color-pending-fg: #4B3AA8;   /* Sin confirmar */
   --color-alert: #E0592A;                                       /* nu-linje, notisprick */
+
+  /* ---------- Personalfärger (befintliga :root-värden, se nedan) ---------- */
+  --color-staff-1: var(--staff-1);
+  --color-staff-2: var(--staff-2);
+  --color-staff-3: var(--staff-3);
+  --color-staff-4: var(--staff-4);
+  --color-staff-5: var(--staff-5);
+  --color-staff-6: var(--staff-6);
 
   /* ---------- Radier ---------- */
   --radius-shell: 32px;   /* innehållspanel, mobilkant */
@@ -60,9 +92,51 @@
   --radius-avatar: 14px;  /* avatar-rutor i listor */
   --radius-event: 12px;   /* kalenderblock, sekundärknappar i popover */
   --radius-chip: 10px;    /* statuschips */
+  --radius-panel: 20px;   /* popover, dag-knapp i Reserva */
+  --radius-bar: 26px;     /* BookingBar, MobileTabBar */
+  --radius-badge: 8px;    /* taggar i Hoy, flash-bricka */
+  --radius-tag: 6px;      /* tagg i kalenderblock */
 
   /* ---------- Skuggor (endast svävande lager) ---------- */
   --shadow-popover: 0 18px 48px rgb(22 22 26 / 0.18), 0 2px 6px rgb(22 22 26 / 0.08);
+
+  /* ---------- Textstorlekar (px-namn, se DESIGN.md §3 för rollnamn) ---------- */
+  --text-10: 10px;
+  --text-11: 11px;
+  --text-12: 12px;
+  --text-13: 13px;
+  --text-14: 14px;
+  --text-15: 15px;
+  --text-16: 16px;
+  --text-17: 17px;
+  --text-18: 18px;
+  --text-19: 19px;
+  --text-22: 22px;
+  --text-24: 24px;
+  --text-26: 26px;
+  --text-28: 28px;
+  --text-30: 30px;
+  --text-32: 32px;
+  --text-38: 38px;
+  --text-40: 40px;
+  --text-44: 44px;
+  --text-118: 118px;
+  --text-event-title: 12.5px;  /* kalenderblockets titel */
+  --text-event-meta: 11.5px;   /* kalenderblockets tid/undertext */
+
+  /* ---------- Tracking (letter-spacing) ---------- */
+  --tracking-display: -0.02em;
+  --tracking-title: -0.01em;
+  --tracking-mega: -0.05em;
+  --tracking-caps: 0.04em;
+
+  /* ---------- Leading (line-height) ---------- */
+  --leading-mega: 0.9;
+  --leading-hero: 1.08;
+  --leading-snug: 1.2;
+  --leading-event: 1.25;
+  --leading-body: 1.45;
+  --leading-relaxed: 1.5;
 
   /* ---------- Agenda ---------- */
   --agenda-hour: 94px;          /* höjd per timme i veckovyn */
@@ -83,4 +157,14 @@
 @utility font-display-tight {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
+}
+
+/* Agendans huvudpanel — används bara där (DESIGN.md §4). */
+@utility bg-agenda {
+  background-image: var(--gradient-agenda);
+}
+
+/* Randigt mönster för en stängd dag i veckovyn. */
+@utility bg-closed-stripes {
+  background-image: repeating-linear-gradient(135deg, var(--color-canvas) 0 10px, var(--color-stripe) 10px 20px);
 }
