@@ -26,4 +26,27 @@ describe("cn", () => {
   it("tar bort falsy-värden och slår ihop strängar från flera argument", () => {
     expect(cn("a", false, undefined, null, "b", 0 && "c")).toBe("a b");
   });
+
+  it("slår ihop bg-agenda och bg-closed-stripes till bg-closed-stripes (samma grupp, bg-image)", () => {
+    expect(cn("bg-agenda", "bg-closed-stripes")).toBe("bg-closed-stripes");
+  });
+
+  it("bg-image (bg-agenda) och bg-color (bg-ink) är olika grupper och behålls båda", () => {
+    expect(cn("bg-agenda", "bg-ink")).toBe("bg-agenda bg-ink");
+  });
+
+  it("slår ihop shadow-popover med Tailwinds inbyggda shadow-none", () => {
+    expect(cn("shadow-popover", "shadow-none")).toBe("shadow-none");
+  });
+
+  it("radie per sida (rounded-t-*) hanteras som en egen grupp, skild från rounded", () => {
+    expect(cn("rounded-card", "rounded-t-tile")).toBe(
+      "rounded-card rounded-t-tile",
+    );
+    expect(cn("rounded-t-card", "rounded-t-tile")).toBe("rounded-t-tile");
+  });
+
+  it("radie per hörn (rounded-tl-*) slås ihop inom samma hörn", () => {
+    expect(cn("rounded-tl-panel", "rounded-tl-badge")).toBe("rounded-tl-badge");
+  });
 });

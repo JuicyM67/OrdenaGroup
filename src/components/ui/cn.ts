@@ -105,14 +105,45 @@ const tracking = ["display", "title", "mega", "caps"];
 
 const leading = ["mega", "hero", "snug", "event", "body", "relaxed"];
 
+/** @utility-klasserna i tokens.css (bg-agenda, bg-closed-stripes). */
+const bgImages = ["agenda", "closed-stripes"];
+
+/** --shadow-* i tokens.css utöver Tailwinds inbyggda "", "inner", "none". */
+const shadows = ["popover"];
+
+// Tailwind har en klassgrupp per sida/hörn för border-radius (rounded-t-*, rounded-tl-* …).
+// Våra radie-tokens ska gå att kombinera/ersätta i alla dessa, inte bara den logiska
+// (ingen sida angiven) gruppen "rounded".
+const roundedSideGroups = [
+  "rounded-s",
+  "rounded-e",
+  "rounded-t",
+  "rounded-r",
+  "rounded-b",
+  "rounded-l",
+  "rounded-ss",
+  "rounded-se",
+  "rounded-ee",
+  "rounded-es",
+  "rounded-tl",
+  "rounded-tr",
+  "rounded-br",
+  "rounded-bl",
+] as const;
+
 const customTwMerge = extendTailwindMerge({
   extend: {
     classGroups: {
       "font-size": [{ text: fontSizes }],
       "text-color": [{ text: colors }],
       "bg-color": [{ bg: colors }],
+      "bg-image": [{ bg: bgImages }],
       "border-color": [{ border: colors }],
+      shadow: [{ shadow: shadows }],
       rounded: [{ rounded: radii }],
+      ...Object.fromEntries(
+        roundedSideGroups.map((group) => [group, [{ [group]: radii }]]),
+      ),
       tracking: [{ tracking: tracking }],
       leading: [{ leading: leading }],
     },
