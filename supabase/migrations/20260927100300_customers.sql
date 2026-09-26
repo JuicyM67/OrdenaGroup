@@ -42,10 +42,19 @@ create trigger set_updated_at
   before update on public.customers
   for each row execute function private.set_updated_at();
 
+-- Säkerhet S5: en ägare som lägger till/ändrar en kund manuellt i appen kan
+-- bara sätta samtycke med consent_channel = 'manual'. `web` och `whatsapp`
+-- betyder att kunden själv gav samtycke via bokningssidan/WhatsApp-flödet,
+-- och ska bara kunna sättas av servern (som verkligen körde det flödet),
+-- inte av en ägare som redigerar en kundrad direkt.
 alter table public.customers enable row level security;
 create policy "owners full access" on public.customers
   for all
   to authenticated
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
-  with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+  with check (
+    private.is_member(business_id, array['owner', 'admin']::public.member_role[])
+    and (consent_channel is null or consent_channel = 'manual')
+  );
 grant select, insert, update, delete on public.customers to authenticated;
+grant select, insert, update, delete on public.customers to service_role;
