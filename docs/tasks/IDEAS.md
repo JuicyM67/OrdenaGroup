@@ -35,3 +35,6 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-27 | Gemensam `Result`-typ i `src/lib/` för server och lib | planner (WP-04) | En felmodell i hela kodbasen | 1 (WP-10) |
 | 2026-09-27 | Utländska telefonnummer (turister) med per-land-validering | planner (WP-04) | Kunder utan chilenskt nummer kan boka | 3 |
 | 2026-09-27 | `zod/mini` för scheman som används på kundsidan | planner (WP-04) | Mindre bundle på billiga Android-telefoner | 2 |
+| 2026-09-27 | Step-up (engångskod via WhatsApp) före export/radering via `r/[token]` | security-reviewer (WP-03) | Länken per bokning vidarebefordras lätt; export/radering får inte gå med bara länken | 1 (WP-26) |
+| 2026-09-27 | Mallvariant utan tjänstenamn för vårdnära branscher | security-reviewer (WP-03) | Tjänstenamn kan vara känsliga uppgifter (Ley 21.719) | 2 |
+| 2026-09-27 | Paritetstestet i i18n jämför rad för rad i stället för mot en sammanslagen sträng | qa-reviewer (WP-03) | Korta texter kan annars räknas som täckta av längre | 2 |
