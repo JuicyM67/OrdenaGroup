@@ -1,7 +1,7 @@
 -- INV-3/INV-4: tenant-isolering för `business_hours`, plus överlappningsregler.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(24);
 \ir _helpers.psql
 
 insert into public.business_hours (id, business_id, weekday, start_time, end_time) values
@@ -55,8 +55,27 @@ select throws_ok($$ delete from public.business_hours where id = 'aaaaaaaa-2300-
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select count(*) from public.business_hours)::int, 0, 'staffA ser noll öppettider');
+select throws_ok(
+  $$ insert into public.business_hours (business_id, weekday, start_time, end_time) values ('aaaaaaaa-0000-0000-0000-000000000001', 5, '10:00', '19:00') $$,
+  '42501'
+);
+with updated as (
+  update public.business_hours set end_time = '20:00' where id = 'aaaaaaaa-2300-0000-0000-000000000001'
+  returning 1
+)
+select is((select count(*) from updated)::int, 0, 'staffA kan inte uppdatera öppettider (0 rader)');
+with deleted as (
+  delete from public.business_hours where id = 'aaaaaaaa-2300-0000-0000-000000000001'
+  returning 1
+)
+select is((select count(*) from deleted)::int, 0, 'staffA kan inte radera öppettider (0 rader)');
+
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);
 select is((select count(*) from public.business_hours)::int, 0, 'vendorA ser noll öppettider');
+select throws_ok(
+  $$ insert into public.business_hours (business_id, weekday, start_time, end_time) values ('aaaaaaaa-0000-0000-0000-000000000001', 6, '10:00', '19:00') $$,
+  '42501'
+);
 
 -- 7. Utan medlemskap: noll rader.
 select set_config('request.jwt.claims', json_build_object('sub', '55555555-5555-5555-5555-555555555555', 'role', 'authenticated')::text, true);

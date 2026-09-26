@@ -159,7 +159,11 @@ create table public.time_off (
   updated_at timestamptz not null default now(),
   foreign key (business_id, staff_id) references public.staff (business_id, id) on delete cascade,
   constraint time_off_period_not_empty check (not isempty(period)),
-  constraint time_off_period_half_open check (lower_inc(period) and not upper_inc(period))
+  constraint time_off_period_half_open check (lower_inc(period) and not upper_inc(period)),
+  -- K2: samma resonemang som på bookings — ett obestämt slut (`[a,)`) gör
+  -- gist-indexet och tillgänglighetsmotorn svårare att resonera om. En
+  -- längre ledighet (t.ex. "vacation") sätts med ett konkret slutdatum.
+  constraint time_off_period_bounded check (not upper_inf(period))
 );
 
 create index time_off_business_id_idx on public.time_off (business_id);
@@ -179,6 +183,7 @@ create policy "owners full access" on public.staff
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
   with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
 grant select, insert, update, delete on public.staff to authenticated;
+grant select, insert, update, delete on public.staff to service_role;
 
 alter table public.services enable row level security;
 create policy "owners full access" on public.services
@@ -187,6 +192,7 @@ create policy "owners full access" on public.services
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
   with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
 grant select, insert, update, delete on public.services to authenticated;
+grant select, insert, update, delete on public.services to service_role;
 
 alter table public.staff_services enable row level security;
 create policy "owners full access" on public.staff_services
@@ -195,6 +201,7 @@ create policy "owners full access" on public.staff_services
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
   with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
 grant select, insert, update, delete on public.staff_services to authenticated;
+grant select, insert, update, delete on public.staff_services to service_role;
 
 alter table public.business_hours enable row level security;
 create policy "owners full access" on public.business_hours
@@ -203,6 +210,7 @@ create policy "owners full access" on public.business_hours
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
   with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
 grant select, insert, update, delete on public.business_hours to authenticated;
+grant select, insert, update, delete on public.business_hours to service_role;
 
 alter table public.staff_hours enable row level security;
 create policy "owners full access" on public.staff_hours
@@ -211,6 +219,7 @@ create policy "owners full access" on public.staff_hours
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
   with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
 grant select, insert, update, delete on public.staff_hours to authenticated;
+grant select, insert, update, delete on public.staff_hours to service_role;
 
 alter table public.time_off enable row level security;
 create policy "owners full access" on public.time_off
@@ -219,3 +228,4 @@ create policy "owners full access" on public.time_off
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
   with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
 grant select, insert, update, delete on public.time_off to authenticated;
+grant select, insert, update, delete on public.time_off to service_role;

@@ -1,7 +1,7 @@
 -- INV-3/INV-4: tenant-isolering för `services`.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(20);
+select plan(23);
 \ir _helpers.psql
 
 insert into public.services (id, business_id, name, duration_min, price_clp) values
@@ -60,8 +60,24 @@ select throws_ok(
   '42501'
 );
 
+-- qa7: staffA:s update/delete-försök på en befintlig rad ger 0 rader.
+with updated as (
+  update public.services set name = 'Hackeado' where id = 'aaaaaaaa-2000-0000-0000-000000000001'
+  returning 1
+)
+select is((select count(*) from updated)::int, 0, 'staffA kan inte uppdatera en tjänst (0 rader)');
+with deleted as (
+  delete from public.services where id = 'aaaaaaaa-2000-0000-0000-000000000001'
+  returning 1
+)
+select is((select count(*) from deleted)::int, 0, 'staffA kan inte radera en tjänst (0 rader)');
+
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);
 select is((select count(*) from public.services)::int, 0, 'vendorA ser noll tjänster');
+select throws_ok(
+  $$ insert into public.services (business_id, name, duration_min, price_clp) values ('aaaaaaaa-0000-0000-0000-000000000001', 'Otro', 30, 5000) $$,
+  '42501'
+);
 
 -- 7. Användare utan medlemskap ser noll rader.
 select set_config('request.jwt.claims', json_build_object('sub', '55555555-5555-5555-5555-555555555555', 'role', 'authenticated')::text, true);

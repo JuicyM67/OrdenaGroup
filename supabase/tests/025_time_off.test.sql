@@ -1,7 +1,7 @@
 -- INV-3/INV-4: tenant-isolering för `time_off`, plus intervallregler.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(23);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -58,8 +58,27 @@ select throws_ok($$ delete from public.time_off where id = 'aaaaaaaa-2500-0000-0
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select count(*) from public.time_off)::int, 0, 'staffA ser noll frånvaro');
+select throws_ok(
+  $$ insert into public.time_off (business_id, staff_id, period, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', null, tstzrange('2026-10-10 13:30+00', '2026-10-10 14:30+00', '[)'), 'lunch') $$,
+  '42501'
+);
+with updated as (
+  update public.time_off set note = 'Hackeado' where id = 'aaaaaaaa-2500-0000-0000-000000000001'
+  returning 1
+)
+select is((select count(*) from updated)::int, 0, 'staffA kan inte uppdatera frånvaro (0 rader)');
+with deleted as (
+  delete from public.time_off where id = 'aaaaaaaa-2500-0000-0000-000000000001'
+  returning 1
+)
+select is((select count(*) from deleted)::int, 0, 'staffA kan inte radera frånvaro (0 rader)');
+
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);
 select is((select count(*) from public.time_off)::int, 0, 'vendorA ser noll frånvaro');
+select throws_ok(
+  $$ insert into public.time_off (business_id, staff_id, period, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', null, tstzrange('2026-10-11 13:30+00', '2026-10-11 14:30+00', '[)'), 'lunch') $$,
+  '42501'
+);
 
 -- 7. Utan medlemskap: noll rader.
 select set_config('request.jwt.claims', json_build_object('sub', '55555555-5555-5555-5555-555555555555', 'role', 'authenticated')::text, true);
@@ -80,6 +99,11 @@ select throws_ok(
 );
 select throws_ok(
   $$ insert into public.time_off (business_id, staff_id, period, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', null, tstzrange('2026-10-09 13:30+00', '2026-10-09 14:30+00', '[]'), 'lunch') $$,
+  '23514'
+);
+-- K2: ett obegränsat intervall (t.ex. "ledigt tills vidare") avvisas.
+select throws_ok(
+  $$ insert into public.time_off (business_id, staff_id, period, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', null, tstzrange('2026-10-09 13:30+00', null, '[)'), 'vacation') $$,
   '23514'
 );
 select lives_ok(
