@@ -235,6 +235,33 @@ describe("plantillas de WhatsApp (Meta, fase 1)", () => {
     }
   });
 
+  it("B1: el token de gestión nunca se describe como expuesto ni derivado del hash", () => {
+    const conToken = PLANTILLAS.filter((p) =>
+      p.botones.some(
+        (b) => b.tipo === "URL" && b.sufijo.fuente.includes("token de gestión"),
+      ),
+    );
+    expect(conToken.map((p) => p.nombre).sort()).toEqual(
+      ["reserva_confirmada", "reserva_movida"].sort(),
+    );
+    for (const plantilla of conToken) {
+      for (const boton of plantilla.botones) {
+        if (boton.tipo !== "URL") continue;
+        expect(boton.sufijo.fuente, plantilla.nombre).toMatch(
+          /nunca se deriva del hash/i,
+        );
+        expect(boton.sufijo.fuente, plantilla.nombre).not.toMatch(
+          /nunca se expone el token completo/i,
+        );
+        // 32 bytes en base64url sin padding = 43 caracteres.
+        expect(boton.sufijo.ejemplo, plantilla.nombre).toHaveLength(43);
+        expect(boton.sufijo.ejemplo, plantilla.nombre).toMatch(
+          /^[A-Za-z0-9_-]{43}$/,
+        );
+      }
+    }
+  });
+
   it("el documento no incluye otras plantillas además de estas seis", () => {
     const nombresEnCodigo = new Set(PLANTILLAS.map((p) => p.nombre));
     // Las plantillas de fase 2 (marketing) y de autenticación no viven en
@@ -273,6 +300,8 @@ describe("mensajes de sesión (whatsappSesion)", () => {
       negocio: NEGOCIO,
       telefonoNegocio: "+56 9 1234 5678",
     }),
+    whatsappSesion.baja({ negocio: NEGOCIO }),
+    whatsappSesion.bajaTotal({ negocio: NEGOCIO }),
   ];
 
   it("cada mensaje mide 300 caracteres o menos", () => {
@@ -303,6 +332,18 @@ describe("mensajes de sesión (whatsappSesion)", () => {
     expect(texto).toContain("¡Listo!");
     expect(texto).not.toContain("¡Lista!");
     expect(texto).toMatch(/confirmaci[oó]n/i);
+  });
+
+  it("baja detiene el marketing pero avisa que las reservas siguen llegando", () => {
+    const texto = whatsappSesion.baja({ negocio: NEGOCIO });
+    expect(texto).toMatch(/ofertas/i);
+    expect(texto).toMatch(/reservas/i);
+  });
+
+  it("bajaTotal deja claro que también se detienen los avisos de reservas", () => {
+    const texto = whatsappSesion.bajaTotal({ negocio: NEGOCIO });
+    expect(texto).toMatch(/ofertas/i);
+    expect(texto).toMatch(/recordatorios|avisos/i);
   });
 });
 
@@ -368,9 +409,19 @@ describe("correo (respaldo de WhatsApp, F7)", () => {
       email.reservaCancelada.cuerpo(EJEMPLO),
       email.reservaMovida.asunto(EJEMPLO),
       email.reservaMovida.cuerpo(EJEMPLO),
+      email.pie({ negocio: EJEMPLO.negocio, plataforma: "la plataforma" }),
     ];
     for (const texto of textos) {
       sinGirosProhibidos(texto);
     }
+  });
+
+  it("email.pie recibe la plataforma como parámetro y nombra al negocio", () => {
+    const texto = email.pie({
+      negocio: "Barbería Norte",
+      plataforma: "la plataforma",
+    });
+    expect(texto).toContain("Barbería Norte");
+    expect(texto).toContain("la plataforma");
   });
 });

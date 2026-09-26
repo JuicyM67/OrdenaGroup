@@ -124,18 +124,19 @@ export const errores = {
     nombreVacio: "Escribe tu nombre.",
     emailInvalido: "Revisa tu correo electrónico.",
     consentimientoRequerido: "Acepta los términos para continuar.",
-    /** Códigos de `chileanMobileInputSchema` (src/lib/format/schemas.ts,
-     * WP-04) para el celular del cliente en Reserva. El teléfono del
-     * negocio (móvil o fijo) y los esquemas de CLP, RUT, fecha y hora son de
-     * WP-03b. */
+    /** Mismos códigos que `PhoneError` (src/lib/format/phone.ts, WP-04) para
+     * el celular del cliente en Reserva, así `satisfies Record<PhoneError,
+     * string>` funciona del lado de WP-04/WP-13 sin traducir nombres. El
+     * teléfono del negocio (que puede ser fijo) y los esquemas de CLP, RUT,
+     * fecha y hora son de WP-03b. */
     telefono: {
-      invalid_type: "Ingresa un número válido.",
       empty: "Escribe tu número de teléfono.",
       invalid_chars: "Usa solo números, por ejemplo +56 9 1234 5678.",
       not_chilean: "Por ahora solo aceptamos números chilenos (+56).",
       invalid_length:
         "Un celular chileno tiene 8 dígitos después de +56 9. Revisa el número.",
       not_mobile: "Escribe un celular chileno, por ejemplo +56 9 1234 5678.",
+      invalid_prefix: "Ese número no es válido. Revisa el código de área.",
     },
   },
   agenda: {
@@ -180,6 +181,7 @@ export const reserva = {
       "Únete a la lista de espera. Si alguien cancela, te avisamos por WhatsApp y la hora es tuya con un toque.",
     listo: "Listo, estás en la lista",
     ctaAvisame: "Avísame",
+    ctaUnirme: "Unirme a la lista",
     ctaEnLaLista: "En la lista",
     /** Recibo más completo (p. ej. en un toast o una tarjeta aparte),
      * distinto del check corto `listo` que se ve dentro de la propia tarjeta
@@ -225,14 +227,21 @@ export const reserva = {
   },
   /** Versión "2026-10-v1" (borrador, ver R8 del plan): pendiente de revisión
    * de un abogado antes de WP-27. Si cambias `terminos`, `terminosLinkTexto`,
-   * `politicaLinkTexto` o `marketing`, sube `version` y registra el nuevo
-   * hash en `es-CL.test.ts` (`HASHES`). */
+   * `politicaLinkTexto`, `privacidadLinkTexto`, `responsable`, `marketing`,
+   * `antesDeConfirmar.avisoWhatsapp` o `antesDeConfirmar.politicaCancelacion`,
+   * sube `version` y registra el nuevo hash en `es-CL.test.ts` (`HASHES`). */
   consentimientos: {
     version: "2026-10-v1",
     terminos:
       "Acepto los términos de la reserva y la política de cancelación, y recibir por WhatsApp la confirmación y los recordatorios de esta hora.",
     terminosLinkTexto: "los términos de la reserva",
     politicaLinkTexto: "la política de cancelación",
+    privacidadLinkTexto: "la política de privacidad",
+    /** Quién trata los datos (Ley 21.719): el negocio es responsable, la
+     * plataforma los procesa por su encargo. Nunca se nombra el producto acá
+     * (regla dura 10): "la plataforma" es una palabra común, no el nombre. */
+    responsable: (p: { negocio: string }): string =>
+      `Tus datos los trata ${p.negocio}; la plataforma los procesa por encargo.`,
     marketing: (p: { negocio: string }): string =>
       `Quiero recibir ofertas y novedades de ${p.negocio} por WhatsApp. Puedo responder BAJA cuando quiera.`,
   },
@@ -472,7 +481,8 @@ export const hoy = {
   relativo: {
     ahora: "ahora",
     enMin: (p: { n: number }): string => `en ${p.n} min`,
-    enHoras: (p: { h: number; m: number }): string => `en ${p.h} h ${p.m} min`,
+    enHoras: (p: { h: number; m: number }): string =>
+      p.m === 0 ? `en ${p.h} h` : `en ${p.h} h ${p.m} min`,
     atrasado: (p: { n: number }): string => `${p.n} min de atraso`,
   },
   sinProximaReserva: "No tienes más clientes agendados hoy.",
@@ -601,9 +611,9 @@ export const plantillasWhatsapp = {
         tipo: "URL",
         texto: "Ver mi reserva",
         sufijo: {
-          ejemplo: "a1B2c3D4",
+          ejemplo: "q3Zr8Kx1VbN0pT7wYc2LmA9sHd4GfJ6eRu5iOk-_XyW",
           fuente:
-            "link de gestión (servidor, a partir del hash de bookings.manage_token)",
+            "token de gestión aleatorio de 32 bytes en base64url (43 caracteres), generado por el servidor al enviar; en la base se guarda solo su hash; el link nunca se deriva del hash",
         },
         dominioPendiente: true,
       },
@@ -742,9 +752,9 @@ export const plantillasWhatsapp = {
         tipo: "URL",
         texto: "Ver mi reserva",
         sufijo: {
-          ejemplo: "a1B2c3D4",
+          ejemplo: "q3Zr8Kx1VbN0pT7wYc2LmA9sHd4GfJ6eRu5iOk-_XyW",
           fuente:
-            "link de gestión (servidor, a partir del hash de bookings.manage_token)",
+            "token de gestión aleatorio de 32 bytes en base64url (43 caracteres), generado por el servidor al enviar; en la base se guarda solo su hash; el link nunca se deriva del hash. WP-16 genera un token nuevo cada vez que se reenvía esta plantilla.",
         },
         dominioPendiente: true,
       },
@@ -858,6 +868,16 @@ export const whatsappSesion = {
     `El tiempo para responder ya pasó. Te avisaremos si se libera otra hora en ${p.negocio}.`,
   noEntendido: (p: { negocio: string; telefonoNegocio: string }): string =>
     `No entendimos tu mensaje. Escribe directo a ${p.negocio} al ${p.telefonoNegocio} si necesitas ayuda.`,
+  /** Respuesta a "BAJA": deja de mandar marketing (hora_flash,
+   * te_echamos_de_menos), pero las utility (confirmación, recordatorio) de
+   * las propias reservas siguen llegando. */
+  baja: (p: { negocio: string }): string =>
+    `Listo, no te enviaremos más ofertas de ${p.negocio}. Seguirás recibiendo solo los avisos de tus reservas.`,
+  /** Baja total: además de las ofertas, deja de mandar los avisos de
+   * reservas por WhatsApp (el cliente sigue pudiendo gestionar su hora por
+   * su link de gestión o llamando al negocio). */
+  bajaTotal: (p: { negocio: string }): string =>
+    `Listo, ya no recibirás ningún mensaje de ${p.negocio} por acá, ni ofertas ni recordatorios de tus reservas. Para gestionar una reserva, entra a tu link de gestión.`,
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -918,4 +938,9 @@ export const email = {
     }): string =>
       `Hola ${p.cliente}:\n\nTu hora en ${p.negocio} cambió.\n\nNuevo día: ${p.fecha}\nNueva hora: ${p.hora}\nProfesional: ${p.profesional}\n\nRevisa el detalle aquí: ${p.linkGestion}`,
   },
+  /** Pie de página de los cuatro correos. `plataforma` se recibe como
+   * parámetro (no se interpola `brand.name` acá): quien arma el correo en
+   * WP-16 decide qué nombre mostrar. */
+  pie: (p: { negocio: string; plataforma: string }): string =>
+    `Recibes este correo porque reservaste en ${p.negocio} a través de ${p.plataforma}.`,
 } as const satisfies Trad;

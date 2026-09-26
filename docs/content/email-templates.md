@@ -12,6 +12,16 @@
 >
 > No hay correo para la lista de espera en v1: esa función depende de una
 > respuesta rápida por WhatsApp, y un correo llegaría demasiado tarde.
+>
+> `{cliente}` es el primer nombre (misma fuente que la variable 2 de las
+> plantillas de WhatsApp: primera palabra de `customers.name`).
+>
+> **Para WP-16 (seguridad, B1):** el seguimiento de clics y de apertura de
+> Resend va **desactivado** en estos cuatro correos — el link de gestión no
+> puede pasar por un redirect de terceros, porque eso expondría el token en
+> otro dominio y en los logs de Resend. El remitente usa el dominio de la
+> plataforma (no el del negocio) con `reply-to` apuntando al negocio, para
+> que un "Responder" del cliente le llegue directo al negocio.
 
 ## 1. Reserva confirmada
 
@@ -83,4 +93,14 @@ Nueva hora: {hora}
 Profesional: {profesional}
 
 Revisa el detalle aquí: {linkGestion}
+```
+
+## 5. Pie de página (los cuatro correos)
+
+`email.pie({ negocio, plataforma })`. `{plataforma}` se recibe como
+parámetro (no está escrito a mano en `es-CL.ts`): quien arma el correo en
+WP-16 decide qué nombre de plataforma mostrar.
+
+```
+Recibes este correo porque reservaste en {negocio} a través de {plataforma}.
 ```

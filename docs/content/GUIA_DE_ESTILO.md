@@ -117,6 +117,15 @@
   forma de darse de baja ("BAJA").
 - Antes del piloto (WP-27) un abogado chileno debe revisar estos textos (ver
   R8 del plan de WP-03 y `docs/legal/COMPLIANCE.md`).
+- **Archivo inmutable por versión (S4, seguridad).** Cada `consentimientos.version`
+  que un cliente llegó a aceptar debe quedar guardada tal cual era ese día,
+  aunque `es-CL.ts` cambie después: no basta con el hash del test, hace falta
+  una copia legible del texto completo (WP-26, `RAT.md` en
+  `docs/legal/COMPLIANCE.md`). El registro de qué versión aceptó cada
+  cliente y cuándo es **append-only**: nunca se sobrescribe ni se borra una
+  fila existente, solo se agregan filas nuevas (por corrección, revocación,
+  etc.). Esto es requisito de producto para WP-26, no algo que resuelva
+  `copywriter-es-cl`.
 
 ## 8. Errores de validación (formularios)
 
@@ -124,16 +133,35 @@
   falló: "Escribe tu nombre." en vez de "Nombre inválido."
 - Los códigos de error de teléfono del cliente en Reserva
   (`errores.reserva.telefono`) usan las mismas claves (en snake_case) que
-  `chileanMobileInputSchema` en `src/lib/format/schemas.ts` (WP-04):
-  `invalid_type`, `empty`, `invalid_chars`, `not_chilean`, `invalid_length`,
-  `not_mobile`. Lo mismo para `errores.reserva`/`errores.agenda`
+  `PhoneError` en `src/lib/format/phone.ts` (WP-04): `empty`,
+  `invalid_chars`, `not_chilean`, `invalid_length`, `not_mobile`,
+  `invalid_prefix`. Lo mismo para `errores.reserva`/`errores.agenda`
   (`slot_taken`, `too_soon`, `outside_hours`, `waitlist_duplicate`): la clave
   es el código real, no una traducción, para que `satisfies Record<Codigo,
   string>` funcione del lado de quien defina el tipo del código. El teléfono
   del negocio (que puede ser fijo) y los esquemas de CLP, RUT, fecha y hora se
   escriben en WP-03b, cuando esas pantallas entren en alcance.
 
-## 9. Cómo revisar un texto nuevo
+## 9. Nombres de servicio neutrales (S5, seguridad)
+
+El nombre de un servicio (`services.name`) viaja tal cual por WhatsApp y por
+correo, dos canales que ni el negocio ni la plataforma controlan del todo
+(quedan en el teléfono del cliente, en Meta, en Resend). Por eso, aunque el
+texto lo escribe el dueño del negocio en Ajustes (F2, pantalla de WP-03b, no
+de este paquete), la regla de producto es:
+
+- Nunca un nombre de servicio de salud o íntimo con detalle clínico
+  (diagnósticos, nombres de tratamientos médicos, condiciones de salud). Un
+  kinesiólogo escribe "Sesión de rehabilitación", no el diagnóstico del
+  paciente.
+- Nunca datos que identifiquen algo sensible de la persona que reserva más
+  allá del servicio en sí.
+- Esto es una regla de producto y de validación en el formulario de
+  servicios (WP-03b), no algo que `copywriter-es-cl` pueda arreglar en
+  `es-CL.ts`: acá solo se documenta para que quien escriba esa pantalla la
+  aplique.
+
+## 10. Cómo revisar un texto nuevo
 
 1. ¿Está en `docs/design/reference/*.dc.html`? Cópialo tal cual, incluyendo
    mayúsculas, tildes y los caracteres especiales (`·`, `−`, `ª`).

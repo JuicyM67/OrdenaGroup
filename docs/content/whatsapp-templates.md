@@ -16,10 +16,16 @@
 >
 > Los campos "Fuente" siguen `docs/tech/DATA_MODEL.md`: `customers` no tiene
 > `first_name` (se usa la primera palabra de `customers.name`), las horas
-> viven en `bookings.period` (`tstzrange`, no `starts_at`), el plazo de
-> cancelación es `businesses.cancel_window_hours` y el link de gestión lo
-> arma el servidor a partir del hash guardado en `bookings.manage_token`
-> (nunca se expone el token completo en texto plano).
+> viven en `bookings.period` (`tstzrange`, no `starts_at`) y el plazo de
+> cancelación es `businesses.cancel_window_hours`.
+>
+> **Sobre el link de gestión (seguridad, B1):** el `{{1}}` del botón "Ver mi
+> reserva" es un token de gestión aleatorio de 32 bytes en base64url (43
+> caracteres), generado por el servidor al enviar cada mensaje. En la base
+> solo se guarda su hash; el link que recibe el cliente nunca se deriva del
+> hash (no hay forma de reconstruir el token a partir de lo guardado). Un
+> reenvío de `reserva_movida` o del correo (`linkGestion`) requiere que WP-16
+> genere un token nuevo en ese momento, no que reutilice uno viejo.
 >
 > Las fechas de ejemplo usan el formato largo en minúsculas que arma WP-04
 > ("viernes 2 de octubre"), nunca abreviado ni relativo.
@@ -72,7 +78,7 @@ Tu hora en {{1}} quedó confirmada, {{2}}: {{3}} el {{4}} a las {{5}} con {{6}}.
 
 | Tipo | Texto | Destino |
 |---|---|---|
-| URL (pendiente de dominio) | Ver mi reserva | `https://{dominio}/r/{{1}}` — sufijo: link de gestión armado por el servidor a partir del hash de `bookings.manage_token`, ejemplo `a1B2c3D4` |
+| URL (pendiente de dominio) | Ver mi reserva | `https://{dominio}/r/{{1}}` — sufijo: token de gestión aleatorio de 32 bytes en base64url (43 caracteres), generado por el servidor al enviar; en la base se guarda solo su hash, ejemplo `q3Zr8Kx1VbN0pT7wYc2LmA9sHd4GfJ6eRu5iOk-_XyW` |
 
 **Vista previa:**
 
@@ -216,7 +222,7 @@ Tu hora en {{1}} cambió, {{2}}: ahora es el {{3}} a las {{4}} con {{5}}. Si no 
 
 | Tipo | Texto | Destino |
 |---|---|---|
-| URL (pendiente de dominio) | Ver mi reserva | `https://{dominio}/r/{{1}}` — sufijo: link de gestión armado por el servidor a partir del hash de `bookings.manage_token`, ejemplo `a1B2c3D4` |
+| URL (pendiente de dominio) | Ver mi reserva | `https://{dominio}/r/{{1}}` — sufijo: token de gestión aleatorio de 32 bytes en base64url (43 caracteres), nuevo en cada reenvío, generado por el servidor al enviar; en la base se guarda solo su hash, ejemplo `q3Zr8Kx1VbN0pT7wYc2LmA9sHd4GfJ6eRu5iOk-_XyW` |
 
 **Vista previa:**
 
@@ -230,6 +236,10 @@ Tu hora en {{1}} cambió, {{2}}: ahora es el {{3}} a las {{4}} con {{5}}. Si no 
 hecho por el negocio. La frase final (con más texto fijo, menos variables
 seguidas) ayuda a que Meta la lea como una notificación de servicio, no como
 una invitación a comprar algo nuevo.
+
+**Sobre el token (seguridad, B1):** cada vez que se reenvía esta plantilla
+(p. ej. si el dueño mueve la hora dos veces), WP-16 genera un token de
+gestión nuevo; nunca reutiliza uno ya enviado.
 
 ---
 
@@ -337,6 +347,8 @@ entre negocios (D-007), así que cada mensaje nombra al negocio.
 | Cliente respondió *No, gracias* | "Listo, seguimos avisándote si se libera otra hora en {negocio}." |
 | El plazo para responder ya venció | "El tiempo para responder ya pasó. Te avisaremos si se libera otra hora en {negocio}." |
 | Mensaje de texto libre que no reconocemos | "No entendimos tu mensaje. Escribe directo a {negocio} al {teléfono del negocio} si necesitas ayuda." |
+| Cliente respondió *BAJA* | "Listo, no te enviaremos más ofertas de {negocio}. Seguirás recibiendo solo los avisos de tus reservas." (deja de mandar marketing; la confirmación y el recordatorio de una reserva propia siguen llegando) |
+| Baja total (deja de recibir también los avisos de reservas) | "Listo, ya no recibirás ningún mensaje de {negocio} por acá, ni ofertas ni recordatorios de tus reservas. Para gestionar una reserva, entra a tu link de gestión." |
 
 ---
 

@@ -165,6 +165,7 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   dias: "Lun–Sáb",
   linkGestion: "https://ejemplo.cl/r/abc123",
   linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
+  plataforma: "la plataforma",
 };
 
 const PATRON_RESTO_ROTO = /undefined|NaN|\bnull\b|\[object|\{\{|\{[a-zA-Z]/;
@@ -369,6 +370,8 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     expect(registrar(hoy.relativo.enHoras({ h: 1, m: 15 }))).toBe(
       "en 1 h 15 min",
     );
+    // m = 0: nunca "en 1 h 0 min".
+    expect(registrar(hoy.relativo.enHoras({ h: 2, m: 0 }))).toBe("en 2 h");
     expect(registrar(hoy.relativo.atrasado({ n: 5 }))).toBe("5 min de atraso");
     expect(hoy.relativo.ahora).toBe("ahora");
   });
@@ -395,6 +398,16 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
         }),
       ),
     ).toBe("Quedaste en la lista de espera para Corte + barba el sábado.");
+    registrar(reserva.waitlist.ctaUnirme);
+  });
+
+  it("reserva.consentimientos.privacidadLinkTexto y .responsable", () => {
+    registrar(reserva.consentimientos.privacidadLinkTexto);
+    const texto = registrar(
+      reserva.consentimientos.responsable({ negocio: "Barbería Norte" }),
+    );
+    expect(texto).toContain("Barbería Norte");
+    expect(texto).toContain("la plataforma");
   });
 
   it("reserva.resumen.* sigue la fórmula del diseño (BookingBar)", () => {
@@ -589,6 +602,7 @@ const EJEMPLO = {
   linkGestion: "https://ejemplo.cl/r/abc123",
   linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
   telefonoNegocio: "+56 9 1234 5678",
+  plataforma: "la plataforma",
 } as const;
 
 const muestrasSesionYCorreo: string[] = [
@@ -621,10 +635,33 @@ const muestrasSesionYCorreo: string[] = [
   email.reservaCancelada.cuerpo({ ...EJEMPLO }),
   email.reservaMovida.asunto({ negocio: EJEMPLO.negocio }),
   email.reservaMovida.cuerpo({ ...EJEMPLO }),
+  email.pie({ negocio: EJEMPLO.negocio, plataforma: EJEMPLO.plataforma }),
+  whatsappSesion.baja({ negocio: EJEMPLO.negocio }),
+  whatsappSesion.bajaTotal({ negocio: EJEMPLO.negocio }),
 ];
 
 const textosPlantillas: string[] = [];
 recolectarStringsProfundo(plantillasWhatsapp, textosPlantillas);
+
+describe("baja, bajaTotal y el pie del correo nombran al negocio", () => {
+  it("whatsappSesion.baja y .bajaTotal", () => {
+    expect(whatsappSesion.baja({ negocio: EJEMPLO.negocio })).toContain(
+      EJEMPLO.negocio,
+    );
+    expect(whatsappSesion.bajaTotal({ negocio: EJEMPLO.negocio })).toContain(
+      EJEMPLO.negocio,
+    );
+  });
+
+  it("email.pie recibe la plataforma como parámetro, no la escribe a mano", () => {
+    const texto = email.pie({
+      negocio: EJEMPLO.negocio,
+      plataforma: EJEMPLO.plataforma,
+    });
+    expect(texto).toContain(EJEMPLO.negocio);
+    expect(texto).toContain(EJEMPLO.plataforma);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // Tono: sin "usted", sin voseo, sin slang, sin anglicismos, sin emoji
@@ -1379,14 +1416,17 @@ describe("longitudes", () => {
 // Validación del celular del cliente (chileanMobileInputSchema, WP-04)
 // ---------------------------------------------------------------------------
 
-describe("errores.reserva.telefono (mismos códigos que chileanMobileInputSchema)", () => {
+describe("errores.reserva.telefono (mismos códigos que PhoneError de WP-04)", () => {
+  // src/lib/format/phone.ts: export type PhoneError = "empty" |
+  // "invalid_chars" | "not_chilean" | "invalid_length" | "not_mobile" |
+  // "invalid_prefix". Si WP-04 agrega un código, agrégalo acá también.
   const codigos = [
-    "invalid_type",
     "empty",
     "invalid_chars",
     "not_chilean",
     "invalid_length",
     "not_mobile",
+    "invalid_prefix",
   ] as const;
 
   it.each(codigos)("%s tiene un texto no vacío", (codigo) => {
@@ -1431,12 +1471,21 @@ describe("consentimientos", () => {
     return createHash("sha256").update(texto, "utf8").digest("hex");
   }
 
+  // Orden fijo (S3, seguridad): todo el texto que ve el cliente antes de
+  // aceptar, en el orden en que aparece en la pantalla de Reserva. Los
+  // parámetros usan placeholders literales ("{negocio}", "{horas}") en vez
+  // de un ejemplo real, para que el hash no dependa de un negocio de prueba.
   function textoConsentimiento(): string {
     const c = reserva.consentimientos;
+    const a = reserva.antesDeConfirmar;
     return [
       c.terminos,
       c.terminosLinkTexto,
       c.politicaLinkTexto,
+      c.privacidadLinkTexto,
+      c.responsable({ negocio: "{negocio}" }),
+      a.avisoWhatsapp({ negocio: "{negocio}" }),
+      a.politicaCancelacion({ horas: "{horas}" as unknown as number }),
       c.marketing({ negocio: "{negocio}" }),
     ].join("\n");
   }
