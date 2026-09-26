@@ -18,6 +18,13 @@
   --text-*: initial;
   --tracking-*: initial;
   --leading-*: initial;
+  /* Systrar till --shadow-*: samma D-015-motivering. Designen använder ingen drop-shadow,
+     inset-shadow, text-shadow eller blur, så de nollställs utan ersättningstokens
+     (granskningsfynd, se docs/design/DESIGN.md §12). */
+  --drop-shadow-*: initial;
+  --inset-shadow-*: initial;
+  --text-shadow-*: initial;
+  --blur-*: initial;
 
   /* ---------- Typsnitt (laddas med next/font, se DESIGN.md §3) ---------- */
   --font-display: var(--font-bricolage), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
