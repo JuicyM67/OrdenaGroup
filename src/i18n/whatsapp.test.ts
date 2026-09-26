@@ -3,6 +3,8 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { brand } from "@/config/brand";
+
 import { email, plantillasWhatsapp, whatsappSesion } from "./es-CL";
 import type { Plantilla } from "./es-CL";
 
@@ -17,6 +19,44 @@ const PLANTILLAS = Object.values(plantillasWhatsapp) as readonly Plantilla[];
 const PALABRAS_DE_VENTA = /\b(descuento|oferta|gratis|promo)\b/i;
 const SIMBOLO_PORCENTAJE = /%/;
 const DIAS_RELATIVOS = /\b(mañana|hoy|pasado mañana)\b/i;
+
+function escaparRegExp(texto: string): string {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Se arma desde brand.name (escapado) para no escribir el nombre del
+ * producto acá y para no romper si tuviera un carácter especial de regex. */
+const PATRON_MARCA = new RegExp(`\\b${escaparRegExp(brand.name)}\\b`, "i");
+
+const REGLAS_DE_TONO = {
+  usted: /\busted(es)?\b/i,
+  voseo: /\b(podés|tenés|querés|sabés|reservá|elegí)\b/i,
+  slangPo: /\bpo\b/i,
+  slangWena: /\bwena\b/i,
+  booking: /\bbooking\b/i,
+  checkin: /\bcheck-?in\b/i,
+  emoji: /\p{Extended_Pictographic}/u,
+};
+
+function sinGirosProhibidos(texto: string): void {
+  for (const [nombreRegla, regex] of Object.entries(REGLAS_DE_TONO)) {
+    expect(regex.test(texto), `${nombreRegla}: "${texto}"`).toBe(false);
+  }
+  expect(PATRON_MARCA.test(texto), `nombre de la plataforma: "${texto}"`).toBe(
+    false,
+  );
+}
+
+/** Columnas viejas o inexistentes (ver docs/tech/DATA_MODEL.md) que no deben
+ * volver a colarse en un campo `fuente`. */
+const FUENTES_PROHIBIDAS = [
+  "customers.first_name",
+  "bookings.starts_at",
+  "bookings.management_token",
+  "businesses.cancellation_window_hours",
+  "waitlist_offers",
+  "waitlist_entries.day",
+];
 
 function variablesEnOrden(body: string): number[] {
   const encontradas = [...body.matchAll(/\{\{(\d+)\}\}/g)].map((m) =>
@@ -95,8 +135,30 @@ describe("plantillas de WhatsApp (Meta, fase 1)", () => {
         expect(primeraOracion).toContain("{{1}}");
       });
 
-      it("no menciona el nombre de la plataforma", () => {
-        expect(plantilla.body).not.toMatch(/\bllena\b/i);
+      it("no menciona el nombre de la plataforma ni usa un giro prohibido", () => {
+        sinGirosProhibidos(plantilla.body);
+        sinGirosProhibidos(plantilla.nota);
+      });
+
+      it("los campos fuente apuntan a columnas reales (docs/tech/DATA_MODEL.md)", () => {
+        for (const variable of plantilla.variables) {
+          for (const prohibida of FUENTES_PROHIBIDAS) {
+            expect(
+              variable.fuente.includes(prohibida),
+              `#${variable.numero} (${plantilla.nombre}): "${variable.fuente}"`,
+            ).toBe(false);
+          }
+        }
+        for (const boton of plantilla.botones) {
+          if (boton.tipo === "URL") {
+            for (const prohibida of FUENTES_PROHIBIDAS) {
+              expect(
+                boton.sufijo.fuente.includes(prohibida),
+                `botón (${plantilla.nombre}): "${boton.sufijo.fuente}"`,
+              ).toBe(false);
+            }
+          }
+        }
       });
 
       it("footer ≤ 60 caracteres si existe", () => {
@@ -189,18 +251,28 @@ describe("plantillas de WhatsApp (Meta, fase 1)", () => {
 });
 
 describe("mensajes de sesión (whatsappSesion)", () => {
+  // El número de WhatsApp es compartido entre negocios (D-007): cada
+  // mensaje nombra al negocio, nunca a la plataforma.
+  const NEGOCIO = "Barbería Norte";
   const muestras: string[] = [
-    whatsappSesion.confirmo,
-    whatsappSesion.necesitoCambiar({ linkGestion: "https://x.cl/r/abc123" }),
+    whatsappSesion.confirmo({ negocio: NEGOCIO }),
+    whatsappSesion.necesitoCambiar({
+      negocio: NEGOCIO,
+      linkGestion: "https://x.cl/r/abc123",
+    }),
     whatsappSesion.listaEsperaConfirmada({
+      negocio: NEGOCIO,
       servicio: "Corte + barba",
-      fecha: "vie 2 oct",
+      fecha: "viernes 2 de octubre",
       hora: "15:00",
     }),
-    whatsappSesion.listaEsperaYaTomada,
-    whatsappSesion.listaEsperaNoGracias,
-    whatsappSesion.listaEsperaExpirada,
-    whatsappSesion.noEntendido({ telefonoNegocio: "+56 9 1234 5678" }),
+    whatsappSesion.listaEsperaYaTomada({ negocio: NEGOCIO }),
+    whatsappSesion.listaEsperaNoGracias({ negocio: NEGOCIO }),
+    whatsappSesion.listaEsperaExpirada({ negocio: NEGOCIO }),
+    whatsappSesion.noEntendido({
+      negocio: NEGOCIO,
+      telefonoNegocio: "+56 9 1234 5678",
+    }),
   ];
 
   it("cada mensaje mide 300 caracteres o menos", () => {
@@ -209,27 +281,28 @@ describe("mensajes de sesión (whatsappSesion)", () => {
     }
   });
 
-  it("ningún mensaje usa un giro prohibido (usted, voseo, slang, anglicismos, emoji)", () => {
-    const prohibido = [
-      /\busted(es)?\b/i,
-      /\b(podés|tenés|querés|sabés|reservá|elegí)\b/i,
-      /\bpo\b/i,
-      /\bwena\b/i,
-      /\bbooking\b/i,
-      /\bcheck-?in\b/i,
-      /\p{Extended_Pictographic}/u,
-    ];
+  it("ningún mensaje usa un giro prohibido ni menciona el nombre de la plataforma", () => {
     for (const texto of muestras) {
-      for (const regex of prohibido) {
-        expect(regex.test(texto), `${regex}: "${texto}"`).toBe(false);
-      }
+      sinGirosProhibidos(texto);
     }
   });
 
-  it("ningún mensaje menciona el nombre de la plataforma", () => {
+  it("cada mensaje nombra al negocio (D-007: número compartido)", () => {
     for (const texto of muestras) {
-      expect(/\bllena\b/i.test(texto), texto).toBe(false);
+      expect(texto, texto).toContain(NEGOCIO);
     }
+  });
+
+  it('listaEsperaConfirmada dice "¡Listo!" (no "¡Lista!") y avisa que llega la confirmación completa', () => {
+    const texto = whatsappSesion.listaEsperaConfirmada({
+      negocio: NEGOCIO,
+      servicio: "Corte + barba",
+      fecha: "viernes 2 de octubre",
+      hora: "15:00",
+    });
+    expect(texto).toContain("¡Listo!");
+    expect(texto).not.toContain("¡Lista!");
+    expect(texto).toMatch(/confirmaci[oó]n/i);
   });
 });
 
@@ -272,5 +345,32 @@ describe("correo (respaldo de WhatsApp, F7)", () => {
     expect(EMAIL_DOC).toContain("Recordatorio 24");
     expect(EMAIL_DOC).toContain("Reserva cancelada");
     expect(EMAIL_DOC).toContain("Reserva movida");
+  });
+
+  it("ningún correo usa un giro prohibido ni menciona el nombre de la plataforma", () => {
+    const EJEMPLO = {
+      cliente: "Joaquín",
+      negocio: "Barbería Norte",
+      servicio: "Corte + barba",
+      fecha: "viernes 2 de octubre",
+      hora: "15:00",
+      profesional: "Diego",
+      horasCancelacion: 4,
+      linkGestion: "https://x.cl/r/abc123",
+      linkNuevaReserva: "https://x.cl/barberia-norte",
+    };
+    const textos = [
+      email.reservaConfirmada.asunto(EJEMPLO),
+      email.reservaConfirmada.cuerpo(EJEMPLO),
+      email.recordatorio24h.asunto(EJEMPLO),
+      email.recordatorio24h.cuerpo(EJEMPLO),
+      email.reservaCancelada.asunto(EJEMPLO),
+      email.reservaCancelada.cuerpo(EJEMPLO),
+      email.reservaMovida.asunto(EJEMPLO),
+      email.reservaMovida.cuerpo(EJEMPLO),
+    ];
+    for (const texto of textos) {
+      sinGirosProhibidos(texto);
+    }
   });
 });

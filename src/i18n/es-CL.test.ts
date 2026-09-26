@@ -10,13 +10,16 @@ import {
   agenda,
   calendario,
   comun,
+  email,
   errores,
   estados,
   gestion,
   hoy,
   inicio,
   nav,
+  plantillasWhatsapp,
   reserva,
+  whatsappSesion,
 } from "./es-CL";
 
 // ---------------------------------------------------------------------------
@@ -33,6 +36,20 @@ const RESERVA_HTML = leerReferencia("Reserva.dc.html");
 const MAIN_HTML = leerReferencia("Main.dc.html");
 const AGENDA_HTML = leerReferencia("Agenda.dc.html");
 const HOY_HTML = leerReferencia("Hoy.dc.html");
+
+/** El texto aparece como nodo de texto (`>texto<`), como valor de atributo
+ * (`"texto"`, p. ej. un aria-label) o como string de JS en el script de
+ * ejemplo (`'texto'`). Más estricto que un `.includes()` suelto. */
+function apareceComoNodo(contenido: string, texto: string): boolean {
+  // Nodo de texto (con espacios o saltos de línea alrededor), atributo o
+  // string de JS.
+  const t = escaparRegExp(texto);
+  return new RegExp(`>\\s*${t}\\s*<|"${t}"|'${t}'`).test(contenido);
+}
+
+function escaparRegExp(texto: string): string {
+  return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 
 type Hoja = string | ((p: never) => string);
 type Rama = { readonly [k: string]: Hoja | Rama };
@@ -66,6 +83,29 @@ const AREAS: Record<string, Rama> = {
   hoy,
 };
 
+function todosLosStringsEstaticos(): string[] {
+  const encontrados: string[] = [];
+  for (const raiz of Object.values(AREAS)) {
+    paraCadaHoja(raiz, "", (_ruta, hoja) => {
+      if (typeof hoja === "string") encontrados.push(hoja);
+    });
+  }
+  return encontrados;
+}
+
+/** Recolecta todos los strings de un árbol de datos cualquiera (no solo
+ * `Trad`): usado para `plantillasWhatsapp` (que tiene `numero`, `dominioPendiente`,
+ * etc. además de strings). Ignora números, booleanos y funciones. */
+function recolectarStringsProfundo(valor: unknown, out: string[]): void {
+  if (typeof valor === "string") {
+    out.push(valor);
+  } else if (Array.isArray(valor)) {
+    for (const v of valor) recolectarStringsProfundo(v, out);
+  } else if (valor && typeof valor === "object") {
+    for (const v of Object.values(valor)) recolectarStringsProfundo(v, out);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Estructura: cada hoja es un string no vacío o una función
 // ---------------------------------------------------------------------------
@@ -80,6 +120,80 @@ describe("estructura", () => {
           expect(typeof hoja, ruta).toBe("function");
         }
       });
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Estructura profunda: cada función, llamada con parámetros genéricos, no
+// deja `undefined`, `NaN`, `null`, `[object`, ni llaves `{`/`{{` sueltas.
+// ---------------------------------------------------------------------------
+
+/** Un valor por cada nombre de parámetro usado en cualquier función de
+ * `es-CL.ts`. No es "correcto" gramaticalmente para cada función (p. ej.
+ * `horas` sirve tanto para textos con número como con string ya formateado):
+ * solo sirve para detectar restos rotos, no para verificar el texto exacto
+ * (eso ya lo hacen las pruebas de "flexión" y "paridad de diseño"). */
+const MUESTRA_GENERICA: Record<string, unknown> = {
+  n: 3,
+  h: 1,
+  m: 30,
+  offset: -3,
+  porcentaje: 20,
+  horas: "4 horas",
+  activas: 2,
+  reservadas: 1,
+  horasCancelacion: 4,
+  negocio: "Barbería Norte",
+  cliente: "Joaquín",
+  nombre: "Diego",
+  servicio: "Corte + barba",
+  profesional: "Diego",
+  dia: "sábado",
+  fecha: "viernes 2 de octubre",
+  hora: "15:00",
+  monto: "$84.000",
+  precio: "$12.000",
+  telefono: "+56 9 •••• 4821",
+  telefonoNegocio: "+56 9 1234 5678",
+  visita: "3.ª visita",
+  relativo: "en 20 min",
+  desde: "28 de septiembre",
+  hasta: "4 de octubre",
+  comuna: "Providencia",
+  rango: "11:30 – 12:05",
+  dias: "Lun–Sáb",
+  linkGestion: "https://ejemplo.cl/r/abc123",
+  linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
+};
+
+const PATRON_RESTO_ROTO = /undefined|NaN|\bnull\b|\[object|\{\{|\{[a-zA-Z]/;
+
+function invocarGenerico(fn: unknown): unknown {
+  return (fn as (p: Record<string, unknown>) => unknown)(MUESTRA_GENERICA);
+}
+
+function revisarFuncionesGenerico(valor: unknown, ruta: string): void {
+  if (typeof valor === "function") {
+    const resultado = invocarGenerico(valor);
+    expect(typeof resultado, ruta).toBe("string");
+    const texto = resultado as string;
+    expect(texto.length, ruta).toBeGreaterThan(0);
+    expect(PATRON_RESTO_ROTO.test(texto), `${ruta}: "${texto}"`).toBe(false);
+  } else if (Array.isArray(valor)) {
+    valor.forEach((v, i) => revisarFuncionesGenerico(v, `${ruta}[${i}]`));
+  } else if (valor && typeof valor === "object") {
+    for (const [k, v] of Object.entries(valor)) {
+      revisarFuncionesGenerico(v, ruta ? `${ruta}.${k}` : k);
+    }
+  }
+}
+
+describe("cada función soporta parámetros genéricos sin dejar restos rotos", () => {
+  const raices: Record<string, unknown> = { ...AREAS, email, whatsappSesion };
+  for (const [nombre, raiz] of Object.entries(raices)) {
+    it(`${nombre}: ninguna función deja undefined/NaN/null/[object/llaves sueltas`, () => {
+      revisarFuncionesGenerico(raiz, nombre);
     });
   }
 });
@@ -112,7 +226,8 @@ describe("tipos (verificados por npm run typecheck)", () => {
 
 // ---------------------------------------------------------------------------
 // Muestras: cada función se llama con parámetros representativos.
-// Esta tabla alimenta las pruebas de tono, paridad de diseño y flexión.
+// Esta tabla alimenta las pruebas de tono, marca, paridad de diseño y
+// paridad inversa.
 // ---------------------------------------------------------------------------
 
 const muestras: string[] = [];
@@ -122,6 +237,13 @@ function registrar(texto: string): string {
 }
 
 describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
+  it("comun.visita (ordinal femenino, compartido entre Agenda y Hoy)", () => {
+    expect(registrar(comun.visita({ n: 6 }))).toBe("6.ª visita");
+    expect(registrar(comun.visita({ n: 3 }))).toBe("3.ª visita");
+    expect(comun.visita({ n: 1 })).toBe("1.ª visita");
+    expect(comun.visita({ n: 21 })).toBe("21.ª visita");
+  });
+
   it("inicio.features.listaEspera.resumen", () => {
     expect(
       registrar(inicio.features.listaEspera.resumen({ n: 1, dia: "sábado" })),
@@ -157,13 +279,33 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     );
   });
 
-  it("inicio.stats.reservasHoy", () => {
+  it("inicio.stats.reservasHoy (incluye el estado en 0)", () => {
     expect(registrar(inicio.stats.reservasHoy({ n: 2 }))).toBe(
       "Reservas hoy · 2 por confirmar",
     );
+    expect(inicio.stats.reservasHoy({ n: 0 })).toBe(
+      "Reservas hoy · 0 por confirmar",
+    );
   });
 
-  it("agenda.panel.reservasCount", () => {
+  it("inicio.hero.horas", () => {
+    expect(registrar(inicio.hero.horas({ n: 4 }))).toBe("4 horas");
+    expect(inicio.hero.horas({ n: 1 })).toBe("1 hora");
+  });
+
+  it("inicio.flashCard.fechaHoraDescuento", () => {
+    expect(
+      registrar(
+        inicio.flashCard.fechaHoraDescuento({
+          fecha: "Mar 6",
+          hora: "11:30",
+          porcentaje: 20,
+        }),
+      ),
+    ).toBe("Mar 6 · 11:30 · −20%");
+  });
+
+  it("agenda.panel.reservasCount (incluye el estado en 0)", () => {
     expect(registrar(agenda.panel.reservasCount({ n: 21 }))).toBe(
       "21 reservas",
     );
@@ -186,21 +328,49 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     );
   });
 
-  it("agenda.popover.visita y hoy.visita (ordinal femenino)", () => {
-    expect(registrar(agenda.popover.visita({ n: 6 }))).toBe("6.ª visita");
-    expect(agenda.popover.visita({ n: 1 })).toBe("1.ª visita");
-    expect(agenda.popover.visita({ n: 2 })).toBe("2.ª visita");
-    expect(agenda.popover.visita({ n: 21 })).toBe("21.ª visita");
-    expect(registrar(hoy.visita({ n: 3 }))).toBe("3.ª visita");
+  it("agenda.popover.telefonoYVisita y agenda.popover.fechaYRango", () => {
+    expect(
+      registrar(
+        agenda.popover.telefonoYVisita({
+          telefono: "+56 9 •••• 4821",
+          visita: comun.visita({ n: 6 }),
+        }),
+      ),
+    ).toBe("+56 9 •••• 4821 · 6.ª visita");
+    expect(
+      registrar(
+        agenda.popover.fechaYRango({
+          fecha: "Vie 2 oct",
+          rango: "11:30 – 12:05",
+        }),
+      ),
+    ).toBe("Vie 2 oct · 11:30 – 12:05");
   });
 
-  it("hoy.restoDia.resumen", () => {
+  it("hoy.restoDia.resumen y hoy.restoDia.detalle", () => {
     expect(registrar(hoy.restoDia.resumen({ n: 6, monto: "$84.000" }))).toBe(
       "6 reservas · $84.000",
     );
     expect(hoy.restoDia.resumen({ n: 1, monto: "$12.000" })).toBe(
       "1 reserva · $12.000",
     );
+    expect(
+      registrar(
+        hoy.restoDia.detalle({
+          servicio: "Corte clásico",
+          profesional: "Matías",
+        }),
+      ),
+    ).toBe("Corte clásico · Matías");
+  });
+
+  it("hoy.relativo.* (WP-04 entrega el número, acá vive la frase)", () => {
+    expect(registrar(hoy.relativo.enMin({ n: 20 }))).toBe("en 20 min");
+    expect(registrar(hoy.relativo.enHoras({ h: 1, m: 15 }))).toBe(
+      "en 1 h 15 min",
+    );
+    expect(registrar(hoy.relativo.atrasado({ n: 5 }))).toBe("5 min de atraso");
+    expect(hoy.relativo.ahora).toBe("ahora");
   });
 
   it("estados.flashConDescuento", () => {
@@ -209,15 +379,22 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     );
   });
 
-  it("reserva.descuento y reserva.duracion", () => {
+  it("reserva.descuento", () => {
     expect(registrar(reserva.descuento({ porcentaje: 20 }))).toBe("−20%");
-    expect(registrar(reserva.duracion({ minutos: 35 }))).toBe("35 min");
   });
 
-  it("reserva.waitlist.diaLleno", () => {
+  it("reserva.waitlist.diaLleno y reserva.waitlist.confirmacion", () => {
     expect(registrar(reserva.waitlist.diaLleno({ dia: "sábado" }))).toBe(
       "El sábado está lleno",
     );
+    expect(
+      registrar(
+        reserva.waitlist.confirmacion({
+          servicio: "Corte + barba",
+          dia: "sábado",
+        }),
+      ),
+    ).toBe("Quedaste en la lista de espera para Corte + barba el sábado.");
   });
 
   it("reserva.resumen.* sigue la fórmula del diseño (BookingBar)", () => {
@@ -232,7 +409,6 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
         }),
       ),
     ).toBe("Corte + barba · Mar 6, 11:30 · Diego");
-    // Sin profesional (cuando el cliente elige "Cualquiera")
     expect(
       registrar(
         reserva.resumen.sinProfesional({
@@ -242,7 +418,6 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
         }),
       ),
     ).toBe("Corte + barba · Mar 6, 11:30");
-    // Lista de espera: svc.name + ' · ' + day.label + ' · lista de espera'
     expect(
       registrar(
         reserva.resumen.listaEspera({
@@ -253,15 +428,10 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     ).toBe("Corte + barba · Sáb 3 · lista de espera");
   });
 
-  it("reserva.meta.titulo y reserva.header.horario", () => {
+  it("reserva.meta.titulo", () => {
     expect(registrar(reserva.meta.titulo({ negocio: "Barbería Norte" }))).toBe(
       "Reservar en Barbería Norte",
     );
-    expect(
-      registrar(
-        reserva.header.horario({ dias: "Lun–Sáb", rango: "10:00–19:00" }),
-      ),
-    ).toBe("Lun–Sáb · 10:00–19:00");
   });
 
   it("reserva.meta.vendidoPor menciona el nombre del negocio y de la marca", () => {
@@ -285,6 +455,12 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     ).toContain("Barbería Norte");
   });
 
+  it("reserva.precioAnteriorAria", () => {
+    expect(
+      registrar(reserva.precioAnteriorAria({ precio: "$18.000" })),
+    ).toContain("$18.000");
+  });
+
   it("reserva.consentimientos.marketing menciona WhatsApp y BAJA", () => {
     const texto = registrar(
       reserva.consentimientos.marketing({ negocio: "Barbería Norte" }),
@@ -294,7 +470,7 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     expect(texto).toContain("Barbería Norte");
   });
 
-  it("gestion.fueraDePlazo", () => {
+  it("gestion.fueraDePlazo (sin forma generizada)", () => {
     const texto = registrar(
       gestion.fueraDePlazo({
         horas: 4,
@@ -303,6 +479,7 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     );
     expect(texto).toContain("4 h");
     expect(texto).toContain("+56 9 1234 5678");
+    expect(texto).not.toMatch(/\bsola\b/);
   });
 
   it("inicio.metaRow y inicio.hola", () => {
@@ -370,7 +547,7 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     ).toBe("$12.000 · abono $3.000 pagado");
   });
 
-  it("hoy.siguiente y hoy.detalleCliente (relativo lo calcula WP-04/scheduling)", () => {
+  it("hoy.siguiente y hoy.detalleCliente", () => {
     expect(registrar(hoy.siguiente({ relativo: "en 20 min" }))).toBe(
       "Siguiente · en 20 min",
     );
@@ -398,6 +575,58 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Mensajes de sesión y correo con parámetros realistas (para tono/marca)
+// ---------------------------------------------------------------------------
+
+const EJEMPLO = {
+  negocio: "Barbería Norte",
+  cliente: "Joaquín",
+  servicio: "Corte + barba",
+  fecha: "viernes 2 de octubre",
+  hora: "15:00",
+  profesional: "Diego",
+  horasCancelacion: 4,
+  linkGestion: "https://ejemplo.cl/r/abc123",
+  linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
+  telefonoNegocio: "+56 9 1234 5678",
+} as const;
+
+const muestrasSesionYCorreo: string[] = [
+  whatsappSesion.confirmo({ negocio: EJEMPLO.negocio }),
+  whatsappSesion.necesitoCambiar({
+    negocio: EJEMPLO.negocio,
+    linkGestion: EJEMPLO.linkGestion,
+  }),
+  whatsappSesion.listaEsperaConfirmada({
+    negocio: EJEMPLO.negocio,
+    servicio: EJEMPLO.servicio,
+    fecha: EJEMPLO.fecha,
+    hora: EJEMPLO.hora,
+  }),
+  whatsappSesion.listaEsperaYaTomada({ negocio: EJEMPLO.negocio }),
+  whatsappSesion.listaEsperaNoGracias({ negocio: EJEMPLO.negocio }),
+  whatsappSesion.listaEsperaExpirada({ negocio: EJEMPLO.negocio }),
+  whatsappSesion.noEntendido({
+    negocio: EJEMPLO.negocio,
+    telefonoNegocio: EJEMPLO.telefonoNegocio,
+  }),
+  email.reservaConfirmada.asunto({ negocio: EJEMPLO.negocio }),
+  email.reservaConfirmada.cuerpo({ ...EJEMPLO }),
+  email.recordatorio24h.asunto({
+    negocio: EJEMPLO.negocio,
+    fecha: EJEMPLO.fecha,
+  }),
+  email.recordatorio24h.cuerpo({ ...EJEMPLO }),
+  email.reservaCancelada.asunto({ negocio: EJEMPLO.negocio }),
+  email.reservaCancelada.cuerpo({ ...EJEMPLO }),
+  email.reservaMovida.asunto({ negocio: EJEMPLO.negocio }),
+  email.reservaMovida.cuerpo({ ...EJEMPLO }),
+];
+
+const textosPlantillas: string[] = [];
+recolectarStringsProfundo(plantillasWhatsapp, textosPlantillas);
+
+// ---------------------------------------------------------------------------
 // Tono: sin "usted", sin voseo, sin slang, sin anglicismos, sin emoji
 // ---------------------------------------------------------------------------
 
@@ -412,32 +641,20 @@ describe("tono", () => {
     emoji: /\p{Extended_Pictographic}/u,
   };
 
-  function todosLosStringsEstaticos(): string[] {
-    const encontrados: string[] = [];
-    for (const raiz of Object.values(AREAS)) {
-      paraCadaHoja(raiz, "", (_ruta, hoja) => {
-        if (typeof hoja === "string") encontrados.push(hoja);
-      });
-    }
-    return encontrados;
-  }
-
   it("la tabla de muestras (describe anterior) se llenó correctamente", () => {
     // Vitest corre los tests de un mismo archivo en orden de declaración: si
     // esto falla, revisa que el describe "flexión" siga antes que este.
     expect(muestras.length).toBeGreaterThan(20);
   });
 
-  it("ningún texto estático usa un giro prohibido", () => {
-    for (const texto of todosLosStringsEstaticos()) {
-      for (const [nombreRegla, regex] of Object.entries(prohibido)) {
-        expect(regex.test(texto), `${nombreRegla}: "${texto}"`).toBe(false);
-      }
-    }
-  });
-
-  it("ninguna muestra generada por una función usa un giro prohibido", () => {
-    for (const texto of muestras) {
+  it("ningún texto (UI, plantillas de WhatsApp, sesión o correo) usa un giro prohibido", () => {
+    const todos = [
+      ...todosLosStringsEstaticos(),
+      ...muestras,
+      ...textosPlantillas,
+      ...muestrasSesionYCorreo,
+    ];
+    for (const texto of todos) {
       for (const [nombreRegla, regex] of Object.entries(prohibido)) {
         expect(regex.test(texto), `${nombreRegla}: "${texto}"`).toBe(false);
       }
@@ -450,20 +667,19 @@ describe("tono", () => {
 // ---------------------------------------------------------------------------
 
 describe("marca", () => {
-  // Se arma desde brand.name para no escribir el nombre en este archivo.
-  const patronMarca = new RegExp(`\\b${brand.name}\\b`, "i");
+  // Se arma desde brand.name (escapado) para no escribir el nombre en este
+  // archivo ni romper si brand.name tuviera algún carácter especial de regex.
+  const patronMarca = new RegExp(`\\b${escaparRegExp(brand.name)}\\b`, "i");
 
-  it("ningún texto estático contiene el nombre del producto", () => {
-    for (const raiz of Object.values(AREAS)) {
-      paraCadaHoja(raiz, "", (ruta, hoja) => {
-        if (typeof hoja === "string") {
-          expect(patronMarca.test(hoja), ruta).toBe(false);
-        }
-      });
+  it("ningún texto (UI, plantillas, sesión o correo) contiene el nombre del producto salvo donde se interpola brand.name", () => {
+    const todos = [
+      ...todosLosStringsEstaticos(),
+      ...textosPlantillas,
+      ...muestrasSesionYCorreo,
+    ];
+    for (const texto of todos) {
+      expect(patronMarca.test(texto), texto).toBe(false);
     }
-  });
-
-  it("el nombre solo aparece en muestras donde se interpola brand.name", () => {
     for (const texto of muestras) {
       if (patronMarca.test(texto)) {
         expect(texto, texto).toContain(brand.name);
@@ -479,7 +695,39 @@ describe("marca", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Nombres de fixtures: no deben aparecer en es-CL.ts fuera de un `ejemplo`
+// de Meta (tenant-isolation, R9 del plan de WP-03).
+// ---------------------------------------------------------------------------
+
+describe("nombres de fixtures no aparecen fuera de un ejemplo de Meta", () => {
+  const ES_CL_PATH = path.resolve(process.cwd(), "src/i18n/es-CL.ts");
+  const FUENTE = fs.readFileSync(ES_CL_PATH, "utf8");
+  const SIN_EJEMPLOS = FUENTE.split("\n")
+    .filter((linea) => !/\bejemplo\s*:/.test(linea))
+    .join("\n");
+
+  const NOMBRES_FIXTURE = [
+    "Barbería Norte",
+    "Joaquín",
+    "Camila",
+    "Martina Lagos",
+    "Valentina Soto",
+    "Ignacio Pérez",
+    "Corte clásico",
+    "Perfilado de barba",
+  ];
+
+  it.each(NOMBRES_FIXTURE)(
+    '"%s" no aparece fuera de un campo "ejemplo"',
+    (nombre) => {
+      expect(SIN_EJEMPLOS.includes(nombre), nombre).toBe(false);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Paridad de diseño: el texto estático existe tal cual en la referencia
+// (como nodo de texto, atributo o string de JS: ver `apareceComoNodo`).
 // ---------------------------------------------------------------------------
 
 describe("paridad de diseño", () => {
@@ -555,11 +803,6 @@ describe("paridad de diseño", () => {
       texto: reserva.descuento({ porcentaje: 20 }),
       archivo: "Reserva",
     },
-    {
-      clave: "reserva.duracion({minutos: 35})",
-      texto: reserva.duracion({ minutos: 35 }),
-      archivo: "Reserva",
-    },
 
     // Inicio (Main.dc.html)
     { clave: "nav.principal", texto: nav.principal, archivo: "Main" },
@@ -573,6 +816,16 @@ describe("paridad de diseño", () => {
     { clave: "nav.buscar", texto: nav.buscar, archivo: "Main" },
     { clave: "nav.notificaciones", texto: nav.notificaciones, archivo: "Main" },
     { clave: "nav.masOpciones", texto: nav.masOpciones, archivo: "Main" },
+    {
+      clave: "inicio.resumenSemanaAria",
+      texto: inicio.resumenSemanaAria,
+      archivo: "Main",
+    },
+    {
+      clave: "inicio.calendarioAria",
+      texto: inicio.calendarioAria,
+      archivo: "Main",
+    },
     { clave: "inicio.hero.titulo", texto: inicio.hero.titulo, archivo: "Main" },
     {
       clave: "inicio.hero.verDetalle",
@@ -702,6 +955,15 @@ describe("paridad de diseño", () => {
       }),
       archivo: "Main",
     },
+    {
+      clave: "inicio.flashCard.fechaHoraDescuento(...)",
+      texto: inicio.flashCard.fechaHoraDescuento({
+        fecha: "Mar 6",
+        hora: "11:30",
+        porcentaje: 20,
+      }),
+      archivo: "Main",
+    },
 
     // Agenda
     {
@@ -717,6 +979,16 @@ describe("paridad de diseño", () => {
     {
       clave: "agenda.agregarProfesional",
       texto: agenda.agregarProfesional,
+      archivo: "Agenda",
+    },
+    {
+      clave: "agenda.calendarioMensualAria",
+      texto: agenda.calendarioMensualAria,
+      archivo: "Agenda",
+    },
+    {
+      clave: "agenda.panel.mostrarAria",
+      texto: agenda.panel.mostrarAria,
       archivo: "Agenda",
     },
     {
@@ -846,13 +1118,24 @@ describe("paridad de diseño", () => {
       archivo: "Agenda",
     },
     {
-      clave: "agenda.popover.visita({n:6})",
-      texto: agenda.popover.visita({ n: 6 }),
+      clave: "agenda.popover.conProfesional({profesional:Diego})",
+      texto: agenda.popover.conProfesional({ profesional: "Diego" }),
       archivo: "Agenda",
     },
     {
-      clave: "agenda.popover.conProfesional({profesional:Diego})",
-      texto: agenda.popover.conProfesional({ profesional: "Diego" }),
+      clave: "agenda.popover.telefonoYVisita(...)",
+      texto: agenda.popover.telefonoYVisita({
+        telefono: "+56 9 •••• 4821",
+        visita: comun.visita({ n: 6 }),
+      }),
+      archivo: "Agenda",
+    },
+    {
+      clave: "agenda.popover.fechaYRango(...)",
+      texto: agenda.popover.fechaYRango({
+        fecha: "Vie 2 oct",
+        rango: "11:30 – 12:05",
+      }),
       archivo: "Agenda",
     },
     {
@@ -915,6 +1198,14 @@ describe("paridad de diseño", () => {
       texto: hoy.restoDia.resumen({ n: 6, monto: "$84.000" }),
       archivo: "Hoy",
     },
+    {
+      clave: "hoy.restoDia.detalle(...)",
+      texto: hoy.restoDia.detalle({
+        servicio: "Corte clásico",
+        profesional: "Matías",
+      }),
+      archivo: "Hoy",
+    },
   ];
 
   const archivos: Record<string, string> = {
@@ -926,11 +1217,10 @@ describe("paridad de diseño", () => {
 
   for (const { clave, texto, archivo } of casos) {
     it(`${clave} está tal cual en ${archivo}.dc.html`, () => {
-      const contenido = archivos[archivo];
-      expect(contenido, archivo).toBeDefined();
+      const contenido = archivos[archivo] ?? "";
       expect(
-        (contenido ?? "").includes(texto),
-        `"${texto}" no aparece en ${archivo}.dc.html`,
+        apareceComoNodo(contenido, texto),
+        `"${texto}" no aparece como nodo de texto, atributo o string en ${archivo}.dc.html`,
       ).toBe(true);
     });
   }
@@ -961,6 +1251,93 @@ describe("paridad de diseño", () => {
       }),
     ).toBe("Corte + barba · con Diego");
   });
+});
+
+// ---------------------------------------------------------------------------
+// Paridad inversa: todo texto/aria-label del diseño tiene una clave o está
+// en la lista explícita de fixtures (nombres, servicios, montos, horas,
+// fechas). Solo mira dentro de <x-dc>, sin <helmet> ni <script> (ahí vive la
+// lógica y los datos de ejemplo del previsualizador, no la copy real).
+// ---------------------------------------------------------------------------
+
+describe("paridad inversa: todo texto del diseño tiene dueño", () => {
+  const FIXTURES_DE_DISENO = [
+    "Barbería Norte", // negocio de ejemplo (Reserva, Main, Agenda)
+    "BN", // iniciales del negocio de ejemplo (Reserva)
+    // Horario de ejemplo (Reserva): días y rango vienen de WP-04
+    // (`calendar-es-CL.ts`, `formatLocalTimeRange`); el formato de rango de
+    // días se define en WP-13.
+    "Lun–Sáb · 10:00–19:00",
+    "Providencia, Santiago", // dirección de ejemplo (Reserva)
+    "Octubre 2026", // fecha de ejemplo (Main, Agenda); el formato real es de WP-04
+    "CR", // iniciales de la dueña de ejemplo (Main, Hoy)
+    "Camila R.", // nombre de la dueña de ejemplo (Main)
+    "Lu",
+    "Ma",
+    "Mi",
+    "Ju",
+    "Vi",
+    "Sá",
+    "Do", // abreviaturas de día de ejemplo (WP-04)
+    "Martina Lagos", // clienta de ejemplo (Agenda, popover)
+    "Corte clásico", // servicio de ejemplo (Agenda, popover)
+    "Joaquín Rivas", // cliente de ejemplo (Hoy)
+  ];
+
+  // Se arma dentro de cada `it`: `muestras` se completa cuando corren los tests
+  // de flexión, que es después de recolectar este describe.
+  const haystack = () =>
+    [...todosLosStringsEstaticos(), ...muestras, ...FIXTURES_DE_DISENO].join(
+      "\n",
+    );
+
+  const TIENE_LETRA = /[a-zA-ZÀ-ÿ]/;
+
+  function extraerCandidatos(html: string): string[] {
+    const inicioIdx = html.indexOf("<x-dc>");
+    const finIdx = html.lastIndexOf("</x-dc>");
+    let contenido = html.slice(inicioIdx, finIdx);
+    contenido = contenido.replace(/<helmet>[\s\S]*?<\/helmet>/g, "");
+    contenido = contenido.replace(/<script[\s\S]*?<\/script>/g, "");
+
+    const candidatos: string[] = [];
+    for (const m of contenido.matchAll(/aria-label="([^"]*)"/g)) {
+      candidatos.push(m[1] ?? "");
+    }
+    for (const m of contenido.matchAll(/>([^<>]+)</g)) {
+      candidatos.push(m[1] ?? "");
+    }
+    return candidatos;
+  }
+
+  function textoEstatico(candidato: string): string {
+    return candidato
+      .replace(/\{\{[^}]*\}\}/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  const archivos: Record<string, string> = {
+    Reserva: RESERVA_HTML,
+    Main: MAIN_HTML,
+    Agenda: AGENDA_HTML,
+    Hoy: HOY_HTML,
+  };
+
+  for (const [nombre, html] of Object.entries(archivos)) {
+    it(`${nombre}.dc.html: cada texto/aria-label estático está cubierto`, () => {
+      const pendientes: string[] = [];
+      for (const candidato of extraerCandidatos(html)) {
+        const estatico = textoEstatico(candidato);
+        if (!estatico || !TIENE_LETRA.test(estatico)) continue;
+        if (!haystack().includes(estatico)) pendientes.push(estatico);
+      }
+      expect(
+        pendientes,
+        `Textos sin clave ni fixture en ${nombre}.dc.html: ${pendientes.join(" | ")}`,
+      ).toEqual([]);
+    });
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -1002,18 +1379,38 @@ describe("longitudes", () => {
 // Validación del celular del cliente (chileanMobileInputSchema, WP-04)
 // ---------------------------------------------------------------------------
 
-describe("errores.reserva.telefono (códigos de chileanMobileInputSchema)", () => {
+describe("errores.reserva.telefono (mismos códigos que chileanMobileInputSchema)", () => {
   const codigos = [
-    "invalidType",
+    "invalid_type",
     "empty",
-    "invalidChars",
-    "notChilean",
-    "invalidLength",
-    "notMobile",
+    "invalid_chars",
+    "not_chilean",
+    "invalid_length",
+    "not_mobile",
   ] as const;
 
   it.each(codigos)("%s tiene un texto no vacío", (codigo) => {
     expect(errores.reserva.telefono[codigo].length).toBeGreaterThan(0);
+  });
+
+  it("invalid_length dice qué hacer, no solo qué falló", () => {
+    expect(errores.reserva.telefono.invalid_length).toMatch(/dígitos|revisa/i);
+  });
+});
+
+describe("errores.reserva y errores.agenda usan las claves de los códigos reales", () => {
+  it("errores.reserva tiene slot_taken, too_soon, outside_hours y waitlist_duplicate", () => {
+    expect(errores.reserva.slot_taken.length).toBeGreaterThan(0);
+    expect(errores.reserva.too_soon.length).toBeGreaterThan(0);
+    expect(errores.reserva.outside_hours.length).toBeGreaterThan(0);
+    expect(errores.reserva.waitlist_duplicate.length).toBeGreaterThan(0);
+  });
+
+  it("errores.agenda tiene slot_taken y outside_hours", () => {
+    expect(errores.agenda.slot_taken.length).toBeGreaterThan(0);
+    expect(errores.agenda.outside_hours).toBe(
+      "Esa hora está fuera del horario de atención.",
+    );
   });
 });
 
@@ -1022,45 +1419,43 @@ describe("errores.reserva.telefono (códigos de chileanMobileInputSchema)", () =
 // ---------------------------------------------------------------------------
 
 describe("consentimientos", () => {
-  // Texto congelado de la versión 2026-10-v1 (utkast, ver R8 del plan
-  // WP-03). Si cambias `reserva.consentimientos.terminos` o
-  // `reserva.consentimientos.marketing`, copia el nuevo texto acá Y sube
-  // `consentimientos.version`.
-  const CONGELADO_V1 = {
-    version: "2026-10-v1",
-    terminos: "Acepto los términos de la reserva y la política de cancelación.",
-    marketingEjemplo:
-      "Quiero recibir ofertas y novedades de Barbería Norte por WhatsApp. Puedo responder BAJA cuando quiera.",
+  // Hash literal por versión: cambiar cualquier texto de consentimiento sin
+  // subir `version` y registrar el nuevo hash hace fallar el test, y el cambio
+  // de hash queda visible en el diff.
+  const HASHES: Record<string, string> = {
+    "2026-10-v1":
+      "87d7a1eefa2ed9db016eea250b4dec4922e3a5c5bce7dd546a41dc5caaa8e52e",
   };
 
   function sha256(texto: string): string {
     return createHash("sha256").update(texto, "utf8").digest("hex");
   }
 
+  function textoConsentimiento(): string {
+    const c = reserva.consentimientos;
+    return [
+      c.terminos,
+      c.terminosLinkTexto,
+      c.politicaLinkTexto,
+      c.marketing({ negocio: "{negocio}" }),
+    ].join("\n");
+  }
+
   it('la versión está ligada al hash del texto (sube "consentimientos.version" si cambias el texto)', () => {
-    expect(reserva.consentimientos.version).toBe(CONGELADO_V1.version);
-
-    const hashActual = sha256(
-      reserva.consentimientos.terminos +
-        reserva.consentimientos.marketing({ negocio: "Barbería Norte" }),
-    );
-    const hashCongelado = sha256(
-      CONGELADO_V1.terminos + CONGELADO_V1.marketingEjemplo,
-    );
-
+    const version = reserva.consentimientos.version;
+    const hashEsperado = HASHES[version];
+    expect(hashEsperado, `No hay hash registrado para "${version}"`).toBeDefined();
     expect(
-      hashActual,
-      'El texto de consentimiento cambió: sube "consentimientos.version" y actualiza CONGELADO_V1 en este test.',
-    ).toBe(hashCongelado);
+      sha256(textoConsentimiento()),
+      'El texto de consentimiento cambió: sube "consentimientos.version" y registra su hash en HASHES.',
+    ).toBe(hashEsperado);
   });
 
-  it("nunca están preseleccionados y el de marketing es opcional (revisado por security-reviewer)", () => {
-    // No hay forma de "marcar por defecto" un string: la prueba documenta la
-    // regla para quien construya el checkbox (WP-11/13): ambas casillas
-    // deben iniciar sin marcar, y la de marketing es una casilla aparte.
-    expect(reserva.consentimientos.terminos).not.toMatch(
-      /marcad[oa] por defecto/i,
-    );
+  it("el texto de términos menciona WhatsApp (aviso de opt-in, FRÅGA 6)", () => {
+    expect(reserva.consentimientos.terminos).toContain("WhatsApp");
+  });
+
+  it("el texto de marketing es opcional y menciona BAJA (WP-13 arma la casilla; ver COMPLIANCE.md)", () => {
     expect(
       reserva.consentimientos.marketing({ negocio: "Barbería Norte" }),
     ).toContain("BAJA");

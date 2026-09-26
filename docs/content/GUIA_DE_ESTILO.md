@@ -32,15 +32,20 @@
 | Falta a la hora reservada | **inasistencia** (en estadísticas), **No vino** (botón) | "no-show" |
 | Opción de "cualquier profesional" | **Cualquiera** | "Cualquier profesional", "Sin preferencia" |
 | Visita número N de un cliente | **"3.ª visita"** (ordinal femenino, con `.ª`) | "3era visita", "visita Nº 3" |
+| URL que le mandamos al cliente | **link** ("link de gestión") | "enlace" (se entiende, pero no es el que usamos) |
 
 ## 3. Formato
 
 - Plata: `$18.000` (símbolo `$`, punto como separador de miles, sin
   decimales). Nunca "18000" ni "$18.000,00".
-- Fechas cortas: "Vie 2 oct". Fechas largas: "Viernes 2 de octubre". Los
-  nombres de días y meses viven en `src/lib/format/` (WP-04), no en
-  `src/i18n/`: acá solo se arman las frases que los rodean.
+- Fechas cortas: "Vie 2 oct". Fechas largas (WhatsApp y correo): "viernes 2 de
+  octubre" (día de la semana y mes en minúscula). Los nombres de días y meses
+  viven en `src/lib/format/` (WP-04), no en `src/i18n/`: acá solo se arman las
+  frases que los rodean.
 - Hora: reloj de 24 horas, "15:00" (nunca "3:00 pm").
+- Duración de un servicio ("35 min"): la arma por completo
+  `formatDuration` en `src/lib/format/` (WP-04). No hay una función propia
+  para esto en `es-CL.ts`.
 - Signo menos tipográfico `−` (U+2212), no un guion `-`, en los descuentos:
   "−20%" (ver DESIGN.md §3). Las funciones que arman estos textos en
   `es-CL.ts` usan `−`.
@@ -64,9 +69,13 @@
 - Las funciones reciben **un solo objeto con parámetros con nombre**, nunca
   parámetros posicionales, para que un error de orden no pase inadvertido.
 - Las funciones de `es-CL.ts` nunca calculan tiempo relativo ("hace 5 min",
-  "en 20 min") ni construyen una fecha: eso ya viene calculado desde
-  `src/lib/format/` o desde el servidor de agendamiento, para no equivocarnos
-  con el horario de verano ni con la medianoche (ver R7 del plan de WP-03).
+  "en 20 min") ni construyen una fecha: eso lo calcula
+  `src/lib/format/`/el servidor de agendamiento (WP-04), para no
+  equivocarnos con el horario de verano ni con la medianoche (ver R7 del plan
+  de WP-03). Lo que sí vive acá es la **frase** alrededor de ese número: WP-04
+  entrega `{ n }` o `{ h, m }`, y `hoy.relativo.{ahora, enMin, enHoras,
+  atrasado}` arma "en 20 min", "en 1 h 15 min", etc. Mismo patrón para
+  `inicio.hero.horas({ n })` ("1 hora" / "4 horas").
 
 ## 5. Botones y confirmaciones destructivas
 
@@ -94,7 +103,7 @@
   siempre terminan con la opción de baja: "Responde BAJA si no quieres
   recibir más ofertas." No se escriben en WP-03 (ver FRÅGA 2 del plan).
 
-## 7. Consentimientos y textos legales (utkast)
+## 7. Consentimientos y textos legales (borrador)
 
 - Los textos de consentimiento (`reserva.consentimientos`) y los avisos sobre
   WhatsApp son **borrador**, escritos por `copywriter-es-cl`, no por un
@@ -114,12 +123,15 @@
 - Los mensajes de error de un campo describen **qué hacer**, no solo qué
   falló: "Escribe tu nombre." en vez de "Nombre inválido."
 - Los códigos de error de teléfono del cliente en Reserva
-  (`errores.reserva.telefono`) vienen de `chileanMobileInputSchema` en
-  `src/lib/format/schemas.ts` (WP-04): un texto por código
-  (`invalidType`, `empty`, `invalidChars`, `notChilean`, `invalidLength`,
-  `notMobile`). El teléfono del negocio (que puede ser fijo) y los esquemas
-  de CLP, RUT, fecha y hora se escriben en WP-03b, cuando esas pantallas
-  entren en alcance.
+  (`errores.reserva.telefono`) usan las mismas claves (en snake_case) que
+  `chileanMobileInputSchema` en `src/lib/format/schemas.ts` (WP-04):
+  `invalid_type`, `empty`, `invalid_chars`, `not_chilean`, `invalid_length`,
+  `not_mobile`. Lo mismo para `errores.reserva`/`errores.agenda`
+  (`slot_taken`, `too_soon`, `outside_hours`, `waitlist_duplicate`): la clave
+  es el código real, no una traducción, para que `satisfies Record<Codigo,
+  string>` funcione del lado de quien defina el tipo del código. El teléfono
+  del negocio (que puede ser fijo) y los esquemas de CLP, RUT, fecha y hora se
+  escriben en WP-03b, cuando esas pantallas entren en alcance.
 
 ## 9. Cómo revisar un texto nuevo
 
@@ -127,8 +139,8 @@
    mayúsculas, tildes y los caracteres especiales (`·`, `−`, `ª`).
 2. ¿Depende de un dato real? Hazlo una función con un objeto de parámetros
    con nombre, nunca interpola con `+` fuera de `es-CL.ts`.
-3. ¿Nombra el producto? Usa `brand.name` o `brand.tagline`, nunca la palabra
-   "llena" escrita a mano (`src/config/brand.test.ts` lo comprueba en todo
-   `src/`, y `es-CL.test.ts` lo vuelve a comprobar con un mensaje más claro).
+3. ¿Nombra el producto? Usa `brand.name` o `brand.tagline`, nunca el nombre
+   escrito a mano (`src/config/brand.test.ts` lo comprueba en todo `src/`, y
+   `es-CL.test.ts` lo vuelve a comprobar con un mensaje más claro).
 4. Pásalo por la lista negra del punto 1 (usted, voseo, "po", "wena",
    anglicismos, emoji) antes de darlo por terminado.

@@ -2,9 +2,8 @@
 
 > Fuente de la verdad para el código: `src/i18n/es-CL.ts` → `email`. El correo
 > es el respaldo (F7): se envía cuando WhatsApp falla y el cliente dejó su
-> correo, o siempre en paralelo si el negocio así lo configura. Mismos cuatro
-> eventos que las plantillas de WhatsApp de confirmación, recordatorio,
-> cancelación y cambio de hora.
+> correo. Mismos cuatro eventos que las plantillas de WhatsApp de
+> confirmación, recordatorio, cancelación y cambio de hora.
 >
 > La confirmación incluye la política de cancelación completa, por la
 > exigencia de SERNAC (Ley 19.496) de una confirmación **escrita** con

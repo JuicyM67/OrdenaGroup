@@ -37,8 +37,8 @@ solo recibe esos nombres ya formateados como parámetros de tipo `string`.
    `plantillasWhatsapp`, `whatsappSesion`, `email`) — nunca sueltos en la raíz
    del archivo.
 5. Corre el texto por la lista negra de tono (usted, voseo, "po", "wena",
-   anglicismos, emoji) y por el chequeo de marca (nunca la palabra "llena"
-   fuera de `brand.ts`).
+   anglicismos, emoji) y por el chequeo de marca (el nombre del producto nunca
+   se escribe a mano fuera de `brand.ts`, se interpola `brand.name`).
 6. Si es una plantilla de WhatsApp, actualiza `whatsapp-templates.md` en el
    mismo cambio: `whatsapp.test.ts` falla si el código y el documento no
    dicen exactamente lo mismo.
