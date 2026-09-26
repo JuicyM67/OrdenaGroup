@@ -8,7 +8,7 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-26 | AI-assistent som svarar och bokar i WhatsApp-chatten | vision | Stark uppgradering | 3 |
 | 2026-09-26 | Automatisk boleta via OpenFactura/Bsale | research | Tar bort manuellt SII-arbete | 3 |
 | 2026-09-26 | Offentlig sida för horas flash (marknadsplats) | D-004 | Ny intäktsström när tätheten finns | 4 |
-| 2026-09-26 | Lint-regel som stoppar hex-värden och godtyckliga Tailwind-värden (`[...]`) i `src/components/` och `src/app/` | planner (WP-00) | Gör hård regel 1 maskinellt kontrollerbar i stället för att förlita sig på granskning | 1 (WP-02) |
+| 2026-09-26 | Lint-regel som stoppar hex-värden och godtyckliga Tailwind-värden (`[...]`) i `src/components/` och `src/app/` | planner (WP-00) | Gör hård regel 1 maskinellt kontrollerbar i stället för att förlita sig på granskning | ☑ genomförd i WP-02 |
 | 2026-09-26 | Env-validering med Zod (`src/config/env.ts`) som stoppar start utan nödvändiga hemligheter | planner (WP-00) | Tydliga fel i stället för tysta fake-providers i fel miljö | 1 (WP-01/WP-16) |
 | 2026-09-26 | Uppgradera till TypeScript 7 och ESLint 10 när typescript-eslint och eslint-plugin-react stöder dem | WP-00 | Snabbare typecheck (native), aktuellt stöd | 2 |
 | 2026-09-27 | Återkommande blockeringar (t.ex. lunch varje dag) som veckoregel i stället för en `time_off`-rad per dag, eller lunch som delade öppettider | planner (WP-01) | F3 nämner lunch. En rad per dag skalar dåligt för ägaren. | 1 (WP-10/WP-15) |
@@ -38,3 +38,4 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-27 | Step-up (engångskod via WhatsApp) före export/radering via `r/[token]` | security-reviewer (WP-03) | Länken per bokning vidarebefordras lätt; export/radering får inte gå med bara länken | 1 (WP-26) |
 | 2026-09-27 | Mallvariant utan tjänstenamn för vårdnära branscher | security-reviewer (WP-03) | Tjänstenamn kan vara känsliga uppgifter (Ley 21.719) | 2 |
 | 2026-09-27 | Paritetstestet i i18n jämför rad för rad i stället för mot en sammanslagen sträng | qa-reviewer (WP-03) | Korta texter kan annars räknas som täckta av längre | 2 |
+| 2026-09-27 | Kontrollera i WP-11–14 att interaktiva komponenter med `transition-colors` också har `focus-visible:transition-none` | ui-engineer (WP-02) | Tailwind 4:s `transition-colors` tonar annars in fokusringen | 1 (WP-11–14) |

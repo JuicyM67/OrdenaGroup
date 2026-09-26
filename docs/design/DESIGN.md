@@ -25,11 +25,28 @@ Ladda med `next/font/google` i `src/app/fonts.ts`:
 
 ```ts
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
-export const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500","600","700","800"], variable: "--font-bricolage" });
+// Variabel vikt med opsz-axeln (WP-02 steg 0-spiken): referenserna laddar Bricolage med
+// opsz,wght@12..96. Utan opsz-axeln avviker display-texten 7–29 % i utsnitt som
+// "Octubre 2026" (30px) och "−20%" (118px), långt över 0,5 %-tröskeln (FRÅGA 4).
+export const display = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["opsz"],
+  variable: "--font-bricolage",
+});
 export const sans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400","500","600","700"], variable: "--font-jakarta" });
 ```
 
 `next/font` genererar ett hashat familjenamn, så variabelnamnen är `--font-bricolage`/`--font-jakarta` (inte `--font-display`/`--font-sans`, som är Tailwind-tokens i `@theme`). `tokens.css` pekar `--font-display`/`--font-sans` mot dessa variabler. Klasserna (`display.variable`, `sans.variable`) sätts på `<html>` i `src/app/layout.tsx`, så variablerna är definierade där `:root` räknar ut tokens.
+
+**Radavstånd (line-height):** referenserna (`docs/design/reference/*.dc.html`) sätter aldrig
+`line-height` i sina inline-stilar, utom på de roller som anger ett värde i tabellen nedan
+(hero, event …) — texten litar annars på webbläsarens naturliga radavstånd för respektive
+typsnitt/storlek. Tailwinds preflight sätter `line-height: 1.5` globalt på `html`/`body`, vilket
+gör varje rubrik och etikett omätbart högre än referensen (upptäckt via `hoy-header`-utsnittet i
+WP-02, se §7). `src/app/globals.css` motverkar det med `html { line-height: normal; }` i
+`@layer base`. Sätt en explicit `leading-*`-klass (se §12) bara där rollen nedan anger ett värde
+— annars ska elementet vila på det globala `normal`.
 
 | Roll | Typsnitt | Storlek / radavstånd | Vikt | Övrigt | Exempel |
 |---|---|---|---|---|---|
@@ -49,6 +66,31 @@ export const sans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400","500"
 
 Belopp skrivs alltid `$` + punkt som tusentalsavgränsare: `$18.000` (es-CL, inga decimaler).
 
+### Roll → klasser
+
+Tailwinds standardtema är nollställt (§12), så storlekarna heter efter px (`text-13`, `text-40`
+…) i stället för `text-sm`/`text-lg`. Rollerna ovan är kombinationer av dessa tokens:
+
+| Roll | Klasser |
+|---|---|
+| hero | `font-display text-40 leading-hero font-semibold tracking-display` |
+| page-title (desktop) | `font-display text-32 font-bold tracking-display` |
+| page-title (mobil) | `font-display text-30 font-semibold tracking-display` |
+| stat | `font-display text-38 font-semibold tracking-display` |
+| stat (belopp) | `font-display text-32 font-semibold tracking-display` |
+| time-xl | `font-display text-44 leading-none font-semibold tracking-display` |
+| day-number (desktop) | `font-display text-30 font-bold tracking-display` |
+| day-number (mobil) | `font-display text-22 font-bold` |
+| card-title | `font-sans text-18 font-bold` |
+| feature-title | `font-sans text-19 leading-snug font-bold` |
+| body-strong | `font-sans text-15 font-semibold` (ibland `font-bold`) |
+| body | `font-sans text-14 font-medium` (ibland `font-semibold`) |
+| meta | `font-sans text-13 text-muted` |
+| caption | `font-sans text-12 font-semibold` |
+| label-caps | `font-sans text-13 font-bold tracking-caps uppercase` |
+| event-title | `font-sans text-event-title leading-event font-bold` |
+| event-meta | `font-sans text-event-meta text-ink-soft` |
+
 ## 4. Färg
 
 Se `tokens.css`. Regler:
@@ -57,7 +99,24 @@ Se `tokens.css`. Regler:
 - `muted` (#5E5E66) är lägsta tillåtna gråton för läsbar text på vitt eller canvas. `subtle` bara för inaktivt.
 - På mörk yta: `on-dark` för rubriker, `on-dark-soft` för brödtext, `on-dark-muted` för meta.
 - Statuschips: Confirmada = success, Abono pagado = deposit, Sin confirmar = pending. Källa: lista de espera = peach-tagg, Flash = lime-tagg.
-- Agenda-headerns gradient (`--gradient-agenda`) används **endast** i agendans huvudpanel.
+- Agenda-headerns gradient (`--gradient-agenda`, klass `bg-agenda`) används **endast** i agendans huvudpanel.
+
+### Nya tokens (WP-02, alla fem referenser)
+
+| Token | Värde | Källa |
+|---|---|---|
+| `--color-ink-soft` | `#3E3E46` | Agenda: veckodag, tid i block, "GMT−3" |
+| `--color-on-dark-faint` | `#6B6B74` | Agenda: dagar utanför månaden i mörk kalender |
+| `--color-on-lilac-soft` / `-on-peach-soft` / `-on-lime-soft` | `#2E2A3D` / `#3D3020` / `#2F3310` | Sekundärtext på Main-korten, Reserva, HoraFlash |
+| `--color-lilac-100` | `#E9E1FB` | Main: avatartint "JR" (skiljer sig från `lilac-50`) |
+| `--color-blocked` | `#8E8E97` | Agenda: prick "Bloqueos y almuerzo" |
+| `--color-stripe` | `#FAFAF7` | Agenda: randning stängd dag (`bg-closed-stripes`) |
+| `--color-flash-dot` / `--color-full-dot` | `#9DB017` / `#C77A1E` | Reserva: dagprickar |
+| `--color-staff-1` … `--color-staff-6` | `var(--staff-1)` … | Tailwind-färger för personalfärgerna (`bg-staff-1` …) |
+| `--radius-panel` | `20px` | Popover, dag-knapp i Reserva |
+| `--radius-bar` | `26px` | BookingBar, MobileTabBar |
+| `--radius-badge` | `8px` | Taggar i Hoy, flash-bricka |
+| `--radius-tag` | `6px` | Tagg i kalenderblock |
 
 ## 5. Form och luft
 
@@ -119,6 +178,26 @@ Kolumnen "Referens" anger vilken fil i `docs/design/reference/` (och bild i `doc
 | **MobileTabBar** | Fast i botten, inset 16, höjd 72, `dark`, radie 26. 4 flikar, aktiv = lime. | Hoy |
 | **FlashStory** | 1080×1920 (renderas 360×640 ×3). Lime bakgrund, lilac cirkel, "−20%" display 800 i 118 px, vitt infokort, svart CTA. Genereras som bild (t.ex. `@vercel/og`). | HoraFlash |
 
+### Byggt i WP-02 (fil och API)
+
+Generella basdelar. Skärmspecifika komponenter i tabellen ovan (HeroSummary, FeatureCard,
+WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är klara.
+
+| Komponent | Fil | API |
+|---|---|---|
+| Button | `src/components/ui/button.tsx` | `variant` (primary/secondary/accent/outline-dark/inverse), `size` (xs…2xl), `asChild` (Radix Slot) |
+| IconButton | `src/components/ui/icon-button.tsx` | `label` (obligatorisk, blir aria-label), `tone`, `size`, `shape`, `badge?` |
+| Chip | `src/components/ui/chip.tsx` | `tone`, `size` (md/sm/xs/tag), inget eget utsnitt (se steg 7) |
+| Pill | `src/components/ui/pill.tsx` | `selected`, `aria-pressed` |
+| Card | `src/components/ui/card.tsx` | `as`, `tone`, `radius`, `padding`; mörka toner sätter `data-surface="dark"` |
+| Avatar | `src/components/ui/avatar.tsx` | `initials`, `shape`, `size`, `tone` |
+| LogoMark | `src/components/ui/logo-mark.tsx` | `label`, `size`, `decorative?` (för när en omgivande länk redan har namnet) |
+| SegmentedControl | `src/components/ui/segmented-control.tsx` | Radix ToggleGroup `type="single"`, `value`/`onValueChange` (kan aldrig bli tomt); R10: `role="radio"`/`aria-checked`, inte `aria-pressed` |
+| NavRail (+Logo/Link/Action/Divider/Spacer) | `src/components/ui/nav-rail.tsx` | `variant` (bare/panel) via Context, `data-surface="dark"` på `<nav>` |
+| PageHeader (+UserPill) | `src/components/ui/page-header.tsx`, `user-pill.tsx` | `variant` (desktop/mobile, meta före titeln i DOM på mobil) |
+| MiniCalendar | `src/components/ui/mini-calendar/` (`grid.ts` ren funktion, `mini-calendar.tsx`) | `month`, `selected`, `today`, `markedDates`, `highlightWeekOf` (bara mörk), `variant`, roving tabindex + pil/Home/End |
+| `cn()` | `src/components/ui/cn.ts` | `clsx` + `extendTailwindMerge` (egna klassgrupper, se DESIGN.md §12) |
+
 ## 8. Rörelse
 
 - Övergångar 150–200 ms `ease-out` på färg och bakgrund. **Animera aldrig storlek eller position på klickytor** (hover gör att tryck missar).
@@ -130,6 +209,9 @@ Kolumnen "Referens" anger vilken fil i `docs/design/reference/` (och bild i `doc
 - Riktiga `<button>`, `<a>`, `<input>` + `<label>`. `aria-label` på alla ikonknappar. `aria-pressed` på valbara pills. `aria-current="page"` i navigation.
 - Text 4.5:1. Färg får aldrig vara enda bäraren av information (chips har text, flash har tagg).
 - Fokusring: 2 px `ink` (på mörk yta 2 px `lime`), offset 2.
+- SegmentedControl (Radix ToggleGroup `type="single"`) exponerar knapparna som `role="radio"`/
+  `aria-checked` i stället för `aria-pressed` som referensens `aria-pressed="true"` antyder.
+  Semantiken är likvärdig (ett val av flera) och godkänd av axe (R10, WP-02).
 
 ## 10. Språk och format
 
@@ -147,3 +229,37 @@ Kolumnen "Referens" anger vilken fil i `docs/design/reference/` (och bild i `doc
 | Stora siffror i display-typsnittet | Inter, Roboto, systemtypsnitt i rubriker |
 | Radier ur tokens | Egna radievärden (t.ex. `rounded-[13px]`) |
 | Lucide-ikoner med rätt stroke | Emoji, fyllda ikoner, blandade ikonset |
+
+## 12. Tokens → klasser (D-015)
+
+**Tailwinds standardtema är nollställt.** `src/styles/tokens.css` sätter
+`--color-*: initial; --radius-*: initial; --shadow-*: initial; --text-*: initial;
+--tracking-*: initial; --leading-*: initial;` samt `--drop-shadow-*`, `--inset-shadow-*`,
+`--text-shadow-*` och `--blur-*` överst i `@theme`, innan projektets egna tokens
+definieras. Det gör hård regel 1 ("bara tokens") till något verktygen kontrollerar:
+
+- `bg-white`, `text-sm`, `rounded-lg`, `tracking-tight` genererar **ingen CSS längre** — bara
+  namnen i `tokens.css` finns (`bg-surface`, `text-14`, `rounded-card`, `tracking-display` …).
+- Spacing (4-bas) och `font-weight` kommer fortfarande från Tailwinds standardtema — de är inte
+  nollställda.
+- `transparent`, `current` och `rounded-full`/`leading-none` är inte del av de nollställda
+  namnrymderna och fungerar som vanligt.
+- `npm run lint` fångar hex, `rgb()`/`hsl()`/`oklch()`, godtyckliga `[…]`-värden och
+  `(--variabel)`-genvägen i `src/components/` och `src/app/` (`no-restricted-syntax` +
+  `better-tailwindcss/no-unknown-classes`). `src/styles/no-raw-values.test.ts` gör samma sak för
+  CSS, som ESLint inte läser.
+
+**Opacitet skrivs med Tailwinds modifierare, inte med egna tokens:** `bg-surface/45`, `/38`,
+`/35`, `/20`, `bg-ink/18`. Det är inte ett godtyckligt värde (`[...]`-syntax) och triggar inte
+lint-regeln ovan.
+
+**Textstorlekar heter efter px** (`text-13`, `text-40` …), med rollnamn bara för de två
+bråkstorlekarna (`text-event-title` 12.5px, `text-event-meta` 11.5px). Radavstånd följer inte
+automatiskt med storleken — sätt `leading-*` explicit. Rollerna i §3 är fasta klasskombinationer,
+inte egna tokens.
+
+**`cn()`** (`src/components/ui/cn.ts`) använder `extendTailwindMerge` för att hålla isär egna
+klassgrupper som `text-13` (font-size) och `text-ink` (text-color), annars skulle
+`tailwind-merge` tro att de tillhör samma grupp och ta bort den ena (se WP-02 R3). Nya tokens i
+`tokens.css` som ska kunna kombineras (nya textstorlekar, färger, radier, tracking, leading)
+måste läggas till i motsvarande lista i `cn.ts` i samma PR.

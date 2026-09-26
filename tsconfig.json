@@ -29,6 +29,7 @@
     "next.config.ts",
     "postcss.config.mjs",
     "vitest.config.mts",
+    "vitest.setup.ts",
     "playwright.config.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
