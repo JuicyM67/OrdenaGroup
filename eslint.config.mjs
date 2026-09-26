@@ -1,6 +1,31 @@
 import coreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
+import betterTailwindcssPlugin from "eslint-plugin-better-tailwindcss";
 import prettier from "eslint-config-prettier";
+
+// Hård regel 1 / D-015: bara tokens från src/styles/tokens.css. Den här regeln fångar
+// hex-koder, färgfunktioner och godtyckliga Tailwind-värden ([…]) i komponenter och
+// appens sidor, i stället för att förlita sig på granskaren (WP-02 steg 1, FRÅGA 10).
+const rawValueMessage =
+  "Inga hex-värden, färgfunktioner eller godtyckliga Tailwind-värden här. Lägg till en token i src/styles/tokens.css och använd den (se docs/design/DESIGN.md).";
+
+const rawValuePatterns = [
+  "#[0-9a-fA-F]{3,8}\\b",
+  "\\b(rgba?|hsla?|oklch|oklab)\\(",
+  "(^|[\\s:])(-?[a-z0-9-]+-)?\\[[^\\]]+\\]",
+  "-\\(--",
+];
+
+const noRestrictedRawValues = rawValuePatterns.flatMap((pattern) => [
+  {
+    selector: `Literal[value=/${pattern}/]`,
+    message: rawValueMessage,
+  },
+  {
+    selector: `TemplateElement[value.raw=/${pattern}/]`,
+    message: rawValueMessage,
+  },
+]);
 
 const eslintConfig = [
   {
@@ -15,6 +40,28 @@ const eslintConfig = [
   },
   ...coreWebVitals,
   ...nextTypescript,
+  {
+    files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "no-restricted-syntax": ["error", ...noRestrictedRawValues],
+    },
+  },
+  {
+    files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    plugins: {
+      "better-tailwindcss": betterTailwindcssPlugin,
+    },
+    settings: {
+      "better-tailwindcss": {
+        entryPoint: "src/app/globals.css",
+      },
+    },
+    rules: {
+      "better-tailwindcss/no-unknown-classes": "error",
+    },
+  },
   prettier,
 ];
 

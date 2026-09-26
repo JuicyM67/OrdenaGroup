@@ -72,6 +72,42 @@ git worktree add ../llena-sched  -b wp/WP-04-format
 
 Öppna Claude Code i varje mapp och kör `/start-wp WP-01`, `/start-wp WP-02`, `/start-wp WP-04`. Agenterna äger olika mappar, se tabellen i `CLAUDE.md`, så de krockar inte. Merga via PR efter `/review`.
 
+### Portkonvention för worktrees
+
+Flera worktrees kan ha en egen `next dev`/`next start` igång samtidigt. För att undvika att en
+körning av `npm run test:e2e` eller `npm run visual` i en worktree av misstag träffar servern i en
+annan, använd en egen port per arbetspaket: **`PORT=30NN`**, där `NN` är arbetspaketets nummer
+(t.ex. `PORT=3002` för WP-02, `PORT=3011` för WP-11).
+
+```bash
+PORT=3002 npm run dev
+PORT=3002 npm run test:e2e
+BASE_URL=http://localhost:3002 npm run visual
+```
+
+`playwright.config.ts` läser `PORT` (standard 3000) och startar sin egen `next build && next start`
+på den porten; `reuseExistingServer` används bara om `PW_REUSE_SERVER=1` sätts uttryckligen.
+`scripts/visual-diff.mjs` läser `BASE_URL` (standard `http://localhost:3000`) och förutsätter att en
+server redan kör där (`npm run build && npm run start` på samma port, inte `next dev`, se nedan).
+
+## Design lab
+
+`/design-lab` (och undersidorna `/design-lab/components`, `/design-lab/crops/*` samt en route per
+skärm som `/design-lab/main`) visar alla generella komponenter (`src/components/ui/`) i sina
+varianter, tillstånd och de utsnitt som jämförs mot referensbilderna. Labbet är bara till för
+utveckling: `notFound()` när `VERCEL_ENV === "production"`, och sidorna har `robots: { index: false }`.
+
+- **Katalog:** `npm run dev` och öppna `/design-lab/components` för att bläddra manuellt.
+- **Visuell jämförelse:** `npm run visual -- components` kör alla registrerade utsnitt i
+  `src/app/design-lab/crops/crops.json` mot `docs/design/screens/*.png`. `npm run visual` (utan
+  argument) kör även hela skärmarna; en skärm som ännu inte finns (404) skrivs ut som
+  "– pendiente" och räknas inte som fel, om inte `VISUAL_STRICT=1` sätts.
+- Kör **alltid** mot `npm run build && npm run start` (inte `next dev`): dev-servern har HMR och
+  första-anrops-kompilering som gör skärmdumparna långsamma och instabila, och `devIndicators`
+  ritas annars in i bilden.
+- Kör lokalt på macOS. Font-rendering skiljer sig mellan macOS och Linux, så `< 2 %`-tröskeln är
+  kalibrerad mot macOS (samma plattform som referensbilderna).
+
 **Förslag på första veckan:** WP-00 → sedan parallellt WP-01 (db), WP-02 → WP-11–14 (ui), WP-04 → WP-10 (scheduling), WP-03 (copy). Se "Parallellisering" i BACKLOG.
 
 ## Det du måste göra själv (agenterna kan inte)
