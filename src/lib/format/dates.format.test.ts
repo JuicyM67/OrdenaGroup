@@ -113,13 +113,48 @@ describe("formatLocalDate (designvärden tecken för tecken)", () => {
     ["2026-10-04", "weekdayShortLower", "dom"],
     ["2026-09-06", "weekdayDayMonthLong", "Domingo 6 de septiembre"],
     ["2026-01-01", "weekdayDayMonthShort", "Jue 1 ene"],
+    ["2026-10-02", "weekdayLongLower", "viernes"],
+    ["2026-10-03", "weekdayLongLower", "sábado"],
+    ["2026-09-30", "weekdayLongLower", "miércoles"],
+    ["2026-10-04", "weekdayLongLower", "domingo"],
+    ["2026-10-05", "weekdayLongLower", "lunes"],
+    ["2026-10-02", "weekdayDayMonthLongLower", "viernes 2 de octubre"],
+    ["2026-10-03", "weekdayDayMonthLongLower", "sábado 3 de octubre"],
+    ["2026-09-30", "weekdayDayMonthLongLower", "miércoles 30 de septiembre"],
+    ["2026-01-01", "weekdayDayMonthLongLower", "jueves 1 de enero"],
+    ["2026-12-31", "weekdayDayMonthLongLower", "jueves 31 de diciembre"],
   ])("%s %s → %s", (date, preset, expected) => {
     const out = formatLocalDate(d(date), preset);
     expect(out).toBe(expected);
     expect(out).toBe(out.normalize("NFC"));
-    expect(out).not.toMatch(/[  ]/);
+    expect(out).not.toMatch(/[\u00A0\u202F]/);
   });
 });
+
+describe("presets för löptext (gemener)", () => {
+  it("hela strängen är gemener, med accenter och utan versaler", () => {
+    for (const date of eachDay()) {
+      for (const preset of [
+        "weekdayLongLower",
+        "weekdayDayMonthLongLower",
+      ] as const) {
+        const out = formatLocalDate(date, preset);
+        expect(out).toBe(out.toLowerCase());
+        expect(out).toBe(out.normalize("NFC"));
+      }
+    }
+  });
+});
+
+function eachDay(): LocalDate[] {
+  // En vecka i varje månad 2026 täcker alla veckodagar och månader.
+  return Array.from({ length: 12 }, (_, m) =>
+    Array.from(
+      { length: 7 },
+      (_, i) => `2026-${String(m + 1).padStart(2, "0")}-0${i + 1}` as LocalDate,
+    ),
+  ).flat();
+}
 
 describe("formatDate", () => {
   it("fredag 2 okt kl 23:30 i Santiago är 2026-10-03T02:30Z", () => {
@@ -154,6 +189,14 @@ describe("formatTime och formatTimeRange", () => {
   it('öppettider (Reserva): "10:00–19:00" utan mellanslag', () => {
     expect(formatLocalTimeRange(t("10:00"), t("19:00"))).toBe("10:00–19:00");
     expect(formatLocalTimeRange(t("10:00"), t("24:00"))).toBe("10:00–24:00");
+  });
+  it('avvisar "24:00" som start', () => {
+    expect(() => formatLocalTimeRange(t("24:00"), t("24:00"))).toThrow(
+      RangeError,
+    );
+    expect(() => formatLocalTimeRange(t("24:00"), t("10:00"))).toThrow(
+      RangeError,
+    );
   });
 });
 

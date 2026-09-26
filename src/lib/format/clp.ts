@@ -35,7 +35,7 @@ export function formatClp(amount: number): string {
 }
 
 // Blanktecken som kan komma från inklistrad text (NBSP, smala mellanslag).
-const SPACES = /[\s   ]/g;
+const SPACES = /\s/g; // \s täcker även U+00A0, U+2007 och U+202F
 const PLAIN = /^\d+$/;
 const GROUPED = /^\d{1,3}(?:\.\d{3})+$/;
 

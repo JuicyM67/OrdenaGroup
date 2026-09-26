@@ -28,7 +28,7 @@ export function rutCheckDigit(body: number): RutCheckDigit {
   return String(r) as RutCheckDigit;
 }
 
-const SPACES = /[\s   ]/g;
+const SPACES = /\s/g; // \s täcker även U+00A0, U+2007 och U+202F
 const SHAPE = /^([0-9.]+)-?([0-9Kk])$/;
 
 /**

@@ -18,7 +18,10 @@ import { err, ok, type ParseResult } from "./result";
 export type TimeZone = string & { readonly __brand: "TimeZone" };
 /** "2026-10-02" */
 export type LocalDate = string & { readonly __brand: "LocalDate" };
-/** "15:00". "24:00" bara som slut (öppettider). */
+/**
+ * "15:00". "24:00" bara som slut (öppettider) och bara med disambiguering
+ * "compatible" (se `fromLocal`).
+ */
 export type LocalTime = string & { readonly __brand: "LocalTime" };
 /** 1 = lunes … 7 = domingo, som `business_hours.weekday`. */
 export type IsoWeekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
@@ -43,6 +46,7 @@ function partsFormatter(tz: string): Intl.DateTimeFormat {
       timeZone: tz,
       hourCycle: "h23",
       numberingSystem: "latn",
+      era: "short",
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -73,10 +77,14 @@ function wallFields(ms: number, tz: string): WallFields {
     minute: 0,
     second: 0,
   };
+  let bc = false;
   for (const p of partsFormatter(tz).formatToParts(ms)) {
-    if (p.type in out) out[p.type as keyof WallFields] = Number(p.value);
+    if (p.type === "era") bc = p.value.startsWith("B");
+    else if (p.type in out) out[p.type as keyof WallFields] = Number(p.value);
   }
   if (out.hour === 24) out.hour = 0; // äldre ICU kan ge "24" vid midnatt
+  // Intl ger år 1 f.Kr. som "1" + era "BC"; räkna om till astronomiskt år (0).
+  if (bc) out.year = 1 - out.year;
   return out;
 }
 
@@ -138,13 +146,22 @@ export function parseTimeZone(
 
 const DATE_SHAPE = /^(\d{4})-(\d{2})-(\d{2})$/;
 
+/** Giltiga år för `LocalDate` (0001–9999, som Postgres `date` utan f.Kr.). */
+const MIN_YEAR = 1;
+const MAX_YEAR = 9999;
+
 function daysInMonth(year: number, month: number): number {
   return new Date(utcMsFromFields(year, month + 1, 0)).getUTCDate();
 }
 
 function isValidYmd(year: number, month: number, day: number): boolean {
   return (
-    month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth(year, month)
+    year >= MIN_YEAR &&
+    year <= MAX_YEAR &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= daysInMonth(year, month)
   );
 }
 
@@ -240,6 +257,7 @@ function isoWeekdayFromUtcDay(utcDay: number): IsoWeekday {
   return (utcDay === 0 ? 7 : utcDay) as IsoWeekday;
 }
 
+/** Kastar `RangeError` om den lokala dagen hamnar utanför år 0001–9999. */
 export function toWallClock(
   instant: Date,
   tz: TimeZone,
@@ -251,6 +269,9 @@ export function toWallClock(
 } {
   const ms = floorToSecond(assertValidDate(instant, "toWallClock"));
   const f = wallFields(ms, tz);
+  if (f.year < MIN_YEAR || f.year > MAX_YEAR) {
+    throw new RangeError(`toWallClock: år ${f.year} utanför 0001–9999`);
+  }
   const dayMs = utcMsFromFields(f.year, f.month, f.day);
   const wall = dayMs + (f.hour * 3600 + f.minute * 60 + f.second) * 1000;
   return {
@@ -305,7 +326,7 @@ type Resolution =
 /**
  * Egen algoritm (som Temporal): kandidat-offset ett dygn före och efter,
  * och kontroll av att kandidaten går tillbaka till samma väggtid.
- * Vi förlitar oss inte på date-fns-tz:s odokumenterade glapp-/överlappsbeteende.
+ * (date-fns-tz används inte, se D-018.)
  */
 function resolveLocal(
   date: LocalDate,
@@ -316,6 +337,9 @@ function resolveLocal(
   const [y, mo, d] = localDateParts(date, fn);
   const [hh, mm] = localTimeParts(time, fn);
   // "24:00" = nästa dags 00:00 (setUTCHours hanterar överslaget).
+  if (hh === 24 && y === MAX_YEAR && mo === 12 && d === 31) {
+    throw new RangeError(`${fn}: 24:00 den 9999-12-31 ger år 10000`);
+  }
   const wall = utcMsFromFields(y, mo, d, hh, mm);
   const before = offsetMs(wall - DAY_MS, tz);
   const after = offsetMs(wall + DAY_MS, tz);
@@ -336,6 +360,13 @@ function resolveLocal(
   return { kind: "gap", earlier: wall - after, later: wall - before };
 }
 
+/**
+ * Lokal väggtid → UTC. "24:00" betyder nästa dags 00:00 och ska användas med
+ * "compatible" (standard): om nästa dag börjar i ett glapp (00:00 finns inte,
+ * t.ex. 2026-09-06 i Santiago) ger "compatible" dagens verkliga slut, medan
+ * "earlier" ger en instant före glappet som inte är ett dagsslut, och
+ * `fromLocalStrict` ger `nonexistent_local_time`.
+ */
 export function fromLocal(
   date: LocalDate,
   time: LocalTime,
@@ -390,10 +421,11 @@ function localDateToUtcMs(date: LocalDate, fn: string): number {
 }
 
 function utcMsToLocalDate(ms: number): LocalDate {
+  if (Number.isNaN(ms)) throw new RangeError("LocalDate: ogiltigt värde (NaN)");
   const dt = new Date(ms);
   const year = dt.getUTCFullYear();
-  if (year < 0 || year > 9999) {
-    throw new RangeError("LocalDate: år utanför 0000–9999");
+  if (Number.isNaN(year) || year < MIN_YEAR || year > MAX_YEAR) {
+    throw new RangeError("LocalDate: år utanför 0001–9999");
   }
   return ymd(year, dt.getUTCMonth() + 1, dt.getUTCDate());
 }
@@ -457,7 +489,9 @@ export type DatePreset =
   | "monthYear" // "Octubre 2026"            (Main, Agenda)
   | "month" // "Octubre"                 (Reserva)
   | "weekdayShort" // "Vie"                     (Reserva DayPicker)
-  | "weekdayShortLower"; // "vie"                     (Agenda DayPill)
+  | "weekdayShortLower" // "vie"                     (Agenda DayPill)
+  | "weekdayLongLower" // "viernes"                 (löptext, WhatsApp/e-post)
+  | "weekdayDayMonthLongLower"; // "viernes 2 de octubre" (löptext, WhatsApp/e-post)
 
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
@@ -495,6 +529,10 @@ export function formatLocalDate(date: LocalDate, preset: DatePreset): string {
       return wShort;
     case "weekdayShortLower":
       return wShort.toLowerCase();
+    case "weekdayLongLower":
+      return wLong.toLowerCase();
+    case "weekdayDayMonthLongLower":
+      return `${wLong.toLowerCase()} ${day} de ${mLong}`;
   }
 }
 
@@ -518,9 +556,12 @@ export function formatTimeRange(start: Date, end: Date, tz: TimeZone): string {
   return `${formatTime(start, tz)} ${EN_DASH} ${formatTime(end, tz)}`;
 }
 
-/** "10:00–19:00" (öppettider i Reserva, utan mellanslag). */
+/** "10:00–19:00" (öppettider i Reserva, utan mellanslag). "24:00" bara som slut. */
 export function formatLocalTimeRange(start: LocalTime, end: LocalTime): string {
-  localTimeParts(start, "formatLocalTimeRange");
+  const [startHour] = localTimeParts(start, "formatLocalTimeRange");
+  if (startHour === 24) {
+    throw new RangeError("formatLocalTimeRange: 24:00 kan inte vara start");
+  }
   localTimeParts(end, "formatLocalTimeRange");
   return `${start}${EN_DASH}${end}`;
 }

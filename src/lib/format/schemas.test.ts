@@ -70,7 +70,7 @@ const failing: [string, z.ZodType, unknown, string][] = [
     "chileanPhoneInputSchema",
     chileanPhoneInputSchema,
     "800 123 456",
-    "phone.not_mobile",
+    "phone.invalid_prefix",
   ],
   ["rutInputSchema", rutInputSchema, "", "rut.empty"],
   ["rutInputSchema", rutInputSchema, "abc", "rut.invalid_format"],

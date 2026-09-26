@@ -9,7 +9,7 @@ import {
   type E164,
 } from "./phone";
 
-const NBSP = " ";
+const NBSP = "\u00A0";
 
 describe("parseChileanPhone (mobil, standard)", () => {
   it.each([
@@ -75,10 +75,10 @@ describe("parseChileanPhone (mobile_or_fixed, företagets telefon F1)", () => {
   });
 
   it.each([
-    ["600 123 456", "not_mobile"],
-    ["800 123 456", "not_mobile"],
-    ["112345678", "not_mobile"],
-    ["012345678", "not_mobile"],
+    ["600 123 456", "invalid_prefix"],
+    ["800 123 456", "invalid_prefix"],
+    ["112345678", "invalid_prefix"],
+    ["012345678", "invalid_prefix"],
     ["+54 11 1234 5678", "not_chilean"],
   ])("avvisar %j → %s", (input, error) => {
     expect(parseChileanPhone(input, opts)).toEqual({ ok: false, error });

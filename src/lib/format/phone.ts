@@ -4,7 +4,12 @@ import { err, ok, type ParseResult } from "./result";
 export type E164 = string & { readonly __brand: "E164" };
 
 export type PhoneError =
-  "empty" | "invalid_chars" | "not_chilean" | "invalid_length" | "not_mobile";
+  | "empty"
+  | "invalid_chars"
+  | "not_chilean"
+  | "invalid_length"
+  | "not_mobile"
+  | "invalid_prefix";
 
 /** Samma mönster som DB-checken i DATA_MODEL. */
 export const E164_PATTERN = /^\+[1-9][0-9]{7,14}$/;
@@ -13,14 +18,16 @@ export function isE164(v: string): v is E164 {
   return E164_PATTERN.test(v);
 }
 
-// Separatorer som godtas i inmatning (även NBSP från WhatsApp).
-const SEPARATORS = /[\s   \-.()]/g;
+// Separatorer som godtas i inmatning. \s täcker även NBSP (U+00A0), U+2007
+// och U+202F (t.ex. från WhatsApp).
+const SEPARATORS = /[\s\-.()]/g;
 
 /**
  * Chilenskt nummer → E.164. Standard: bara mobil (9 siffror som börjar på 9).
  * Med `allow: "mobile_or_fixed"` godtas även fasta nummer (9 siffror som
  * börjar på 2–7, utom specialserien 60x). Gamla 8-siffriga nummer gissas inte.
- * `not_mobile` betyder "inte ett giltigt nummer för det tillåtna slaget".
+ * Ogiltigt prefix ger `not_mobile` i mobilläget och `invalid_prefix` i läget
+ * `mobile_or_fixed`.
  */
 export function parseChileanPhone(
   input: string,
@@ -48,8 +55,10 @@ export function parseChileanPhone(
 
   const isMobile = national.startsWith("9");
   const isFixed = /^[2-7]/.test(national) && !national.startsWith("60");
-  if (!isMobile && !(allow === "mobile_or_fixed" && isFixed)) {
-    return err("not_mobile");
+  if (allow === "mobile") {
+    if (!isMobile) return err("not_mobile");
+  } else if (!isMobile && !isFixed) {
+    return err("invalid_prefix");
   }
   return ok(`+56${national}` as E164);
 }

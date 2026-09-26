@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   addLocalDays,
   eachLocalDate,
+  fromLocal,
   isoWeekdayOf,
+  localDayRange,
   minutesBetween,
   parseInstant,
   parseLocalDate,
@@ -15,6 +17,7 @@ import {
   toWallClock,
   utcOffsetMinutes,
   type LocalDate,
+  type LocalTime,
 } from "./dates";
 
 const d = (s: string) => s as LocalDate;
@@ -52,18 +55,24 @@ describe("parseTimeZone", () => {
 });
 
 describe("parseLocalDate", () => {
-  it.each(["2028-02-29", "2026-10-02", "2026-12-31", "2026-01-01"])(
-    "%s ok",
-    (s) => {
-      expect(parseLocalDate(s)).toEqual({ ok: true, value: s });
-    },
-  );
+  it.each([
+    "2028-02-29",
+    "2026-10-02",
+    "2026-12-31",
+    "2026-01-01",
+    "0001-01-01",
+    "9999-12-31",
+  ])("%s ok", (s) => {
+    expect(parseLocalDate(s)).toEqual({ ok: true, value: s });
+  });
   it.each([
     ["2026-02-29", "invalid_date"],
     ["2026-04-31", "invalid_date"],
     ["2026-13-01", "invalid_date"],
     ["2026-00-10", "invalid_date"],
     ["2026-01-00", "invalid_date"],
+    ["0000-01-01", "invalid_date"],
+    ["0000-12-31", "invalid_date"],
     ["2026-2-3", "invalid_format"],
     ["2026-10-02T00:00", "invalid_format"],
     ["02-10-2026", "invalid_format"],
@@ -161,6 +170,60 @@ describe("addLocalDays", () => {
   });
   it("kastar för icke-heltal", () => {
     expect(() => addLocalDays(d("2026-10-02"), 1.5)).toThrow(RangeError);
+  });
+  it.each([
+    Number.MAX_SAFE_INTEGER,
+    -Number.MAX_SAFE_INTEGER,
+    100_000_000, // utanför Date-intervallet (±8.64e15 ms)
+    -100_000_000,
+    3_000_000, // giltig Date men år > 9999
+  ])("kastar RangeError för enormt antal dagar (%d)", (n) => {
+    expect(() => addLocalDays(d("2026-10-02"), n)).toThrow(RangeError);
+  });
+  it("gränserna 0001-01-01 och 9999-12-31", () => {
+    expect(addLocalDays(d("0001-01-02"), -1)).toBe("0001-01-01");
+    expect(addLocalDays(d("9999-12-30"), 1)).toBe("9999-12-31");
+    expect(() => addLocalDays(d("0001-01-01"), -1)).toThrow(RangeError);
+    expect(() => addLocalDays(d("9999-12-31"), 1)).toThrow(RangeError);
+  });
+  it("kastar för ogiltigt datum (år 0)", () => {
+    expect(() => addLocalDays(d("0000-06-01"), 1)).toThrow(RangeError);
+  });
+});
+
+describe("år 0001–9999", () => {
+  const t = (s: string) => s as LocalTime;
+  it("fromLocal och localDayRange kastar för år 0", () => {
+    expect(() => fromLocal(d("0000-12-31"), t("12:00"), SANTIAGO)).toThrow(
+      RangeError,
+    );
+    expect(() => localDayRange(d("0000-12-31"), SANTIAGO)).toThrow(RangeError);
+  });
+  it('9999-12-31 "23:59" går, "24:00" kastar (år 10000)', () => {
+    const last = fromLocal(d("9999-12-31"), t("23:59"), SANTIAGO);
+    expect(toWallClock(last, SANTIAGO).date).toBe("9999-12-31");
+    expect(() => fromLocal(d("9999-12-31"), t("24:00"), SANTIAGO)).toThrow(
+      RangeError,
+    );
+    expect(() => localDayRange(d("9999-12-31"), SANTIAGO)).toThrow(RangeError);
+  });
+  it("toWallClock kastar när den lokala dagen hamnar utanför 1–9999", () => {
+    // Midnatt UTC den 1 januari år 1 är 31 december år 0 i Santiago (LMT).
+    expect(() => toWallClock(utc("0001-01-01T00:00:00Z"), SANTIAGO)).toThrow(
+      RangeError,
+    );
+    expect(toWallClock(utc("0001-01-01T12:00:00Z"), SANTIAGO).date).toBe(
+      "0001-01-01",
+    );
+    expect(() => toWallClock(new Date(8.64e15), SANTIAGO)).toThrow(RangeError);
+    expect(() => toWallClock(new Date(-8.64e15), SANTIAGO)).toThrow(RangeError);
+  });
+  it("0001-01-01 00:00 i Santiago går tur och retur", () => {
+    const start = fromLocal(d("0001-01-01"), t("00:00"), SANTIAGO);
+    expect(toWallClock(start, SANTIAGO)).toMatchObject({
+      date: "0001-01-01",
+      time: "00:00",
+    });
   });
 });
 

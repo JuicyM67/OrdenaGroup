@@ -144,6 +144,10 @@ describe("tid som inte finns (00:00–00:59 i september)", () => {
       ok: false,
       error: "nonexistent_local_time",
     });
+    // Därför ska "24:00" användas med "compatible": "earlier" hamnar före glappet.
+    expect(
+      iso(fromLocal(d("2026-09-05"), t("24:00"), SANTIAGO, "earlier")),
+    ).toBe("2026-09-06T03:00:00Z");
   });
 });
 

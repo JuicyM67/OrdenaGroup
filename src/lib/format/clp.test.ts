@@ -31,7 +31,7 @@ describe("formatClp", () => {
     // Bara ASCII-siffror, "$" och "." – ingen NBSP, inget mellanslag.
     expect([...out].every((c) => /[0-9$.]/.test(c))).toBe(true);
     expect(out.charCodeAt(0)).toBe(0x24);
-    expect(out).not.toMatch(/[\s  ]/);
+    expect(out).not.toMatch(/\s/); // \s täcker även U+00A0 och U+202F
   });
 
   it("negativt belopp använder U+2212 som designens −20%", () => {
@@ -73,7 +73,7 @@ describe("parseClp", () => {
     ["999", 999],
     ["1.234.567", 1234567],
     ["2.147.483.647", CLP_MAX],
-    [" 18.000 ", 18000],
+    ["\u00A018.000\u00A0", 18000],
   ])("godtar %j → %d", (input, expected) => {
     expect(parseClp(input)).toEqual({ ok: true, value: expected });
   });
