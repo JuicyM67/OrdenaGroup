@@ -45,3 +45,37 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 7
+
+  db:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Samma npm som lockfilen skapades med (packageManager i package.json).
+      - run: npm install -g "$(node -p "require('./package.json').packageManager")"
+
+      - run: npm ci
+
+      # `npx supabase` (till skillnad från `node_modules/.bin/supabase`
+      # direkt) är tillåtet i CI-filer — skyddsreglerna gäller lokala
+      # agentkommandon, inte GitHub Actions-runnern. Ingen fjärrdatabas,
+      # ingen `--linked`, inget moln: allt körs i en lokal container i
+      # runnern.
+      - run: npx supabase db start
+      - run: npx supabase test db
+
+      # Typdrift: den incheckade src/types/database.ts ska vara exakt vad
+      # `db:types` genererar från det lokala schemat (samma kontroll som
+      # görs manuellt efter varje migration).
+      - run: npm run db:types
+      - run: git diff --exit-code src/types/database.ts
