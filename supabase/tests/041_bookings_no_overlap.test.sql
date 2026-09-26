@@ -52,9 +52,12 @@ select throws_ok(
              tstzrange('2026-11-02 12:40+00', '2026-11-02 13:15+00', '[)'), tstzrange('2026-11-02 12:40+00', '2026-11-02 13:15+00', '[)'), 'confirmed', 'manual', 12000) $$,
   '23P01'
 );
+-- qa2 (granskningsfynd): måste vara SAMMA profesional (...002) som
+-- buffertbokningen ovan, annars bevisar testet ingenting om bufferten (två
+-- olika profesionales krockar aldrig, oavsett buffert).
 select lives_ok(
   $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp)
-     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000002', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
              tstzrange('2026-11-02 12:45+00', '2026-11-02 13:20+00', '[)'), tstzrange('2026-11-02 12:45+00', '2026-11-02 13:20+00', '[)'), 'confirmed', 'manual', 12000) $$,
   'ny bokning precis efter buffertfönstret (12:45) är okej'
 );

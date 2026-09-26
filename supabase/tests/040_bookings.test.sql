@@ -2,7 +2,7 @@
 -- INV-1 (no_overlap) testas separat i 041_bookings_no_overlap.test.sql.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(24);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -74,8 +74,31 @@ select throws_ok($$ delete from public.bookings where id = 'aaaaaaaa-4000-0000-0
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select count(*) from public.bookings)::int, 0, 'staffA ser noll bokningar');
+select throws_ok(
+  $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp)
+     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+             tstzrange('2026-11-06 10:00+00', '2026-11-06 10:35+00', '[)'), tstzrange('2026-11-06 10:00+00', '2026-11-06 10:35+00', '[)'), 'confirmed', 'manual', 12000) $$,
+  '42501'
+);
+with updated as (
+  update public.bookings set notes = 'Hackeado' where id = 'aaaaaaaa-4000-0000-0000-000000000001'
+  returning 1
+)
+select is((select count(*) from updated)::int, 0, 'staffA kan inte uppdatera bokningar (0 rader)');
+with deleted as (
+  delete from public.bookings where id = 'aaaaaaaa-4000-0000-0000-000000000001'
+  returning 1
+)
+select is((select count(*) from deleted)::int, 0, 'staffA kan inte radera bokningar (0 rader)');
+
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);
 select is((select count(*) from public.bookings)::int, 0, 'vendorA ser noll bokningar');
+select throws_ok(
+  $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp)
+     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+             tstzrange('2026-11-06 11:00+00', '2026-11-06 11:35+00', '[)'), tstzrange('2026-11-06 11:00+00', '2026-11-06 11:35+00', '[)'), 'confirmed', 'manual', 12000) $$,
+  '42501'
+);
 
 -- 7. Utan medlemskap: noll rader.
 select set_config('request.jwt.claims', json_build_object('sub', '55555555-5555-5555-5555-555555555555', 'role', 'authenticated')::text, true);
@@ -101,6 +124,28 @@ select throws_ok(
      values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'bbbbbbbb-3000-0000-0000-000000000001',
              tstzrange('2026-11-05 12:00+00', '2026-11-05 12:35+00', '[)'), tstzrange('2026-11-05 12:00+00', '2026-11-05 12:35+00', '[)'), 'confirmed', 'manual', 12000) $$,
   '23503'
+);
+
+-- K1: manage_token_hash måste vara exakt 32 byte (SHA-256) om den är satt.
+select throws_ok(
+  $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, manage_token_hash)
+     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+             tstzrange('2026-11-06 09:00+00', '2026-11-06 09:35+00', '[)'), tstzrange('2026-11-06 09:00+00', '2026-11-06 09:35+00', '[)'), 'confirmed', 'manual', 12000, '\x1234') $$,
+  '23514'
+);
+select lives_ok(
+  $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, manage_token_hash)
+     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+             tstzrange('2026-11-06 09:40+00', '2026-11-06 10:15+00', '[)'), tstzrange('2026-11-06 09:40+00', '2026-11-06 10:15+00', '[)'), 'confirmed', 'manual', 12000, extensions.digest('token', 'sha256')) $$,
+  'en 32-byte hash (SHA-256) accepteras'
+);
+
+-- K2: en bokning måste ha ett bestämt slut, inte ett obegränsat intervall.
+select throws_ok(
+  $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp)
+     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+             tstzrange('2026-11-06 10:20+00', null, '[)'), tstzrange('2026-11-06 10:20+00', null, '[)'), 'confirmed', 'manual', 12000) $$,
+  '23514'
 );
 
 select finish();

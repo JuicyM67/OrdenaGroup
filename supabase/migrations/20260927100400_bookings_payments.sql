@@ -46,7 +46,14 @@ create table public.bookings (
   constraint bookings_discount_clp_check check (discount_clp between 0 and price_clp),
   constraint bookings_deposit_clp_check check (deposit_clp between 0 and price_clp - discount_clp),
   constraint bookings_pending_expires_at_check check ((status = 'pending_payment') = (pending_expires_at is not null)),
-  constraint bookings_cancelled_at_check check ((status = 'cancelled') = (cancelled_at is not null))
+  constraint bookings_cancelled_at_check check ((status = 'cancelled') = (cancelled_at is not null)),
+  -- K1: en SHA-256-hash är alltid exakt 32 byte. Fångar bugg där fel
+  -- hashalgoritm eller ett rått token råkar sparas i stället för en hash.
+  constraint bookings_manage_token_hash_length check (manage_token_hash is null or octet_length(manage_token_hash) = 32),
+  -- K2: en bokning har alltid ett bestämt slut. Ett obegränsat intervall
+  -- (`[a,)`) skulle bland annat göra `blocked @> period` meningslös och
+  -- blockera all framtid för profesionalen.
+  constraint bookings_period_bounded check (not upper_inf(period) and not upper_inf(blocked))
 );
 
 create index bookings_business_id_lower_period_idx on public.bookings (business_id, (lower(period)));
@@ -70,6 +77,10 @@ create policy "owners full access" on public.bookings
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
   with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
 grant select, insert, update, delete on public.bookings to authenticated;
+-- Säkerhet S2: explicit grant till service_role (kundens publika bokningsflöde
+-- körs på servern, som skapar/uppdaterar bokningar med service role och ett
+-- explicit business_id-filter, se ARCHITECTURE.md princip 3).
+grant select, insert, update, delete on public.bookings to service_role;
 
 -- payments ------------------------------------------------------------------
 create table public.payments (
@@ -106,15 +117,35 @@ create policy "owners select" on public.payments
   for select
   to authenticated
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+-- Säkerhet B1: `authenticated` (ägarens app) kan bara skapa/ändra kontanta
+-- eller manuella betalningsrader. `mercadopago`-rader (med provider_ref) är
+-- skrivskyddade för authenticated — de skapas/uppdateras bara av service
+-- role i webhook-hanteraren (WP-25), som förbigår RLS. Utan detta skulle en
+-- ägare kunna skriva en falsk "approved"-rad med ett gissat provider_ref,
+-- eller manipulera en riktig MP-betalnings status/belopp i efterhand.
 create policy "owners insert" on public.payments
   for insert
   to authenticated
-  with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+  with check (
+    private.is_member(business_id, array['owner', 'admin']::public.member_role[])
+    and method in ('cash', 'card_terminal', 'transfer')
+    and provider_ref is null
+  );
 create policy "owners update" on public.payments
   for update
   to authenticated
-  using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
-  with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+  using (
+    private.is_member(business_id, array['owner', 'admin']::public.member_role[])
+    and method <> 'mercadopago'
+  )
+  with check (
+    private.is_member(business_id, array['owner', 'admin']::public.member_role[])
+    and method in ('cash', 'card_terminal', 'transfer')
+    and provider_ref is null
+  );
 -- Ingen delete-policy: kassahistorik försvinner aldrig, rättning görs med
 -- status refunded/rejected.
 grant select, insert, update on public.payments to authenticated;
+-- Säkerhet S2: explicit grant till service_role (WP-25:s webhook-hanterare
+-- skriver mercadopago-rader från servern, förbigår RLS med den här rollen).
+grant select, insert, update, delete on public.payments to service_role;
