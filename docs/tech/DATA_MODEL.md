@@ -9,7 +9,7 @@
 - Enums som Postgres-typer.
 - **D-014, tenant-integritet:** varje tabell som pekar på en annan tenant-tabell gör det med en **sammansatt FK** `(business_id, x_id) references x (business_id, id)`, inte bara `x_id references x (id)`. Det kräver `unique (business_id, id)` på den refererade tabellen. En rad i företag A kan då aldrig peka på en rad i företag B, inte ens med service role som förbigår RLS (bevisas av pgTAP-punkt 8, "tvärtenant-FK", i varje tabells testfil). Avvikelse från tidigare utkast: `staff_services` och `staff_hours` har därför fått en egen `business_id`-kolumn (de har den inte i en normaliserad modell, men det krävs för RLS-policyn och den sammansatta FK:en).
 - RLS-hjälpfunktioner (`is_member` m.fl.) ligger i schemat **`private`**, inte `public`. Schemat exponeras inte i Data API (ingår inte i `api.schemas`), så funktionerna kan bara anropas inifrån policies/andra funktioner, aldrig som RPC. De är `security definer`, `stable` och sätter `search_path = ''` för att inte vara sårbara för sökvägskapning. Undantaget är `public.create_business()`, som medvetet ligger i `public` eftersom den anropas direkt av klienten (se nedan).
-- Grants: `anon` har inga rättigheter alls i `public` (varken tabeller, sekvenser eller funktioner), varken direkt eller via `PUBLIC`-standardrättigheter. Den lokala Supabase-plattformen ger annars `authenticated` fullt CRUD på nya tabeller som standard (motsvarande `auto_expose_new_tables` i molnet) — det nollställs explicit i `core_foundation`-migrationen, så att varje `grant ... to authenticated` per tabell/funktion verkligen är den enda källan till åtkomst, inte bara ett komplement till en dold standardrättighet.
+- Grants (rättat, säkerhetsgranskning): `anon` har inga rättigheter alls i `public` (varken tabeller, sekvenser eller funktioner), varken direkt eller via `PUBLIC`-standardrättigheter. Den lokala Supabase-plattformen sätter en default-privilege SPECIFIK FÖR SCHEMAT `public` (en egen rad i `pg_default_acl` för roll `postgres`/schema `public`) som annars ger `anon`, `authenticated` och `service_role` fullt CRUD på nya tabeller (motsvarande `auto_expose_new_tables` i molnet). En sådan schema-specifik rad har alltid företräde framför en schemalös (global) rad för objekt som hamnar i det schemat — därför måste revoken för `anon`/`authenticated` vara `alter default privileges for role postgres **in schema public**`, inte en schemalös variant (ett tidigare granskningsfynd: en schemalös variant skapar bara en egen, separat rad som aldrig konsulteras för objekt i `public`, så `anon`/`authenticated` behöll fullt CRUD trots att migrationen "såg rätt ut"). Undantaget är regeln för Postgres inbyggda PUBLIC-execute-standard på funktioner (`revoke execute on functions from public`, där "from public" är pseudo-rollen, inte schemat) — den SKA vara schemalös, eftersom den gäller ett generellt SQL-beteende (inte en Supabase-specifik rad) och då täcker både `public` och `private` (och alla framtida scheman) i ett steg. Se `core_foundation`-migrationen för den exakta ordningen (default-privilegier måste sättas innan `private.set_updated_at()` skapas).
 
 ## Tabeller
 
@@ -25,6 +25,16 @@ businesses (id, slug unique, name, comuna, category, timezone default 'America/S
 
 memberships (business_id, user_id references auth.users, role enum('owner','staff','vendor','admin'),
   staff_id null references staff, primary key (business_id, user_id))
+  -- Säkerhet S3: rollen 'admin' här är en FÖRETAGSNIVÅ-roll (samma
+  -- rättigheter som 'owner' i den här tabellens policies), inte
+  -- plattformsadministration. En ägare kan inte ge ut den via appen (RLS:
+  -- with check role <> 'admin'); bara service role sätter den. VARNING inför
+  -- F19 (intern admin-konsol): plattformsadmin FÅR INTE bygga sin
+  -- auktorisering på memberships.role = 'admin' i något företag — det är två
+  -- olika begrepp som råkar dela ett enum-värde. F19 behöver en egen,
+  -- företagsoberoende mekanism (t.ex. en separat platform_admins-tabell eller
+  -- en claim på auth.users), vilket ska beslutas i DECISIONS.md innan F19
+  -- påbörjas.
 
 -- Katalog och schema
 staff (id, business_id, name, color, active, sort)
@@ -55,6 +65,11 @@ customers (id, business_id, phone_e164, name, email null, notes,
   -- anonymisera en kund utan ny migration. consent_*-fälten saknar default (aldrig förkryssat,
   -- hård regel 7/Ley 21.719): om consent_terms_at eller consent_marketing_at är satt måste
   -- consent_version och consent_channel också vara satta.
+  -- R7 (qa8): visits_count/no_show_count är denormaliserade räknare. WP-21
+  -- MÅSTE uppdatera dem i SAMMA transaktion som bokningens statusbyte
+  -- (completed/no_show), annars glider de isär från den faktiska historiken
+  -- i bookings. WP-01 skapar bara kolumnerna (default 0); ingen trigger
+  -- underhåller dem än.
 
 -- Bokningar
 bookings (id, business_id, staff_id, service_id, customer_id,
@@ -132,3 +147,10 @@ grant select, insert, update, delete on public.services to authenticated;
 - `businesses` har ingen insert-policy: nya företag skapas bara via `public.create_business()` (security definer, kräver `auth.uid()`, skapar företaget och ägarens medlemskap i samma transaktion).
 - **INV-4:** en pgTAP-test per tabell bevisar att företag A inte kan läsa eller skriva B:s rader, och att en rad i A inte kan peka på personal/tjänst/kund/bokning i B (sammansatta FK, D-014).
 - Kunden (utan konto) når sin bokning bara via sin länk; servern jämför tokenens SHA-256-hash mot `bookings.manage_token_hash`.
+- **Säkerhetsgranskningsfynd, ytterligare begränsningar utöver `is_member`:**
+  - `payments` (B1): `authenticated` kan bara skapa/ändra rader med `method in ('cash','card_terminal','transfer')` och `provider_ref is null`. `mercadopago`-rader är skrivskyddade för `authenticated` (både insert och update), och skapas/ändras bara av `service_role` i webhook-hanteraren (WP-25).
+  - `businesses` (B2): `authenticated` har bara kolumnbegränsad `update` (affärsfält). `plan`, `status`, `trial_ends_at`, `id`, `timezone` kan bara ändras av `service_role` (billing/D-011/WP-26).
+  - `memberships` (S3): `with check (role <> 'admin')` på insert/update, och kolumnbegränsad `update (role, staff_id)` — `business_id`/`user_id` kan inte ändras av `authenticated`.
+  - `customers` (S5): `authenticated` kan bara sätta `consent_channel = 'manual'`. `web`/`whatsapp` sätts bara av servern (den som faktiskt körde det samtyckesflödet).
+  - `private.protect_last_owner()` (S4): hoppar över kontrollen om `businesses`-raden redan är borta (kaskad), låser `businesses`-raden (`for update`) innan den räknar kvarvarande owners (skydd mot samtidiga degraderingar), och blockerar byte av `business_id` på en `memberships`-rad även för roller som förbigår RLS.
+  - Samtliga tabeller har explicita `grant ... to service_role` (S2): den lokala plattformens dolda auto-expose-standard ska inte vara den enda anledningen till att servern (cron/webhooks) fungerar — samma grants gäller oavsett plattformskonfiguration.
