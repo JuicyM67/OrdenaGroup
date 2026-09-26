@@ -2,7 +2,7 @@
 -- INV-3 (RLS, inga anon-policies) och D-014 (business_id + index, sammansatta FK).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 
 -- 1. Varje tabell i public har row level security påslaget.
 select ok(
@@ -112,6 +112,21 @@ select ok(
       and contype = 'x'
   ),
   'no_overlap finns på bookings och är en exclusion constraint'
+);
+
+-- Säkerhet S1: allowlist över funktioner i `public` som `authenticated` får
+-- köra. Fångar av misstag för brett `grant execute` på en ny funktion.
+-- Uppdatera listan medvetet när en ny public-funktion ska vara anropbar.
+select is(
+  (
+    select coalesce(array_agg(p.proname::text order by p.proname::text), array[]::text[])
+    from pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and has_function_privilege('authenticated', p.oid, 'execute')
+  ),
+  array['create_business'],
+  'authenticated får bara köra create_business() bland public-funktioner'
 );
 
 select finish();
