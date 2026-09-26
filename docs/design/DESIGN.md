@@ -161,6 +161,26 @@ Kolumnen "Referens" anger vilken fil i `docs/design/reference/` (och bild i `doc
 | **MobileTabBar** | Fast i botten, inset 16, höjd 72, `dark`, radie 26. 4 flikar, aktiv = lime. | Hoy |
 | **FlashStory** | 1080×1920 (renderas 360×640 ×3). Lime bakgrund, lilac cirkel, "−20%" display 800 i 118 px, vitt infokort, svart CTA. Genereras som bild (t.ex. `@vercel/og`). | HoraFlash |
 
+### Byggt i WP-02 (fil och API)
+
+Generella basdelar. Skärmspecifika komponenter i tabellen ovan (HeroSummary, FeatureCard,
+WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är klara.
+
+| Komponent | Fil | API |
+|---|---|---|
+| Button | `src/components/ui/button.tsx` | `variant` (primary/secondary/accent/outline-dark/inverse), `size` (xs…2xl), `asChild` (Radix Slot) |
+| IconButton | `src/components/ui/icon-button.tsx` | `label` (obligatorisk, blir aria-label), `tone`, `size`, `shape`, `badge?` |
+| Chip | `src/components/ui/chip.tsx` | `tone`, `size` (md/sm/xs/tag), inget eget utsnitt (se steg 7) |
+| Pill | `src/components/ui/pill.tsx` | `selected`, `aria-pressed` |
+| Card | `src/components/ui/card.tsx` | `as`, `tone`, `radius`, `padding`; mörka toner sätter `data-surface="dark"` |
+| Avatar | `src/components/ui/avatar.tsx` | `initials`, `shape`, `size`, `tone` |
+| LogoMark | `src/components/ui/logo-mark.tsx` | `label`, `size`, `decorative?` (för när en omgivande länk redan har namnet) |
+| SegmentedControl | `src/components/ui/segmented-control.tsx` | Radix ToggleGroup `type="single"`, `value`/`onValueChange` (kan aldrig bli tomt); R10: `role="radio"`/`aria-checked`, inte `aria-pressed` |
+| NavRail (+Logo/Link/Action/Divider/Spacer) | `src/components/ui/nav-rail.tsx` | `variant` (bare/panel) via Context, `data-surface="dark"` på `<nav>` |
+| PageHeader (+UserPill) | `src/components/ui/page-header.tsx`, `user-pill.tsx` | `variant` (desktop/mobile, meta före titeln i DOM på mobil) |
+| MiniCalendar | `src/components/ui/mini-calendar/` (`grid.ts` ren funktion, `mini-calendar.tsx`) | `month`, `selected`, `today`, `markedDates`, `highlightWeekOf` (bara mörk), `variant`, roving tabindex + pil/Home/End |
+| `cn()` | `src/components/ui/cn.ts` | `clsx` + `extendTailwindMerge` (egna klassgrupper, se DESIGN.md §12) |
+
 ## 8. Rörelse
 
 - Övergångar 150–200 ms `ease-out` på färg och bakgrund. **Animera aldrig storlek eller position på klickytor** (hover gör att tryck missar).
@@ -172,6 +192,9 @@ Kolumnen "Referens" anger vilken fil i `docs/design/reference/` (och bild i `doc
 - Riktiga `<button>`, `<a>`, `<input>` + `<label>`. `aria-label` på alla ikonknappar. `aria-pressed` på valbara pills. `aria-current="page"` i navigation.
 - Text 4.5:1. Färg får aldrig vara enda bäraren av information (chips har text, flash har tagg).
 - Fokusring: 2 px `ink` (på mörk yta 2 px `lime`), offset 2.
+- SegmentedControl (Radix ToggleGroup `type="single"`) exponerar knapparna som `role="radio"`/
+  `aria-checked` i stället för `aria-pressed` som referensens `aria-pressed="true"` antyder.
+  Semantiken är likvärdig (ett val av flera) och godkänd av axe (R10, WP-02).
 
 ## 10. Språk och format
 

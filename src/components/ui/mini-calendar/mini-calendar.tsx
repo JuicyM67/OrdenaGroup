@@ -157,7 +157,9 @@ export function MiniCalendar({
   const isLight = variant === "light";
 
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
+    <div
+      className={cn("flex flex-col", isLight ? "gap-3" : "gap-2.5", className)}
+    >
       <div className="flex items-center justify-between">
         <h2
           className={
@@ -197,7 +199,10 @@ export function MiniCalendar({
       <table
         role="grid"
         aria-label={labels.title}
-        className="w-full table-fixed border-collapse"
+        className={cn(
+          "w-full table-fixed border-separate border-spacing-y-0.5",
+          isLight ? "border-spacing-x-0.5" : "border-spacing-x-0",
+        )}
       >
         <thead>
           <tr>
@@ -207,8 +212,8 @@ export function MiniCalendar({
                 abbr={wd}
                 scope="col"
                 className={cn(
-                  "pb-0.5 text-12 font-semibold",
-                  isLight ? "text-muted" : "text-on-dark-subtle",
+                  "text-12 font-semibold",
+                  isLight ? "pb-2.5 text-muted" : "pb-2 text-on-dark-subtle",
                 )}
               >
                 {wd}

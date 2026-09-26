@@ -23,8 +23,8 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex items-center gap-4",
-        isDesktop ? "h-13" : "",
+        "flex items-center",
+        isDesktop ? "h-13 gap-4" : "gap-3",
         className,
       )}
     >

@@ -10,6 +10,16 @@
 @custom-variant toggle-on (&[data-state="on"]);
 
 @layer base {
+  /* Referenserna (docs/design/reference/*.dc.html) sätter aldrig line-height utom där
+     DESIGN.md §3 anger en leading-roll (hero, event, body …) — texten litar annars på
+     webbläsarens naturliga radavstånd. Tailwinds preflight sätter annars line-height:1.5
+     på html/body, vilket gör varje rubrik och etikett omätbart högre än referensen
+     (WP-02 steg 7, upptäckt via hoy-header-utsnittet). `leading-*`-klasserna i tokens.css
+     används fortfarande där en roll uttryckligen anger ett värde. */
+  html {
+    line-height: normal;
+  }
+
   body {
     @apply bg-canvas font-sans text-ink antialiased;
   }

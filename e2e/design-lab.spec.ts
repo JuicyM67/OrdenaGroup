@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import crops from "../src/app/design-lab/crops/crops.json" with { type: "json" };
+
 test.describe("design lab — routes", () => {
   test("/design-lab svarar 200", async ({ page }) => {
     const response = await page.goto("/design-lab");
@@ -16,6 +18,13 @@ test.describe("design lab — routes", () => {
     const robots = page.locator('meta[name="robots"]');
     await expect(robots).toHaveAttribute("content", /noindex/);
   });
+
+  for (const crop of crops) {
+    test(`/design-lab/crops/${crop.id} svarar 200`, async ({ page }) => {
+      const response = await page.goto(`/design-lab/crops/${crop.id}`);
+      expect(response?.status()).toBe(200);
+    });
+  }
 });
 
 test.describe("design lab — komponentkatalog", () => {
