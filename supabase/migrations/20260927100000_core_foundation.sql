@@ -43,6 +43,16 @@ $$;
 -- Försvar på djupet för INV-3: varken `anon` eller `PUBLIC` (funktioners
 -- standardrättighet) har några rättigheter i `public`. `authenticated` får
 -- uttryckliga grants per tabell/funktion när de skapas.
+--
+-- Viktigt: den lokala Supabase-plattformen sätter (utanför våra migrationer,
+-- motsvarande `auto_expose_new_tables = true` i molnet) redan en
+-- default-privilege som ger `authenticated` fullt CRUD på nya tabeller i
+-- `public` automatiskt. Utan raderna nedan skulle t.ex. `payments` (som
+-- medvetet saknar en delete-policy) ändå ha ett delete-grant "bakvägen", och
+-- våra uttryckliga `grant ... to authenticated`-satser i senare migrationer
+-- vore bara skenbart uttömmande. Vi nollställer därför default-rättigheterna
+-- för `authenticated` här också, så att varje efterföljande `grant` per
+-- tabell/funktion verkligen är den enda källan till åtkomst.
 revoke all on all tables in schema public from anon;
 revoke all on all sequences in schema public from anon;
 revoke all on all functions in schema public from anon;
@@ -52,3 +62,7 @@ alter default privileges in schema public revoke all on tables from anon;
 alter default privileges in schema public revoke all on sequences from anon;
 alter default privileges in schema public revoke all on functions from anon;
 alter default privileges in schema public revoke execute on functions from public;
+
+alter default privileges in schema public revoke all on tables from authenticated;
+alter default privileges in schema public revoke all on sequences from authenticated;
+alter default privileges in schema public revoke all on functions from authenticated;
