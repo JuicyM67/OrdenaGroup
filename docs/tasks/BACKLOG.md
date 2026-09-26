@@ -7,11 +7,12 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 
 | ID | Titel | Agent | Beror på | F# | Status |
 |---|---|---|---|---|---|
-| WP-00 | Projektgrund: Next.js (`src/`), Tailwind v4 + tokens, typsnitt, ESLint/Prettier, Vitest, Playwright, Supabase CLI, `brand.ts`, `.env.example`, CI (typecheck, lint, test) | ui-engineer | – | – | ☐ |
+| WP-00 | Projektgrund: Next.js (`src/`), Tailwind v4 + tokens, typsnitt, ESLint/Prettier, Vitest, Playwright, Supabase CLI, `brand.ts`, `.env.example`, CI (typecheck, lint, test) | ui-engineer | – | – | ◐ |
 | WP-01 | Kärnschema: businesses, memberships, staff, services, staff_services, hours, time_off, customers, bookings (+ exclusion constraint), payments. RLS + pgTAP + seed "Barbería Norte" | db-engineer | WP-00 | F1–F4, F9 | ☐ |
 | WP-02 | Design lab + baskomponenter (Button, IconButton, Chip, Pill, Card, SegmentedControl, NavRail, PageHeader, MiniCalendar ljus/mörk) | ui-engineer | WP-00 | – | ☐ |
 | WP-03 | Texter v1: UI-strängar för alla MVP-skärmar + WhatsApp-mallar (för Meta-ansökan) | copywriter-es-cl | – | F5–F8 | ☐ |
 | WP-04 | Format-lib: clp, datum/tid i America/Santiago, telefon E.164 (+56), RUT | scheduling-engineer | WP-00 | – | ☐ |
+| WP-05 | Deploy + observabilitet: Vercel-projekt i `gru1`, preview-miljöer (Supabase-branch per PR), Sentry, PostHog utan persondata | integrations-engineer | WP-00 | – | ☐ |
 
 ## Våg B — kärnflöden
 

@@ -46,6 +46,6 @@ Next.js App Router + TypeScript strict (`src/`) · Tailwind v4 med tokens · Rad
 | `security-reviewer` | RLS, auth, webhooks, hemligheter, Ley 21.719 | – |
 
 ## Kommandon
-`npm run dev` · `npm run typecheck` · `npm run lint` · `npm run test` · `npm run test:db` (pgTAP) · `npm run test:e2e` · `npm run visual [skärm]` · `supabase start` · `supabase db reset` · `npm run db:types`
+`npm run dev` · `npm run typecheck` · `npm run lint` · `npm run test` · `npm run test:db` (pgTAP) · `npm run test:e2e` · `npm run visual [skärm]` · `npm run db:start` · `npm run db:reset` · `npm run db:types`
 
 Slash-kommandon: `/start-wp <id>`, `/build-screen <skärm>`, `/visual-check [skärm]`, `/review`, `/status`.
