@@ -4,6 +4,18 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-017 · 2026-09-27 · Tid: lokal väggtid ↔ UTC bara via `src/lib/format/dates.ts`
+**Varför:** Chiles sommartidsbyten sker vid midnatt, så en dag kan sakna 00:00 (september) eller ha 23:00–23:59 två gånger (april), och bibliotek hanterar det olika. **Konsekvens:** date-fns + date-fns-tz behålls (D-003). Standardregeln är "compatible" (tid som inte finns flyttas fram, tvetydig tid blir första förekomsten); `fromLocalStrict` eller explicit `disambiguation` där annat behövs. Ingen kod använder lokala `Date`-metoder. Temporal omprövas när Node LTS har det utan flagga. (WP-04)
+
+### D-016 · 2026-09-27 · UI-text: ett typat TS-objekt, bara es-CL, inget i18n-bibliotek
+**Varför:** ett språk, typade nycklar och parametrar fångar fel vid kompilering, liten bundle. **Konsekvens:** all produkttext (UI, WhatsApp, e-post) finns i `src/i18n/` och ägs av `copywriter-es-cl`. Komponenter tar text som props. Mallarnas variabelordning är kontraktet mot WP-16. Veckodagar och månader ligger i `src/lib/format/` (WP-04), granskade av copywriter. Ett andra språk kräver nytt beslut. (WP-03)
+
+### D-015 · 2026-09-27 · Tailwinds standardtema nollställs, bara projektets tokens finns
+**Varför:** hård regel 1 och D-012 ska kontrolleras av verktygen, inte av granskaren. **Konsekvens:** `tokens.css` nollställer color, radius, shadow, text, tracking och leading; varje ny visuell storhet kräver en token (tokens.css + DESIGN.md i samma PR). Spacing och font-weight behålls från Tailwind. (WP-02)
+
+### D-014 · 2026-09-27 · Tenant-integritet i databasen
+**Varför:** RLS skyddar mot fel användare men inte mot en serverbugg som med service role kopplar ihop rader från två företag. **Konsekvens:** (1) alla tenant-tabeller har `business_id` och refererar varandra med sammansatta FK `(business_id, id)`, (2) RLS-hjälpfunktioner ligger i schemat `private`, `security definer` med `search_path = ''`, (3) `anon` har inga grants i `public`, `authenticated` får uttryckliga grants per tabell, (4) nya företag skapas bara via `create_business()`. Schemavakten i pgTAP fångar avsteg. (WP-01)
+
 ### D-013 · 2026-09-26 · Verktygskedja: Node 24 LTS, npm, exakta versioner, Supabase CLI som dev-beroende
 **Varför:** samma verktyg lokalt, i worktrees, i CI och på Vercel, och ingen global installation krävs. **Konsekvens:** `.nvmrc` och `engines` styr Node-versionen, lockfilen checkas in, uppgraderingar görs i egna PR:er och CLI-kommandon körs via `npm run db:*`.
 
