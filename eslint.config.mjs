@@ -27,6 +27,18 @@ const noRestrictedRawValues = rawValuePatterns.flatMap((pattern) => [
   },
 ]);
 
+// `style`-attributet kringgår tokens helt. Förbjudet bara i de generella komponenterna —
+// design-lab (crops m.fl.) får fortfarande använda style för enstaka px-positioner som inte
+// går att uttrycka i spacing-skalan (WP-02 steg 7, R7). Måste läggas i SAMMA
+// no-restricted-syntax-array som noRestrictedRawValues för src/components/**, eftersom ESLint
+// flat config låter en senare matchande config helt ERSÄTTA (inte slå ihop) en tidigare
+// regels värde för samma regelnamn och samma fil.
+const noStyleAttribute = {
+  selector: "JSXAttribute[name.name='style']",
+  message:
+    "Inget style-attribut i src/components/. Använd tokens/Tailwind-klasser (se docs/design/DESIGN.md).",
+};
+
 const eslintConfig = [
   {
     ignores: [
@@ -41,10 +53,23 @@ const eslintConfig = [
   ...coreWebVitals,
   ...nextTypescript,
   {
-    files: ["src/components/**/*.{ts,tsx}", "src/app/**/*.{ts,tsx}"],
+    // src/app/** (inkl. design-lab) får rå-värde-kontrollen men inte style-förbudet.
+    files: ["src/app/**/*.{ts,tsx}"],
     ignores: ["**/*.test.ts", "**/*.test.tsx"],
     rules: {
       "no-restricted-syntax": ["error", ...noRestrictedRawValues],
+    },
+  },
+  {
+    // src/components/** får båda i samma regel (se kommentaren vid noStyleAttribute ovan).
+    files: ["src/components/**/*.{ts,tsx}"],
+    ignores: ["**/*.test.ts", "**/*.test.tsx"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        ...noRestrictedRawValues,
+        noStyleAttribute,
+      ],
     },
   },
   {
