@@ -12,7 +12,7 @@
 Bakgrund (läs vid behov): `docs/research/MARKET_RESEARCH.md`, `docs/gtm/GO_TO_MARKET.md`, `docs/product/ROADMAP.md`.
 
 ## Stack (beslutad, se D-003)
-Next.js App Router + TypeScript strict (`src/`) · Tailwind v4 med tokens · Radix/shadcn omstylat · Supabase (`sa-east-1`) med RLS · Zod · date-fns-tz · Vitest · Playwright · Vercel `gru1` · Meta WhatsApp Cloud API · Mercado Pago · Flow · Resend.
+Next.js App Router + TypeScript strict (`src/`) · Tailwind v4 med tokens · Radix/shadcn omstylat · Supabase (`sa-east-1`) med RLS · Zod · tid via `src/lib/format/dates.ts` (Intl, D-018) · Vitest · Playwright · Vercel `gru1` · Meta WhatsApp Cloud API · Mercado Pago · Flow · Resend.
 
 ## Hårda regler
 1. **Designen återskapas exakt.** Källa: `docs/design/reference/*.dc.html` + `docs/design/DESIGN.md`. Bara tokens från `src/styles/tokens.css`, inga hex-värden eller godtyckliga Tailwind-värden i komponenter. En skärm är klar först när `npm run visual` visar < 2 % avvikelse.
