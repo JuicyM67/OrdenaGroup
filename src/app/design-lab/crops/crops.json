@@ -1,0 +1,56 @@
+[
+  {
+    "id": "main-navrail",
+    "ref": "Main.png",
+    "clip": { "x": 16, "y": 16, "width": 80, "height": 868 },
+    "verifies": "NavRail bare, LogoMark, NavRailLink aktiv/inaktiv, ikoner"
+  },
+  {
+    "id": "main-header",
+    "ref": "Main.png",
+    "clip": { "x": 144, "y": 44, "width": 1248, "height": 52 },
+    "verifies": "PageHeader desktop, IconButton 48 + badge, UserPill, Avatar"
+  },
+  {
+    "id": "main-calendar",
+    "ref": "Main.png",
+    "clip": { "x": 1032, "y": 416, "width": 360, "height": 288 },
+    "verifies": "Card surface, MiniCalendar ljus, prickar, vald dag"
+  },
+  {
+    "id": "agenda-calendar",
+    "ref": "Agenda.png",
+    "clip": { "x": 112, "y": 16, "width": 300, "height": 282 },
+    "verifies": "MiniCalendar mörk, veckoband, IconButton ghost-dark"
+  },
+  {
+    "id": "agenda-toolbar",
+    "ref": "Agenda.png",
+    "clip": { "x": 448, "y": 36, "width": 956, "height": 48 },
+    "verifies": "Button xs \"Hoy\", IconButton 34 ghost, Button lg primary med ikon (över bg-agenda)"
+  },
+  {
+    "id": "agenda-segmented",
+    "ref": "Agenda.png",
+    "clip": { "x": 1100, "y": 96, "width": 304, "height": 44 },
+    "verifies": "SegmentedControl"
+  },
+  {
+    "id": "reserva-pills",
+    "ref": "Reserva.png",
+    "clip": { "x": 20, "y": 540, "width": 354, "height": 44 },
+    "verifies": "Pill vald/ovald (raden är 354 bred, 4 px bredare än de 390 px WP-13 renderar i, se R8)"
+  },
+  {
+    "id": "hoy-header",
+    "ref": "Hoy.png",
+    "clip": { "x": 20, "y": 20, "width": 350, "height": 50 },
+    "verifies": "PageHeader mobile, IconButton 46 + badge, Avatar 46"
+  },
+  {
+    "id": "hoy-actions",
+    "ref": "Hoy.png",
+    "clip": { "x": 42, "y": 263, "width": 306, "height": 48 },
+    "verifies": "Button accent xl, outline-dark xl (på bg-dark)"
+  }
+]

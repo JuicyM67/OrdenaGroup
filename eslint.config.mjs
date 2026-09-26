@@ -62,6 +62,28 @@ const eslintConfig = [
       "better-tailwindcss/no-unknown-classes": "error",
     },
   },
+  {
+    // R9: fixtures i design lab är testdata, inte produkttext, och får bara användas där.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/app/design-lab/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "*/design-lab/_fixtures/*",
+                "@/app/design-lab/_fixtures/*",
+              ],
+              message:
+                "Fixtures i design lab (R9) är testdata och får bara importeras inuti src/app/design-lab/.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   prettier,
 ];
 
