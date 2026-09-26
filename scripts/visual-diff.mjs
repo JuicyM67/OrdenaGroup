@@ -3,9 +3,12 @@
 // Kör:    npm run visual                    (hela skärmarna + alla utsnitt, se README "Design lab")
 //         npm run visual -- agenda          (bara en skärm)
 //         npm run visual -- components      (bara utsnitten i design-lab/crops/crops.json, WP-02 steg 7)
+//         npm run visual -- main-navrail    (bara ett enskilt utsnitt, samma id som i crops.json)
 //
 // Miljövariabler:
-//   BASE_URL          bas-url för servern som redan kör (standard http://localhost:3000)
+//   BASE_URL           bas-url för servern som redan kör (standard http://localhost:${PORT ?? 3000},
+//                      så samma PORT som `npm run dev`/`test:e2e` används per worktree)
+//   PORT                se ovan
 //   VISUAL_MAX_DIFF    max andel avvikande pixlar, 0–1 (standard 0.02 = 2 %)
 //   VISUAL_STRICT=1    en design lab-sida som svarar 404 räknas som fel i stället för
 //                      "– pendiente" (används när WP-11–14 är klara och alla fem skärmar finns)
@@ -17,7 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const BASE = process.env.BASE_URL ?? "http://localhost:3000";
+const BASE = process.env.BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
 const THRESHOLD = Number(process.env.VISUAL_MAX_DIFF ?? 0.02); // max 2 % avvikande pixlar
 const STRICT = process.env.VISUAL_STRICT === "1";
 
@@ -54,12 +57,23 @@ const cropItems = crops.map((c) => ({
 const screenItems = screens.map((s) => ({ ...s, group: "screens" }));
 
 const only = process.argv[2];
-const items =
-  only === "components"
-    ? cropItems
-    : only && only !== "components"
-      ? screenItems.filter((s) => s.name === only)
-      : [...screenItems, ...cropItems];
+let items;
+if (!only) {
+  items = [...screenItems, ...cropItems];
+} else if (only === "components") {
+  items = cropItems;
+} else {
+  // Ett enskilt namn kan vara antingen en hel skärm (main, agenda …) eller ett utsnitts-id
+  // (main-navrail, agenda-calendar …) — sök i båda listorna.
+  items = [...screenItems, ...cropItems].filter((i) => i.name === only);
+  if (items.length === 0) {
+    const known = [...screenItems.map((s) => s.name), "components", ...cropItems.map((c) => c.name)];
+    console.error(
+      `✗ okänt namn "${only}". Giltiga värden: ${known.join(", ")}.`,
+    );
+    process.exit(1);
+  }
+}
 
 const outDir = ".visual-diff";
 fs.mkdirSync(outDir, { recursive: true });

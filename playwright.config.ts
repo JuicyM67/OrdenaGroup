@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
-// Portkonvention för parallella worktrees: PORT=30NN, där NN = arbetspaketets nummer
-// (t.ex. PORT=3002 för WP-02). Se README "Köra flera agenter parallellt".
+// Portkonvention för parallella worktrees: PORT=31NN, där NN = arbetspaketets nummer
+// (t.ex. PORT=3102 för WP-02). Port 3000 är reserverad för huvudworktreen (main).
+// Se README "Köra flera agenter parallellt".
 const port = Number(process.env.PORT ?? 3000);
 const baseURL = process.env.BASE_URL ?? `http://localhost:${port}`;
 
