@@ -25,8 +25,6 @@
     "db:types": "supabase gen types typescript --local > src/types/database.ts.tmp && mv src/types/database.ts.tmp src/types/database.ts"
   },
   "dependencies": {
-    "date-fns": "4.4.0",
-    "date-fns-tz": "3.2.0",
     "next": "16.3.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
