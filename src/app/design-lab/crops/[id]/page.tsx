@@ -40,12 +40,9 @@ import {
   pillFixtures,
   segmentedControlOptions,
 } from "../../_fixtures/components";
-import crops from "../crops.json";
 
-export function generateStaticParams() {
-  return crops.map((c) => ({ id: c.id }));
-}
-
+// Ingen generateStaticParams: /design-lab har force-dynamic (layout.tsx), så sidan renderas
+// redan alltid per request — en statisk paramlista gör ingen nytta (granskningsfynd).
 const mainCalendarMarked = new Set([
   "2026-10-03",
   "2026-10-06",
