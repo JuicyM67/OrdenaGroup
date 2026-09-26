@@ -25,11 +25,28 @@ Ladda med `next/font/google` i `src/app/fonts.ts`:
 
 ```ts
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
-export const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500","600","700","800"], variable: "--font-bricolage" });
+// Variabel vikt med opsz-axeln (WP-02 steg 0-spiken): referenserna laddar Bricolage med
+// opsz,wght@12..96. Utan opsz-axeln avviker display-texten 7–29 % i utsnitt som
+// "Octubre 2026" (30px) och "−20%" (118px), långt över 0,5 %-tröskeln (FRÅGA 4).
+export const display = Bricolage_Grotesque({
+  subsets: ["latin"],
+  weight: "variable",
+  axes: ["opsz"],
+  variable: "--font-bricolage",
+});
 export const sans = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["400","500","600","700"], variable: "--font-jakarta" });
 ```
 
 `next/font` genererar ett hashat familjenamn, så variabelnamnen är `--font-bricolage`/`--font-jakarta` (inte `--font-display`/`--font-sans`, som är Tailwind-tokens i `@theme`). `tokens.css` pekar `--font-display`/`--font-sans` mot dessa variabler. Klasserna (`display.variable`, `sans.variable`) sätts på `<html>` i `src/app/layout.tsx`, så variablerna är definierade där `:root` räknar ut tokens.
+
+**Radavstånd (line-height):** referenserna (`docs/design/reference/*.dc.html`) sätter aldrig
+`line-height` i sina inline-stilar, utom på de roller som anger ett värde i tabellen nedan
+(hero, event …) — texten litar annars på webbläsarens naturliga radavstånd för respektive
+typsnitt/storlek. Tailwinds preflight sätter `line-height: 1.5` globalt på `html`/`body`, vilket
+gör varje rubrik och etikett omätbart högre än referensen (upptäckt via `hoy-header`-utsnittet i
+WP-02, se §7). `src/app/globals.css` motverkar det med `html { line-height: normal; }` i
+`@layer base`. Sätt en explicit `leading-*`-klass (se §12) bara där rollen nedan anger ett värde
+— annars ska elementet vila på det globala `normal`.
 
 | Roll | Typsnitt | Storlek / radavstånd | Vikt | Övrigt | Exempel |
 |---|---|---|---|---|---|
