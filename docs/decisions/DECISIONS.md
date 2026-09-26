@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-018 · 2026-09-27 · Ingen date-fns/date-fns-tz; all tidslogik via `dates.ts` (Intl)
+**Varför:** WP-04 och granskningen visade att date-fns-tz 3.2.0 ger fel väggtid och offset beroende på värdens tidszon (t.ex. `TZ=Europe/Stockholm`: 2026-03-29T05:00Z blir 03:00 i Santiago i stället för 02:00), och date-fns-kärnan använder lokala `Date`-getters, vilket D-017 förbjuder. `src/lib/format/dates.ts` bygger bara på `Intl.DateTimeFormat` med explicit `timeZone` och är verifierad mot Temporal. **Konsekvens:** ersätter datumraden i D-003 och meningen "date-fns + date-fns-tz behålls" i D-017. Paketen avinstalleras och importer stoppas av gränstestet. Temporal omprövas enligt D-017.
+
 ### D-017 · 2026-09-27 · Tid: lokal väggtid ↔ UTC bara via `src/lib/format/dates.ts`
 **Varför:** Chiles sommartidsbyten sker vid midnatt, så en dag kan sakna 00:00 (september) eller ha 23:00–23:59 två gånger (april), och bibliotek hanterar det olika. **Konsekvens:** date-fns + date-fns-tz behålls (D-003). Standardregeln är "compatible" (tid som inte finns flyttas fram, tvetydig tid blir första förekomsten); `fromLocalStrict` eller explicit `disambiguation` där annat behövs. Ingen kod använder lokala `Date`-metoder. Temporal omprövas när Node LTS har det utan flagga. (WP-04)
 

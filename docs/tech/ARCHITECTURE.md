@@ -11,7 +11,7 @@
 | Databas / auth / lagring | **Supabase** (Postgres 15+, Auth, Storage), region `sa-east-1` |
 | DB-åtkomst | `@supabase/ssr` för auth; SQL-migrationer i `supabase/migrations/`; genererade typer i `src/types/database.ts` |
 | Validering | Zod, delad mellan klient och server |
-| Datum | `date-fns` + `date-fns-tz`, all lagring i UTC, allt resonerande i företagets tidszon |
+| Datum | `src/lib/format/dates.ts` (Intl, se D-017/D-018), all lagring i UTC, allt resonerande i företagets tidszon. Inte date-fns/date-fns-tz. |
 | Jobb | Tabell `message_outbox` + cron varje minut (Supabase `pg_cron` → skyddad route `/api/cron/*`) |
 | Meddelanden | Meta WhatsApp Cloud API (direkt), Resend för e-post |
 | Betalning | Mercado Pago (OAuth per företag, handpenning), Flow (vårt abonnemang) |
