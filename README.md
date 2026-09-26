@@ -1,0 +1,62 @@
+# llena — bokningssystem för pymes i Chile
+
+*Arbetsnamn. "Tu agenda se llena sola."*
+
+Den här mappen innehåller allt Claude Code behöver för att bygga produkten: tankesätt, analys, specifikation, design, teknisk arkitektur, beslut, backlog och färdiga agenter. Någon kod finns ännu inte. Den byggs av agenterna, med början i WP-00.
+
+## Innehåll
+
+```
+CLAUDE.md                      Läses automatiskt av Claude Code i varje session: regler, stack, agenter
+claude-config/  → kopieras till .claude/ av setup-claude.sh
+  agents/                      8 specialiserade agenter (planner, db, scheduling, ui, integrations, copy, qa, security)
+  commands/                    /start-wp, /build-screen, /visual-check, /review, /status
+  settings.json                tillåtna och förbjudna kommandon (inget mot produktion)
+docs/
+  product/VISION.md            tankesättet — läs först
+  product/MVP_SPEC.md          funktioner F1–F19 med "klart när"
+  product/ROADMAP.md           faser + det du behöver göra utanför koden
+  research/MARKET_RESEARCH.md  marknad, konkurrenter, betalningar, WhatsApp-kostnader, open source
+  gtm/GO_TO_MARKET.md          Santiago, priser, förmedlarmodell
+  legal/COMPLIANCE.md          SII, SERNAC, Ley 21.719 som produktkrav
+  decisions/DECISIONS.md       beslutslogg D-001–D-012
+  tech/                        ARCHITECTURE, DATA_MODEL, SCHEDULING, INTEGRATIONS
+  design/DESIGN.md             designriktlinjer och komponentspecar
+  design/reference/*.dc.html   designen från designytan — källan till sanning
+  design/screens/              lägg exporterade PNG:er här (se README där)
+  design/PROMPTS.md            alternativ: skärm-för-skärm-prompter utan agenter
+  tasks/BACKLOG.md             arbetspaket WP-00…WP-36 med ägare och beroenden
+src/styles/tokens.css          design tokens (Tailwind v4)
+scripts/visual-diff.mjs        pixeljämförelse mot designen
+```
+
+## Kom igång
+
+1. **Exportera designbilderna.** Exportera de fem skärmarna från designytan som PNG och spara dem i `docs/design/screens/` (namnen står i README där).
+2. **Installera agenterna:** kör `bash setup-claude.sh` i mappen. Det kopierar `claude-config/` till `.claude/`, där Claude Code letar.
+3. **Initiera git** i den här mappen: `git init && git add . && git commit -m "Projektgrund: docs, design, agenter"`.
+4. **Installera verktyg:** Node 20+, [Supabase CLI](https://supabase.com/docs/guides/local-development) och Docker (för lokal Supabase).
+5. **Öppna Claude Code i mappen** och kör:
+   ```
+   /status
+   /start-wp WP-00
+   ```
+   Planen visas först och du godkänner den. Därefter bygger agenten projektgrunden.
+
+## Köra flera agenter parallellt
+
+När WP-00 är klart kan flera arbetspaket köras samtidigt, var och ett i en egen **git worktree** med en egen Claude Code-session:
+
+```bash
+git worktree add ../llena-db     -b wp/WP-01-schema
+git worktree add ../llena-ui     -b wp/WP-02-design-lab
+git worktree add ../llena-sched  -b wp/WP-04-format
+```
+
+Öppna Claude Code i varje mapp och kör `/start-wp WP-01`, `/start-wp WP-02`, `/start-wp WP-04`. Agenterna äger olika mappar, se tabellen i `CLAUDE.md`, så de krockar inte. Merga via PR efter `/review`.
+
+**Förslag på första veckan:** WP-00 → sedan parallellt WP-01 (db), WP-02 → WP-11–14 (ui), WP-04 → WP-10 (scheduling), WP-03 (copy). Se "Parallellisering" i BACKLOG.
+
+## Det du måste göra själv (agenterna kan inte)
+
+Se `docs/product/ROADMAP.md` → "Parallellt arbete utanför koden": SpA och SII, bankkonto, Meta-verifiering och WhatsApp-mallar, Mercado Pago- och Flow-konton, contador, jurist, domän och slutligt namn. **Starta Meta-verifieringen tidigt**, eftersom den brukar ta längst tid.

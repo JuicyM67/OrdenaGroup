@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoy · app del dueño</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Plus Jakarta Sans',system-ui,sans-serif;color:#16161A;background:#F4F4F0}
+a{color:#16161A}a:hover{color:#4B3AA8}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F4F0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; position: relative; overflow: hidden;">
+<div style="padding: 20px 20px 0; display: flex; flex-direction: column; gap: 14px;">
+
+<header style="display: flex; align-items: center; gap: 12px;">
+<div style="flex-grow: 1;">
+<div style="font-size: 13px; color: #5E5E66;">Viernes 2 de octubre</div>
+<h1 style="margin: 2px 0 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; font-weight: 600; letter-spacing: -0.02em;">Hoy</h1>
+</div>
+<button type="button" aria-label="Notificaciones" style="width: 46px; height: 46px; border-radius: 23px; border: none; background: #FFFFFF; color: #16161A; display: flex; align-items: center; justify-content: center; position: relative;">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"></path><path d="M10 20.5a2 2 0 0 0 4 0"></path></svg>
+<span style="position: absolute; top: 11px; right: 12px; width: 8px; height: 8px; border-radius: 4px; background: #E0592A;"></span>
+</button>
+<div style="width: 46px; height: 46px; border-radius: 23px; background: #C9B8F5; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700;">CR</div>
+</header>
+
+<section aria-label="Próxima reserva" style="background: #1C1C22; color: #FFFFFF; border-radius: 28px; padding: 22px; display: flex; flex-direction: column; gap: 16px;">
+<div style="display: flex; align-items: center; justify-content: space-between;">
+<span style="font-size: 13px; color: #B9B9C2;">Siguiente · en 20 min</span>
+<span style="font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 10px; background: #D5EEDC; color: #1F6B3A;">Confirmó</span>
+</div>
+<div>
+<div style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 44px; font-weight: 600; letter-spacing: -0.02em; line-height: 1;">15:00</div>
+<div style="font-size: 18px; font-weight: 700; margin-top: 10px;">Joaquín Rivas</div>
+<div style="font-size: 14px; color: #D2D2D9; margin-top: 2px;">Corte + barba · con Diego · 3.ª visita</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+<button type="button" style="height: 48px; border-radius: 16px; border: none; background: {{accent}}; color: #16161A; font: inherit; font-size: 15px; font-weight: 700;">Llegó</button>
+<button type="button" style="height: 48px; border-radius: 16px; border: 1px solid #3A3A42; background: transparent; color: #FFFFFF; font: inherit; font-size: 15px; font-weight: 600;">No vino</button>
+</div>
+</section>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+<a href="HoraFlash.dc.html" style="height: 96px; border-radius: 22px; background: {{accent}}; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; color: #16161A;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 3L5 13.5h6L10 21l8-10.5h-6L13 3z"></path></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.2;">Crear hora flash</span>
+</a>
+<a href="#" style="height: 96px; border-radius: 22px; background: #C9B8F5; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; color: #16161A;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="9" y1="6" x2="20" y2="6"></line><line x1="9" y1="12" x2="20" y2="12"></line><line x1="9" y1="18" x2="20" y2="18"></line><circle cx="4.5" cy="6" r="1.3" fill="currentColor"></circle><circle cx="4.5" cy="12" r="1.3" fill="currentColor"></circle><circle cx="4.5" cy="18" r="1.3" fill="currentColor"></circle></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.2;">Lista de espera · 3</span>
+</a>
+<a href="#" style="height: 96px; border-radius: 22px; background: #F5DEC0; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; text-decoration: none; color: #16161A;">
+<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2.5"></rect><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+<span style="font-size: 14px; font-weight: 700; line-height: 1.2;">Cobrar</span>
+</a>
+</div>
+
+<section aria-label="Resto del día" style="background: #FFFFFF; border-radius: 24px; padding: 16px 18px; display: flex; flex-direction: column;">
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700;">Resto del día</h2>
+<span style="font-size: 13px; color: #5E5E66;">6 reservas · $84.000</span>
+</div>
+<sc-for list="{{rest}}" as="r" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 12px; height: 56px; border-top: 1px solid #F1F1EE;">
+<span style="width: 46px; font-size: 14px; font-weight: 700;">{{r.time}}</span>
+<span style="width: 6px; height: 32px; border-radius: 3px; background: {{r.color}};"></span>
+<span style="flex-grow: 1; min-width: 0;">
+<span style="display: block; font-size: 14px; font-weight: 600;">{{r.client}}</span>
+<span style="display: block; font-size: 12px; color: #5E5E66;">{{r.detail}}</span>
+</span>
+<sc-if value="{{r.tag}}" hint-placeholder-val="{{false}}"><span style="font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px; background: {{r.tagBg}}; color: #16161A;">{{r.tag}}</span></sc-if>
+</div>
+</sc-for>
+</section>
+</div>
+
+<nav aria-label="Secciones" style="position: absolute; left: 16px; right: 16px; bottom: 16px; height: 72px; border-radius: 26px; background: #1C1C22; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: center; padding: 0 8px; box-sizing: border-box;">
+<a href="#" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: {{accent}}; text-decoration: none; font-size: 11px; font-weight: 700;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"></rect><rect x="14" y="3" width="7" height="7" rx="2"></rect><rect x="3" y="14" width="7" height="7" rx="2"></rect><rect x="14" y="14" width="7" height="7" rx="2"></rect></svg>Hoy</a>
+<a href="Agenda.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #B9B9C2; text-decoration: none; font-size: 11px; font-weight: 600;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"></rect><line x1="3" y1="10" x2="21" y2="10"></line><line x1="8" y1="3" x2="8" y2="7"></line><line x1="16" y1="3" x2="16" y2="7"></line></svg>Agenda</a>
+<a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #B9B9C2; text-decoration: none; font-size: 11px; font-weight: 600;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"></circle><path d="M3 20c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7"></path><path d="M21 20c0-2.6-1.6-4.6-4-5.3"></path></svg>Clientes</a>
+<a href="#" style="display: flex; flex-direction: column; align-items: center; gap: 4px; color: #B9B9C2; text-decoration: none; font-size: 11px; font-weight: 600;">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><line x1="5" y1="20" x2="5" y2="12"></line><line x1="12" y1="20" x2="12" y2="5"></line><line x1="19" y1="20" x2="19" y2="9"></line></svg>Caja</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#E3F36B","options":["#E3F36B","#C9B8F5","#F5DEC0","#BFE3D0"]},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var accent = this.props.accent ?? '#E3F36B';
+    var rest = [
+      { time: '15:45', client: 'Valentina Soto', detail: 'Corte clásico · Matías', color: '#D3E3EE', tag: 'Abono', tagBg: '#FBEBD6' },
+      { time: '16:30', client: 'Ignacio Pérez', detail: 'Perfilado de barba · Tomás', color: '#E6E0F8', tag: '', tagBg: '' },
+      { time: '17:15', client: 'Ian Soto', detail: 'Corte clásico · Diego', color: '#C9B8F5', tag: 'Desde lista', tagBg: '#F5DEC0' },
+      { time: '18:00', client: 'Emilio Tapia', detail: 'Corte + barba · Tomás', color: '#E6E0F8', tag: 'Flash', tagBg: accent }
+    ];
+    return { accent: accent, rest: rest };
+  }
+}
+</script>
+</body>
+</html>

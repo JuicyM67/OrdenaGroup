@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+coverage/
+.visual-diff/
+test-results/
+playwright-report/
+.env
+.env.local
+.env.*.local
+.env.production
+.vercel
+supabase/.branches
+supabase/.temp
+.DS_Store
+*.log

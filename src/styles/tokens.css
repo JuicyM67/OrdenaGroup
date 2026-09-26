@@ -1,0 +1,86 @@
+/*
+ * llena — design tokens (Tailwind CSS v4)
+ * Källa: docs/design/reference/*.dc.html. Lägg till nya värden HÄR först, aldrig direkt i komponenter.
+ * Import i src/app/globals.css:  @import "tailwindcss";  @import "../styles/tokens.css";
+ */
+
+@theme {
+  /* ---------- Typsnitt (laddas med next/font, se DESIGN.md §3) ---------- */
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* ---------- Neutrala, ljusa ---------- */
+  --color-canvas: #F4F4F0;        /* bakgrund i innehållspanel och mobil */
+  --color-surface: #FFFFFF;       /* kort */
+  --color-line: #F1F1EE;          /* tunna avdelare, tidslinjer i kalendern */
+  --color-line-strong: #EFEFEA;   /* radavdelare i listor */
+  --color-border: #E2E2DC;        /* sekundära knappar */
+
+  /* ---------- Neutrala, mörka ---------- */
+  --color-ink: #16161A;           /* text, primärknappar, appens yttre ram */
+  --color-night: #111114;         /* yttre ram i Agenda */
+  --color-dark: #1C1C22;          /* mörka kort, hero, sidopaneler */
+  --color-dark-2: #2A2A31;        /* aktiv navpunkt, taggar på mörk yta */
+  --color-dark-line: #33333B;
+  --color-dark-border: #3A3A42;
+
+  /* ---------- Text ---------- */
+  --color-muted: #5E5E66;         /* sekundär text på ljus yta (≥4.5:1) */
+  --color-subtle: #A3A3AB;        /* inaktiv, datum utanför månad — aldrig brödtext */
+  --color-on-dark: #FFFFFF;
+  --color-on-dark-soft: #D2D2D9;
+  --color-on-dark-muted: #B9B9C2;
+  --color-on-dark-subtle: #A9A9B3;
+
+  /* ---------- Varumärke / pasteller ---------- */
+  --color-lime: #E3F36B;          /* accent: aktivt, CTA på mörk yta, hora flash */
+  --color-lilac: #C9B8F5;
+  --color-peach: #F5DEC0;
+  --color-sky: #D3E3EE;
+  --color-lavender: #E6E0F8;
+  --color-mint: #BFE3D0;
+  --color-lilac-50: #EDE6FD;
+  --color-peach-50: #FBEBD6;
+  --color-lime-50: #EEF6C4;
+  --color-violet: #7B61E0;        /* datapunkter, dagens datum i agendan */
+
+  /* ---------- Semantik (chips) ---------- */
+  --color-success-bg: #D5EEDC;  --color-success-fg: #1F6B3A;   /* Confirmada */
+  --color-deposit-bg: #FBEBD6;  --color-deposit-fg: #7A4A12;   /* Abono pagado */
+  --color-pending-bg: #EDE6FD;  --color-pending-fg: #4B3AA8;   /* Sin confirmar */
+  --color-alert: #E0592A;                                       /* nu-linje, notisprick */
+
+  /* ---------- Radier ---------- */
+  --radius-shell: 32px;   /* innehållspanel, mobilkant */
+  --radius-hero: 28px;    /* mörk hero, agenda-panel */
+  --radius-card: 24px;    /* vita kort, sidopanelkort */
+  --radius-tile: 22px;    /* pastellkort, tjänstekort, dag-pills */
+  --radius-icon: 18px;    /* logo-ruta, ikonrutor, CTA i bokningsfält */
+  --radius-control: 16px; /* navpunkter, segment, tidsknappar */
+  --radius-avatar: 14px;  /* avatar-rutor i listor */
+  --radius-event: 12px;   /* kalenderblock, sekundärknappar i popover */
+  --radius-chip: 10px;    /* statuschips */
+
+  /* ---------- Skuggor (endast svävande lager) ---------- */
+  --shadow-popover: 0 18px 48px rgb(22 22 26 / 0.18), 0 2px 6px rgb(22 22 26 / 0.08);
+
+  /* ---------- Agenda ---------- */
+  --agenda-hour: 94px;          /* höjd per timme i veckovyn */
+  --agenda-gutter: 64px;        /* tidskolumnens bredd */
+}
+
+:root {
+  --gradient-agenda: linear-gradient(125deg, #E3F36B 0%, #D6E8C8 28%, #CAD5EA 62%, #C9B8F5 100%);
+  /* Personalfärger i ordning. Tilldelas per profesional, används i kalenderblock, avatarer och prickar. */
+  --staff-1: #C9B8F5;
+  --staff-2: #D3E3EE;
+  --staff-3: #E6E0F8;
+  --staff-4: #F5DEC0;
+  --staff-5: #BFE3D0;
+  --staff-6: #EEF6C4;
+}
+
+@utility font-display-tight {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
