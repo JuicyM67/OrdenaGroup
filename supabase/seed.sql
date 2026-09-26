@@ -17,8 +17,8 @@ values (
   'Barbería Norte',
   'Providencia',
   'barberia',
-  '+56221234567',
-  'Av. Providencia 1234, Providencia',
+  '+56900000000',
+  'Av. Ficticia 1234, Providencia',
   '#E3F36B'
 );
 
@@ -276,8 +276,13 @@ from (select (((date_trunc('week', (now() at time zone 'America/Santiago')))::da
 -- Ägaren (R5: bräcklig direktinsert i auth.users; om det inte fungerar
 -- skapar WP-15 användaren via Auth-API i stället). Ingen lösenord: inloggning
 -- sker via magisk länk (lokal mail).
+-- qa5/K7: token-kolumnerna sätts till '' i stället för NULL. GoTrue (Auth-
+-- API:et) läser dessa som icke-nullbara strängar internt och kraschar annars
+-- vid inloggning ("sql: Scan error ... converting NULL to string is
+-- unsupported"), ett känt problem med direktinsert i auth.users.
 insert into auth.users (
   id, instance_id, aud, role, email, email_confirmed_at,
+  confirmation_token, recovery_token, email_change_token_new, email_change,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
 ) values (
   'b0000000-0000-0000-0000-000000900001',
@@ -286,8 +291,26 @@ insert into auth.users (
   'authenticated',
   'dueno@example.com',
   now(),
+  '',
+  '',
+  '',
+  '',
   '{"provider":"email","providers":["email"]}',
   '{}',
+  now(),
+  now()
+);
+
+-- En auth.identities-rad krävs för att GoTrue ska räkna kontot som ett
+-- riktigt email-konto (t.ex. för att kunna slå upp det vid inloggning).
+insert into auth.identities (
+  id, user_id, provider_id, provider, identity_data, created_at, updated_at
+) values (
+  gen_random_uuid(),
+  'b0000000-0000-0000-0000-000000900001',
+  'b0000000-0000-0000-0000-000000900001',
+  'email',
+  '{"sub":"b0000000-0000-0000-0000-000000900001","email":"dueno@example.com","email_verified":true}',
   now(),
   now()
 );

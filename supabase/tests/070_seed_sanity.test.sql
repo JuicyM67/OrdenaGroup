@@ -3,7 +3,7 @@
 -- _helpers.psql.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(8);
+select plan(9);
 
 select is(
   (select count(*) from public.businesses where slug = 'barberia-norte')::int, 1,
@@ -46,6 +46,11 @@ select ok(
 select ok(
   not exists (select 1 from auth.users where email is not null and email !~ '@example\.com$'),
   'ägarens e-post är också @example.com'
+);
+-- qa6/K6: företagets eget telefonnummer är också fiktivt (+5690000xxxx).
+select ok(
+  (select phone from public.businesses where slug = 'barberia-norte') ~ '^\+5690000[0-9]{4}$',
+  'Barbería Nortes telefon är +5690000xxxx'
 );
 
 select finish();
