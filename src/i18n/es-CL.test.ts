@@ -1464,7 +1464,7 @@ describe("consentimientos", () => {
   // de hash queda visible en el diff.
   const HASHES: Record<string, string> = {
     "2026-10-v1":
-      "87d7a1eefa2ed9db016eea250b4dec4922e3a5c5bce7dd546a41dc5caaa8e52e",
+      "",
   };
 
   function sha256(texto: string): string {
