@@ -1,0 +1,8 @@
+docs/
+src/styles/tokens.css
+scripts/visual-diff.mjs
+package-lock.json
+.claude/
+claude-config/
+supabase/
+CLAUDE.md

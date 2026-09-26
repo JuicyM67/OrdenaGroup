@@ -12,5 +12,7 @@ playwright-report/
 .vercel
 supabase/.branches
 supabase/.temp
+*.tsbuildinfo
+/playwright/.cache/
 .DS_Store
 *.log
