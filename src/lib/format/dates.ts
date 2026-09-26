@@ -7,6 +7,12 @@
  * Regler: rena funktioner, klockan injiceras av anroparen, bara `getUTC*`
  * och `Intl.DateTimeFormat` med explicit `timeZone` (inga lokala Date-metoder).
  */
+import {
+  MONTH_LONG,
+  MONTH_SHORT,
+  WEEKDAY_LONG,
+  WEEKDAY_SHORT,
+} from "./calendar-es-CL";
 import { err, ok, type ParseResult } from "./result";
 
 export type TimeZone = string & { readonly __brand: "TimeZone" };
@@ -439,8 +445,66 @@ export function minutesBetween(a: Date, b: Date): number {
 }
 
 // ---------------------------------------------------------------------------
-// Visning (tider)
+// Visning (es-CL, 24 h, egna namntabeller, ingen ICU-text)
 // ---------------------------------------------------------------------------
+
+export type DatePreset =
+  | "weekdayDayMonthShort" // "Vie 2 oct"              (Agenda, EventPopover)
+  | "weekdayDayMonthLong" // "Viernes 2 de octubre"   (Main, Hoy)
+  | "weekdayDayShort" // "Mar 6"                   (Main FlashCard, Reserva)
+  | "weekdayDayLong" // "Martes 6"                (HoraFlash)
+  | "dayMonthLong" // "28 de septiembre"        (Agenda aria-label)
+  | "monthYear" // "Octubre 2026"            (Main, Agenda)
+  | "month" // "Octubre"                 (Reserva)
+  | "weekdayShort" // "Vie"                     (Reserva DayPicker)
+  | "weekdayShortLower"; // "vie"                     (Agenda DayPill)
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function pick(table: readonly string[], index: number): string {
+  const v = table[index];
+  if (v === undefined) throw new RangeError(`namntabell: index ${index}`);
+  return v;
+}
+
+export function formatLocalDate(date: LocalDate, preset: DatePreset): string {
+  const [year, month, day] = localDateParts(date, "formatLocalDate");
+  const wd = isoWeekdayOf(date) - 1;
+  const wShort = pick(WEEKDAY_SHORT, wd);
+  const wLong = pick(WEEKDAY_LONG, wd);
+  const mShort = pick(MONTH_SHORT, month - 1);
+  const mLong = pick(MONTH_LONG, month - 1);
+  switch (preset) {
+    case "weekdayDayMonthShort":
+      return `${wShort} ${day} ${mShort}`;
+    case "weekdayDayMonthLong":
+      return `${wLong} ${day} de ${mLong}`;
+    case "weekdayDayShort":
+      return `${wShort} ${day}`;
+    case "weekdayDayLong":
+      return `${wLong} ${day}`;
+    case "dayMonthLong":
+      return `${day} de ${mLong}`;
+    case "monthYear":
+      return `${capitalize(mLong)} ${year}`;
+    case "month":
+      return capitalize(mLong);
+    case "weekdayShort":
+      return wShort;
+    case "weekdayShortLower":
+      return wShort.toLowerCase();
+  }
+}
+
+export function formatDate(
+  instant: Date,
+  tz: TimeZone,
+  preset: DatePreset,
+): string {
+  return formatLocalDate(toLocalDate(instant, tz), preset);
+}
 
 const EN_DASH = "–";
 
@@ -452,4 +516,22 @@ export function formatTime(instant: Date, tz: TimeZone): string {
 /** "11:30 – 12:05" (Agenda, EventPopover). */
 export function formatTimeRange(start: Date, end: Date, tz: TimeZone): string {
   return `${formatTime(start, tz)} ${EN_DASH} ${formatTime(end, tz)}`;
+}
+
+/** "10:00–19:00" (öppettider i Reserva, utan mellanslag). */
+export function formatLocalTimeRange(start: LocalTime, end: LocalTime): string {
+  localTimeParts(start, "formatLocalTimeRange");
+  localTimeParts(end, "formatLocalTimeRange");
+  return `${start}${EN_DASH}${end}`;
+}
+
+/** "35 min", "1 h", "1 h 30 min". */
+export function formatDuration(minutes: number): string {
+  if (!Number.isSafeInteger(minutes) || minutes < 0) {
+    throw new RangeError(`formatDuration: ogiltigt värde ${String(minutes)}`);
+  }
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
