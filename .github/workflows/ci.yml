@@ -26,6 +26,9 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
 
+      # Samma npm som lockfilen skapades med (packageManager i package.json).
+      - run: npm install -g "$(node -p "require('./package.json').packageManager")"
+
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
