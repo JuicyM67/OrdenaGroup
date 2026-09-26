@@ -1,13 +1,13 @@
 /*
- * llena — design tokens (Tailwind CSS v4)
+ * Design tokens (Tailwind CSS v4)
  * Källa: docs/design/reference/*.dc.html. Lägg till nya värden HÄR först, aldrig direkt i komponenter.
  * Import i src/app/globals.css:  @import "tailwindcss";  @import "../styles/tokens.css";
  */
 
 @theme {
   /* ---------- Typsnitt (laddas med next/font, se DESIGN.md §3) ---------- */
-  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-bricolage), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
   /* ---------- Neutrala, ljusa ---------- */
   --color-canvas: #F4F4F0;        /* bakgrund i innehållspanel och mobil */

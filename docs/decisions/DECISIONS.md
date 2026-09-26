@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-013 · 2026-09-26 · Verktygskedja: Node 24 LTS, npm, exakta versioner, Supabase CLI som dev-beroende
+**Varför:** samma verktyg lokalt, i worktrees, i CI och på Vercel, och ingen global installation krävs. **Konsekvens:** `.nvmrc` och `engines` styr Node-versionen, lockfilen checkas in, uppgraderingar görs i egna PR:er och CLI-kommandon körs via `npm run db:*`.
+
 ### D-012 · 2026-09-26 · Designen är fastställd och återskapas exakt
 **Varför:** premiumkänsla är en del av erbjudandet. **Konsekvens:** `docs/design/reference/*.dc.html` är källan till sanning, bara tokens får användas, och visuell jämförelse krävs innan en skärm är klar.
 
