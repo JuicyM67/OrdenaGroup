@@ -98,15 +98,21 @@ export function MiniCalendar({
   }
 
   function moveTo(target: string) {
-    setActiveDate(target);
     if (isInGrid(target)) {
+      setActiveDate(target);
       const el = cellRefs.current.get(target);
       el?.focus();
       return;
     }
-    pendingFocusRef.current = target;
     const monthFirstDate = `${String(month.year).padStart(4, "0")}-${String(month.month).padStart(2, "0")}-01`;
-    if (target < monthFirstDate) {
+    const goingBack = target < monthFirstDate;
+    // Utan en callback för månadsbytet kan vi inte ta oss dit — gör då ingenting alls
+    // i stället för att ändra activeDate/pendingFocus utan att något faktiskt händer.
+    if (goingBack && !onPrevMonth) return;
+    if (!goingBack && !onNextMonth) return;
+    setActiveDate(target);
+    pendingFocusRef.current = target;
+    if (goingBack) {
       onPrevMonth?.();
     } else {
       onNextMonth?.();
@@ -200,15 +206,18 @@ export function MiniCalendar({
         role="grid"
         aria-label={labels.title}
         className={cn(
-          "w-full table-fixed border-separate border-spacing-y-0.5",
+          // border-spacing lägger också 2px OVANFÖR första raden (mellan tabellens
+          // kant och thead), inte bara mellan raderna — -mt-0.5 kompenserar det
+          // (granskningsfynd: kalendern hamnade ~2 CSS-px för lågt).
+          "-mt-0.5 w-full table-fixed border-separate border-spacing-y-0.5",
           isLight ? "border-spacing-x-0.5" : "border-spacing-x-0",
         )}
       >
         <thead>
           <tr>
-            {labels.weekdays.map((wd) => (
+            {labels.weekdays.map((wd, i) => (
               <th
-                key={wd}
+                key={i}
                 abbr={wd}
                 scope="col"
                 className={cn(
@@ -266,7 +275,7 @@ export function MiniCalendar({
                             onSelect?.(cell.date);
                           }}
                           className={cn(
-                            "flex items-center justify-center font-semibold transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-default",
+                            "flex items-center justify-center font-semibold transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:transition-none disabled:cursor-default",
                             isLight
                               ? "h-6.5 w-7.5 rounded-full text-13 focus-visible:outline-ink"
                               : "h-7.5 w-7.5 rounded-full text-event-title focus-visible:outline-lime",

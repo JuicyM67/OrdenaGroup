@@ -23,7 +23,7 @@ export function Pill({
       type={type}
       aria-pressed={selected}
       className={cn(
-        "h-11 shrink-0 rounded-full px-4 text-14 font-semibold transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+        "h-11 shrink-0 rounded-full px-4 text-14 font-semibold transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
         selected ? "bg-ink text-on-dark" : "bg-surface text-ink",
         className,
       )}

@@ -62,7 +62,7 @@ export function NavRailLogo({ label, href }: { label: string; href?: string }) {
       href={href}
       aria-label={label}
       className={cn(
-        "rounded-icon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime",
+        "rounded-icon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
         wrapperClassName,
       )}
     >
@@ -90,7 +90,7 @@ export function NavRailLink({
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex size-13 items-center justify-center rounded-control transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime",
+        "flex size-13 items-center justify-center rounded-control transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
         active ? "bg-dark-2 text-lime" : "text-on-dark-subtle",
       )}
     >

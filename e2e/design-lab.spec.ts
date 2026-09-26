@@ -1,6 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 
 import crops from "../src/app/design-lab/crops/crops.json" with { type: "json" };
+
+/** Navigerar med riktiga Tab-tryckningar tills `locator` har fokus (DESIGN.md §9). */
+async function tabUntilFocused(page: Page, locator: Locator, maxPresses = 400) {
+  const handle = await locator.elementHandle();
+  if (!handle) throw new Error("tabUntilFocused: elementet finns inte");
+  for (let i = 0; i < maxPresses; i++) {
+    const isFocused = await page.evaluate(
+      (el) => el === document.activeElement,
+      handle,
+    );
+    if (isFocused) return;
+    await page.keyboard.press("Tab");
+  }
+  throw new Error("tabUntilFocused: nådde inte elementet med Tab");
+}
 
 test.describe("design lab — routes", () => {
   test("/design-lab svarar 200", async ({ page }) => {
@@ -91,12 +106,39 @@ test.describe("design lab — komponentkatalog", () => {
     expect(box?.height).toBe(48);
   });
 
-  test("fokusring på ljus yta: 2px ink, offset 2", async ({ page }) => {
+  test("fokusring på ljus yta: 2px ink, offset 2 (Tab, elementets egen text är inte ink)", async ({
+    page,
+  }) => {
     await page.goto("/design-lab/components");
-    await page.getByRole("button", { name: "Mover" }).focus();
-    const styles = await page.evaluate(() => {
-      const el = document.activeElement;
-      if (!el) return null;
+    // "Hoy" (Button, variant="primary", storlek xs) har vit text (text-on-dark) på bg-ink —
+    // om testet bara läste outline-color skulle en trasig (saknad) fokusring kunna råka matcha
+    // elementets egen textfärg om den vore ink. Här är de garanterat olika.
+    const button = page.getByRole("button", { name: "Hoy", exact: true });
+    await tabUntilFocused(page, button);
+    const styles = await button.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        color: s.outlineColor,
+        width: s.outlineWidth,
+        offset: s.outlineOffset,
+        textColor: s.color,
+      };
+    });
+    expect(styles.textColor).not.toBe("rgb(22, 22, 26)");
+    expect(styles.color).toBe("rgb(22, 22, 26)");
+    expect(styles.width).toBe("2px");
+    expect(styles.offset).toBe("2px");
+  });
+
+  test("fokusring på mörk yta (NavRailLink): 2px lime, offset 2 (Tab)", async ({
+    page,
+  }) => {
+    await page.goto("/design-lab/components");
+    // "Inicio" är en aktiv NavRailLink inuti NavRail, som sätter data-surface="dark" —
+    // on-dark:focus-visible:outline-lime ska då slå igenom i stället för ink-standarden.
+    const link = page.getByRole("link", { name: "Inicio", exact: true });
+    await tabUntilFocused(page, link);
+    const styles = await link.evaluate((el) => {
       const s = getComputedStyle(el);
       return {
         color: s.outlineColor,
@@ -104,9 +146,9 @@ test.describe("design lab — komponentkatalog", () => {
         offset: s.outlineOffset,
       };
     });
-    expect(styles?.color).toBe("rgb(22, 22, 26)");
-    expect(styles?.width).toBe("2px");
-    expect(styles?.offset).toBe("2px");
+    expect(styles.color).toBe("rgb(227, 243, 107)");
+    expect(styles.width).toBe("2px");
+    expect(styles.offset).toBe("2px");
   });
 
   test("reducerad rörelse: transition-duration 0s på Pill", async ({

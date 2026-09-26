@@ -7,7 +7,7 @@ import type { ComponentPropsWithoutRef, ReactNode, Ref } from "react";
 import { cn } from "./cn";
 
 const button = cva(
-  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:pointer-events-none disabled:opacity-40 on-dark:focus-visible:outline-lime",
+  "inline-flex shrink-0 items-center justify-center gap-2 whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:transition-none focus-visible:outline-offset-2 focus-visible:outline-ink disabled:pointer-events-none disabled:opacity-40 on-dark:focus-visible:outline-lime",
   {
     variants: {
       variant: {

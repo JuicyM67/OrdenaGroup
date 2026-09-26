@@ -60,7 +60,8 @@ describe("buildMonthGrid", () => {
         const sorted = [...dates].sort();
         expect(dates).toEqual(sorted);
       } finally {
-        process.env.TZ = original;
+        if (original === undefined) delete process.env.TZ;
+        else process.env.TZ = original;
       }
     },
   );
@@ -81,7 +82,8 @@ describe("buildMonthGrid", () => {
         const sorted = [...dates].sort();
         expect(dates).toEqual(sorted);
       } finally {
-        process.env.TZ = original;
+        if (original === undefined) delete process.env.TZ;
+        else process.env.TZ = original;
       }
     },
   );

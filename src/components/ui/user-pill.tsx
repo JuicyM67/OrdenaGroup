@@ -28,7 +28,8 @@ export function UserPill({
       ref={ref}
       type={type}
       className={cn(
-        "flex h-12 items-center gap-2.5 rounded-full bg-surface py-0 pr-4 pl-1.5 text-14 font-semibold text-ink",
+        "flex h-12 items-center gap-2.5 rounded-full bg-surface py-0 pr-4 pl-1.5 text-14 font-semibold text-ink transition-colors duration-150 ease-out",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
         className,
       )}
       {...props}

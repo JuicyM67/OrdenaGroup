@@ -46,6 +46,7 @@ export function SegmentedControl({
           value={option.value}
           className={cn(
             "h-9 w-24 rounded-event text-13 font-semibold text-ink transition-colors duration-150 ease-out",
+            "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
             "toggle-on:bg-surface toggle-on:font-bold",
           )}
         >
