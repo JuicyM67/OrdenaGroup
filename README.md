@@ -1,6 +1,6 @@
 # llena — bokningssystem för pymes i Chile
 
-*Arbetsnamn. "Tu agenda se llena sola."*
+_Arbetsnamn. "Tu agenda se llena sola."_
 
 Den här mappen innehåller allt Claude Code behöver för att bygga produkten: tankesätt, analys, specifikation, design, teknisk arkitektur, beslut, backlog och färdiga agenter. Någon kod finns ännu inte. Den byggs av agenterna, med början i WP-00.
 
@@ -35,13 +35,30 @@ scripts/visual-diff.mjs        pixeljämförelse mot designen
 1. **Exportera designbilderna.** Exportera de fem skärmarna från designytan som PNG och spara dem i `docs/design/screens/` (namnen står i README där).
 2. **Installera agenterna:** kör `bash setup-claude.sh` i mappen. Det kopierar `claude-config/` till `.claude/`, där Claude Code letar.
 3. **Initiera git** i den här mappen: `git init && git add . && git commit -m "Projektgrund: docs, design, agenter"`.
-4. **Installera verktyg:** Node 20+, [Supabase CLI](https://supabase.com/docs/guides/local-development) och Docker (för lokal Supabase).
+4. **Installera verktyg:** Node 24 (se `.nvmrc`). Supabase CLI installeras via `npm install` (dev-beroende, `npm run db:*`) — Docker behövs först från WP-01, när lokal Supabase används.
 5. **Öppna Claude Code i mappen** och kör:
    ```
    /status
    /start-wp WP-00
    ```
    Planen visas först och du godkänner den. Därefter bygger agenten projektgrunden.
+
+## npm-skript
+
+| Skript                                            | Kommando                                                        | Beskrivning                                                                                                                                                                               |
+| ------------------------------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dev`                                             | `next dev`                                                      | Utvecklingsserver                                                                                                                                                                         |
+| `build`                                           | `next build`                                                    | Produktionsbygge                                                                                                                                                                          |
+| `start`                                           | `next start`                                                    | Kör produktionsbygget                                                                                                                                                                     |
+| `typecheck`                                       | `next typegen && tsc --noEmit`                                  | Ruttypning + TypeScript strict                                                                                                                                                            |
+| `lint`                                            | `eslint . --max-warnings=0`                                     | Lint (ESLint flat config)                                                                                                                                                                 |
+| `format` / `format:check`                         | `prettier --write .` / `prettier --check .`                     | Formatering                                                                                                                                                                               |
+| `test` / `test:watch`                             | `vitest run` / `vitest`                                         | Enhetstester                                                                                                                                                                              |
+| `test:e2e`                                        | `playwright test`                                               | E2E-rök (kräver `npx playwright install chromium`)                                                                                                                                        |
+| `visual`                                          | `node scripts/visual-diff.mjs`                                  | Pixeljämförelse mot `docs/design/screens/`. Kräver en körande server (`npm run build && npm run start` eller `npm run dev`) och design-lab-sidorna från WP-02 för att ge < 2 % avvikelse. |
+| `test:db`                                         | `supabase test db`                                              | pgTAP (från WP-01, kräver `db:start`)                                                                                                                                                     |
+| `db:start` / `db:stop` / `db:status` / `db:reset` | `supabase start` / `stop` / `status` / `db reset`               | Lokal Supabase (från WP-01, kräver Docker)                                                                                                                                                |
+| `db:types`                                        | `supabase gen types typescript --local > src/types/database.ts` | Genererar databastyper (från WP-01)                                                                                                                                                       |
 
 ## Köra flera agenter parallellt
 
