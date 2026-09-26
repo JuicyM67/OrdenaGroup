@@ -1444,7 +1444,10 @@ describe("consentimientos", () => {
   it('la versión está ligada al hash del texto (sube "consentimientos.version" si cambias el texto)', () => {
     const version = reserva.consentimientos.version;
     const hashEsperado = HASHES[version];
-    expect(hashEsperado, `No hay hash registrado para "${version}"`).toBeDefined();
+    expect(
+      hashEsperado,
+      `No hay hash registrado para "${version}"`,
+    ).toBeDefined();
     expect(
       sha256(textoConsentimiento()),
       'El texto de consentimiento cambió: sube "consentimientos.version" y registra su hash en HASHES.',
