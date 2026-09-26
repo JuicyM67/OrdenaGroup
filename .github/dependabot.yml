@@ -9,3 +9,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # Medvetet låsta (se WP-00-planen och IDEAS.md): typescript-eslint
+      # stöder bara TS < 6.1, eslint-plugin-react kraschar på ESLint 10,
+      # och @types/node ska följa Node 24 (.nvmrc).
+      - dependency-name: "typescript"
+        versions: [">=6.1.0"]
+      - dependency-name: "eslint"
+        versions: [">=10.0.0"]
+      - dependency-name: "@types/node"
+        versions: [">=25.0.0"]
