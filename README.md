@@ -83,7 +83,7 @@ Port 3000 är reserverad för huvudworktreen (main) — rör den aldrig från en
 ```bash
 PORT=3102 npm run dev
 PORT=3102 npm run test:e2e
-BASE_URL=http://localhost:3102 npm run visual
+PORT=3102 npm run visual
 ```
 
 `playwright.config.ts` läser `PORT` (standard 3000) och startar sin egen `next build && next start`

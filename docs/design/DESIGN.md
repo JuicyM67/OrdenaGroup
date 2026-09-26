@@ -234,7 +234,8 @@ WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är k
 
 **Tailwinds standardtema är nollställt.** `src/styles/tokens.css` sätter
 `--color-*: initial; --radius-*: initial; --shadow-*: initial; --text-*: initial;
---tracking-*: initial; --leading-*: initial;` överst i `@theme`, innan projektets egna tokens
+--tracking-*: initial; --leading-*: initial;` samt `--drop-shadow-*`, `--inset-shadow-*`,
+`--text-shadow-*` och `--blur-*` överst i `@theme`, innan projektets egna tokens
 definieras. Det gör hård regel 1 ("bara tokens") till något verktygen kontrollerar:
 
 - `bg-white`, `text-sm`, `rounded-lg`, `tracking-tight` genererar **ingen CSS längre** — bara
