@@ -1,7 +1,7 @@
 -- INV-3/INV-4: tenant-isolering för `memberships`, plus skydd av sista owner.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(26);
 \ir _helpers.psql
 
 -- Fixturer för tvärtenant-FK-testet (staff i A och B).
@@ -54,6 +54,23 @@ select throws_ok(
   '42501'
 );
 
+-- Säkerhet S3: role = 'admin' är reserverat för intern platformsadministration
+-- (F19) — en ägare kan inte ge ut den rollen via appen. Update är dessutom
+-- kolumnbegränsad till (role, staff_id): business_id/user_id kan inte ändras
+-- ens inom det egna företaget.
+select throws_ok(
+  $$ insert into public.memberships (business_id, user_id, role) values ('aaaaaaaa-0000-0000-0000-000000000001', '55555555-5555-5555-5555-555555555555', 'admin') $$,
+  '42501'
+);
+select throws_ok(
+  $$ update public.memberships set role = 'admin' where business_id = 'aaaaaaaa-0000-0000-0000-000000000001' and user_id = '33333333-3333-3333-3333-333333333333' $$,
+  '42501'
+);
+select throws_ok(
+  $$ update public.memberships set user_id = '55555555-5555-5555-5555-555555555555' where business_id = 'aaaaaaaa-0000-0000-0000-000000000001' and user_id = '33333333-3333-3333-3333-333333333333' $$,
+  '42501'
+);
+
 -- 5. anon: select, insert, update, delete -> permission denied.
 set local role anon;
 select throws_ok($$ select count(*) from public.memberships $$, '42501');
@@ -97,6 +114,13 @@ select throws_ok(
   '23503'
 );
 
+-- Säkerhet S4: byte av business_id blockeras av triggern själv, inte bara av
+-- RLS — gäller alltså även postgres/service_role.
+select throws_ok(
+  $$ update public.memberships set business_id = 'bbbbbbbb-0000-0000-0000-000000000002' where business_id = 'aaaaaaaa-0000-0000-0000-000000000001' and user_id = '44444444-4444-4444-4444-444444444444' $$,
+  '42501'
+);
+
 -- Sista owner: kan varken tas bort eller degraderas.
 select throws_ok(
   $$ delete from public.memberships where business_id = 'aaaaaaaa-0000-0000-0000-000000000001' and user_id = '11111111-1111-1111-1111-111111111111' $$,
@@ -116,6 +140,28 @@ insert into public.memberships (business_id, user_id, role) values
 select lives_ok(
   $$ delete from public.memberships where business_id = 'aaaaaaaa-0000-0000-0000-000000000001' and user_id = '11111111-1111-1111-1111-111111111111' $$,
   'ownerA kan tas bort när det finns en andra owner'
+);
+
+-- Säkerhet S4/qa3: protect_last_owner får inte blockera en radering av hela
+-- företaget, även om det bara har en (1) owner.
+insert into auth.users (id, email, role, aud) values
+  ('77777777-7777-7777-7777-777777777777', 'ownerc@example.com', 'authenticated', 'authenticated');
+insert into public.businesses (id, slug, name, comuna, category) values
+  ('cccccccc-0000-0000-0000-000000000003', 'test-negocio-c', 'Negocio C', 'Providencia', 'barberia');
+insert into public.memberships (business_id, user_id, role) values
+  ('cccccccc-0000-0000-0000-000000000003', '77777777-7777-7777-7777-777777777777', 'owner');
+
+select lives_ok(
+  $$ delete from public.businesses where id = 'cccccccc-0000-0000-0000-000000000003' $$,
+  'ett företag med bara en owner kan raderas (kaskaden till memberships blockeras inte)'
+);
+select is(
+  (select count(*) from public.memberships where business_id = 'cccccccc-0000-0000-0000-000000000003')::int, 0,
+  'medlemskapet togs bort av kaskaden'
+);
+select lives_ok(
+  $$ delete from auth.users where id = '77777777-7777-7777-7777-777777777777' $$,
+  'den ensamma ägarens auth.users-rad kan raderas efter att företaget är borta'
 );
 
 select finish();

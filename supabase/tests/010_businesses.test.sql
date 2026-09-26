@@ -5,7 +5,7 @@
 -- "inte tillämpligt" (en business kan inte peka på en annan business).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(28);
 \ir _helpers.psql
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
@@ -35,6 +35,37 @@ select is(
   (select name from public.businesses where id = 'bbbbbbbb-0000-0000-0000-000000000002'),
   'Negocio B',
   'B:s namn är oförändrat efter ownerA:s försök'
+);
+
+-- Säkerhet B2/qa4: ownerA får ändra affärsfält, men inte plan/status/
+-- trial_ends_at/id/timezone — de styrs bara av servern (billing, D-011,
+-- WP-26). Kolumngrant, inte bara RLS: felet är "permission denied for
+-- column", inte en RLS-policyträff.
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+select lives_ok(
+  $$ update public.businesses set name = 'Negocio A renombrado' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  'ownerA kan ändra name (tillåten kolumn)'
+);
+select throws_ok(
+  $$ update public.businesses set plan = 'equipo' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '42501'
+);
+select throws_ok(
+  $$ update public.businesses set status = 'frozen' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '42501'
+);
+select throws_ok(
+  $$ update public.businesses set trial_ends_at = now() where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '42501'
+);
+select throws_ok(
+  $$ update public.businesses set timezone = 'America/Santiago' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '42501'
+);
+select throws_ok(
+  $$ update public.businesses set id = 'aaaaaaaa-0000-0000-0000-000000000099' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '42501'
 );
 
 -- 5. anon: select, insert, update, delete -> permission denied.
@@ -123,7 +154,22 @@ select throws_ok(
   $$ select public.create_business('X', 'test-negocio-a', 'Providencia', 'barberia', null) $$,
   '23505'
 );
+-- qa7: för kort/felformad slug ("-x": börjar med bindestreck, bara 2 tecken).
+select throws_ok(
+  $$ select public.create_business('X', '-x', 'Providencia', 'barberia', null) $$,
+  '23514'
+);
 reset role;
+
+-- K5: logo_url måste vara https://.
+select throws_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, logo_url) values ('wp01-test-logo', 'X', 'Providencia', 'barberia', 'http://example.com/logo.png') $$,
+  '23514'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, logo_url) values ('wp01-test-logo', 'X', 'Providencia', 'barberia', 'https://example.com/logo.png') $$,
+  'https:// accepteras'
+);
 
 select finish();
 rollback;

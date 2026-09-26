@@ -40,6 +40,9 @@ create table public.businesses (
   constraint businesses_timezone_allowed check (timezone = 'America/Santiago'),
   constraint businesses_phone_e164 check (phone is null or phone ~ '^\+[1-9][0-9]{7,14}$'),
   constraint businesses_accent_color_format check (accent_color is null or accent_color ~ '^#[0-9A-F]{6}$'),
+  -- K5: bara https:-länkar (Supabase Storage/CDN), aldrig http:// eller
+  -- data:-URI:er i den här kolumnen.
+  constraint businesses_logo_url_format check (logo_url is null or logo_url ~ '^https://'),
   constraint businesses_min_notice_minutes_check check (min_notice_minutes >= 0),
   constraint businesses_max_days_ahead_check check (max_days_ahead between 1 and 365),
   constraint businesses_cancel_window_hours_check check (cancel_window_hours >= 0),
@@ -88,6 +91,17 @@ revoke all on function private.is_member(uuid, public.member_role[]) from public
 grant execute on function private.is_member(uuid, public.member_role[]) to authenticated;
 
 -- Skydda det sista owner-medlemskapet -----------------------------------
+-- Säkerhet S4/qa3:
+--  1. Om företaget redan är borta (t.ex. mitt i en kaskad-radering av
+--     businesses) finns inget kvar att skydda — annars skulle det vara
+--     omöjligt att radera ett företag som bara har en owner.
+--  2. Låser businessraden (`for update`) innan den räknar kvarvarande
+--     owners, så att två samtidiga degraderingar/raderingar av de sista två
+--     ägarna inte båda kan se "en kvar" och båda lyckas (vilket skulle
+--     lämna företaget utan ägare).
+--  3. Ett membership kan aldrig flyttas till ett annat företag via UPDATE
+--     (RLS blockerar redan detta för authenticated via with check, men det
+--     här gäller även postgres/service_role).
 create function private.protect_last_owner()
 returns trigger
 language plpgsql
@@ -97,7 +111,8 @@ declare
   remaining_owners integer;
 begin
   if tg_op = 'DELETE' then
-    if old.role = 'owner' then
+    if old.role = 'owner' and exists (select 1 from public.businesses where id = old.business_id) then
+      perform 1 from public.businesses where id = old.business_id for update;
       select count(*) into remaining_owners
       from public.memberships
       where business_id = old.business_id
@@ -109,7 +124,11 @@ begin
     end if;
     return old;
   elsif tg_op = 'UPDATE' then
-    if old.role = 'owner' and new.role <> 'owner' then
+    if new.business_id <> old.business_id then
+      raise exception 'No se puede mover un membership a otro negocio' using errcode = '42501';
+    end if;
+    if old.role = 'owner' and new.role <> 'owner' and exists (select 1 from public.businesses where id = old.business_id) then
+      perform 1 from public.businesses where id = old.business_id for update;
       select count(*) into remaining_owners
       from public.memberships
       where business_id = old.business_id
@@ -182,7 +201,23 @@ create policy "owners update" on public.businesses
   with check (private.is_member(id, array['owner', 'admin']::public.member_role[]));
 
 -- Ingen insert-policy (bara via create_business) och ingen delete-policy.
-grant select, update on public.businesses to authenticated;
+--
+-- Säkerhet B2/qa4: `authenticated` (ägaren i appen) får bara ändra
+-- affärsmässiga fält, kolumn för kolumn. `plan`, `status`, `trial_ends_at`,
+-- `id` och `timezone` styrs bara av servern (billing/plan-hantering,
+-- WP-26-anonymisering, D-011). En ägare ska inte kunna ge sig själv ett
+-- högre plan eller ta bort en `frozen`-spärr genom att uppdatera sin egen
+-- rad via Data API.
+grant select on public.businesses to authenticated;
+grant update (
+  name, slug, comuna, category, phone, address, logo_url, accent_color,
+  min_notice_minutes, max_days_ahead, cancel_window_hours, slot_interval_minutes,
+  waitlist_mode
+) on public.businesses to authenticated;
+
+-- Säkerhet S2: service_role (server/billing) har fullt CRUD, inklusive de
+-- kolumner som authenticated inte får ändra.
+grant select, update on public.businesses to service_role;
 
 -- RLS: memberships --------------------------------------------------------
 alter table public.memberships enable row level security;
@@ -195,20 +230,38 @@ create policy "select own or admin" on public.memberships
     or private.is_member(business_id, array['owner', 'admin']::public.member_role[])
   );
 
+-- Säkerhet S3: `role <> 'admin'` i with check. `admin` är tänkt för intern
+-- platformsadministration (F19), inte något en företagsägare ska kunna dela
+-- ut till sig själv eller andra via appen (se DATA_MODEL.md, "Roller").
+-- Bara service role (intern admin-konsol) sätter role = 'admin'.
 create policy "owners insert" on public.memberships
   for insert
   to authenticated
-  with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+  with check (
+    private.is_member(business_id, array['owner', 'admin']::public.member_role[])
+    and role <> 'admin'
+  );
 
 create policy "owners update" on public.memberships
   for update
   to authenticated
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
-  with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+  with check (
+    private.is_member(business_id, array['owner', 'admin']::public.member_role[])
+    and role <> 'admin'
+  );
 
 create policy "owners delete" on public.memberships
   for delete
   to authenticated
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
 
-grant select, insert, update, delete on public.memberships to authenticated;
+grant select, insert, delete on public.memberships to authenticated;
+-- Kolumnbegränsad update: authenticated kan bara ändra en medlems roll eller
+-- vilken staff-rad den är kopplad till, aldrig flytta raden till ett annat
+-- företag (business_id) eller till en annan användare (user_id) — det är
+-- redan blockerat av RLS (INV-4), men kolumngrant är försvar på djupet.
+grant update (role, staff_id) on public.memberships to authenticated;
+
+-- Säkerhet S2: service_role har fullt CRUD (kan t.ex. sätta role = 'admin').
+grant select, insert, update, delete on public.memberships to service_role;
