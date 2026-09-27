@@ -75,12 +75,25 @@ export function sectionAria(desde: LocalDate, hasta: LocalDate): string {
   });
 }
 
-export type StatusChip = { readonly label: string; readonly tone: "success" };
+export type StatusChip = {
+  readonly label: string;
+  readonly tone: "success" | "neutral";
+};
 
-/** "Confirmó por WhatsApp" om kunden bekräftat, annars ingen status-chip. */
+/**
+ * "Llegó"/"No vino" om popoverns knappar redan satt det lokalt (WP-12 FRÅGA 7, `status`
+ * "completed"/"no_show"), annars "Confirmó por WhatsApp" om kunden bekräftat, annars
+ * ingen status-chip.
+ */
 export function statusChip(
-  booking: Pick<AgendaBooking, "confirmedByCustomer">,
+  booking: Pick<AgendaBooking, "confirmedByCustomer" | "status">,
 ): StatusChip | null {
+  if (booking.status === "completed") {
+    return { label: estados.llego, tone: "success" };
+  }
+  if (booking.status === "no_show") {
+    return { label: estados.noVino, tone: "neutral" };
+  }
   return booking.confirmedByCustomer
     ? { label: estados.confirmoPorWhatsapp, tone: "success" }
     : null;

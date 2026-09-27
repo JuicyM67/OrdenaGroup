@@ -150,6 +150,17 @@ describe("popoverModel", () => {
     });
     expect(statusChip({ ...booking, confirmedByCustomer: false })).toBeNull();
   });
+
+  it("status: Llegó/No vino (WP-12 FRÅGA 7) tienen prioridad sobre confirmedByCustomer", () => {
+    expect(statusChip({ ...booking, status: "completed" })).toEqual({
+      label: "Llegó",
+      tone: "success",
+    });
+    expect(statusChip({ ...booking, status: "no_show" })).toEqual({
+      label: "No vino",
+      tone: "neutral",
+    });
+  });
 });
 
 describe("weekdayMinLabels", () => {

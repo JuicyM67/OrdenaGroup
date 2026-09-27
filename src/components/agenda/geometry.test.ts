@@ -10,6 +10,7 @@ import {
   HOUR_PX,
   eventBox,
   gridHours,
+  initialScrollHour,
   nowTop,
   showAvatar,
   showTime,
@@ -126,6 +127,38 @@ describe("gridHours", () => {
       startHour: 0,
       endHour: 24,
     });
+  });
+});
+
+describe("initialScrollHour", () => {
+  it("idag syns: nu − 1 h (12:40 → 11,67)", () => {
+    const h = initialScrollHour(
+      instant(`${DAY}T12:40:00-03:00`),
+      10,
+      SANTIAGO,
+      true,
+    );
+    expect(h).toBeCloseTo(11.667, 2);
+  });
+
+  it("idag syns men nu − 1 h < öppningen: öppningen", () => {
+    const h = initialScrollHour(
+      instant(`${DAY}T10:20:00-03:00`),
+      10,
+      SANTIAGO,
+      true,
+    );
+    expect(h).toBe(10);
+  });
+
+  it("idag syns inte: öppningen", () => {
+    const h = initialScrollHour(
+      instant(`${DAY}T12:40:00-03:00`),
+      10,
+      SANTIAGO,
+      false,
+    );
+    expect(h).toBe(10);
   });
 });
 

@@ -19,7 +19,7 @@ export const EVENT_GAP_PX = 4;
 /** Kolumnhuvudets höjd i dagvyn (0 i veckovyn). */
 export const DAY_HEADER_PX = 44;
 
-function wallHourDecimal(instant: Date, tz: TimeZone): number {
+export function wallHourDecimal(instant: Date, tz: TimeZone): number {
   const wall = toWallClock(instant, tz);
   const [hh, mm] = wall.time.split(":") as [string, string];
   return Number(hh) + Number(mm) / 60;
@@ -102,4 +102,19 @@ export function gridHours(
     return { startHour: 0, endHour: 24 };
   }
   return { startHour, endHour };
+}
+
+/**
+ * Första synliga timmen i rutnätet: öppningen, eller nu − 1 h om "idag" syns (plan §4
+ * steg 5). `todayVisible` avgörs av anroparen (vecka innehåller idag, eller dagvyns
+ * fokusdag är idag).
+ */
+export function initialScrollHour(
+  now: Date,
+  gridStartHour: number,
+  tz: TimeZone,
+  todayVisible: boolean,
+): number {
+  if (!todayVisible) return gridStartHour;
+  return Math.max(gridStartHour, wallHourDecimal(now, tz) - 1);
 }
