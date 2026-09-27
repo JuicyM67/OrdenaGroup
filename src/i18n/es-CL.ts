@@ -5,8 +5,16 @@
  *
  * Alcance (WP-03, F5–F8): Reserva (`/[slug]`), la reserva del cliente
  * (`r/[token]`), Inicio, Agenda, Hoy, las seis plantillas de WhatsApp de la
- * fase 1 y el respaldo por correo. Onboarding, Clientes, Caja, Ajustes y el
- * abono con Mercado Pago se escriben en WP-03b.
+ * fase 1 y el respaldo por correo.
+ *
+ * Alcance (WP-03b, F1–F3, F9–F11): inicio de sesión (`acceso`), onboarding
+ * en 4 pasos, el perfil del negocio (`negocio`) y el catálogo (`servicios`,
+ * `profesionales`, `horarios`), Clientes (F9), Caja (F10), Ajustes y el
+ * abono por Mercado Pago (`abono`, F11), más las validaciones de esas
+ * pantallas (`validacion`). Estas exportaciones viven al final del archivo
+ * (R7 de su plan, para evitar conflictos con otros paquetes) y no tienen
+ * `.dc.html` de referencia (R1: no hay prueba de paridad de diseño para
+ * ellas, solo de contrato contra códigos y enums en `es-CL.v2.test.ts`).
  *
  * Los nombres de los días de la semana y de los meses NO están acá: viven en
  * `src/lib/format/` (WP-04), para que el mismo nombre ("Vie", "vie", "oct")
@@ -88,6 +96,10 @@ export const estados = {
   flash: "Flash",
   flashConDescuento: (p: { porcentaje: number }): string =>
     `Flash −${p.porcentaje}%`,
+  /** Agregado al final por WP-03b (§3 del plan, única excepción permitida
+   * en esta exportación ya existente): estado de una reserva con abono
+   * pendiente de pago (F11). */
+  pendientePago: "Esperando abono",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -140,6 +152,12 @@ export const errores = {
     outside_cancel_window:
       "Ya pasó el plazo para cancelar o cambiar esta reserva sin costo.",
     invalid_input: "Revisa los datos e intenta de nuevo.",
+    /** Código nuevo, fuera de la lista original de `BookingError` de WP-10
+     * (agregado por pedido de revisión, 2026-09-27): el negocio no está
+     * recibiendo reservas ahora mismo (`businesses.status = 'frozen'` u
+     * otra causa). Mismo texto que `reserva.vacios.negocioNoDisponible`
+     * (misma situación, dos puntos de entrada distintos). */
+    business_unavailable: "Este negocio no está recibiendo reservas por ahora.",
     outside_hours: "Ese horario ya no está disponible.",
     network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
     waitlist_duplicate: "Ya estás en la lista de espera para este día.",
@@ -166,9 +184,12 @@ export const errores = {
     outside_hours: "Esa hora está fuera del horario de atención.",
     /** Mismos códigos nuevos de `BookingError` que `errores.reserva`, en
      * tono para la dueña (WP-12, reserva manual/mover/cancelar desde
-     * Agenda). `too_far` no debería ocurrir para el dueño (inv. 5 de
-     * WP-10: sin horizonte), pero la clave existe para que
-     * `satisfies Record<BookingError, string>` funcione igual. */
+     * Agenda). `too_far` y `too_soon` no deberían ocurrir para el dueño
+     * (inv. 5 de WP-10: sin aviso mínimo ni horizonte), pero las claves
+     * existen para que `satisfies Record<BookingError, string>` funcione
+     * igual (pedido de revisión, 2026-09-27: faltaba `too_soon`, no
+     * compilaba). */
+    too_soon: "Es muy pronto para reservar esa hora.",
     too_far: "Esa fecha está fuera del rango permitido.",
     service_not_offered: "Ese profesional no ofrece este servicio.",
     not_found: "Esa reserva ya no existe.",
@@ -176,6 +197,10 @@ export const errores = {
     outside_cancel_window:
       "Ya pasó el plazo para cancelar o cambiar esta reserva.",
     invalid_input: "Revisa los datos e intenta de nuevo.",
+    /** Ver el comentario del mismo código en `errores.reserva`. */
+    business_unavailable:
+      "Tu cuenta está congelada. No puedes crear ni mover reservas hasta reactivarla.",
+    network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
   },
 } as const satisfies Trad;
 
@@ -239,16 +264,16 @@ export const reserva = {
      * de la lista de espera. */
     confirmacion: (p: { servicio: string; dia: string }): string =>
       `Quedaste en la lista de espera para ${p.servicio} el ${p.dia}.`,
+    /** Casilla de consentimiento para unirse a la lista de espera (WP-13):
+     * es una acción distinta de "Confirmar reserva", así que se versiona
+     * aparte de `consentimientos.version` (pedido de revisión,
+     * 2026-09-27). El hash se registra en `es-CL.test.ts` junto al de
+     * `consentimientos`. */
+    terminos: "Acepto recibir por WhatsApp el aviso si se libera una hora.",
+    /** Hash pendiente: el orquestador debe llenarlo después de correr
+     * `es-CL.test.ts` una vez (ver el informe de esta entrega). */
+    consentimientoVersion: "lista-espera-2026-10-v1",
   },
-  /** Casilla de consentimiento para unirse a la lista de espera (WP-13):
-   * es una acción distinta de "Confirmar reserva", así que no viaja dentro
-   * de `consentimientos` ni de su hash de versión. Pendiente: si esta
-   * pantalla necesita su propia versión/hash (mismo patrón que
-   * `clientes.consentimientoManual.version` en el plan de WP-03b, paso 7)
-   * queda para que el orquestador/planner lo decida; ver el informe de
-   * esta entrega. */
-  terminosListaEspera:
-    "Acepto recibir por WhatsApp el aviso si se libera una hora.",
   resumen: {
     conProfesional: (p: {
       servicio: string;
@@ -285,13 +310,15 @@ export const reserva = {
       `Te enviaremos la confirmación y un recordatorio por WhatsApp de ${p.negocio} a este número.`,
     ctaConfirmar: "Confirmar reserva",
   },
-  /** Versión "2026-10-v1" (borrador, ver R8 del plan): pendiente de revisión
+  /** Versión "2026-10-v2" (borrador, ver R8 del plan): pendiente de revisión
    * de un abogado antes de WP-27. Si cambias `terminos`, `terminosLinkTexto`,
    * `politicaLinkTexto`, `privacidadLinkTexto`, `responsable`, `marketing`,
-   * `antesDeConfirmar.avisoWhatsapp` o `antesDeConfirmar.politicaCancelacion`,
-   * sube `version` y registra el nuevo hash en `es-CL.test.ts` (`HASHES`). */
+   * `antesDeConfirmar.avisoWhatsapp`, `antesDeConfirmar.politicaCancelacion`
+   * o (desde v2) `abono.reserva.condiciones`, sube `version` y registra el
+   * nuevo hash en `es-CL.test.ts` (`HASHES`). v1 queda registrada en el
+   * archivo de hashes aunque ya no se use (GUIA §7, archivo inmutable). */
   consentimientos: {
-    version: "2026-10-v1",
+    version: "2026-10-v2",
     terminos:
       "Acepto los términos de la reserva y la política de cancelación, y recibir por WhatsApp la confirmación y los recordatorios de esta hora.",
     terminosLinkTexto: "los términos de la reserva",
@@ -1026,4 +1053,663 @@ export const email = {
    * WP-16 decide qué nombre mostrar. */
   pie: (p: { negocio: string; plataforma: string }): string =>
     `Recibes este correo porque reservaste en ${p.negocio} a través de ${p.plataforma}.`,
+  /** Correos de acceso (Supabase Auth, WP-03b paso 2, F1). Son textos fijos
+   * (no funciones): las variables `{{ .ConfirmationURL }}` y `{{ .Token }}`
+   * son sintaxis de plantilla de Supabase, no interpolación de `es-CL.ts`,
+   * y deben quedar literales para que WP-15 las copie tal cual a
+   * `supabase/templates/*.html` (FRÅGA 3 del plan, R9). `brand.name`
+   * aparece una vez en cada asunto, como remitente. */
+  acceso: {
+    magicLink: {
+      asunto: `Tu link para entrar a ${brand.name}`,
+      cuerpo: `Haz clic en este link para entrar a tu cuenta:\n\n{{ .ConfirmationURL }}\n\nO escribe este código en la pantalla de acceso: {{ .Token }}\n\nEl link y el código vencen en 15 minutos. Si no pediste este correo, puedes ignorarlo.`,
+    },
+    confirmation: {
+      asunto: `Confirma tu cuenta de ${brand.name}`,
+      cuerpo: `Haz clic en este link para confirmar tu cuenta y entrar:\n\n{{ .ConfirmationURL }}\n\nO escribe este código en la pantalla de acceso: {{ .Token }}\n\nEl link y el código vencen en 15 minutos. Si no creaste esta cuenta, puedes ignorar este correo.`,
+    },
+  },
+  /** Línea que WP-16/25 agregan dentro de `reservaConfirmada.cuerpo` cuando
+   * el servicio tiene abono (WP-03b paso 6, F11): una nueva propiedad
+   * opcional en `cuerpo` no es posible sin romper el tipo (`Trad` no admite
+   * parámetros opcionales ad hoc), así que va aparte. */
+  abono: {
+    lineaConfirmacion: (p: {
+      monto: string;
+      saldo: string;
+      condiciones: string;
+    }): string =>
+      `Pagaste ${p.monto} de abono. El resto (${p.saldo}) lo pagas en el local. ${p.condiciones}`,
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// WP-03b (desde acá): onboarding, catálogo, Clientes, Caja, Ajustes y el
+// abono con Mercado Pago. Mismas reglas que arriba (D-016): `tú`, sin
+// anglicismos evitables, sin el nombre del producto salvo vía `brand.name`.
+// No hay `.dc.html` de referencia para estas pantallas (R1 del plan de
+// WP-03b): no hay prueba de paridad de diseño para las exportaciones de
+// abajo, solo de contrato contra códigos y enums (ver `es-CL.v2.test.ts`).
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// validacion: códigos de error de los esquemas de src/lib/format/ (WP-04)
+// para los campos que llena el dueño (clp, rut, fecha, hora, hora local,
+// teléfono del negocio y del cliente, correo). Las claves son el código real
+// después del prefijo (`clp.out_of_range` → `validacion.clp.out_of_range`),
+// para que `satisfies Record<Codigo, string>` funcione sin traducir nombres
+// (mismo patrón que `errores.reserva.telefono`).
+// ---------------------------------------------------------------------------
+
+export const validacion = {
+  clp: {
+    empty: "Escribe un monto.",
+    invalid_format: "Usa solo números, sin decimales.",
+    out_of_range: "Ese monto es demasiado alto.",
+    invalid_type: "Ese monto no es válido.",
+  },
+  // Ningún campo usa RUT todavía en fase 1 (F17 lo necesitará). Se escribe
+  // igual porque el esquema ya existe (plan de WP-03b, paso 1).
+  rut: {
+    empty: "Escribe un RUT.",
+    invalid_format: "Ese RUT no tiene un formato válido.",
+    invalid_check_digit: "Revisa el dígito verificador.",
+    out_of_range: "Ese RUT no es válido.",
+  },
+  date: {
+    invalid_format: "Usa el formato día-mes-año.",
+    invalid_date: "Esa fecha no existe.",
+    invalid_type: "Esa fecha no es válida.",
+  },
+  time: {
+    invalid_format: "Usa el formato hora:minutos, por ejemplo 15:00.",
+    out_of_range: "Esa hora no existe. Usa un valor entre 00:00 y 23:59.",
+    invalid_type: "Esa hora no es válida.",
+  },
+  /** `fromLocalStrict` (src/lib/format/dates.ts, WP-04): cuando el dueño
+   * bloquea una hora en el propio día del cambio de horario de verano. */
+  horaLocal: {
+    nonexistent_local_time:
+      "Esa hora no existe ese día por el cambio de hora. Elige otra.",
+    ambiguous_local_time:
+      "Esa hora se repite ese día por el cambio de hora. Elige antes o después del cambio.",
+  },
+  /** Teléfono del negocio (F1): mobile_or_fixed, `chileanPhoneInputSchema`.
+   * Los seis códigos son `PhoneError` (src/lib/format/phone.ts); `not_mobile`
+   * no puede ocurrir en este modo, pero la clave existe para que
+   * `satisfies Record<PhoneError | "invalid_type" | "invalid_format", string>`
+   * compile. */
+  telefonoNegocio: {
+    empty: "Escribe el teléfono del negocio.",
+    invalid_chars: "Usa solo números, por ejemplo +56 9 1234 5678.",
+    not_chilean: "Por ahora solo aceptamos números chilenos (+56).",
+    invalid_length:
+      "Ese número no tiene la cantidad de dígitos de un teléfono chileno. Revisa el número.",
+    not_mobile: "Escribe un celular chileno, por ejemplo +56 9 1234 5678.",
+    invalid_prefix:
+      "Ese número no es válido. Debe empezar con 9 (celular) o con un código de área (fijo).",
+    invalid_type: "Ese teléfono no es válido.",
+    invalid_format: "Revisa el teléfono del negocio.",
+  },
+  /** Celular de un cliente que el dueño escribe a mano (Clientes, reserva
+   * manual): mismos seis códigos que `telefonoNegocio`, en tono distinto
+   * (es el celular de otra persona, no el propio). */
+  telefonoCliente: {
+    empty: "Escribe el celular del cliente.",
+    invalid_chars: "Usa solo números, por ejemplo +56 9 1234 5678.",
+    not_chilean: "Por ahora solo aceptamos celulares chilenos (+56).",
+    invalid_length:
+      "Un celular chileno tiene 8 dígitos después de +56 9. Revisa el número.",
+    not_mobile: "Escribe un celular chileno, por ejemplo +56 9 1234 5678.",
+    invalid_prefix: "Ese número no es válido. Revisa el código de área.",
+    invalid_type: "Ese celular no es válido.",
+    invalid_format: "Revisa el celular del cliente.",
+  },
+  email: {
+    invalid: "Revisa el correo electrónico.",
+  },
+  requerido: "Completa este campo.",
+  numeroEntero: (p: { min: number; max: number }): string =>
+    `Escribe un número entero entre ${p.min} y ${p.max}.`,
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// acceso: inicio de sesión con link mágico + código de 6 dígitos (F1,
+// FRÅGA 2 del plan de WP-03b). No hay código por WhatsApp en v1.
+// ---------------------------------------------------------------------------
+
+export const acceso = {
+  login: {
+    titulo: "Entrar",
+    emailLabel: "Correo",
+    emailPlaceholder: "tucorreo@ejemplo.cl",
+    cta: "Enviarme el link",
+    sinContrasena: "No necesitas contraseña.",
+    cuentaNueva: "Si es tu primera vez, creamos tu cuenta al tiro.",
+  },
+  enviado: {
+    titulo: "Revisa tu correo",
+    enviadoA: (p: { email: string }): string =>
+      `Te enviamos un link a ${p.email}.`,
+    codigoLabel: "O escribe el código de 6 dígitos",
+    reenviarEn: (p: { segundos: number }): string =>
+      `Reenviar en ${p.segundos} s`,
+    reenviar: "Reenviar",
+    usarOtroCorreo: "Usar otro correo",
+  },
+  /** Nombres propuestos por copywriter (R2 del plan de WP-03b): WP-15
+   * confirma la lista real de códigos de Supabase Auth y ajusta las claves
+   * si hace falta. */
+  errores: {
+    invalid_email: "Escribe un correo válido.",
+    otp_expired: "Ese link o código venció. Pide uno nuevo.",
+    invalid_otp: "Ese código no es válido. Revísalo o pide uno nuevo.",
+    over_email_send_rate_limit: "Espera un minuto antes de pedir otro link.",
+    /** PKCE: el link se abrió en un navegador distinto al que lo pidió,
+     * común cuando se abre desde el navegador interno de WhatsApp. */
+    pkce_mismatch:
+      "Abre el link en el mismo navegador donde lo pediste, o usa el código.",
+    captcha_failed:
+      "No pudimos verificar que eres una persona. Intenta de nuevo.",
+    session_expired: "Tu sesión venció. Entra de nuevo.",
+    network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
+  },
+  sesionCerrada: "Cerraste tu sesión.",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// negocio: perfil del negocio (onboarding paso 1 y Ajustes)
+// ---------------------------------------------------------------------------
+
+export const negocio = {
+  campos: {
+    nameLabel: "Nombre del negocio",
+    namePlaceholder: "Ej: Barbería Central",
+    comunaLabel: "Comuna",
+    categoryLabel: "Rubro",
+    phoneLabel: "Teléfono del negocio",
+    phoneAyuda:
+      "Celular o fijo. Tus clientes lo ven en la confirmación y lo usan para escribirte si no pueden cambiar su hora solos.",
+    addressLabel: "Dirección (opcional)",
+    addressPlaceholder: "Calle y número",
+  },
+  /** Claves = valores guardados en `businesses.category` (FRÅGA 8 del plan
+   * de WP-03b). La lista de comunas es dato, no copy: vive en WP-15. */
+  rubros: {
+    barberia: "Barbería",
+    peluqueria: "Peluquería",
+    estetica: "Estética",
+    unas: "Uñas",
+    cejas_pestanas: "Cejas y pestañas",
+    masajes: "Masajes",
+    kinesiologia: "Kinesiología",
+    otro: "Otro",
+  },
+  slug: {
+    label: "Tu link de reservas",
+    ayuda:
+      "Así se ve el link que le compartes a tus clientes. Puedes cambiarlo después en Ajustes.",
+    /** Vista previa del link ya armado (dominio + slug), formateado por
+     * quien la llama. */
+    vistaPrevia: (p: { url: string }): string => `Tu link: ${p.url}`,
+  },
+  /** Nombres propuestos por copywriter (R2 del plan): `businesses_slug_format`
+   * y `businesses_slug_not_reserved` (WP-01) validan 3–40 caracteres,
+   * a–z, 0–9 y guiones. */
+  errores: {
+    slug_taken: "Ese link ya lo está usando otro negocio. Prueba con otro.",
+    slug_reserved: "Ese link no está disponible. Prueba con otro.",
+    slug_invalid:
+      "Usa entre 3 y 40 letras minúsculas, números o guiones, sin espacios.",
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// onboarding: cuenta nueva en 4 pasos (F1, "menos de 10 minutos")
+// ---------------------------------------------------------------------------
+
+export const onboarding = {
+  bienvenida: "Configura tu agenda en 4 pasos, toma menos de 10 minutos.",
+  paso: (p: { n: number; total: number }): string =>
+    `Paso ${p.n} de ${p.total}`,
+  /** Mismos nombres que las secciones equivalentes en `ajustes.secciones`
+   * cuando significan lo mismo (§5 del plan: "mismo vocabulario"). */
+  pasos: {
+    servicios: "Servicios",
+    equipo: "Equipo",
+    horario: "Horario",
+    link: "Tu link",
+  },
+  ctaContinuar: "Continuar",
+  ctaVolver: "Volver",
+  ctaSaltar: "Saltar este paso",
+  loHagoDespues: "Lo hago después",
+  /** Una oración por paso, ≤ 120 caracteres (§5 del plan). */
+  intro: {
+    servicios: "Agrega lo que ofreces: nombre, duración y precio.",
+    equipo:
+      "Agrega a las personas que atienden. Si trabajas solo, agrégate a ti.",
+    horario: "Cuéntanos cuándo atiendes cada día.",
+    link: "Con esto ya tienes tu página de reservas lista.",
+  },
+  listo: {
+    titulo: "Tu link está listo",
+    ctaCopiar: "Copiar link",
+    copiado: "Copiado",
+    ctaCompartirWhatsapp: "Compartir por WhatsApp",
+    ctaVerPagina: "Ver mi página",
+    ctaIrAgenda: "Ir a mi agenda",
+    /** Se manda desde el propio teléfono del dueño (Web Share/`wa.me`), no
+     * por `message_outbox`: la regla dura 4 no aplica acá (ver el plan,
+     * paso 3). */
+    mensajeCompartir: (p: { negocio: string; url: string }): string =>
+      `Hola, ya puedes reservar tu hora en ${p.negocio} acá: ${p.url}`,
+  },
+  checklist: {
+    titulo: "Completa tu configuración",
+    pasosPendientes: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "paso pendiente" : "pasos pendientes"}`,
+  },
+  avisoSinServicios:
+    "Tu página no recibe reservas hasta que agregues un servicio.",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// servicios: catálogo (onboarding paso 1 y Ajustes, mismos campos)
+// ---------------------------------------------------------------------------
+
+export const servicios = {
+  campos: {
+    nameLabel: "Nombre del servicio",
+    namePlaceholder: "Ej: Corte de pelo",
+    /** GUIA §9: texto de ayuda que siempre se ve bajo el nombre, en
+     * onboarding y en Ajustes (misma clave en los dos lugares). No hay
+     * filtro automático de palabras en v1 (FRÅGA 11 del plan). */
+    nombreAyuda:
+      "El nombre llega al cliente por WhatsApp y correo. Usa un nombre general, sin datos de salud.",
+    /** Texto ampliado para kinesiología y estética (GUIA §9). */
+    nombreAyudaExtendida:
+      'Por ejemplo, escribe "Sesión de rehabilitación" en vez del diagnóstico o el tratamiento específico.',
+    durationLabel: "Duración (min)",
+    priceLabel: "Precio",
+    bufferLabel: "Tiempo extra después",
+    bufferAyuda: "Para limpiar o preparar. El cliente no lo ve.",
+    categoryLabel: "Categoría (opcional)",
+    profesionalesLabel: "¿Quién lo hace?",
+    mostrarEnPaginaLabel: "Mostrar en la página de reservas",
+    subirAria: "Subir",
+    bajarAria: "Bajar",
+  },
+  errores: {
+    nombreVacio: "Escribe el nombre del servicio.",
+    duracionInvalida: "La duración debe ser mayor a 0.",
+    bufferInvalido: "El tiempo extra no puede ser negativo.",
+    /** Sin cascada (bookings apunta al servicio): borrar un servicio con
+     * reservas lo bloquea la base de datos (plan, paso 3). */
+    service_in_use:
+      "Ese servicio tiene reservas. Desactívalo en vez de borrarlo.",
+  },
+  vacio: "Agrega los servicios que ofreces.",
+  contador: (p: { n: number }): string =>
+    `${p.n} ${p.n === 1 ? "servicio" : "servicios"}`,
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// profesionales: equipo (onboarding paso 2 y Ajustes)
+// ---------------------------------------------------------------------------
+
+export const profesionales = {
+  campos: {
+    nameLabel: "Nombre",
+    colorLabel: "Color",
+    serviciosLabel: "Servicios que hace",
+    horarioLabel: "Horario",
+    horarioIgualNegocio: "Igual que el negocio",
+    horarioPropio: "Horario propio",
+    activoLabel: "Activo",
+  },
+  /** `staff-1` … `staff-6` (src/styles/tokens.css): lavanda, celeste, lila,
+   * durazno, menta, lima, en ese orden (plan, paso 3). Usadas como
+   * `aria-label` de cada color y para el lector de pantalla. */
+  colores: {
+    "staff-1": "Lavanda",
+    "staff-2": "Celeste",
+    "staff-3": "Lila",
+    "staff-4": "Durazno",
+    "staff-5": "Menta",
+    "staff-6": "Lima",
+  },
+  /** Un horario propio solo puede achicar el horario del negocio, nunca
+   * ampliarlo (F3, `staff_hours`, R6 en el plan de WP-01): la base de datos
+   * no lo impide, lo respeta el motor de WP-10. */
+  horarioAyuda:
+    "Un horario propio solo puede achicar el horario del negocio, nunca ampliarlo.",
+  horarioAvisoFueraDeNegocio:
+    "Ese horario queda fuera del horario del negocio. No se van a ofrecer horas ahí.",
+  errores: {
+    nombreVacio: "Escribe el nombre del profesional.",
+    staff_has_future_bookings: (p: { n: number }): string =>
+      `Tiene ${p.n} ${p.n === 1 ? "reserva próxima" : "reservas próximas"}, muévelas o cancélalas primero.`,
+  },
+  vacio: "Agrega a las personas que atienden. Si trabajas solo, agrégate a ti.",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// horarios: horario de atención y bloqueos/ausencias (onboarding paso 3 y
+// Ajustes)
+// ---------------------------------------------------------------------------
+
+export const horarios = {
+  abierto: "Abierto",
+  cerrado: "Cerrado",
+  ctaAgregarHorario: "Agregar horario",
+  ctaQuitarHorario: "Quitar horario",
+  ctaCopiarATodosLosDias: "Copiar a todos los días",
+  /** "10:00–14:00 y 15:00–19:00": conjunción española de listas para 1, 2 y
+   * 3 intervalos ("A", "A y B", "A, B y C"). `rangos` ya viene formateado
+   * ("10:00–14:00") por WP-04; acá solo se arma la lista. */
+  intervalos: (p: { rangos: readonly string[] }): string => {
+    const r = p.rangos;
+    if (r.length === 0) return "";
+    if (r.length === 1) return r[0] ?? "";
+    if (r.length === 2) return `${r[0]} y ${r[1]}`;
+    return `${r.slice(0, -1).join(", ")} y ${r[r.length - 1]}`;
+  },
+  errores: {
+    business_hours_start_before_end:
+      "La hora de inicio debe ser antes que la de término.",
+    business_hours_no_overlap: "Ese horario se cruza con otro del mismo día.",
+  },
+  /** `time_off_kind` (DB enum) y campos del formulario de bloqueo/ausencia. */
+  bloqueos: {
+    tituloNuevo: "Nuevo bloqueo",
+    kind: {
+      block: "Bloqueo",
+      lunch: "Almuerzo",
+      vacation: "Vacaciones",
+      holiday: "Feriado",
+    },
+    alcance: {
+      negocio: "Todo el negocio",
+      profesional: "Un profesional",
+    },
+    campos: {
+      desde: "Desde",
+      hasta: "Hasta",
+      nota: "Nota (opcional)",
+    },
+    notaAyuda: "Solo tu equipo la ve. No anotes datos de salud.",
+    ctaGuardar: "Guardar bloqueo",
+    overlapsBookings: (p: { n: number }): string =>
+      `Ese bloqueo se cruza con ${p.n} ${p.n === 1 ? "reserva" : "reservas"}. Muévelas antes de guardar.`,
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// ajustes: pantalla de configuración permanente (perfil, reglas, cuenta)
+// ---------------------------------------------------------------------------
+
+export const ajustes = {
+  secciones: {
+    negocio: "Tu negocio",
+    link: "Tu link de reservas",
+    reglas: "Reglas de reserva",
+    servicios: "Servicios",
+    equipo: "Equipo",
+    horario: "Horario",
+    mercadopago: "Mercado Pago",
+    cuenta: "Cuenta",
+  },
+  reglas: {
+    minNoticeLabel: "Anticipación mínima",
+    maxDaysAheadLabel: (p: { n: number }): string =>
+      `Reservas con hasta ${p.n} días de anticipación`,
+    cancelWindowLabel: "Plazo para cancelar o cambiar",
+    cancelWindowAyuda:
+      "Este número se lo mostramos al cliente antes de confirmar y en la confirmación por WhatsApp.",
+    slotIntervalLabel: "Cada cuánto se ofrecen horas",
+  },
+  waitlistMode: {
+    sequential: "Uno por uno, en orden",
+    broadcast: "A todos a la vez",
+  },
+  waitlistModeAyuda: {
+    sequential: "Le avisamos a un cliente a la vez y esperamos su respuesta.",
+    broadcast:
+      "Le avisamos a todos los que esperan y gana quien confirme primero.",
+  },
+  slugAviso:
+    'Si cambias tu link, el anterior deja de funcionar. Los WhatsApp ya enviados con el botón "Reservar de nuevo" van a apuntar al link viejo.',
+  guardarCambios: "Guardar cambios",
+  cambiosGuardados: "Cambios guardados",
+  cambiosSinGuardar: "Tienes cambios sin guardar",
+  seguirEditando: "Seguir editando",
+  conflictoEdicion:
+    "Alguien más cambió esto. Recarga para ver la última versión.",
+  cuenta: {
+    sesionComo: (p: { email: string }): string =>
+      `Sesión iniciada como ${p.email}`,
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// clientes: Clientes (F9) — lista, ficha, notas y consentimientos
+// ---------------------------------------------------------------------------
+
+export const clientes = {
+  lista: {
+    buscarPlaceholder: "Buscar por nombre o celular",
+    columnaUltimaVisita: "Última visita",
+    columnaVisitas: "Visitas",
+    columnaInasistencias: "Inasistencias",
+    vacio: "Todavía no tienes clientes.",
+    sinResultados: (p: { busqueda: string }): string =>
+      `No encontramos clientes para "${p.busqueda}".`,
+  },
+  ficha: {
+    clienteDesde: (p: { fecha: string }): string => `Cliente desde ${p.fecha}`,
+    visitas: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "visita" : "visitas"}`,
+    inasistencias: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "inasistencia" : "inasistencias"}`,
+    historialTitulo: "Historial",
+    proximasTitulo: "Próximas reservas",
+    ctaNuevaReserva: "Nueva reserva",
+    ctaLlamar: "Llamar",
+    ctaWhatsapp: "Escribir por WhatsApp",
+    ctaVerFicha: "Ver ficha",
+  },
+  notas: {
+    label: "Notas",
+    ayuda:
+      "Solo tu equipo las ve. No anotes datos de salud ni información sensible.",
+  },
+  editar: {
+    nameLabel: "Nombre",
+    phoneLabel: "Celular",
+    emailLabel: "Correo (opcional)",
+    ctaGuardar: "Guardar cliente",
+  },
+  errores: {
+    /** Nunca dice si el número ya existe en OTRO negocio (tenant-isolation,
+     * plan §5). */
+    customer_phone_taken: "Ya tienes un cliente con ese celular.",
+  },
+  /** `consent_channel` (DB enum). */
+  consentimientos: {
+    canal: {
+      web: "En tu página de reservas",
+      whatsapp: "Por WhatsApp",
+      manual: "Registrado por ti",
+    },
+    sinRegistro: "Todavía no dio su consentimiento.",
+    baja: "Respondió BAJA a las ofertas.",
+  },
+  /** Casilla de consentimiento cuando el dueño agenda a un cliente sin que
+   * haya pasado por `/[slug]` (walk-in, teléfono; FRÅGA 10 del plan): nunca
+   * está premarcada, y se guarda con `consent_channel = 'manual'`. Versión
+   * propia porque es un texto distinto del de `reserva.consentimientos`.
+   * Hash pendiente: el orquestador debe llenarlo tras correr
+   * `es-CL.v2.test.ts` una vez (ver el informe de esta entrega). */
+  consentimientoManual: {
+    version: "manual-2026-10-v1",
+    texto:
+      "El cliente aceptó recibir por WhatsApp la confirmación y los recordatorios de sus horas.",
+    marketingRechazado: "El cliente no quiere recibir ofertas.",
+  },
+  anonimizado: "Cliente anonimizado",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// caja: Caja (F10) — resumen de pagos, marcar como pagada, anular
+// ---------------------------------------------------------------------------
+
+export const caja = {
+  /** SegmentedControl ≤ 7 caracteres (§5 del plan). */
+  periodos: {
+    hoy: "Hoy",
+    semana: "Semana",
+    mes: "Mes",
+  },
+  /** Mismo patrón que `agenda.semana` para la semana. */
+  periodo: (p: { desde: string; hasta: string }): string =>
+    `Del ${p.desde} al ${p.hasta}`,
+  resumen: {
+    cobrado: "Cobrado",
+    porCobrar: "Por cobrar",
+    abonosMercadopago: "Abonos por Mercado Pago",
+    reservasCount: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "reserva" : "reservas"}`,
+    /** Explica qué cuenta como "cobrado" (F10: "las sumas cuadran con las
+     * reservas"): pagos `approved` con `paid_at` dentro del período en
+     * America/Santiago, menos los `refunded`. */
+    explicacion:
+      "Suma los pagos aprobados dentro del período (hora de Santiago), menos los devueltos.",
+  },
+  /** `payment_method` (DB enum). Mercado Pago manual (FRÅGA 7 del plan) no
+   * se ofrece en v1 (D-022): la etiqueta queda lista para cuando exista un
+   * valor de enum propio. */
+  metodo: {
+    cash: "Efectivo",
+    card_terminal: "Débito o crédito",
+    transfer: "Transferencia",
+    mercadopago: "Mercado Pago",
+  },
+  /** `payment_kind` (DB enum). */
+  tipo: {
+    deposit: "Abono",
+    balance: "Saldo",
+    full: "Pago completo",
+  },
+  /** `payment_status` (DB enum). */
+  estado: {
+    pending: "Pendiente",
+    approved: "Aprobado",
+    rejected: "Rechazado",
+    refunded: "Devuelto",
+  },
+  marcarPagada: {
+    titulo: "Marcar como pagada",
+    /** WP-24 calcula el monto sugerido; acá solo se arma la frase. */
+    aPagar: (p: { precio: string; descuento: string; abono: string }): string =>
+      `${p.precio} − ${p.descuento} − ${p.abono} de abono`,
+    metodoLabel: "Método de pago",
+    cta: "Marcar como pagada",
+    confirmacion: (p: { metodo: string }): string => `Pagada con ${p.metodo}.`,
+  },
+  /** GUIA §5: nunca "Cancelar pago", el botón destructivo dice "Anular
+   * pago" y el diálogo usa "Volver", nunca "Cancelar". No hay borrado
+   * (RLS de `payments`), solo anulación. */
+  anular: {
+    cta: "Anular pago",
+    tituloConfirmacion: "¿Anular este pago?",
+    cuerpoConfirmacion: "Esto no se puede deshacer.",
+  },
+  soloLecturaMercadopago: "Pagado por Mercado Pago, no se puede editar acá.",
+  errores: {
+    already_paid:
+      "Esta reserva ya se marcó como pagada. Recarga para ver el estado.",
+  },
+  vacioPeriodo: "No hay pagos en este período.",
+  vacioDia: "No tienes reservas este día.",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// abono: pago adelantado por Mercado Pago (F11) — Ajustes, servicio, Reserva,
+// retorno de Mercado Pago, r/[token] y la vista del dueño
+// ---------------------------------------------------------------------------
+
+export const abono = {
+  ajustes: {
+    /** D-008: el abono nunca pasa por la plataforma. */
+    explicacion:
+      "El abono llega directo a tu cuenta de Mercado Pago. Nunca pasa por nosotros.",
+    ctaConectar: "Conectar Mercado Pago",
+    conectadaComo: (p: { cuenta: string }): string =>
+      `Conectada como ${p.cuenta}`,
+    ctaDesconectar: "Desconectar",
+    confirmarDesconectar:
+      "Los servicios con abono dejarán de pedirlo hasta que vuelvas a conectar.",
+    errores: {
+      oauth_cancelled: "Cancelaste la conexión con Mercado Pago.",
+      oauth_denied: "Mercado Pago rechazó la conexión. Intenta de nuevo.",
+      token_expired: "Tu conexión con Mercado Pago venció. Vuelve a conectar.",
+      mp_unavailable: "Mercado Pago no está respondiendo. Intenta más tarde.",
+    },
+  },
+  /** `deposit_kind` (DB enum) y campos del formulario de servicio. */
+  servicio: {
+    depositKindLabel: "Abono",
+    depositKind: {
+      none: "Sin abono",
+      fixed: "Monto fijo",
+      percent: "Porcentaje del precio",
+    },
+    depositValueLabel: "Monto del abono",
+    /** WP-25 calcula el monto (redondeo `percentOfClp`, ver IDEAS). */
+    vistaPrevia: (p: { monto: string }): string =>
+      `El cliente paga ${p.monto} para reservar.`,
+    errores: {
+      porcentajeFueraDeRango: "El porcentaje debe ser entre 1 y 100.",
+      montoMayorAlPrecio:
+        "El abono no puede ser mayor que el precio del servicio.",
+      mp_not_connected: "Conecta Mercado Pago para pedir abono.",
+    },
+  },
+  reserva: {
+    requiereAbono: (p: { monto: string }): string =>
+      `Requiere abono de ${p.monto}`,
+    explicacion: (p: { monto: string; saldo: string }): string =>
+      `Paga ${p.monto} ahora con Mercado Pago. El resto (${p.saldo}) lo pagas en el local.`,
+    /** D-022 (regla del abono, antes D-019 en el plan): el abono se
+     * descuenta del precio; si el cliente cancela dentro del plazo, el
+     * negocio lo devuelve; si cancela fuera de plazo o no viene, el negocio
+     * se lo queda. Este texto entra en el hash de `consentimientos.version`
+     * (paso 7 del plan, FRÅGA 4 aprobada). */
+    condiciones: (p: { horas: number }): string =>
+      `Si cancelas con más de ${p.horas} h de anticipación, te devolvemos el abono. Si cancelas después o no vienes, el negocio se queda con el abono.`,
+    ctaPagar: "Pagar abono",
+    redirigiendo: "Te llevamos a Mercado Pago…",
+    tiempoParaPagar: (p: { minutos: number }): string =>
+      `Tienes ${p.minutos} min para pagar. Después liberamos la hora.`,
+    retorno: {
+      aprobado: "Abono pagado, tu hora quedó confirmada.",
+      pendiente: "Estamos confirmando tu pago…",
+      rechazado: "El pago no se completó. Puedes intentar de nuevo.",
+      expirado: "Se acabó el tiempo y la hora quedó libre.",
+    },
+    /** El pago llegó aprobado después de que la hora ya se liberó (webhook
+     * tardío): devolución manual en v1 (D-022, automática queda en IDEAS). */
+    pagoTardio: (p: { negocio: string }): string =>
+      `Recibimos tu pago, pero la hora ya se había liberado. ${p.negocio} te devolverá el abono.`,
+  },
+  gestion: {
+    abonoPagado: (p: { monto: string }): string => `Abono pagado: ${p.monto}`,
+  },
+  /** Vista del dueño (Caja y Agenda): `estados.pendientePago` cubre el chip
+   * de la reserva sin pagar; esto es la devolución pendiente. */
+  dueno: {
+    abonoPorDevolver: "Abono por devolver",
+    devolverEnMercadopago: "Devuélvelo desde tu cuenta de Mercado Pago.",
+  },
 } as const satisfies Trad;

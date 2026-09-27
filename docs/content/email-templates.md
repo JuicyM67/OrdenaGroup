@@ -95,7 +95,65 @@ Profesional: {profesional}
 Revisa el detalle aquí: {linkGestion}
 ```
 
-## 5. Pie de página (los cuatro correos)
+## 5. Acceso (Supabase Auth, WP-03b)
+
+**Fuente:** `email.acceso` en `src/i18n/es-CL.ts`. Son textos **fijos**, no
+funciones: `{{ .ConfirmationURL }}` y `{{ .Token }}` son variables de
+plantilla de Supabase (sintaxis Go), no interpolación de `es-CL.ts`, y deben
+copiarse **tal cual** a `supabase/templates/*.html` (WP-15). `brand.name`
+aparece una vez en cada asunto, como remitente. Vencen en 15 minutos
+(`otp_expiry = 900`, ver `docs/tech/SUPABASE_CONFIG.md`).
+
+### 5.1 Link mágico (inicio de sesión)
+
+**Asunto:** `email.acceso.magicLink.asunto`
+
+```
+Haz clic en este link para entrar a tu cuenta:
+
+{{ .ConfirmationURL }}
+
+O escribe este código en la pantalla de acceso: {{ .Token }}
+
+El link y el código vencen en 15 minutos. Si no pediste este correo, puedes
+ignorarlo.
+```
+
+### 5.2 Confirmación (cuenta nueva, `enable_confirmations` en prod)
+
+**Asunto:** `email.acceso.confirmation.asunto`
+
+```
+Haz clic en este link para confirmar tu cuenta y entrar:
+
+{{ .ConfirmationURL }}
+
+O escribe este código en la pantalla de acceso: {{ .Token }}
+
+El link y el código vencen en 15 minutos. Si no creaste esta cuenta, puedes
+ignorar este correo.
+```
+
+## 6. Abono (Mercado Pago, WP-03b, F11)
+
+**Fuente:** `email.abono.lineaConfirmacion({ monto, saldo, condiciones })`.
+No es un correo aparte: WP-16/25 agregan esta línea dentro del cuerpo de
+"Reserva confirmada" (§1) cuando el servicio tiene abono, porque una nueva
+propiedad opcional en `email.reservaConfirmada.cuerpo` rompería su tipo. La
+línea cumple la exigencia de confirmación **escrita** con condiciones
+(SERNAC, Ley 19.496; ver la nota al inicio de este documento).
+
+```
+Pagaste {monto} de abono. El resto ({saldo}) lo pagas en el local.
+{condiciones}
+```
+
+`{condiciones}` es el resultado de `abono.reserva.condiciones({ horas })`
+(D-022, regla del abono): explica que el abono se devuelve si se cancela
+dentro del plazo, y que el negocio se lo queda si se cancela fuera de plazo
+o si el cliente no viene.
+
+## 7. Pie de página (los cuatro correos de reserva)
 
 `email.pie({ negocio, plataforma })`. `{plataforma}` se recibe como
 parámetro (no está escrito a mano en `es-CL.ts`): quien arma el correo en

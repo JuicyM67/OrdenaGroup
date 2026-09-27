@@ -7,8 +7,10 @@ import { describe, expect, it } from "vitest";
 import { brand } from "@/config/brand";
 
 import {
+  abono,
   agenda,
   calendario,
+  clientes,
   comun,
   email,
   errores,
@@ -21,10 +23,22 @@ import {
   reserva,
   whatsappSesion,
 } from "./es-CL";
+import {
+  escaparRegExp,
+  NOMBRES_FIXTURE,
+  paraCadaHoja,
+  PATRON_MARCA,
+  PATRON_RESTO_ROTO,
+  REGLAS_DE_TONO,
+  type Rama,
+} from "./test-helpers";
 
 // ---------------------------------------------------------------------------
 // Utilidades
 // ---------------------------------------------------------------------------
+// `paraCadaHoja`, `escaparRegExp`, `PATRON_RESTO_ROTO`, `REGLAS_DE_TONO`,
+// `PATRON_MARCA` y `NOMBRES_FIXTURE` viven en `./test-helpers` desde
+// WP-03b (paso 1, refactorización pura: mismo comportamiento que antes).
 
 const REF_DIR = path.resolve(process.cwd(), "docs/design/reference");
 
@@ -45,29 +59,6 @@ function apareceComoNodo(contenido: string, texto: string): boolean {
   // string de JS.
   const t = escaparRegExp(texto);
   return new RegExp(`>\\s*${t}\\s*<|"${t}"|'${t}'`).test(contenido);
-}
-
-function escaparRegExp(texto: string): string {
-  return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-type Hoja = string | ((p: never) => string);
-type Rama = { readonly [k: string]: Hoja | Rama };
-
-/** Recorre un área completa y visita cada hoja (string o función). */
-function paraCadaHoja(
-  raiz: Rama,
-  prefijo: string,
-  visitar: (ruta: string, hoja: Hoja) => void,
-): void {
-  for (const [clave, valor] of Object.entries(raiz)) {
-    const ruta = prefijo ? `${prefijo}.${clave}` : clave;
-    if (typeof valor === "string" || typeof valor === "function") {
-      visitar(ruta, valor);
-    } else {
-      paraCadaHoja(valor, ruta, visitar);
-    }
-  }
 }
 
 const AREAS: Record<string, Rama> = {
@@ -167,8 +158,6 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
   plataforma: "la plataforma",
 };
-
-const PATRON_RESTO_ROTO = /undefined|NaN|\bnull\b|\[object|\{\{|\{[a-zA-Z]/;
 
 function invocarGenerico(fn: unknown): unknown {
   return (fn as (p: Record<string, unknown>) => unknown)(MUESTRA_GENERICA);
@@ -704,16 +693,6 @@ describe("baja, bajaTotal y el pie del correo nombran al negocio", () => {
 // ---------------------------------------------------------------------------
 
 describe("tono", () => {
-  const prohibido = {
-    usted: /\busted(es)?\b/i,
-    voseo: /\b(podés|tenés|querés|sabés|reservá|elegí)\b/i,
-    slangPo: /\bpo\b/i,
-    slangWena: /\bwena\b/i,
-    booking: /\bbooking\b/i,
-    checkin: /\bcheck-?in\b/i,
-    emoji: /\p{Extended_Pictographic}/u,
-  };
-
   it("la tabla de muestras (describe anterior) se llenó correctamente", () => {
     // Vitest corre los tests de un mismo archivo en orden de declaración: si
     // esto falla, revisa que el describe "flexión" siga antes que este.
@@ -728,7 +707,7 @@ describe("tono", () => {
       ...muestrasSesionYCorreo,
     ];
     for (const texto of todos) {
-      for (const [nombreRegla, regex] of Object.entries(prohibido)) {
+      for (const [nombreRegla, regex] of Object.entries(REGLAS_DE_TONO)) {
         expect(regex.test(texto), `${nombreRegla}: "${texto}"`).toBe(false);
       }
     }
@@ -740,10 +719,6 @@ describe("tono", () => {
 // ---------------------------------------------------------------------------
 
 describe("marca", () => {
-  // Se arma desde brand.name (escapado) para no escribir el nombre en este
-  // archivo ni romper si brand.name tuviera algún carácter especial de regex.
-  const patronMarca = new RegExp(`\\b${escaparRegExp(brand.name)}\\b`, "i");
-
   it("ningún texto (UI, plantillas, sesión o correo) contiene el nombre del producto salvo donde se interpola brand.name", () => {
     const todos = [
       ...todosLosStringsEstaticos(),
@@ -751,10 +726,10 @@ describe("marca", () => {
       ...muestrasSesionYCorreo,
     ];
     for (const texto of todos) {
-      expect(patronMarca.test(texto), texto).toBe(false);
+      expect(PATRON_MARCA.test(texto), texto).toBe(false);
     }
     for (const texto of muestras) {
-      if (patronMarca.test(texto)) {
+      if (PATRON_MARCA.test(texto)) {
         expect(texto, texto).toContain(brand.name);
         expect(texto.split(brand.name).length - 1, texto).toBe(1);
       }
@@ -762,7 +737,7 @@ describe("marca", () => {
   });
 
   it("el hero de Inicio usa el pretérito (llenó), no el nombre", () => {
-    expect(patronMarca.test(inicio.hero.titulo)).toBe(false);
+    expect(PATRON_MARCA.test(inicio.hero.titulo)).toBe(false);
     expect(inicio.hero.titulo).toContain("llenó");
   });
 });
@@ -778,17 +753,6 @@ describe("nombres de fixtures no aparecen fuera de un ejemplo de Meta", () => {
   const SIN_EJEMPLOS = FUENTE.split("\n")
     .filter((linea) => !/\bejemplo\s*:/.test(linea))
     .join("\n");
-
-  const NOMBRES_FIXTURE = [
-    "Barbería Norte",
-    "Joaquín",
-    "Camila",
-    "Martina Lagos",
-    "Valentina Soto",
-    "Ignacio Pérez",
-    "Corte clásico",
-    "Perfilado de barba",
-  ];
 
   it.each(NOMBRES_FIXTURE)(
     '"%s" no aparece fuera de un campo "ejemplo"',
@@ -1445,6 +1409,8 @@ describe("longitudes", () => {
     expect(estados.confirmada.length).toBeLessThanOrEqual(22);
     expect(estados.abonoPagado.length).toBeLessThanOrEqual(22);
     expect(estados.sinConfirmar.length).toBeLessThanOrEqual(22);
+    // Agregado por WP-03b (F11): chip de una reserva con abono pendiente.
+    expect(estados.pendientePago.length).toBeLessThanOrEqual(22);
   });
 });
 
@@ -1482,8 +1448,10 @@ describe("errores.reserva y errores.agenda usan las claves de los códigos reale
     expect(errores.reserva.waitlist_duplicate.length).toBeGreaterThan(0);
   });
 
-  it("errores.agenda tiene slot_taken y outside_hours", () => {
+  it("errores.agenda tiene slot_taken, too_soon, outside_hours y network", () => {
     expect(errores.agenda.slot_taken.length).toBeGreaterThan(0);
+    expect(errores.agenda.too_soon.length).toBeGreaterThan(0);
+    expect(errores.agenda.network.length).toBeGreaterThan(0);
     expect(errores.agenda.outside_hours).toBe(
       "Esa hora está fuera del horario de atención.",
     );
@@ -1493,7 +1461,9 @@ describe("errores.reserva y errores.agenda usan las claves de los códigos reale
 // ---------------------------------------------------------------------------
 // errores.reserva y errores.agenda cubren los códigos nuevos de
 // `BookingError` (WP-10, `src/server/bookings/types.ts`, FRÅGA 4 del plan
-// de WP-10, entrega temprana de WP-03b).
+// de WP-10, entrega temprana de WP-03b) más `business_unavailable`, código
+// nuevo fuera de la lista original de WP-10 (pedido de revisión,
+// 2026-09-27).
 // ---------------------------------------------------------------------------
 
 describe("errores.reserva y errores.agenda cubren BookingError (WP-10)", () => {
@@ -1508,6 +1478,7 @@ describe("errores.reserva y errores.agenda cubren BookingError (WP-10)", () => {
     "invalid_status",
     "outside_cancel_window",
     "invalid_input",
+    "business_unavailable",
   ] as const;
 
   it.each(codigosNuevos)(
@@ -1536,6 +1507,13 @@ describe("consentimientos", () => {
   const HASHES: Record<string, string> = {
     "2026-10-v1":
       "9332b0c637c01b914a0bf68d93e2d55519c27fcba6d3476ee5686f34d5c4278f",
+    // WP-03b, paso 7 (FRÅGA 4 aprobada): v2 agrega `abono.reserva.condiciones`
+    // al texto que se hashea, porque ahora las condiciones del abono también
+    // son algo que el cliente acepta antes de confirmar. HASH PENDIENTE: no
+    // se pudo calcular en esta entrega (sin acceso a Bash/node); el
+    // orquestador debe correr este test una vez, copiar el hash "Received"
+    // del mensaje de fallo y pegarlo acá. Ver el informe de esta entrega.
+    "2026-10-v2": "",
   };
 
   function sha256(texto: string): string {
@@ -1558,6 +1536,9 @@ describe("consentimientos", () => {
       a.avisoWhatsapp({ negocio: "{negocio}" }),
       a.politicaCancelacion({ horas: "{horas}" as unknown as number }),
       c.marketing({ negocio: "{negocio}" }),
+      // Nuevo en v2 (paso 7 del plan): condiciones del abono, cuando el
+      // servicio lo tiene.
+      abono.reserva.condiciones({ horas: "{horas}" as unknown as number }),
     ].join("\n");
   }
 
@@ -1582,5 +1563,68 @@ describe("consentimientos", () => {
     expect(
       reserva.consentimientos.marketing({ negocio: "Barbería Norte" }),
     ).toContain("BAJA");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Consentimiento de la lista de espera: versión propia, aparte de
+// `reserva.consentimientos.version` (pedido de revisión, 2026-09-27, sobre
+// `reserva.waitlist.terminos`).
+// ---------------------------------------------------------------------------
+
+describe("consentimiento de la lista de espera", () => {
+  // HASH PENDIENTE (igual que "2026-10-v2" arriba): el orquestador lo llena
+  // después de correr este test una vez. Ver el informe de esta entrega.
+  const HASHES: Record<string, string> = {
+    "lista-espera-2026-10-v1": "",
+  };
+
+  function sha256(texto: string): string {
+    return createHash("sha256").update(texto, "utf8").digest("hex");
+  }
+
+  it('la versión está ligada al hash del texto (sube "reserva.waitlist.consentimientoVersion" si cambias el texto)', () => {
+    const version = reserva.waitlist.consentimientoVersion;
+    const hashEsperado = HASHES[version];
+    expect(
+      hashEsperado,
+      `No hay hash registrado para "${version}"`,
+    ).toBeDefined();
+    expect(sha256(reserva.waitlist.terminos)).toBe(hashEsperado);
+  });
+
+  it("menciona WhatsApp (es un aviso, no una promoción)", () => {
+    expect(reserva.waitlist.terminos).toContain("WhatsApp");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Consentimiento manual (dueño registra a un cliente walk-in/telefónico):
+// versión propia, `consent_channel = 'manual'` (plan de WP-03b, paso 7).
+// ---------------------------------------------------------------------------
+
+describe("consentimiento manual de Clientes", () => {
+  // HASH PENDIENTE: mismo motivo que los dos anteriores.
+  const HASHES: Record<string, string> = {
+    "manual-2026-10-v1": "",
+  };
+
+  function sha256(texto: string): string {
+    return createHash("sha256").update(texto, "utf8").digest("hex");
+  }
+
+  it('la versión está ligada al hash del texto (sube "clientes.consentimientoManual.version" si cambias el texto)', () => {
+    const version = clientes.consentimientoManual.version;
+    const hashEsperado = HASHES[version];
+    expect(
+      hashEsperado,
+      `No hay hash registrado para "${version}"`,
+    ).toBeDefined();
+    expect(sha256(clientes.consentimientoManual.texto)).toBe(hashEsperado);
+  });
+
+  it("está redactado como algo que el cliente hizo, no como una casilla premarcada por el dueño", () => {
+    expect(clientes.consentimientoManual.texto).toMatch(/aceptó/i);
+    expect(clientes.consentimientoManual.texto).toContain("WhatsApp");
   });
 });
