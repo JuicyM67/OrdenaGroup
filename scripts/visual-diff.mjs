@@ -117,7 +117,12 @@ for (const item of items) {
     viewport: { width: item.width, height: item.height },
     deviceScaleFactor: scale,
   });
-  const response = await page.goto(BASE + item.url, { waitUntil: "networkidle" });
+  // "networkidle" hänger ibland (WP-12, granskningsfynd): Next.js `<Link>`-prefetch mot
+  // en route som inte finns än i det här worktreet (t.ex. NavRailLogo → /app/inicio,
+  // innan WP-11 är mergad) håller kvar en keep-alive-anslutning som Chromium aldrig
+  // räknar som "idle", trots att svaret (404) redan kommit. "load" + `document.fonts.ready`
+  // nedan räcker för en stillastående design lab-sida.
+  const response = await page.goto(BASE + item.url, { waitUntil: "load" });
   if (response?.status() === 404) {
     await page.close();
     if (STRICT) {
