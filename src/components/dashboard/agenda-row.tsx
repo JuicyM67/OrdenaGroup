@@ -10,6 +10,7 @@ import { strokeCard } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
 import { nav, inicio } from "@/i18n";
 import { SANTIAGO, formatTime } from "@/lib/format/dates";
+import { initialsOf } from "@/lib/format/initials";
 
 import { mustParseInstant, statusChip } from "./inicio-view";
 import type { TodayBooking } from "./types";
@@ -30,7 +31,7 @@ export function AgendaRow({ booking, onMoreOptions }: AgendaRowProps) {
         shape="square"
         size={40}
         tone={booking.tint}
-        initials={booking.initials}
+        initials={initialsOf(booking.clientName)}
       />
       <div className="min-w-0 flex-1">
         <div className="truncate text-15 font-semibold">

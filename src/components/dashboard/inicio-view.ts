@@ -1,6 +1,6 @@
 // Rena funktioner för Inicio-skärmen (Main.dc.html), se docs/tasks/plans/WP-11.md §4 steg 2.
 // Ingen React, inget `new Date()` här — klockan tas alltid emot som parameter.
-import { estados, inicio } from "@/i18n";
+import { estados, inicio, nav } from "@/i18n";
 import {
   SANTIAGO,
   formatDate,
@@ -72,6 +72,13 @@ export function heroVariant(week: InicioData["week"]): "recuperado" | "vacio" {
   return week.recoveredHours > 0 ? "recuperado" : "vacio";
 }
 
+/** `nav.notificaciones` utan aviseringar, annars `nav.notificacionesNuevas({ n })`. */
+export function notificationsLabel(count: number): string {
+  return count > 0
+    ? nav.notificacionesNuevas({ n: count })
+    : nav.notificaciones;
+}
+
 /** "bajando" / "subiendo" / "igual" (FRÅGA 8: down = success, up = deposit, flat = neutral). */
 export function noShowTrendLabel(
   trend: InicioData["stats"]["noShowTrend"],
@@ -79,20 +86,6 @@ export function noShowTrendLabel(
   if (trend === "down") return inicio.stats.tendencia.bajando;
   if (trend === "up") return inicio.stats.tendencia.subiendo;
   return inicio.stats.tendencia.igual;
-}
-
-/**
- * "Camila Reyes" → "CR". Reservfall om `owner.initials` saknas (typen är valfri för
- * WP-21:s riktiga data). TODO(WP-10): byt till `initialsOf()` när den finns (FRÅGA 6).
- */
-export function initialsFallback(fullName: string): string {
-  return fullName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]!.toUpperCase())
-    .join("");
 }
 
 /**

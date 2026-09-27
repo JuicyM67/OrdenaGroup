@@ -1,7 +1,8 @@
 // Vy-modell för Inicio (Main.dc.html), se docs/tasks/plans/WP-11.md §4 steg 2.
 // Råa värden bara: instanter som ISO-strängar med offset, `LocalDate`, belopp som heltal
-// CLP. Ingen text, inga formaterade strängar (utom där lib-funktionen ännu inte finns, se
-// kommentarerna i fixtures.ts/calendar-card.tsx — markerat med TODO(WP-10)).
+// CLP, procentenheter som tal (`formatPercent`). Ingen text, ingen egen formatering —
+// initialer (`initialsOf`) och procent (`formatPercent`) räknas alltid ur `name`/`noShowPct`
+// vid renderingen, aldrig lagrade som text i datan.
 // Riktig tillgänglighet/priser kommer från servern (WP-21), inte uträknat i UI (hård regel 2).
 import type { AvatarProps } from "@/components/ui/avatar";
 import type { LocalDate } from "@/lib/format/dates";
@@ -21,9 +22,8 @@ export type TodayBooking = {
    * riktig tillgänglighet/tider kommer alltid från servern, aldrig uträknat i UI.
    */
   end: string;
+  /** "Joaquín Rivas" — initialerna till Avatar räknas med `initialsOf()` (agenda-row.tsx). */
   clientName: string;
-  /** "JR". Fixtures förser den redan färdig (`initialsOf`, WP-10, saknas ännu). */
-  initials: string;
   service: string;
   staff: string;
   tint: NonNullable<AvatarProps["tone"]>;
@@ -40,11 +40,10 @@ export type InicioData = {
     comuna: string;
   };
   owner: {
+    /** "Camila R." — initialerna till UserPill räknas med `initialsOf()` (inicio-screen.tsx). */
     name: string;
-    /** "CR". Om den saknas: fixtures förser den redan färdig (initialsOf, WP-10, saknas
-     * ännu — se docs/tasks/plans/WP-11.md FRÅGA 6). */
-    initials?: string;
   };
+  notifications: { count: number };
   week: {
     recoveredHours: number;
     recoveredClp: Clp;
@@ -59,13 +58,8 @@ export type InicioData = {
     toConfirm: number;
     revenueWeekClp: Clp;
     revenueSeries: number[];
-    /**
-     * "4%", redan formaterad. TODO(WP-10): byt till `noShowPct: number` +
-     * `formatPercent()` (src/lib/format/) när den funktionen finns på main (se
-     * docs/tasks/plans/WP-11.md FRÅGA 6) — fixtures bär texten tills dess i stället för
-     * att WP-11 skriver en egen variant av formatPercent.
-     */
-    noShowPctText: string;
+    /** Procentenheter (som `formatPercent()` tar), t.ex. `4` → "4%". */
+    noShowPct: number;
     noShowTrend: "down" | "up" | "flat";
   };
   today: TodayBooking[];

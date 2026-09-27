@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { estados, inicio } from "@/i18n";
+import { estados, inicio, nav } from "@/i18n";
 import { parseInstant } from "@/lib/format/dates";
 
 import {
   firstName,
   heroVariant,
-  initialsFallback,
   noShowTrendLabel,
+  notificationsLabel,
   splitHighlight,
   statusChip,
   todayLabel,
@@ -28,7 +28,6 @@ function booking(
     start: "2026-10-02T15:00:00-03:00",
     end: "2026-10-02T15:45:00-03:00",
     clientName: "Joaquín Rivas",
-    initials: "JR",
     service: "Corte + barba",
     staff: "Diego",
     tint: "lilac-100",
@@ -175,13 +174,14 @@ describe("noShowTrendLabel", () => {
   });
 });
 
-describe("initialsFallback", () => {
-  it('"Camila Reyes" → "CR"', () => {
-    expect(initialsFallback("Camila Reyes")).toBe("CR");
+describe("notificationsLabel", () => {
+  it("0 → nav.notificaciones (sin aviso de cantidad)", () => {
+    expect(notificationsLabel(0)).toBe(nav.notificaciones);
   });
 
-  it("un solo nombre da una sola inicial", () => {
-    expect(initialsFallback("Camila")).toBe("C");
+  it("n > 0 → nav.notificacionesNuevas({ n })", () => {
+    expect(notificationsLabel(3)).toBe(nav.notificacionesNuevas({ n: 3 }));
+    expect(notificationsLabel(1)).toBe(nav.notificacionesNuevas({ n: 1 }));
   });
 });
 

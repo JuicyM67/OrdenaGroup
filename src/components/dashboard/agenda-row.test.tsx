@@ -10,7 +10,6 @@ function booking(overrides: Partial<TodayBooking> = {}): TodayBooking {
     start: "2026-10-02T15:00:00-03:00",
     end: "2026-10-02T15:45:00-03:00",
     clientName: "Joaquín Rivas",
-    initials: "JR",
     service: "Corte + barba",
     staff: "Diego",
     tint: "lilac-100",
@@ -71,7 +70,7 @@ describe("AgendaRow", () => {
     expect(screen.getByText("Sin confirmar")).toBeInTheDocument();
   });
 
-  it('es un <li> con avatar (iniciales) y el botón "Más opciones"', () => {
+  it('es un <li> con avatar (iniciales via initialsOf) y el botón "Más opciones"', () => {
     render(
       <ul>
         <AgendaRow booking={booking()} />
