@@ -213,7 +213,24 @@ _Fylls i av WP-13._
 
 ### Byggt i WP-14
 
-_Fylls i av WP-14._
+Hoy (mobil, ägare), `src/components/mobile/`. Vy-modell och rena funktioner i `types.ts`/
+`hoy-view.ts` (formatering via `src/lib/format/`, text via `@/i18n`, ingen dold klocka — `now`
+injiceras). Fixtures i `src/app/design-lab/hoy/fixtures.ts` (`buildFixture(estado)`), samma
+komponent på `/design-lab/hoy` och `/app/hoy` (D-020).
+
+| Komponent | Fil | API |
+|---|---|---|
+| HoyScreen | `hoy-screen.tsx` | `data: HoyData`, `notificationBadge?`. Klientkomponent: håller Llegó/No vino-statusen lokalt (FRÅGA 1), optimistisk låsning ~400 ms, dold `role="status"` läser upp `agenda.toast.llego`/`noVino`, fokus flyttas till nästa korts sektion |
+| NextClientCard | `next-client-card.tsx` | `booking?`, `now`, `onArrived`, `onNoShow`, `disabled?`, `ref?`. `booking` saknas → tillståndet "sin-proxima" (`hoy.sinProximaReserva`, inga knappar) |
+| QuickActions / QuickActionTile | `quick-actions.tsx`, `quick-action-tile.tsx` | `links: HoyLinks`, `waitlistCount`; `href`, `label`, `icon`, `tone` (lime/lilac/peach) |
+| RestOfDay | `rest-of-day.tsx` | `bookings`, `dayCount`, `dayTotalClp`, `closedToday` — `resumen` använder alltid `dayCount`/`dayTotalClp` ur datan, aldrig radernas summa |
+| MobileTabBar | `mobile-tab-bar.tsx` | `items: MobileTabItem[]`, `active`. Generell för ägarens mobilvyer (Agenda/Clientes/Caja återanvänder den) |
+
+**R3 (lime-undantag):** Hoy visar tre lime-ytor samtidigt (Llegó, "Crear hora flash", aktiv
+flik i MobileTabBar), vilket bryter mot principen "max en lime primärhandling per vy" (§2.3).
+Referensen (`Hoy.dc.html`) vinner (D-012): Llegó är sidans primärhandling, "Crear hora flash"
+är en pastellruta bland tre likvärdiga snabbåtgärder och den aktiva fliken är
+navigationstillstånd, inte en handling — men färgen är densamma. Undantaget gäller bara Hoy.
 
 ## 8. Rörelse
 
