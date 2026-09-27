@@ -11,6 +11,7 @@ import {
   MONTH_LONG,
   MONTH_SHORT,
   WEEKDAY_LONG,
+  WEEKDAY_MIN,
   WEEKDAY_SHORT,
 } from "./calendar-es-CL";
 import { err, ok, type ParseResult } from "./result";
@@ -489,6 +490,7 @@ export type DatePreset =
   | "monthYear" // "Octubre 2026"            (Main, Agenda)
   | "month" // "Octubre"                 (Reserva)
   | "weekdayShort" // "Vie"                     (Reserva DayPicker)
+  | "weekdayMin" // "Vi"                      (Reserva, kalenderrubrik)
   | "weekdayShortLower" // "vie"                     (Agenda DayPill)
   | "weekdayLongLower" // "viernes"                 (löptext, WhatsApp/e-post)
   | "weekdayDayMonthLongLower"; // "viernes 2 de octubre" (löptext, WhatsApp/e-post)
@@ -527,6 +529,8 @@ export function formatLocalDate(date: LocalDate, preset: DatePreset): string {
       return capitalize(mLong);
     case "weekdayShort":
       return wShort;
+    case "weekdayMin":
+      return pick(WEEKDAY_MIN, wd);
     case "weekdayShortLower":
       return wShort.toLowerCase();
     case "weekdayLongLower":
@@ -545,6 +549,23 @@ export function formatDate(
 }
 
 const EN_DASH = "–";
+
+function assertIsoWeekday(v: number, fn: string): void {
+  if (!Number.isInteger(v) || v < 1 || v > 7) {
+    throw new RangeError(`${fn}: ogiltig veckodag ${String(v)}`);
+  }
+}
+
+/**
+ * "Lun–Sáb" (öppettider i Reserva, en-dash utan mellanslag). Samma dag → "Mié".
+ * Omlott över veckoslutet ("Sáb–Lun") är tillåtet.
+ */
+export function formatWeekdayRange(from: IsoWeekday, to: IsoWeekday): string {
+  assertIsoWeekday(from, "formatWeekdayRange");
+  assertIsoWeekday(to, "formatWeekdayRange");
+  const a = pick(WEEKDAY_SHORT, from - 1);
+  return from === to ? a : `${a}${EN_DASH}${pick(WEEKDAY_SHORT, to - 1)}`;
+}
 
 /** "15:00", "09:05", "00:00" (24 h). */
 export function formatTime(instant: Date, tz: TimeZone): string {

@@ -26,6 +26,17 @@ export const WEEKDAY_SHORT: readonly string[] = [
   "Dom",
 ];
 
+/** Två bokstäver (Reserva, kalenderrubrik). Index 0 = lunes. */
+export const WEEKDAY_MIN: readonly string[] = [
+  "Lu",
+  "Ma",
+  "Mi",
+  "Ju",
+  "Vi",
+  "Sá",
+  "Do",
+];
+
 /** Gemener, som i löptext ("2 de octubre"). Index 0 = enero. */
 export const MONTH_LONG: readonly string[] = [
   "enero",
