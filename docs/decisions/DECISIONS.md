@@ -4,6 +4,18 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-022 · 2026-09-27 · Handpenning i v1: fast regel, återbetalning görs av företaget
+**Varför:** en regel som kunden kan läsa före bekräftelsen (Ley 19.496), inga nya kolumner och inga pengar som plattformen rör (D-008). **Konsekvens:** handpenningen dras av från priset. Avbokning inom avbokningsfönstret: företaget betalar tillbaka. Avbokning utanför fönstret eller no-show: företaget behåller den. Obetald bokning släpps efter 15 min. Företaget återbetalar själv i sitt Mercado Pago-konto; systemet visar "Abono por devolver". Villkoret ingår i samtyckesversionen; juristen granskar (JURIST_FRAGOR 5). Mercado Pago som manuell metod i Caja visas inte i v1. (WP-03b)
+
+### D-021 · 2026-09-27 · `style` i komponenter bara för geometri som räknas ur data
+**Varför:** agendablock placeras efter starttid och längd, och nu-linjen efter klockan; det går inte med klasser utan godtyckliga värden (D-015). **Konsekvens:** lint tillåter `style` i `src/components/**` bara när nycklarna är `top`, `height`, `left` eller `width`. Inga färger eller andra värden. Geometrikonstanter bara i `src/components/agenda/geometry.ts`, testade mot tokens. (WP-12)
+
+### D-020 · 2026-09-27 · Skärmar med fixtures på riktiga routes är stängda i produktion
+**Varför:** WP-11–14 byggs före auth och riktig data, men fiktiva bokningar får inte synas publikt. **Konsekvens:** `/app/inicio`, `/app/agenda`, `/app/hoy` och `/[slug]` anropar `notFound()` och har `noindex` när `isDesignLabEnabled()` är falsk (samma grind och `DESIGN_LAB`-flagga som design lab, så de syns i staging). Grinden tas bort i samma PR som kopplar på riktig data (WP-20/21). (WP-11)
+
+### D-019 · 2026-09-27 · Serverns databasåtkomst via `pg` i `src/server/db/` med rollbyte per transaktion
+**Varför:** bokning, kund och outbox-rad ska skrivas i en transaktion, "Cualquiera" behöver savepoints efter `23P01`, och samtidighetstestet kräver riktiga anslutningar. **Konsekvens:** `withServiceTx` (`set local role service_role`, alltid explicit `business_id`) för publika flöden, cron och webhooks; `withOwnerTx(userId)` (`set local role authenticated` + JWT-claims) så att RLS gäller för ägarens åtgärder. `DATABASE_URL` bara på servern; på Vercel via Supavisor i transaction mode (port 6543, inga sessionsberoende features). `@supabase/ssr` bara för auth (WP-15, `src/lib/supabase/`). (WP-10)
+
 ### D-018 · 2026-09-27 · Ingen date-fns/date-fns-tz; all tidslogik via `dates.ts` (Intl)
 **Varför:** WP-04 och granskningen visade att date-fns-tz 3.2.0 ger fel väggtid och offset beroende på värdens tidszon (t.ex. `TZ=Europe/Stockholm`: 2026-03-29T05:00Z blir 03:00 i Santiago i stället för 02:00), och date-fns-kärnan använder lokala `Date`-getters, vilket D-017 förbjuder. `src/lib/format/dates.ts` bygger bara på `Intl.DateTimeFormat` med explicit `timeZone` och är verifierad mot Temporal. **Konsekvens:** ersätter datumraden i D-003 och meningen "date-fns + date-fns-tz behålls" i D-017. Paketen avinstalleras och importer stoppas av gränstestet. Temporal omprövas enligt D-017.
 

@@ -14,5 +14,5 @@ Regler:
 - **Testa först.** Skriv testfallen i SCHEDULING.md som Vitest-tester innan implementationen, inklusive sommartid i `America/Santiago` (dagar med 23 och 25 timmar), buffertar, `min_notice`, personal som snävar in, och två samtidiga bokningar (DB-test mot lokal Supabase).
 - Klientens val är bara en önskan: räkna om allt i `createBooking()`.
 - Returnera typade fel (`slot_taken`, `outside_hours`, `too_soon`, `too_far`, `service_not_offered`) — aldrig kasta generiska fel till UI.
-- Använd `date-fns-tz`. Lagra UTC, resonera i företagets tidszon. Aldrig `new Date()` utan tidszon i logiken; injicera klockan (`now`) så att testerna blir deterministiska.
+- Använd bara `src/lib/format/dates.ts` för tid (D-017/D-018, ingen date-fns eller date-fns-tz). Lagra UTC, resonera i företagets tidszon. Aldrig `new Date()` utan tidszon i logiken; injicera klockan (`now`) så att testerna blir deterministiska.
 - Format: `clp(18000) === "$18.000"`, telefon normaliseras till `+569XXXXXXXX`, RUT valideras med kontrollsiffra.
