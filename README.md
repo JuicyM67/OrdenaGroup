@@ -67,6 +67,7 @@ scripts/visual-diff.mjs        pixeljämförelse mot designen
 - `npm run db:start` startar den lokala stacken (Postgres, Studio, Auth, Storage, lokal mail). `npm run db:status` visar URL:er och nycklar. `npm run db:stop` stänger av den.
 - `npm run db:reset` kör om alla migrationer i `supabase/migrations/` från noll och laddar `supabase/seed.sql`. Detta är det normala sättet att testa en ny migration.
 - `npm run test:db` kör pgTAP-testerna i `supabase/tests/` och kräver en körande stack (`db:start` eller ett nyss kört `db:reset`).
+- `npm run test:integration` kör Vitest-integrationstesterna (`src/server/**/*.db.test.ts`, bl.a. samtidighetstestet för F4) mot den lokala stacken. Kräver `db:start`; avbryter om `DATABASE_URL` inte är lokal.
 - `npm run db:types` genererar `src/types/database.ts` från det lokala schemat.
 - Inget körs någonsin mot ett fjärrprojekt eller produktion från en agent (ingen `link`, `db push`, `--linked`, `--db-url`).
 
