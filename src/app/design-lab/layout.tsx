@@ -13,7 +13,12 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default function DesignLabLayout({ children }: { children: ReactNode }) {
-  if (!isDesignLabEnabled({ VERCEL_ENV: process.env.VERCEL_ENV })) {
+  if (
+    !isDesignLabEnabled({
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      DESIGN_LAB: process.env.DESIGN_LAB,
+    })
+  ) {
     notFound();
   }
   // Ingen egen marginal eller ram här — annars påverkas skärmdumparna i npm run visual.

@@ -122,6 +122,15 @@ utveckling: `notFound()` när `VERCEL_ENV === "production"`, och sidorna har `ro
 
 **Förslag på första veckan:** WP-00 → sedan parallellt WP-01 (db), WP-02 → WP-11–14 (ui), WP-04 → WP-10 (scheduling), WP-03 (copy). Se "Parallellisering" i BACKLOG.
 
+## Staging
+
+Ett separat Supabase-projekt (`OrdenaGroup-staging`, `sa-east-1`) och ett Vercel-projekt
+(`gru1`) för granskning, skilt från produktion. Migrationer körs av GitHub Actions
+(`.github/workflows/deploy-staging.yml`) vid push till `main`, aldrig av en agent. Se
+`docs/tech/STAGING.md` för ägarens steg-för-steg-guide (skapa projektet, hemligheter,
+Vercel-import, verifiering) och vad som **inte** får göras i staging (riktiga kunddata,
+skarpa WhatsApp-meddelanden/betalningar).
+
 ## Det du måste göra själv (agenterna kan inte)
 
 Se `docs/product/ROADMAP.md` → "Parallellt arbete utanför koden": SpA och SII, bankkonto, Meta-verifiering och WhatsApp-mallar, Mercado Pago- och Flow-konton, contador, jurist, domän och slutligt namn. **Starta Meta-verifieringen tidigt**, eftersom den brukar ta längst tid.

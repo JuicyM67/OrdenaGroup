@@ -10,7 +10,12 @@ import { NextResponse } from "next/server";
 import { isDesignLabEnabled } from "@/app/design-lab/gate";
 
 export function proxy() {
-  if (!isDesignLabEnabled({ VERCEL_ENV: process.env.VERCEL_ENV })) {
+  if (
+    !isDesignLabEnabled({
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      DESIGN_LAB: process.env.DESIGN_LAB,
+    })
+  ) {
     return new NextResponse(null, { status: 404 });
   }
   return NextResponse.next();

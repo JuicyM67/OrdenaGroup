@@ -1,0 +1,112 @@
+name: Deploy staging (Supabase)
+
+# Kör migrationer och pgTAP-tester mot det separata Supabase-projektet "staging"
+# (sa-east-1, se docs/tech/STAGING.md). Rör aldrig produktion. Ingen agent har
+# nycklarna till detta projekt — bara GitHub Actions, via repo-hemligheterna
+# nedan, som ägaren lägger in manuellt.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/migrations/**"
+      - "supabase/seed.sql"
+      - ".github/workflows/deploy-staging.yml"
+  workflow_dispatch:
+    inputs:
+      reseed:
+        description: "Nollställ staging-databasen helt (migrationer + seed.sql från noll) i stället för att bara köra nya migrationer. Radera all data i staging."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# En körning i taget mot staging-databasen. Vänta in en pågående körning i
+# stället för att avbryta den mitt i en `db push`/`db reset`.
+concurrency:
+  group: staging-db
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Hemligheterna ligger i GitHub Environment "staging", som bara `main` får
+    # använda (deployment branch policy). En workflow på någon annan branch
+    # kommer alltså inte åt dem.
+    environment: staging
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # Samma npm som lockfilen skapades med (packageManager i package.json).
+      - run: npm install -g "$(node -p "require('./package.json').packageManager")"
+
+      - run: npm ci
+
+      # Avsluta med ett tydligt fel om en hemlighet saknas, i stället för att
+      # tyst hoppa över steg eller låta `supabase link`/`db push` misslyckas
+      # med ett kryptiskt CLI-fel längre ner. Ingen hemlighet skrivs till
+      # loggen — bara namnen på dem som saknas.
+      - name: Kontrollera att repo-hemligheterna finns
+        env:
+          STAGING_SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+          STAGING_SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+          STAGING_SUPABASE_PROJECT_REF: ${{ secrets.STAGING_SUPABASE_PROJECT_REF }}
+        run: |
+          missing=()
+          [ -z "$STAGING_SUPABASE_ACCESS_TOKEN" ] && missing+=("STAGING_SUPABASE_ACCESS_TOKEN")
+          [ -z "$STAGING_SUPABASE_DB_PASSWORD" ] && missing+=("STAGING_SUPABASE_DB_PASSWORD")
+          [ -z "$STAGING_SUPABASE_PROJECT_REF" ] && missing+=("STAGING_SUPABASE_PROJECT_REF")
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Saknade repo-hemligheter (Settings -> Secrets and variables -> Actions): ${missing[*]}. Se docs/tech/STAGING.md."
+            exit 1
+          fi
+
+      # `npx supabase` mot ett fjärrprojekt är bara tillåtet härifrån (GitHub
+      # Actions-runnern), aldrig som ett lokalt agentkommando — se README och
+      # .claude/settings.json (`--linked`, `link`, `db push` är blockerade
+      # lokalt). Det här jobbet rör bara staging, aldrig produktion.
+      - name: Länka mot staging-projektet
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+          PROJECT_REF: ${{ secrets.STAGING_SUPABASE_PROJECT_REF }}
+        run: npx supabase link --project-ref "$PROJECT_REF"
+
+      - name: Kör migrationer mot staging (db push)
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+        run: npx supabase db push --yes
+
+      # Bara vid manuell körning med reseed=true: nollställer hela
+      # databasen (kör om alla migrationer och laddar seed.sql från noll).
+      # Detta raderar all data i staging. Körs aldrig automatiskt vid push.
+      - name: Nollställ och seed:a staging (bara manuellt, reseed=true)
+        if: github.event_name == 'workflow_dispatch' && inputs.reseed == true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+        run: npx supabase db reset --linked --yes
+
+      # Schemavakten och pgTAP-isoleringstesterna körs på nytt mot molnet,
+      # eftersom pg_default_acl sätts av plattformen per projekt och kan
+      # skilja sig från den lokala containern (se SUPABASE_CONFIG.md,
+      # "Verifiering efter första db push mot prod"). `--linked` stöds av
+      # `supabase test db` i CLI 2.118.0 (verifierat med `--help`); om en
+      # senare CLI-version tar bort flaggan är alternativet att köra
+      # `supabase/tests/*.sql` manuellt med `psql "$DATABASE_URL" -f <fil>`
+      # mot samma anslutningssträng som `db push` använde.
+      - name: Kör pgTAP mot staging
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+        run: npx supabase test db --linked
