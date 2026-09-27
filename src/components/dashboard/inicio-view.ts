@@ -25,11 +25,17 @@ export function todayLabel(now: Date): string {
   return formatDate(now, SANTIAGO, "weekdayDayMonthLong");
 }
 
+/** Visas aldrig i "Agenda de hoy", oavsett tid: cancelled/no_show hände inte (blev av). */
+const HIDDEN_STATUSES = new Set<TodayBooking["status"]>([
+  "cancelled",
+  "no_show",
+]);
+
 /**
  * Dagens bokningar som fortfarande är aktuella: pågående eller kommande under den
  * *lokala* dagen (`localDayRange`, inte `+24 h` — det ger fel gräns kring sommartid,
- * se docs/tasks/plans/WP-11.md §5). Sorterade på starttid (instant, inte väggtid, så
- * en tvetydig dubbeltimme sorteras rätt).
+ * se docs/tasks/plans/WP-11.md §5), och inte avbokade/uteblivna. Sorterade på starttid
+ * (instant, inte väggtid, så en tvetydig dubbeltimme sorteras rätt).
  */
 export function upcomingToday(
   bookings: readonly TodayBooking[],
@@ -42,6 +48,7 @@ export function upcomingToday(
   const dayEndMs = dayEnd.getTime();
 
   return bookings
+    .filter((booking) => !HIDDEN_STATUSES.has(booking.status))
     .map((booking) => ({
       booking,
       startMs: mustParseInstant(booking.start, "upcomingToday").getTime(),
@@ -86,16 +93,6 @@ export function noShowTrendLabel(
   if (trend === "down") return inicio.stats.tendencia.bajando;
   if (trend === "up") return inicio.stats.tendencia.subiendo;
   return inicio.stats.tendencia.igual;
-}
-
-/**
- * "Camila R." → "Camila", para el saludo del hero (`inicio.hola`). El header/UserPill usa
- * el nombre completo (`owner.name`); el hero de la referencia solo usa el primer nombre.
- * No es formateo de fecha/dinero/teléfono (`src/lib/format/`) sino una lectura directa del
- * dato ya recibido, así que vive acá igual que las demás funciones de vista de Inicio.
- */
-export function firstName(fullName: string): string {
-  return fullName.trim().split(/\s+/)[0] ?? fullName;
 }
 
 /**

@@ -4,7 +4,6 @@ import { estados, inicio, nav } from "@/i18n";
 import { parseInstant } from "@/lib/format/dates";
 
 import {
-  firstName,
   heroVariant,
   noShowTrendLabel,
   notificationsLabel,
@@ -117,6 +116,31 @@ describe("upcomingToday", () => {
       "23:30-later",
     ]);
   });
+
+  it("cancelled y no_show aldrig visas, även om tiden i övrigt matchar", () => {
+    const now = mustParse("2026-10-02T14:40:00-03:00");
+    const cancelled = booking({
+      id: "cancelled",
+      status: "cancelled",
+      start: "2026-10-02T15:00:00-03:00",
+      end: "2026-10-02T15:45:00-03:00",
+    });
+    const noShow = booking({
+      id: "no-show",
+      status: "no_show",
+      start: "2026-10-02T15:00:00-03:00",
+      end: "2026-10-02T15:45:00-03:00",
+    });
+    const confirmada = booking({
+      id: "confirmada",
+      status: "confirmed",
+      start: "2026-10-02T15:00:00-03:00",
+      end: "2026-10-02T15:45:00-03:00",
+    });
+    expect(
+      upcomingToday([cancelled, noShow, confirmada], now).map((x) => x.id),
+    ).toEqual(["confirmada"]);
+  });
 });
 
 describe("statusChip", () => {
@@ -153,16 +177,6 @@ describe("heroVariant", () => {
     );
     expect(inicio.hero.horas({ n: 1 })).toBe("1 hora");
     expect(inicio.hero.horas({ n: 4 })).toBe("4 horas");
-  });
-});
-
-describe("firstName", () => {
-  it('"Camila R." → "Camila"', () => {
-    expect(firstName("Camila R.")).toBe("Camila");
-  });
-
-  it("un solo nombre se devuelve tal cual", () => {
-    expect(firstName("Camila")).toBe("Camila");
   });
 });
 
