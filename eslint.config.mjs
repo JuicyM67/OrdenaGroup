@@ -27,17 +27,37 @@ const noRestrictedRawValues = rawValuePatterns.flatMap((pattern) => [
   },
 ]);
 
-// `style`-attributet kringgår tokens helt. Förbjudet bara i de generella komponenterna —
-// design-lab (crops m.fl.) får fortfarande använda style för enstaka px-positioner som inte
-// går att uttrycka i spacing-skalan (WP-02 steg 7, R7). Måste läggas i SAMMA
+// `style`-attributet kringgår tokens helt. Förbjudet i de generella komponenterna, UTOM
+// undantaget i D-021 (WP-12): ett objekt-literal vars nycklar bara är top/height/left/width
+// (agendans block, lanes och nu-linje räknar ut sin geometri ur data — det går inte att
+// uttrycka med klasser utan godtyckliga värden, förbjudna av D-015). Måste läggas i SAMMA
 // no-restricted-syntax-array som noRestrictedRawValues för src/components/**, eftersom ESLint
 // flat config låter en senare matchande config helt ERSÄTTA (inte slå ihop) en tidigare
 // regels värde för samma regelnamn och samma fil.
-const noStyleAttribute = {
-  selector: "JSXAttribute[name.name='style']",
-  message:
-    "Inget style-attribut i src/components/. Använd tokens/Tailwind-klasser (se docs/design/DESIGN.md).",
-};
+const styleGeometryMessage =
+  "style i src/components/ tillåts bara som ett objekt-literal med nycklarna top/height/left/width (D-021). Använd tokens/Tailwind-klasser annars (se docs/design/DESIGN.md).";
+
+const noStyleAttribute = [
+  {
+    // style={s} (variabel), style={fn()}, style={`...`} … — allt utom ett objekt-literal
+    // direkt i uttrycket.
+    selector:
+      "JSXAttribute[name.name='style'] > JSXExpressionContainer > :not(ObjectExpression)",
+    message: styleGeometryMessage,
+  },
+  {
+    // style={{ ...spread }} kringgår nyckel-kontrollen nedan.
+    selector:
+      "JSXAttribute[name.name='style'] ObjectExpression > SpreadElement",
+    message: styleGeometryMessage,
+  },
+  {
+    // Varje egenskap i objektet måste heta top, height, left eller width.
+    selector:
+      "JSXAttribute[name.name='style'] ObjectExpression > Property:not([key.name='top']):not([key.name='height']):not([key.name='left']):not([key.name='width'])",
+    message: styleGeometryMessage,
+  },
+];
 
 const eslintConfig = [
   {
@@ -68,7 +88,7 @@ const eslintConfig = [
       "no-restricted-syntax": [
         "error",
         ...noRestrictedRawValues,
-        noStyleAttribute,
+        ...noStyleAttribute,
       ],
     },
   },
