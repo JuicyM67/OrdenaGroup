@@ -6,6 +6,7 @@ export function NowLine({ top }: NowLineProps) {
   return (
     <div
       aria-hidden="true"
+      data-testid="now-line"
       className="absolute right-0 -left-1.25 h-0.5 bg-alert"
       style={{ top }}
     >

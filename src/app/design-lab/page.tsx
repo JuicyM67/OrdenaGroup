@@ -5,6 +5,7 @@ import crops from "./crops/crops.json";
 const screens = [
   { href: "/design-lab/main", label: "Inicio (Main)", wp: "WP-11" },
   { href: "/design-lab/agenda", label: "Agenda", wp: "WP-12" },
+  { href: "/design-lab/agenda-dia", label: "Agenda · día", wp: "WP-12" },
   { href: "/design-lab/reserva", label: "Reserva", wp: "WP-13" },
   { href: "/design-lab/hoy", label: "Hoy", wp: "WP-14" },
   { href: "/design-lab/hora-flash", label: "Hora flash", wp: "WP-30" },

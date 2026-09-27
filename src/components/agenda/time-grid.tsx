@@ -57,6 +57,7 @@ export function TimeGrid({
   return (
     <section
       aria-label={ariaLabel}
+      data-testid="time-grid"
       className="relative mt-4 flex-1 overflow-hidden rounded-tile bg-surface"
     >
       <div
@@ -75,6 +76,8 @@ export function TimeGrid({
             {columns.map((col) => (
               <div
                 key={col.key}
+                data-testid="day-column"
+                data-column-key={col.key}
                 className="relative min-w-0 flex-1 border-l border-line"
               >
                 {col.header ? (
@@ -106,11 +109,13 @@ function HourMark({ hour, top }: { hour: number; top: number }) {
     <>
       <div
         aria-hidden="true"
+        data-testid="hour-line"
         className="absolute right-2 left-16 h-px bg-line"
         style={{ top }}
       />
       <div
         aria-hidden="true"
+        data-testid="hour-label"
         className="absolute left-4 text-12 font-semibold text-muted"
         style={{ top: top - 8 }}
       >

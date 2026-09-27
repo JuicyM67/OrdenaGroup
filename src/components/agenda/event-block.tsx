@@ -61,6 +61,7 @@ export function EventBlock({
     <button
       ref={ref}
       type="button"
+      data-testid="event-block"
       aria-label={ariaLabel}
       onClick={onClick}
       style={{
