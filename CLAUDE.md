@@ -37,7 +37,7 @@ Next.js App Router + TypeScript strict (`src/`) · Tailwind v4 med tokens · Rad
 | Agent | Ansvar | Äger |
 |---|---|---|
 | `planner` | Bryter ner funktioner till planer och arbetspaket, håller BACKLOG uppdaterad. Skriver ingen produktionskod. | `docs/tasks/` |
-| `db-engineer` | Schema, migrationer, RLS, pgTAP, seed, typer | `supabase/`, `src/types/database.ts` |
+| `db-engineer` | Schema, migrationer, RLS, pgTAP, seed, typer, serverns DB-åtkomst | `supabase/`, `src/types/database.ts`, `src/server/db/` |
 | `scheduling-engineer` | Tillgänglighet, bokning, väntelista, sommartid, format-lib | `src/server/scheduling/`, `src/server/waitlist/`, `src/server/bookings/`, `src/lib/format/` |
 | `ui-engineer` | Komponenter och skärmar med exakt design, design lab | `src/components/`, `src/app/**/page.tsx`, `src/app/design-lab/` |
 | `integrations-engineer` | WhatsApp, outbox, cron, Mercado Pago, Flow, e-post | `src/server/messaging/`, `src/server/payments/`, `src/server/billing/`, `src/app/api/` |
@@ -45,7 +45,7 @@ Next.js App Router + TypeScript strict (`src/`) · Tailwind v4 med tokens · Rad
 | `qa-reviewer` | Granskar PR:er mot spec, design och tester. Rättar inte själv. | – |
 | `security-reviewer` | RLS, auth, webhooks, hemligheter, Ley 21.719 | – |
 
-**Delade mappar:** `src/lib/validation/<område>.ts` skapas av den agent vars arbetspaket behöver schemat. **Lokal Supabase:** bara en stack åt gången (samma `project_id` och portar), under Våg A bara i WP-01:s worktree. **E2E i worktrees:** egen `PORT` per worktree.
+**Delade mappar:** `src/lib/supabase/` (auth-klienter) skapas av WP-15 (ui-engineer). `src/lib/validation/<område>.ts` skapas av den agent vars arbetspaket behöver schemat. **Lokal Supabase:** bara en stack åt gången (samma `project_id` och portar), under Våg A bara i WP-01:s worktree. **E2E i worktrees:** egen `PORT` per worktree.
 
 ## Kommandon
 `npm run dev` · `npm run typecheck` · `npm run lint` · `npm run test` · `npm run test:db` (pgTAP) · `npm run test:e2e` · `npm run visual [skärm]` · `npm run db:start` · `npm run db:reset` · `npm run db:types`
