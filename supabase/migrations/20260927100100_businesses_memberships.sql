@@ -215,9 +215,13 @@ grant update (
   waitlist_mode
 ) on public.businesses to authenticated;
 
--- Säkerhet S2: service_role (server/billing) har fullt CRUD, inklusive de
--- kolumner som authenticated inte får ändra.
-grant select, update on public.businesses to service_role;
+-- Säkerhet S2 (rättad, granskningsfynd): service_role (server/billing) har
+-- fullt CRUD, inklusive de kolumner som authenticated inte får ändra, och
+-- delete (WP-26 raderar ett företag på ägarens begäran eller vid definitiv
+-- avslutning — kaskaden tar samtidigt bort memberships/staff/services/...).
+-- Ingen delete-policy behövs: service_role har bypassrls och förbigår RLS
+-- helt, oavsett om en policy finns.
+grant select, update, delete on public.businesses to service_role;
 
 -- RLS: memberships --------------------------------------------------------
 alter table public.memberships enable row level security;

@@ -5,7 +5,7 @@
 -- "inte tillämpligt" (en business kan inte peka på en annan business).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(28);
+select plan(30);
 \ir _helpers.psql
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
@@ -169,6 +169,26 @@ select throws_ok(
 select lives_ok(
   $$ insert into public.businesses (slug, name, comuna, category, logo_url) values ('wp01-test-logo', 'X', 'Providencia', 'barberia', 'https://example.com/logo.png') $$,
   'https:// accepteras'
+);
+
+-- Säkerhet S2 (rättad): service_role kan radera ett företag (WP-26), och
+-- kaskaden tar bort memberships (bypasserar RLS helt, ingen delete-policy behövs).
+insert into public.businesses (id, slug, name, comuna, category) values
+  ('dddddddd-0000-0000-0000-000000000004', 'wp01-test-service-delete', 'Negocio D', 'Providencia', 'barberia');
+insert into auth.users (id, email, role, aud) values
+  ('88888888-8888-8888-8888-888888888888', 'ownerd@example.com', 'authenticated', 'authenticated');
+insert into public.memberships (business_id, user_id, role) values
+  ('dddddddd-0000-0000-0000-000000000004', '88888888-8888-8888-8888-888888888888', 'owner');
+
+set local role service_role;
+select lives_ok(
+  $$ delete from public.businesses where id = 'dddddddd-0000-0000-0000-000000000004' $$,
+  'service_role kan radera ett företag'
+);
+reset role;
+select is(
+  (select count(*) from public.memberships where business_id = 'dddddddd-0000-0000-0000-000000000004')::int, 0,
+  'kaskaden tog bort medlemskapet när service_role raderade företaget'
 );
 
 select finish();
