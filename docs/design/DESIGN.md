@@ -186,8 +186,8 @@ WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är k
 | Komponent | Fil | API |
 |---|---|---|
 | Button | `src/components/ui/button.tsx` | `variant` (primary/secondary/accent/outline-dark/inverse), `size` (xs…2xl), `asChild` (Radix Slot) |
-| IconButton | `src/components/ui/icon-button.tsx` | `label` (obligatorisk, blir aria-label), `tone`, `size`, `shape`, `badge?` |
-| Chip | `src/components/ui/chip.tsx` | `tone`, `size` (md/sm/xs/tag), inget eget utsnitt (se steg 7) |
+| IconButton | `src/components/ui/icon-button.tsx` | `label` (obligatorisk, blir aria-label), `tone`, `size`, `shape`, `badge?`, `asChild?` (Radix Slot, WP-11; stöds inte tillsammans med `badge`) |
+| Chip | `src/components/ui/chip.tsx` | `tone` (…/peach-50, WP-11), `size` (md/sm/xs/tag/trend/badge, WP-11), `weight` (default/bold, WP-11, läggs efter `size` så `cn()` låter `font-bold` vinna), inget eget utsnitt (se steg 7) |
 | Pill | `src/components/ui/pill.tsx` | `selected`, `aria-pressed` |
 | Card | `src/components/ui/card.tsx` | `as`, `tone`, `radius`, `padding`; mörka toner sätter `data-surface="dark"` |
 | Avatar | `src/components/ui/avatar.tsx` | `initials`, `shape`, `size`, `tone` |
@@ -197,6 +197,23 @@ WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är k
 | PageHeader (+UserPill) | `src/components/ui/page-header.tsx`, `user-pill.tsx` | `variant` (desktop/mobile, meta före titeln i DOM på mobil) |
 | MiniCalendar | `src/components/ui/mini-calendar/` (`grid.ts` ren funktion, `mini-calendar.tsx`) | `month`, `selected`, `today`, `markedDates`, `highlightWeekOf` (bara mörk), `variant`, roving tabindex + pil/Home/End |
 | `cn()` | `src/components/ui/cn.ts` | `clsx` + `extendTailwindMerge` (egna klassgrupper, se DESIGN.md §12) |
+| TextLink | `src/components/ui/text-link.tsx` (WP-11) | tunn wrapper runt `next/link`, `text-13 font-semibold text-ink underline`, `hover:text-pending-fg` |
+
+### Byggt i WP-11
+
+_Fylls i av WP-11._
+
+### Byggt i WP-12
+
+_Fylls i av WP-12._
+
+### Byggt i WP-13
+
+_Fylls i av WP-13._
+
+### Byggt i WP-14
+
+_Fylls i av WP-14._
 
 ## 8. Rörelse
 
