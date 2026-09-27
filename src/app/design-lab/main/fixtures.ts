@@ -1,14 +1,7 @@
 // Fixtures för Inicio (Main.dc.html), hämtade ur referensens renderVals(). Bara data,
 // ingen UI-text (den kommer från @/i18n) och ingen egen formatering (den kommer från
-// src/lib/format/) — se docs/tasks/plans/WP-11.md §4 steg 2.
-//
-// TODO(WP-10): `stats.noShowPctText` är redan formaterad text ("4%") i stället för
-// `noShowPct: number` + `formatPercent()`, och `weekdays` i calendar-card.tsx är
-// hårdkodad — båda väntar på src/lib/format/-funktioner som ännu inte finns på main
-// (FRÅGA 6). "weekdayMin" och "initialsOf" behövs inte här: MiniCalendar tar `weekdays`
-// som prop (som redan görs i _fixtures/components.ts sedan WP-02) och alla initialer i den
-// här filen är redan färdiga fixturdata.
-import { initialsFallback } from "@/components/dashboard/inicio-view";
+// src/lib/format/) — se docs/tasks/plans/WP-11.md §4 steg 2. Initialer och procent räknas
+// vid renderingen (initialsOf/formatPercent), inte lagrade som text här.
 import type { InicioData, TodayBooking } from "@/components/dashboard/types";
 import { parseLocalDate, type LocalDate } from "@/lib/format/dates";
 
@@ -26,7 +19,6 @@ const REFERENCE_TODAY: TodayBooking[] = [
     start: "2026-10-02T15:00:00-03:00",
     end: "2026-10-02T15:45:00-03:00",
     clientName: "Joaquín Rivas",
-    initials: "JR",
     service: "Corte + barba",
     staff: "Diego",
     tint: "lilac-100",
@@ -39,7 +31,6 @@ const REFERENCE_TODAY: TodayBooking[] = [
     start: "2026-10-02T15:45:00-03:00",
     end: "2026-10-02T16:15:00-03:00",
     clientName: "Valentina Soto",
-    initials: "VS",
     service: "Corte clásico",
     staff: "Matías",
     tint: "peach-50",
@@ -52,7 +43,6 @@ const REFERENCE_TODAY: TodayBooking[] = [
     start: "2026-10-02T16:30:00-03:00",
     end: "2026-10-02T16:50:00-03:00",
     clientName: "Ignacio Pérez",
-    initials: "IP",
     service: "Perfilado de barba",
     staff: "Tomás",
     tint: "lime-50",
@@ -105,7 +95,6 @@ function buildLlenoToday(): TodayBooking[] {
       start,
       end,
       clientName,
-      initials: initialsFallback(clientName),
       service: "Corte + barba",
       staff: "Diego",
       tint: LLENO_TINTS[i % LLENO_TINTS.length]!,
@@ -116,10 +105,18 @@ function buildLlenoToday(): TodayBooking[] {
   });
 }
 
+const ACTIVE_FLASH = {
+  start: "2026-10-06T11:30:00-03:00",
+  discountPct: 20,
+  service: "Corte + barba",
+  staff: "Diego",
+} satisfies NonNullable<InicioData["activeFlash"]>;
+
 const BASE = {
   now: NOW,
   business: { name: "Barbería Norte", comuna: "Providencia" },
-  owner: { name: "Camila R.", initials: "CR" },
+  owner: { name: "Camila R." },
+  notifications: { count: 1 }, // referensens prick "Notificaciones"
   week: { recoveredHours: 4, recoveredClp: 72_000 },
   features: {
     waitlist: {
@@ -137,7 +134,7 @@ const BASE = {
     // Puntos relativos (0–100) para el sparkline, misma forma en "S" que la referencia
     // (sube, baja, sube, baja, sube): ver docs/tasks/plans/WP-11.md R3.
     revenueSeries: [22, 40, 28, 55, 20, 62, 46],
-    noShowPctText: "4%",
+    noShowPct: 4,
     noShowTrend: "down",
   },
   calendar: {
@@ -152,15 +149,10 @@ const BASE = {
       "2026-10-13",
     ].map(mustLocalDate),
   },
-  activeFlash: {
-    start: "2026-10-06T11:30:00-03:00",
-    discountPct: 20,
-    service: "Corte + barba",
-    staff: "Diego",
-  },
+  activeFlash: ACTIVE_FLASH,
 } satisfies Omit<InicioData, "today">;
 
-export type InicioEstado = "referencia" | "vacio" | "lleno";
+export type InicioEstado = "referencia" | "vacio" | "lleno" | "sin-flash";
 
 export function getInicioFixtures(estado: InicioEstado): InicioData {
   switch (estado) {
@@ -172,6 +164,12 @@ export function getInicioFixtures(estado: InicioEstado): InicioData {
       } satisfies InicioData;
     case "lleno":
       return { ...BASE, today: buildLlenoToday() } satisfies InicioData;
+    case "sin-flash":
+      return {
+        ...BASE,
+        activeFlash: null,
+        today: REFERENCE_TODAY,
+      } satisfies InicioData;
     case "referencia":
     default:
       return { ...BASE, today: REFERENCE_TODAY } satisfies InicioData;

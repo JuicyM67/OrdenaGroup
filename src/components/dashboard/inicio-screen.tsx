@@ -10,6 +10,8 @@ import { UserPill } from "@/components/ui/user-pill";
 import { inicio, nav } from "@/i18n";
 import { formatClp } from "@/lib/format/clp";
 import { SANTIAGO, toLocalDate } from "@/lib/format/dates";
+import { initialsOf } from "@/lib/format/initials";
+import { formatPercent } from "@/lib/format/percent";
 
 import { AgendaToday } from "./agenda-today";
 import { AppShell } from "./app-shell";
@@ -17,9 +19,9 @@ import { CalendarCard } from "./calendar-card";
 import { FlashCard } from "./flash-card";
 import { HeroSummary } from "./hero-summary";
 import {
-  initialsFallback,
   mustParseInstant,
   noShowTrendLabel,
+  notificationsLabel,
   todayLabel,
   upcomingToday,
 } from "./inicio-view";
@@ -44,8 +46,7 @@ const FLASH_HREF = "/app/flash";
 export function InicioScreen({ data, shellClassName }: InicioScreenProps) {
   const now = mustParseInstant(data.now, "InicioScreen");
   const bookings = upcomingToday(data.today, now);
-  const ownerInitials =
-    data.owner.initials ?? initialsFallback(data.owner.name);
+  const notificationsCount = data.notifications.count;
 
   return (
     <AppShell rail={<MainNav active="inicio" />} className={shellClassName}>
@@ -62,10 +63,17 @@ export function InicioScreen({ data, shellClassName }: InicioScreenProps) {
             <IconButton label={nav.buscar} tone="surface">
               <Search aria-hidden="true" className="size-5" strokeWidth={1.9} />
             </IconButton>
-            <IconButton label={nav.notificaciones} tone="surface" badge>
+            <IconButton
+              label={notificationsLabel(notificationsCount)}
+              tone="surface"
+              badge={notificationsCount > 0}
+            >
               <Bell aria-hidden="true" className="size-5" strokeWidth={1.9} />
             </IconButton>
-            <UserPill name={data.owner.name} initials={ownerInitials} />
+            <UserPill
+              name={data.owner.name}
+              initials={initialsOf(data.owner.name)}
+            />
           </>
         }
       />
@@ -93,7 +101,7 @@ export function InicioScreen({ data, shellClassName }: InicioScreenProps) {
             />
             <StatTile
               variant="percent"
-              value={data.stats.noShowPctText}
+              value={formatPercent(data.stats.noShowPct)}
               meta={inicio.stats.inasistencias}
               trend={data.stats.noShowTrend}
               trendLabel={noShowTrendLabel(data.stats.noShowTrend)}
