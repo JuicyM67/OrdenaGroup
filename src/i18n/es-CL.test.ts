@@ -701,6 +701,44 @@ describe("baja, bajaTotal y el pie del correo nombran al negocio", () => {
 });
 
 // ---------------------------------------------------------------------------
+// email.acceso: las variables de plantilla de Supabase son literales, no
+// interpolación de es-CL.ts (WP-03b paso 2, R9 del plan): cada cuerpo debe
+// tener exactamente los dos placeholders reales y ningún otro "{{" suelto
+// (una llave doble sin cerrar sería un placeholder roto en el correo).
+// ---------------------------------------------------------------------------
+
+describe("email.acceso: variables de plantilla de Supabase", () => {
+  const CUERPOS = [
+    ["magicLink", email.acceso.magicLink.cuerpo],
+    ["confirmation", email.acceso.confirmation.cuerpo],
+  ] as const;
+
+  it.each(CUERPOS)(
+    "%s.cuerpo tiene los dos placeholders y ningún otro '{{'",
+    (_nombre, cuerpo) => {
+      expect(cuerpo).toContain("{{ .ConfirmationURL }}");
+      expect(cuerpo).toContain("{{ .Token }}");
+      const totalDobleLlave = (cuerpo.match(/\{\{/g) ?? []).length;
+      expect(totalDobleLlave).toBe(2);
+    },
+  );
+
+  it("los asuntos no tienen ninguna llave doble", () => {
+    expect(email.acceso.magicLink.asunto).not.toContain("{{");
+    expect(email.acceso.confirmation.asunto).not.toContain("{{");
+  });
+
+  it("email.abono.lineaConfirmacion no usa sintaxis de plantilla de Supabase", () => {
+    const texto = email.abono.lineaConfirmacion({
+      monto: "$6.000",
+      saldo: "$12.000",
+      condiciones: "Si cancelas...",
+    });
+    expect(texto).not.toContain("{{");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tono: sin "usted", sin voseo, sin slang, sin anglicismos, sin emoji
 // ---------------------------------------------------------------------------
 
@@ -1472,7 +1510,7 @@ describe("errores.reserva y errores.agenda usan las claves de los códigos reale
 
 // ---------------------------------------------------------------------------
 // errores.reserva y errores.agenda cubren los códigos nuevos de
-// `BookingError` (WP-10, `src/server/bookings/types.ts`, FRÅGA 4 del plan
+// `BookingError` (WP-10, `src/server/bookings/types.ts`, pregunta 4 del plan
 // de WP-10, entrega temprana de WP-03b) más `business_unavailable`, código
 // nuevo fuera de la lista original de WP-10 (pedido de revisión,
 // 2026-09-27).
@@ -1519,14 +1557,14 @@ describe("consentimientos", () => {
   const HASHES: Record<string, string> = {
     "2026-10-v1":
       "9332b0c637c01b914a0bf68d93e2d55519c27fcba6d3476ee5686f34d5c4278f",
-    // WP-03b, paso 7 (FRÅGA 4 aprobada): v2 agrega `abono.reserva.condiciones`
+    // WP-03b, paso 7 (pregunta 4 aprobada): v2 agrega `abono.reserva.condiciones`
     // al texto que se hashea, porque ahora las condiciones del abono también
-    // son algo que el cliente acepta antes de confirmar. HASH PENDIENTE: no
-    // se pudo calcular en esta entrega (sin acceso a Bash/node); el
-    // orquestador debe correr este test una vez, copiar el hash "Received"
-    // del mensaje de fallo y pegarlo acá. Ver el informe de esta entrega.
-    "2026-10-v2":
-      "ebf14f57a7856e26a7b91c0d287d7ae3a85bff67189b79d79c1ab8c422aae58c",
+    // son algo que el cliente acepta antes de confirmar. `condiciones` cambió
+    // de firma (ahora recibe `negocio` también, revisión de seguridad
+    // 2026-09-27: la plataforma nunca promete devolver el abono), así que
+    // este hash hay que recalcularlo de nuevo. Ningún cliente real aceptó
+    // "2026-10-v2" todavía (no hay piloto), así que subirlo no cuesta nada.
+    "2026-10-v2": "",
   };
 
   function sha256(texto: string): string {
@@ -1551,7 +1589,10 @@ describe("consentimientos", () => {
       c.marketing({ negocio: "{negocio}" }),
       // Nuevo en v2 (paso 7 del plan): condiciones del abono, cuando el
       // servicio lo tiene.
-      abono.reserva.condiciones({ horas: "{horas}" as unknown as number }),
+      abono.reserva.condiciones({
+        negocio: "{negocio}",
+        horas: "{horas}" as unknown as number,
+      }),
     ].join("\n");
   }
 
@@ -1568,7 +1609,7 @@ describe("consentimientos", () => {
     ).toBe(hashEsperado);
   });
 
-  it("el texto de términos menciona WhatsApp (aviso de opt-in, FRÅGA 6)", () => {
+  it("el texto de términos menciona WhatsApp (aviso de opt-in, pregunta 6)", () => {
     expect(reserva.consentimientos.terminos).toContain("WhatsApp");
   });
 
@@ -1586,15 +1627,27 @@ describe("consentimientos", () => {
 // ---------------------------------------------------------------------------
 
 describe("consentimiento de la lista de espera", () => {
-  // HASH PENDIENTE (igual que "2026-10-v2" arriba): el orquestador lo completa
-  // después de correr este test una vez. Ver el informe de esta entrega.
+  // La pantalla de unirse a la lista de espera también debe mostrar el
+  // responsable de los datos y el link a la política de privacidad (mismo
+  // criterio de seguridad que `reserva.consentimientos`, GUIA §7): el hash
+  // cubre los tres textos, no solo `waitlist.terminos`. Cambió el texto que
+  // se hashea (revisión de seguridad, 2026-09-27), así que hay que
+  // recalcularlo.
   const HASHES: Record<string, string> = {
-    "lista-espera-2026-10-v1":
-      "30e79da07ce0eda5a5667b90f3252f85247aa992b987f8f213ddbfed2d2b2905",
+    "lista-espera-2026-10-v1": "",
   };
 
   function sha256(texto: string): string {
     return createHash("sha256").update(texto, "utf8").digest("hex");
+  }
+
+  function textoConsentimientoListaEspera(): string {
+    const c = reserva.consentimientos;
+    return [
+      reserva.waitlist.terminos,
+      c.responsable({ negocio: "{negocio}" }),
+      c.privacidadLinkTexto,
+    ].join("\n");
   }
 
   it('la versión está ligada al hash del texto (sube "reserva.waitlist.consentimientoVersion" si cambias el texto)', () => {
@@ -1604,7 +1657,7 @@ describe("consentimiento de la lista de espera", () => {
       hashEsperado,
       `No hay hash registrado para "${version}"`,
     ).toBeDefined();
-    expect(sha256(reserva.waitlist.terminos)).toBe(hashEsperado);
+    expect(sha256(textoConsentimientoListaEspera())).toBe(hashEsperado);
   });
 
   it("menciona WhatsApp (es un aviso, no una promoción)", () => {
@@ -1618,10 +1671,10 @@ describe("consentimiento de la lista de espera", () => {
 // ---------------------------------------------------------------------------
 
 describe("consentimiento manual de Clientes", () => {
-  // HASH PENDIENTE: mismo motivo que los dos anteriores.
+  // El texto cambió para aclarar el alcance ("esta hora y las próximas",
+  // revisión de seguridad, 2026-09-27): hay que recalcular el hash.
   const HASHES: Record<string, string> = {
-    "manual-2026-10-v1":
-      "b005e68f3a637a15439da9566b397858bca768135d8b86f8161b74170adeb764",
+    "manual-2026-10-v1": "",
   };
 
   function sha256(texto: string): string {

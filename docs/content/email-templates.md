@@ -117,6 +117,9 @@ O escribe este código en la pantalla de acceso: {{ .Token }}
 
 El link y el código vencen en 15 minutos. Si no pediste este correo, puedes
 ignorarlo.
+
+No compartas este código con nadie. Nunca te lo vamos a pedir por WhatsApp
+ni por teléfono.
 ```
 
 ### 5.2 Confirmación (cuenta nueva, `enable_confirmations` en prod)
@@ -132,6 +135,9 @@ O escribe este código en la pantalla de acceso: {{ .Token }}
 
 El link y el código vencen en 15 minutos. Si no creaste esta cuenta, puedes
 ignorar este correo.
+
+No compartas este código con nadie. Nunca te lo vamos a pedir por WhatsApp
+ni por teléfono.
 ```
 
 ## 6. Abono (Mercado Pago, WP-03b, F11)
@@ -148,10 +154,12 @@ Pagaste {monto} de abono. El resto ({saldo}) lo pagas en el local.
 {condiciones}
 ```
 
-`{condiciones}` es el resultado de `abono.reserva.condiciones({ horas })`
-(D-022, regla del abono): explica que el abono se devuelve si se cancela
-dentro del plazo, y que el negocio se lo queda si se cancela fuera de plazo
-o si el cliente no viene.
+`{condiciones}` es el resultado de
+`abono.reserva.condiciones({ negocio, horas })` (D-022, regla del abono):
+explica que **el negocio** (nunca la plataforma, D-008) devuelve el abono si
+se cancela hasta `horas` h antes, que se lo queda si se cancela después o si
+el cliente no viene, que el abono se mantiene si solo se cambia la hora, y
+que el negocio lo devuelve si es él quien cancela.
 
 ## 7. Pie de página (los cuatro correos de reserva)
 

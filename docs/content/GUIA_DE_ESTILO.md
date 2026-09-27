@@ -33,12 +33,13 @@
 | Opción de "cualquier profesional" | **Cualquiera** | "Cualquier profesional", "Sin preferencia" |
 | Visita número N de un cliente | **"3.ª visita"** (ordinal femenino, con `.ª`) | "3era visita", "visita Nº 3" |
 | URL que le mandamos al cliente | **link** ("link de gestión") | "enlace" (se entiende, pero no es el que usamos) |
-| Pago adelantado por Mercado Pago | **abono** / lo que falta pagar en el local, **saldo** | "seña" (para "abono"), "resto" (para "saldo") |
+| Lo que falta pagar en el local después del abono (texto visible: "El **resto** ($6.000) lo pagas en el local"; `saldo` es solo el nombre del parámetro que trae el monto) | **resto** | "saldo" como palabra visible (esa es la clave/parámetro, no el texto) |
 | Marcar un pago como registrado en la base | **cobrar** / **cobrado** | "pagar" (ese verbo es del cliente) |
 | Deshacer un pago mal registrado (`payments` no permite borrar, solo actualizar) | **anular pago** | "cancelar pago" (ambiguo con cancelar la reserva, GUIA §5) |
-| Las cuatro personas del negocio en conjunto (paso 2 de onboarding) | **equipo** | — |
+| Las personas que atienden en el negocio, en conjunto (paso 2 de onboarding) | **equipo** | — |
 | Una persona que atiende | **profesional** | "empleado" (ver también la fila de arriba) |
-| El `/[slug]` que le compartes al cliente | **link de reservas** | "página de reservas" (se usa distinto, para la vista previa) |
+| La URL que le compartes al cliente (`negocio.slug`, onboarding paso 4) | **link de reservas** | "enlace" |
+| La página a la que lleva ese link (`/[slug]`, lo que el cliente ve y usa para reservar) | **página de reservas** | — (es un concepto distinto del link, no un sinónimo: el link se copia/comparte, la página se visita) |
 | Categoría del negocio (`businesses.category`) | **rubro** | "categoría" (esa palabra se reserva para `services.category`) |
 
 ## 3. Formato
@@ -108,7 +109,7 @@
   cambio de horario de verano (R7).
 - Las plantillas de marketing (fase 2: `hora_flash`, `te_echamos_de_menos`)
   siempre terminan con la opción de baja: "Responde BAJA si no quieres
-  recibir más ofertas." No se escriben en WP-03 (ver FRÅGA 2 del plan).
+  recibir más ofertas." No se escriben en WP-03 (ver pregunta 2 del plan).
 
 ## 7. Consentimientos y textos legales (borrador)
 
@@ -125,7 +126,11 @@
     confirmar una reserva en `/[slug]`.
   - `reserva.waitlist.consentimientoVersion` (`"lista-espera-2026-10-v1"`):
     unirse a la lista de espera, una acción distinta de confirmar una
-    reserva.
+    reserva. La pantalla de unirse a la lista de espera **debe mostrar**,
+    además de `waitlist.terminos`, quién trata los datos
+    (`consentimientos.responsable({ negocio })`) y el link a la política de
+    privacidad (`consentimientos.privacidadLinkTexto`): el hash de esta
+    versión cubre los tres textos juntos, no solo `waitlist.terminos`.
   - `clientes.consentimientoManual.version` (`"manual-2026-10-v1"`): el
     dueño registra que un cliente walk-in o telefónico aceptó, guardado con
     `consent_channel = 'manual'`.
@@ -187,8 +192,9 @@ de este paquete), la regla de producto es:
 
 - Nunca un nombre de servicio de salud o íntimo con detalle clínico
   (diagnósticos, nombres de tratamientos médicos, condiciones de salud). Un
-  kinesiólogo escribe "Sesión de rehabilitación", no el diagnóstico del
-  paciente.
+  kinesiólogo escribe "Sesión de kinesiología" o "Sesión (60 min)", nunca el
+  diagnóstico ni el tratamiento específico del paciente (ni siquiera
+  "rehabilitación", que ya sugiere una condición).
 - Nunca datos que identifiquen algo sensible de la persona que reserva más
   allá del servicio en sí.
 - Esto es una regla de producto y de validación en el formulario de
@@ -205,8 +211,12 @@ de este paquete), la regla de producto es:
 
 Ningún campo de notas libres pide ni sugiere anotar datos de salud:
 
-- `clientes.notas.ayuda` (notas del cliente en su ficha): "Solo tu equipo
-  las ve. No anotes datos de salud ni información sensible."
+- `clientes.notas.ayuda` y `agenda.manual.notasAyuda` (mismo texto, una sola
+  definición: notas del cliente en su ficha y notas de una reserva manual):
+  "Las ven tú y tus administradores, y el cliente puede pedir una copia de
+  sus datos. No anotes datos de salud ni información sensible." (menciona el
+  derecho del cliente a pedir copia de sus datos, revisión de seguridad
+  2026-09-27).
 - `horarios.bloqueos.notaAyuda` (nota de un bloqueo o ausencia, por ejemplo
   una licencia médica): "Solo tu equipo la ve. No anotes datos de salud."
 

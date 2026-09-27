@@ -143,7 +143,7 @@ export const errores = {
     slot_taken: "Alguien tomó esa hora recién, elige otra.",
     too_soon: "Es muy pronto para reservar esta hora, elige una más adelante.",
     /** Códigos nuevos de `BookingError` (WP-10, `src/server/bookings/`,
-     * FRÅGA 4 del plan de WP-10): `createBooking`/`moveBooking`/
+     * pregunta 4 del plan de WP-10): `createBooking`/`moveBooking`/
      * `cancelBooking` pueden devolverlos también del lado del cliente
      * (`/[slug]` y `r/[token]`). */
     too_far:
@@ -199,9 +199,12 @@ export const errores = {
     outside_cancel_window:
       "Ya pasó el plazo para cancelar o cambiar esta reserva.",
     invalid_input: "Revisa los datos e intenta de nuevo.",
-    /** Ver el comentario del mismo código en `errores.reserva`. */
-    business_unavailable:
-      "Tu cuenta está congelada. No puedes crear ni mover reservas hasta reactivarla.",
+    /** Solo por completitud de tipo: WP-10 nunca devuelve este código para
+     * el actor `owner` (`errores.reserva` es la ruta real, del lado
+     * cliente). Texto neutral porque no debería mostrarse nunca (revisión
+     * de seguridad, 2026-09-27: evitar una narrativa específica —"cuenta
+     * congelada"— que la dueña podría ver sin que sea la causa real). */
+    business_unavailable: "No se pueden crear ni mover reservas por ahora.",
     network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
   },
 } as const satisfies Trad;
@@ -209,6 +212,12 @@ export const errores = {
 // ---------------------------------------------------------------------------
 // reserva: /[slug] — F5, F8 para el cliente
 // ---------------------------------------------------------------------------
+
+/** Única fuente del texto de `reserva.waitlist.terminos` (y de su alias
+ * temporal `reserva.terminosListaEspera` más abajo), para que no existan
+ * dos copias que puedan desalinearse. */
+const TERMINOS_LISTA_ESPERA =
+  "Acepto recibir por WhatsApp el aviso si se libera una hora.";
 
 export const reserva = {
   meta: {
@@ -271,11 +280,16 @@ export const reserva = {
      * aparte de `consentimientos.version` (pedido de revisión,
      * 2026-09-27). El hash se registra en `es-CL.test.ts` junto al de
      * `consentimientos`. */
-    terminos: "Acepto recibir por WhatsApp el aviso si se libera una hora.",
-    /** Hash pendiente: el orquestador debe llenarlo después de correr
-     * `es-CL.test.ts` una vez (ver el informe de esta entrega). */
+    terminos: TERMINOS_LISTA_ESPERA,
     consentimientoVersion: "lista-espera-2026-10-v1",
   },
+  /**
+   * @deprecated Alias temporal de `reserva.waitlist.terminos` (revisión de
+   * seguridad, 2026-09-27), para que WP-13 no se rompa si mergea antes de
+   * cambiar su referencia. Bórralo junto con el import en WP-13; no lo uses
+   * en código nuevo.
+   */
+  terminosListaEspera: TERMINOS_LISTA_ESPERA,
   resumen: {
     conProfesional: (p: {
       servicio: string;
@@ -477,6 +491,18 @@ export const inicio = {
 // agenda: Agenda.dc.html — F6 para el dueño (semana, día, popover)
 // ---------------------------------------------------------------------------
 
+/** Texto de ayuda compartido para campos de notas libres (protección de
+ * datos, Ley 21.719): reservas manuales (`agenda.manual.notasAyuda`) y
+ * clientes (`clientes.notas.ayuda`, WP-03b). Una sola definición para que
+ * no se desalineen. */
+const NOTAS_AYUDA =
+  "Las ven tú y tus administradores, y el cliente puede pedir una copia de sus datos. No anotes datos de salud ni información sensible.";
+
+/** Mismo texto en el riel de Agenda (`agenda.agregarProfesional`) y en el
+ * formulario de equipo de Ajustes (`profesionales.ctaAgregar`, WP-03b):
+ * GUIA §4, "mismo vocabulario" para el mismo botón. */
+const AGREGAR_PROFESIONAL = "Agregar profesional";
+
 export const agenda = {
   /** aria-label de `<section aria-label="Calendario mensual">` (aside). */
   calendarioMensualAria: "Calendario mensual",
@@ -500,7 +526,7 @@ export const agenda = {
     minimoUnProfesional: "Debes dejar al menos un profesional visible.",
   },
   nuevaReserva: "Nueva reserva",
-  agregarProfesional: "Agregar profesional",
+  agregarProfesional: AGREGAR_PROFESIONAL,
   verAgendaDe: (p: { nombre: string }): string => `Ver agenda de ${p.nombre}`,
   vistaAria: "Vista",
   /** aria-label de la sección semanal: "Semana del {desde} al {hasta}". */
@@ -560,7 +586,11 @@ export const agenda = {
       telefono: "Celular",
       dia: "Día",
       hora: "Hora",
+      notas: "Notas (opcional)",
     },
+    /** Mismo texto que `clientes.notas.ayuda` (WP-03b): ver `NOTAS_AYUDA`
+     * arriba. */
+    notasAyuda: NOTAS_AYUDA,
     ctaGuardar: "Guardar reserva",
   },
   confirmarAviso: {
@@ -659,7 +689,7 @@ export type BotonPlantilla =
       /** Sufijo dinámico del botón (su propio "{{1}}", con numeración propia
        * respecto del body). */
       readonly sufijo: { readonly ejemplo: string; readonly fuente: string };
-      /** true mientras `brand.domain` sea `null` (FRÅGA 3 / D-001): la
+      /** true mientras `brand.domain` sea `null` (pregunta 3 / D-001): la
        * plantilla no se puede enviar a Meta hasta tener la base de la URL. */
       readonly dominioPendiente: boolean;
     };
@@ -1068,16 +1098,16 @@ export const email = {
    * (no funciones): las variables `{{ .ConfirmationURL }}` y `{{ .Token }}`
    * son sintaxis de plantilla de Supabase, no interpolación de `es-CL.ts`,
    * y deben quedar literales para que WP-15 las copie tal cual a
-   * `supabase/templates/*.html` (FRÅGA 3 del plan, R9). `brand.name`
+   * `supabase/templates/*.html` (pregunta 3 del plan, R9). `brand.name`
    * aparece una vez en cada asunto, como remitente. */
   acceso: {
     magicLink: {
       asunto: `Tu link para entrar a ${brand.name}`,
-      cuerpo: `Haz clic en este link para entrar a tu cuenta:\n\n{{ .ConfirmationURL }}\n\nO escribe este código en la pantalla de acceso: {{ .Token }}\n\nEl link y el código vencen en 15 minutos. Si no pediste este correo, puedes ignorarlo.`,
+      cuerpo: `Haz clic en este link para entrar a tu cuenta:\n\n{{ .ConfirmationURL }}\n\nO escribe este código en la pantalla de acceso: {{ .Token }}\n\nEl link y el código vencen en 15 minutos. Si no pediste este correo, puedes ignorarlo.\n\nNo compartas este código con nadie. Nunca te lo vamos a pedir por WhatsApp ni por teléfono.`,
     },
     confirmation: {
       asunto: `Confirma tu cuenta de ${brand.name}`,
-      cuerpo: `Haz clic en este link para confirmar tu cuenta y entrar:\n\n{{ .ConfirmationURL }}\n\nO escribe este código en la pantalla de acceso: {{ .Token }}\n\nEl link y el código vencen en 15 minutos. Si no creaste esta cuenta, puedes ignorar este correo.`,
+      cuerpo: `Haz clic en este link para confirmar tu cuenta y entrar:\n\n{{ .ConfirmationURL }}\n\nO escribe este código en la pantalla de acceso: {{ .Token }}\n\nEl link y el código vencen en 15 minutos. Si no creaste esta cuenta, puedes ignorar este correo.\n\nNo compartas este código con nadie. Nunca te lo vamos a pedir por WhatsApp ni por teléfono.`,
     },
   },
   /** Línea que WP-16/25 agregan dentro de `reservaConfirmada.cuerpo` cuando
@@ -1128,13 +1158,13 @@ export const validacion = {
     out_of_range: "Ese RUT no es válido.",
   },
   date: {
-    invalid_format: "Usa el formato día-mes-año.",
+    invalid_format: "Elige una fecha válida.",
     invalid_date: "Esa fecha no existe.",
     invalid_type: "Esa fecha no es válida.",
   },
   time: {
     invalid_format: "Usa el formato hora:minutos, por ejemplo 15:00.",
-    out_of_range: "Esa hora no existe. Usa un valor entre 00:00 y 23:59.",
+    out_of_range: "Esa hora no existe. Revisa la hora y los minutos.",
     invalid_type: "Esa hora no es válida.",
   },
   /** `fromLocalStrict` (src/lib/format/dates.ts, WP-04): cuando el dueño
@@ -1186,7 +1216,7 @@ export const validacion = {
 
 // ---------------------------------------------------------------------------
 // acceso: inicio de sesión con link mágico + código de 6 dígitos (F1,
-// FRÅGA 2 del plan de WP-03b). No hay código por WhatsApp en v1.
+// pregunta 2 del plan de WP-03b). No hay código por WhatsApp en v1.
 // ---------------------------------------------------------------------------
 
 export const acceso = {
@@ -1195,6 +1225,8 @@ export const acceso = {
     emailLabel: "Correo",
     emailPlaceholder: "tucorreo@ejemplo.cl",
     cta: "Enviarme el link",
+    /** Estado del botón `cta` mientras se envía la solicitud. */
+    enviando: "Enviando…",
     sinContrasena: "No necesitas contraseña.",
     cuentaNueva: "Si es tu primera vez, creamos tu cuenta al tiro.",
   },
@@ -1244,7 +1276,7 @@ export const negocio = {
     addressLabel: "Dirección (opcional)",
     addressPlaceholder: "Calle y número",
   },
-  /** Claves = valores guardados en `businesses.category` (FRÅGA 8 del plan
+  /** Claves = valores guardados en `businesses.category` (pregunta 8 del plan
    * de WP-03b). La lista de comunas es dato, no copy: vive en WP-15. */
   rubros: {
     barberia: "Barbería",
@@ -1279,6 +1311,12 @@ export const negocio = {
 // onboarding: cuenta nueva en 4 pasos (F1, "menos de 10 minutos")
 // ---------------------------------------------------------------------------
 
+/** Forma sin género para quien atiende sin equipo (revisión de seguridad,
+ * 2026-09-27: "trabajas solo/sola" obligaba a elegir género). Compartida
+ * entre `onboarding.intro.equipo` y `profesionales.vacio`. */
+const AGREGA_EQUIPO_VACIO =
+  "Agrega a las personas que atienden. Si atiendes sin equipo, agrégate a ti.";
+
 export const onboarding = {
   bienvenida: "Configura tu agenda en 4 pasos, toma menos de 10 minutos.",
   paso: (p: { n: number; total: number }): string =>
@@ -1298,8 +1336,7 @@ export const onboarding = {
   /** Una oración por paso, ≤ 120 caracteres (§5 del plan). */
   intro: {
     servicios: "Agrega lo que ofreces: nombre, duración y precio.",
-    equipo:
-      "Agrega a las personas que atienden. Si trabajas solo, agrégate a ti.",
+    equipo: AGREGA_EQUIPO_VACIO,
     horario: "Cuéntanos cuándo atiendes cada día.",
     link: "Con esto ya tienes tu página de reservas lista.",
   },
@@ -1323,6 +1360,10 @@ export const onboarding = {
   },
   avisoSinServicios:
     "Tu página no recibe reservas hasta que agregues un servicio.",
+  /** Aviso genérico al saltar cualquier paso (`ctaSaltar`), distinto de
+   * `avisoSinServicios` (que es específico del paso de servicios). */
+  pasoOmitidoAviso: (p: { seccion: string }): string =>
+    `Saltaste este paso. Puedes completarlo después en Ajustes → ${p.seccion}.`,
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -1335,12 +1376,14 @@ export const servicios = {
     namePlaceholder: "Ej: Corte de pelo",
     /** GUIA §9: texto de ayuda que siempre se ve bajo el nombre, en
      * onboarding y en Ajustes (misma clave en los dos lugares). No hay
-     * filtro automático de palabras en v1 (FRÅGA 11 del plan). */
+     * filtro automático de palabras en v1 (pregunta 11 del plan). */
     nombreAyuda:
       "El nombre llega al cliente por WhatsApp y correo. Usa un nombre general, sin datos de salud.",
-    /** Texto ampliado para kinesiología y estética (GUIA §9). */
+    /** Texto ampliado para kinesiología y estética (GUIA §9). Ejemplo
+     * neutral (revisión de seguridad, 2026-09-27): ni "rehabilitación" ni
+     * ningún otro nombre que sugiera una condición de salud. */
     nombreAyudaExtendida:
-      'Por ejemplo, escribe "Sesión de rehabilitación" en vez del diagnóstico o el tratamiento específico.',
+      'Por ejemplo, escribe "Sesión de kinesiología" o "Sesión (60 min)", no el diagnóstico ni el tratamiento específico.',
     durationLabel: "Duración (min)",
     priceLabel: "Precio",
     bufferLabel: "Tiempo extra después",
@@ -1363,6 +1406,10 @@ export const servicios = {
   vacio: "Agrega los servicios que ofreces.",
   contador: (p: { n: number }): string =>
     `${p.n} ${p.n === 1 ? "servicio" : "servicios"}`,
+  ctaAgregar: "Agregar servicio",
+  ctaEliminar: "Eliminar servicio",
+  ctaDesactivar: "Desactivar servicio",
+  ctaActivar: "Activar servicio",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -1402,7 +1449,11 @@ export const profesionales = {
     staff_has_future_bookings: (p: { n: number }): string =>
       `Tiene ${p.n} ${p.n === 1 ? "reserva próxima" : "reservas próximas"}, muévelas o cancélalas primero.`,
   },
-  vacio: "Agrega a las personas que atienden. Si trabajas solo, agrégate a ti.",
+  vacio: AGREGA_EQUIPO_VACIO,
+  ctaAgregar: AGREGAR_PROFESIONAL,
+  ctaEliminar: "Eliminar profesional",
+  ctaDesactivar: "Desactivar profesional",
+  ctaActivar: "Activar profesional",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -1450,7 +1501,9 @@ export const horarios = {
       nota: "Nota (opcional)",
     },
     notaAyuda: "Solo tu equipo la ve. No anotes datos de salud.",
+    ctaAgregar: "Agregar bloqueo",
     ctaGuardar: "Guardar bloqueo",
+    ctaEliminar: "Eliminar bloqueo",
     overlapsBookings: (p: { n: number }): string =>
       `Ese bloqueo se cruza con ${p.n} ${p.n === 1 ? "reserva" : "reservas"}. Muévelas antes de guardar.`,
   },
@@ -1487,14 +1540,20 @@ export const ajustes = {
   waitlistModeAyuda: {
     sequential: "Le avisamos a un cliente a la vez y esperamos su respuesta.",
     broadcast:
-      "Le avisamos a todos los que esperan y gana quien confirme primero.",
+      "Le avisamos a todas las personas en espera y gana quien confirme primero.",
   },
   slugAviso:
     'Si cambias tu link, el anterior deja de funcionar. Los WhatsApp ya enviados con el botón "Reservar de nuevo" van a apuntar al link viejo.',
   guardarCambios: "Guardar cambios",
+  /** Estado del botón `guardarCambios` mientras se guarda. */
+  guardando: "Guardando…",
   cambiosGuardados: "Cambios guardados",
   cambiosSinGuardar: "Tienes cambios sin guardar",
   seguirEditando: "Seguir editando",
+  /** Opción destructiva del diálogo de `cambiosSinGuardar` (GUIA §5: nunca
+   * "Cancelar" para la opción de quedarse; acá es al revés, "seguir
+   * editando" es la segura y esta es la que descarta). */
+  salirSinGuardar: "Salir sin guardar",
   conflictoEdicion:
     "Alguien más cambió esto. Recarga para ver la última versión.",
   cuenta: {
@@ -1532,10 +1591,14 @@ export const clientes = {
   },
   notas: {
     label: "Notas",
-    ayuda:
-      "Solo tu equipo las ve. No anotes datos de salud ni información sensible.",
+    /** Mismo texto que `agenda.manual.notasAyuda`: ver `NOTAS_AYUDA` junto
+     * a `agenda` (revisión de seguridad, 2026-09-27: menciona el derecho
+     * del cliente a pedir copia de sus datos). */
+    ayuda: NOTAS_AYUDA,
   },
   editar: {
+    tituloNuevo: "Nuevo cliente",
+    tituloEditar: "Editar cliente",
     nameLabel: "Nombre",
     phoneLabel: "Celular",
     emailLabel: "Correo (opcional)",
@@ -1553,19 +1616,36 @@ export const clientes = {
       whatsapp: "Por WhatsApp",
       manual: "Registrado por ti",
     },
+    /** Mismas tres etiquetas que `canal`, pero en minúscula y sin verbo,
+     * para usar dentro de una frase (`aceptoEl`) en vez de como línea
+     * suelta. "WhatsApp" mantiene su mayúscula porque es un nombre propio. */
+    canalEnFrase: {
+      web: "en tu página de reservas",
+      whatsapp: "por WhatsApp",
+      manual: "registrado por ti",
+    },
+    /** Fila de consentimiento con fecha y canal (plan de WP-03b, paso 5).
+     * `canal` ya viene de `canalEnFrase`. */
+    aceptoEl: (p: { fecha: string; canal: string }): string =>
+      `Aceptó el ${p.fecha} (${p.canal})`,
     sinRegistro: "Todavía no dio su consentimiento.",
     baja: "Respondió BAJA a las ofertas.",
   },
   /** Casilla de consentimiento cuando el dueño agenda a un cliente sin que
-   * haya pasado por `/[slug]` (walk-in, teléfono; FRÅGA 10 del plan): nunca
+   * haya pasado por `/[slug]` (walk-in, teléfono; pregunta 10 del plan): nunca
    * está premarcada, y se guarda con `consent_channel = 'manual'`. Versión
    * propia porque es un texto distinto del de `reserva.consentimientos`.
-   * Hash pendiente: el orquestador debe llenarlo tras correr
-   * `es-CL.v2.test.ts` una vez (ver el informe de esta entrega). */
+   * Alcance deliberado (revisión de seguridad, 2026-09-27): el consentimiento
+   * queda en pie para "esta hora y las próximas" (no hay que volver a
+   * pedirlo cada vez que el dueño agende al mismo cliente por teléfono). */
   consentimientoManual: {
     version: "manual-2026-10-v1",
     texto:
-      "El cliente aceptó recibir por WhatsApp la confirmación y los recordatorios de sus horas.",
+      "El cliente aceptó recibir por WhatsApp la confirmación y los recordatorios de esta hora y las próximas.",
+    /** Texto de apoyo para el dueño, al lado de la casilla: qué decirle al
+     * cliente antes de marcarla. */
+    ayuda: (p: { negocio: string }): string =>
+      `Cuéntale que le llegarán mensajes de WhatsApp de ${p.negocio} y que puede pedir que no le escriban.`,
     marketingRechazado: "El cliente no quiere recibir ofertas.",
   },
   anonimizado: "Cliente anonimizado",
@@ -1574,6 +1654,17 @@ export const clientes = {
 // ---------------------------------------------------------------------------
 // caja: Caja (F10) — resumen de pagos, marcar como pagada, anular
 // ---------------------------------------------------------------------------
+
+/** `payment_method` sin `mercadopago` (D-022, pregunta 7 del plan): los
+ * métodos que el dueño puede elegir al marcar un pago a mano. Mercado Pago
+ * solo lo cobra el propio flujo automático de abono, nunca a mano. Es una
+ * lista de códigos, no texto de producto, así que vive fuera de `caja`
+ * (`Trad` no admite arrays); las etiquetas siguen en `caja.metodo`. */
+export const CAJA_METODOS_MANUALES = [
+  "cash",
+  "card_terminal",
+  "transfer",
+] as const;
 
 export const caja = {
   /** SegmentedControl ≤ 7 caracteres (§5 del plan). */
@@ -1597,9 +1688,10 @@ export const caja = {
     explicacion:
       "Suma los pagos aprobados dentro del período (hora de Santiago), menos los devueltos.",
   },
-  /** `payment_method` (DB enum). Mercado Pago manual (FRÅGA 7 del plan) no
-   * se ofrece en v1 (D-022): la etiqueta queda lista para cuando exista un
-   * valor de enum propio. */
+  /** `payment_method` (DB enum): las cuatro etiquetas, para mostrar cómo
+   * quedó pagada una reserva (incluida una ya pagada por Mercado Pago). El
+   * selector de "Marcar como pagada" solo debe ofrecer
+   * `CAJA_METODOS_MANUALES` (sin `mercadopago`, D-022). */
   metodo: {
     cash: "Efectivo",
     card_terminal: "Débito o crédito",
@@ -1621,9 +1713,12 @@ export const caja = {
   },
   marcarPagada: {
     titulo: "Marcar como pagada",
-    /** WP-24 calcula el monto sugerido; acá solo se arma la frase. */
-    aPagar: (p: { precio: string; descuento: string; abono: string }): string =>
-      `${p.precio} − ${p.descuento} − ${p.abono} de abono`,
+    /** WP-24 calcula `total` (ya con el descuento y el abono restados) y,
+     * si quiere mostrar el detalle, arma `desglose` como un texto propio
+     * ("precio $18.000 − descuento $0 − abono $6.000"): acá solo se decide
+     * si va entre paréntesis o no. */
+    aPagar: (p: { total: string; desglose?: string }): string =>
+      p.desglose ? `${p.total} (${p.desglose})` : p.total,
     metodoLabel: "Método de pago",
     cta: "Marcar como pagada",
     confirmacion: (p: { metodo: string }): string => `Pagada con ${p.metodo}.`,
@@ -1652,6 +1747,10 @@ export const caja = {
 
 export const abono = {
   ajustes: {
+    /** Encabezado dentro de la sección "Mercado Pago" de Ajustes
+     * (`ajustes.secciones.mercadopago` es la pestaña/título de la sección
+     * completa; esto es el título de este bloque en particular). */
+    titulo: "Cobro de abonos",
     /** D-008: el abono nunca pasa por la plataforma. */
     explicacion:
       "El abono llega directo a tu cuenta de Mercado Pago. Nunca pasa por nosotros.",
@@ -1677,6 +1776,10 @@ export const abono = {
       percent: "Porcentaje del precio",
     },
     depositValueLabel: "Monto del abono",
+    /** Etiqueta propia para `deposit_kind = 'percent'` (revisión de
+     * seguridad, 2026-09-27): ese campo pide un porcentaje, no un monto en
+     * pesos, así que no puede compartir la etiqueta con `fixed`. */
+    depositValuePercentLabel: "Porcentaje del abono",
     /** WP-25 calcula el monto (redondeo `percentOfClp`, ver IDEAS). */
     vistaPrevia: (p: { monto: string }): string =>
       `El cliente paga ${p.monto} para reservar.`,
@@ -1693,12 +1796,15 @@ export const abono = {
     explicacion: (p: { monto: string; saldo: string }): string =>
       `Paga ${p.monto} ahora con Mercado Pago. El resto (${p.saldo}) lo pagas en el local.`,
     /** D-022 (regla del abono, antes D-019 en el plan): el abono se
-     * descuenta del precio; si el cliente cancela dentro del plazo, el
-     * negocio lo devuelve; si cancela fuera de plazo o no viene, el negocio
-     * se lo queda. Este texto entra en el hash de `consentimientos.version`
-     * (paso 7 del plan, FRÅGA 4 aprobada). */
-    condiciones: (p: { horas: number }): string =>
-      `Si cancelas con más de ${p.horas} h de anticipación, te devolvemos el abono. Si cancelas después o no vienes, el negocio se queda con el abono.`,
+     * descuenta del precio; si el cliente cancela dentro del plazo, EL
+     * NEGOCIO lo devuelve; si cancela fuera de plazo o no viene, el negocio
+     * se lo queda. La plataforma nunca toca ni promete devolver el abono
+     * (D-008, D-022): nunca dice "te devolvemos", siempre "{negocio} te
+     * devuelve". Mismo límite ("hasta … antes") que
+     * `antesDeConfirmar.politicaCancelacion`. Este texto entra en el hash de
+     * `consentimientos.version` (paso 7 del plan, pregunta 4 aprobada). */
+    condiciones: (p: { negocio: string; horas: number }): string =>
+      `Si cancelas hasta ${p.horas} h antes, ${p.negocio} te devuelve el abono. Si cancelas después o no vienes, ${p.negocio} se queda con el abono. Si cambias la hora, el abono se mantiene. Si ${p.negocio} cancela, te devuelve el abono.`,
     ctaPagar: "Pagar abono",
     redirigiendo: "Te llevamos a Mercado Pago…",
     tiempoParaPagar: (p: { minutos: number }): string =>
@@ -1710,12 +1816,26 @@ export const abono = {
       expirado: "Se acabó el tiempo y la hora quedó libre.",
     },
     /** El pago llegó aprobado después de que la hora ya se liberó (webhook
-     * tardío): devolución manual en v1 (D-022, automática queda en IDEAS). */
-    pagoTardio: (p: { negocio: string }): string =>
-      `Recibimos tu pago, pero la hora ya se había liberado. ${p.negocio} te devolverá el abono.`,
+     * tardío): devolución manual en v1 (D-022, automática queda en IDEAS).
+     * Quien devuelve es siempre el negocio, nunca la plataforma (D-008). */
+    pagoTardio: (p: { negocio: string; telefonoNegocio: string }): string =>
+      `${p.negocio} recibió tu pago, pero la hora ya se había liberado. ${p.negocio} te devolverá el abono. Escribe al ${p.telefonoNegocio} para coordinarlo.`,
   },
   gestion: {
     abonoPagado: (p: { monto: string }): string => `Abono pagado: ${p.monto}`,
+    /** Confirmación de cancelación desde `r/[token]` cuando la reserva
+     * tiene abono: qué pasa con la plata según el plazo (D-022). Quien
+     * devuelve es siempre el negocio, nunca la plataforma (D-008). */
+    cancelarConAbonoDentroPlazo: (p: {
+      monto: string;
+      negocio: string;
+    }): string =>
+      `${p.negocio} te devolverá ${p.monto} a tu cuenta de Mercado Pago.`,
+    /** Misma regla fuera de plazo. También es la línea que acompaña a
+     * `gestion.fueraDePlazo` cuando la reserva tenía abono, para dejar
+     * claro que tampoco se devuelve por ese camino. */
+    cancelarConAbonoFueraPlazo: (p: { monto: string }): string =>
+      `El abono de ${p.monto} no se devuelve.`,
   },
   /** Vista del dueño (Caja y Agenda): `estados.pendientePago` cubre el chip
    * de la reserva sin pagar; esto es la devolución pendiente. */

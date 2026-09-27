@@ -45,7 +45,10 @@ solo recibe esos nombres ya formateados como parámetros de tipo `string`.
    nunca sueltos en la raíz del archivo. Las áreas de WP-03b se agregan
    siempre **al final** del archivo (ver R7 de su plan): es la única forma
    ya acordada de evitar conflictos con otros paquetes que también tocan
-   `es-CL.ts`.
+   `es-CL.ts`. Excepción: `CAJA_METODOS_MANUALES` es una lista de códigos
+   (`payment_method` sin `mercadopago`, D-022), no texto de producto, así que
+   se exporta suelta junto a `caja` en vez de vivir dentro de un objeto
+   `Trad` (que no admite arrays).
 5. Corre el texto por la lista negra de tono (usted, voseo, "po", "wena",
    anglicismos, emoji) y por el chequeo de marca (el nombre del producto nunca
    se escribe a mano fuera de `brand.ts`, se interpola `brand.name`).
@@ -56,7 +59,7 @@ solo recibe esos nombres ya formateados como parámetros de tipo `string`.
 ## Quién puede cambiar qué
 
 - `copywriter-es-cl` es dueño de `src/i18n/` completo (incluye `index.ts` y
-  las pruebas, no solo `es-CL.ts`: ver `docs/tasks/plans/WP-03.md` FRÅGA 10) y
+  las pruebas, no solo `es-CL.ts`: ver `docs/tasks/plans/WP-03.md` pregunta 10) y
   de `docs/content/`.
 - Ningún componente escribe su propio texto (regla dura 6 de `CLAUDE.md`):
   `src/components/` y `src/app/**/page.tsx` (ui-engineer) reciben el texto

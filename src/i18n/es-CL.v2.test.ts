@@ -14,6 +14,11 @@
 import { describe, expect, it } from "vitest";
 
 import type { ClpError } from "@/lib/format/clp";
+import type {
+  fromLocalStrict,
+  parseLocalDate,
+  parseLocalTime,
+} from "@/lib/format/dates";
 import type { PhoneError } from "@/lib/format/phone";
 import type { RutError } from "@/lib/format/rut";
 import {
@@ -31,6 +36,7 @@ import {
   acceso,
   ajustes,
   caja,
+  CAJA_METODOS_MANUALES,
   clientes,
   horarios,
   negocio,
@@ -51,13 +57,23 @@ import {
 // ---------------------------------------------------------------------------
 // `src/lib/format/dates.ts` no exporta alias para estas uniones de error
 // (van inline en la firma de `parseLocalDate`/`parseLocalTime`/
-// `fromLocalStrict`): se repiten acá tal cual, con la fuente anotada. Si
-// WP-04 les cambia el nombre a los códigos, este archivo deja de compilar
-// donde se usan (mismo efecto que un `import type`).
+// `fromLocalStrict`): se derivan acá con `Extract<..., { ok: false }>`
+// sobre el `ReturnType` real de cada función, con `import type` (nunca se
+// importa el valor en tiempo de ejecución). Si WP-04 cambia un código, este
+// archivo deja de compilar donde se usan los tipos derivados.
 // ---------------------------------------------------------------------------
-type DateError = "invalid_format" | "invalid_date"; // parseLocalDate
-type TimeError = "invalid_format" | "out_of_range"; // parseLocalTime
-type HoraLocalError = "nonexistent_local_time" | "ambiguous_local_time"; // fromLocalStrict
+type DateError = Extract<
+  ReturnType<typeof parseLocalDate>,
+  { ok: false }
+>["error"];
+type TimeError = Extract<
+  ReturnType<typeof parseLocalTime>,
+  { ok: false }
+>["error"];
+type HoraLocalError = Extract<
+  ReturnType<typeof fromLocalStrict>,
+  { ok: false }
+>["error"];
 
 const AREAS_V2: Record<string, Rama> = {
   validacion,
@@ -97,7 +113,12 @@ describe("estructura (WP-03b)", () => {
 
 const MUESTRA_GENERICA_V2: Record<string, unknown> = {
   n: 3,
-  total: 4,
+  /** Ya formateado (WP-24 arma `caja.marcarPagada.aPagar({ total })`), no
+   * el número de pasos de `onboarding.paso({ total })`: mismo nombre de
+   * parámetro en las dos funciones, un solo valor genérico posible. Ambos
+   * usos solo se invocan acá para el chequeo de "sin restos rotos", nunca
+   * para verificar el texto exacto (eso lo hace "flexión"). */
+  total: "$18.000",
   min: 1,
   max: 365,
   segundos: 45,
@@ -118,6 +139,9 @@ const MUESTRA_GENERICA_V2: Record<string, unknown> = {
   monto: "$6.000",
   horas: 4,
   minutos: 15,
+  telefonoNegocio: "+56 9 1234 5678",
+  canal: "por WhatsApp",
+  seccion: "Servicios",
 };
 
 function invocarGenerico(fn: unknown): unknown {
@@ -206,80 +230,137 @@ describe("validacion cubre los códigos reales de src/lib/format/ (tipo)", () =>
   });
 });
 
+/** Mismo shape que `SafeParseReturnType` de Zod: `success: true` con `data`,
+ * o `success: false` con `error.issues[].message` (acá va la cadena
+ * "prefijo.codigo" que arma `fromParser`, ver src/lib/format/schemas.ts).
+ * `data` se tipa `unknown` porque acá nunca se lee: solo interesa el
+ * código de error. */
+function codigoDe(
+  r:
+    | { success: true; data: unknown }
+    | { success: false; error: { issues: readonly { message?: string }[] } },
+): string {
+  return r.success ? "" : (r.error.issues[0]?.message ?? "");
+}
+
+/** Tabla en tiempo de ejecución: corre el esquema real de WP-04 con una
+ * entrada inválida y comprueba que (a) el código sea el esperado y (b) ese
+ * código tenga una clave con texto en el mapa de `validacion` que le
+ * corresponde. Incluye `telefonoCliente` contra `chileanMobileInputSchema`,
+ * el mismo esquema que usa `errores.reserva.telefono` (WP-03) pero leído
+ * del lado del dueño. */
+const CASOS_ESQUEMA: ReadonlyArray<{
+  nombre: string;
+  ejecutar: () => string;
+  codigoEsperado: string;
+  mapa: Record<string, string>;
+}> = [
+  {
+    nombre: "chileanPhoneInputSchema (negocio) con prefijo inválido",
+    ejecutar: () =>
+      codigoDe(chileanPhoneInputSchema.safeParse("+56 1 2345 6789")),
+    codigoEsperado: "phone.invalid_prefix",
+    mapa: validacion.telefonoNegocio,
+  },
+  {
+    nombre: "chileanPhoneInputSchema (negocio) con serie 60x",
+    ejecutar: () =>
+      codigoDe(chileanPhoneInputSchema.safeParse("+56 60 123 4567")),
+    codigoEsperado: "phone.invalid_prefix",
+    mapa: validacion.telefonoNegocio,
+  },
+  {
+    nombre: "chileanPhoneInputSchema (negocio) vacío",
+    ejecutar: () => codigoDe(chileanPhoneInputSchema.safeParse("")),
+    codigoEsperado: "phone.empty",
+    mapa: validacion.telefonoNegocio,
+  },
+  {
+    nombre: "chileanMobileInputSchema (cliente) con un fijo",
+    ejecutar: () =>
+      codigoDe(chileanMobileInputSchema.safeParse("+56 2 2123 4567")),
+    codigoEsperado: "phone.not_mobile",
+    mapa: validacion.telefonoCliente,
+  },
+  {
+    nombre: "chileanMobileInputSchema (cliente) con caracteres inválidos",
+    ejecutar: () =>
+      codigoDe(chileanMobileInputSchema.safeParse("nueve 1234 5678")),
+    codigoEsperado: "phone.invalid_chars",
+    mapa: validacion.telefonoCliente,
+  },
+  {
+    nombre: "chileanMobileInputSchema (cliente) no chileno",
+    ejecutar: () =>
+      codigoDe(chileanMobileInputSchema.safeParse("+54 9 1234 5678")),
+    codigoEsperado: "phone.not_chilean",
+    mapa: validacion.telefonoCliente,
+  },
+  {
+    nombre: "chileanMobileInputSchema (cliente) largo incorrecto",
+    ejecutar: () => codigoDe(chileanMobileInputSchema.safeParse("+56 9 1234")),
+    codigoEsperado: "phone.invalid_length",
+    mapa: validacion.telefonoCliente,
+  },
+  {
+    nombre: 'clpInputSchema con "18.000,50"',
+    ejecutar: () => codigoDe(clpInputSchema.safeParse("18.000,50")),
+    codigoEsperado: "clp.invalid_format",
+    mapa: validacion.clp,
+  },
+  {
+    nombre: "clpInputSchema vacío",
+    ejecutar: () => codigoDe(clpInputSchema.safeParse("")),
+    codigoEsperado: "clp.empty",
+    mapa: validacion.clp,
+  },
+  {
+    nombre: "rutInputSchema con dígito verificador incorrecto",
+    ejecutar: () => codigoDe(rutInputSchema.safeParse("12345678-9")),
+    codigoEsperado: "rut.invalid_check_digit",
+    mapa: validacion.rut,
+  },
+  {
+    nombre: "rutInputSchema vacío",
+    ejecutar: () => codigoDe(rutInputSchema.safeParse("")),
+    codigoEsperado: "rut.empty",
+    mapa: validacion.rut,
+  },
+  {
+    nombre: 'localEndTimeSchema con "24:30"',
+    ejecutar: () => codigoDe(localEndTimeSchema.safeParse("24:30")),
+    codigoEsperado: "time.out_of_range",
+    mapa: validacion.time,
+  },
+  {
+    nombre: 'localTimeSchema con "24:00" (sin allowEndOfDay)',
+    ejecutar: () => codigoDe(localTimeSchema.safeParse("24:00")),
+    codigoEsperado: "time.out_of_range",
+    mapa: validacion.time,
+  },
+  {
+    nombre: 'localTimeSchema con "9:00" (formato inválido)',
+    ejecutar: () => codigoDe(localTimeSchema.safeParse("9:00")),
+    codigoEsperado: "time.invalid_format",
+    mapa: validacion.time,
+  },
+];
+
 describe("validacion cubre los códigos reales de src/lib/format/ (ejecución)", () => {
-  it("chileanPhoneInputSchema con prefijo inválido → phone.invalid_prefix", () => {
-    const r = chileanPhoneInputSchema.safeParse("+56 1 2345 6789");
-    expect(r.success).toBe(false);
-    const codigo = r.success ? "" : (r.error.issues[0]?.message ?? "");
-    expect(codigo.split(".")[1]).toBe("invalid_prefix");
-    expect(validacion.telefonoNegocio.invalid_prefix.length).toBeGreaterThan(0);
-  });
+  it.each(CASOS_ESQUEMA)(
+    "$nombre → $codigoEsperado, con texto en validacion",
+    ({ ejecutar, codigoEsperado, mapa }) => {
+      const codigo = ejecutar();
+      expect(codigo).toBe(codigoEsperado);
+      const sufijo = codigo.split(".")[1] ?? "";
+      expect(mapa[sufijo]?.length ?? 0).toBeGreaterThan(0);
+    },
+  );
 
-  it("chileanPhoneInputSchema con serie 60x → phone.invalid_prefix", () => {
-    const r = chileanPhoneInputSchema.safeParse("+56 60 123 4567");
-    expect(r.success).toBe(false);
-  });
-
-  it("chileanMobileInputSchema con un fijo → phone.not_mobile", () => {
-    const r = chileanMobileInputSchema.safeParse("+56 2 2123 4567");
-    expect(r.success).toBe(false);
-    const codigo = r.success ? "" : (r.error.issues[0]?.message ?? "");
-    expect(codigo).toBe("phone.not_mobile");
-  });
-
-  it('clpInputSchema con "18.000,50" → clp.invalid_format', () => {
-    const r = clpInputSchema.safeParse("18.000,50");
-    expect(r.success).toBe(false);
-    const codigo = r.success ? "" : (r.error.issues[0]?.message ?? "");
-    expect(codigo).toBe("clp.invalid_format");
-  });
-
-  it("rutInputSchema con dígito verificador incorrecto → rut.invalid_check_digit", () => {
-    const r = rutInputSchema.safeParse("12345678-9");
-    expect(r.success).toBe(false);
-    const codigo = r.success ? "" : (r.error.issues[0]?.message ?? "");
-    expect(codigo).toBe("rut.invalid_check_digit");
-  });
-
-  it('localEndTimeSchema con "24:30" → time.out_of_range', () => {
-    const r = localEndTimeSchema.safeParse("24:30");
-    expect(r.success).toBe(false);
-    const codigo = r.success ? "" : (r.error.issues[0]?.message ?? "");
-    expect(codigo).toBe("time.out_of_range");
-  });
-
-  it('localTimeSchema con "24:00" (sin allowEndOfDay) → time.out_of_range', () => {
-    const r = localTimeSchema.safeParse("24:00");
-    expect(r.success).toBe(false);
-    const codigo = r.success ? "" : (r.error.issues[0]?.message ?? "");
-    expect(codigo).toBe("time.out_of_range");
-  });
-
-  // Cada código real (después del prefijo) tiene una clave en `validacion`.
-  it.each([
-    ["phone", "invalid_chars"],
-    ["phone", "not_chilean"],
-    ["phone", "invalid_length"],
-    ["clp", "empty"],
-    ["clp", "out_of_range"],
-    ["rut", "empty"],
-    ["rut", "invalid_format"],
-    ["rut", "out_of_range"],
-    ["date", "invalid_format"],
-    ["date", "invalid_date"],
-    ["time", "invalid_format"],
-  ] as const)("%s.%s tiene una clave en validacion", (prefijo, codigo) => {
-    const mapa =
-      prefijo === "phone"
-        ? validacion.telefonoNegocio
-        : prefijo === "clp"
-          ? validacion.clp
-          : prefijo === "rut"
-            ? validacion.rut
-            : prefijo === "date"
-              ? validacion.date
-              : validacion.time;
-    expect((mapa as Record<string, string>)[codigo]?.length).toBeGreaterThan(0);
+  it("invalid_length de telefonoCliente dice qué hacer, no solo qué falló", () => {
+    expect(validacion.telefonoCliente.invalid_length).toMatch(
+      /dígitos|revisa/i,
+    );
   });
 });
 
@@ -304,6 +385,18 @@ describe("contrato contra los enums de la base de datos", () => {
     expect(Object.keys(caja.estado).sort()).toEqual(
       [...Constants.public.Enums.payment_status].sort(),
     );
+  });
+
+  it("CAJA_METODOS_MANUALES no incluye mercadopago (D-022)", () => {
+    expect(CAJA_METODOS_MANUALES).not.toContain("mercadopago");
+    expect([...CAJA_METODOS_MANUALES].sort()).toEqual(
+      ["card_terminal", "cash", "transfer"].sort(),
+    );
+    // Cada código sigue siendo un payment_method válido y tiene etiqueta.
+    for (const metodo of CAJA_METODOS_MANUALES) {
+      expect(Constants.public.Enums.payment_method).toContain(metodo);
+      expect(caja.metodo[metodo].length).toBeGreaterThan(0);
+    }
   });
 
   it("abono.servicio.depositKind cubre deposit_kind exacto", () => {
@@ -389,6 +482,25 @@ describe("flexión (n = 0, 1, 2, 21)", () => {
     );
   });
 
+  it("caja.marcarPagada.aPagar, con y sin desglose", () => {
+    expect(caja.marcarPagada.aPagar({ total: "$12.000" })).toBe("$12.000");
+    expect(
+      caja.marcarPagada.aPagar({
+        total: "$12.000",
+        desglose: "precio $18.000 − descuento $0 − abono $6.000",
+      }),
+    ).toBe("$12.000 (precio $18.000 − descuento $0 − abono $6.000)");
+  });
+
+  it("clientes.consentimientos.aceptoEl usa la etiqueta de canal en minúscula", () => {
+    expect(
+      clientes.consentimientos.aceptoEl({
+        fecha: "12 de marzo de 2026",
+        canal: clientes.consentimientos.canalEnFrase.whatsapp,
+      }),
+    ).toBe("Aceptó el 12 de marzo de 2026 (por WhatsApp)");
+  });
+
   it("horarios.intervalos con 1, 2 y 3 rangos", () => {
     expect(horarios.intervalos({ rangos: ["10:00–14:00"] })).toBe(
       "10:00–14:00",
@@ -419,16 +531,43 @@ describe("tono y marca (WP-03b)", () => {
     return encontrados;
   }
 
-  it("ningún texto nuevo usa un giro prohibido", () => {
-    for (const texto of todosLosStringsEstaticosV2()) {
+  /** Resultado de invocar cada función con `MUESTRA_GENERICA_V2`: las
+   * reglas de tono y de marca deben cumplirse también acá, no solo en las
+   * hojas estáticas (una función podría construir una frase con un giro
+   * prohibido aunque ninguna pieza suelta lo tenga). */
+  function todosLosResultadosDeFuncionesV2(): string[] {
+    const encontrados: string[] = [];
+    function recorrer(valor: unknown): void {
+      if (typeof valor === "function") {
+        encontrados.push(invocarGenerico(valor) as string);
+      } else if (Array.isArray(valor)) {
+        valor.forEach(recorrer);
+      } else if (valor && typeof valor === "object") {
+        for (const v of Object.values(valor)) recorrer(v);
+      }
+    }
+    for (const raiz of Object.values(AREAS_V2)) recorrer(raiz);
+    return encontrados;
+  }
+
+  it("ningún texto nuevo (hojas estáticas y resultados de funciones) usa un giro prohibido", () => {
+    const todos = [
+      ...todosLosStringsEstaticosV2(),
+      ...todosLosResultadosDeFuncionesV2(),
+    ];
+    for (const texto of todos) {
       for (const [nombreRegla, regex] of Object.entries(REGLAS_DE_TONO)) {
         expect(regex.test(texto), `${nombreRegla}: "${texto}"`).toBe(false);
       }
     }
   });
 
-  it("ningún texto nuevo escribe el nombre del producto a mano", () => {
-    for (const texto of todosLosStringsEstaticosV2()) {
+  it("ningún texto nuevo (hojas estáticas y resultados de funciones) escribe el nombre del producto a mano", () => {
+    const todos = [
+      ...todosLosStringsEstaticosV2(),
+      ...todosLosResultadosDeFuncionesV2(),
+    ];
+    for (const texto of todos) {
       expect(PATRON_MARCA.test(texto), texto).toBe(false);
     }
   });
