@@ -8,7 +8,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | ID | Titel | Agent | Beror på | F# | Status |
 |---|---|---|---|---|---|
 | WP-00 | Projektgrund: Next.js (`src/`), Tailwind v4 + tokens, typsnitt, ESLint/Prettier, Vitest, Playwright, Supabase CLI, `brand.ts`, `.env.example`, CI (typecheck, lint, test) | ui-engineer | – | – | ☑ |
-| WP-01 | Kärnschema: businesses, memberships, staff, services, staff_services, hours, time_off, customers, bookings (+ exclusion constraint), payments. RLS + pgTAP + seed "Barbería Norte" | db-engineer | WP-00 | F1–F4, F9 | ◐ |
+| WP-01 | Kärnschema: businesses, memberships, staff, services, staff_services, hours, time_off, customers, bookings (+ exclusion constraint), payments. RLS + pgTAP + seed "Barbería Norte" | db-engineer | WP-00 | F1–F4, F9 | ☑ |
 | WP-02 | Design lab + baskomponenter (Button, IconButton, Chip, Pill, Card, SegmentedControl, NavRail, PageHeader, MiniCalendar ljus/mörk) | ui-engineer | WP-00 | – | ☑ |
 | WP-03 | Texter v1: UI-strängar för alla MVP-skärmar + WhatsApp-mallar (för Meta-ansökan) | copywriter-es-cl | – | F5–F8 | ☑ |
 | WP-04 | Format-lib: clp, datum/tid i America/Santiago, telefon E.164 (+56), RUT | scheduling-engineer | WP-00 | – | ☑ |
@@ -19,7 +19,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 
 | ID | Titel | Agent | Beror på | F# | Status |
 |---|---|---|---|---|---|
-| WP-10 | Schemamotor: getAvailableDays/Slots, createBooking/move/cancel, "Cualquiera", sommartidstester, samtidighetstest | scheduling-engineer | WP-01, WP-04 | F4 | ☐ |
+| WP-10 | Schemamotor: getAvailableDays/Slots, createBooking/move/cancel, "Cualquiera", sommartidstester, samtidighetstest (två riktiga pg-anslutningar → 23P01, ersätter skippade `042`; krav för F4) | scheduling-engineer | WP-01, WP-04 | F4 | ☐ |
 | WP-11 | Skärm Inicio (desktop) enligt `Main.dc.html` med fixtures | ui-engineer | WP-02 | F6 | ☐ |
 | WP-12 | Skärm Agenda veckovy enligt `Agenda.dc.html` + dagvy per profesional (ny, samma språk) | ui-engineer | WP-02 | F6 | ☐ |
 | WP-13 | Skärm Reserva (kund) enligt `Reserva.dc.html` med fixtures, alla tillstånd | ui-engineer | WP-02, WP-03 | F5, F8 | ☐ |
