@@ -1564,7 +1564,8 @@ describe("consentimientos", () => {
     // 2026-09-27: la plataforma nunca promete devolver el abono), así que
     // este hash hay que recalcularlo de nuevo. Ningún cliente real aceptó
     // "2026-10-v2" todavía (no hay piloto), así que subirlo no cuesta nada.
-    "2026-10-v2": "",
+    "2026-10-v2":
+      "00a736f71aa46e907b68f049d8894d5fb7b26bd61f05f24954250794d781b164",
   };
 
   function sha256(texto: string): string {
@@ -1634,7 +1635,8 @@ describe("consentimiento de la lista de espera", () => {
   // se hashea (revisión de seguridad, 2026-09-27), así que hay que
   // recalcularlo.
   const HASHES: Record<string, string> = {
-    "lista-espera-2026-10-v1": "",
+    "lista-espera-2026-10-v1":
+      "b55edbc719165d3b30dc9c6a76353a40fd2fe0850b63188953a82c7ac0ed7631",
   };
 
   function sha256(texto: string): string {
@@ -1674,7 +1676,8 @@ describe("consentimiento manual de Clientes", () => {
   // El texto cambió para aclarar el alcance ("esta hora y las próximas",
   // revisión de seguridad, 2026-09-27): hay que recalcular el hash.
   const HASHES: Record<string, string> = {
-    "manual-2026-10-v1": "",
+    "manual-2026-10-v1":
+      "396e959204f27371c3afb6288ef61088fde269ec2df06cbd8708b9e2543c3f2f",
   };
 
   function sha256(texto: string): string {
