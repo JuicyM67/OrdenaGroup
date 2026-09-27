@@ -20,10 +20,9 @@ export default async function DesignLabHoyPage({
   const data = buildFixture(estado);
   return (
     <div className="relative h-211 w-97.5 overflow-hidden">
-      {/* Design lab visar alltid notispricken, som i referensen (FRÅGA 4). `key` gör att
-          Llegó/No vino-statusen startar om när ?estado= byts, i stället för att en gammal
-          klientstate läcker mellan tillstånd. */}
-      <HoyScreen key={estado ?? "default"} data={data} notificationBadge />
+      {/* `key` gör att Llegó/No vino-statusen startar om när ?estado= byts, i stället för
+          att en gammal klientstate läcker mellan tillstånd. */}
+      <HoyScreen key={estado ?? "default"} data={data} />
     </div>
   );
 }

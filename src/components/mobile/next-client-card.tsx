@@ -9,20 +9,31 @@ import { useRef, type Ref } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import { cn } from "@/components/ui/cn";
 import { comun, hoy } from "@/i18n/es-CL";
 import { formatTime, SANTIAGO } from "@/lib/format/dates";
 
 import { nextChip, parseInstantOrThrow, relative } from "./hoy-view";
 import type { HoyBooking } from "./types";
 
+// Fokusringen ligger 2 px INNANFÖR kortets kant (negativ outline-offset, ingen godtycklig
+// [...]-syntax — se Tailwinds dokumenterade `-outline-offset-*`) i stället för utanför: med
+// positiv offset hamnade lime-ringen på den ljusa canvas-ytan bakom kortet (~1,1:1 kontrast),
+// inte på det mörka kortet (13,97:1) där den faktiskt syns (WCAG 1.4.11, granskningsfynd).
+const FOCUS_RING =
+  "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-lime focus-visible:transition-none";
+
 export type NextClientCardProps = {
-  /** `undefined` visar tillståndet "sin-proxima". */
+  /** `undefined` visar tillståndet "sin-proxima" (eller "cerrado" via `emptyMessage`). */
   booking: HoyBooking | undefined;
   now: Date;
   onArrived: () => void;
   onNoShow: () => void;
   /** Inaktiverar knapparna under den korta optimistiska uppdateringen (FRÅGA 1). */
   disabled?: boolean;
+  /** Text när `booking` saknas. Standard: `hoy.sinProximaReserva`. Stängd dag: skickar
+   * anroparen `hoy.restoDia.diaCerrado` i stället, så texten inte motsäger listan. */
+  emptyMessage?: string;
   ref?: Ref<HTMLElement>;
 };
 
@@ -32,6 +43,7 @@ export function NextClientCard({
   onArrived,
   onNoShow,
   disabled = false,
+  emptyMessage,
   ref,
 }: NextClientCardProps) {
   const handledIdRef = useRef<string | null>(null);
@@ -46,10 +58,10 @@ export function NextClientCard({
         aria-label={hoy.proximaReserva}
         tabIndex={-1}
         ref={ref}
-        className="flex flex-col gap-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime focus-visible:transition-none"
+        className={cn("flex flex-col gap-4", FOCUS_RING)}
       >
         <p className="text-15 font-semibold text-on-dark-soft">
-          {hoy.sinProximaReserva}
+          {emptyMessage ?? hoy.sinProximaReserva}
         </p>
       </Card>
     );
@@ -80,7 +92,7 @@ export function NextClientCard({
       aria-label={hoy.proximaReserva}
       tabIndex={-1}
       ref={ref}
-      className="flex flex-col gap-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime focus-visible:transition-none"
+      className={cn("flex flex-col gap-4", FOCUS_RING)}
     >
       <div className="flex items-center justify-between">
         <span className="text-13 text-on-dark-muted">

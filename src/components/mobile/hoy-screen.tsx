@@ -3,16 +3,22 @@
 // Se Hoy.dc.html + docs/tasks/plans/WP-14.md §4 steg 2–4. Skalet, headern och flikraden, samt
 // statushanteringen för Llegó/No vino (FRÅGA 1, svar: ja — fixture-läget ändras lokalt och
 // callbacken byts mot servern i WP-21).
-import { BarChart3, Bell, Calendar, LayoutGrid, Users } from "lucide-react";
+import {
+  Bell,
+  Calendar,
+  ChartNoAxesColumn,
+  LayoutGrid,
+  Users,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Avatar } from "@/components/ui/avatar";
 import { IconButton } from "@/components/ui/icon-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { agenda, hoy, nav } from "@/i18n/es-CL";
+import { initialsOf } from "@/lib/format/initials";
 
 import {
-  initialsOf,
   nextBooking,
   parseInstantOrThrow,
   restOfDay,
@@ -26,28 +32,29 @@ import type { HoyBooking, HoyData } from "./types";
 
 export type HoyScreenProps = {
   data: HoyData;
-  /**
-   * Visar notisprick. FRÅGA 4: `nav.notificacionesNuevas` saknas ännu (WP-03b). Design lab
-   * visar den lokalt för referensens skull; den riktiga routen låter den vara av tills
-   * strängen finns.
-   */
-  notificationBadge?: boolean;
 };
 
 /** Hur länge Llegó/No vino-knapparna är inaktiva efter ett tryck (optimistisk uppdatering). */
 const OPTIMISTIC_LOCK_MS = 400;
 
-export function HoyScreen({ data, notificationBadge = false }: HoyScreenProps) {
+export function HoyScreen({ data }: HoyScreenProps) {
   // `data` byts bara genom en ny instans av skärmen (anroparen sätter `key`, t.ex. per
   // `?estado=` i design lab) — annars skulle den lokala Llegó/No vino-statusen tappas varje
   // gång servern skickar samma dag på nytt.
   const now = useMemo(() => parseInstantOrThrow(data.now), [data.now]);
   const [bookings, setBookings] = useState<HoyBooking[]>(data.bookings);
   const [pendingId, setPendingId] = useState<string | null>(null);
-  const [announcement, setAnnouncement] = useState("");
+  // `id` ökar på varje anrop så att samma text (t.ex. två "Llegó" i rad) ändå ger en ny DOM-nod
+  // i role="status" och läses upp igen (annars: text som inte ändras annonseras inte om).
+  const [announcement, setAnnouncement] = useState<{
+    id: number;
+    text: string;
+  } | null>(null);
   const nextCardRef = useRef<HTMLElement>(null);
   const previousNextId = useRef<string | undefined>(undefined);
   const isFirstNext = useRef(true);
+  // `number` (inte `NodeJS.Timeout`): det här körs bara i webbläsaren, via window.setTimeout.
+  const pendingTimeoutRef = useRef<number | null>(null);
 
   const next = data.closedToday ? undefined : nextBooking(bookings, now);
   const rest = data.closedToday ? [] : restOfDay(bookings, now, next);
@@ -61,6 +68,15 @@ export function HoyScreen({ data, notificationBadge = false }: HoyScreenProps) {
     previousNextId.current = next?.id;
   }, [next?.id]);
 
+  // Rensa den väntande timern om komponenten avmonteras medan Llegó/No vino-låsningen pågår.
+  useEffect(() => {
+    return () => {
+      if (pendingTimeoutRef.current !== null) {
+        window.clearTimeout(pendingTimeoutRef.current);
+      }
+    };
+  }, []);
+
   function markStatus(
     id: string,
     status: "completed" | "no_show",
@@ -71,8 +87,11 @@ export function HoyScreen({ data, notificationBadge = false }: HoyScreenProps) {
     setBookings((prev) =>
       prev.map((b) => (b.id === id ? { ...b, status } : b)),
     );
-    setAnnouncement(message);
-    window.setTimeout(() => setPendingId(null), OPTIMISTIC_LOCK_MS);
+    setAnnouncement((prev) => ({ id: (prev?.id ?? 0) + 1, text: message }));
+    pendingTimeoutRef.current = window.setTimeout(() => {
+      setPendingId(null);
+      pendingTimeoutRef.current = null;
+    }, OPTIMISTIC_LOCK_MS);
   }
 
   const tabItems: MobileTabItem[] = [
@@ -103,10 +122,16 @@ export function HoyScreen({ data, notificationBadge = false }: HoyScreenProps) {
       href: data.links.tabs.caja,
       label: nav.caja,
       icon: (
-        <BarChart3 aria-hidden="true" className="size-5.5" strokeWidth={1.9} />
+        <ChartNoAxesColumn
+          aria-hidden="true"
+          className="size-5.5"
+          strokeWidth={1.9}
+        />
       ),
     },
   ];
+
+  const hasUnread = data.unreadNotifications > 0;
 
   return (
     <div className="min-h-dvh bg-canvas">
@@ -118,10 +143,14 @@ export function HoyScreen({ data, notificationBadge = false }: HoyScreenProps) {
           actions={
             <>
               <IconButton
-                label={nav.notificaciones}
+                label={
+                  hasUnread
+                    ? nav.notificacionesNuevas({ n: data.unreadNotifications })
+                    : nav.notificaciones
+                }
                 tone="surface"
                 size={46}
-                badge={notificationBadge}
+                badge={hasUnread}
               >
                 <Bell aria-hidden="true" className="size-5" strokeWidth={1.9} />
               </IconButton>
@@ -141,6 +170,7 @@ export function HoyScreen({ data, notificationBadge = false }: HoyScreenProps) {
           booking={next}
           now={now}
           disabled={pendingId !== null}
+          emptyMessage={data.closedToday ? hoy.restoDia.diaCerrado : undefined}
           onArrived={() =>
             next && markStatus(next.id, "completed", agenda.toast.llego)
           }
@@ -162,7 +192,9 @@ export function HoyScreen({ data, notificationBadge = false }: HoyScreenProps) {
       <MobileTabBar items={tabItems} active="hoy" />
 
       <div role="status" className="sr-only">
-        {announcement}
+        {announcement ? (
+          <span key={announcement.id}>{announcement.text}</span>
+        ) : null}
       </div>
     </div>
   );

@@ -76,6 +76,22 @@ describe("NextClientCard", () => {
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
   });
 
+  it('emptyMessage byter ut standardtexten ("cerrado" motsäger inte listan)', () => {
+    render(
+      <NextClientCard
+        booking={undefined}
+        now={now}
+        onArrived={vi.fn()}
+        onNoShow={vi.fn()}
+        emptyMessage="Hoy no atiendes."
+      />,
+    );
+    expect(screen.getByText("Hoy no atiendes.")).toBeInTheDocument();
+    expect(
+      screen.queryByText("No tienes más clientes agendados hoy."),
+    ).not.toBeInTheDocument();
+  });
+
   it("visar tid, namn och statuschippen", () => {
     render(
       <NextClientCard

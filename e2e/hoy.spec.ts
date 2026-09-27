@@ -135,9 +135,21 @@ test.describe("Hoy — klickytor ≥ 44×44", () => {
     for (const name of ["Llegó", "No vino"]) {
       await expectMinTapTarget(page.getByRole("button", { name }));
     }
+    // baseFixture har unreadNotifications: 1, så aria-label är den singulara varianten av
+    // nav.notificacionesNuevas, inte den tomma nav.notificaciones.
     await expectMinTapTarget(
-      page.getByRole("button", { name: "Notificaciones" }),
+      page.getByRole("button", { name: "1 notificación nueva" }),
     );
+  });
+});
+
+test.describe("Hoy — notisknappen", () => {
+  test("badge och aria-label speglar unreadNotifications (>0 → prick + notificacionesNuevas)", async ({
+    page,
+  }) => {
+    await page.goto("/design-lab/hoy");
+    const button = page.getByRole("button", { name: "1 notificación nueva" });
+    await expect(button.locator(".bg-alert")).toBeVisible();
   });
 });
 
@@ -186,7 +198,7 @@ test.describe("Hoy — tangentbord", () => {
   }) => {
     await page.goto("/design-lab/hoy");
 
-    const notif = page.getByRole("button", { name: "Notificaciones" });
+    const notif = page.getByRole("button", { name: "1 notificación nueva" });
     await tabUntilFocused(page, notif);
 
     const llego = page.getByRole("button", { name: "Llegó" });
@@ -206,6 +218,56 @@ test.describe("Hoy — tangentbord", () => {
 
     const hoyTab = page.getByRole("link", { name: "Hoy", exact: true });
     await tabUntilFocused(page, hoyTab, 20);
+  });
+});
+
+test.describe("Hoy — NextClientCard, fokus efter Llegó", () => {
+  test.skip(
+    ({ isMobile }) => isMobile,
+    "kräver tangentbordsaktivering (input-modality), inte pekskärm",
+  );
+
+  test("fokusringen ligger innanför kortet (negativ offset, lime på mörk botten)", async ({
+    page,
+  }) => {
+    await page.goto("/design-lab/hoy");
+    // tabIndex={-1}: kortet nås inte med Tab (avsiktligt, se DESIGN.md §7), utan får fokus
+    // programmatiskt när Llegó flyttar vidare till nästa kund (FRÅGA 1). Aktivera Llegó med
+    // tangentbordet (inte .click()) — annars räknar Chromium input-modality som "pekare" och
+    // visar ingen focus-visible-ring alls på det nya kortet, oavsett offset.
+    const llego = page.getByRole("button", { name: "Llegó" });
+    await tabUntilFocused(page, llego, 10);
+    await page.keyboard.press("Enter");
+    const card = page.getByRole("region", { name: "Próxima reserva" });
+    await expect(card).toBeFocused();
+    const styles = await card.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return {
+        color: s.outlineColor,
+        width: s.outlineWidth,
+        offset: s.outlineOffset,
+        background: s.backgroundColor,
+      };
+    });
+    expect(styles.color).toBe("rgb(227, 243, 107)"); // lime
+    expect(styles.width).toBe("2px");
+    // Negativ offset → ringen ligger innanför kortets (mörka) bakgrund, inte på den ljusa
+    // canvasen bakom det (granskningsfynd: ~1,1:1 kontrast där, 13,97:1 mot bg-dark).
+    expect(styles.offset).toBe("-2px");
+    expect(styles.background).toBe("rgb(28, 28, 34)"); // bg-dark
+  });
+});
+
+test.describe("Hoy — cerrado", () => {
+  test("nästa-kund-kortet visar 'Hoy no atiendes.', inte 'No tienes más clientes agendados hoy.'", async ({
+    page,
+  }) => {
+    await page.goto("/design-lab/hoy?estado=cerrado");
+    const card = page.getByRole("region", { name: "Próxima reserva" });
+    await expect(card.getByText("Hoy no atiendes.")).toBeVisible();
+    await expect(
+      page.getByText("No tienes más clientes agendados hoy."),
+    ).toHaveCount(0);
   });
 });
 

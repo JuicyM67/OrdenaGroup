@@ -41,7 +41,7 @@ export function RestOfDay({
       className="flex flex-col px-4.5 py-4"
     >
       <div className="mb-1 flex items-center justify-between">
-        <h2 id={HEADING_ID} className="text-18 font-bold">
+        <h2 id={HEADING_ID} className="text-16 font-bold">
           {hoy.restoDia.titulo}
         </h2>
         <span className="text-13 text-muted">

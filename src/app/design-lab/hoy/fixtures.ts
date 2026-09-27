@@ -110,6 +110,7 @@ export const baseFixture = {
   dayCount: 6,
   dayTotalClp: 84_000,
   waitlistCount: 3,
+  unreadNotifications: 1,
   links: LINKS,
 } satisfies HoyData;
 

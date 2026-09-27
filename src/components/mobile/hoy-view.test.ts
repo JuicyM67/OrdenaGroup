@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import {
-  initialsOf,
   nextBooking,
   nextChip,
   parseInstantOrThrow,
@@ -50,12 +49,6 @@ for (const tz of [undefined, "UTC", "Europe/Stockholm"]) {
         expect(
           todayLabel(parseInstantOrThrow("2026-10-02T14:40:00-03:00")),
         ).toBe("Viernes 2 de octubre");
-      });
-    });
-
-    describe("initialsOf", () => {
-      it('"Camila Rojas" → "CR"', () => {
-        expect(initialsOf("Camila Rojas")).toBe("CR");
       });
     });
 

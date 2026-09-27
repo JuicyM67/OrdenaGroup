@@ -24,19 +24,6 @@ export function parseInstantOrThrow(instant: string): Date {
   return result.value;
 }
 
-/**
- * Initialer ur ett fullständigt namn, t.ex. "Camila Rojas" → "CR". Tillfällig lokal
- * implementation: hör egentligen hemma i `src/lib/format/` (scheduling-engineer, se
- * WP-14-planen §3 "Externa beroenden"), men den PR:en är inte mergad än och WP-14 äger
- * inte den mappen. Flyttas dit utan ändrad signatur när den landar.
- */
-export function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "";
-  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase();
-  return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
-}
-
 /** "Viernes 2 de octubre" i America/Santiago. */
 export function todayLabel(now: Date): string {
   return formatDate(now, SANTIAGO, "weekdayDayMonthLong");

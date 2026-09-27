@@ -12,9 +12,10 @@ import { notFound } from "next/navigation";
 import { isDesignLabEnabled } from "@/app/design-lab/gate";
 import { buildFixture } from "@/app/design-lab/hoy/fixtures";
 import { HoyScreen } from "@/components/mobile/hoy-screen";
+import { hoy } from "@/i18n/es-CL";
 
 export const metadata: Metadata = {
-  title: "Hoy",
+  title: hoy.titulo,
   robots: { index: false, follow: false },
 };
 
@@ -36,7 +37,5 @@ export default async function HoyPage({
   }
   const { estado } = await searchParams;
   const data = buildFixture(estado);
-  // FRÅGA 4: strängen `nav.notificacionesNuevas` saknas ännu — ingen badge här tills den
-  // finns (WP-03b). Design lab visar den för referensens skull.
   return <HoyScreen key={estado ?? "default"} data={data} />;
 }

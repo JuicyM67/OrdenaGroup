@@ -55,5 +55,7 @@ export type HoyData = {
   /** Summa för hela dagen, heltal CLP. */
   dayTotalClp: number;
   waitlistCount: number;
+  /** Antal olästa notiser. Styr notispricken och `nav.notificaciones`/`notificacionesNuevas`. */
+  unreadNotifications: number;
   links: HoyLinks;
 };
