@@ -24,6 +24,8 @@ const iconButton = cva(
         30: "size-7.5",
         32: "size-8",
         34: "size-8.5",
+        // 36: AgendaRow "Más opciones" (Main), WP-11.
+        36: "size-9",
         44: "size-11",
         46: "size-11.5",
         48: "size-12",
