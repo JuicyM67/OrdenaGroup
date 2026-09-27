@@ -4,21 +4,18 @@
 // `labels.dayLabel` är en funktion och kan inte skickas från en serverkomponent (samma skäl
 // som design-lab/components/mini-calendar-demo.tsx, WP-02). Månadsbyte hålls i lokalt
 // state; val av dag markerar bara — navigering till Agenda för den dagen är WP-21 (idé).
-//
-// TODO(WP-10): byt `WEEKDAYS_MIN` mot `weekdayMin`-preset i src/lib/format/dates.ts när den
-// finns (FRÅGA 6) — MiniCalendar tar redan `weekdays` som prop (WP-02), så det är bara den
-// hårdkodade arrayen nedan som ska bytas ut, ingen omskrivning av komponenten.
-// TODO(WP-03b): lägg till `calendario.diaConReservas({ fecha })` i `dayLabel` när nyckeln
-// finns (FRÅGA 7) — pricken är annars ensam bärare av "har bokningar".
 import { useState } from "react";
 
 import { Card } from "@/components/ui/card";
 import { addMonths, type YearMonth } from "@/components/ui/mini-calendar/grid";
 import { MiniCalendar } from "@/components/ui/mini-calendar/mini-calendar";
 import { calendario, inicio } from "@/i18n";
+import { WEEKDAY_MIN } from "@/lib/format/calendar-es-CL";
 import { formatLocalDate, type LocalDate } from "@/lib/format/dates";
 
-const WEEKDAYS_MIN: readonly [
+// WEEKDAY_MIN är `readonly string[]` (7 element, testat i weekdays.test.ts); MiniCalendar
+// vill ha en 7-tuppel — säker assertion, ingen omformatering av innehållet.
+const WEEKDAYS_MIN = WEEKDAY_MIN as readonly [
   string,
   string,
   string,
@@ -26,7 +23,7 @@ const WEEKDAYS_MIN: readonly [
   string,
   string,
   string,
-] = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+];
 
 function firstOfMonth({ year, month }: YearMonth): LocalDate {
   const y = String(year).padStart(4, "0");
@@ -71,8 +68,15 @@ export function CalendarCard({
           weekdays: WEEKDAYS_MIN,
           prevMonth: calendario.mesAnterior,
           nextMonth: calendario.mesSiguiente,
-          dayLabel: (date) =>
-            formatLocalDate(date as LocalDate, "weekdayDayMonthLong"),
+          dayLabel: (date) => {
+            const base = formatLocalDate(
+              date as LocalDate,
+              "weekdayDayMonthLong",
+            );
+            return marked.has(date)
+              ? `${base}, ${calendario.diaConReservas}`
+              : base;
+          },
         }}
       />
     </Card>
