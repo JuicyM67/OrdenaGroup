@@ -39,3 +39,9 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-27 | Mallvariant utan tjänstenamn för vårdnära branscher | security-reviewer (WP-03) | Tjänstenamn kan vara känsliga uppgifter (Ley 21.719) | 2 |
 | 2026-09-27 | Paritetstestet i i18n jämför rad för rad i stället för mot en sammanslagen sträng | qa-reviewer (WP-03) | Korta texter kan annars räknas som täckta av längre | 2 |
 | 2026-09-27 | Kontrollera i WP-11–14 att interaktiva komponenter med `transition-colors` också har `focus-visible:transition-none` | ui-engineer (WP-02) | Tailwind 4:s `transition-colors` tonar annars in fokusringen | 1 (WP-11–14) |
+| 2026-09-27 | Behandla 55P03 (lock_timeout på advisory lock) som `slot_taken` i stället för infrastrukturfel | security-reviewer (WP-10) | Hård konkurrens om samma profesional ska ge rätt meddelande | 1 (WP-20) |
+| 2026-09-27 | Rate limiting per telefon och IP på kundens bokningsväg | security-reviewer (WP-10) | Skyddar poolen och mot trakasserier via annans nummer | 1 (WP-20) |
+| 2026-09-27 | Räkna inte no-show för bokningar med overifierat nummer | security-reviewer (WP-10) | Annars kan någon sänka en annan kunds rykte | 2 |
+| 2026-09-27 | Egen databasroll i stället för `postgres` i `DATABASE_URL` | security-reviewer (WP-10) | Minsta möjliga behörighet på servern | 1 (WP-05b/WP-27) |
+| 2026-09-27 | WP-26: nolla `phone_e164` vid anonymisering | scheduling-engineer (WP-10) | Annars blockerar unique-constrainten numret för nya bokningar | 1 (WP-26) |
+| 2026-09-27 | `r/[token]` utan slug: uppslag på bara `manage_token_hash` som uttryckligt undantag i gränstestet | security-reviewer (WP-10) | WP-20 behöver `businessId` innan motorn anropas | 1 (WP-20) |
