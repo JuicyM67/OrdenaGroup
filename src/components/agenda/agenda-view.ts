@@ -141,11 +141,10 @@ export function popoverModel(
 }
 
 // ---------------------------------------------------------------------------
-// weekdayMin: "Lu"…"Do" (MiniCalendar mörk, DayPill). `src/lib/format/` saknar ännu en egen
-// preset för två bokstäver (extern beroende, scheduling-engineer/WP-10, se WP-12 FRÅGA 6 /
-// plan §3 "Externa beroenden") — härleds här ur den redan exporterade `weekdayShort`
-// ("Lun"→"Lu", "Mié"→"Mi", "Sáb"→"Sá" …), utan att röra src/lib/format/ eller src/i18n/.
-const REFERENCE_MONDAY = "2024-01-01" as LocalDate;
+// weekdayMin: "Lu"…"Do" (MiniCalendar mörk, DayPill), via `formatLocalDate(date,
+// "weekdayMin")` (src/lib/format/dates.ts, WP-10).
+// ---------------------------------------------------------------------------
+const REFERENCE_MONDAY = "2024-01-01" as LocalDate; // känt en måndag
 
 export const weekdayMinLabels: readonly [
   string,
@@ -156,8 +155,5 @@ export const weekdayMinLabels: readonly [
   string,
   string,
 ] = Array.from({ length: 7 }, (_, i) =>
-  formatLocalDate(addLocalDays(REFERENCE_MONDAY, i), "weekdayShort").slice(
-    0,
-    2,
-  ),
+  formatLocalDate(addLocalDays(REFERENCE_MONDAY, i), "weekdayMin"),
 ) as [string, string, string, string, string, string, string];

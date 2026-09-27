@@ -11,7 +11,6 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   addLocalDays,
   formatTime,
-  formatTimeRange,
   isoWeekdayOf,
   toLocalDate,
   type LocalDate,
@@ -47,7 +46,6 @@ import { layoutLanes, mergeCommonBlocks } from "./layout-events";
 import { LegendCard } from "./legend-card";
 import { MonthCard } from "./month-card";
 import { NowLine } from "./now-line";
-import { pendingCopy } from "./pending-copy";
 import { StaffFilter } from "./staff-filter";
 import { TimeGrid, type TimeGridColumn } from "./time-grid";
 import type { AgendaBooking, AgendaData, StaffId } from "./types";
@@ -237,15 +235,15 @@ export function AgendaScreen({
             ? "waitlist"
             : "staff";
       const meta = isTimeVisible(box.height)
-        ? pendingCopy.bloqueMeta({
+        ? agenda.bloque.meta({
             hora: formatTime(start, tz),
-            detalle: booking.service,
+            servicio: booking.service,
           })
         : null;
-      const ariaLabel = pendingCopy.bloqueAria({
+      const ariaLabel = agenda.bloque.aria({
         cliente: booking.clientName,
         servicio: booking.service,
-        rango: formatTimeRange(start, end, tz),
+        hora: formatTime(start, tz),
         profesional: staff?.name ?? "",
       });
       const trigger = (

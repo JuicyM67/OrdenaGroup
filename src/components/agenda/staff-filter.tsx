@@ -9,7 +9,6 @@ import { strokeArrow } from "@/components/ui/icons";
 import { agenda } from "@/i18n";
 
 import { staffBgClass } from "./agenda-view";
-import { pendingCopy } from "./pending-copy";
 import type { AgendaStaff, StaffId } from "./types";
 
 export type StaffFilterProps = {
@@ -74,7 +73,7 @@ export function StaffFilter({
             </span>
             {isLastChecked ? (
               <span id={describedBy} className="sr-only">
-                {pendingCopy.panelMinimoUnProfesional}
+                {agenda.panel.minimoUnProfesional}
               </span>
             ) : null}
           </label>

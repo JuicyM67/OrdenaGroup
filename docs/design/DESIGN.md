@@ -268,9 +268,10 @@ nu-linje) — allt annat är tokens/klasser.
 | agenda-view.ts, geometry.ts, layout-events.ts | `src/components/agenda/` | Rena funktioner: `weekDates`/`focusDate`/`weekTitle`/`offsetLabel`/`sectionAria`/`popoverModel`/`statusChip`/`weekdayMinLabels`, `eventBox`/`showTime`/`showAvatar`/`nowTop`/`gridHours`/`initialScrollHour`, `layoutLanes`/`mergeCommonBlocks` |
 | AgendaScreen | `src/components/agenda/agenda-screen.tsx` | `data` (`AgendaData`), `initialVista`/`initialFecha`; håller `vista`, fokusdag, synliga profesionales, vald bokning och de lokala Llegó/No vino-överskrivningarna (FRÅGA 7); `?vista=&fecha=` via `router.replace` |
 
-`agenda.bloque.meta`/`agenda.bloque.aria`/`agenda.panel.minimoUnProfesional` saknas
-ännu i `src/i18n/es-CL.ts` (WP-03b, FRÅGA 6): `src/components/agenda/pending-copy.ts`
-har tre `TODO_COPY`-platshållare, formaterade exakt som referensen, tills dess.
+Textkällor: `agenda.bloque.meta`/`agenda.bloque.aria` (blockets tidsrad/aria-label) och
+`agenda.panel.minimoUnProfesional` (WP-03b, FRÅGA 6) i `src/i18n/es-CL.ts`.
+`weekdayMinLabels` (`agenda-view.ts`) använder `formatLocalDate(date, "weekdayMin")`
+(WP-10, `src/lib/format/dates.ts`).
 
 ### Byggt i WP-13
 

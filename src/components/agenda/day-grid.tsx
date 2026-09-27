@@ -6,7 +6,6 @@ import { cn } from "@/components/ui/cn";
 import {
   formatLocalDate,
   formatTime,
-  formatTimeRange,
   isoWeekdayOf,
   toLocalDate,
   type LocalDate,
@@ -25,7 +24,6 @@ import {
 } from "./geometry";
 import { layoutLanes } from "./layout-events";
 import { NowLine } from "./now-line";
-import { pendingCopy } from "./pending-copy";
 import { TimeGrid, type TimeGridColumn } from "./time-grid";
 import type { AgendaBooking, AgendaData, AgendaStaff, StaffId } from "./types";
 
@@ -98,15 +96,15 @@ export function DayGrid({
             ? "waitlist"
             : "staff";
       const meta = isTimeVisible(box.height)
-        ? pendingCopy.bloqueMeta({
+        ? agenda.bloque.meta({
             hora: formatTime(start, tz),
-            detalle: booking.service,
+            servicio: booking.service,
           })
         : null;
-      const ariaLabel = pendingCopy.bloqueAria({
+      const ariaLabel = agenda.bloque.aria({
         cliente: booking.clientName,
         servicio: booking.service,
-        rango: formatTimeRange(start, end, tz),
+        hora: formatTime(start, tz),
         profesional: staff.name,
       });
       const trigger = (
