@@ -500,12 +500,21 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     expect(registrar(inicio.hola({ nombre: "Camila" }))).toBe("Hola, Camila");
   });
 
-  it("inicio.hero.resumen", () => {
+  it("inicio.hero.destacado y inicio.hero.resumen (mismo separador)", () => {
+    expect(
+      registrar(inicio.hero.destacado({ horas: "4 horas", monto: "$72.000" })),
+    ).toBe("4 horas · $72.000");
     expect(
       registrar(inicio.hero.resumen({ horas: "4 horas", monto: "$72.000" })),
     ).toBe(
       "Recuperaste 4 horas · $72.000 con la lista de espera y las horas flash.",
     );
+  });
+
+  it("calendario.diaConReservas (etiqueta completa para lector de pantalla)", () => {
+    expect(
+      registrar(calendario.diaConReservas({ fecha: "viernes 2 de octubre" })),
+    ).toBe("viernes 2 de octubre, con reservas");
   });
 
   it("inicio.agendaHoy.fila e inicio.flashCard.detalle", () => {

@@ -109,10 +109,12 @@ export const estados = {
 export const calendario = {
   hoy: "Hoy",
   cerrado: "Cerrado",
-  /** Texto oculto (sr-only) para el punto de color del MiniCalendar
+  /** Etiqueta completa (sr-only) para el punto de color del MiniCalendar
    * (`c.dot` en Main.dc.html, sin texto accesible hoy) que marca un día con
-   * reservas. Clave propuesta por WP-11/WP-12 (R2 del plan de WP-03b). */
-  diaConReservas: "Con reservas",
+   * reservas: "{fecha}, con reservas" (minúscula a mitad de frase). `fecha`
+   * ya viene formateada por WP-04. Clave propuesta por WP-11/WP-12 (R2 del
+   * plan de WP-03b). */
+  diaConReservas: (p: { fecha: string }): string => `${p.fecha}, con reservas`,
   vista: {
     mes: "Mes",
     semana: "Semana",
@@ -388,6 +390,14 @@ export const gestion = {
 // inicio: Main.dc.html — F6 para el dueño (desktop)
 // ---------------------------------------------------------------------------
 
+/** "{horas} · {monto}": la parte destacada en lima del hero (DESIGN.md).
+ * Función privada para que `inicio.hero.destacado` y `inicio.hero.resumen`
+ * compartan el mismo separador en un solo lugar (regla dura 6: los
+ * componentes no arman su propio texto). */
+function heroDestacado(p: { horas: string; monto: string }): string {
+  return `${p.horas} · ${p.monto}`;
+}
+
 export const inicio = {
   titulo: "Inicio",
   /** aria-label de la sección `<section aria-label="Resumen de la semana">`. */
@@ -403,8 +413,9 @@ export const inicio = {
     /** "1 hora" / "4 horas": WP-04 entrega el número, acá vive la flexión. */
     horas: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "hora" : "horas"}`,
+    destacado: heroDestacado,
     resumen: (p: { horas: string; monto: string }): string =>
-      `Recuperaste ${p.horas} · ${p.monto} con la lista de espera y las horas flash.`,
+      `Recuperaste ${heroDestacado(p)} con la lista de espera y las horas flash.`,
     resumenVacio:
       "Activa la lista de espera y las horas flash para empezar a recuperar horas.",
     verDetalle: "VER DETALLE",
