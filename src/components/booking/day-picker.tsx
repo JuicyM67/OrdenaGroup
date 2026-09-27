@@ -34,7 +34,7 @@ export function DayPicker({
   return (
     <div className="flex flex-col gap-2.5">
       <div className="flex items-baseline justify-between">
-        <h2 id={headingId} className="text-16 font-bold text-ink">
+        <h2 id={headingId} className="text-16 leading-event font-bold text-ink">
           {reserva.pasos.diaYHora}
         </h2>
         <span className="text-13 text-muted">{month}</span>

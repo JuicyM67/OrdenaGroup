@@ -216,7 +216,10 @@ export function BookingScreen({
             aria-labelledby="paso-servicio"
             className="flex flex-col gap-2.5"
           >
-            <h2 id="paso-servicio" className="text-16 font-bold text-ink">
+            <h2
+              id="paso-servicio"
+              className="text-16 leading-event font-bold text-ink"
+            >
               {reserva.pasos.servicio}
             </h2>
             <div className="flex flex-col gap-2.5">
@@ -237,7 +240,10 @@ export function BookingScreen({
             aria-labelledby="paso-profesional"
             className="flex flex-col gap-2.5"
           >
-            <h2 id="paso-profesional" className="text-16 font-bold text-ink">
+            <h2
+              id="paso-profesional"
+              className="text-16 leading-event font-bold text-ink"
+            >
               {reserva.pasos.profesional}
             </h2>
             <StaffPicker
@@ -262,7 +268,10 @@ export function BookingScreen({
               />
             ) : (
               <>
-                <h2 id="paso-dia-hora" className="text-16 font-bold text-ink">
+                <h2
+                  id="paso-dia-hora"
+                  className="text-16 leading-event font-bold text-ink"
+                >
                   {reserva.pasos.diaYHora}
                 </h2>
                 <p className="text-14 text-muted">
