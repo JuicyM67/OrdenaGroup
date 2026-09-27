@@ -1,18 +1,23 @@
 -- INV-3/INV-4: tenant-isolering för `customers`, plus dataskyddsregler (Ley 21.719).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(38);
 \ir _helpers.psql
 
 insert into public.customers (id, business_id, phone_e164, name) values
   ('aaaaaaaa-3000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', '+56900001111', 'Cliente A'),
   ('bbbbbbbb-3000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002', '+56900001111', 'Cliente B');
+-- En kund som samtyckte via det publika bokningsflödet (som servern/service
+-- role skulle skapa), för att bevisa granskningsfyndet: ägaren måste kunna
+-- redigera/anonymisera den här utan att röra samtycket.
+insert into public.customers (id, business_id, phone_e164, name, consent_terms_at, consent_version, consent_channel) values
+  ('aaaaaaaa-3000-0000-0000-000000000098', 'aaaaaaaa-0000-0000-0000-000000000001', '+56900009800', 'Cliente Web', now(), 'v1', 'web');
 
 select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 set local role authenticated;
 
 -- 1. ownerA ser A:s kunder, noll av B:s.
-select is((select count(*) from public.customers where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 1, 'ownerA ser A:s kunder');
+select is((select count(*) from public.customers where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 2, 'ownerA ser A:s kunder');
 select is((select count(*) from public.customers where business_id = 'bbbbbbbb-0000-0000-0000-000000000002')::int, 0, 'ownerA ser noll av B:s kunder');
 
 -- 2. ownerA kan inte skapa en kund i B.
@@ -96,6 +101,58 @@ select throws_ok(
 select lives_ok(
   $$ insert into public.customers (business_id, phone_e164, name, consent_terms_at, consent_version, consent_channel) values ('aaaaaaaa-0000-0000-0000-000000000001', '+56900006668', 'X', now(), 'v1', 'manual') $$,
   'ownerA kan sätta consent_channel = manual'
+);
+
+-- Granskningsfynd (blockerande): ägaren måste kunna redigera en kund med
+-- web/whatsapp-samtycke UTAN att röra samtycket. Cliente Web
+-- (…3000-…-000098) har consent_channel = 'web' från fixturen ovan.
+select lives_ok(
+  $$ update public.customers set notes = 'Prefiere corte clásico' where id = 'aaaaaaaa-3000-0000-0000-000000000098' $$,
+  'ownerA kan ändra notes på en web-kund utan att röra samtycket'
+);
+select is(
+  (select consent_channel from public.customers where id = 'aaaaaaaa-3000-0000-0000-000000000098')::text,
+  'web',
+  'consent_channel på web-kunden är fortfarande web efter notes-ändringen'
+);
+
+-- ownerA anonymiserar web-kunden (WP-26-liknande flöde): namn/telefon null,
+-- anonymized_at satt, samtycket nollat i samma update.
+select lives_ok(
+  $$ update public.customers
+     set name = null, phone_e164 = null, anonymized_at = now(),
+         consent_terms_at = null, consent_marketing_at = null, consent_version = null, consent_channel = null
+     where id = 'aaaaaaaa-3000-0000-0000-000000000098' $$,
+  'ownerA kan anonymisera en web-kund (samtycket nollas samtidigt)'
+);
+
+-- ownerA kan inte sätta consent_channel = 'web' via en update. Egen kund utan
+-- samtycke sedan tidigare (rör inte Cliente A, som ett senare test i filen
+-- förutsätter är helt orörd).
+insert into public.customers (id, business_id, phone_e164, name) values
+  ('aaaaaaaa-3000-0000-0000-000000000096', 'aaaaaaaa-0000-0000-0000-000000000001', '+56900009600', 'Cliente Sin Consentimiento');
+select throws_ok(
+  $$ update public.customers set consent_channel = 'web' where id = 'aaaaaaaa-3000-0000-0000-000000000096' $$,
+  '42501'
+);
+
+-- ownerA kan inte ändra ett samtyckesfält på en web-rad utan att sätta
+-- 'manual' (ny web-kund, som postgres — authenticated får inte skapa den).
+reset role;
+insert into public.customers (id, business_id, phone_e164, name, consent_terms_at, consent_version, consent_channel) values
+  ('aaaaaaaa-3000-0000-0000-000000000097', 'aaaaaaaa-0000-0000-0000-000000000001', '+56900009700', 'Cliente Web 2', now(), 'v1', 'web');
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+select throws_ok(
+  $$ update public.customers set consent_marketing_at = now() where id = 'aaaaaaaa-3000-0000-0000-000000000097' $$,
+  '42501'
+);
+
+-- ownerA sätter 'manual' med ett nytt samtycke (tillåtet). Samma kund som
+-- nyss fick sitt web-försök nekat.
+select lives_ok(
+  $$ update public.customers set consent_channel = 'manual', consent_terms_at = now(), consent_version = 'v1' where id = 'aaaaaaaa-3000-0000-0000-000000000096' $$,
+  'ownerA kan sätta consent_channel = manual med ett nytt samtycke via update'
 );
 
 reset role;

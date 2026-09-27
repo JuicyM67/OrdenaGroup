@@ -42,19 +42,96 @@ create trigger set_updated_at
   before update on public.customers
   for each row execute function private.set_updated_at();
 
--- Säkerhet S5: en ägare som lägger till/ändrar en kund manuellt i appen kan
--- bara sätta samtycke med consent_channel = 'manual'. `web` och `whatsapp`
--- betyder att kunden själv gav samtycke via bokningssidan/WhatsApp-flödet,
--- och ska bara kunna sättas av servern (som verkligen körde det flödet),
--- inte av en ägare som redigerar en kundrad direkt.
+-- Säkerhet S5, rättad (granskningsfynd, blockerande): en tidigare version
+-- lade consent_channel-villkoret i en enda `for all`-policy. Det gäller då
+-- även UPDATE:s `with check`, som utvärderas mot HELA den nya raden — så
+-- fort en kund redan hade consent_channel = 'web'/'whatsapp' (från det
+-- publika bokningsflödet) kunde ägaren inte längre ändra ens `notes` eller
+-- namnet, eftersom den oförändrade consent_channel-kolumnen i den nya raden
+-- fortfarande var 'web' och stötte på samma villkor. Alla kunder med ett
+-- riktigt samtycke (hela seeden) drabbades.
+--
+-- Lösning: RLS-policyerna nedan är bara tenant-isolering (is_member), en per
+-- kommando. Reglerna för VILKA FÄLT som får ändras/sättas ligger i stället i
+-- en trigger, som kan jämföra ny rad mot gammal rad (`is distinct from`) —
+-- något en RLS-policy inte kan uttrycka (den ser antingen bara den nya raden
+-- eller bara den gamla, aldrig båda samtidigt).
 alter table public.customers enable row level security;
-create policy "owners full access" on public.customers
-  for all
+
+create policy "owners select" on public.customers
+  for select
+  to authenticated
+  using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+
+create policy "owners insert" on public.customers
+  for insert
+  to authenticated
+  with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+
+create policy "owners update" on public.customers
+  for update
   to authenticated
   using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]))
-  with check (
-    private.is_member(business_id, array['owner', 'admin']::public.member_role[])
-    and (consent_channel is null or consent_channel = 'manual')
-  );
+  with check (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+
+create policy "owners delete" on public.customers
+  for delete
+  to authenticated
+  using (private.is_member(business_id, array['owner', 'admin']::public.member_role[]));
+
 grant select, insert, update, delete on public.customers to authenticated;
 grant select, insert, update, delete on public.customers to service_role;
+
+-- Trigger-versionen av S5. `security invoker` räcker (ingen förhöjd
+-- rättighet behövs, funktionen bara jämför NEW/OLD och kastar fel) men
+-- `search_path = ''` sätts ändå av princip. Gäller bara `authenticated`
+-- (ägarens app) — `postgres`/`service_role` (servern, WP-25/WP-26) berörs
+-- inte, eftersom de kör de riktiga web/whatsapp-samtyckesflödena.
+create function private.customers_guard_consent()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if current_user <> 'authenticated' then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    if new.consent_channel is not null and new.consent_channel <> 'manual' then
+      raise exception 'authenticated kan bara sätta consent_channel = manual' using errcode = '42501';
+    end if;
+    return new;
+  end if;
+
+  -- UPDATE: bara bry sig om raden faktiskt försöker ändra ett samtyckesfält.
+  -- Det vanliga fallet (ändra notes/namn/telefon utan att röra samtycket)
+  -- ska aldrig nå längre än hit.
+  if (new.consent_terms_at is distinct from old.consent_terms_at)
+     or (new.consent_marketing_at is distinct from old.consent_marketing_at)
+     or (new.consent_version is distinct from old.consent_version)
+     or (new.consent_channel is distinct from old.consent_channel) then
+    -- Tillåtet: ägaren sätter/ändrar samtycke via 'manual' (hon la in det själv).
+    if new.consent_channel = 'manual' then
+      return new;
+    end if;
+    -- Tillåtet: anonymisering nollar samtycket (WP-26), samtidigt som
+    -- anonymized_at sätts.
+    if new.anonymized_at is not null
+       and new.consent_terms_at is null
+       and new.consent_marketing_at is null
+       and new.consent_version is null
+       and new.consent_channel is null then
+      return new;
+    end if;
+    raise exception 'authenticated kan bara ändra consent_* via consent_channel = manual eller vid anonymisering' using errcode = '42501';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger customers_guard_consent
+  before insert or update on public.customers
+  for each row execute function private.customers_guard_consent();
