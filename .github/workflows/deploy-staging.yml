@@ -81,7 +81,7 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
-        run: npx supabase db push
+        run: npx supabase db push --yes
 
       # Bara vid manuell körning med reseed=true: nollställer hela
       # databasen (kör om alla migrationer och laddar seed.sql från noll).
@@ -91,7 +91,7 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
-        run: npx supabase db reset --linked
+        run: npx supabase db reset --linked --yes
 
       # Schemavakten och pgTAP-isoleringstesterna körs på nytt mot molnet,
       # eftersom pg_default_acl sätts av plattformen per projekt och kan
