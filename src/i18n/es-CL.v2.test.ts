@@ -29,6 +29,7 @@ import {
   localTimeSchema,
   rutInputSchema,
 } from "@/lib/format/schemas";
+import { brand } from "@/config/brand";
 import { Constants } from "@/types/database";
 
 import {
@@ -42,6 +43,7 @@ import {
   negocio,
   onboarding,
   profesionales,
+  email,
   servicios,
   validacion,
 } from "./es-CL";
@@ -650,5 +652,48 @@ describe("longitudes", () => {
     for (const texto of Object.values(onboarding.intro)) {
       expect(texto.length).toBeLessThanOrEqual(120);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Abono: la plataforma nunca promete ni recibe dinero (D-008, D-022)
+// ---------------------------------------------------------------------------
+
+describe("abono: el negocio devuelve, no la plataforma", () => {
+  const muestras = [
+    abono.reserva.condiciones({ negocio: "Barbería Norte", horas: 24 }),
+    abono.reserva.pagoTardio({
+      negocio: "Barbería Norte",
+      telefonoNegocio: "+56 9 1234 5678",
+    }),
+    abono.gestion.cancelarConAbonoDentroPlazo({
+      monto: "$3.000",
+      negocio: "Barbería Norte",
+    }),
+    abono.gestion.cancelarConAbonoFueraPlazo({ monto: "$3.000" }),
+  ];
+
+  it.each(muestras)("no usa primera persona plural: %s", (texto) => {
+    expect(texto).not.toMatch(/\b(devolvemos|recibimos|reembolsamos)\b/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// email.acceso: tono y marca (asunto con brand.name exactamente una vez)
+// ---------------------------------------------------------------------------
+
+describe("email.acceso: tono y marca", () => {
+  const plantillas = Object.entries(email.acceso);
+
+  it.each(plantillas)("%s respeta las reglas de tono", (_nombre, p) => {
+    for (const [regla, patron] of Object.entries(REGLAS_DE_TONO)) {
+      expect(patron.test(p.asunto), `${regla} en asunto`).toBe(false);
+      expect(patron.test(p.cuerpo), `${regla} en cuerpo`).toBe(false);
+    }
+  });
+
+  it.each(plantillas)("%s nombra la marca una vez en el asunto", (_n, p) => {
+    expect(p.asunto.split(brand.name).length - 1).toBe(1);
+    expect(PATRON_MARCA.test(p.cuerpo)).toBe(false);
   });
 });

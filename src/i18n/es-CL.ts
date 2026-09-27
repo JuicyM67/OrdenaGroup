@@ -1829,8 +1829,7 @@ export const abono = {
     cancelarConAbonoDentroPlazo: (p: {
       monto: string;
       negocio: string;
-    }): string =>
-      `${p.negocio} te devolverá ${p.monto} a tu cuenta de Mercado Pago.`,
+    }): string => `${p.negocio} te devolverá ${p.monto}.`,
     /** Misma regla fuera de plazo. También es la línea que acompaña a
      * `gestion.fueraDePlazo` cuando la reserva tenía abono, para dejar
      * claro que tampoco se devuelve por ese camino. */

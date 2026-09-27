@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-023 · 2026-09-27 · Handpenning vid ombokning och när företaget avbokar
+**Varför:** villkorstexten i samtycke `2026-10-v2` behöver täcka alla fall kunden kan hamna i (Ley 19.496). **Konsekvens:** kompletterar D-022: flyttar kunden tiden följer handpenningen med till den nya tiden; avbokar företaget betalar företaget tillbaka handpenningen. Plattformen lovar aldrig själv återbetalning (D-008). Juristen granskar (JURIST_FRAGOR 8).
+
 ### D-022 · 2026-09-27 · Handpenning i v1: fast regel, återbetalning görs av företaget
 **Varför:** en regel som kunden kan läsa före bekräftelsen (Ley 19.496), inga nya kolumner och inga pengar som plattformen rör (D-008). **Konsekvens:** handpenningen dras av från priset. Avbokning inom avbokningsfönstret: företaget betalar tillbaka. Avbokning utanför fönstret eller no-show: företaget behåller den. Obetald bokning släpps efter 15 min. Företaget återbetalar själv i sitt Mercado Pago-konto; systemet visar "Abono por devolver". Villkoret ingår i samtyckesversionen; juristen granskar (JURIST_FRAGOR 5). Mercado Pago som manuell metod i Caja visas inte i v1. (WP-03b)
 

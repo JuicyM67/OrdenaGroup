@@ -12,7 +12,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-02 | Design lab + baskomponenter (Button, IconButton, Chip, Pill, Card, SegmentedControl, NavRail, PageHeader, MiniCalendar ljus/mörk) | ui-engineer | WP-00 | – | ☑ |
 | WP-03 | Texter v1: UI-strängar för alla MVP-skärmar + WhatsApp-mallar (för Meta-ansökan) | copywriter-es-cl | – | F5–F8 | ☑ |
 | WP-04 | Format-lib: clp, datum/tid i America/Santiago, telefon E.164 (+56), RUT | scheduling-engineer | WP-00 | – | ☑ |
-| WP-03b | Texter v2: onboarding, Clientes, Caja, Ajustes, handpenning | copywriter-es-cl | WP-03 | F1–F3, F9, F10, F11 | ◐ |
+| WP-03b | Texter v2: onboarding, Clientes, Caja, Ajustes, handpenning | copywriter-es-cl | WP-03 | F1–F3, F9, F10, F11 | ☑ |
 | WP-05 | Staging: Supabase-projekt (sa-east-1) med migrationer via GitHub Actions (Environment `staging`, bara `main`), Vercel `gru1`, design lab via `DESIGN_LAB` | integrations-engineer | WP-00 | – | ☑ |
 | WP-05b | Observabilitet och previews: Sentry, PostHog utan persondata, preview-miljöer (Supabase-branch per PR) | integrations-engineer | WP-05 | – | ☐ |
 
