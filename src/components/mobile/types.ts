@@ -1,0 +1,59 @@
+// Vy-modell för Hoy (Hoy.dc.html), se docs/design/DESIGN.md §7 "NextClientCard",
+// "QuickActionTile", "MobileTabBar" och WP-14-planen §4 (gemensamma regler för WP-11–14).
+//
+// Bara råa värden här: instanter som ISO-strängar med offset, heltal CLP, `now` injiceras
+// av anroparen. UI räknar aldrig ut pengar eller lediga tider (hård regel 2) — `dayCount`
+// och `dayTotalClp` gäller hela dagen och kommer färdiga från servern.
+import type { Database } from "@/types/database";
+
+export type BookingStatus = Database["public"]["Enums"]["booking_status"];
+export type BookingSource = Database["public"]["Enums"]["booking_source"];
+
+/** Personalfärg 1..6, se `--color-staff-1`…`-6` i tokens.css. */
+export type StaffColor = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type HoyBooking = {
+  id: string;
+  /** Instant, ISO 8601 med offset (t.ex. "2026-10-02T15:00:00-03:00"). */
+  start: string;
+  /** Instant, ISO 8601 med offset. */
+  end: string;
+  clientName: string;
+  service: string;
+  staffName: string;
+  staffColor: StaffColor;
+  status: BookingStatus;
+  confirmedByCustomer: boolean;
+  /** Heltal CLP, 0 om inget abono är betalt. */
+  depositPaidClp: number;
+  source: BookingSource;
+  /** 1 = första besöket. Källa till `comun.visita`. */
+  visitNumber: number;
+};
+
+export type HoyLinks = {
+  flash: string;
+  waitlist: string;
+  cobrar: string;
+  tabs: {
+    hoy: string;
+    agenda: string;
+    clientes: string;
+    caja: string;
+  };
+};
+
+export type HoyData = {
+  /** Instant, ISO 8601 med offset. Aldrig `new Date()` i komponenten. */
+  now: string;
+  owner: { name: string };
+  /** Sant ersätter både nästa-kund-kortet och listan med "Hoy no atiendes." */
+  closedToday: boolean;
+  bookings: HoyBooking[];
+  /** Antal reservationer för hela dagen (inte bara de synliga raderna). */
+  dayCount: number;
+  /** Summa för hela dagen, heltal CLP. */
+  dayTotalClp: number;
+  waitlistCount: number;
+  links: HoyLinks;
+};
