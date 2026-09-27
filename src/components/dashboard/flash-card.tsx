@@ -1,8 +1,7 @@
 // Se DESIGN.md §7 "FlashCard" och docs/tasks/plans/WP-11.md §4 steg 6. Mörkt kort i asiden.
-// `activeFlash === null`: FRÅGA 4 (planen) rekommenderar samma mörka kort med
-// `hoy.accionesRapidas.crearHoraFlash` och en pil-länk till Horas flash, tills
-// `inicio.flashCard.vacio` finns (WP-03b). Det tillståndet byggs inte i design lab än — det
-// här är bara en säker, icke-kraschande fallback om `activeFlash` skulle vara `null`.
+// `activeFlash === null` (FRÅGA 4): samma mörka kort, med `inicio.flashCard.vacio` i stället
+// för datum/tid/rabatt, och en pil-länk för att skapa en ny hora flash
+// (`hoy.accionesRapidas.crearHoraFlash` som aria-label på knappen).
 import { ArrowUpRight, Zap } from "lucide-react";
 import Link from "next/link";
 
@@ -50,15 +49,20 @@ export function FlashCard({ activeFlash, href }: FlashCardProps) {
     return (
       <Card
         as="section"
-        aria-label={hoy.accionesRapidas.crearHoraFlash}
+        aria-label={inicio.flashCard.titulo}
         tone="dark"
         radius="card"
         padding="none"
         className="flex flex-1 items-center gap-4 px-5.5 py-5"
       >
         <IconTile />
-        <div className="flex-1 text-16 font-bold">
-          {hoy.accionesRapidas.crearHoraFlash}
+        <div className="flex-1">
+          <div className="text-12 text-on-dark-muted">
+            {inicio.flashCard.titulo}
+          </div>
+          <div className="mt-0.5 text-16 font-bold">
+            {inicio.flashCard.vacio}
+          </div>
         </div>
         <ShareLink href={href} label={hoy.accionesRapidas.crearHoraFlash} />
       </Card>
