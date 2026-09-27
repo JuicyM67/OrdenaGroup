@@ -146,6 +146,9 @@ create policy "owners update" on public.payments
 -- Ingen delete-policy: kassahistorik försvinner aldrig, rättning görs med
 -- status refunded/rejected.
 grant select, insert, update on public.payments to authenticated;
--- Säkerhet S2: explicit grant till service_role (WP-25:s webhook-hanterare
--- skriver mercadopago-rader från servern, förbigår RLS med den här rollen).
-grant select, insert, update, delete on public.payments to service_role;
+-- Säkerhet S2 (rättad, granskningsfynd): explicit grant till service_role
+-- (WP-25:s webhook-hanterare skriver mercadopago-rader från servern,
+-- förbigår RLS med den här rollen) — men INGEN delete, inte ens för
+-- service_role. Kassahistorik ska aldrig kunna försvinna, oavsett vilken
+-- roll som frågar; rättning görs med status refunded/rejected.
+grant select, insert, update on public.payments to service_role;
