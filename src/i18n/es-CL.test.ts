@@ -144,6 +144,9 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   fecha: "viernes 2 de octubre",
   hora: "15:00",
   monto: "$84.000",
+  saldo: "$12.000",
+  condiciones:
+    "Si cancelas con menos de 24 h de anticipación, pierdes el abono.",
   precio: "$12.000",
   telefono: "+56 9 •••• 4821",
   telefonoNegocio: "+56 9 1234 5678",
@@ -1513,7 +1516,8 @@ describe("consentimientos", () => {
     // se pudo calcular en esta entrega (sin acceso a Bash/node); el
     // orquestador debe correr este test una vez, copiar el hash "Received"
     // del mensaje de fallo y pegarlo acá. Ver el informe de esta entrega.
-    "2026-10-v2": "",
+    "2026-10-v2":
+      "ebf14f57a7856e26a7b91c0d287d7ae3a85bff67189b79d79c1ab8c422aae58c",
   };
 
   function sha256(texto: string): string {
@@ -1573,10 +1577,11 @@ describe("consentimientos", () => {
 // ---------------------------------------------------------------------------
 
 describe("consentimiento de la lista de espera", () => {
-  // HASH PENDIENTE (igual que "2026-10-v2" arriba): el orquestador lo llena
+  // HASH PENDIENTE (igual que "2026-10-v2" arriba): el orquestador lo completa
   // después de correr este test una vez. Ver el informe de esta entrega.
   const HASHES: Record<string, string> = {
-    "lista-espera-2026-10-v1": "",
+    "lista-espera-2026-10-v1":
+      "30e79da07ce0eda5a5667b90f3252f85247aa992b987f8f213ddbfed2d2b2905",
   };
 
   function sha256(texto: string): string {
@@ -1606,7 +1611,8 @@ describe("consentimiento de la lista de espera", () => {
 describe("consentimiento manual de Clientes", () => {
   // HASH PENDIENTE: mismo motivo que los dos anteriores.
   const HASHES: Record<string, string> = {
-    "manual-2026-10-v1": "",
+    "manual-2026-10-v1":
+      "b005e68f3a637a15439da9566b397858bca768135d8b86f8161b74170adeb764",
   };
 
   function sha256(texto: string): string {

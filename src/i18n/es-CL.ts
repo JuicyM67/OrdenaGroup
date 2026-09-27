@@ -1094,7 +1094,7 @@ export const email = {
 
 // ---------------------------------------------------------------------------
 // validacion: códigos de error de los esquemas de src/lib/format/ (WP-04)
-// para los campos que llena el dueño (clp, rut, fecha, hora, hora local,
+// para los campos que completa el dueño (clp, rut, fecha, hora, hora local,
 // teléfono del negocio y del cliente, correo). Las claves son el código real
 // después del prefijo (`clp.out_of_range` → `validacion.clp.out_of_range`),
 // para que `satisfies Record<Codigo, string>` funcione sin traducir nombres
