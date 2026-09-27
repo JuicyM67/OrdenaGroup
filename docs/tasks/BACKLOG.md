@@ -24,7 +24,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-11 | Skärm Inicio (desktop) enligt `Main.dc.html` med fixtures | ui-engineer | WP-02 | F6 | ◐ |
 | WP-12 | Skärm Agenda veckovy enligt `Agenda.dc.html` + dagvy per profesional (ny, samma språk) | ui-engineer | WP-02 | F6 | ◐ |
 | WP-13 | Skärm Reserva (kund) enligt `Reserva.dc.html` med fixtures, alla tillstånd | ui-engineer | WP-02, WP-03 | F5, F8 | ◐ |
-| WP-14 | Skärm Hoy (mobil ägare) enligt `Hoy.dc.html` | ui-engineer | WP-02 | F6 | ◐ |
+| WP-14 | Skärm Hoy (mobil ägare) enligt `Hoy.dc.html` | ui-engineer | WP-02 | F6 | ☑ |
 | WP-15 | Auth + onboarding i 4 steg (tjänster, personal, öppettider, länk) + Ajustes | ui-engineer | WP-01, WP-02, WP-03b | F1–F3 | ☐ |
 | WP-16 | Outbox + cron-infrastruktur + e-post (Resend) + WhatsApp-klient och webhook | integrations-engineer | WP-01 | F7 | ☐ |
 
