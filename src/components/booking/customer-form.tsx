@@ -4,7 +4,7 @@
 "use client";
 
 import { ChevronLeft } from "lucide-react";
-import { useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
@@ -84,6 +84,18 @@ export function CustomerForm({
   const emailRef = useRef<HTMLInputElement>(null);
   const termsRef = useRef<HTMLInputElement>(null);
 
+  // Skydd mot dubbla anrop: en `ref` uppdateras synkront (till skillnad från
+  // `submitting`-state, som väntar på nästa render). Två `click()` i samma
+  // tick — en riktig dubbelklick-scenario, inte bara snabba men skilda events
+  // — hinner annars båda läsa samma "idle"-state innan React hunnit rendera
+  // om, och båda skickar iväg ett anrop. `submittingRef` stängs precis innan
+  // `onSubmitBooking`/`onSubmitWaitlist` anropas och öppnas igen när
+  // `submitting`-propen (satt av BookingScreen) går tillbaka till `false`.
+  const submittingRef = useRef(false);
+  useEffect(() => {
+    submittingRef.current = submitting;
+  }, [submitting]);
+
   if (!service || !selection.date) return null;
 
   function buildInput() {
@@ -112,7 +124,9 @@ export function CustomerForm({
   function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     // Ett andra klick medan anropet redan pågår skickar inget (planens R5).
-    if (submitting) return;
+    // `submittingRef` (synkron) fångar även två `click()` i samma tick,
+    // `submitting`-propen (nästa render) räcker inte ensam.
+    if (submittingRef.current) return;
 
     const schema = isWaitlist ? waitlistFormSchema : customerFormSchema;
     const result = schema.safeParse(buildInput());
@@ -127,6 +141,7 @@ export function CustomerForm({
       focusFirstError(next);
       return;
     }
+    submittingRef.current = true;
     setErrors({});
     if (isWaitlist) onSubmitWaitlist(result.data as WaitlistFormOutput);
     else onSubmitBooking(result.data as CustomerFormOutput);

@@ -295,6 +295,108 @@ test.describe("Reserva — flödet", () => {
     ).toBeVisible();
     await context.close();
   });
+
+  test("dubbelklick på Confirmar ger exakt ett anrop", async ({ page }) => {
+    const actionRequests: string[] = [];
+    page.on("request", (req) => {
+      if (req.method() === "POST" && req.headers()["next-action"]) {
+        actionRequests.push(req.url());
+      }
+    });
+
+    await page.goto("/barberia-norte");
+    await selectService(page, /Corte clásico/);
+    await selectDay(page, "Viernes 2 de octubre");
+    await page.getByRole("button", { name: /Elegir la hora 10:00/ }).click();
+    await page
+      .getByRole("button", { name: reserva.bookingBar.ctaReservar })
+      .click();
+    await page.getByLabel(reserva.clienteForm.nombreLabel).fill("Ana Pérez");
+    await page
+      .getByLabel(reserva.clienteForm.telefonoLabel)
+      .fill("+56 9 1234 5678");
+    await page
+      .getByRole("checkbox", {
+        name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
+      })
+      .check();
+
+    // Två riktiga klick i samma tick (inte två separata Playwright-actions,
+    // som redan serialiseras av auto-wait) — det är scenariot där en
+    // `submitting`-state som bara uppdateras vid nästa render INTE räcker
+    // som skydd (se `customer-form.tsx`, `submittingRef`).
+    await page.evaluate(() => {
+      const btn = [...document.querySelectorAll("button")].find(
+        (b) => b.textContent?.trim() === "Confirmar reserva",
+      );
+      btn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      btn?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    await expect(
+      page.getByRole("heading", { name: reserva.confirmacion.titulo }),
+    ).toBeVisible();
+    expect(actionRequests).toHaveLength(1);
+  });
+});
+
+test.describe("Reserva — prestanda (FRÅGA 7)", () => {
+  // Budget (godkänd av ägaren): ≤ 170 kB gzip JS för /[slug], första tjänsten
+  // klickbar inom 3,5 s, 4G (150 ms RTT, 1,6 Mbit/s ned / 750 kbit/s upp) och
+  // 4x CPU-strypning via CDP. Bara Chromium har CDP.
+  const JS_BUDGET_BYTES = 170 * 1024;
+  const TIME_BUDGET_MS = 3500;
+
+  test("4G + 4x CPU: JS ≤ 170 kB gzip och tjänsten klickbar inom 3,5 s", async ({
+    page,
+    browserName,
+  }) => {
+    test.skip(browserName !== "chromium", "CDP finns bara i Chromium");
+
+    const client = await page.context().newCDPSession(page);
+    await client.send("Network.enable");
+    await client.send("Network.emulateNetworkConditions", {
+      offline: false,
+      latency: 150,
+      downloadThroughput: (1.6 * 1024 * 1024) / 8,
+      uploadThroughput: (750 * 1024) / 8,
+    });
+    await client.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+
+    const jsRequests = new Map<string, boolean>();
+    let jsBytes = 0;
+    client.on("Network.responseReceived", (e) => {
+      const mime = e.response.mimeType ?? "";
+      if (mime.includes("javascript")) jsRequests.set(e.requestId, true);
+    });
+    client.on("Network.loadingFinished", (e) => {
+      if (jsRequests.has(e.requestId)) jsBytes += e.encodedDataLength;
+    });
+
+    const start = Date.now();
+    await page.goto("/barberia-norte", { waitUntil: "load" });
+    const service = page.getByRole("button", { name: /Corte clásico/ });
+    await service.click();
+    await expect(service).toHaveAttribute("aria-pressed", "true");
+    const elapsedMs = Date.now() - start;
+
+    // Låt sista `loadingFinished`-events hinna fram innan vi summerar.
+    await page.waitForTimeout(200);
+
+    // Rapportera siffrorna oavsett utfall (planens R "gissa inte").
+    console.log(
+      `[prestanda] JS: ${(jsBytes / 1024).toFixed(1)} kB gzip (budget ${JS_BUDGET_BYTES / 1024} kB), tid: ${elapsedMs} ms (budget ${TIME_BUDGET_MS} ms)`,
+    );
+
+    expect(
+      jsBytes,
+      `JS-storlek ${(jsBytes / 1024).toFixed(1)} kB över budgeten ${JS_BUDGET_BYTES / 1024} kB`,
+    ).toBeLessThanOrEqual(JS_BUDGET_BYTES);
+    expect(
+      elapsedMs,
+      `Tid ${elapsedMs} ms över budgeten ${TIME_BUDGET_MS} ms`,
+    ).toBeLessThanOrEqual(TIME_BUDGET_MS);
+  });
 });
 
 test.describe("Reserva — design lab", () => {
