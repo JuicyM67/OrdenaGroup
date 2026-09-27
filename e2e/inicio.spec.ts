@@ -23,6 +23,35 @@ async function tabUntilFocused(page: Page, locator: Locator, maxPresses = 400) {
   throw new Error("tabUntilFocused: nådde inte elementet med Tab");
 }
 
+/**
+ * Fokusringen ska faktiskt synas: `outline-style: solid` och `outline-color` skild från
+ * bakgrunden den ligger mot (närmaste förälderns bakgrund — inte elementets egen fyllning,
+ * eftersom outlinen ritas utanför boxen och kan ligga mot ett pastellkort även om knappen
+ * själv är mörk, t.ex. "Enviar recordatorio" i ett lime FeatureCard inuti hero-kortet, QA).
+ */
+async function assertVisibleFocusRing(locator: Locator) {
+  const info = await locator.evaluate((el) => {
+    const style = getComputedStyle(el);
+    let bgEl = el.parentElement;
+    let background = "rgba(0, 0, 0, 0)";
+    while (bgEl) {
+      const c = getComputedStyle(bgEl).backgroundColor;
+      if (c && c !== "rgba(0, 0, 0, 0)" && c !== "transparent") {
+        background = c;
+        break;
+      }
+      bgEl = bgEl.parentElement;
+    }
+    return {
+      outlineStyle: style.outlineStyle,
+      outlineColor: style.outlineColor,
+      background,
+    };
+  });
+  expect(info.outlineStyle).toBe("solid");
+  expect(info.outlineColor).not.toBe(info.background);
+}
+
 test.describe("rutter", () => {
   for (const url of ["/design-lab/main", "/app/inicio"]) {
     test(`${url} svarar 200 och har exakt en h1 "Inicio"`, async ({ page }) => {
@@ -61,12 +90,20 @@ test("tangentbord: nav → header → VER DETALLE → Enviar recordatorio → Ve
     page.getByRole("link", { name: "Inicio", exact: true }),
   );
   await tabUntilFocused(page, page.getByRole("button", { name: "Buscar" }));
-  await tabUntilFocused(page, page.getByRole("link", { name: "VER DETALLE" }));
-  await tabUntilFocused(
-    page,
-    page.getByRole("button", { name: "Enviar recordatorio" }),
-  );
-  await tabUntilFocused(page, page.getByRole("link", { name: "Ver agenda" }));
+
+  const verDetalle = page.getByRole("link", { name: "VER DETALLE" });
+  await tabUntilFocused(page, verDetalle);
+  await assertVisibleFocusRing(verDetalle);
+
+  const enviarRecordatorio = page.getByRole("button", {
+    name: "Enviar recordatorio",
+  });
+  await tabUntilFocused(page, enviarRecordatorio);
+  await assertVisibleFocusRing(enviarRecordatorio);
+
+  const verAgenda = page.getByRole("link", { name: "Ver agenda" });
+  await tabUntilFocused(page, verAgenda);
+  await assertVisibleFocusRing(verAgenda);
 
   const rows = page.getByRole("listitem");
   const rowCount = await rows.count();
@@ -86,10 +123,10 @@ test("tangentbord: nav → header → VER DETALLE → Enviar recordatorio → Ve
     page,
     page.getByRole("button", { name: "Viernes 2 de octubre" }),
   );
-  await tabUntilFocused(
-    page,
-    page.getByRole("link", { name: "Compartir hora flash" }),
-  );
+
+  const compartir = page.getByRole("link", { name: "Compartir hora flash" });
+  await tabUntilFocused(page, compartir);
+  await assertVisibleFocusRing(compartir);
 });
 
 test("1280×800 en /app/inicio: sin scroll horizontal y el hero no se recorta", async ({
