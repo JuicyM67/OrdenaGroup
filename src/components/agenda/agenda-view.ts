@@ -28,6 +28,16 @@ export function toInstant(iso: string): Date {
   return r.value;
 }
 
+/**
+ * Den lokala dagen (`tz`) för en bokning/ett blocks `start` (ISO, valfri offset).
+ * Bara `toLocalDate(toInstant(iso), tz)`, aldrig `iso.startsWith(date)` — UTC-strängar
+ * (t.ex. från Postgres) hamnar annars på fel dag när UTC-datumet skiljer sig från det
+ * lokala i Santiago (granskningsfynd, se agenda-screen.tsx/day-grid.tsx).
+ */
+export function localDateOf(iso: string, tz: TimeZone): LocalDate {
+  return toLocalDate(toInstant(iso), tz);
+}
+
 /** `bg-staff-N`/`text-on-dark` — literala klasser (Tailwind kan inte se `bg-staff-${n}`). */
 const STAFF_BG_CLASS: Record<StaffColor, string> = {
   1: "bg-staff-1",

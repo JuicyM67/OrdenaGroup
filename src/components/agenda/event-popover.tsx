@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { IconButton } from "@/components/ui/icon-button";
 import { roleIcons, strokeCard } from "@/components/ui/icons";
-import { SANTIAGO } from "@/lib/format/dates";
+import type { TimeZone } from "@/lib/format/dates";
 import { agenda } from "@/i18n";
 
 import { popoverModel } from "./agenda-view";
@@ -23,6 +23,7 @@ const PaymentIcon = roleIcons.pago as NonNullable<typeof roleIcons.pago>;
 export type EventPopoverProps = {
   booking: AgendaBooking;
   staffName: string;
+  tz: TimeZone;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onLlego: () => void;
@@ -34,6 +35,7 @@ export type EventPopoverProps = {
 export function EventPopover({
   booking,
   staffName,
+  tz,
   open,
   onOpenChange,
   onLlego,
@@ -41,7 +43,7 @@ export function EventPopover({
   onMover,
   trigger,
 }: EventPopoverProps) {
-  const model = popoverModel(booking, staffName, SANTIAGO);
+  const model = popoverModel(booking, staffName, tz);
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <Popover.Trigger asChild>{trigger}</Popover.Trigger>

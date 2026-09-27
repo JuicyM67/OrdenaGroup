@@ -12,7 +12,6 @@ import {
   addLocalDays,
   formatTime,
   isoWeekdayOf,
-  toLocalDate,
   type LocalDate,
   type TimeZone,
 } from "@/lib/format/dates";
@@ -23,6 +22,7 @@ import { AgendaShell } from "./agenda-shell";
 import { AgendaToolbar } from "./agenda-toolbar";
 import {
   focusDate as computeFocusDate,
+  localDateOf,
   offsetLabel,
   sectionAria,
   toInstant,
@@ -166,6 +166,7 @@ export function AgendaScreen({
         key={`popover-${booking.id}`}
         booking={bookingWithOverride(booking)}
         staffName={staffName}
+        tz={tz}
         open={popoverOpen}
         onOpenChange={setPopoverOpen}
         onLlego={() =>
@@ -195,24 +196,20 @@ export function AgendaScreen({
 
   // ---------------------------------------------------------------------------
   // Veckovyn: en kolumn per dag, block för alla synliga profesionales i samma kolumn.
+  // Bokningar OCH block (sammanslagna eller inte) delar samma lane-beräkning, så ett
+  // block som bara gäller några av de synliga profesionales inte ritas i full bredd
+  // ovanpå en krockande bokning för en annan profesional (granskningsfynd).
   // ---------------------------------------------------------------------------
   const weekColumns: TimeGridColumn[] = week.map((date) => {
     const dayBookings = data.bookings.filter(
       (b) =>
-        toLocalDate(toInstant(b.start), tz) === date &&
-        visibleStaffIds.has(b.staffId),
-    );
-    const laneOf = new Map(
-      layoutLanes(
-        dayBookings.map((b) => ({
-          id: b.id,
-          start: toInstant(b.start),
-          end: toInstant(b.end),
-        })),
-      ).map((r) => [r.id, r]),
+        localDateOf(b.start, tz) === date && visibleStaffIds.has(b.staffId),
     );
     const dayBlocksRaw = data.blocks
-      .filter((b) => b.start.startsWith(date) && visibleStaffIds.has(b.staffId))
+      .filter(
+        (b) =>
+          localDateOf(b.start, tz) === date && visibleStaffIds.has(b.staffId),
+      )
       .map((b) => ({
         staffId: b.staffId,
         start: toInstant(b.start),
@@ -221,12 +218,27 @@ export function AgendaScreen({
       }));
     const merged = mergeCommonBlocks(dayBlocksRaw, [...visibleStaffIds]);
 
+    const laneOf = new Map(
+      layoutLanes([
+        ...dayBookings.map((b) => ({
+          id: `b:${b.id}`,
+          start: toInstant(b.start),
+          end: toInstant(b.end),
+        })),
+        ...merged.map((m) => ({
+          id: `k:${m.key}`,
+          start: m.start,
+          end: m.end,
+        })),
+      ]).map((r) => [r.id, r]),
+    );
+
     const items: ReactNode[] = [];
     for (const booking of dayBookings) {
       const start = toInstant(booking.start);
       const end = toInstant(booking.end);
       const box = eventBox(start, end, gridRange.startHour, tz);
-      const lane = laneOf.get(booking.id);
+      const lane = laneOf.get(`b:${booking.id}`);
       const staff = staffById.get(booking.staffId);
       const variant =
         booking.source === "flash"
@@ -272,12 +284,18 @@ export function AgendaScreen({
     }
     for (const block of merged) {
       const box = eventBox(block.start, block.end, gridRange.startHour, tz);
+      const lane = laneOf.get(`k:${block.key}`);
       items.push(
         <BlockItem
           key={block.key}
           kind={block.kind}
           top={box.top}
           height={box.height}
+          lane={
+            lane && lane.lanes > 1
+              ? { index: lane.lane, lanes: lane.lanes }
+              : undefined
+          }
         />,
       );
     }
@@ -304,6 +322,11 @@ export function AgendaScreen({
           highlightedStaffId={highlightedStaffId}
           onSelectStaff={(id) => {
             setHighlightedStaffId(id);
+            // Klick på en profesional som just kryssats ur i filtret ska göra hen
+            // synlig igen, annars visar dagvyn en tom kolumn (granskningsfynd).
+            setVisibleStaffIds((prev) =>
+              prev.has(id) ? prev : new Set(prev).add(id),
+            );
             goTo("dia", focus);
           }}
         />

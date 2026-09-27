@@ -5,11 +5,14 @@
 // räknas ur data (D-021).
 import { useEffect, useRef, type ReactNode } from "react";
 
-import { HOUR_PX, TOP_PX } from "./geometry";
+import {
+  BOTTOM_PAD_PX,
+  formatHourLabel,
+  HOUR_LABEL_OFFSET_PX,
+  HOUR_PX,
+  TOP_PX,
+} from "./geometry";
 import { ClosedDay } from "./closed-day";
-
-/** Utrymme under sista timmen, så sista radens etikett inte klipps av panelens kant. */
-const BOTTOM_PAD_PX = 16;
 
 export type TimeGridColumn = {
   key: string;
@@ -26,6 +29,12 @@ export type TimeGridProps = {
   /** 0 i veckovyn, 44 i dagvyn (DAY_HEADER_PX). */
   headerHeight: number;
   columns: readonly TimeGridColumn[];
+  /**
+   * Dagvyn: en enda `ClosedDay`-yta över alla kolumner i stället för en per kolumn
+   * (annars upprepas "Cerrado" en gång per profesional för samma dag, granskningsfynd).
+   * Ignorerar `column.closed` när den är satt.
+   */
+  allColumnsClosed?: boolean;
   /** Första synliga timmen vid montering (öppningen, eller nu − 1 h om idag syns). */
   initialScrollHour?: number;
 };
@@ -36,6 +45,7 @@ export function TimeGrid({
   endHour,
   headerHeight,
   columns,
+  allColumnsClosed = false,
   initialScrollHour,
 }: TimeGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -94,9 +104,17 @@ export function TimeGrid({
                 >
                   {col.items}
                 </div>
-                {col.closed ? <ClosedDay /> : null}
+                {!allColumnsClosed && col.closed ? <ClosedDay /> : null}
               </div>
             ))}
+            {allColumnsClosed ? (
+              <div
+                className="absolute inset-x-0 bottom-0"
+                style={{ top: headerHeight }}
+              >
+                <ClosedDay />
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
@@ -117,9 +135,9 @@ function HourMark({ hour, top }: { hour: number; top: number }) {
         aria-hidden="true"
         data-testid="hour-label"
         className="absolute left-4 text-12 font-semibold text-muted"
-        style={{ top: top - 8 }}
+        style={{ top: top - HOUR_LABEL_OFFSET_PX }}
       >
-        {hour}:00
+        {formatHourLabel(hour)}
       </div>
     </>
   );

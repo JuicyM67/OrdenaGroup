@@ -35,7 +35,7 @@ test.describe("Agenda — rutter", () => {
     expect(response?.status()).toBe(200);
   });
 
-  test("/app/agenda svarar 200 (grind öppen lokalt/i CI, D-019)", async ({
+  test("/app/agenda svarar 200 (grind öppen lokalt/i CI, D-020)", async ({
     page,
   }) => {
     const response = await page.goto("/app/agenda");
@@ -61,6 +61,25 @@ test.describe("Agenda — rutter", () => {
         .getByTestId("day-column")
         .first()
         .getByText("Diego", { exact: true }),
+    ).toBeVisible();
+  });
+});
+
+test.describe("Agenda — klick på en urkryssad profesional i railen", () => {
+  test("gör hen synlig igen i filtret (granskningsfynd)", async ({ page }) => {
+    await page.goto("/design-lab/agenda");
+    const tomasCheckbox = page.getByRole("checkbox", { name: /tomás/i });
+    await expect(tomasCheckbox).toBeChecked();
+    await tomasCheckbox.uncheck();
+    await expect(tomasCheckbox).not.toBeChecked();
+
+    await page.getByRole("button", { name: "Ver agenda de Tomás" }).click();
+
+    await expect(tomasCheckbox).toBeChecked();
+    await expect(
+      page
+        .getByTestId("day-column")
+        .filter({ has: page.getByText("Tomás", { exact: true }) }),
     ).toBeVisible();
   });
 });
@@ -298,6 +317,43 @@ test.describe("Agenda — lanes (?estado=solapadas)", () => {
   });
 });
 
+test.describe("Agenda — ett block för bara en profesional krockar med en bokning (?estado=bloqueo)", () => {
+  test("bokningen syns och går att klicka på, inte dold under blocket (granskningsfynd)", async ({
+    page,
+  }) => {
+    await page.goto("/design-lab/agenda?estado=bloqueo");
+    const bookingButton = page.getByRole("button", { name: /Martina Lagos/ });
+    await expect(bookingButton).toBeVisible();
+
+    const box = await bookingButton.boundingBox();
+    if (!box) throw new Error("saknar boundingBox");
+    const center = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    const topElementIsTheBooking = await page.evaluate(({ x, y }) => {
+      const el = document.elementFromPoint(x, y);
+      const block = el?.closest('[data-testid="event-block"]');
+      return (
+        block?.getAttribute("aria-label")?.includes("Martina Lagos") ?? false
+      );
+    }, center);
+    expect(topElementIsTheBooking).toBe(true);
+
+    // Delar lane med blocket: smalare än en hel kolumn (kolumnens `data-column-key` är
+    // dagens datum i veckovyn, se agenda-screen.tsx).
+    const column = page.locator(
+      '[data-testid="day-column"][data-column-key="2026-10-02"]',
+    );
+    const columnBox = await column.boundingBox();
+    if (!columnBox) throw new Error("saknar boundingBox");
+    expect(box.width).toBeLessThan(columnBox.width * 0.7);
+
+    // Klickbar: öppnar popovern.
+    await bookingButton.click();
+    await expect(
+      page.getByRole("dialog", { name: "Detalle de la reserva" }),
+    ).toBeVisible();
+  });
+});
+
 test.describe("Agenda — style bara för geometri (D-021)", () => {
   test("inga style-attribut med färger i DOM:en", async ({ page }) => {
     await page.goto("/design-lab/agenda");
@@ -318,6 +374,7 @@ test.describe("Agenda — axe", () => {
     "/design-lab/agenda?estado=vacia",
     "/design-lab/agenda?estado=cerrado",
     "/design-lab/agenda?estado=solapadas",
+    "/design-lab/agenda?estado=bloqueo",
   ];
 
   for (const url of pages) {

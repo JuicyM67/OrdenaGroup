@@ -1,4 +1,4 @@
-// Se docs/tasks/plans/WP-12.md steg 8. Grind (D-019/isDesignLabEnabled — stängd i
+// Se docs/tasks/plans/WP-12.md steg 8. Grind (D-020/isDesignLabEnabled — stängd i
 // produktion), noindex, fixtures (riktig data kopplas in i WP-20/21). Popovern är stängd
 // från början. `?vista=&fecha=` läses server-side (inga klient-only sökparametrar).
 import type { Metadata } from "next";

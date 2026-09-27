@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
+import { SANTIAGO } from "@/lib/format/dates";
 import type { E164 } from "@/lib/format/phone";
 
 import { EventPopover } from "./event-popover";
@@ -38,6 +39,7 @@ function Harness({
     <EventPopover
       booking={booking}
       staffName="Diego"
+      tz={SANTIAGO}
       open={open}
       onOpenChange={setOpen}
       onLlego={onLlego}

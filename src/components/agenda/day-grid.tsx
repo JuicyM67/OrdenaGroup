@@ -7,16 +7,16 @@ import {
   formatLocalDate,
   formatTime,
   isoWeekdayOf,
-  toLocalDate,
   type LocalDate,
   type TimeZone,
 } from "@/lib/format/dates";
 import { agenda } from "@/i18n";
 
-import { staffBgClass, toInstant } from "./agenda-view";
+import { localDateOf, staffBgClass, toInstant } from "./agenda-view";
 import { BlockItem } from "./block-item";
 import { EventBlock } from "./event-block";
 import {
+  DAY_HEADER_PX,
   eventBox,
   nowTop,
   showTime as isTimeVisible,
@@ -67,20 +67,24 @@ export function DayGrid({
 
   const columns: TimeGridColumn[] = orderedStaff.map((staff) => {
     const staffBookings = data.bookings.filter(
-      (b) =>
-        b.staffId === staff.id && toLocalDate(toInstant(b.start), tz) === date,
+      (b) => b.staffId === staff.id && localDateOf(b.start, tz) === date,
+    );
+    const staffBlocks = data.blocks.filter(
+      (b) => b.staffId === staff.id && localDateOf(b.start, tz) === date,
     );
     const laneOf = new Map(
-      layoutLanes(
-        staffBookings.map((b) => ({
-          id: b.id,
+      layoutLanes([
+        ...staffBookings.map((b) => ({
+          id: `b:${b.id}`,
           start: toInstant(b.start),
           end: toInstant(b.end),
         })),
-      ).map((r) => [r.id, r]),
-    );
-    const staffBlocks = data.blocks.filter(
-      (b) => b.staffId === staff.id && b.start.startsWith(date),
+        ...staffBlocks.map((b) => ({
+          id: `k:${b.staffId}:${b.start}`,
+          start: toInstant(b.start),
+          end: toInstant(b.end),
+        })),
+      ]).map((r) => [r.id, r]),
     );
 
     const items: ReactNode[] = [];
@@ -88,7 +92,7 @@ export function DayGrid({
       const start = toInstant(booking.start);
       const end = toInstant(booking.end);
       const box = eventBox(start, end, gridRange.startHour, tz);
-      const lane = laneOf.get(booking.id);
+      const lane = laneOf.get(`b:${booking.id}`);
       const variant =
         booking.source === "flash"
           ? "flash"
@@ -137,12 +141,18 @@ export function DayGrid({
         gridRange.startHour,
         tz,
       );
+      const lane = laneOf.get(`k:${block.staffId}:${block.start}`);
       items.push(
         <BlockItem
           key={`${staff.id}-${block.start}`}
           kind={block.kind}
           top={box.top}
           height={box.height}
+          lane={
+            lane && lane.lanes > 1
+              ? { index: lane.lane, lanes: lane.lanes }
+              : undefined
+          }
         />,
       );
     }
@@ -155,7 +165,7 @@ export function DayGrid({
 
     return {
       key: staff.id,
-      closed: isClosed,
+      closed: false,
       header: (
         <div className="flex h-full items-center gap-2 px-2.25">
           <span
@@ -177,8 +187,9 @@ export function DayGrid({
       ariaLabel={formatLocalDate(date, "weekdayDayMonthLong")}
       startHour={gridRange.startHour}
       endHour={gridRange.endHour}
-      headerHeight={44}
+      headerHeight={DAY_HEADER_PX}
       columns={columns}
+      allColumnsClosed={isClosed}
       initialScrollHour={initialScrollHour}
     />
   );

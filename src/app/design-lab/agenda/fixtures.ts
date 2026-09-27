@@ -396,3 +396,22 @@ export const agendaFixtureOverlap: AgendaData = {
     }),
   ],
 };
+
+/**
+ * `?estado=bloqueo`: ett block som bara gäller EN av de synliga profesionales (Tomás,
+ * inte lunch för alla) krockar i tid med en bokning för en annan profesional (Martina
+ * Lagos, Diego). Blocket ska dela lane med bokningen i stället för att ritas i full
+ * bredd ovanpå den (granskningsfynd, se agenda-screen.tsx).
+ */
+export const agendaFixtureBlockedStaff: AgendaData = {
+  ...agendaFixture,
+  blocks: [
+    ...agendaFixture.blocks,
+    {
+      staffId: TOMAS,
+      start: "2026-10-02T11:15:00-03:00",
+      end: "2026-10-02T11:50:00-03:00",
+      kind: "block",
+    },
+  ],
+};

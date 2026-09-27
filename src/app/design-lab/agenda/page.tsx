@@ -7,6 +7,7 @@ import type { LocalDate } from "@/lib/format/dates";
 
 import {
   agendaFixture,
+  agendaFixtureBlockedStaff,
   agendaFixtureClosedToday,
   agendaFixtureEmpty,
   agendaFixtureOverlap,
@@ -16,6 +17,7 @@ const ESTADOS: Record<string, AgendaData> = {
   vacia: agendaFixtureEmpty,
   cerrado: agendaFixtureClosedToday,
   solapadas: agendaFixtureOverlap,
+  bloqueo: agendaFixtureBlockedStaff,
 };
 
 export default async function AgendaDesignLabPage({

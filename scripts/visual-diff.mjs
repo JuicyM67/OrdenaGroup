@@ -27,7 +27,9 @@ const STRICT = process.env.VISUAL_STRICT === "1";
 // Hela skärmarna (WP-11–14). "– pendiente" (varken ✓ eller ✗) tills routen finns, om inte STRICT.
 const screens = [
   { name: "main", url: "/design-lab/main", width: 1440, height: 900, ref: "Main.png" },
-  { name: "agenda", url: "/design-lab/agenda", width: 1440, height: 900, ref: "Agenda.png" },
+  // hasPopover: standardläget visar Martina Lagos-popovern öppen (Radix, portalerad) —
+  // väntar på att den faktiskt hunnit rendera innan skärmdumpen tas (granskningsfynd).
+  { name: "agenda", url: "/design-lab/agenda", width: 1440, height: 900, ref: "Agenda.png", hasPopover: true },
   { name: "reserva", url: "/design-lab/reserva", width: 390, height: 1060, ref: "Reserva.png" },
   { name: "hoy", url: "/design-lab/hoy", width: 390, height: 844, ref: "Hoy.png" },
   { name: "hora-flash", url: "/design-lab/hora-flash", width: 360, height: 640, ref: "HoraFlash.png" },
@@ -135,6 +137,16 @@ for (const item of items) {
     continue;
   }
   await page.evaluate(() => document.fonts.ready);
+  // Bästa-försök: låter nätverket (webbteckensnitt m.m.) bli klart inom 3 s, utan att
+  // blockera obegränsat på den flakiga NavRailLogo-prefetchen mot en route som saknas i
+  // det här worktreet (se kommentaren ovan om "load" i stället för "networkidle").
+  await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
+  if (item.hasPopover) {
+    // Radix Popover.Content är portalerad och kan hinna vara oöppnad än vid `load`.
+    await page
+      .waitForSelector("[data-radix-popper-content-wrapper]", { timeout: 3000 })
+      .catch(() => {});
+  }
 
   // Regioner (WP-12, agenda-dia): en skärmdump av hela viewporten, jämförd mot samma ref i
   // flera separata utsnitt (ingen egen `clip` på item-nivå). Bakåtkompatibelt: poster utan

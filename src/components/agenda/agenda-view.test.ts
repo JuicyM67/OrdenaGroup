@@ -6,6 +6,7 @@ import type { E164 } from "@/lib/format/phone";
 import type { AgendaBooking } from "./types";
 import {
   focusDate,
+  localDateOf,
   offsetLabel,
   popoverModel,
   sectionAria,
@@ -15,6 +16,22 @@ import {
   weekTitle,
   weekdayMinLabels,
 } from "./agenda-view";
+
+describe("localDateOf", () => {
+  it("+00:00 (UTC, t.ex. från Postgres) mappas till rätt lokal dag, inte till UTC-datumet", () => {
+    // 2026-10-02T02:00:00Z = 2026-10-01T23:00:00-03:00 i Santiago: en `startsWith` på
+    // UTC-strängen skulle felaktigt lägga bokningen på 2 okt (granskningsfynd).
+    expect(localDateOf("2026-10-02T02:00:00+00:00", SANTIAGO)).toBe(
+      "2026-10-01",
+    );
+  });
+
+  it("med offset -03:00 matchar det lokala datumet direkt", () => {
+    expect(localDateOf("2026-10-02T11:30:00-03:00", SANTIAGO)).toBe(
+      "2026-10-02",
+    );
+  });
+});
 
 describe("weekDates", () => {
   it("måndag + de sex följande dagarna", () => {

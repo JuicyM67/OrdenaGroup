@@ -18,6 +18,11 @@ export const RIGHT_PX = 8;
 export const EVENT_GAP_PX = 4;
 /** Kolumnhuvudets höjd i dagvyn (0 i veckovyn). */
 export const DAY_HEADER_PX = 44;
+/** Utrymme under sista timmen i rutnätet, så sista radens etikett inte klipps av panelens
+ * nedre kant (time-grid.tsx). */
+export const BOTTOM_PAD_PX = 16;
+/** Timetikettens position ovanför sin tidslinje (time-grid.tsx: `top - HOUR_LABEL_OFFSET_PX`). */
+export const HOUR_LABEL_OFFSET_PX = 8;
 
 export function wallHourDecimal(instant: Date, tz: TimeZone): number {
   const wall = toWallClock(instant, tz);
@@ -106,8 +111,9 @@ export function gridHours(
 
 /**
  * Första synliga timmen i rutnätet: öppningen, eller nu − 1 h om "idag" syns (plan §4
- * steg 5). `todayVisible` avgörs av anroparen (vecka innehåller idag, eller dagvyns
- * fokusdag är idag).
+ * steg 5), avrundat nedåt till hel timme så rullningen landar exakt på en timlinje.
+ * `todayVisible` avgörs av anroparen (vecka innehåller idag, eller dagvyns fokusdag är
+ * idag).
  */
 export function initialScrollHour(
   now: Date,
@@ -116,5 +122,10 @@ export function initialScrollHour(
   todayVisible: boolean,
 ): number {
   if (!todayVisible) return gridStartHour;
-  return Math.max(gridStartHour, wallHourDecimal(now, tz) - 1);
+  return Math.max(gridStartHour, Math.floor(wallHourDecimal(now, tz) - 1));
+}
+
+/** "10:00", "09:00" — timetikettens text (alltid hela timmar, ingen tz behövs). */
+export function formatHourLabel(hour: number): string {
+  return `${String(hour).padStart(2, "0")}:00`;
 }

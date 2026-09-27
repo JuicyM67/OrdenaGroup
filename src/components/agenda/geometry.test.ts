@@ -9,6 +9,7 @@ import {
   GUTTER_PX,
   HOUR_PX,
   eventBox,
+  formatHourLabel,
   gridHours,
   initialScrollHour,
   nowTop,
@@ -131,14 +132,14 @@ describe("gridHours", () => {
 });
 
 describe("initialScrollHour", () => {
-  it("idag syns: nu − 1 h (12:40 → 11,67)", () => {
+  it("idag syns: nu − 1 h, avrundat nedåt till hel timme (12:40 → 11)", () => {
     const h = initialScrollHour(
       instant(`${DAY}T12:40:00-03:00`),
       10,
       SANTIAGO,
       true,
     );
-    expect(h).toBeCloseTo(11.667, 2);
+    expect(h).toBe(11);
   });
 
   it("idag syns men nu − 1 h < öppningen: öppningen", () => {
@@ -159,6 +160,13 @@ describe("initialScrollHour", () => {
       false,
     );
     expect(h).toBe(10);
+  });
+});
+
+describe("formatHourLabel", () => {
+  it('alltid två siffror ("09:00", "10:00")', () => {
+    expect(formatHourLabel(9)).toBe("09:00");
+    expect(formatHourLabel(10)).toBe("10:00");
   });
 });
 
