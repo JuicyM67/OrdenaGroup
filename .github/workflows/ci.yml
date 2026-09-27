@@ -74,6 +74,13 @@ jobs:
       - run: npx supabase db start
       - run: npx supabase test db
 
+      # WP-10: Vitest-integrationstester mot samma lokala container, bl.a.
+      # F4:s samtidighetstest (två riktiga anslutningar, 23P01 → slot_taken).
+      # Ingen hemlighet: det är containerns standardlösenord.
+      - run: npm run test:integration
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:54322/postgres
+
       # Typdrift: den incheckade src/types/database.ts ska vara exakt vad
       # `db:types` genererar från det lokala schemat (samma kontroll som
       # görs manuellt efter varje migration).
