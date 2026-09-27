@@ -59,11 +59,27 @@ workflowen första gången:
 
 ## c) GitHub-hemligheter och första körningen
 
-1. I GitHub-repot: **Settings → Secrets and variables → Actions → New repository
-   secret**. Lägg in exakt dessa tre (namnen måste matcha `deploy-staging.yml`):
+1. Hemligheterna läggs i GitHub Environment **`staging`** (inte som vanliga
+   repo-hemligheter). Environmentet finns redan och får bara användas av `main`
+   (**Settings → Environments → staging → Deployment branches and tags: main**), så en
+   workflow på någon annan branch kommer inte åt nycklarna. Enklast från din egen
+   terminal (värdet frågas efter och syns inte):
+   ```
+   gh secret set STAGING_SUPABASE_PROJECT_REF --env staging -R matiaslopezeffektiv/OrdenaGroup
+   gh secret set STAGING_SUPABASE_DB_PASSWORD --env staging -R matiaslopezeffektiv/OrdenaGroup
+   gh secret set STAGING_SUPABASE_ACCESS_TOKEN --env staging -R matiaslopezeffektiv/OrdenaGroup
+   ```
+   eller i GitHub: **Settings → Environments → staging → Environment secrets → Add
+   secret**. Namnen måste matcha `deploy-staging.yml`:
    - `STAGING_SUPABASE_ACCESS_TOKEN` — token från steg (a.5).
    - `STAGING_SUPABASE_DB_PASSWORD` — databaslösenordet från steg (a.2).
    - `STAGING_SUPABASE_PROJECT_REF` — project ref från steg (a.4).
+
+   **Om token:** en personlig access token når **alla** projekt på Supabase-kontot.
+   Staging ligger därför på ett eget konto/en egen organisation som bara innehåller
+   staging — lägg aldrig ett produktionsprojekt på samma konto. Läcker token: återkalla
+   den på [supabase.com/dashboard/account/tokens](https://supabase.com/dashboard/account/tokens)
+   och lägg in en ny.
 2. Kör workflowen manuellt första gången: **Actions → Deploy staging (Supabase) →
    Run workflow** → gren `main` → sätt **`reseed`** till **`true`** (kryssrutan) → **Run
    workflow**. Det kör alla migrationer i `supabase/migrations/` och laddar
@@ -81,7 +97,9 @@ workflowen första gången:
 2. **Add New… → Project** → importera repot för llena.
 3. **Framework Preset:** Next.js (upptäcks automatiskt).
 4. **Environment Variables** (lägg till innan första deploy, eller under **Project
-   Settings → Environment Variables** efteråt):
+   Settings → Environment Variables** efteråt). Välj miljön **Production** för alla
+   variabler nedan, inte "All" — preview-deployer från andra brancher ska inte gå mot
+   staging-databasen (de får egna Supabase-branches senare, se `SUPABASE_CONFIG.md`):
    - `NEXT_PUBLIC_APP_URL` — sätt till den Vercel-URL projektet får (du kan uppdatera
      den efter första deploy när du vet exakt domän).
    - `NEXT_PUBLIC_SUPABASE_URL` — från `OrdenaGroup-staging`-projektet:
@@ -101,7 +119,8 @@ workflowen första gången:
    det verkligen står **São Paulo (gru1)**.
 6. **Deployment Protection:** slå på **Vercel Authentication** (Project Settings →
    Deployment Protection) så att staging inte är en öppen, publik sajt — bara du
-   (och de du bjuder in i Vercel-teamet) kan öppna den.
+   (och de du bjuder in i Vercel-teamet) kan öppna den. Koppla **ingen egen domän**
+   till staging-projektet: Vercels standardskydd gäller inte egna produktionsdomäner.
 7. Deploya. Vercels **"Production"-miljö för det här projektet ÄR staging** — det
    finns ingen separat riktig produktionsmiljö i Vercel ännu. Blanda inte ihop
    Vercels ord "production" med det faktiska produktionsbegreppet i
@@ -109,6 +128,8 @@ workflowen första gången:
 
 ## e) Verifiering
 
+- **Skyddet:** öppna Vercel-URL:en i ett inkognitofönster. Du ska få Vercels
+  inloggning, inte appen.
 - **Startsidan:** öppna Vercel-URL:en (efter att ha loggat in via Vercel Authentication
   om du slog på det i steg d.6) och kontrollera att sidan laddar.
 - **`/design-lab`:** öppna `<vercel-url>/design-lab` — ska svara 200 och visa
@@ -135,6 +156,8 @@ workflowen första gången:
   används bara fake-providers som loggar (se `docs/tech/INTEGRATIONS.md`). Fyll bara i
   riktiga tredjepartsnycklar i staging om du medvetet pekar dem mot en sandbox/testkonto
   hos respektive leverantör — aldrig produktionskonton.
+- **`DESIGN_LAB=1` hör bara hemma i staging-projektet.** Om det här Vercel-projektet
+  någon gång blir produktion eller får en riktig domän: ta bort `DESIGN_LAB` först.
 - Migrationer mot staging körs **bara** av GitHub Actions (`deploy-staging.yml`), aldrig
   av en agent lokalt — skyddsreglerna i `.claude/settings.json` blockerar `db push`,
   `link` och `--linked` som lokala agentkommandon i alla worktrees.

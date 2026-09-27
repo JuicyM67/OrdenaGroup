@@ -31,6 +31,10 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Hemligheterna ligger i GitHub Environment "staging", som bara `main` får
+    # använda (deployment branch policy). En workflow på någon annan branch
+    # kommer alltså inte åt dem.
+    environment: staging
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
