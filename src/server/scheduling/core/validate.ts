@@ -29,10 +29,10 @@ const MIN = 60_000;
  * - `slot_taken` om tiden ryms i arbetstiden men krockar med en bokning,
  *   annars `outside_hours`.
  *
- * `input.date` ignoreras; datumet är starttidens lokala datum.
+ * Datumet är starttidens lokala datum i företagets tidszon.
  */
 export function checkStart(
-  input: DayInput,
+  input: Omit<DayInput, "date">,
   start: number,
 ): ParseResult<string[], StartError> {
   const s = input.snapshot;

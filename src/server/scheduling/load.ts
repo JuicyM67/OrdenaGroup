@@ -4,6 +4,7 @@ import {
   localDayRange,
   parseLocalTime,
   parseTimeZone,
+  toLocalDate,
   type IsoWeekday,
   type LocalDate,
   type LocalTime,
@@ -62,14 +63,18 @@ function toHours(r: HoursDbRow): HoursRow {
   };
 }
 
+export type LoadInput = {
+  businessId: string;
+  serviceId: string;
+  /** Lokala datum [from, to], eller den lokala dagen för en instant. */
+  range: { from: LocalDate; to: LocalDate } | { around: Date };
+  /** Flytt av en befintlig bokning: tjänsten får ha inaktiverats sedan dess. */
+  includeInactiveService?: boolean;
+};
+
 export async function loadSnapshot(
   q: Queryable,
-  input: {
-    businessId: string;
-    serviceId: string;
-    from: LocalDate;
-    to: LocalDate;
-  },
+  input: LoadInput,
 ): Promise<Result<LoadedSnapshot, "service_not_offered">> {
   const { businessId, serviceId } = input;
 
@@ -82,16 +87,24 @@ export async function loadSnapshot(
               where x.business_id = $1 and x.active) as shortest
        from public.businesses b
        join public.services s on s.business_id = b.id
-      where b.id = $1 and s.business_id = $1 and s.id = $2 and s.active`,
-    [businessId, serviceId],
+      where b.id = $1 and s.business_id = $1 and s.id = $2
+        and (s.active or $3::boolean)`,
+    [businessId, serviceId, input.includeInactiveService === true],
   );
   const h = head.rows[0];
   if (!h) return err("service_not_offered");
   const tz = parseTimeZone(h.timezone);
   if (!tz.ok) throw new RangeError("load: ogiltig tidszon");
 
-  const rangeStartIso = localDayRange(input.from, tz.value).start.toISOString();
-  const rangeEndIso = localDayRange(input.to, tz.value).end.toISOString();
+  const days =
+    "around" in input.range
+      ? {
+          from: toLocalDate(input.range.around, tz.value),
+          to: toLocalDate(input.range.around, tz.value),
+        }
+      : input.range;
+  const rangeStartIso = localDayRange(days.from, tz.value).start.toISOString();
+  const rangeEndIso = localDayRange(days.to, tz.value).end.toISOString();
 
   // 2. Personal och om de utför tjänsten.
   const staffRows = await q.query<{

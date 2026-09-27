@@ -2,6 +2,8 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 
+import pg from "pg";
+
 import { getPool, type QueryResultLike } from "./pool";
 import { toTstzrange } from "./tstzrange";
 
@@ -29,6 +31,19 @@ export function assertLocalDatabase(): void {
       "Integrationstester får bara köras mot den lokala databasen (127.0.0.1/localhost)",
     );
   }
+}
+
+/**
+ * En egen anslutning utanför poolen (samtidighetstester: två riktiga
+ * transaktioner). Samma URL som poolen; anroparen ansvarar för `end()`.
+ */
+export async function createTestClient(): Promise<pg.Client> {
+  assertLocalDatabase();
+  const client = new pg.Client({
+    connectionString: getPool().options.connectionString,
+  });
+  await client.connect();
+  return client;
 }
 
 export async function adminQuery<R extends object = Record<string, unknown>>(

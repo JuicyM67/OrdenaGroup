@@ -45,7 +45,11 @@ export async function availableDaysIn(
     now: Date;
   },
 ): Promise<Result<AvailableDay[], "service_not_offered">> {
-  const loaded = await loadSnapshot(q, input);
+  const loaded = await loadSnapshot(q, {
+    businessId: input.businessId,
+    serviceId: input.serviceId,
+    range: { from: input.from, to: input.to },
+  });
   if (!loaded.ok) return loaded;
   if (!staffOffersService(loaded.value, input.staffId)) {
     return err("service_not_offered");
@@ -78,9 +82,9 @@ export async function availableSlotsIn(
   },
 ): Promise<Result<AvailableSlot[], "service_not_offered">> {
   const loaded = await loadSnapshot(q, {
-    ...input,
-    from: input.date,
-    to: input.date,
+    businessId: input.businessId,
+    serviceId: input.serviceId,
+    range: { from: input.date, to: input.date },
   });
   if (!loaded.ok) return loaded;
   if (!staffOffersService(loaded.value, input.staffId)) {
