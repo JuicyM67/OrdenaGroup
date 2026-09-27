@@ -1,5 +1,8 @@
 // Se DESIGN.md §7. `label` är obligatorisk och blir aria-label (typfel utan den).
 // `badge` visar en notisprick (8px, bg-alert) — texten om notiser finns måste stå i `label`.
+// `asChild` (Radix Slot) låter samma stil användas på <a>/Link, t.ex. "Compartir hora
+// flash". `badge` stöds inte tillsammans med `asChild` (inget kort i designen behöver det).
+import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import type { ComponentPropsWithoutRef, ReactNode, Ref } from "react";
 
@@ -47,6 +50,7 @@ export type IconButtonProps = Omit<ComponentPropsWithoutRef<"button">, "type"> &
     /** Obligatorisk: blir aria-label. Nämn notisen här om `badge` är satt. */
     label: string;
     badge?: boolean;
+    asChild?: boolean;
     ref?: Ref<HTMLButtonElement>;
     children?: ReactNode;
   };
@@ -58,26 +62,35 @@ export function IconButton({
   shape,
   label,
   badge = false,
+  asChild = false,
   type = "button",
   ref,
   children,
   ...props
 }: IconButtonProps) {
+  const Comp = asChild ? Slot : "button";
+  const typeProp = asChild ? {} : { type };
   return (
-    <button
+    <Comp
       ref={ref}
-      type={type}
       aria-label={label}
       className={cn(iconButton({ tone, size, shape }), className)}
+      {...typeProp}
       {...props}
     >
-      {children}
-      {badge ? (
-        <span
-          aria-hidden="true"
-          className="absolute top-2.75 right-3 size-2 rounded-full bg-alert"
-        />
-      ) : null}
-    </button>
+      {asChild ? (
+        children
+      ) : (
+        <>
+          {children}
+          {badge ? (
+            <span
+              aria-hidden="true"
+              className="absolute top-2.75 right-3 size-2 rounded-full bg-alert"
+            />
+          ) : null}
+        </>
+      )}
+    </Comp>
   );
 }

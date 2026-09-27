@@ -29,6 +29,20 @@ describe("IconButton", () => {
     expect(badge).not.toBeNull();
   });
 
+  it('asChild (Radix Slot) med <a href> ger en länk med aria-label ("Compartir hora flash")', () => {
+    render(
+      <IconButton asChild label="Compartir hora flash" tone="surface">
+        <a href="/app/flash">
+          <Bell aria-hidden="true" />
+        </a>
+      </IconButton>,
+    );
+    const link = screen.getByRole("link", { name: "Compartir hora flash" });
+    expect(link).toHaveAttribute("href", "/app/flash");
+    // Stilen (bg-surface, size-11 …) kommer från IconButton, inte från barnet.
+    expect(link.className).toContain("bg-surface");
+  });
+
   // @ts-expect-error label är obligatorisk i typen (fångas av typecheck).
   it("ger typfel utan label", () => <IconButton />);
 });
