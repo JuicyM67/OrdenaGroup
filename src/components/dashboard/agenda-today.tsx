@@ -23,7 +23,7 @@ export function AgendaToday({ bookings, href }: AgendaTodayProps) {
       padding="none"
       className="flex min-h-0 flex-1 flex-col gap-1.5 px-5.5 py-5"
     >
-      <div className="flex items-center justify-between">
+      <div className="mb-1.5 flex items-center justify-between">
         <h2 className="text-18 font-bold">{inicio.agendaHoy.titulo}</h2>
         <TextLink href={href} prefetch={false}>
           {inicio.agendaHoy.verAgenda}
@@ -32,7 +32,7 @@ export function AgendaToday({ bookings, href }: AgendaTodayProps) {
       {bookings.length === 0 ? (
         <p className="text-14 text-muted">{inicio.agendaHoy.vacio}</p>
       ) : (
-        <ul className="min-h-0 flex-1 overflow-y-auto">
+        <ul className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
           {bookings.map((booking) => (
             <AgendaRow key={booking.id} booking={booking} />
           ))}
