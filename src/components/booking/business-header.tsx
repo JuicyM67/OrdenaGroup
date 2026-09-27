@@ -2,13 +2,21 @@
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { reserva } from "@/i18n";
-import { formatLocalTimeRange } from "@/lib/format/dates";
+import {
+  formatLocalTimeRange,
+  formatWeekdayRange,
+  type IsoWeekday,
+} from "@/lib/format/dates";
+import { initialsOf } from "@/lib/format/initials";
 
-import { formatWeekdayRange, initialsOf } from "./format-local";
 import type { BookingBusiness } from "./types";
 
 export function BusinessHeader({ business }: { business: BookingBusiness }) {
-  const dias = formatWeekdayRange(business.weekdaysOpen);
+  // weekdaysOpen är en sammanhängande sekvens (F1: öppettider utan luckor), så
+  // min/max räcker för `formatWeekdayRange(from, to)` ("Lun–Sáb").
+  const first = Math.min(...business.weekdaysOpen) as IsoWeekday;
+  const last = Math.max(...business.weekdaysOpen) as IsoWeekday;
+  const dias = formatWeekdayRange(first, last);
   const rango = formatLocalTimeRange(business.open, business.close);
 
   return (
