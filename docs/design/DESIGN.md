@@ -275,7 +275,30 @@ Textkällor: `agenda.bloque.meta`/`agenda.bloque.aria` (blockets tidsrad/aria-la
 
 ### Byggt i WP-13
 
-_Fylls i av WP-13._
+Reserva (`/{slug}`, mobil). Steg 1–4 (val) har referens (`Reserva.dc.html`).
+Datasteget och bekräftelsen (steg 5–6) är härledda — ingen referens finns, formen är
+godkänd via skärmdumpar i PR E (FRÅGA 2 i planen).
+
+| Komponent | Fil | API |
+|---|---|---|
+| BusinessHeader | `src/components/booking/business-header.tsx` | `business` (`BookingBusiness`) |
+| ServiceCard | `src/components/booking/service-card.tsx` | `service`, `selected`, `onSelect` |
+| StaffPicker | `src/components/booking/staff-picker.tsx` | `staff`, `selectedId`, `onSelect` (raden scrollar horisontellt, `-mx-5 px-5 overflow-x-auto snap-x`) |
+| DayPicker / DayButton | `src/components/booking/day-picker.tsx`, `day-button.tsx` | `DayPicker`: `headingId`, `days`, `selectedDate`, `onSelect` (sidor om 6, `snap-mandatory`). `DayButton`: `date`, `selected`, `full`, `flash`, `onSelect` |
+| TimeSlot(Grid) | `src/components/booking/time-slot.tsx`, `time-slot-grid.tsx` | `TimeSlotGrid`: `slots`, `selectedSlotId`, `onSelect`. `TimeSlot`: `slot`, `selected`, `onSelect` (flash → `Chip size="badge" tone="lime"`) |
+| WaitlistCard | `src/components/booking/waitlist-card.tsx` | `date`, `joined`, `duplicate?` |
+| BookingBar | `src/components/booking/booking-bar.tsx` | `summary`, `price` (`BarPrice \| null`), `ctaLabel`, `ctaDisabled?`, `onCta?` **eller** `formId` (submit via `form=`) |
+| TextField (generell) | `src/components/ui/text-field.tsx` | `label`, `hint?`, `error?`, `required?`, resten av native `<input>`-props; `scroll-mb-28`, `aria-describedby` pekar på både hint och fel |
+| ConsentCheckbox | `src/components/booking/consent-checkbox.tsx` | `checked`, `onChange`, `required?`, `error?`, `children` (aldrig `defaultChecked`) |
+| CustomerForm | `src/components/booking/customer-form.tsx` | `formId`, `data`, `selection`, `day`, `submitting`, `serverErrorCode`, `onBack`, `onSubmitBooking`, `onSubmitWaitlist`, `initialErrors?` (design lab) — **härledd, ingen referens** |
+| Confirmation | `src/components/booking/confirmation.tsx` | `data`, `selection`, `day` — **härledd, ingen referens** |
+| BookingScreen (orkestrerare) | `src/components/booking/booking-screen.tsx` | `data`, `submitBooking`, `joinWaitlist`, `initialState?`/`loadingHorarios?`/`initialFormErrors?`/`forceOffline?` (design lab) |
+| Vy-modell, flöde, text | `src/components/booking/types.ts`, `flow-state.ts`, `summary.ts`, `errors.ts`, `form-schema.ts` | Se filkommentarerna; `bookingFlowReducer`/`canContinue` är en ren reducer utan data-import |
+
+**Känd avvikelse:** `formatWeekdayRange`/`initialsOf` (BusinessHeader) ligger tillfälligt
+i `src/components/booking/format-local.ts` i stället för `src/lib/format/`
+(externt beroende på `scheduling-engineer`, se planens §57, inte levererat när WP-13
+byggdes). Flyttas när den riktiga funktionen landar på `main`.
 
 ### Byggt i WP-14
 
