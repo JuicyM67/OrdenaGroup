@@ -18,12 +18,16 @@
 -- databasen. F4:s "klart när"-kriterium för verklig samtidighet flyttas
 -- till WP-10 (Vitest-test med två riktiga pg-klientanslutningar mot samma
 -- lokala databas, som inte har dblink:s superuser-begränsning).
+--
+-- WP-10 (klart): testet finns i src/server/bookings/concurrency.db.test.ts
+-- och körs med `npm run test:integration` (lokalt och i CI-jobbet `db`).
+-- Filen behålls som skip för spårbarhet (WP-10 FRÅGA 6).
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(1);
 
 select skip(
-  'F4-samtidighet: dblink_connect nekas lokalt (2F003, se kommentar överst i filen och planens R3). Flyttas till WP-10.',
+  'F4-samtidighet: dblink_connect nekas lokalt (2F003). Testas i src/server/bookings/concurrency.db.test.ts (npm run test:integration).',
   1
 );
 
