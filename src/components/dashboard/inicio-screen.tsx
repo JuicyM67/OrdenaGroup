@@ -79,7 +79,7 @@ export function InicioScreen({ data, shellClassName }: InicioScreenProps) {
       />
 
       <HeroSummary
-        ownerName={data.owner.name}
+        ownerFirstName={data.owner.firstName}
         week={data.week}
         features={data.features}
         detailHref={DETAIL_HREF}

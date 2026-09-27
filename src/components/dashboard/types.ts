@@ -42,6 +42,9 @@ export type InicioData = {
   owner: {
     /** "Camila R." — initialerna till UserPill räknas med `initialsOf()` (inicio-screen.tsx). */
     name: string;
+    /** "Camila" — hero-hälsningen (`inicio.hola`). Klar från datan, ingen egen
+     * namnformatering i UI:t (QA). */
+    firstName: string;
   };
   notifications: { count: number };
   week: {

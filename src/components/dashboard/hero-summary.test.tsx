@@ -16,7 +16,7 @@ describe("HeroSummary", () => {
   it('exactamente un elemento está resaltado en lime y contiene "4 horas · $72.000"', () => {
     render(
       <HeroSummary
-        ownerName="Camila R."
+        ownerFirstName="Camila"
         week={{ recoveredHours: 4, recoveredClp: 72_000 }}
         features={features}
         detailHref="#detalle"
@@ -28,7 +28,7 @@ describe("HeroSummary", () => {
     // Es el único elemento con esa clase en todo el hero.
     const { container } = render(
       <HeroSummary
-        ownerName="Camila R."
+        ownerFirstName="Camila"
         week={{ recoveredHours: 4, recoveredClp: 72_000 }}
         features={features}
         detailHref="#detalle"
@@ -40,7 +40,7 @@ describe("HeroSummary", () => {
   it('el enlace "VER DETALLE" tiene href', () => {
     render(
       <HeroSummary
-        ownerName="Camila R."
+        ownerFirstName="Camila"
         week={{ recoveredHours: 4, recoveredClp: 72_000 }}
         features={features}
         detailHref="#detalle"
@@ -52,10 +52,10 @@ describe("HeroSummary", () => {
     );
   });
 
-  it("saludo usa el primer nombre (Camila), no el nombre completo", () => {
+  it("el saludo usa ownerFirstName tal cual (ninguna formateo propio)", () => {
     render(
       <HeroSummary
-        ownerName="Camila R."
+        ownerFirstName="Camila"
         week={{ recoveredHours: 4, recoveredClp: 72_000 }}
         features={features}
         detailHref="#detalle"
@@ -67,7 +67,7 @@ describe("HeroSummary", () => {
   it("semana vacía (0 horas): título vacío, sin resaltado lime", () => {
     render(
       <HeroSummary
-        ownerName="Camila R."
+        ownerFirstName="Camila"
         week={{ recoveredHours: 0, recoveredClp: 0 }}
         features={features}
         detailHref="#detalle"
@@ -75,7 +75,7 @@ describe("HeroSummary", () => {
     );
     const { container } = render(
       <HeroSummary
-        ownerName="Camila R."
+        ownerFirstName="Camila"
         week={{ recoveredHours: 0, recoveredClp: 0 }}
         features={features}
         detailHref="#detalle"

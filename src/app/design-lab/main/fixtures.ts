@@ -115,7 +115,7 @@ const ACTIVE_FLASH = {
 const BASE = {
   now: NOW,
   business: { name: "Barbería Norte", comuna: "Providencia" },
-  owner: { name: "Camila R." },
+  owner: { name: "Camila R.", firstName: "Camila" },
   notifications: { count: 1 }, // referensens prick "Notificaciones"
   week: { recoveredHours: 4, recoveredClp: 72_000 },
   features: {
