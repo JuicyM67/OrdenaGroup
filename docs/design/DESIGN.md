@@ -204,11 +204,19 @@ WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är k
 Skärmen Inicio (Main.dc.html, desktop, F6). Vy-modell och rena funktioner:
 `src/components/dashboard/types.ts` (`InicioData`, `TodayBooking`), `inicio-view.ts`
 (`todayLabel`, `upcomingToday`, `statusChip`, `heroVariant`, `splitHighlight`, `firstName`,
-`noShowTrendLabel`, `initialsFallback`, `mustParseInstant`). Fixtures:
+`noShowTrendLabel`, `notificationsLabel`, `mustParseInstant`). Fixtures:
 `src/app/design-lab/main/fixtures.ts` (`getInicioFixtures`, tillstånd `referencia`/`vacio`/
-`lleno`; `sin-flash` byggs inte än, se planens FRÅGA 4). Skärmen:
-`src/components/dashboard/inicio-screen.tsx`, design lab `src/app/design-lab/main/page.tsx`
-(`?estado=`), riktig route `src/app/(app)/app/inicio/page.tsx` (grind D-020, noindex).
+`lleno`/`sin-flash`). Skärmen: `src/components/dashboard/inicio-screen.tsx`, design lab
+`src/app/design-lab/main/page.tsx` (`?estado=`), riktig route
+`src/app/(app)/app/inicio/page.tsx` (grind D-020, noindex).
+
+Initialer (`initialsOf`, WP-10) och procent (`formatPercent`, WP-10) räknas alltid ur
+`owner.name`/`clientName`/`stats.noShowPct` vid renderingen — datan bär inga färdig­formaterade
+strängar för dem. Veckodagarna i CalendarCard kommer från `WEEKDAY_MIN`
+(`src/lib/format/calendar-es-CL.ts`, WP-10), och `dayLabel` lägger till
+`calendario.diaConReservas` för dagar med prick (WP-03b) — pricken är annars ensam bärare av
+informationen. Notisknappen: `nav.notificaciones` utan aviseringar, annars
+`nav.notificacionesNuevas({ n })` (`notificationsLabel`, `data.notifications.count`).
 
 | Komponent | Fil | API |
 |---|---|---|
@@ -222,7 +230,7 @@ Skärmen Inicio (Main.dc.html, desktop, F6). Vy-modell och rena funktioner:
 | AgendaToday | `src/components/dashboard/agenda-today.tsx` | `bookings`, `href`; `min-h-0` + `overflow-y-auto` internt, sidan klipper aldrig bort bokningar |
 | AgendaRow | `src/components/dashboard/agenda-row.tsx` | `booking` (`TodayBooking`), `onMoreOptions?`; `<li>`, tid alltid i `SANTIAGO` |
 | CalendarCard | `src/components/dashboard/calendar-card.tsx` | `month`, `today`, `markedDates`; klientkomponent, `"use client"` |
-| FlashCard | `src/components/dashboard/flash-card.tsx` | `activeFlash` (`InicioData["activeFlash"]`), `href`; `null` → säker platshållare (FRÅGA 4), tillståndet testas inte än |
+| FlashCard | `src/components/dashboard/flash-card.tsx` | `activeFlash` (`InicioData["activeFlash"]`), `href`; `null` → `inicio.flashCard.vacio` + länk för att skapa en (`?estado=sin-flash`, testat) |
 
 **Tillägg i delade `ui/`-filer (WP-11, PR C):** `IconButton` fick storleken `36` (AgendaRow
 "Más opciones"); `NavRailLink` fick ett valfritt `prefetch`-prop (standard följer Next.js;

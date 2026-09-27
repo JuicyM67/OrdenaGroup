@@ -148,11 +148,25 @@ test("?estado=vacio: visar hero.tituloVacio och agendaHoy.vacio", async ({
   ).toBeVisible();
 });
 
+test("?estado=sin-flash: visar inicio.flashCard.vacio i stället för datum/tid/rabatt", async ({
+  page,
+}) => {
+  await page.goto("/design-lab/main?estado=sin-flash");
+  await expect(
+    page.getByText("No tienes ninguna hora flash activa todavía."),
+  ).toBeVisible();
+  await expect(page.getByText(/−\d+%/)).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Crear hora flash" }),
+  ).toBeVisible();
+});
+
 test.describe("axe (wcag2a, wcag2aa, wcag21aa)", () => {
   for (const url of [
     "/design-lab/main",
     "/design-lab/main?estado=vacio",
     "/design-lab/main?estado=lleno",
+    "/design-lab/main?estado=sin-flash",
   ]) {
     test(`${url} sin violaciones`, async ({ page }) => {
       await page.goto(url);
