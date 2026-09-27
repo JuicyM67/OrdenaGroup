@@ -24,3 +24,12 @@ export function pgErrorCode(e: unknown): string | undefined {
 export function isNoOverlapViolation(e: unknown): boolean {
   return pgErrorCode(e) === "23P01" && field(e, "constraint") === "no_overlap";
 }
+
+/**
+ * Deadlock (40P01) eller serialiseringsfel (40001): två transaktioner krockade.
+ * Hela transaktionen kan köras om (se `runAs`).
+ */
+export function isRetryableConflict(e: unknown): boolean {
+  const code = pgErrorCode(e);
+  return code === "40P01" || code === "40001";
+}

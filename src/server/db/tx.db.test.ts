@@ -104,6 +104,53 @@ describe("withOwnerTx", () => {
     for (let i = 0; i < 4; i++) expect(await currentUser()).toBe("postgres");
   });
 
+  it("förorenad session (request.jwt.claim.sub på sessionsnivå) vinner aldrig över ägarens id", async () => {
+    const pool = getPool();
+    const max = pool.options.max ?? 3;
+    // Förorena varje anslutning i poolen med en annan användare.
+    const clients = await Promise.all(
+      Array.from({ length: max }, () => pool.connect()),
+    );
+    for (const c of clients) {
+      await c.query(
+        "select set_config('request.jwt.claim.sub', $1, false), set_config('request.jwt.claims', $2, false)",
+        [b.ownerUserId, JSON.stringify({ sub: b.ownerUserId })],
+      );
+    }
+    for (const c of clients) c.release();
+    try {
+      const seen = await withOwnerTx(a.ownerUserId, async (q) => {
+        const r = await q.query<{ uid: string; n: number }>(
+          `select auth.uid()::text as uid,
+                  (select count(*)::int from public.bookings where business_id = $1) as n`,
+          [b.id],
+        );
+        return r.rows[0]!;
+      });
+      expect(seen).toEqual({ uid: a.ownerUserId, n: 0 });
+    } finally {
+      const again = await Promise.all(
+        Array.from({ length: max }, () => pool.connect()),
+      );
+      for (const c of again) {
+        await c.query(
+          "select set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claims', '', false)",
+        );
+        c.release();
+      }
+    }
+  });
+
+  it("transaktionerna har lock_timeout och idle_in_transaction_session_timeout", async () => {
+    const r = await withServiceTx(async (q) => {
+      const x = await q.query<{ l: string; i: string; s: string }>(
+        "select current_setting('lock_timeout') as l, current_setting('idle_in_transaction_session_timeout') as i, current_setting('statement_timeout') as s",
+      );
+      return x.rows[0]!;
+    });
+    expect(r).toEqual({ l: "3s", i: "15s", s: "10s" });
+  });
+
   it("en användare utan medlemskap ser noll rader", async () => {
     const n = await withOwnerTx(stranger, async (q) => {
       const r = await q.query<{ n: number }>(

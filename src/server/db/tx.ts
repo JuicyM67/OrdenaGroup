@@ -19,8 +19,13 @@ import { getPool, type Queryable } from "./pool";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** Gräns för en enskild sats, så att ett låst anrop inte hänger en funktion. */
-const STATEMENT_TIMEOUT = "10s";
+/**
+ * Gränser per transaktion (bara `set local`): en enskild sats, väntan på
+ * ett lås (rad, exclusion constraint eller advisory lock) och en öppen
+ * transaktion utan aktivitet. Överskridet lås ger 55P03 → infrastrukturfel.
+ */
+const LIMITS =
+  "set local statement_timeout = '10s'; set local lock_timeout = '3s'; set local idle_in_transaction_session_timeout = '15s'";
 
 function wrap(client: pg.PoolClient): Queryable {
   return {
@@ -66,9 +71,7 @@ async function runTx<T>(
 
 export function withServiceTx<T>(fn: (q: Queryable) => Promise<T>): Promise<T> {
   return runTx(async (client) => {
-    await client.query(
-      `set local role service_role; set local statement_timeout = '${STATEMENT_TIMEOUT}'`,
-    );
+    await client.query(`set local role service_role; ${LIMITS}`);
   }, fn);
 }
 
@@ -80,12 +83,16 @@ export function withOwnerTx<T>(
     return Promise.reject(new TypeError("withOwnerTx: userId är inte en uuid"));
   }
   return runTx(async (client) => {
+    await client.query(`set local role authenticated; ${LIMITS}`);
+    // Både claims-objektet och de enskilda nycklarna sätts lokalt:
+    // auth.uid() läser `request.jwt.claim.sub` först, så ett värde som
+    // blivit kvar på sessionsnivå får aldrig vinna över ägarens id.
     await client.query(
-      `set local role authenticated; set local statement_timeout = '${STATEMENT_TIMEOUT}'`,
+      `select set_config('request.jwt.claims', $1, true),
+              set_config('request.jwt.claim.sub', $2, true),
+              set_config('request.jwt.claim.role', 'authenticated', true)`,
+      [JSON.stringify({ sub: userId, role: "authenticated" }), userId],
     );
-    await client.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify({ sub: userId, role: "authenticated" }),
-    ]);
   }, fn);
 }
 
