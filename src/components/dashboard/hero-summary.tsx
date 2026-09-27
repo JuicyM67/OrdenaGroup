@@ -13,11 +13,13 @@ import { formatClp } from "@/lib/format/clp";
 import { formatLocalDate } from "@/lib/format/dates";
 
 import { FeatureCard } from "./feature-card";
-import { firstName, heroVariant, splitHighlight } from "./inicio-view";
+import { heroVariant, splitHighlight } from "./inicio-view";
 import type { InicioData } from "./types";
 
 export type HeroSummaryProps = {
-  ownerName: string;
+  /** "Camila" — förnamnet kommer redan klart från datan (`owner.firstName`), ingen egen
+   * namnformatering här. */
+  ownerFirstName: string;
   week: InicioData["week"];
   features: InicioData["features"];
   detailHref: string;
@@ -25,7 +27,7 @@ export type HeroSummaryProps = {
 };
 
 export function HeroSummary({
-  ownerName,
+  ownerFirstName,
   week,
   features,
   detailHref,
@@ -56,7 +58,7 @@ export function HeroSummary({
       <div className="flex flex-1 flex-col justify-between">
         <div className="flex flex-col gap-3">
           <p className="text-15 text-on-dark-muted">
-            {inicio.hola({ nombre: firstName(ownerName) })}
+            {inicio.hola({ nombre: ownerFirstName })}
           </p>
           <p className="font-display text-40 leading-hero font-semibold tracking-display">
             {variant === "recuperado"
@@ -120,6 +122,11 @@ export function HeroSummary({
               tone="ink"
               size={34}
               onClick={onEnviarRecordatorio}
+              // Knappen ligger i ett lime FeatureCard, men FeatureCard i sig sitter inuti
+              // hero-kortets `data-surface="dark"` (card.tsx): utan denna override läcker
+              // `on-dark:focus-visible:outline-lime` (icon-button.tsx) igenom och ger lime
+              // fokusring på lime bakgrund (osynlig, QA).
+              className="on-dark:focus-visible:outline-ink"
             >
               <ArrowUpRight
                 aria-hidden="true"
