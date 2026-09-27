@@ -32,20 +32,26 @@ create type public.consent_channel as enum ('web', 'whatsapp', 'manual');
 -- (default-privilegier gäller bara objekt som skapas EFTER att de sätts, av
 -- samma roll) -----------------------------------------------------------
 --
--- Den lokala Supabase-plattformen sätter (utanför våra migrationer,
--- motsvarande `auto_expose_new_tables = true` i molnet) redan en
--- default-privilege SPECIFIK FÖR SCHEMAT `public` (`pg_default_acl` har en
--- rad för `postgres`/schema `public`) som ger `anon`, `authenticated` och
--- `service_role` fullt CRUD på nya tabeller/sekvenser/funktioner. En
--- schema-specifik default-privilege-rad har alltid företräde framför en
--- schemalös (global) rad för objekt som hamnar i just det schemat — därför
--- MÅSTE revoken nedan för `anon`/`authenticated` vara `in schema public`
--- (samma schema som platformens rad) för att verkligen ersätta den. Ett
--- schemalöst `alter default privileges` skulle bara skapa en egen, separat
--- rad som aldrig konsulteras för objekt i `public` (bevisat: en tidigare
--- version av den här migrationen använde `for role postgres` utan `in
--- schema` här, vilket gjorde att `anon` fortfarande fick fullt CRUD på alla
--- tabeller — granskningsfynd, rättat).
+-- Hur `alter default privileges` faktiskt kombineras (rättad förklaring,
+-- granskningsfynd): en schema-specifik rad (`in schema X`) och en schemalös
+-- (global) rad för samma roll är TVÅ SEPARATA rader i `pg_default_acl` som
+-- LÄGGS OVANPÅ VARANDRA (adderas), inte "den mest specifika vinner allt". Av
+-- det följer:
+--   * Det som getts PER SCHEMA kan bara återkallas med en revoke `in schema`
+--     samma schema. En schemalös revoke rör en annan (global) rad och gör
+--     ingenting åt den schema-specifika.
+--   * Det som getts GLOBALT (utan `in schema`) kan inte återkallas med en
+--     schema-specifik revoke — bara med en annan schemalös sats.
+--
+-- Den lokala Supabase-plattformen har satt en schema-specifik rad
+-- (`postgres`/schema `public`, synlig i `pg_default_acl`) som ger `anon`,
+-- `authenticated` och `service_role` fullt CRUD på nya tabeller/sekvenser/
+-- funktioner i `public`. Revoken nedan för `anon`/`authenticated` MÅSTE
+-- därför vara `in schema public` för att träffa och ändra just den raden.
+-- (Granskningsfynd, rättat: en tidigare version använde `for role postgres`
+-- utan `in schema`, vilket bara skapade en egen, obesläktad global rad —
+-- plattformens schema-specifika grant till anon stod kvar orörd, så `anon`
+-- behöll fullt CRUD på alla tabeller trots migrationen.)
 alter default privileges for role postgres in schema public revoke all on tables from anon;
 alter default privileges for role postgres in schema public revoke all on sequences from anon;
 alter default privileges for role postgres in schema public revoke all on functions from anon;
@@ -54,18 +60,19 @@ alter default privileges for role postgres in schema public revoke all on tables
 alter default privileges for role postgres in schema public revoke all on sequences from authenticated;
 alter default privileges for role postgres in schema public revoke all on functions from authenticated;
 
--- Säkerhet S1: den här raden är däremot medvetet UTAN `in schema`. Den
--- riktar sig mot ett annat problem: Postgres standardbeteende att en ny
--- funktion (i VILKET schema som helst) automatiskt får EXECUTE till
--- pseudo-rollen PUBLIC, om inget annat sägs — det är inte en
--- Supabase-specifik default-privilege-rad, utan inbyggt SQL-beteende.
--- `private` är ett schema VI skapar (ingen platformsrad konkurrerar med den
--- här för det schemat), så en global (schemalös) regel för `postgres` täcker
--- både `public` och `private` och alla framtida scheman vi kan komma att
--- skapa, utan att man behöver komma ihåg att lägga till `in schema` varje
--- gång. Måste stå EFTER schema-specifika `public`-raderna ovan (annars vore
--- ordningen tvärtom irrelevant) och FÖRE `private.set_updated_at()` nedan,
--- så att den funktionen aldrig får PUBLIC-execute.
+-- Säkerhet S1: den här raden är däremot medvetet UTAN `in schema` (en global
+-- rad). Den riktar sig mot ett annat problem: Postgres standardbeteende att
+-- en ny funktion (i vilket schema som helst) automatiskt får EXECUTE till
+-- pseudo-rollen PUBLIC om ingen default-ACL-rad alls (varken global eller
+-- schema-specifik) matchar — det är inte en Supabase-satt rad, utan
+-- inbyggt SQL-fallback. `public` har redan sin egen schema-specifika rad för
+-- funktioner (se ovan/testat i 000_schema_guard), så den påverkas inte av
+-- den globala raden här. `private` saknar en egen schema-specifik rad, så
+-- den globala gäller där i stället för SQL-fallbacken. En och samma global
+-- rad täcker alltså `private` och alla framtida scheman vi kan komma att
+-- skapa. Måste stå EFTER schema-specifika `public`-raderna ovan och FÖRE
+-- `private.set_updated_at()` nedan, så att den funktionen aldrig får
+-- PUBLIC-execute.
 alter default privileges for role postgres revoke execute on functions from public;
 
 -- Delad trigger för updated_at ------------------------------------------
