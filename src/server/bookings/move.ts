@@ -1,6 +1,7 @@
 import "server-only";
 
 import { isNoOverlapViolation } from "@/server/db/errors";
+import { lockStaffForBooking } from "@/server/db/locks";
 import type { Queryable } from "@/server/db/pool";
 import { toTstzrange } from "@/server/db/tstzrange";
 import { savepoint } from "@/server/db/tx";
@@ -10,37 +11,78 @@ import { loadSnapshot } from "@/server/scheduling/load";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { runAs } from "@/server/scheduling/run";
 import {
-  moveBookingInputSchema,
-  type MoveBookingInput,
+  customerMoveRequestSchema,
+  engineContextSchema,
+  ownerMoveRequestSchema,
+  parseContext,
+  type EngineContext,
+  type MoveBookingRequest,
 } from "@/server/scheduling/schemas";
+import type { Actor, StaffChoice } from "@/server/scheduling/types";
 
-import { CHANGEABLE, insideCancelWindow, lockBooking } from "./row";
+import {
+  CHANGEABLE,
+  insideCancelWindow,
+  lockBooking,
+  type BookingRef,
+} from "./row";
 import type { BookingError, Freed, MovedBooking } from "./types";
 
 const MIN = 60_000;
 
+type MoveResult = Result<{ booking: MovedBooking; freed: Freed }, BookingError>;
+
 /**
- * Flyttar en bokning. Behåller längd, buffert (upper − lower) och pris.
- * Tillgängligheten räknas om utan bokningen själv; `no_overlap` har sista
- * ordet (23P01 → nästa "any"-kandidat eller `slot_taken`).
+ * Flyttar en bokning. Kunden identifierar bokningen med länkens token,
+ * ägaren med id. Behåller längd, buffert (upper − lower) och pris.
+ * Tillgängligheten räknas om utan bokningen själv; målprofesionalerna låses
+ * (advisory lock) före update och `no_overlap` har sista ordet.
  */
 export async function moveBooking(
-  raw: MoveBookingInput,
-): Promise<Result<{ booking: MovedBooking; freed: Freed }, BookingError>> {
-  const p = moveBookingInputSchema.safeParse(raw);
-  if (!p.success) return err("invalid_input");
-  const input = p.data;
-  return runAs(input.actor, (q) => moveIn(q, input));
+  request: MoveBookingRequest,
+  ctx: EngineContext,
+): Promise<MoveResult> {
+  const c = parseContext(engineContextSchema, ctx);
+  let ref: BookingRef;
+  let newStart: Date;
+  let newStaffId: StaffChoice | undefined;
+  if (c.actor.kind === "customer") {
+    const p = customerMoveRequestSchema.safeParse(request);
+    if (!p.success) return err("invalid_input");
+    ref = { manageToken: p.data.manageToken };
+    ({ newStart, newStaffId } = p.data);
+  } else {
+    const p = ownerMoveRequestSchema.safeParse(request);
+    if (!p.success) return err("invalid_input");
+    ref = { bookingId: p.data.bookingId };
+    ({ newStart, newStaffId } = p.data);
+  }
+  const input = { ...c, ref, newStart, newStaffId };
+  return runAs(c.actor, (q) => moveIn(q, input), {
+    onConflict: err("slot_taken"),
+  });
 }
 
-async function moveIn(
+export type MoveInput = {
+  businessId: string;
+  ref: BookingRef;
+  newStart: Date;
+  newStaffId?: StaffChoice | undefined;
+  actor: Actor;
+  now: Date;
+};
+
+/** Inre steg (för tester): kör i anroparens transaktion. */
+export async function moveIn(
   q: Queryable,
-  input: ReturnType<typeof moveBookingInputSchema.parse>,
-): Promise<Result<{ booking: MovedBooking; freed: Freed }, BookingError>> {
-  const b = await lockBooking(q, input.businessId, input.bookingId);
+  input: MoveInput,
+): Promise<MoveResult> {
+  const b = await lockBooking(q, input.businessId, input.ref);
   if (!b) return err("not_found");
+  const isCustomer = input.actor.kind === "customer";
+  if (isCustomer && !b.businessActive) return err("business_unavailable");
   if (!CHANGEABLE.includes(b.status)) return err("invalid_status");
-  if (input.actor.kind === "customer" && !insideCancelWindow(b, input.now)) {
+  if (isCustomer && !insideCancelWindow(b, input.now)) {
     return err("outside_cancel_window");
   }
 
@@ -55,11 +97,12 @@ async function moveIn(
   if (!staffOffersService(loaded.value, staffChoice)) {
     return err("service_not_offered");
   }
-  const durationMin = (b.periodEnd - b.start) / MIN;
-  const bufferMin = (b.blockedEnd - b.periodEnd) / MIN;
   const snapshot = {
     ...loaded.value.snapshot,
-    service: { durationMin, bufferAfterMin: bufferMin },
+    service: {
+      durationMin: (b.periodEnd - b.start) / MIN,
+      bufferAfterMin: (b.blockedEnd - b.periodEnd) / MIN,
+    },
   };
 
   const start = input.newStart.getTime();
@@ -74,6 +117,8 @@ async function moveIn(
     start,
   );
   if (!check.ok) return check;
+
+  await lockStaffForBooking(q, input.businessId, check.value);
 
   const periodEnd = start + (b.periodEnd - b.start);
   const blockedEnd = start + (b.blockedEnd - b.start);

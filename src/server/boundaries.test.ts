@@ -11,8 +11,11 @@ import { describe, expect, it } from "vitest";
  * - Varje icke-testfil i src/server börjar med `import "server-only"`.
  * - Ingen "use client"-fil i src/ importerar @/server/* eller pg.
  * - DATABASE_URL och SUPABASE_SERVICE_ROLE_KEY läses bara i db/pool.ts.
- * - SQL mot tenant-tabeller i scheduling/ och bookings/ filtrerar på
- *   business_id (ARCHITECTURE princip 3, INV-4).
+ * - SQL mot tenant-tabeller i all produktionskod i src/server och
+ *   src/app/api filtrerar på business_id; `businesses` på business_id eller
+ *   id (ARCHITECTURE princip 3, INV-4, säkerhet R6). Testkod (testing.ts,
+ *   __fixtures__/) körs som postgres och undantas.
+ * - Bara testkod importerar @/server/db/testing (säkerhet R5).
  */
 const serverDir = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.resolve(serverDir, "..");
@@ -96,6 +99,7 @@ const TENANT_TABLES = [
   "business_hours",
   "staff_hours",
   "time_off",
+  "businesses",
 ] as const;
 
 /** Sträng- och mallitteraler som ser ut som SQL. */
@@ -120,8 +124,41 @@ function tenantTablesIn(sql: string): string[] {
 
 function sqlOffenders(code: string): string[] {
   return sqlStrings(code)
-    .filter((s) => tenantTablesIn(s).length > 0 && !/\bbusiness_id\b/.test(s))
+    .filter((s) => {
+      const tables = tenantTablesIn(s);
+      if (tables.length === 0 || /\bbusiness_id\b/.test(s)) return false;
+      // Bara businesses: filtret är dess egen primärnyckel.
+      const onlyBusinesses = tables.every((t) => t === "businesses");
+      return !(onlyBusinesses && /\bid\s*=\s*\$\d/.test(s));
+    })
     .map((s) => s.replace(/\s+/g, " ").trim().slice(0, 80));
+}
+
+const appApiDir = path.join(srcDir, "app", "api");
+const isTestSupport = (f: string) =>
+  rel(f) === "server/db/testing.ts" || /(^|\/)__fixtures__\//.test(rel(f));
+/** All produktionskod som kan köra SQL: src/server och src/app/api. */
+const productionSources = [
+  ...serverSources,
+  ...collect(appApiDir).filter((f) => !isTest(f)),
+].filter((f) => !isTestSupport(f));
+
+/** Importen pekar på db/testing (alias eller relativ sökväg). */
+function importsDbTesting(file: string, spec: string): boolean {
+  if (spec === "@/server/db/testing") return true;
+  if (!spec.startsWith(".")) return false;
+  const target = path.resolve(path.dirname(file), spec);
+  return rel(target).replace(/\.ts$/, "") === "server/db/testing";
+}
+
+/** Importen pekar på en __fixtures__-modul. */
+function importsFixture(file: string, spec: string): boolean {
+  const resolved = spec.startsWith("@/")
+    ? spec.slice(2)
+    : spec.startsWith(".")
+      ? rel(path.resolve(path.dirname(file), spec))
+      : "";
+  return /(^|\/)__fixtures__\//.test(resolved);
 }
 
 const SECRET_ENV = "(?:DATABASE_URL|SUPABASE_SERVICE_ROLE_KEY)";
@@ -178,7 +215,31 @@ describe("detektorerna själva", () => {
       ),
     ).toEqual([]);
     expect(sqlOffenders('q.query("select current_user")')).toEqual([]);
+    expect(
+      sqlOffenders('q.query("select status from public.businesses")'),
+    ).toHaveLength(1);
+    expect(
+      sqlOffenders(
+        'q.query("select status from public.businesses b where b.id = $1")',
+      ),
+    ).toEqual([]);
     expect(sqlOffenders('const m = "Selecciona un servicio";')).toEqual([]);
+  });
+});
+
+describe("importdetektorerna", () => {
+  const f = path.join(serverDir, "bookings", "create.ts");
+  it("db/testing via alias och relativ sökväg", () => {
+    expect(importsDbTesting(f, "@/server/db/testing")).toBe(true);
+    expect(importsDbTesting(f, "../db/testing")).toBe(true);
+    expect(importsDbTesting(f, "../db/tx")).toBe(false);
+  });
+  it("__fixtures__ via alias och relativ sökväg", () => {
+    expect(importsFixture(f, "./__fixtures__/flat")).toBe(true);
+    expect(importsFixture(f, "@/server/scheduling/__fixtures__/snapshot")).toBe(
+      true,
+    );
+    expect(importsFixture(f, "./row")).toBe(false);
   });
 });
 
@@ -248,10 +309,34 @@ describe("src/server gränser", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("SQL mot tenant-tabeller i scheduling/ och bookings/ innehåller business_id", () => {
+  it("SQL mot tenant-tabeller i all produktionskod (src/server, src/app/api) innehåller business_id", () => {
+    expect(productionSources.map(rel)).toContain("server/bookings/create.ts");
+    expect(productionSources.map(rel)).not.toContain("server/db/testing.ts");
     const offenders: string[] = [];
-    for (const f of engineSources) {
+    for (const f of productionSources) {
       for (const s of sqlOffenders(read(f))) offenders.push(`${rel(f)}: ${s}`);
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("bara testkod importerar @/server/db/testing", () => {
+    const offenders: string[] = [];
+    for (const f of collect(srcDir).filter((x) => x !== self)) {
+      if (isTest(f) || isTestSupport(f)) continue;
+      for (const spec of importSpecifiers(read(f))) {
+        if (importsDbTesting(f, spec)) offenders.push(`${rel(f)}: ${spec}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("__fixtures__-moduler importeras bara av tester eller andra fixturer", () => {
+    const offenders: string[] = [];
+    for (const f of collect(srcDir).filter((x) => x !== self)) {
+      if (isTest(f) || /(^|\/)__fixtures__\//.test(rel(f))) continue;
+      for (const spec of importSpecifiers(read(f))) {
+        if (importsFixture(f, spec)) offenders.push(`${rel(f)}: ${spec}`);
+      }
     }
     expect(offenders).toEqual([]);
   });

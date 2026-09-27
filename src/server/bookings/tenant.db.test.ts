@@ -15,10 +15,7 @@ import {
   insertTestBooking,
   type TestBusiness,
 } from "@/server/db/testing";
-
-import { cancelBooking } from "./cancel";
-import { createBooking } from "./create";
-import { moveBooking } from "./move";
+import { cancelBooking, createBooking, moveBooking } from "./__fixtures__/flat";
 
 /** INV-4 på servern, bokningsdelen (service role med explicit business_id, och RLS för ägare). */
 

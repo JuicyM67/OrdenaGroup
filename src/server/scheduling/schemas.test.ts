@@ -1,110 +1,127 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
+import type { z } from "zod";
 
 import {
-  availableDaysInputSchema,
-  availableSlotsInputSchema,
-  cancelBookingInputSchema,
-  createBookingInputSchema,
-  moveBookingInputSchema,
+  availableDaysRequestSchema,
+  availableSlotsRequestSchema,
+  createBookingRequestSchema,
+  createContextSchema,
+  customerCancelRequestSchema,
+  customerMoveRequestSchema,
+  engineContextSchema,
+  ownerCancelRequestSchema,
+  ownerMoveRequestSchema,
+  parseContext,
 } from "./schemas";
 
 const BIZ = "0b0c7d4e-8f3a-4c1d-9e2f-1a2b3c4d5e6f";
 const SVC = "1b0c7d4e-8f3a-4c1d-9e2f-1a2b3c4d5e6f";
 const STAFF = "2b0c7d4e-8f3a-4c1d-9e2f-1a2b3c4d5e6f";
 const USER = "3b0c7d4e-8f3a-4c1d-9e2f-1a2b3c4d5e6f";
+const TOKEN = "A".repeat(43);
 const now = new Date(1_790_000_000_000);
-const customer = { kind: "customer" as const };
-const owner = { kind: "owner" as const, userId: USER };
 
 const days = {
-  businessId: BIZ,
   serviceId: SVC,
   staffId: "any",
   from: "2026-10-01",
   to: "2026-10-31",
-  actor: customer,
-  now,
 };
 
 const create = {
-  businessId: BIZ,
   serviceId: SVC,
   staffId: STAFF,
   start: "2026-10-06T14:00:00.000Z",
   customer: { phone: "+56912345678", name: "Camila Rojas" },
-  source: "web",
-  actor: customer,
-  now,
 };
 
-describe("availableDaysInputSchema", () => {
-  it("godtar giltig indata och ger audience från aktören", () => {
-    const r = availableDaysInputSchema.safeParse(days);
-    expect(r.success).toBe(true);
-    if (r.success) expect(r.data.audience).toBe("customer");
-    const o = availableDaysInputSchema.safeParse({ ...days, actor: owner });
-    expect(o.success && o.data.audience).toBe("owner");
+describe("klientscheman har bara formulärdata (typtest)", () => {
+  it("create saknar actor, now, source, businessId, pris", () => {
+    type In = z.input<typeof createBookingRequestSchema>;
+    expectTypeOf<In>().not.toHaveProperty("actor");
+    expectTypeOf<In>().not.toHaveProperty("now");
+    expectTypeOf<In>().not.toHaveProperty("source");
+    expectTypeOf<In>().not.toHaveProperty("businessId");
+    expectTypeOf<In>().not.toHaveProperty("priceClp");
   });
 
-  it("ägaren kan be om kundvyn, kunden aldrig om ägarvyn", () => {
+  it("days/slots saknar actor, now, audience, limit, businessId", () => {
+    type D = z.input<typeof availableDaysRequestSchema>;
+    type S = z.input<typeof availableSlotsRequestSchema>;
+    expectTypeOf<D>().not.toHaveProperty("actor");
+    expectTypeOf<D>().not.toHaveProperty("now");
+    expectTypeOf<D>().not.toHaveProperty("audience");
+    expectTypeOf<D>().not.toHaveProperty("businessId");
+    expectTypeOf<S>().not.toHaveProperty("limit");
+    expectTypeOf<S>().not.toHaveProperty("audience");
+    expectTypeOf<S>().not.toHaveProperty("actor");
+  });
+
+  it("kundens flytt/avbokning har token men inget bookingId", () => {
+    type M = z.input<typeof customerMoveRequestSchema>;
+    type C = z.input<typeof customerCancelRequestSchema>;
+    expectTypeOf<M>().toHaveProperty("manageToken");
+    expectTypeOf<M>().not.toHaveProperty("bookingId");
+    expectTypeOf<C>().not.toHaveProperty("bookingId");
+    expectTypeOf<C>().not.toHaveProperty("by");
+  });
+
+  it.each([
+    ["actor", { actor: { kind: "owner", userId: USER } }],
+    ["now", { now }],
+    ["source", { source: "manual" }],
+    ["businessId", { businessId: BIZ }],
+    ["priceClp", { priceClp: 1 }],
+  ])("create avvisar %s vid körning", (_n, patch) => {
     expect(
-      availableDaysInputSchema.safeParse({
-        ...days,
-        actor: owner,
-        audience: "customer",
-      }).success,
-    ).toBe(true);
-    expect(
-      availableDaysInputSchema.safeParse({ ...days, audience: "owner" })
-        .success,
+      createBookingRequestSchema.safeParse({ ...create, ...patch }).success,
     ).toBe(false);
   });
 
   it.each([
-    ["ogiltig uuid", { businessId: "abc" }],
+    ["audience", { audience: "owner" }],
+    ["limit", { limit: 500 }],
+    ["actor", { actor: { kind: "customer" } }],
+  ])("days/slots avvisar %s vid körning", (_n, patch) => {
+    expect(
+      availableDaysRequestSchema.safeParse({ ...days, ...patch }).success,
+    ).toBe(false);
+    expect(
+      availableSlotsRequestSchema.safeParse({
+        serviceId: SVC,
+        staffId: "any",
+        date: "2026-10-06",
+        ...patch,
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe("availableDaysRequestSchema", () => {
+  it("godtar giltig indata; 62 dagar godtas", () => {
+    expect(availableDaysRequestSchema.safeParse(days).success).toBe(true);
+    expect(
+      availableDaysRequestSchema.safeParse({ ...days, to: "2026-12-01" })
+        .success,
+    ).toBe(true);
+  });
+
+  it.each([
+    ["ogiltig uuid", { serviceId: "abc" }],
     ["staffId varken uuid eller any", { staffId: "cualquiera" }],
     ["from > to", { from: "2026-10-31", to: "2026-10-01" }],
     ["mer än 62 dagar", { from: "2026-10-01", to: "2026-12-02" }],
     ["ogiltigt datum", { from: "2026-02-30" }],
-    ["now är ingen Date", { now: "2026-10-01T00:00:00Z" }],
-    ["ogiltig Date", { now: new Date(Number.NaN) }],
-    ["extra fält", { price: 1 }],
-    ["owner utan userId", { actor: { kind: "owner" } }],
   ])("%s → fel", (_n, patch) => {
     expect(
-      availableDaysInputSchema.safeParse({ ...days, ...patch }).success,
-    ).toBe(false);
-  });
-
-  it("62 dagar godtas", () => {
-    expect(
-      availableDaysInputSchema.safeParse({
-        ...days,
-        from: "2026-10-01",
-        to: "2026-12-01",
-      }).success,
-    ).toBe(true);
-  });
-});
-
-describe("availableSlotsInputSchema", () => {
-  it("limit är ett positivt heltal", () => {
-    const base = { ...days, date: "2026-10-06" } as Record<string, unknown>;
-    delete base.from;
-    delete base.to;
-    expect(availableSlotsInputSchema.safeParse(base).success).toBe(true);
-    expect(
-      availableSlotsInputSchema.safeParse({ ...base, limit: 0 }).success,
-    ).toBe(false);
-    expect(
-      availableSlotsInputSchema.safeParse({ ...base, limit: 1.5 }).success,
+      availableDaysRequestSchema.safeParse({ ...days, ...patch }).success,
     ).toBe(false);
   });
 });
 
-describe("createBookingInputSchema", () => {
+describe("createBookingRequestSchema", () => {
   it("godtar giltig indata och ger start som Date", () => {
-    const r = createBookingInputSchema.safeParse(create);
+    const r = createBookingRequestSchema.safeParse(create);
     expect(r.success).toBe(true);
     if (r.success) {
       expect(r.data.start.toISOString()).toBe("2026-10-06T14:00:00.000Z");
@@ -122,8 +139,6 @@ describe("createBookingInputSchema", () => {
       "ogiltig e-post",
       { customer: { phone: "+56912345678", name: "A", email: "x" } },
     ],
-    ["eget pris (extra fält avvisas)", { priceClp: 1 }],
-    ["källa flash (WP-30)", { source: "flash" }],
     ["staffId varken uuid eller any", { staffId: "Diego" }],
     [
       "extra fält i kunden",
@@ -131,50 +146,85 @@ describe("createBookingInputSchema", () => {
     ],
   ])("%s → fel", (_n, patch) => {
     expect(
-      createBookingInputSchema.safeParse({ ...create, ...patch }).success,
+      createBookingRequestSchema.safeParse({ ...create, ...patch }).success,
     ).toBe(false);
   });
 
   it("any godtas som staffId", () => {
     expect(
-      createBookingInputSchema.safeParse({ ...create, staffId: "any" }).success,
+      createBookingRequestSchema.safeParse({ ...create, staffId: "any" })
+        .success,
     ).toBe(true);
   });
 });
 
-describe("moveBookingInputSchema / cancelBookingInputSchema", () => {
-  it("flytt", () => {
-    const m = {
-      businessId: BIZ,
-      bookingId: STAFF,
-      newStart: "2026-10-06T15:00:00Z",
-      actor: owner,
-      now,
-    };
-    expect(moveBookingInputSchema.safeParse(m).success).toBe(true);
+describe("flytt och avbokning", () => {
+  it("kund: token krävs, bookingId avvisas", () => {
+    const m = { manageToken: TOKEN, newStart: "2026-10-06T15:00:00Z" };
+    expect(customerMoveRequestSchema.safeParse(m).success).toBe(true);
     expect(
-      moveBookingInputSchema.safeParse({ ...m, newStaffId: "any" }).success,
-    ).toBe(true);
+      customerMoveRequestSchema.safeParse({ ...m, bookingId: STAFF }).success,
+    ).toBe(false);
     expect(
-      moveBookingInputSchema.safeParse({ ...m, newStart: "mañana" }).success,
+      customerMoveRequestSchema.safeParse({ ...m, manageToken: "kort" })
+        .success,
+    ).toBe(false);
+    expect(
+      customerCancelRequestSchema.safeParse({ bookingId: STAFF }).success,
     ).toBe(false);
   });
 
-  it("avbokning: by måste stämma med aktören", () => {
-    const c = {
-      businessId: BIZ,
-      bookingId: STAFF,
-      by: "owner",
-      actor: owner,
-      now,
-    };
-    expect(cancelBookingInputSchema.safeParse(c).success).toBe(true);
+  it("ägare: bookingId krävs", () => {
+    const m = { bookingId: STAFF, newStart: "2026-10-06T15:00:00Z" };
+    expect(ownerMoveRequestSchema.safeParse(m).success).toBe(true);
     expect(
-      cancelBookingInputSchema.safeParse({ ...c, actor: customer }).success,
+      ownerMoveRequestSchema.safeParse({ ...m, newStaffId: "any" }).success,
+    ).toBe(true);
+    expect(
+      ownerMoveRequestSchema.safeParse({ ...m, newStart: "mañana" }).success,
     ).toBe(false);
     expect(
-      cancelBookingInputSchema.safeParse({ ...c, reason: "x".repeat(501) })
-        .success,
+      ownerCancelRequestSchema.safeParse({
+        bookingId: STAFF,
+        reason: "x".repeat(501),
+      }).success,
     ).toBe(false);
+  });
+});
+
+describe("betrodd kontext", () => {
+  it("giltig kontext godtas", () => {
+    const ctx = { businessId: BIZ, actor: { kind: "customer" }, now };
+    expect(parseContext(engineContextSchema, ctx)).toEqual(ctx);
+    expect(
+      parseContext(createContextSchema, { ...ctx, source: "waitlist" }).source,
+    ).toBe("waitlist");
+  });
+
+  it.each([
+    ["now som sträng", { now: "2026-10-01T00:00:00Z" }],
+    ["ogiltig Date", { now: new Date(Number.NaN) }],
+    ["owner utan userId", { actor: { kind: "owner" } }],
+    ["businessId saknas", { businessId: undefined }],
+  ])("%s → TypeError (programmeringsfel)", (_n, patch) => {
+    expect(() =>
+      parseContext(engineContextSchema, {
+        businessId: BIZ,
+        actor: { kind: "customer" },
+        now,
+        ...patch,
+      }),
+    ).toThrow(TypeError);
+  });
+
+  it("källan manual/web kan inte sättas via kontexten", () => {
+    expect(() =>
+      parseContext(createContextSchema, {
+        businessId: BIZ,
+        actor: { kind: "customer" },
+        now,
+        source: "manual",
+      }),
+    ).toThrow(TypeError);
   });
 });

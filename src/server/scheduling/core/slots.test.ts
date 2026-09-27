@@ -70,6 +70,31 @@ describe("candidateStarts", () => {
     ]);
   });
 
+  it("fönster som börjar mitt i en minut avrundas uppåt till hel minut", () => {
+    const origin = at(TUE, "10:00");
+    const win = { start: at(TUE, "14:30") + 30_000, end: at(TUE, "15:30") };
+    expect(candidateStarts(win, origin, 15, 20 * 60_000)).toEqual([
+      at(TUE, "14:31"),
+      at(TUE, "14:45"),
+      at(TUE, "15:00"),
+    ]);
+  });
+
+  it("frånvaro som slutar 14:30:30 ger första tiden 14:31, aldrig sekunder", () => {
+    const s = norte({
+      timeOff: [
+        {
+          staffId: null,
+          start: at(TUE, "13:30"),
+          end: at(TUE, "14:30") + 30_000,
+        },
+      ],
+    });
+    const slots = slotsForDay(input(s, { audience: "owner" }));
+    expect(slots.map((x) => x.time)).toContain("14:31");
+    for (const x of slots) expect(Date.parse(x.start) % 60_000).toBe(0);
+  });
+
   it("tomt när behovet inte ryms", () => {
     const win = { start: at(TUE, "10:00"), end: at(TUE, "10:30") };
     expect(candidateStarts(win, win.start, 15, 35 * 60_000)).toEqual([]);

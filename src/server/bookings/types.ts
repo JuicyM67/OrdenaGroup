@@ -10,11 +10,12 @@ import type { Interval } from "@/server/scheduling/core/intervals";
 export type BookingError =
   | "invalid_input" // Zod-fel i indata (ska inte hända från vårt UI)
   | "service_not_offered" // tjänst/profesional finns inte i företaget, inaktiv eller utför inte tjänsten
+  | "business_unavailable" // kund: företaget är inte aktivt (businesses.status <> 'active')
   | "outside_hours" // inte i ett ledigt arbetsfönster (eller inte på rutnätet för kund)
   | "too_soon" // start < now + min_notice_minutes (bara kund)
   | "too_far" // lokalt datum > idag + max_days_ahead (bara kund)
   | "slot_taken" // 23P01 från no_overlap, eller alla "any"-kandidater tagna
-  | "not_found" // bokningen finns inte i företaget (move/cancel)
+  | "not_found" // bokningen finns inte i företaget, eller fel token (move/cancel)
   | "invalid_status" // move/cancel på annat än confirmed/pending_payment
   | "outside_cancel_window"; // kund senare än cancel_window_hours före start
 

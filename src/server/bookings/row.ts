@@ -1,8 +1,9 @@
 import "server-only";
 
 import type { Queryable } from "@/server/db/pool";
-
 import type { BookingStatus } from "@/server/scheduling/types";
+
+import { hashManageToken } from "./token";
 
 export type LockedBooking = {
   id: string;
@@ -14,39 +15,53 @@ export type LockedBooking = {
   blockedEnd: number;
   priceClp: number;
   cancelWindowHours: number;
+  businessActive: boolean;
 };
 
 /**
- * Låser bokningsraden (`for update`) i företaget. Med service role filtrerar
- * `business_id = $1` bort andra företag; med ägarens roll gör RLS det också.
+ * Vilken bokning: ägaren anger id (RLS gäller), kunden bara länkens token.
+ * Kunden kan alltså aldrig nå en bokning genom att gissa ett id.
+ */
+export type BookingRef = { bookingId: string } | { manageToken: string };
+
+type Row = {
+  id: string;
+  staff_id: string;
+  service_id: string;
+  status: BookingStatus;
+  s: number;
+  pe: number;
+  be: number;
+  price_clp: number;
+  cancel_window_hours: number;
+  business_status: string;
+};
+
+/**
+ * Låser bokningsraden (`for update`) i företaget. `business_id = $1` filtrerar
+ * bort andra företag även med service role; med ägarens roll gör RLS det också.
  */
 export async function lockBooking(
   q: Queryable,
   businessId: string,
-  bookingId: string,
+  ref: BookingRef,
 ): Promise<LockedBooking | undefined> {
-  const r = await q.query<{
-    id: string;
-    staff_id: string;
-    service_id: string;
-    status: BookingStatus;
-    s: number;
-    pe: number;
-    be: number;
-    price_clp: number;
-    cancel_window_hours: number;
-  }>(
+  const [column, value] =
+    "manageToken" in ref
+      ? (["manage_token_hash", hashManageToken(ref.manageToken)] as const)
+      : (["id", ref.bookingId] as const);
+  const r = await q.query<Row>(
     `select bk.id, bk.staff_id, bk.service_id, bk.status::text as status,
             bk.price_clp,
             extract(epoch from lower(bk.period))::float8 * 1000 as s,
             extract(epoch from upper(bk.period))::float8 * 1000 as pe,
             extract(epoch from upper(bk.blocked))::float8 * 1000 as be,
-            (select b.cancel_window_hours from public.businesses b
-              where b.id = $1) as cancel_window_hours
+            b.cancel_window_hours, b.status::text as business_status
        from public.bookings bk
-      where bk.business_id = $1 and bk.id = $2
+       join public.businesses b on b.id = bk.business_id
+      where bk.business_id = $1 and b.id = $1 and bk.${column} = $2
       for update of bk`,
-    [businessId, bookingId],
+    [businessId, value],
   );
   const x = r.rows[0];
   if (!x) return undefined;
@@ -60,6 +75,7 @@ export async function lockBooking(
     blockedEnd: Math.round(x.be),
     priceClp: x.price_clp,
     cancelWindowHours: x.cancel_window_hours,
+    businessActive: x.business_status === "active",
   };
 }
 

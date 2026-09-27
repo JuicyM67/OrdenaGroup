@@ -4,36 +4,75 @@ import type { Queryable } from "@/server/db/pool";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { runAs } from "@/server/scheduling/run";
 import {
-  cancelBookingInputSchema,
-  type CancelBookingInput,
+  customerCancelRequestSchema,
+  engineContextSchema,
+  ownerCancelRequestSchema,
+  parseContext,
+  type CancelBookingRequest,
+  type EngineContext,
 } from "@/server/scheduling/schemas";
+import type { Actor } from "@/server/scheduling/types";
 
-import { CHANGEABLE, insideCancelWindow, lockBooking } from "./row";
+import {
+  CHANGEABLE,
+  insideCancelWindow,
+  lockBooking,
+  type BookingRef,
+} from "./row";
 import type { BookingError, Freed } from "./types";
 
+type CancelResult = Result<
+  { bookingId: string; freed: Freed | null },
+  BookingError
+>;
+
 /**
- * Avbokar. Idempotent: redan avbokad → ok med `freed = null`. Kunden bara
- * fram till start − cancel_window_hours; ägaren alltid. `cancelled_at` är den
- * injicerade klockan. Väntelistan (WP-23) anropas inte här.
+ * Avbokar. Kunden identifierar bokningen med länkens token, ägaren med id
+ * (`by` följer aktören). Idempotent: redan avbokad → ok med `freed = null`.
+ * Kunden bara fram till start − cancel_window_hours (även om företaget är
+ * fryst); ägaren alltid. `cancelled_at` är den injicerade klockan.
+ * Väntelistan (WP-23) anropas inte här.
  */
 export async function cancelBooking(
-  raw: CancelBookingInput,
-): Promise<Result<{ bookingId: string; freed: Freed | null }, BookingError>> {
-  const p = cancelBookingInputSchema.safeParse(raw);
-  if (!p.success) return err("invalid_input");
-  const input = p.data;
-  return runAs(input.actor, (q) => cancelIn(q, input));
+  request: CancelBookingRequest,
+  ctx: EngineContext,
+): Promise<CancelResult> {
+  const c = parseContext(engineContextSchema, ctx);
+  let ref: BookingRef;
+  let reason: string | undefined;
+  if (c.actor.kind === "customer") {
+    const p = customerCancelRequestSchema.safeParse(request);
+    if (!p.success) return err("invalid_input");
+    ref = { manageToken: p.data.manageToken };
+    reason = p.data.reason;
+  } else {
+    const p = ownerCancelRequestSchema.safeParse(request);
+    if (!p.success) return err("invalid_input");
+    ref = { bookingId: p.data.bookingId };
+    reason = p.data.reason;
+  }
+  const input = { ...c, ref, reason };
+  return runAs(c.actor, (q) => cancelIn(q, input));
 }
 
-async function cancelIn(
+export type CancelInput = {
+  businessId: string;
+  ref: BookingRef;
+  reason?: string | undefined;
+  actor: Actor;
+  now: Date;
+};
+
+/** Inre steg (för tester): kör i anroparens transaktion. */
+export async function cancelIn(
   q: Queryable,
-  input: ReturnType<typeof cancelBookingInputSchema.parse>,
-): Promise<Result<{ bookingId: string; freed: Freed | null }, BookingError>> {
-  const b = await lockBooking(q, input.businessId, input.bookingId);
+  input: CancelInput,
+): Promise<CancelResult> {
+  const b = await lockBooking(q, input.businessId, input.ref);
   if (!b) return err("not_found");
   if (b.status === "cancelled") return ok({ bookingId: b.id, freed: null });
   if (!CHANGEABLE.includes(b.status)) return err("invalid_status");
-  if (input.by === "customer" && !insideCancelWindow(b, input.now)) {
+  if (input.actor.kind === "customer" && !insideCancelWindow(b, input.now)) {
     return err("outside_cancel_window");
   }
   await q.query(

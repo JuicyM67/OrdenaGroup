@@ -29,12 +29,15 @@ import {
 
 export type LoadedSnapshot = {
   snapshot: ScheduleSnapshot;
+  /** businesses.status = 'active'. Kundvägen nekas annars (business_unavailable). */
+  businessActive: boolean;
   priceClp: number;
   cancelWindowHours: number;
 };
 
 type BusinessServiceRow = {
   timezone: string;
+  status: string;
   min_notice_minutes: number;
   max_days_ahead: number;
   cancel_window_hours: number;
@@ -80,7 +83,7 @@ export async function loadSnapshot(
 
   // 1. Företagets inställningar + tjänsten (aktiv) + kortaste aktiva tjänst.
   const head = await q.query<BusinessServiceRow>(
-    `select b.timezone, b.min_notice_minutes, b.max_days_ahead,
+    `select b.timezone, b.status::text as status, b.min_notice_minutes, b.max_days_ahead,
             b.cancel_window_hours, b.slot_interval_minutes,
             s.duration_min, s.buffer_after_min, s.price_clp,
             (select min(x.duration_min) from public.services x
@@ -181,6 +184,7 @@ export async function loadSnapshot(
   }));
 
   return ok({
+    businessActive: h.status === "active",
     priceClp: h.price_clp,
     cancelWindowHours: h.cancel_window_hours,
     snapshot: {

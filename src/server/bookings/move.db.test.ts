@@ -17,9 +17,7 @@ import {
   insertTestBooking,
   type TestBusiness,
 } from "@/server/db/testing";
-
-import { createBooking } from "./create";
-import { moveBooking } from "./move";
+import { createBooking, moveBooking } from "./__fixtures__/flat";
 
 const at = (date: string, time: string) =>
   fromLocal(date as LocalDate, time as LocalTime, SANTIAGO).getTime();

@@ -18,8 +18,7 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 import { toTstzrange } from "@/server/db/tstzrange";
-
-import { createBooking } from "./create";
+import { createBooking } from "./__fixtures__/flat";
 
 /**
  * F4 "klart när": två samtidiga bokningar av samma tid ger en lyckad och en
@@ -221,9 +220,20 @@ describe("via motorn", () => {
     expect(errors).toEqual(["slot_taken"]);
   });
 
-  it("buffert samtidigt: A (35 + 10) 10:00 och B 10:40 → exakt en lyckas", async () => {
+  it("buffert samtidigt: A (35 + 10) 10:00 och B 10:40 → exakt en lyckas, 10 av 10 varv", async () => {
     const owner = { kind: "owner" as const, userId: biz.ownerUserId };
-    for (const date of ["2026-10-14", "2026-10-15", "2026-10-16"]) {
+    for (const date of [
+      "2026-10-14",
+      "2026-10-15",
+      "2026-10-16",
+      "2026-10-17",
+      "2026-10-19",
+      "2026-10-20",
+      "2026-10-21",
+      "2026-10-22",
+      "2026-10-23",
+      "2026-10-24",
+    ]) {
       const [a, b] = await Promise.all([
         book(biz, {
           start: iso(at(date, "10:00")),

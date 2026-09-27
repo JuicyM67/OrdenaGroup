@@ -19,11 +19,15 @@ import {
 } from "@/server/db/testing";
 import { withServiceTx } from "@/server/db/tx";
 
+import { split } from "./__fixtures__/contract";
 import {
   availableDaysIn,
-  getAvailableDays,
-  getAvailableSlots,
+  getAvailableDays as realDays,
+  getAvailableSlots as realSlots,
 } from "./availability";
+type Flat = Parameters<typeof split>[0];
+const getAvailableDays = (x: Flat) => realDays(...split(x));
+const getAvailableSlots = (x: Flat) => realSlots(...split(x));
 
 const at = (date: string, time: string) =>
   fromLocal(date as LocalDate, time as LocalTime, SANTIAGO).getTime();

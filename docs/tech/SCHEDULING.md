@@ -36,33 +36,55 @@ Exakt algoritm och policy: se "Algoritm och policy (WP-10)" nedan.
 
 Rena funktioner i `src/server/scheduling/core/*` tar en ögonblicksbild (öppettider, personal, frånvaro, upptagna intervall, inställningar och `now`) och ger slots eller dagstatus. DB-lagret (`load.ts`, `src/server/bookings/*`) hämtar ögonblicksbilden och skriver. Servermoduler börjar med `import "server-only"`, och det finns inget barrel-index (import per modul).
 
-- **Klockan injiceras:** `now: Date` skickas alltid in. Enda stället som läser systemklockan är `src/server/scheduling/clock.ts` (`systemClock()`), som WP-20/21 anropar.
-- **Förväntade fel returneras** som `Result<T, E>` (`{ ok: true; value } | { ok: false; error }`, samma form som `ParseResult` i `@/lib/format/result`). Ett förväntat fel rullar tillbaka hela transaktionen. Infrastrukturfel kastas som `SchedulingInfraError` med bara SQLSTATE (inga persondata, ingen token, ingen SQL). UI mappar det till `errores.reserva.network`.
-- **Instanter** är ISO-strängar i UTC (`2026-10-02T14:30:00.000Z`). Lokala datum är `LocalDate` och lokala tider `LocalTime`.
-- **Aktör:** `{ kind: "customer" }` körs i `withServiceTx` (service role, `business_id = $1` i varje fråga, gränstest). `{ kind: "owner", userId }` körs i `withOwnerTx` (authenticated + JWT-claims, RLS gäller). `audience` härleds från aktören. Ägaren kan be om kundvyn, men en kund kan aldrig få ägarvyn.
-- **Indata** valideras med de strikta Zod-schemana i `src/server/scheduling/schemas.ts`. Okända fält (t.ex. ett pris från klienten) ger `invalid_input`.
+**Regel för indata: request från klienten, kontext från servern.**
+Varje funktion tar två argument, `(request, ctx)`:
+- `request` innehåller bara det som valts i ett formulär: tjänst, profesional, tid, kunduppgifter och länkens token. Schemana i `src/server/scheduling/schemas.ts` är strikta. Okända fält ger `invalid_input`, till exempel `actor`, `now`, `source`, `audience`, `limit`, `businessId` eller ett pris.
+- `ctx: { businessId, actor, now }` sätts bara av servern och byggs aldrig av formulärdata:
+  - `businessId` kommer från sluggen i den publika vägen, eller från ägarens verifierade medlemskap.
+  - `actor` kommer från den verifierade sessionen (WP-15) och är annars `{ kind: "customer" }`.
+  - `now` är `systemClock()`.
+
+  En ogiltig kontext är ett programmeringsfel och kastar `TypeError`.
+- Allt annat härleds på servern:
+  - `audience` följer aktören: kund ger kundvy, ägare ger ägarvy.
+  - Kunden får alltid högst 12 tider, och ägaren alla.
+  - `source` är `web` för kund och `manual` för ägare. Servern kan sätta `ctx.source = "waitlist"` (WP-23).
+  - `cancelBooking` har inget `by`; det följer aktören.
+
+**Övriga regler:**
+- **Klockan injiceras.** Enda stället som läser systemklockan är `src/server/scheduling/clock.ts` (`systemClock()`).
+- **Förväntade fel returneras** som `Result<T, E>` (samma form som `ParseResult` i `@/lib/format/result`), och ett förväntat fel rullar tillbaka hela transaktionen. Infrastrukturfel kastas som `SchedulingInfraError` med bara SQLSTATE (inga persondata, ingen token, ingen SQL). UI mappar det till `errores.reserva.network`.
+- **Instanter** är ISO-strängar i UTC. Lokala datum är `LocalDate` och lokala tider `LocalTime`.
+- **Transaktion per aktör:**
+  - Kund: `withServiceTx`, alltså service role med `business_id = $1` i varje fråga. Det kontrolleras statiskt och dynamiskt i `src/server/tenant-queries.db.test.ts`.
+  - Ägare: `withOwnerTx`, alltså authenticated och RLS. Rollen och `request.jwt.claims`/`request.jwt.claim.sub`/`request.jwt.claim.role` sätts lokalt, så en förorenad session vinner aldrig.
+  - Varje transaktion har `statement_timeout` 10 s, `lock_timeout` 3 s (överskridet lås ger infrastrukturfel 55P03) och `idle_in_transaction_session_timeout` 15 s.
+- **Kundens flytt och avbokning** identifierar bokningen bara med länkens token (`manageToken`). Bokningen slås upp på `business_id = $1 and manage_token_hash = sha256(token)`. Fel token ger `not_found`. Bara ägaren använder `bookingId`.
+- **Företagets status:** när `businesses.status <> 'active'` får kundens tillgänglighet, `createBooking` och flytt `business_unavailable`. Kunden kan fortfarande avboka, och ägaren påverkas inte.
 
 ```ts
+type EngineContext = { businessId: string; actor: { kind: "customer" } | { kind: "owner"; userId: string }; now: Date };
+
 // src/server/scheduling/availability.ts
-getAvailableDays({ businessId, serviceId, staffId /* uuid | "any" */, from, to /* ≤ 62 dagar */, actor, audience?, now })
-  : Promise<Result<{ date: LocalDate; status: "available" | "full" | "closed"; hasFlash: false }[], "invalid_input" | "service_not_offered">>
-getAvailableSlots({ businessId, serviceId, staffId, date, actor, audience?, now, limit? /* kund 12, ägare alla */ })
-  : Promise<Result<{ start: string; time: LocalTime; end: string; staffIds: string[] }[], "invalid_input" | "service_not_offered">>
+getAvailableDays({ serviceId, staffId /* uuid | "any" */, from, to /* ≤ 62 dagar */ }, ctx)
+  : Promise<Result<{ date: LocalDate; status: "available" | "full" | "closed"; hasFlash: false }[], "invalid_input" | "service_not_offered" | "business_unavailable">>
+getAvailableSlots({ serviceId, staffId, date }, ctx)       // kund högst 12, ägare alla
+  : Promise<Result<{ start: string; time: LocalTime; end: string; staffIds: string[] }[], "invalid_input" | "service_not_offered" | "business_unavailable">>
 
 // src/server/bookings/create.ts, move.ts, cancel.ts
-createBooking({ businessId, serviceId, staffId, start, customer: { phone, name, email? }, source: "web" | "manual" | "waitlist", notes?, actor, now })
+createBooking({ serviceId, staffId, start, customer: { phone, name, email? }, notes? }, ctx & { source?: "waitlist" })
   : Promise<Result<CreatedBooking /* inkl. manageToken en gång */, BookingError>>
-moveBooking({ businessId, bookingId, newStart, newStaffId?, actor, now })
+moveBooking({ manageToken, newStart, newStaffId? } /* kund */ | { bookingId, newStart, newStaffId? } /* ägare */, ctx)
   : Promise<Result<{ booking: MovedBooking; freed: { staffId; blocked: Interval } }, BookingError>>
-cancelBooking({ businessId, bookingId, by: "owner" | "customer", reason?, actor, now })
+cancelBooking({ manageToken, reason? } /* kund */ | { bookingId, reason? } /* ägare */, ctx)
   : Promise<Result<{ bookingId; freed: { staffId; blocked: Interval } | null }, BookingError>>
 ```
 
 - `closed` betyder ingen arbetstid alls den dagen (stängt, eller all personal ledig), eller för kund ett datum före idag eller efter `idag + max_days_ahead`. `full` betyder att arbetstid finns men inga lediga tider (F8: väntelistan erbjuds bara här). `available` betyder minst en tid.
 - `AvailableSlot.start` är det enda som skickas tillbaka till `createBooking`. `time` är den färdiga etiketten i företagets tidszon. `end` är `start + duration_min`, alltså utan buffert (inv. 4). `staffIds` är lediga profesionales i tilldelningsordning.
-- `hasFlash` är alltid `false` och `flash` saknas tills WP-30. Källan `flash` avvisas.
+- `hasFlash` är alltid `false` och `flash` saknas tills WP-30.
 - **Handpenning (R9):** alla bokningar skapas som `confirmed` med `deposit_clp = 0` och `discount_clp = 0` tills WP-25/WP-30, även för tjänster med `deposit_kind <> 'none'`.
-- Kunden hittas eller skapas på `(business_id, phone_e164)` i bokningens transaktion. En befintlig kunds namn och e-post skrivs aldrig över, och inga `consent_*` skrivs (WP-20/WP-26). En ny kundrad finns bara kvar om bokningen lyckas.
+- Kunden hittas eller skapas på `(business_id, phone_e164)` i bokningens transaktion. En befintlig kunds namn och e-post skrivs aldrig över, anonymiserade kunder (`anonymized_at` satt) återanvänds aldrig, och inga `consent_*` skrivs (WP-20/WP-26). En ny kundrad finns bara kvar om bokningen lyckas. WP-26 ska nolla `phone_e164` vid anonymisering. Annars blockerar den gamla raden numret, och bokningen ger ett infrastrukturfel.
 - Länk-token: 32 slumpbyte som base64url returneras en gång i `CreatedBooking.manageToken`. Bara SHA-256 sparas (`manage_token_hash`). Token loggas aldrig.
 - Kunden får flytta och avboka fram till `start − cancel_window_hours`, ägaren alltid. `cancelBooking` är idempotent. `moveBooking` behåller längd, buffert och pris. Väntelistan (WP-23) anropas inte av motorn. Anroparen får det frigjorda intervallet (`freed`).
 
@@ -70,13 +92,14 @@ cancelBooking({ businessId, bookingId, by: "owner" | "customer", reason?, actor,
 
 | Kod | När |
 |---|---|
-| `invalid_input` | Zod-fel i indata (ska inte hända från vårt UI), eller kund med `source: "manual"` |
+| `invalid_input` | Zod-fel i request, till exempel ett okänt fält, eller `bookingId` från kund eller token från ägare |
 | `service_not_offered` | Tjänsten eller profesionalen finns inte i företaget, är inaktiv eller utför inte tjänsten (även ägare mot ett annat företag, via RLS) |
+| `business_unavailable` | Kund: företaget är inte aktivt (`businesses.status <> 'active'`), vid tillgänglighet, bokning och flytt |
 | `outside_hours` | Tiden ligger inte i ett arbetsfönster (öppettider ∩ personal − frånvaro), är inte en hel minut, eller ligger (för kund) inte på rutnätet |
 | `too_soon` | Kund: `start < now + min_notice_minutes` |
 | `too_far` | Kund: lokalt datum efter `idag + max_days_ahead` |
 | `slot_taken` | Tiden ryms i arbetstiden men krockar med en bokning eller buffert, `23P01` från `no_overlap`, eller alla "any"-kandidater tagna |
-| `not_found` | Bokningen finns inte i företaget (move/cancel, även via RLS) |
+| `not_found` | Bokningen finns inte i företaget, eller kundens token matchar ingen bokning där (move/cancel, även via RLS) |
 | `invalid_status` | Move/cancel på något annat än `confirmed`/`pending_payment` (redan avbokad ger ok vid cancel) |
 | `outside_cancel_window` | Kund senare än `cancel_window_hours` före start |
 
@@ -84,7 +107,7 @@ cancelBooking({ businessId, bookingId, by: "owner" | "customer", reason?, actor,
 
 1. **Arbetsfönster per profesional och lokal dag.** Öppettiderna är väggtid. Varje intervall `[start_time, end_time)` konverteras med `fromLocal(date, t, tz)` ("compatible") i båda ändar, och `24:00:00` blir nästa dags 00:00. Intervallet får alltså den verkliga längd som konverteringen ger. En starttid som inte finns (sön 6 sep 2026 00:30) flyttas fram (01:30). En tvetydig tid (lör 4 apr 2026 23:30) blir första förekomsten (−03). Därefter snitt med `staff_hours`: en profesional utan rader följer företaget, och en med rader arbetar bara inom snittet (en veckodag utan rad = ledig). Sedan dras `time_off` (företag + profesional) och `blocked` för bokningar med status `pending_payment`/`confirmed`/`completed` bort. Fönster slås aldrig ihop över midnatt.
 2. **Behov** = `duration_min + buffer_after_min` i verkliga minuter. En tid är giltig om `[start, start + behov)` ryms i ett fritt fönster.
-3. **Rutnät.** Kandidaterna är `arbetsfönstrets start + k · slot_interval_minutes` (verklig tid), plus starten på varje fritt fönster som börjar mitt i arbetsfönstret (direkt efter en bokning, frånvaro eller buffert). Det senare ger "tight packing" utan luckor. Exempel: 10:00–19:00, intervall 15 och 35 min ger 10:00 … 18:15 (34 tider).
+3. **Rutnät.** Kandidaterna är `arbetsfönstrets start + k · slot_interval_minutes` (verklig tid), plus starten på varje fritt fönster som börjar mitt i arbetsfönstret (direkt efter en bokning, frånvaro eller buffert). Fönstrets start ger "tight packing" utan luckor och avrundas uppåt till hel minut, så en frånvaro som slutar 14:30:30 ger 14:31. Exempel: 10:00–19:00, intervall 15 och 35 min ger 10:00 … 18:15 (34 tider).
 4. **Kund.** `start ≥ now + min_notice_minutes`, och det lokala datumet ligger i `[idag, idag + max_days_ahead]` räknat i kalenderdagar. Finns fler än `limit` (12) tider väljs de deterministiskt:
    - Först "bra" tider, alltså tider som varken före eller efter sig lämnar en lucka i det fria fönstret som är större än 0 men kortare än företagets kortaste aktiva tjänst. De väljs jämnt fördelade i tid, med närmaste kandidat till `limit` jämnt utspridda mål mellan första och sista bra tid.
    - Räcker de bra inte, fylls det på med den övriga tid som ligger längst från de redan valda.
@@ -92,6 +115,10 @@ cancelBooking({ businessId, bookingId, by: "owner" | "customer", reason?, actor,
    `createBooking` godtar alla kandidater (före gallringen), så en tid som visats avvisas aldrig som `outside_hours`.
 5. **Ägare.** Ingen `min_notice`, ingen horisont och ingen gallring (inv. 5). Tider tidigare samma dag och bakåt i tiden går att boka. Öppettider, frånvaro och överlapp gäller (`outside_hours`/`slot_taken`). Starten måste vara en hel minut men behöver inte ligga på rutnätet. Att "forzar" utanför öppettiderna finns i IDEAS.
 6. **"Cualquiera".** Unionen över aktiva profesionales med `staff_services` för tjänsten, grupperad per instant. Ordningen är minst antal aktiva bokningar samma lokala dag, sedan `sort`, sedan `id`. Vid bokning provas kandidaterna i den ordningen, en i taget i en savepoint. `23P01` betyder nästa kandidat, och när alla är slut blir svaret `slot_taken`.
+   **Serialisering:**
+   - Före insert eller update låses kandidaternas profesionales med `pg_advisory_xact_lock` (`src/server/db/locks.ts`). Låset gäller på transaktionsnivå, så det fungerar i Supavisor transaction mode. Låsen tas en i taget i sorterad ordning.
+   - Två krockande skrivningar ger då 23P01 och inte deadlock. Utan låset kan exclusion constraint ge 40P01, eftersom båda transaktionerna väntar på den andras ännu inte committade indexpost.
+   - Blir det ändå 40P01 eller 40001 körs hela transaktionen om en gång, och därefter blir svaret `slot_taken`.
 7. **Pris.** `price_clp = services.price_clp` läses i samma transaktion som insert. Klientens pris finns inte i indata.
 8. **Dubbel timme i april.** Tider i den upprepade timmen (23:00–23:59 första lördagen i april) visas för båda förekomsterna. De har olika `start` men samma etikett `time`. Det rör bara företag med öppet efter 23:00 den dagen.
 

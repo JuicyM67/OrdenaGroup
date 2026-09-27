@@ -15,7 +15,14 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 
-import { getAvailableDays, getAvailableSlots } from "./availability";
+import { split } from "./__fixtures__/contract";
+import {
+  getAvailableDays as realDays,
+  getAvailableSlots as realSlots,
+} from "./availability";
+type Flat = Parameters<typeof split>[0];
+const getAvailableDays = (x: Flat) => realDays(...split(x));
+const getAvailableSlots = (x: Flat) => realSlots(...split(x));
 
 /** INV-4 på servern, tillgänglighetsdelen (bokningsdelen: src/server/bookings/tenant.db.test.ts). */
 

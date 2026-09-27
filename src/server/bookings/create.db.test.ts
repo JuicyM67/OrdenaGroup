@@ -18,8 +18,8 @@ import {
   insertTestBooking,
   type TestBusiness,
 } from "@/server/db/testing";
-
-import { createBooking } from "./create";
+import { createBooking } from "./__fixtures__/flat";
+import { createBooking as realCreate } from "./create";
 
 const at = (date: string, time: string) =>
   fromLocal(date as LocalDate, time as LocalTime, SANTIAGO).getTime();
@@ -169,11 +169,40 @@ describe("createBooking lyckas", () => {
     expect(await counts(biz)).toEqual(before);
   });
 
-  it("kund kan inte skicka source manual", async () => {
-    expect(await createBooking(base(biz, { source: "manual" }))).toEqual({
-      ok: false,
-      error: "invalid_input",
+  it("source, actor och now kan inte skickas i request (sätts av servern)", async () => {
+    const before = await counts(biz);
+    const { businessId, actor, now, ...request } = base(biz, {
+      start: iso(at(TUE, "13:00")),
     });
+    for (const extra of [
+      { source: "manual" },
+      { actor: { kind: "owner", userId: biz.ownerUserId } },
+      { now: NOW },
+    ]) {
+      expect(
+        await realCreate({ ...request, ...extra } as never, {
+          businessId,
+          actor,
+          now,
+        }),
+      ).toEqual({ ok: false, error: "invalid_input" });
+    }
+    expect(await counts(biz)).toEqual(before);
+  });
+
+  it("kund får source web; servern kan sätta waitlist via kontexten", async () => {
+    const web = await createBooking(
+      base(biz, { start: iso(at("2026-10-08", "10:00")) }),
+    );
+    const wl = await createBooking(
+      base(biz, {
+        start: iso(at("2026-10-08", "11:00")),
+        source: "waitlist",
+      }),
+    );
+    if (!web.ok || !wl.ok) throw new Error("setup");
+    expect((await bookingRow(web.value.id)).source).toBe("web");
+    expect((await bookingRow(wl.value.id)).source).toBe("waitlist");
   });
 
   it("ägaren bokar manuellt (RLS), source manual", async () => {

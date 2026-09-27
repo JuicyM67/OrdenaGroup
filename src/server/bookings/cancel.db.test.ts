@@ -15,10 +15,9 @@ import {
   insertTestBooking,
   type TestBusiness,
 } from "@/server/db/testing";
-import { getAvailableSlots } from "@/server/scheduling/availability";
-
-import { cancelBooking } from "./cancel";
-import { createBooking } from "./create";
+import { split } from "@/server/scheduling/__fixtures__/contract";
+import { getAvailableSlots as realSlots } from "@/server/scheduling/availability";
+import { cancelBooking, createBooking } from "./__fixtures__/flat";
 
 const at = (date: string, time: string) =>
   fromLocal(date as LocalDate, time as LocalTime, SANTIAGO).getTime();
@@ -26,6 +25,9 @@ const iso = (ms: number) => new Date(ms).toISOString();
 const TUE = "2026-10-06";
 const NOW = new Date(at("2026-10-01", "09:00"));
 const customer = { kind: "customer" as const };
+
+const getAvailableSlots = (x: Parameters<typeof split>[0]) =>
+  realSlots(...split(x));
 
 let biz: TestBusiness;
 

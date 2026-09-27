@@ -1,6 +1,8 @@
 import "server-only";
 
+import type { E164 } from "@/lib/format/phone";
 import { isNoOverlapViolation } from "@/server/db/errors";
+import { lockStaffForBooking } from "@/server/db/locks";
 import type { Queryable } from "@/server/db/pool";
 import { toTstzrange } from "@/server/db/tstzrange";
 import { savepoint } from "@/server/db/tx";
@@ -10,9 +12,13 @@ import { loadSnapshot } from "@/server/scheduling/load";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { runAs } from "@/server/scheduling/run";
 import {
-  createBookingInputSchema,
-  type CreateBookingInput,
+  createBookingRequestSchema,
+  createContextSchema,
+  parseContext,
+  type CreateBookingRequest,
+  type CreateContext,
 } from "@/server/scheduling/schemas";
+import type { Actor, StaffChoice } from "@/server/scheduling/types";
 
 import { findOrCreateCustomer } from "./customers";
 import { createManageToken } from "./token";
@@ -20,31 +26,66 @@ import type { BookingError, CreatedBooking } from "./types";
 
 const MIN = 60_000;
 
+type BookingSource = "web" | "manual" | "waitlist";
+
+/** Källan sätts av servern: kund = web, ägare = manual, väntelista via ctx. */
+function sourceFor(
+  actor: Actor,
+  ctxSource: "waitlist" | undefined,
+): BookingSource {
+  if (ctxSource) return ctxSource;
+  return actor.kind === "owner" ? "manual" : "web";
+}
+
 /**
  * Skapar en bokning (F4). Klientens val är bara en önskan (inv. 6): allt
  * räknas om här i en transaktion — tjänst och profesional i företaget,
- * notice/horisont (kund), öppettider, frånvaro, bokningar och buffert, och
- * priset från services.price_clp. Dubbelbokning stoppas till sist av
- * `no_overlap` (23P01 → nästa "any"-kandidat eller `slot_taken`).
+ * företagets status (kund), notice/horisont (kund), öppettider, frånvaro,
+ * bokningar och buffert, och priset från services.price_clp.
+ *
+ * Samtidighet: kandidaterna låses per profesional (advisory lock, sorterad
+ * ordning) före insert, så att två krockande inserts serialiseras och ger
+ * 23P01 i stället för deadlock. `no_overlap` har sista ordet (23P01 → nästa
+ * "any"-kandidat eller `slot_taken`). 40P01/40001 kör om hela transaktionen
+ * en gång och ger sedan `slot_taken`.
  *
  * WP-10: alltid `confirmed`, `deposit_clp = 0`, `discount_clp = 0` (WP-25/30).
  */
 export async function createBooking(
-  raw: CreateBookingInput,
+  request: CreateBookingRequest,
+  ctx: CreateContext,
 ): Promise<Result<CreatedBooking, BookingError>> {
-  const p = createBookingInputSchema.safeParse(raw);
+  const c = parseContext(createContextSchema, ctx);
+  const p = createBookingRequestSchema.safeParse(request);
   if (!p.success) return err("invalid_input");
-  const input = p.data;
-  // Kunden bokar via webben eller väntelistan; "manual" är ägarens.
-  if (input.actor.kind === "customer" && input.source === "manual") {
-    return err("invalid_input");
-  }
-  return runAs(input.actor, (q) => createIn(q, input));
+  const input = {
+    ...p.data,
+    businessId: c.businessId,
+    actor: c.actor,
+    now: c.now,
+    source: sourceFor(c.actor, c.source),
+  };
+  return runAs(input.actor, (q) => createIn(q, input), {
+    onConflict: err("slot_taken"),
+  });
 }
 
-async function createIn(
+export type CreateInput = {
+  businessId: string;
+  serviceId: string;
+  staffId: StaffChoice;
+  start: Date;
+  customer: { phone: E164; name: string; email?: string | undefined };
+  notes?: string | undefined;
+  source: BookingSource;
+  actor: Actor;
+  now: Date;
+};
+
+/** Inre steg (för tester): kör i anroparens transaktion. */
+export async function createIn(
   q: Queryable,
-  input: ReturnType<typeof createBookingInputSchema.parse>,
+  input: CreateInput,
 ): Promise<Result<CreatedBooking, BookingError>> {
   const start = input.start.getTime();
   const loaded = await loadSnapshot(q, {
@@ -53,6 +94,9 @@ async function createIn(
     range: { around: input.start },
   });
   if (!loaded.ok) return loaded;
+  if (input.actor.kind === "customer" && !loaded.value.businessActive) {
+    return err("business_unavailable");
+  }
   if (!staffOffersService(loaded.value, input.staffId)) {
     return err("service_not_offered");
   }
@@ -68,6 +112,8 @@ async function createIn(
     start,
   );
   if (!check.ok) return check;
+
+  await lockStaffForBooking(q, input.businessId, check.value);
 
   const customerId = await findOrCreateCustomer(
     q,

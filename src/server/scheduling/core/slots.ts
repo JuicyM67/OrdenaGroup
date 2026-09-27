@@ -33,8 +33,9 @@ export type Candidate = {
 
 /**
  * Starttider i ett fritt fönster: rutnätet `gridOrigin + k · intervall`
- * (arbetsfönstrets start, verklig tid) plus fönstrets egen start ("tight
- * packing" direkt efter en bokning, frånvaro eller buffert). Bara starter där
+ * (arbetsfönstrets start, verklig tid) plus fönstrets egen start, avrundad
+ * uppåt till hel minut ("tight packing" direkt efter en bokning, frånvaro
+ * eller buffert). Bara starter där
  * `[start, start + need)` ryms i fönstret.
  */
 export function candidateStarts(
@@ -44,12 +45,15 @@ export function candidateStarts(
   needMs: number,
 ): number[] {
   const step = intervalMin * MIN;
+  // Ett fritt fönster kan börja mitt i en minut (frånvaro eller bokning som
+  // slutar 14:30:30). Starttider är alltid hela minuter: avrunda uppåt.
+  const first = Math.ceil(win.start / MIN) * MIN;
   const lastStart = win.end - needMs;
-  if (lastStart < win.start) return [];
-  const out: number[] = [win.start];
-  const k = Math.ceil((win.start - gridOrigin) / step);
+  if (lastStart < first) return [];
+  const out: number[] = [first];
+  const k = Math.ceil((first - gridOrigin) / step);
   for (let s = gridOrigin + Math.max(0, k) * step; s <= lastStart; s += step) {
-    if (s > win.start) out.push(s);
+    if (s > first) out.push(s);
   }
   return out;
 }
@@ -134,7 +138,9 @@ function staffCandidates(
       if (start < earliest) continue;
       out.push({
         start,
-        good: gapOk(start - free.start) && gapOk(free.end - (start + need)),
+        good:
+          gapOk(start - Math.ceil(free.start / MIN) * MIN) &&
+          gapOk(free.end - (start + need)),
       });
     }
   }

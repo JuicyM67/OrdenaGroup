@@ -8,10 +8,13 @@ import { loadSnapshot, type LoadedSnapshot } from "./load";
 import { err, ok, type Result } from "./result";
 import { runAs } from "./run";
 import {
-  availableDaysInputSchema,
-  availableSlotsInputSchema,
-  type AvailableDaysInput,
-  type AvailableSlotsInput,
+  availableDaysRequestSchema,
+  availableSlotsRequestSchema,
+  engineContextSchema,
+  parseContext,
+  type AvailableDaysRequest,
+  type AvailableSlotsRequest,
+  type EngineContext,
 } from "./schemas";
 import type {
   Audience,
@@ -20,9 +23,10 @@ import type {
   StaffChoice,
 } from "./types";
 
-export type AvailabilityError = "invalid_input" | "service_not_offered";
+export type AvailabilityError =
+  "invalid_input" | "service_not_offered" | "business_unavailable";
 
-/** Standardgräns för kundens tider per dag (SCHEDULING.md, R8). */
+/** Fast gräns för kundens tider per dag (SCHEDULING.md, R8). Ägaren ser alla. */
 export const CUSTOMER_SLOT_LIMIT = 12;
 
 /** Profesionalen måste finnas, vara aktiv och utföra tjänsten (för "any": minst en). */
@@ -33,24 +37,30 @@ export function staffOffersService(
   return eligibleStaff(loaded.snapshot, staff).length > 0;
 }
 
+type Common = {
+  businessId: string;
+  serviceId: string;
+  staffId: StaffChoice;
+  audience: Audience;
+  now: Date;
+};
+
+/** Inre steg (för tester och createBooking): kör i anroparens transaktion. */
 export async function availableDaysIn(
   q: Queryable,
-  input: {
-    businessId: string;
-    serviceId: string;
-    staffId: StaffChoice;
-    from: LocalDate;
-    to: LocalDate;
-    audience: Audience;
-    now: Date;
-  },
-): Promise<Result<AvailableDay[], "service_not_offered">> {
+  input: Common & { from: LocalDate; to: LocalDate },
+): Promise<
+  Result<AvailableDay[], "service_not_offered" | "business_unavailable">
+> {
   const loaded = await loadSnapshot(q, {
     businessId: input.businessId,
     serviceId: input.serviceId,
     range: { from: input.from, to: input.to },
   });
   if (!loaded.ok) return loaded;
+  if (input.audience === "customer" && !loaded.value.businessActive) {
+    return err("business_unavailable");
+  }
   if (!staffOffersService(loaded.value, input.staffId)) {
     return err("service_not_offered");
   }
@@ -71,28 +81,22 @@ export async function availableDaysIn(
 
 export async function availableSlotsIn(
   q: Queryable,
-  input: {
-    businessId: string;
-    serviceId: string;
-    staffId: StaffChoice;
-    date: LocalDate;
-    audience: Audience;
-    now: Date;
-    limit?: number | undefined;
-  },
-): Promise<Result<AvailableSlot[], "service_not_offered">> {
+  input: Common & { date: LocalDate },
+): Promise<
+  Result<AvailableSlot[], "service_not_offered" | "business_unavailable">
+> {
   const loaded = await loadSnapshot(q, {
     businessId: input.businessId,
     serviceId: input.serviceId,
     range: { from: input.date, to: input.date },
   });
   if (!loaded.ok) return loaded;
+  if (input.audience === "customer" && !loaded.value.businessActive) {
+    return err("business_unavailable");
+  }
   if (!staffOffersService(loaded.value, input.staffId)) {
     return err("service_not_offered");
   }
-  const limit =
-    input.limit ??
-    (input.audience === "customer" ? CUSTOMER_SLOT_LIMIT : undefined);
   return ok(
     slotsForDay(
       {
@@ -102,30 +106,47 @@ export async function availableSlotsIn(
         audience: input.audience,
         now: input.now,
       },
-      limit,
+      input.audience === "customer" ? CUSTOMER_SLOT_LIMIT : undefined,
     ),
   );
 }
 
 /**
- * Dagstatus för [from, to] (högst 62 dagar). Kund: service role med explicit
- * business_id. Ägare: RLS via withOwnerTx.
+ * Dagstatus för [from, to] (högst 62 dagar). `ctx` sätts bara av servern
+ * (se schemas.ts). Kund: service role med explicit business_id, kundvy.
+ * Ägare: RLS via withOwnerTx, ägarvy.
  */
 export async function getAvailableDays(
-  raw: AvailableDaysInput,
+  request: AvailableDaysRequest,
+  ctx: EngineContext,
 ): Promise<Result<AvailableDay[], AvailabilityError>> {
-  const p = availableDaysInputSchema.safeParse(raw);
+  const c = parseContext(engineContextSchema, ctx);
+  const p = availableDaysRequestSchema.safeParse(request);
   if (!p.success) return err("invalid_input");
-  const input = p.data;
-  return runAs(input.actor, (q) => availableDaysIn(q, input));
+  return runAs(c.actor, (q) =>
+    availableDaysIn(q, {
+      ...p.data,
+      businessId: c.businessId,
+      audience: c.actor.kind,
+      now: c.now,
+    }),
+  );
 }
 
 /** Tider för en dag. Kund: högst 12 (gallrade). Ägare: alla. */
 export async function getAvailableSlots(
-  raw: AvailableSlotsInput,
+  request: AvailableSlotsRequest,
+  ctx: EngineContext,
 ): Promise<Result<AvailableSlot[], AvailabilityError>> {
-  const p = availableSlotsInputSchema.safeParse(raw);
+  const c = parseContext(engineContextSchema, ctx);
+  const p = availableSlotsRequestSchema.safeParse(request);
   if (!p.success) return err("invalid_input");
-  const input = p.data;
-  return runAs(input.actor, (q) => availableSlotsIn(q, input));
+  return runAs(c.actor, (q) =>
+    availableSlotsIn(q, {
+      ...p.data,
+      businessId: c.businessId,
+      audience: c.actor.kind,
+      now: c.now,
+    }),
+  );
 }

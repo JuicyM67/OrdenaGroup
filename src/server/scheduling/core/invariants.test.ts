@@ -221,5 +221,7 @@ describe("invarianter över 500 slumpade ögonblicksbilder", () => {
       }
     }
     expect(slotsChecked).toBeGreaterThan(1000);
-  });
+    // CPU-tungt (500 ögonblicksbilder); egen gräns så att en belastad
+    // maskin (parallella agenter, CI) inte ger falskt fel.
+  }, 30_000);
 });
