@@ -45,3 +45,7 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-27 | Egen databasroll i stället för `postgres` i `DATABASE_URL` | security-reviewer (WP-10) | Minsta möjliga behörighet på servern | 1 (WP-05b/WP-27) |
 | 2026-09-27 | WP-26: nolla `phone_e164` vid anonymisering | scheduling-engineer (WP-10) | Annars blockerar unique-constrainten numret för nya bokningar | 1 (WP-26) |
 | 2026-09-27 | `r/[token]` utan slug: uppslag på bara `manage_token_hash` som uttryckligt undantag i gränstestet | security-reviewer (WP-10) | WP-20 behöver `businessId` innan motorn anropas | 1 (WP-20) |
+| 2026-09-27 | **Krav före WP-21:** samtyckestriggern (`private.customers_guard_consent`) ska förbjuda `consent_marketing_at` med kanal `manual` och inte skriva över samtycke från `web`/`whatsapp` | security-reviewer (WP-03b) | Ägaren kan annars skapa marknadsföringssamtycke åt kunder och radera beviset för webbsamtycket | 1 (WP-21, db-engineer) |
+| 2026-09-27 | Append-only-logg för samtycken (en rad per typ och version) i stället för en kolumn per kund | security-reviewer (WP-03b) | Tre samtyckesversioner skriver annars över varandras bevis | 1 (WP-26) |
+| 2026-09-27 | Synktest mellan "vencen en 15 minutos" i `email.acceso` och `otp_expiry` i SUPABASE_CONFIG | security-reviewer (WP-03b) | Lokal `otp_expiry` är 3600 | 1 (WP-15) |
+| 2026-09-27 | Card-tonerna lilac/peach/lime sätter `data-surface="light"` så att `on-dark:` inte läcker in i pastellkort | qa-reviewer (WP-11) | Roten till fokusringsfelet i Inicio | 2 |

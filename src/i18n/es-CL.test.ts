@@ -7,8 +7,10 @@ import { describe, expect, it } from "vitest";
 import { brand } from "@/config/brand";
 
 import {
+  abono,
   agenda,
   calendario,
+  clientes,
   comun,
   email,
   errores,
@@ -21,10 +23,22 @@ import {
   reserva,
   whatsappSesion,
 } from "./es-CL";
+import {
+  escaparRegExp,
+  NOMBRES_FIXTURE,
+  paraCadaHoja,
+  PATRON_MARCA,
+  PATRON_RESTO_ROTO,
+  REGLAS_DE_TONO,
+  type Rama,
+} from "./test-helpers";
 
 // ---------------------------------------------------------------------------
 // Utilidades
 // ---------------------------------------------------------------------------
+// `paraCadaHoja`, `escaparRegExp`, `PATRON_RESTO_ROTO`, `REGLAS_DE_TONO`,
+// `PATRON_MARCA` y `NOMBRES_FIXTURE` viven en `./test-helpers` desde
+// WP-03b (paso 1, refactorización pura: mismo comportamiento que antes).
 
 const REF_DIR = path.resolve(process.cwd(), "docs/design/reference");
 
@@ -45,29 +59,6 @@ function apareceComoNodo(contenido: string, texto: string): boolean {
   // string de JS.
   const t = escaparRegExp(texto);
   return new RegExp(`>\\s*${t}\\s*<|"${t}"|'${t}'`).test(contenido);
-}
-
-function escaparRegExp(texto: string): string {
-  return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-type Hoja = string | ((p: never) => string);
-type Rama = { readonly [k: string]: Hoja | Rama };
-
-/** Recorre un área completa y visita cada hoja (string o función). */
-function paraCadaHoja(
-  raiz: Rama,
-  prefijo: string,
-  visitar: (ruta: string, hoja: Hoja) => void,
-): void {
-  for (const [clave, valor] of Object.entries(raiz)) {
-    const ruta = prefijo ? `${prefijo}.${clave}` : clave;
-    if (typeof valor === "string" || typeof valor === "function") {
-      visitar(ruta, valor);
-    } else {
-      paraCadaHoja(valor, ruta, visitar);
-    }
-  }
 }
 
 const AREAS: Record<string, Rama> = {
@@ -153,6 +144,9 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   fecha: "viernes 2 de octubre",
   hora: "15:00",
   monto: "$84.000",
+  saldo: "$12.000",
+  condiciones:
+    "Si cancelas con menos de 24 h de anticipación, pierdes el abono.",
   precio: "$12.000",
   telefono: "+56 9 •••• 4821",
   telefonoNegocio: "+56 9 1234 5678",
@@ -167,8 +161,6 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
   plataforma: "la plataforma",
 };
-
-const PATRON_RESTO_ROTO = /undefined|NaN|\bnull\b|\[object|\{\{|\{[a-zA-Z]/;
 
 function invocarGenerico(fn: unknown): unknown {
   return (fn as (p: Record<string, unknown>) => unknown)(MUESTRA_GENERICA);
@@ -508,12 +500,21 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     expect(registrar(inicio.hola({ nombre: "Camila" }))).toBe("Hola, Camila");
   });
 
-  it("inicio.hero.resumen", () => {
+  it("inicio.hero.destacado y inicio.hero.resumen (mismo separador)", () => {
+    expect(
+      registrar(inicio.hero.destacado({ horas: "4 horas", monto: "$72.000" })),
+    ).toBe("4 horas · $72.000");
     expect(
       registrar(inicio.hero.resumen({ horas: "4 horas", monto: "$72.000" })),
     ).toBe(
       "Recuperaste 4 horas · $72.000 con la lista de espera y las horas flash.",
     );
+  });
+
+  it("calendario.diaConReservas (etiqueta completa para lector de pantalla)", () => {
+    expect(
+      registrar(calendario.diaConReservas({ fecha: "viernes 2 de octubre" })),
+    ).toBe("viernes 2 de octubre, con reservas");
   });
 
   it("inicio.agendaHoy.fila e inicio.flashCard.detalle", () => {
@@ -700,20 +701,48 @@ describe("baja, bajaTotal y el pie del correo nombran al negocio", () => {
 });
 
 // ---------------------------------------------------------------------------
+// email.acceso: las variables de plantilla de Supabase son literales, no
+// interpolación de es-CL.ts (WP-03b paso 2, R9 del plan): cada cuerpo debe
+// tener exactamente los dos placeholders reales y ningún otro "{{" suelto
+// (una llave doble sin cerrar sería un placeholder roto en el correo).
+// ---------------------------------------------------------------------------
+
+describe("email.acceso: variables de plantilla de Supabase", () => {
+  const CUERPOS = [
+    ["magicLink", email.acceso.magicLink.cuerpo],
+    ["confirmation", email.acceso.confirmation.cuerpo],
+  ] as const;
+
+  it.each(CUERPOS)(
+    "%s.cuerpo tiene los dos placeholders y ningún otro '{{'",
+    (_nombre, cuerpo) => {
+      expect(cuerpo).toContain("{{ .ConfirmationURL }}");
+      expect(cuerpo).toContain("{{ .Token }}");
+      const totalDobleLlave = (cuerpo.match(/\{\{/g) ?? []).length;
+      expect(totalDobleLlave).toBe(2);
+    },
+  );
+
+  it("los asuntos no tienen ninguna llave doble", () => {
+    expect(email.acceso.magicLink.asunto).not.toContain("{{");
+    expect(email.acceso.confirmation.asunto).not.toContain("{{");
+  });
+
+  it("email.abono.lineaConfirmacion no usa sintaxis de plantilla de Supabase", () => {
+    const texto = email.abono.lineaConfirmacion({
+      monto: "$6.000",
+      saldo: "$12.000",
+      condiciones: "Si cancelas...",
+    });
+    expect(texto).not.toContain("{{");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Tono: sin "usted", sin voseo, sin slang, sin anglicismos, sin emoji
 // ---------------------------------------------------------------------------
 
 describe("tono", () => {
-  const prohibido = {
-    usted: /\busted(es)?\b/i,
-    voseo: /\b(podés|tenés|querés|sabés|reservá|elegí)\b/i,
-    slangPo: /\bpo\b/i,
-    slangWena: /\bwena\b/i,
-    booking: /\bbooking\b/i,
-    checkin: /\bcheck-?in\b/i,
-    emoji: /\p{Extended_Pictographic}/u,
-  };
-
   it("la tabla de muestras (describe anterior) se llenó correctamente", () => {
     // Vitest corre los tests de un mismo archivo en orden de declaración: si
     // esto falla, revisa que el describe "flexión" siga antes que este.
@@ -728,7 +757,7 @@ describe("tono", () => {
       ...muestrasSesionYCorreo,
     ];
     for (const texto of todos) {
-      for (const [nombreRegla, regex] of Object.entries(prohibido)) {
+      for (const [nombreRegla, regex] of Object.entries(REGLAS_DE_TONO)) {
         expect(regex.test(texto), `${nombreRegla}: "${texto}"`).toBe(false);
       }
     }
@@ -740,10 +769,6 @@ describe("tono", () => {
 // ---------------------------------------------------------------------------
 
 describe("marca", () => {
-  // Se arma desde brand.name (escapado) para no escribir el nombre en este
-  // archivo ni romper si brand.name tuviera algún carácter especial de regex.
-  const patronMarca = new RegExp(`\\b${escaparRegExp(brand.name)}\\b`, "i");
-
   it("ningún texto (UI, plantillas, sesión o correo) contiene el nombre del producto salvo donde se interpola brand.name", () => {
     const todos = [
       ...todosLosStringsEstaticos(),
@@ -751,10 +776,10 @@ describe("marca", () => {
       ...muestrasSesionYCorreo,
     ];
     for (const texto of todos) {
-      expect(patronMarca.test(texto), texto).toBe(false);
+      expect(PATRON_MARCA.test(texto), texto).toBe(false);
     }
     for (const texto of muestras) {
-      if (patronMarca.test(texto)) {
+      if (PATRON_MARCA.test(texto)) {
         expect(texto, texto).toContain(brand.name);
         expect(texto.split(brand.name).length - 1, texto).toBe(1);
       }
@@ -762,7 +787,7 @@ describe("marca", () => {
   });
 
   it("el hero de Inicio usa el pretérito (llenó), no el nombre", () => {
-    expect(patronMarca.test(inicio.hero.titulo)).toBe(false);
+    expect(PATRON_MARCA.test(inicio.hero.titulo)).toBe(false);
     expect(inicio.hero.titulo).toContain("llenó");
   });
 });
@@ -778,17 +803,6 @@ describe("nombres de fixtures no aparecen fuera de un ejemplo de Meta", () => {
   const SIN_EJEMPLOS = FUENTE.split("\n")
     .filter((linea) => !/\bejemplo\s*:/.test(linea))
     .join("\n");
-
-  const NOMBRES_FIXTURE = [
-    "Barbería Norte",
-    "Joaquín",
-    "Camila",
-    "Martina Lagos",
-    "Valentina Soto",
-    "Ignacio Pérez",
-    "Corte clásico",
-    "Perfilado de barba",
-  ];
 
   it.each(NOMBRES_FIXTURE)(
     '"%s" no aparece fuera de un campo "ejemplo"',
@@ -1445,6 +1459,8 @@ describe("longitudes", () => {
     expect(estados.confirmada.length).toBeLessThanOrEqual(22);
     expect(estados.abonoPagado.length).toBeLessThanOrEqual(22);
     expect(estados.sinConfirmar.length).toBeLessThanOrEqual(22);
+    // Agregado por WP-03b (F11): chip de una reserva con abono pendiente.
+    expect(estados.pendientePago.length).toBeLessThanOrEqual(22);
   });
 });
 
@@ -1482,8 +1498,10 @@ describe("errores.reserva y errores.agenda usan las claves de los códigos reale
     expect(errores.reserva.waitlist_duplicate.length).toBeGreaterThan(0);
   });
 
-  it("errores.agenda tiene slot_taken y outside_hours", () => {
+  it("errores.agenda tiene slot_taken, too_soon, outside_hours y network", () => {
     expect(errores.agenda.slot_taken.length).toBeGreaterThan(0);
+    expect(errores.agenda.too_soon.length).toBeGreaterThan(0);
+    expect(errores.agenda.network.length).toBeGreaterThan(0);
     expect(errores.agenda.outside_hours).toBe(
       "Esa hora está fuera del horario de atención.",
     );
@@ -1492,8 +1510,10 @@ describe("errores.reserva y errores.agenda usan las claves de los códigos reale
 
 // ---------------------------------------------------------------------------
 // errores.reserva y errores.agenda cubren los códigos nuevos de
-// `BookingError` (WP-10, `src/server/bookings/types.ts`, FRÅGA 4 del plan
-// de WP-10, entrega temprana de WP-03b).
+// `BookingError` (WP-10, `src/server/bookings/types.ts`, pregunta 4 del plan
+// de WP-10, entrega temprana de WP-03b) más `business_unavailable`, código
+// nuevo fuera de la lista original de WP-10 (pedido de revisión,
+// 2026-09-27).
 // ---------------------------------------------------------------------------
 
 describe("errores.reserva y errores.agenda cubren BookingError (WP-10)", () => {
@@ -1508,6 +1528,7 @@ describe("errores.reserva y errores.agenda cubren BookingError (WP-10)", () => {
     "invalid_status",
     "outside_cancel_window",
     "invalid_input",
+    "business_unavailable",
   ] as const;
 
   it.each(codigosNuevos)(
@@ -1536,6 +1557,15 @@ describe("consentimientos", () => {
   const HASHES: Record<string, string> = {
     "2026-10-v1":
       "9332b0c637c01b914a0bf68d93e2d55519c27fcba6d3476ee5686f34d5c4278f",
+    // WP-03b, paso 7 (pregunta 4 aprobada): v2 agrega `abono.reserva.condiciones`
+    // al texto que se hashea, porque ahora las condiciones del abono también
+    // son algo que el cliente acepta antes de confirmar. `condiciones` cambió
+    // de firma (ahora recibe `negocio` también, revisión de seguridad
+    // 2026-09-27: la plataforma nunca promete devolver el abono), así que
+    // este hash hay que recalcularlo de nuevo. Ningún cliente real aceptó
+    // "2026-10-v2" todavía (no hay piloto), así que subirlo no cuesta nada.
+    "2026-10-v2":
+      "00a736f71aa46e907b68f049d8894d5fb7b26bd61f05f24954250794d781b164",
   };
 
   function sha256(texto: string): string {
@@ -1558,6 +1588,12 @@ describe("consentimientos", () => {
       a.avisoWhatsapp({ negocio: "{negocio}" }),
       a.politicaCancelacion({ horas: "{horas}" as unknown as number }),
       c.marketing({ negocio: "{negocio}" }),
+      // Nuevo en v2 (paso 7 del plan): condiciones del abono, cuando el
+      // servicio lo tiene.
+      abono.reserva.condiciones({
+        negocio: "{negocio}",
+        horas: "{horas}" as unknown as number,
+      }),
     ].join("\n");
   }
 
@@ -1574,7 +1610,7 @@ describe("consentimientos", () => {
     ).toBe(hashEsperado);
   });
 
-  it("el texto de términos menciona WhatsApp (aviso de opt-in, FRÅGA 6)", () => {
+  it("el texto de términos menciona WhatsApp (aviso de opt-in, pregunta 6)", () => {
     expect(reserva.consentimientos.terminos).toContain("WhatsApp");
   });
 
@@ -1582,5 +1618,84 @@ describe("consentimientos", () => {
     expect(
       reserva.consentimientos.marketing({ negocio: "Barbería Norte" }),
     ).toContain("BAJA");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Consentimiento de la lista de espera: versión propia, aparte de
+// `reserva.consentimientos.version` (pedido de revisión, 2026-09-27, sobre
+// `reserva.waitlist.terminos`).
+// ---------------------------------------------------------------------------
+
+describe("consentimiento de la lista de espera", () => {
+  // La pantalla de unirse a la lista de espera también debe mostrar el
+  // responsable de los datos y el link a la política de privacidad (mismo
+  // criterio de seguridad que `reserva.consentimientos`, GUIA §7): el hash
+  // cubre los tres textos, no solo `waitlist.terminos`. Cambió el texto que
+  // se hashea (revisión de seguridad, 2026-09-27), así que hay que
+  // recalcularlo.
+  const HASHES: Record<string, string> = {
+    "lista-espera-2026-10-v1":
+      "b55edbc719165d3b30dc9c6a76353a40fd2fe0850b63188953a82c7ac0ed7631",
+  };
+
+  function sha256(texto: string): string {
+    return createHash("sha256").update(texto, "utf8").digest("hex");
+  }
+
+  function textoConsentimientoListaEspera(): string {
+    const c = reserva.consentimientos;
+    return [
+      reserva.waitlist.terminos,
+      c.responsable({ negocio: "{negocio}" }),
+      c.privacidadLinkTexto,
+    ].join("\n");
+  }
+
+  it('la versión está ligada al hash del texto (sube "reserva.waitlist.consentimientoVersion" si cambias el texto)', () => {
+    const version = reserva.waitlist.consentimientoVersion;
+    const hashEsperado = HASHES[version];
+    expect(
+      hashEsperado,
+      `No hay hash registrado para "${version}"`,
+    ).toBeDefined();
+    expect(sha256(textoConsentimientoListaEspera())).toBe(hashEsperado);
+  });
+
+  it("menciona WhatsApp (es un aviso, no una promoción)", () => {
+    expect(reserva.waitlist.terminos).toContain("WhatsApp");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Consentimiento manual (dueño registra a un cliente walk-in/telefónico):
+// versión propia, `consent_channel = 'manual'` (plan de WP-03b, paso 7).
+// ---------------------------------------------------------------------------
+
+describe("consentimiento manual de Clientes", () => {
+  // El texto cambió para aclarar el alcance ("esta hora y las próximas",
+  // revisión de seguridad, 2026-09-27): hay que recalcular el hash.
+  const HASHES: Record<string, string> = {
+    "manual-2026-10-v1":
+      "396e959204f27371c3afb6288ef61088fde269ec2df06cbd8708b9e2543c3f2f",
+  };
+
+  function sha256(texto: string): string {
+    return createHash("sha256").update(texto, "utf8").digest("hex");
+  }
+
+  it('la versión está ligada al hash del texto (sube "clientes.consentimientoManual.version" si cambias el texto)', () => {
+    const version = clientes.consentimientoManual.version;
+    const hashEsperado = HASHES[version];
+    expect(
+      hashEsperado,
+      `No hay hash registrado para "${version}"`,
+    ).toBeDefined();
+    expect(sha256(clientes.consentimientoManual.texto)).toBe(hashEsperado);
+  });
+
+  it("está redactado como algo que el cliente hizo, no como una casilla premarcada por el dueño", () => {
+    expect(clientes.consentimientoManual.texto).toMatch(/aceptó/i);
+    expect(clientes.consentimientoManual.texto).toContain("WhatsApp");
   });
 });

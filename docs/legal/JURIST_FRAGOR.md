@@ -9,3 +9,12 @@ Samlade från säkerhetsgranskningen av WP-03 (2026-09-27). Texterna finns i `sr
 5. **SERNAC/Ley 19.496.** Bekräftelsens innehåll: säljarens identitet ("gestionada por … para …"), retracto, villkor vid handpenning (F11), "sin costo" i avbokningstexten.
 6. **Bevisning av samtycke.** Arkiv per version och append-only-logg (WP-26): räcker det, och hur länge ska loggen sparas?
 7. **Export och radering via kundlänken** (WP-26): krav på extra verifiering (engångskod) eftersom länken kan vidarebefordras.
+
+## Tillägg efter granskningen av WP-03b (2026-09-27)
+
+8. **Handpenningens villkor (D-022, D-023):** räcker texten i `abono.reserva.condiciones`? Behövs en tidsfrist för återbetalningen ("dentro de X días hábiles")? Hur förhåller sig en behållen handpenning till ångerrätten (art. 3 bis) och kraven på förverkandeklausuler i Ley 19.496? Kan företaget behålla handpenningen vid no-show utan särskilt avtal?
+9. **Skriftlig bekräftelse utan e-post:** räcker en WhatsApp-bekräftelse med länk till `r/[token]` där villkoren står?
+10. **Manuellt samtycke (`manual-2026-10-v1`):** räcker ägarens intygande som bevis? Är ett stående samtycke ("esta hora y las próximas") giltigt? Hur fullgörs informationsplikten för en kund som aldrig sett bokningssidan? Behövs samtycke alls för transaktionsmeddelanden?
+11. **Väntelistan:** är aviseringen transaktionell eller marknadsföring? Hur länge får en anmälan sparas?
+12. **Anteckningar och ansvar:** om ett företag i vårdnära bransch ändå skriver hälsouppgifter i kundanteckningar, vilket ansvar har plattformen som biträde? Räcker hjälptexten, eller behövs ett förbud i villkoren/biträdesavtalet?
+13. **Sen betalning:** plattformen visar "{negocio} te devolverá el abono" men betalar inte själv. Krävs mer av plattformen (påminnelse till företaget, tidsfrist)?

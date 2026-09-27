@@ -1,6 +1,6 @@
 # WP-03b · Texter v2
 
-Branch: `wp/WP-03b-texter-v2` · Status: **plan, väntar på godkännande** · Beror på: WP-03 (☑), WP-04 (☑, felkoderna), WP-01 (☑, kolumner och enum-värden) · Körs samtidigt som: WP-10 (scheduling, `src/server/scheduling/` m.fl.), WP-11–14 (ui, `src/components/`, `src/app/**`), utan överlappande filer (se §3 om `es-CL.ts`).
+Branch: `wp/WP-03b-texter-v2` · Status: **klar 2026-09-27** · Beror på: WP-03 (☑), WP-04 (☑, felkoderna), WP-01 (☑, kolumner och enum-värden) · Körs samtidigt som: WP-10 (scheduling, `src/server/scheduling/` m.fl.), WP-11–14 (ui, `src/components/`, `src/app/**`), utan överlappande filer (se §3 om `es-CL.ts`).
 
 ---
 
@@ -310,3 +310,11 @@ Texterna bygger på den regel som föreslås i **D-019 (förslag)** nedan. Blir 
 ## Svar (godkänt av ägaren 2026-09-27)
 
 Ja till alla rekommendationer. Besluten har nya nummer på main: D-019 = pg i `src/server/db/` (WP-10), D-020 = fixture-routes stängda i produktion via `isDesignLabEnabled()` (öppna i staging med `DESIGN_LAB=1`), D-021 = `style` bara för geometri (WP-12), D-022 = handpenningsregel (WP-03b). Hänvisa till dessa nummer. Tillägg: en tidig PR med de nycklar som skärmarna saknar: `nav.notificacionesNuevas`, `calendario.diaConReservas`, `inicio.flashCard.vacio` (WP-11); `agenda.bloque.meta`, `agenda.bloque.aria`, `agenda.panel.minimoUnProfesional` (WP-12); `reserva.header.ubicacion`, dold text för full dag och flash-dag, `reserva.horaAria`, `reserva.vacios.eligeServicio`, `reserva.terminosListaEspera` (WP-13); samt WP-10:s felkoder `too_far`, `service_not_offered`, `not_found`, `invalid_status`, `outside_cancel_window`, `invalid_input`. Mercado Pago som manuell metod i Caja visas inte i v1 (D-022). Ajustes byggs i WP-15.
+
+## Justeringar under genomförandet (2026-09-27)
+- Tidig leverans (PR #15) med nycklar för WP-10–13; resten i den här PR:en.
+- Samtycken: `2026-10-v2` (bokning inkl. handpenningsvillkor), `lista-espera-2026-10-v1` (väntelista, inkl. ansvarig och integritetslänk), `manual-2026-10-v1` (ägaren registrerar kund; bara transaktionella meddelanden). Literal-hashar i testerna.
+- Handpenning: företaget, aldrig plattformen, betalar tillbaka (D-022); ombokning och företagets avbokning (D-023).
+- `business_unavailable`, `too_soon`, `network` i `errores`; `reserva.terminosListaEspera` är `@deprecated` alias tills WP-13 bytt.
+- För WP-11: `inicio.hero.destacado`, `calendario.diaConReservas({fecha})`.
+- Utöver planens §3 har `es-CL.test.ts` fått nya tester (hashar, felkoder, e-postmallar) och `test-helpers.ts` bryter ut delade hjälpare.

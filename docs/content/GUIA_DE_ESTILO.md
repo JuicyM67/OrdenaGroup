@@ -33,6 +33,14 @@
 | Opción de "cualquier profesional" | **Cualquiera** | "Cualquier profesional", "Sin preferencia" |
 | Visita número N de un cliente | **"3.ª visita"** (ordinal femenino, con `.ª`) | "3era visita", "visita Nº 3" |
 | URL que le mandamos al cliente | **link** ("link de gestión") | "enlace" (se entiende, pero no es el que usamos) |
+| Lo que falta pagar en el local después del abono (texto visible: "El **resto** ($6.000) lo pagas en el local"; `saldo` es solo el nombre del parámetro que trae el monto) | **resto** | "saldo" como palabra visible (esa es la clave/parámetro, no el texto) |
+| Marcar un pago como registrado en la base | **cobrar** / **cobrado** | "pagar" (ese verbo es del cliente) |
+| Deshacer un pago mal registrado (`payments` no permite borrar, solo actualizar) | **anular pago** | "cancelar pago" (ambiguo con cancelar la reserva, GUIA §5) |
+| Las personas que atienden en el negocio, en conjunto (paso 2 de onboarding) | **equipo** | — |
+| Una persona que atiende | **profesional** | "empleado" (ver también la fila de arriba) |
+| La URL que le compartes al cliente (`negocio.slug`, onboarding paso 4) | **link de reservas** | "enlace" |
+| La página a la que lleva ese link (`/[slug]`, lo que el cliente ve y usa para reservar) | **página de reservas** | — (es un concepto distinto del link, no un sinónimo: el link se copia/comparte, la página se visita) |
+| Categoría del negocio (`businesses.category`) | **rubro** | "categoría" (esa palabra se reserva para `services.category`) |
 
 ## 3. Formato
 
@@ -101,15 +109,33 @@
   cambio de horario de verano (R7).
 - Las plantillas de marketing (fase 2: `hora_flash`, `te_echamos_de_menos`)
   siempre terminan con la opción de baja: "Responde BAJA si no quieres
-  recibir más ofertas." No se escriben en WP-03 (ver FRÅGA 2 del plan).
+  recibir más ofertas." No se escriben en WP-03 (ver pregunta 2 del plan).
 
 ## 7. Consentimientos y textos legales (borrador)
 
 - Los textos de consentimiento (`reserva.consentimientos`) y los avisos sobre
   WhatsApp son **borrador**, escritos por `copywriter-es-cl`, no por un
-  abogado. `consentimientos.version` (hoy `"2026-10-v1"`) se sube cada vez
-  que cambia el texto: `es-CL.test.ts` liga la versión a un hash del
-  contenido para que no se te olvide.
+  abogado. `consentimientos.version` (hoy `"2026-10-v2"`, incluye las
+  condiciones del abono desde WP-03b) se sube cada vez que cambia el texto:
+  `es-CL.test.ts` liga la versión a un hash del contenido para que no se te
+  olvide.
+- **Tres versiones independientes (WP-03b).** No todo lo que el cliente o
+  el dueño aceptan viaja en el mismo hash: cada acción tiene su propia
+  versión, porque son pantallas y momentos distintos.
+  - `reserva.consentimientos.version` (`"2026-10-v2"`): la pantalla de
+    confirmar una reserva en `/[slug]`.
+  - `reserva.waitlist.consentimientoVersion` (`"lista-espera-2026-10-v1"`):
+    unirse a la lista de espera, una acción distinta de confirmar una
+    reserva. La pantalla de unirse a la lista de espera **debe mostrar**,
+    además de `waitlist.terminos`, quién trata los datos
+    (`consentimientos.responsable({ negocio })`) y el link a la política de
+    privacidad (`consentimientos.privacidadLinkTexto`): el hash de esta
+    versión cubre los tres textos juntos, no solo `waitlist.terminos`.
+  - `clientes.consentimientoManual.version` (`"manual-2026-10-v1"`): el
+    dueño registra que un cliente walk-in o telefónico aceptó, guardado con
+    `consent_channel = 'manual'`.
+  Cada una tiene su propio hash en `es-CL.test.ts`, y las versiones viejas
+  quedan registradas aunque ya no se usen (archivo inmutable, ver abajo).
 - Ninguna casilla de consentimiento empieza marcada. La de marketing es
   siempre una casilla aparte de la de términos, nunca la misma casilla ni un
   texto combinado.
@@ -136,11 +162,25 @@
   `PhoneError` en `src/lib/format/phone.ts` (WP-04): `empty`,
   `invalid_chars`, `not_chilean`, `invalid_length`, `not_mobile`,
   `invalid_prefix`. Lo mismo para `errores.reserva`/`errores.agenda`
-  (`slot_taken`, `too_soon`, `outside_hours`, `waitlist_duplicate`): la clave
+  (`slot_taken`, `too_soon`, `outside_hours`, `waitlist_duplicate`,
+  `too_far`, `service_not_offered`, `not_found`, `invalid_status`,
+  `outside_cancel_window`, `invalid_input`, `business_unavailable`): la clave
   es el código real, no una traducción, para que `satisfies Record<Codigo,
-  string>` funcione del lado de quien defina el tipo del código. El teléfono
-  del negocio (que puede ser fijo) y los esquemas de CLP, RUT, fecha y hora se
-  escriben en WP-03b, cuando esas pantallas entren en alcance.
+  string>` funcione del lado de quien defina el tipo del código.
+- **`validacion` (WP-03b):** mismo patrón para los campos que llena el
+  dueño. Las claves son el código después del prefijo del esquema de
+  `src/lib/format/schemas.ts` (`clp.out_of_range` → `validacion.clp.
+  out_of_range`): `validacion.clp`, `validacion.rut`, `validacion.date`,
+  `validacion.time` y `validacion.horaLocal` (`fromLocalStrict`, para
+  bloqueos en un día de cambio de horario de verano).
+- **Dos perspectivas de teléfono (WP-03b):** `errores.reserva.telefono`
+  (WP-03) le habla al cliente ("Escribe tu número"). Cuando el dueño escribe
+  el número de otra persona o el propio negocio, el tono cambia:
+  `validacion.telefonoCliente` (el celular de un cliente, en Clientes o una
+  reserva manual) y `validacion.telefonoNegocio` (el teléfono del propio
+  negocio, que puede ser fijo, en el onboarding y en Ajustes). Los dos
+  cubren los seis códigos de `PhoneError` más `invalid_type` e
+  `invalid_format` del esquema.
 
 ## 9. Nombres de servicio neutrales (S5, seguridad)
 
@@ -152,14 +192,33 @@ de este paquete), la regla de producto es:
 
 - Nunca un nombre de servicio de salud o íntimo con detalle clínico
   (diagnósticos, nombres de tratamientos médicos, condiciones de salud). Un
-  kinesiólogo escribe "Sesión de rehabilitación", no el diagnóstico del
-  paciente.
+  kinesiólogo escribe "Sesión de kinesiología" o "Sesión (60 min)", nunca el
+  diagnóstico ni el tratamiento específico del paciente (ni siquiera
+  "rehabilitación", que ya sugiere una condición).
 - Nunca datos que identifiquen algo sensible de la persona que reserva más
   allá del servicio en sí.
 - Esto es una regla de producto y de validación en el formulario de
   servicios (WP-03b), no algo que `copywriter-es-cl` pueda arreglar en
   `es-CL.ts`: acá solo se documenta para que quien escriba esa pantalla la
   aplique.
+- El texto de ayuda que aplica esta regla en la interfaz es
+  `servicios.campos.nombreAyuda` (siempre visible, en onboarding y en
+  Ajustes), con una versión más específica en
+  `servicios.campos.nombreAyudaExtendida` para los rubros de kinesiología y
+  estética.
+
+### 9.1 Campos de anotaciones (minimización, Ley 21.719)
+
+Ningún campo de notas libres pide ni sugiere anotar datos de salud:
+
+- `clientes.notas.ayuda` y `agenda.manual.notasAyuda` (mismo texto, una sola
+  definición: notas del cliente en su ficha y notas de una reserva manual):
+  "Las ven tú y tus administradores, y el cliente puede pedir una copia de
+  sus datos. No anotes datos de salud ni información sensible." (menciona el
+  derecho del cliente a pedir copia de sus datos, revisión de seguridad
+  2026-09-27).
+- `horarios.bloqueos.notaAyuda` (nota de un bloqueo o ausencia, por ejemplo
+  una licencia médica): "Solo tu equipo la ve. No anotes datos de salud."
 
 ## 10. Cómo revisar un texto nuevo
 
