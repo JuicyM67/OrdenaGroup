@@ -585,6 +585,42 @@ describe("flexión (n = 0, 1, 2, 21) y patrones dinámicos", () => {
     expect(registrar(calendario.zonaHoraria({ offset: -3 }))).toBe("GMT−3");
     expect(registrar(calendario.zonaHoraria({ offset: -4 }))).toBe("GMT−4");
   });
+
+  it("nav.notificacionesNuevas", () => {
+    expect(registrar(nav.notificacionesNuevas({ n: 1 }))).toBe(
+      "1 notificación nueva",
+    );
+    expect(nav.notificacionesNuevas({ n: 3 })).toBe("3 notificaciones nuevas");
+    expect(nav.notificacionesNuevas({ n: 0 })).toBe("0 notificaciones nuevas");
+  });
+
+  it("reserva.header.ubicacion", () => {
+    expect(registrar(reserva.header.ubicacion({ comuna: "Providencia" }))).toBe(
+      "Providencia, Santiago",
+    );
+  });
+
+  it("reserva.horaAria", () => {
+    expect(registrar(reserva.horaAria({ hora: "15:00" }))).toBe(
+      "Elegir la hora 15:00",
+    );
+  });
+
+  it("agenda.bloque.meta y agenda.bloque.aria", () => {
+    expect(
+      registrar(agenda.bloque.meta({ hora: "10:00", servicio: "Corte" })),
+    ).toBe("10:00 · Corte");
+    expect(
+      registrar(
+        agenda.bloque.aria({
+          cliente: "Joaquín",
+          servicio: "Corte + barba",
+          hora: "15:00",
+          profesional: "Diego",
+        }),
+      ),
+    ).toBe("Joaquín, Corte + barba, 15:00 con Diego");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1452,6 +1488,41 @@ describe("errores.reserva y errores.agenda usan las claves de los códigos reale
       "Esa hora está fuera del horario de atención.",
     );
   });
+});
+
+// ---------------------------------------------------------------------------
+// errores.reserva y errores.agenda cubren los códigos nuevos de
+// `BookingError` (WP-10, `src/server/bookings/types.ts`, FRÅGA 4 del plan
+// de WP-10, entrega temprana de WP-03b).
+// ---------------------------------------------------------------------------
+
+describe("errores.reserva y errores.agenda cubren BookingError (WP-10)", () => {
+  // src/server/bookings/types.ts: export type BookingError = "invalid_input"
+  // | "service_not_offered" | "outside_hours" | "too_soon" | "too_far" |
+  // "slot_taken" | "not_found" | "invalid_status" | "outside_cancel_window".
+  // Si WP-10 agrega un código, agrégalo acá también.
+  const codigosNuevos = [
+    "too_far",
+    "service_not_offered",
+    "not_found",
+    "invalid_status",
+    "outside_cancel_window",
+    "invalid_input",
+  ] as const;
+
+  it.each(codigosNuevos)(
+    "errores.reserva.%s tiene un texto no vacío",
+    (codigo) => {
+      expect(errores.reserva[codigo].length).toBeGreaterThan(0);
+    },
+  );
+
+  it.each(codigosNuevos)(
+    "errores.agenda.%s tiene un texto no vacío",
+    (codigo) => {
+      expect(errores.agenda[codigo].length).toBeGreaterThan(0);
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------

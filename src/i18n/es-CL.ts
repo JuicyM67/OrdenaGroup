@@ -60,6 +60,12 @@ export const nav = {
   volverAlInicio: "Volver al inicio",
   buscar: "Buscar",
   notificaciones: "Notificaciones",
+  /** Texto oculto (sr-only) del contador que acompaña a `notificaciones`
+   * cuando hay avisos sin leer: WP-11 lo usa junto al ícono de campana, que
+   * hoy en Main.dc.html no tiene texto accesible propio. Nombre de clave
+   * propuesto por WP-11 (R2 del plan de WP-03b). */
+  notificacionesNuevas: (p: { n: number }): string =>
+    `${p.n} ${p.n === 1 ? "notificación nueva" : "notificaciones nuevas"}`,
   masOpciones: "Más opciones",
 } as const satisfies Trad;
 
@@ -91,6 +97,10 @@ export const estados = {
 export const calendario = {
   hoy: "Hoy",
   cerrado: "Cerrado",
+  /** Texto oculto (sr-only) para el punto de color del MiniCalendar
+   * (`c.dot` en Main.dc.html, sin texto accesible hoy) que marca un día con
+   * reservas. Clave propuesta por WP-11/WP-12 (R2 del plan de WP-03b). */
+  diaConReservas: "Con reservas",
   vista: {
     mes: "Mes",
     semana: "Semana",
@@ -118,6 +128,18 @@ export const errores = {
     // el tipo del código (WP-10/WP-04) sin tener que traducir nombres.
     slot_taken: "Alguien tomó esa hora recién, elige otra.",
     too_soon: "Es muy pronto para reservar esta hora, elige una más adelante.",
+    /** Códigos nuevos de `BookingError` (WP-10, `src/server/bookings/`,
+     * FRÅGA 4 del plan de WP-10): `createBooking`/`moveBooking`/
+     * `cancelBooking` pueden devolverlos también del lado del cliente
+     * (`/[slug]` y `r/[token]`). */
+    too_far:
+      "Por ahora no puedes reservar tan lejos, elige una fecha más cercana.",
+    service_not_offered: "Ese servicio ya no está disponible. Elige otro.",
+    not_found: "No encontramos esa reserva.",
+    invalid_status: "Esta reserva ya no se puede cambiar.",
+    outside_cancel_window:
+      "Ya pasó el plazo para cancelar o cambiar esta reserva sin costo.",
+    invalid_input: "Revisa los datos e intenta de nuevo.",
     outside_hours: "Ese horario ya no está disponible.",
     network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
     waitlist_duplicate: "Ya estás en la lista de espera para este día.",
@@ -142,6 +164,18 @@ export const errores = {
   agenda: {
     slot_taken: "Esa hora ya se ocupó. Elige otra.",
     outside_hours: "Esa hora está fuera del horario de atención.",
+    /** Mismos códigos nuevos de `BookingError` que `errores.reserva`, en
+     * tono para la dueña (WP-12, reserva manual/mover/cancelar desde
+     * Agenda). `too_far` no debería ocurrir para el dueño (inv. 5 de
+     * WP-10: sin horizonte), pero la clave existe para que
+     * `satisfies Record<BookingError, string>` funcione igual. */
+    too_far: "Esa fecha está fuera del rango permitido.",
+    service_not_offered: "Ese profesional no ofrece este servicio.",
+    not_found: "Esa reserva ya no existe.",
+    invalid_status: "Esa reserva ya no se puede cambiar.",
+    outside_cancel_window:
+      "Ya pasó el plazo para cancelar o cambiar esta reserva.",
+    invalid_input: "Revisa los datos e intenta de nuevo.",
   },
 } as const satisfies Trad;
 
@@ -161,6 +195,12 @@ export const reserva = {
      * formateados por WP-04). */
     horario: (p: { dias: string; rango: string }): string =>
       `${p.dias} · ${p.rango}`,
+    /** "{comuna}, Santiago", p. ej. "Providencia, Santiago" (fixture de
+     * Reserva.dc.html línea 26). Fase 1 solo vende en la Región
+     * Metropolitana (VISION, "Santiago"), así que la ciudad no es un campo
+     * de `businesses`: se escribe literal acá, no es el nombre del
+     * producto (regla dura 10). */
+    ubicacion: (p: { comuna: string }): string => `${p.comuna}, Santiago`,
   },
   pasos: {
     servicio: "1 · Elige el servicio",
@@ -168,6 +208,17 @@ export const reserva = {
     cualquiera: "Cualquiera",
     diaYHora: "3 · Día y hora",
   },
+  /** Texto oculto (sr-only) para los días del selector de fecha (paso 3):
+   * hoy el punto de color (`d.dotStyle` en Reserva.dc.html) es la única
+   * marca de "lleno" o "con hora flash", sin texto accesible. Claves
+   * propuestas por WP-13 (R2 del plan de WP-03b). */
+  dia: {
+    llenoOculto: "Día lleno",
+    flashOculto: "Con hora flash",
+  },
+  /** aria-label de cada botón de hora del paso 3 (`{{t.t}}` en
+   * Reserva.dc.html solo muestra la hora, p. ej. "11:30"). */
+  horaAria: (p: { hora: string }): string => `Elegir la hora ${p.hora}`,
   // No hay `duracion` acá: "35 min" llega ya formateado por
   // `formatDuration` de WP-04 (src/lib/format/), igual que los montos y las
   // horas.
@@ -189,6 +240,15 @@ export const reserva = {
     confirmacion: (p: { servicio: string; dia: string }): string =>
       `Quedaste en la lista de espera para ${p.servicio} el ${p.dia}.`,
   },
+  /** Casilla de consentimiento para unirse a la lista de espera (WP-13):
+   * es una acción distinta de "Confirmar reserva", así que no viaja dentro
+   * de `consentimientos` ni de su hash de versión. Pendiente: si esta
+   * pantalla necesita su propia versión/hash (mismo patrón que
+   * `clientes.consentimientoManual.version` en el plan de WP-03b, paso 7)
+   * queda para que el orquestador/planner lo decida; ver el informe de
+   * esta entrega. */
+  terminosListaEspera:
+    "Acepto recibir por WhatsApp el aviso si se libera una hora.",
   resumen: {
     conProfesional: (p: {
       servicio: string;
@@ -252,6 +312,7 @@ export const reserva = {
     verMiReserva: "Ver mi reserva",
   },
   vacios: {
+    eligeServicio: "Elige un servicio para ver las horas disponibles.",
     cargandoHorarios: "Buscando horas disponibles…",
     sinHorariosEseDia: "No quedan horas ese día. Elige otro.",
     sinHorariosEnRango: "No hay horas disponibles en los próximos días.",
@@ -359,6 +420,9 @@ export const inicio = {
   },
   flashCard: {
     titulo: "Hora flash activa",
+    /** Estado sin ninguna hora flash activa (WP-11): reemplaza a la
+     * tarjeta cuando no hay nada que compartir. */
+    vacio: "No tienes ninguna hora flash activa todavía.",
     compartir: "Compartir hora flash",
     detalle: (p: { servicio: string; profesional: string }): string =>
       `${p.servicio} con ${p.profesional}`,
@@ -392,6 +456,10 @@ export const agenda = {
     esperanEl: (p: { n: number; dia: string }): string =>
       `${p.n} ${p.n === 1 ? "espera" : "esperan"} el ${p.dia}`,
     avisoWhatsapp: "Se avisa solo por WhatsApp",
+    /** Aviso al desmarcar el último profesional visible en "Mostrar en la
+     * agenda": siempre debe quedar al menos uno, para no dejar la semana
+     * vacía sin darse cuenta. */
+    minimoUnProfesional: "Debes dejar al menos un profesional visible.",
   },
   nuevaReserva: "Nueva reserva",
   agregarProfesional: "Agregar profesional",
@@ -403,6 +471,21 @@ export const agenda = {
   bloqueo: {
     almuerzo: "Almuerzo",
     bloqueado: "bloqueado",
+  },
+  /** El bloque de una reserva en la grilla semanal (`e.box` en
+   * Agenda.dc.html): el nombre del cliente va directo en `e.title` (dato,
+   * no copy), pero la segunda línea (`{{e.time}} · {{e.sub}}`) y el
+   * aria-label del bloque completo son texto de producto. Claves
+   * propuestas por WP-12 (R2 del plan de WP-03b). */
+  bloque: {
+    meta: (p: { hora: string; servicio: string }): string =>
+      `${p.hora} · ${p.servicio}`,
+    aria: (p: {
+      cliente: string;
+      servicio: string;
+      hora: string;
+      profesional: string;
+    }): string => `${p.cliente}, ${p.servicio}, ${p.hora} con ${p.profesional}`,
   },
   diaCerrado: "Cerrado",
   columnaVacia: "Sin reservas en este horario.",
