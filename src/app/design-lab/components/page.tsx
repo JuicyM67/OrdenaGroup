@@ -27,6 +27,7 @@ import {
   NavRailSpacer,
 } from "@/components/ui/nav-rail";
 import { PageHeader } from "@/components/ui/page-header";
+import { TextLink } from "@/components/ui/text-link";
 import { UserPill } from "@/components/ui/user-pill";
 
 import {
@@ -165,12 +166,49 @@ export default function ComponentsCatalogPage() {
         </IconButton>
       </Section>
 
+      <Section title="IconButton — asChild (WP-11)">
+        <Card
+          as="div"
+          tone="dark"
+          radius="tile"
+          padding="md"
+          className="inline-flex"
+        >
+          <IconButton asChild label="Compartir hora flash" size={44}>
+            <a href="#hora-flash">
+              <ArrowUpRight
+                aria-hidden="true"
+                className="size-4.5"
+                strokeWidth={strokeCard}
+              />
+            </a>
+          </IconButton>
+        </Card>
+      </Section>
+
       <Section title="Chip — tone/storlek">
         {chipFixtures.map((c) => (
           <Chip key={c.label} tone={c.tone} size={c.size}>
             {c.label}
           </Chip>
         ))}
+      </Section>
+
+      <Section title="Chip — trend/badge/weight/peach-50 (WP-11)">
+        <Chip tone="success" size="trend">
+          bajando
+        </Chip>
+        <Chip size="badge">−20%</Chip>
+        <Chip tone="success" size="sm" weight="bold">
+          Confirmó
+        </Chip>
+        <Chip tone="peach-50" size="xs">
+          Abono
+        </Chip>
+      </Section>
+
+      <Section title="TextLink (WP-11)">
+        <TextLink href="#agenda">Ver agenda</TextLink>
       </Section>
 
       <Section title="Pill — vald/ovald">
