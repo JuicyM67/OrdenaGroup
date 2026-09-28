@@ -5,7 +5,7 @@
  */
 import { market } from "@/config/brand";
 
-import * as esCL from "./es-CL";
+import { estados, hoy, nav } from "./es-CL";
 import * as esCLSitio from "./es-CL.marketing";
 import * as svSE from "./sv-SE";
 
@@ -27,20 +27,23 @@ type Widen<T> = T extends string
 type PlanTexto = Omit<esCLSitio.PlanLanding, "precioClp">;
 
 export type MarketingCopy = Widen<
-  Pick<typeof esCL, "nav" | "estados" | "hoy"> &
-    Pick<
-      typeof esCLSitio,
-      | "landing"
-      | "sitio"
-      | "SITIO_FUNCIONALIDADES"
-      | "SITIO_PRECIOS_TABLA"
-      | "SITIO_PARA_INDUSTRIAS"
-      | "SITIO_RUBROS_MARQUEE"
-    >
+  { nav: typeof nav; estados: typeof estados; hoy: typeof hoy } & Pick<
+    typeof esCLSitio,
+    | "landing"
+    | "sitio"
+    | "SITIO_FUNCIONALIDADES"
+    | "SITIO_PRECIOS_TABLA"
+    | "SITIO_PARA_INDUSTRIAS"
+    | "SITIO_RUBROS_MARQUEE"
+  >
 > & { readonly PLANES: readonly PlanTexto[] };
 
+// Namngivna importer (inte `import * as`): en namnrymdsimport av es-CL gör att
+// bundlern behåller alla exporter överallt, även i appens JS (budget /r, FRÅGA 7).
 const cl: MarketingCopy = {
-  ...esCL,
+  nav,
+  estados,
+  hoy,
   ...esCLSitio,
   PLANES: esCLSitio.PLANES_LANDING,
 };

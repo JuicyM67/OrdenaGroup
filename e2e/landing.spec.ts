@@ -95,9 +95,14 @@ test("preguntas frecuentes: se puede abrir una pregunta (details/summary nativo)
 
 test.describe("axe (wcag2a, wcag2aa, wcag21aa)", () => {
   test("/ sin violaciones", async ({ page }) => {
+    // Stillastående animationer (samma som för besökare med minskad rörelse) och
+    // utan de dekorativa produktmockuperna (aria-hidden): de byter färg mitt i
+    // animationen och bär ingen information.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+      .exclude('[aria-hidden="true"]')
       .analyze();
     expect(results.violations).toEqual([]);
   });
