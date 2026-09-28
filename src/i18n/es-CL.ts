@@ -2262,6 +2262,57 @@ export const sitio = {
   /** Sección de la portada con las cuatro razones grandes para elegirnos,
    * cada una con su propia imagen de producto (WP-hemsida). */
   inicio: {
+    /** Bento del hero de la portada (WP-hemsida): la píldora sobre el H1, la
+     * tarjeta de "Tu semana" (maqueta, no una agenda real), el toast de
+     * "Nueva reserva", la tarjeta del link de reservas y las dos cifras
+     * (disponibilidad y comisión). No hay `heroBento.siguiente` ni
+     * `heroBento.cta`/`nav`: la maqueta reutiliza `hoy.siguiente` (con
+     * `hoy.relativo.enMin`), `landing.hero.ctaPrimario`/`ctaSecundario` y
+     * `sitio.nav.entrar`/`ctaCrearAgenda`, que ya tienen el texto exacto que
+     * necesita esta tarjeta (ver el reporte de WP-hemsida). */
+    heroBento: {
+      nuevo: {
+        etiqueta: "Nuevo",
+        texto: "Horas flash: vende tus horas libres",
+      },
+      /** Tarjeta de calendario del hero: siempre muestra Lun–Vie, sin
+       * conectarse a una fecha real (a diferencia de `weekdayShort` de
+       * `src/lib/format/`, pensado para una fecha concreta). */
+      semana: {
+        titulo: "Tu semana",
+        vistaSemana: "Semana",
+        vistaDia: "Día",
+        dias: {
+          lun: "Lun",
+          mar: "Mar",
+          mie: "Mié",
+          jue: "Jue",
+          vie: "Vie",
+        },
+      },
+      /** Toast animado de una reserva nueva sobre la maqueta. `dia` ya llega
+       * formateado (p. ej. "vie 2 oct"). */
+      toast: (p: { dia: string; hora: string }): string =>
+        `Nueva reserva · ${p.dia} ${p.hora}`,
+      /** Mismo concepto que `inicio.tuLink` (agenda del dueño), acá con
+       * textos de botón más cortos porque la tarjeta del hero es angosta. */
+      link: {
+        titulo: "Tu link de reservas",
+        copiar: "Copiar",
+        copiado: "Copiado",
+        compartirAria: "Compartir tu link de reservas",
+      },
+      disponible: {
+        valor: "24/7",
+        pie: "de día o de noche",
+      },
+      /** `titulo`/`pie` son fijos; los porcentajes que van rotando
+       * (15 %, 10 %, 5 %, $0) los arma el componente, no `es-CL.ts`. */
+      comision: {
+        titulo: "Comisión",
+        pie: "por reserva, siempre",
+      },
+    },
     usp: {
       reservasSolas: {
         titulo: "Tus clientes reservan solos, a cualquier hora",

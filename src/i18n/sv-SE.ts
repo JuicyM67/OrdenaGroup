@@ -413,6 +413,53 @@ export const sitio = {
     hechoEnSantiago: landing.footer.hechoEnSantiago,
   },
   inicio: {
+    /** Samma nycklar och samma funktionssignaturer som `es-CL.sitio.inicio
+     * .heroBento` (WP-hemsida). Ingen `heroBento.siguiente` eller
+     * `heroBento.cta`/`nav`: samma återanvändning som i `es-CL.ts`, av
+     * `hoy.siguiente` (med `hoy.relativo.enMin`), `landing.hero.ctaPrimario`
+     * /`ctaSecundario` och `sitio.nav.entrar`/`ctaCrearAgenda`. Påminnelser
+     * går via sms, inte WhatsApp (D-028): `link.compartirAria` nämner ingen
+     * kanal. */
+    heroBento: {
+      nuevo: {
+        etiqueta: "Nyhet",
+        texto: "Flashtider: sälj dina lediga tider",
+      },
+      /** Kalenderkortet i hero: visar alltid mån–fre, utan koppling till ett
+       * riktigt datum. */
+      semana: {
+        titulo: "Din vecka",
+        vistaSemana: "Vecka",
+        vistaDia: "Dag",
+        dias: {
+          lun: "Mån",
+          mar: "Tis",
+          mie: "Ons",
+          jue: "Tor",
+          vie: "Fre",
+        },
+      },
+      /** Animerad toast för en ny bokning ovanpå maquetten. `dia` kommer
+       * redan formaterad (t.ex. "fre 2 okt"). */
+      toast: (p: { dia: string; hora: string }): string =>
+        `Ny bokning · ${p.dia} ${p.hora}`,
+      link: {
+        titulo: "Din bokningslänk",
+        copiar: "Kopiera",
+        copiado: "Kopierad",
+        compartirAria: "Dela din bokningslänk",
+      },
+      disponible: {
+        valor: "24/7",
+        pie: "dag som natt",
+      },
+      /** `titulo`/`pie` är fasta; de procentsatser som rullar (15 %, 10 %,
+       * 5 %, 0 kr) byggs av komponenten, inte här. */
+      comision: {
+        titulo: "Provision",
+        pie: "per bokning, alltid",
+      },
+    },
     usp: {
       reservasSolas: {
         titulo: "Dina kunder bokar själva, när som helst",

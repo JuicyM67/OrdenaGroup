@@ -26,15 +26,17 @@ import {
 } from "./test-helpers";
 
 /** Incluye `hora`, `pct` y `n` por las funciones de `sitio.inicio.flash.mock`
- * (WP-hemsida): como todas las funciones de `sitio` se invocan con la misma
- * muestra genérica, cualquier función nueva debe usar uno de estos nombres
- * de parámetro (o sumar uno acá). */
+ * (WP-hemsida), y `dia` por `sitio.inicio.heroBento.toast` (WP-hemsida):
+ * como todas las funciones de `sitio` se invocan con la misma muestra
+ * genérica, cualquier función nueva debe usar uno de estos nombres de
+ * parámetro (o sumar uno acá). */
 const MUESTRA_GENERICA = {
   nombre: "texto de ejemplo",
   precio: "$9.990",
   hora: "15:00",
   pct: "20",
   n: "3",
+  dia: "vie 2 oct",
 } as const;
 
 function invocarGenerico(fn: (p: never) => string): string {
