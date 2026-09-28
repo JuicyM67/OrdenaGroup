@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-024 · 2026-09-28 · D-020s grind tas bort för `/[slug]`, kvar för `/app/inicio|agenda|hoy`
+**Varför:** WP-20 kopplar Reserva (`/{slug}`) mot riktig data (schemamotorn, `createBooking`, samtycke på kundraden) och slug→business_id-uppslagningen ersätter D-020s `isDesignLabEnabled()`-grind: en okänd slug ger 404, ett `frozen`-företag visar det redan byggda frozen-läget. `/app/inicio`, `/app/agenda` och `/app/hoy` (WP-21) är oförändrade och stängda tills vidare. **Konsekvens:** `/[slug]/page.tsx` slår upp företaget via `src/app/[slug]/business.ts` (den enda `businesses`-frågan som filtrerar på `slug`) och laddar sidan via `src/server/bookings/page-data.ts`. `noindex` står kvar (ingen SEO-strategi bestämd än). Väntelistan (F8/WP-23) och kundens `r/[token]`-sida är utanför WP-20: en full dag utelämnas helt ur riktig data (som en stängd dag), så `WaitlistCard`/"Avísame" syns aldrig där — fixturerna i `/design-lab/reserva` har kvar fulla dagar och väntelistans stubbe (`src/app/design-lab/reserva/actions.ts`, flyttad ut ur `/[slug]/actions.ts` i samma PR). Samtycket sparas på kundraden (`consent_terms_at/marketing_at/version/channel='web'`) i en egen transaktion efter bokningen, inte atomiskt med den — en fullständig samtyckeslogg hör till WP-26. Kunden ser tillgänglighet 21 dagar framåt (inte hela `max_days_ahead`), en avvägning mot sidstorleken/prestandabudgeten. (WP-20)
+
 ### D-023 · 2026-09-27 · Handpenning vid ombokning och när företaget avbokar
 **Varför:** villkorstexten i samtycke `2026-10-v2` behöver täcka alla fall kunden kan hamna i (Ley 19.496). **Konsekvens:** kompletterar D-022: flyttar kunden tiden följer handpenningen med till den nya tiden; avbokar företaget betalar företaget tillbaka handpenningen. Plattformen lovar aldrig själv återbetalning (D-008). Juristen granskar (JURIST_FRAGOR 8).
 

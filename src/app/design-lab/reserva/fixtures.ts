@@ -2,9 +2,10 @@
  * Fixturer för Reserva, hämtade ur `docs/design/reference/Reserva.dc.html`
  * (`renderVals()`) och typade med `satisfies BookingPageData` (planens steg 1).
  *
- * Används av både `/design-lab/reserva` och den riktiga routen `/[slug]` (D-020:
- * routen är stängd i produktion via `isDesignLabEnabled()`). Riktig data kopplas in
- * i WP-20 — den här filen och `src/app/[slug]/actions.ts` stubbe försvinner då.
+ * Används bara av `/design-lab/reserva` sedan WP-20: den riktiga routen
+ * `/{slug}` läser numera riktig data via `src/server/bookings/page-data.ts`
+ * (docs/tasks/plans/WP-20.md). Server-action-stubben som svarar ur de här
+ * fixturerna flyttade till `./actions.ts` i samma PR.
  */
 import type {
   BookingAvailability,
@@ -130,7 +131,7 @@ function daysFor(
 }
 
 /** Jue 8 17:15, Corte + barba, Cualquiera — den enda tid som server-action-stubben
- * (`src/app/[slug]/actions.ts`) svarar `slot_taken` på (planens steg 1). */
+ * (`./actions.ts`) svarar `slot_taken` på (planens steg 1). */
 export const SLOT_TAKEN_ID = "cb-2026-10-08-1715";
 
 const services: readonly BookingService[] = [

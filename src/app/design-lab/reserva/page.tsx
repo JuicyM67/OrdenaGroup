@@ -1,7 +1,8 @@
 // /design-lab/reserva — artboard 390×1060, `?estado=` väljer tillstånden i planens
 // steg 8. Standardläget (utan `?estado=`) är referensens: Corte + barba, Cualquiera,
-// Mar 6, 11:30 flash. Alla lägen är interaktiva (samma BookingScreen/actions som den
-// riktiga routen), inte bara stillbilder.
+// Mar 6, 11:30 flash. Alla lägen är interaktiva (samma `BookingScreen` som den
+// riktiga routen, men fixture-stubbar i `./actions.ts` i stället för motorn — se
+// docs/tasks/plans/WP-20.md), inte bara stillbilder.
 import { errores } from "@/i18n";
 
 import {
@@ -19,7 +20,7 @@ import type {
 } from "@/components/booking/types";
 
 import { isDesignLabEnabled } from "../gate";
-import { createBooking, joinWaitlist } from "../../[slug]/actions";
+import { createBooking, joinWaitlist } from "./actions";
 import {
   barberiaNorte,
   barberiaPausada,

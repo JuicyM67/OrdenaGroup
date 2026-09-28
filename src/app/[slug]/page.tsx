@@ -1,5 +1,5 @@
-// Publik bokningssida (F5). Bara fixturer tills WP-20 kopplar in riktig data.
-// Grind D-020: stängd i produktion, öppen i staging via DESIGN_LAB=1.
+// Publik bokningssida (F5). Riktig data sedan WP-20 (D-020s grind för
+// `/[slug]` togs bort i samma PR, se docs/decisions/DECISIONS.md).
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -10,67 +10,59 @@ import type {
 } from "@/components/booking/form-schema";
 import type { BookingActionResult } from "@/components/booking/types";
 import { reserva } from "@/i18n";
+import { withServiceTx } from "@/server/db/tx";
+import { loadReservaPageData } from "@/server/bookings/page-data";
+import { systemClock } from "@/server/scheduling/clock";
 
-import { isDesignLabEnabled, type DesignLabEnv } from "../design-lab/gate";
-import { fixtureBusinesses } from "../design-lab/reserva/fixtures";
 import { createBooking, joinWaitlist } from "./actions";
+import { resolveBusinessBySlug } from "./business";
 
-// VERCEL_ENV måste läsas per request (samma skäl som design-lab/layout.tsx).
+// VERCEL_ENV/databasen måste läsas per request (samma skäl som tidigare:
+// design-lab/layout.tsx), och tillgängligheten ändras minut för minut.
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug: string }>;
-
-function gateEnv(): DesignLabEnv {
-  return {
-    VERCEL_ENV: process.env.VERCEL_ENV,
-    DESIGN_LAB: process.env.DESIGN_LAB,
-  };
-}
 
 export async function generateMetadata({
   params,
 }: {
   params: Params;
 }): Promise<Metadata> {
-  // Grinden även här (qa-granskning, item 16): annars läcker företagsnamnet i
-  // <title> för en okänd/stängd sida innan sidkomponenten hinner 404:a.
-  if (!isDesignLabEnabled(gateEnv())) {
-    return { robots: { index: false, follow: false } };
-  }
   const { slug } = await params;
-  const business = fixtureBusinesses[slug];
+  const business = await resolveBusinessBySlug(slug);
   return {
     title: business
-      ? reserva.meta.titulo({ negocio: business.business.name })
+      ? reserva.meta.titulo({ negocio: business.name })
       : undefined,
-    // Fixturer, inte riktig data: noindex tills WP-20.
+    // Riktig data, men fortfarande noindex (planens FRÅGA, WP-20-slim):
+    // sidan är ny, ingen SEO-strategi bestämd än.
     robots: { index: false, follow: false },
   };
 }
 
 export default async function ReservaPage({ params }: { params: Params }) {
-  if (!isDesignLabEnabled(gateEnv())) {
-    notFound();
-  }
-
   const { slug } = await params;
-  const data = fixtureBusinesses[slug];
+  const business = await resolveBusinessBySlug(slug);
+  if (!business) notFound();
+
+  const data = await withServiceTx((q) =>
+    loadReservaPageData(q, {
+      businessId: business.id,
+      slug,
+      now: systemClock(),
+    }),
+  );
+  // Bara en skyddsnät mot en race (företaget togs bort mellan de två
+  // frågorna ovan) — `resolveBusinessBySlug` hittade det just innan.
   if (!data) notFound();
 
-  // Bara de här två closurerna är riktiga server actions (qa-granskning,
-  // item 5): `slug` binds på servern (fri variabel i closuren, aldrig ett
-  // klientkontrollerat argument), och grinden körs igen inne i closuren —
-  // en anropare som fått tag i själva action-referensen (t.ex. från
-  // `.next/server/server-reference-manifest.json`) kan varken välja ett
-  // annat företag eller komma förbi grinden om miljön stängts efter att
-  // sidan laddades.
+  // Bara de här två closurerna är riktiga server actions (qa-granskning
+  // WP-13, item 5 — gäller fortfarande): `slug` binds på servern (fri
+  // variabel i closuren, aldrig ett klientkontrollerat argument).
   async function submitBooking(
     input: CustomerFormOutput,
   ): Promise<BookingActionResult> {
     "use server";
-    if (!isDesignLabEnabled(gateEnv())) {
-      return { ok: false, code: "business_unavailable" };
-    }
     return createBooking(slug, input);
   }
 
@@ -78,9 +70,6 @@ export default async function ReservaPage({ params }: { params: Params }) {
     input: WaitlistFormOutput,
   ): Promise<BookingActionResult> {
     "use server";
-    if (!isDesignLabEnabled(gateEnv())) {
-      return { ok: false, code: "business_unavailable" };
-    }
     return joinWaitlist(slug, input);
   }
 
