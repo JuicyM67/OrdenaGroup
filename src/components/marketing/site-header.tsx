@@ -1,32 +1,89 @@
-// Header delad av alla sidor på sitio-webben (WP-hemsida): logga, nav (med undermenyn
-// "Para quién"), "Entrar" och CTA. Samma yta som landningens tidigare bespoke header
-// (`sticky top-0 border-b border-line bg-canvas`, h-20), nu återanvänd på fler sidor.
-// Klientkomponent: undermenyn (Radix Popover, skrivbord) och mobilmenyn (Radix Dialog)
-// har eget öppet/stängt-tillstånd.
+// Header delad av alla sidor på sitio-webben (WP-hemsida, utökad i WP-hemsida v2 med en
+// megameny): logga, nav ("Funcionalidades" och "Para quién" öppnar samma breda panel —
+// kolumnerna Producto/Para quién/Recursos + ett destacado-kort för Horas flash), "Entrar"
+// och CTA. Radix NavigationMenu på skrivbord (tangentbord: pilar mellan triggers, Escape
+// stänger, Tab går igenom panelen). Ingen Viewport-komponent: med bara två triggers som
+// delar exakt samma innehåll ger den inget extra (ingen bredd-/höjdmorph att vinna), och
+// varje Content renderas i stället in-place, positionerad mot den (relativa) headern —
+// samma mönster som undermenyns tidigare Popover. Mobilmenyn (Radix Dialog) grupperar
+// samma innehåll (Producto/Para quién/Recursos) i en enda kolumn.
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import * as Popover from "@radix-ui/react-popover";
-import { ChevronDown, Menu, X } from "lucide-react";
+import * as NavigationMenu from "@radix-ui/react-navigation-menu";
+import {
+  ArrowUpRight,
+  Bell,
+  Calendar,
+  ChevronDown,
+  Link2,
+  List,
+  Menu,
+  Smartphone,
+  X,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 import { IconButton } from "@/components/ui/icon-button";
 import { LogoMark } from "@/components/ui/logo-mark";
-import { strokeNav } from "@/components/ui/icons";
+import { strokeArrow, strokeCard, strokeNav } from "@/components/ui/icons";
 import { brand } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
 
-const NAV_LINK_FUNCIONALIDADES = {
-  href: "/funcionalidades",
-  label: copy.sitio.nav.funcionalidades,
-} as const;
+const PRODUCTO_ITEMS: readonly {
+  id: string;
+  href: string;
+  icon: LucideIcon;
+  titulo: string;
+  texto: string;
+}[] = [
+  {
+    id: "reservas",
+    href: "/funcionalidades#link-reservas",
+    icon: Link2,
+    ...copy.sitio.megamenu.producto.items.reservas,
+  },
+  {
+    id: "agenda",
+    href: "/funcionalidades#agenda",
+    icon: Calendar,
+    ...copy.sitio.megamenu.producto.items.agenda,
+  },
+  {
+    id: "hoy",
+    href: "/funcionalidades#hoy",
+    icon: Smartphone,
+    ...copy.sitio.megamenu.producto.items.hoy,
+  },
+  {
+    id: "flash",
+    href: "/#horas-flash",
+    icon: Zap,
+    ...copy.sitio.megamenu.producto.items.flash,
+  },
+  {
+    id: "recordatorios",
+    href: "/funcionalidades#recordatorios",
+    icon: Bell,
+    ...copy.sitio.megamenu.producto.items.recordatorios,
+  },
+  {
+    id: "lista-espera",
+    href: "/funcionalidades#lista-espera",
+    icon: List,
+    ...copy.sitio.megamenu.producto.items.listaEspera,
+  },
+];
 
-const NAV_LINKS_AFTER_PARA_QUIEN = [
-  { href: "/precios", label: copy.sitio.nav.precios },
-  { href: "/preguntas", label: copy.sitio.nav.preguntas },
-  { href: "/contacto", label: copy.sitio.nav.contacto },
+const RECURSOS_ITEMS = [
+  { href: "/precios", ...copy.sitio.megamenu.recursos.precios },
+  { href: "/preguntas", ...copy.sitio.megamenu.recursos.preguntas },
+  { href: "/contacto", ...copy.sitio.megamenu.recursos.contacto },
 ] as const;
 
 const INDUSTRIAS = copy.SITIO_PARA_INDUSTRIAS.map((industria) => ({
@@ -38,12 +95,136 @@ const INDUSTRIAS = copy.SITIO_PARA_INDUSTRIAS.map((industria) => ({
 const navLinkClass =
   "text-14 font-semibold text-ink transition-colors duration-150 ease-out hover:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
+const megaLinkClass =
+  "group flex items-start gap-3 rounded-event p-2.5 transition-colors duration-150 ease-out hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
+/** Delas av de två megameny-triggerna ("Funcionalidades" och "Para quién"): samma fyra
+ * kolumner oavsett vilken av dem som öppnade den. */
+function MegaMenuPanel() {
+  return (
+    <div className="grid grid-cols-12 gap-8 rounded-panel bg-surface p-6 shadow-popover">
+      <div className="col-span-5 flex flex-col gap-3">
+        <span className="text-12 font-bold tracking-caps text-muted uppercase">
+          {copy.sitio.megamenu.producto.titulo}
+        </span>
+        <div className="grid grid-cols-2 gap-1">
+          {PRODUCTO_ITEMS.map((item) => (
+            <NavigationMenu.Link key={item.id} asChild>
+              <Link href={item.href} className={megaLinkClass}>
+                <span
+                  aria-hidden="true"
+                  className="flex size-9 shrink-0 items-center justify-center rounded-icon bg-canvas text-ink transition-colors duration-150 ease-out group-hover:bg-lime"
+                >
+                  <item.icon className="size-4.5" strokeWidth={strokeCard} />
+                </span>
+                <span className="flex flex-col gap-0.5">
+                  <span className="text-14 font-bold text-ink">
+                    {item.titulo}
+                  </span>
+                  <span className="text-13 text-muted">{item.texto}</span>
+                </span>
+              </Link>
+            </NavigationMenu.Link>
+          ))}
+        </div>
+      </div>
+
+      <div className="col-span-2 flex flex-col gap-3">
+        <span className="text-12 font-bold tracking-caps text-muted uppercase">
+          {copy.sitio.megamenu.paraQuien.titulo}
+        </span>
+        <ul className="flex flex-col gap-1">
+          {INDUSTRIAS.map((industria) => (
+            <li key={industria.id}>
+              <NavigationMenu.Link asChild>
+                <Link
+                  href={industria.href}
+                  className="block rounded-event px-2.5 py-2 text-14 font-semibold text-ink transition-colors duration-150 ease-out hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                >
+                  {industria.nombre}
+                </Link>
+              </NavigationMenu.Link>
+            </li>
+          ))}
+        </ul>
+        <NavigationMenu.Link asChild>
+          <Link
+            href="/#para-quien"
+            className="px-2.5 text-13 font-semibold text-ink underline transition-colors duration-150 ease-out hover:text-pending-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            {copy.sitio.megamenu.paraQuien.verTodas}
+          </Link>
+        </NavigationMenu.Link>
+      </div>
+
+      <div className="col-span-2 flex flex-col gap-3">
+        <span className="text-12 font-bold tracking-caps text-muted uppercase">
+          {copy.sitio.megamenu.recursos.titulo}
+        </span>
+        <ul className="flex flex-col gap-1">
+          {RECURSOS_ITEMS.map((item) => (
+            <li key={item.href}>
+              <NavigationMenu.Link asChild>
+                <Link href={item.href} className={megaLinkClass}>
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-14 font-bold text-ink">
+                      {item.titulo}
+                    </span>
+                    <span className="text-13 text-muted">{item.texto}</span>
+                  </span>
+                </Link>
+              </NavigationMenu.Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="col-span-3">
+        <NavigationMenu.Link asChild>
+          <Link
+            href="/#horas-flash"
+            className="group flex h-full flex-col justify-between gap-4 rounded-card bg-dark p-5 text-on-dark transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
+          >
+            <div className="flex items-center justify-between">
+              <span
+                aria-hidden="true"
+                className="flex size-14 shrink-0 items-center justify-center rounded-icon bg-lime text-ink"
+              >
+                <Zap className="size-6" strokeWidth={strokeCard} />
+              </span>
+              <Chip tone="lime" size="xs">
+                {copy.sitio.megamenu.destacado.etiqueta}
+              </Chip>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-17 font-bold">
+                {copy.sitio.megamenu.destacado.titulo}
+              </span>
+              <span className="text-13 text-on-dark-soft">
+                {copy.sitio.megamenu.destacado.texto}
+              </span>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-13 font-bold text-lime">
+              {copy.sitio.megamenu.destacado.cta}
+              <ArrowUpRight
+                aria-hidden="true"
+                className="size-4 transition-transform duration-150 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
+                strokeWidth={strokeArrow}
+              />
+            </span>
+          </Link>
+        </NavigationMenu.Link>
+      </div>
+    </div>
+  );
+}
+
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-canvas">
-      <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
+      <div className="relative mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
         <Link href="/" className="flex shrink-0 items-center gap-2.5">
           <LogoMark label={brand.name} size={40} decorative />
           <span className="font-display text-19 font-bold tracking-display text-ink">
@@ -51,55 +232,85 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <nav
+        <NavigationMenu.Root
           aria-label={copy.nav.principal}
-          className="hidden items-center gap-8 lg:flex"
+          className="hidden lg:block"
+          delayDuration={100}
         >
-          <Link href="/funcionalidades" className={navLinkClass}>
-            {copy.sitio.nav.funcionalidades}
-          </Link>
-
-          <Popover.Root>
-            <Popover.Trigger
-              className={`${navLinkClass} flex items-center gap-1`}
-            >
-              {copy.sitio.nav.paraQuien}
-              <ChevronDown
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={strokeNav}
-              />
-            </Popover.Trigger>
-            <Popover.Portal>
-              <Popover.Content
-                sideOffset={12}
-                align="start"
-                className="z-10 flex w-56 flex-col gap-1 rounded-panel bg-surface p-2 shadow-popover"
+          <NavigationMenu.List className="flex items-center gap-8">
+            <NavigationMenu.Item value="funcionalidades">
+              <NavigationMenu.Trigger
+                className={`${navLinkClass} flex items-center gap-1 outline-none`}
               >
-                {INDUSTRIAS.map((industria) => (
-                  <Popover.Close key={industria.id} asChild>
-                    <Link
-                      href={industria.href}
-                      className="rounded-event px-3 py-2.5 text-14 font-semibold text-ink transition-colors duration-150 ease-out hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                    >
-                      {industria.nombre}
-                    </Link>
-                  </Popover.Close>
-                ))}
-              </Popover.Content>
-            </Popover.Portal>
-          </Popover.Root>
+                {copy.sitio.nav.funcionalidades}
+                <ChevronDown
+                  aria-hidden="true"
+                  className="size-4"
+                  strokeWidth={strokeNav}
+                />
+              </NavigationMenu.Trigger>
+              <NavigationMenu.Content
+                // `fixed` i stället för `absolute`: Radix lägger en egen
+                // `position: relative`-wrapper runt <List> (bredd = navraden, inte hela
+                // headern), så en `absolute`/`w-full` här skulle bara bli lika bred som
+                // navraden. `fixed` + `inset-x-0` gör panelen oberoende av det, och
+                // `mx-auto max-w-6xl` inuti återskapar samma breddram som resten av sidan.
+                className="fixed inset-x-0 top-20 z-40"
+              >
+                <div className="mx-auto max-w-6xl px-4 sm:px-8">
+                  <MegaMenuPanel />
+                </div>
+              </NavigationMenu.Content>
+            </NavigationMenu.Item>
 
-          <Link href="/precios" className={navLinkClass}>
-            {copy.sitio.nav.precios}
-          </Link>
-          <Link href="/preguntas" className={navLinkClass}>
-            {copy.sitio.nav.preguntas}
-          </Link>
-          <Link href="/contacto" className={navLinkClass}>
-            {copy.sitio.nav.contacto}
-          </Link>
-        </nav>
+            <NavigationMenu.Item value="para-quien">
+              <NavigationMenu.Trigger
+                className={`${navLinkClass} flex items-center gap-1 outline-none`}
+              >
+                {copy.sitio.nav.paraQuien}
+                <ChevronDown
+                  aria-hidden="true"
+                  className="size-4"
+                  strokeWidth={strokeNav}
+                />
+              </NavigationMenu.Trigger>
+              <NavigationMenu.Content
+                // `fixed` i stället för `absolute`: Radix lägger en egen
+                // `position: relative`-wrapper runt <List> (bredd = navraden, inte hela
+                // headern), så en `absolute`/`w-full` här skulle bara bli lika bred som
+                // navraden. `fixed` + `inset-x-0` gör panelen oberoende av det, och
+                // `mx-auto max-w-6xl` inuti återskapar samma breddram som resten av sidan.
+                className="fixed inset-x-0 top-20 z-40"
+              >
+                <div className="mx-auto max-w-6xl px-4 sm:px-8">
+                  <MegaMenuPanel />
+                </div>
+              </NavigationMenu.Content>
+            </NavigationMenu.Item>
+
+            <NavigationMenu.Item>
+              <NavigationMenu.Link asChild>
+                <Link href="/precios" className={navLinkClass}>
+                  {copy.sitio.nav.precios}
+                </Link>
+              </NavigationMenu.Link>
+            </NavigationMenu.Item>
+            <NavigationMenu.Item>
+              <NavigationMenu.Link asChild>
+                <Link href="/preguntas" className={navLinkClass}>
+                  {copy.sitio.nav.preguntas}
+                </Link>
+              </NavigationMenu.Link>
+            </NavigationMenu.Item>
+            <NavigationMenu.Item>
+              <NavigationMenu.Link asChild>
+                <Link href="/contacto" className={navLinkClass}>
+                  {copy.sitio.nav.contacto}
+                </Link>
+              </NavigationMenu.Link>
+            </NavigationMenu.Item>
+          </NavigationMenu.List>
+        </NavigationMenu.Root>
 
         <div className="flex shrink-0 items-center gap-3">
           <Link
@@ -135,7 +346,7 @@ export function SiteHeader() {
               <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/45" />
               <Dialog.Content
                 aria-label={copy.nav.secciones}
-                className="fixed inset-y-0 right-0 z-50 flex w-full max-w-80 flex-col gap-6 bg-surface p-6 shadow-popover"
+                className="fixed inset-y-0 right-0 z-50 flex w-full max-w-80 flex-col gap-6 overflow-y-auto bg-surface p-6 shadow-popover"
               >
                 <div className="flex items-center justify-between">
                   <Dialog.Title asChild>
@@ -144,10 +355,7 @@ export function SiteHeader() {
                     </span>
                   </Dialog.Title>
                   <Dialog.Close asChild>
-                    {/* TODO_COPY: falta una cadena genérica "Cerrar" en `copy`
-                        (existe `comun.cerrar` en es-CL.ts, pero `comun` no está
-                        en `MarketingCopy`). Avisado en el reporte de WP-hemsida. */}
-                    <IconButton label="TODO_COPY: Cerrar" tone="canvas">
+                    <IconButton label={copy.sitio.nav.cerrar} tone="canvas">
                       <X
                         aria-hidden="true"
                         className="size-5"
@@ -161,37 +369,57 @@ export function SiteHeader() {
                   aria-label={copy.nav.principal}
                   className="flex flex-1 flex-col gap-1"
                 >
-                  <Dialog.Close asChild>
-                    <Link
-                      href={NAV_LINK_FUNCIONALIDADES.href}
-                      className="rounded-event px-3 py-3 text-16 font-semibold text-ink hover:bg-canvas"
-                    >
-                      {NAV_LINK_FUNCIONALIDADES.label}
-                    </Link>
-                  </Dialog.Close>
+                  <span className="px-3 text-12 font-bold tracking-caps text-muted uppercase">
+                    {copy.sitio.megamenu.producto.titulo}
+                  </span>
+                  {PRODUCTO_ITEMS.map((item) => (
+                    <Dialog.Close key={item.id} asChild>
+                      <Link
+                        href={item.href}
+                        className="flex items-center gap-3 rounded-event px-3 py-2.5 text-16 font-semibold text-ink hover:bg-canvas"
+                      >
+                        <item.icon
+                          aria-hidden="true"
+                          className="size-4.5 shrink-0 text-muted"
+                          strokeWidth={strokeCard}
+                        />
+                        {item.titulo}
+                      </Link>
+                    </Dialog.Close>
+                  ))}
 
                   <span className="mt-3 px-3 text-12 font-bold tracking-caps text-muted uppercase">
-                    {copy.sitio.nav.paraQuien}
+                    {copy.sitio.megamenu.paraQuien.titulo}
                   </span>
                   {INDUSTRIAS.map((industria) => (
                     <Dialog.Close key={industria.id} asChild>
                       <Link
                         href={industria.href}
-                        className="rounded-event px-3 py-3 text-16 font-semibold text-ink hover:bg-canvas"
+                        className="rounded-event px-3 py-2.5 text-16 font-semibold text-ink hover:bg-canvas"
                       >
                         {industria.nombre}
                       </Link>
                     </Dialog.Close>
                   ))}
+                  <Dialog.Close asChild>
+                    <Link
+                      href="/#para-quien"
+                      className="rounded-event px-3 py-2.5 text-14 font-semibold text-ink underline"
+                    >
+                      {copy.sitio.megamenu.paraQuien.verTodas}
+                    </Link>
+                  </Dialog.Close>
 
-                  <div className="mt-3 border-t border-line pt-3" />
-                  {NAV_LINKS_AFTER_PARA_QUIEN.map((link) => (
-                    <Dialog.Close key={link.href} asChild>
+                  <span className="mt-3 px-3 text-12 font-bold tracking-caps text-muted uppercase">
+                    {copy.sitio.megamenu.recursos.titulo}
+                  </span>
+                  {RECURSOS_ITEMS.map((item) => (
+                    <Dialog.Close key={item.href} asChild>
                       <Link
-                        href={link.href}
-                        className="rounded-event px-3 py-3 text-16 font-semibold text-ink hover:bg-canvas"
+                        href={item.href}
+                        className="rounded-event px-3 py-2.5 text-16 font-semibold text-ink hover:bg-canvas"
                       >
-                        {link.label}
+                        {item.titulo}
                       </Link>
                     </Dialog.Close>
                   ))}

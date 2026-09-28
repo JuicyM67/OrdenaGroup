@@ -82,9 +82,12 @@ export default function FuncionalidadesPage() {
             return (
               <Card
                 key={seccion.id}
+                id={seccion.id}
                 radius="tile"
                 padding="xl"
-                className="flex flex-col items-center gap-8 lg:flex-row"
+                // scroll-mt-24: destino de los anclajes del megamenú (Producto/Recursos,
+                // WP-hemsida v2), para que el header sticky no tape el título al saltar acá.
+                className="flex scroll-mt-24 flex-col items-center gap-8 lg:flex-row"
               >
                 <div
                   className={

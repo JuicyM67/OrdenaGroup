@@ -39,6 +39,9 @@ type MiniEvent = {
   time: string;
   tone: string;
   flash?: boolean;
+  /** Aparece con retraso (`animate-pop-in`), como si acabara de entrar una reserva
+   * (WP-hemsida v2, punto 2: "ev. en ny bokning som poppar in i kalendern"). */
+  isNew?: boolean;
 };
 
 // Cinco días, ~4 horas (10:00–14:00) y varios rubros (barbería, peluquería, estética,
@@ -61,6 +64,12 @@ const COLUMNS: readonly { day: string; events: readonly MiniEvent[] }[] = [
     day: DEMO.dagar[2]!,
     events: [
       { title: DEMO.tjanster[2]!, time: "12:30", tone: staffBgClass(3) },
+      {
+        title: DEMO.tjanster[0]!,
+        time: "13:30",
+        tone: staffBgClass(6),
+        isNew: true,
+      },
     ],
   },
   {
@@ -74,12 +83,29 @@ const COLUMNS: readonly { day: string; events: readonly MiniEvent[] }[] = [
 
 const COLUMNS_MOBILE = COLUMNS.slice(0, 3);
 
-function AgendaEvent({ event }: { event: MiniEvent }) {
+// Entrada en cascada al montar el hero: una animación de una sola vez (no `infinite`),
+// con más retraso por columna (`delay-*`, escala fija de Tailwind — nunca `[…]` ni un
+// `animation-delay` por style, prohibidos por ESLint en src/components, D-015).
+const COLUMN_DELAY = ["", "delay-100", "delay-200", "delay-300"] as const;
+
+function AgendaEvent({
+  event,
+  columnIndex,
+}: {
+  event: MiniEvent;
+  columnIndex: number;
+}) {
   return (
     <div
       className={cn(
         "flex flex-col rounded-event px-2.25 py-1.75 text-ink",
         event.tone,
+        event.isNew
+          ? "animate-pop-in delay-1000"
+          : cn(
+              "animate-fade-up",
+              COLUMN_DELAY[columnIndex % COLUMN_DELAY.length],
+            ),
       )}
     >
       {event.flash ? (
@@ -121,25 +147,33 @@ export function HeroVisualPreview({ className }: { className?: string }) {
             enda bokning lämnar synligt utrymme under — det läser som lediga tider, inte
             som ett tomt kort, och ger hela agendakortet höjd nog att bli huvudelementet. */}
         <div className="grid grid-cols-3 gap-2 sm:hidden">
-          {COLUMNS_MOBILE.map((column) => (
+          {COLUMNS_MOBILE.map((column, columnIndex) => (
             <div key={column.day} className="flex h-48 flex-col gap-2">
               <span className="text-13 font-semibold text-muted">
                 {column.day}
               </span>
               {column.events.map((event) => (
-                <AgendaEvent key={event.title} event={event} />
+                <AgendaEvent
+                  key={event.title + event.time}
+                  event={event}
+                  columnIndex={columnIndex}
+                />
               ))}
             </div>
           ))}
         </div>
         <div className="hidden grid-cols-4 gap-3 sm:grid">
-          {COLUMNS.map((column) => (
+          {COLUMNS.map((column, columnIndex) => (
             <div key={column.day} className="flex h-68 flex-col gap-2.5">
               <span className="text-13 font-semibold text-muted">
                 {column.day}
               </span>
               {column.events.map((event) => (
-                <AgendaEvent key={event.title} event={event} />
+                <AgendaEvent
+                  key={event.title + event.time}
+                  event={event}
+                  columnIndex={columnIndex}
+                />
               ))}
             </div>
           ))}
@@ -148,7 +182,9 @@ export function HeroVisualPreview({ className }: { className?: string }) {
 
       {/* Bokningskort: tjänst + tidsknappar (Reserva). Kikar ut ovanför agendakortets
           övre högra hörn (bara hörnet, inte mitten) — mittersta dagkolumnerna förblir
-          fria. Nedskalad bort på mobil (ren agenda + "Siguiente" räcker där). */}
+          fria. Nedskalad bort på mobil (ren agenda + "Siguiente" räcker där). Två av
+          tidsknapparna "väljs" växelvis i en loop (animate-select-glow-a/-b), den tredje
+          (Horas flash) förblir alltid lime — det är dess fasta färg, inte ett val. */}
       <div
         aria-hidden="true"
         className="absolute right-0 bottom-4 z-20 hidden w-6/12 rotate-2 rounded-tile bg-surface p-4 shadow-popover sm:block sm:w-4/12"
@@ -158,10 +194,10 @@ export function HeroVisualPreview({ className }: { className?: string }) {
           {formatDuration(35)} · {DEMO.pris}
         </div>
         <div className="mt-3 grid grid-cols-3 gap-1.5">
-          <span className="flex h-10 items-center justify-center rounded-control bg-surface text-13 font-bold text-ink">
+          <span className="flex h-10 animate-select-glow-a items-center justify-center rounded-control bg-canvas text-13 font-bold text-ink">
             10:00
           </span>
-          <span className="flex h-10 items-center justify-center rounded-control bg-ink text-13 font-bold text-on-dark">
+          <span className="flex h-10 animate-select-glow-b items-center justify-center rounded-control bg-canvas text-13 font-bold text-ink">
             11:30
           </span>
           <span className="flex h-10 items-center justify-center rounded-control bg-lime text-13 font-bold text-ink">
@@ -171,10 +207,12 @@ export function HeroVisualPreview({ className }: { className?: string }) {
       </div>
 
       {/* Mobilkort: "Siguiente" (Hoy). Överlappar bara agendakortets nedre vänstra hörn,
-          i det motsatta hörnet mot bokningskortet ovan — de korsar aldrig varandra. */}
+          i det motsatta hörnet mot bokningskortet ovan — de korsar aldrig varandra. Svävar
+          lätt i en loop (animate-float bakar in samma -1° rotation som förut, se
+          tokens.css: animationen äger `transform` under hela loopen). */}
       <div
         aria-hidden="true"
-        className="absolute bottom-0 left-0 z-30 w-8/12 -rotate-1 rounded-hero bg-dark p-5 text-on-dark shadow-popover sm:w-5/12"
+        className="absolute bottom-0 left-0 z-30 w-8/12 animate-float rounded-hero bg-dark p-5 text-on-dark shadow-popover sm:w-5/12"
       >
         <div className="flex flex-col items-start gap-2">
           <span className="text-13 text-on-dark-muted">

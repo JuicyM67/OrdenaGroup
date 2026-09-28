@@ -4,6 +4,13 @@
 // D-025/D-026) från samma kod. Header/footer/CTA-band/FAQ delas med resten av
 // sitio-webben (`src/components/marketing/`). Ingen `npm run visual` för den här skärmen
 // (inget referensfoto finns) — se PR-rapporten.
+//
+// WP-hemsida v2 ("hemsidan blir rörlig", se PR-rapporten): megameny i headern, en levande
+// hero (hero-visual-preview.tsx), USP-korten fick mini-mockuper + hover-lyft
+// (usp-showcase.tsx), "Cómo funciona" ersattes av en animerad telefonmockup
+// (flujo-mockup.tsx), en ny sektion visar Horas flash (flash-mockup.tsx), "Beneficios" blev
+// ett bentogrid (bento-grid.tsx) och "Para quién" blev en rullande banner
+// (rubros-marquee.tsx) — branschrutorna finns kvar på /para/*, nådda via megamenyn/footern.
 import type { Metadata } from "next";
 import {
   Banknote,
@@ -11,13 +18,9 @@ import {
   Calendar,
   Check,
   CreditCard,
-  Gem,
-  HeartPulse,
   Link2,
   List,
-  Scissors,
-  Sparkles,
-  UserCheck,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -25,13 +28,18 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextLink } from "@/components/ui/text-link";
 import { strokeCard } from "@/components/ui/icons";
+import { BentoGrid } from "@/components/marketing/bento-grid";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { DecorativeBlob } from "@/components/marketing/decorative-blob";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
+import { FlashMockup } from "@/components/marketing/flash-mockup";
+import { FlujoMockup } from "@/components/marketing/flujo-mockup";
 import { HeroVisualPreview } from "@/components/marketing/hero-visual-preview";
+import { RubrosMarquee } from "@/components/marketing/rubros-marquee";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
+import { UspShowcase } from "@/components/marketing/usp-showcase";
 import { brand } from "@/config/brand";
 import { formatPrecioPlan } from "@/config/pricing";
 import { copy } from "@/i18n/marketing";
@@ -41,20 +49,6 @@ export const metadata: Metadata = {
   description: copy.landing.meta.descripcion({ nombre: brand.name }),
 };
 
-type Tone = "lilac" | "peach" | "lime";
-const TONE_CYCLE: readonly Tone[] = ["lilac", "peach", "lime"];
-const TONE_TEXT: Record<Tone, string> = {
-  lilac: "text-on-lilac-soft",
-  peach: "text-on-peach-soft",
-  lime: "text-on-lime-soft",
-};
-
-const PASOS = [
-  copy.landing.comoFunciona.pasos.crear,
-  copy.landing.comoFunciona.pasos.compartir,
-  copy.landing.comoFunciona.pasos.reservan,
-] as const;
-
 const BENEFICIOS = [
   { icon: Link2, ...copy.landing.beneficios.items.linkPropio },
   { icon: Calendar, ...copy.landing.beneficios.items.agendaPorProfesional },
@@ -62,16 +56,6 @@ const BENEFICIOS = [
   { icon: List, ...copy.landing.beneficios.items.listaDeEspera },
   { icon: CreditCard, ...copy.landing.beneficios.items.abono },
   { icon: Banknote, ...copy.landing.beneficios.items.precioUnico },
-] as const;
-
-const PARA_QUIEN = [
-  { icon: Scissors, label: copy.landing.paraQuien.items.barberias },
-  { icon: Sparkles, label: copy.landing.paraQuien.items.peluquerias },
-  { icon: Gem, label: copy.landing.paraQuien.items.esteticaYUnas },
-  {
-    icon: HeartPulse,
-    label: copy.landing.paraQuien.items.kinesiologiaYMasajes,
-  },
 ] as const;
 
 const PREGUNTAS = [
@@ -89,13 +73,10 @@ const HERO_STATS = [
   copy.landing.heroStats.comision,
 ] as const;
 
-/** Fyra stora USP-block (`sitio.inicio.usp`, WP-hemsida): egna lucide-ikoner per block,
- * samma mönster som BENEFICIOS ovan (ikonen är inte del av copy). */
-const USP_ITEMS = [
-  { icon: Link2, ...copy.sitio.inicio.usp.reservasSolas },
-  { icon: Calendar, ...copy.sitio.inicio.usp.agendaOrdenada },
-  { icon: UserCheck, ...copy.sitio.inicio.usp.menosInasistencias },
-  { icon: Banknote, ...copy.sitio.inicio.usp.precioUnico },
+const FLASH_PUNTOS = [
+  copy.sitio.inicio.flash.puntos.punto1,
+  copy.sitio.inicio.flash.puntos.punto2,
+  copy.sitio.inicio.flash.puntos.punto3,
 ] as const;
 
 export default function LandingPage() {
@@ -181,49 +162,9 @@ export default function LandingPage() {
           </Card>
         </section>
 
-        {/* USP: cuatro razones grandes (sitio.inicio.usp) */}
+        {/* USP: cuatro razones grandes, cada una con su propia mini-mockup (sitio.inicio.usp) */}
         <section className="mx-auto max-w-6xl px-4 py-14 sm:px-8">
-          <div className="grid gap-5 sm:grid-cols-2">
-            {USP_ITEMS.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Card
-                  key={item.titulo}
-                  radius="tile"
-                  padding="xl"
-                  className="flex flex-col gap-4"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="flex size-11 shrink-0 items-center justify-center rounded-icon bg-ink text-on-dark"
-                  >
-                    <Icon className="size-5.5" strokeWidth={strokeCard} />
-                  </span>
-                  <div className="flex flex-col gap-2">
-                    <h3 className="text-19 leading-snug font-bold text-ink">
-                      {item.titulo}
-                    </h3>
-                    <p className="text-14 text-muted">{item.texto}</p>
-                  </div>
-                  <ul className="flex flex-col gap-2">
-                    {Object.values(item.puntos).map((punto) => (
-                      <li
-                        key={punto}
-                        className="flex items-start gap-2 text-14 text-ink"
-                      >
-                        <Check
-                          aria-hidden="true"
-                          className="mt-0.5 size-4 shrink-0 text-muted"
-                          strokeWidth={2.4}
-                        />
-                        {punto}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              );
-            })}
-          </div>
+          <UspShowcase />
 
           {/* Prisnudge: precio desde + link a Funcionalidades */}
           <Card
@@ -243,93 +184,88 @@ export default function LandingPage() {
           </Card>
         </section>
 
-        {/* Cómo funciona */}
+        {/* Cómo funciona: mockup animado del flujo de reserva completo */}
         <section
           id="como-funciona"
           className="mx-auto max-w-6xl scroll-mt-24 px-4 py-14 sm:px-8"
         >
-          <SectionHeading title={copy.landing.comoFunciona.titulo} />
-          <div className="mt-8 grid gap-5 sm:grid-cols-3">
-            {PASOS.map((paso, i) => {
-              const tone = TONE_CYCLE[i % TONE_CYCLE.length]!;
-              return (
-                <Card
-                  key={paso.titulo}
-                  tone={tone}
-                  radius="tile"
-                  padding="lg"
-                  className="flex flex-col gap-3"
-                >
-                  <span className="text-13 font-semibold text-ink">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <h3 className="text-19 leading-snug font-bold text-ink">
-                    {paso.titulo}
-                  </h3>
-                  <p className={`text-14 ${TONE_TEXT[tone]}`}>{paso.texto}</p>
-                </Card>
-              );
-            })}
+          <SectionHeading
+            title={copy.sitio.inicio.flujo.titulo}
+            subtitle={copy.sitio.inicio.flujo.texto}
+          />
+          <div className="mt-8">
+            <FlujoMockup />
           </div>
         </section>
 
-        {/* Beneficios */}
+        {/* Horas flash */}
+        <section
+          id="horas-flash"
+          className="mx-auto max-w-6xl scroll-mt-24 px-4 py-14 sm:px-8"
+        >
+          <div className="flex flex-col items-center gap-10 lg:flex-row">
+            <div className="flex flex-1 flex-col gap-4">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-13 font-bold tracking-caps text-on-dark uppercase">
+                <Zap
+                  aria-hidden="true"
+                  className="size-3.5"
+                  strokeWidth={strokeCard}
+                />
+                {copy.sitio.inicio.flash.etiqueta}
+              </span>
+              <h2 className="font-display text-30 font-bold tracking-display text-ink sm:text-32">
+                {copy.sitio.inicio.flash.titulo}
+              </h2>
+              <p className="max-w-md text-15 text-muted">
+                {copy.sitio.inicio.flash.texto}
+              </p>
+              <ul className="flex flex-col gap-2">
+                {FLASH_PUNTOS.map((punto) => (
+                  <li
+                    key={punto}
+                    className="flex items-start gap-2 text-14 text-ink"
+                  >
+                    <Check
+                      aria-hidden="true"
+                      className="mt-0.5 size-4 shrink-0 text-muted"
+                      strokeWidth={2.4}
+                    />
+                    {punto}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="w-full flex-1">
+              <FlashMockup />
+            </div>
+          </div>
+        </section>
+
+        {/* Todo lo que necesitas: bentogrid (mismos seis beneficios de siempre) */}
         <section
           id="beneficios"
           className="mx-auto max-w-6xl scroll-mt-24 px-4 py-14 sm:px-8"
         >
-          <SectionHeading title={copy.landing.beneficios.titulo} />
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {BENEFICIOS.map((item, i) => {
-              const tone = TONE_CYCLE[i % TONE_CYCLE.length]!;
-              const Icon = item.icon;
-              return (
-                <Card
-                  key={item.titulo}
-                  tone={tone}
-                  radius="tile"
-                  padding="lg"
-                  className="flex flex-col gap-3"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="flex size-11 shrink-0 items-center justify-center rounded-icon bg-ink text-on-dark"
-                  >
-                    <Icon className="size-5.5" strokeWidth={strokeCard} />
-                  </span>
-                  <h3 className="text-19 leading-snug font-bold text-ink">
-                    {item.titulo}
-                  </h3>
-                  <p className={`text-14 ${TONE_TEXT[tone]}`}>{item.texto}</p>
-                </Card>
-              );
-            })}
+          <SectionHeading
+            title={copy.sitio.inicio.bento.titulo}
+            subtitle={copy.sitio.inicio.bento.subtitulo}
+          />
+          <div className="mt-8">
+            <BentoGrid
+              items={BENEFICIOS}
+              imageSrc="/images/sitio/bento-salon.webp"
+            />
           </div>
         </section>
 
-        {/* Para quién */}
+        {/* Para quién: banner con todos los rubros, en bucle */}
         <section
           id="para-quien"
           className="mx-auto max-w-6xl scroll-mt-24 px-4 py-14 sm:px-8"
         >
-          <SectionHeading title={copy.landing.paraQuien.titulo} />
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {PARA_QUIEN.map(({ icon: Icon, label }) => (
-              <Card
-                key={label}
-                radius="tile"
-                padding="lg"
-                className="flex flex-col items-center gap-3 text-center"
-              >
-                <span
-                  aria-hidden="true"
-                  className="flex size-11 shrink-0 items-center justify-center rounded-icon bg-canvas text-ink"
-                >
-                  <Icon className="size-5.5" strokeWidth={strokeCard} />
-                </span>
-                <span className="text-15 font-semibold text-ink">{label}</span>
-              </Card>
-            ))}
+          <SectionHeading title={copy.sitio.inicio.marquee.titulo} />
+          <div className="mt-8">
+            <RubrosMarquee />
           </div>
         </section>
 
@@ -403,6 +339,8 @@ export default function LandingPage() {
           text={copy.landing.ctaFinal.texto}
           buttonLabel={copy.landing.ctaFinal.boton}
           href="/login"
+          imageSrc="/images/sitio/cta-barberia.webp"
+          imageAlt={copy.sitio.cta.fondoAlt}
         />
       </main>
 

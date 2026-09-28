@@ -148,6 +148,179 @@
   /* ---------- Agenda ---------- */
   --agenda-hour: 94px;          /* höjd per timme i veckovyn */
   --agenda-gutter: 64px;        /* tidskolumnens bredd */
+
+  /* ---------- Animation (WP-hemsida v2 — hemsidan blir rörlig) ----------
+     Ingen referens i docs/design/reference/ (nytt för hemsidan, inte produkt-UI).
+     `prefers-reduced-motion: reduce` stänger av allt (src/app/globals.css). ESLint (D-015)
+     förbjuder både `style={}` (utom top/height/left/width, D-021) och `[...]`-värden i
+     klassnamn i src/components och src/app — så varje stegs fördröjning är inbakad i en
+     egen namngiven @keyframes i stället för `animation-delay` via en Tailwind-klass eller
+     inline style. Tidsvärden (sekunder i keyframes, `delay-*`) är rena CSS-tajmningar,
+     inte designtokens — samma mönster som `duration-150`/`ease-out` i komponenterna. */
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pop-in: pop-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-marquee: marquee 34s linear infinite;
+  --animate-marquee-reverse: marquee-reverse 38s linear infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  /* Rotationen är inbakad (i stället för en Tailwind `-rotate-*`-klass på samma element):
+     animationen äger `transform` under hela loopen, så den skulle annars nollställa
+     kortets vridning i vila (WP-hemsida v2, "Siguiente"-kortet i heron). */
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-1deg);
+    }
+    50% {
+      transform: translateY(-6px) rotate(-1deg);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  /* Oändlig rullning, "Para quién"-bannern: dubblerat innehåll, 50% = en hel runda. */
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes marquee-reverse {
+    from {
+      transform: translateX(-50%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* BookingBar-mockupen i heron: två tidsknappar "väljs" växelvis i en loop
+     (canvas → ink → canvas), en halv runda ur fas med varandra. */
+  --animate-select-glow-a: select-glow-a 6s ease-in-out infinite;
+  --animate-select-glow-b: select-glow-b 6s ease-in-out infinite;
+  @keyframes select-glow-a {
+    0%,
+    28% {
+      background-color: var(--color-canvas);
+      color: var(--color-ink);
+    }
+    36%,
+    64% {
+      background-color: var(--color-ink);
+      color: var(--color-on-dark);
+    }
+    72%,
+    100% {
+      background-color: var(--color-canvas);
+      color: var(--color-ink);
+    }
+  }
+  @keyframes select-glow-b {
+    0%,
+    64% {
+      background-color: var(--color-canvas);
+      color: var(--color-ink);
+    }
+    72%,
+    100% {
+      background-color: var(--color-ink);
+      color: var(--color-on-dark);
+    }
+    /* Fortsätter i samma "ink"-läge in i nästa runda tills 28% (se select-glow-a). */
+  }
+
+  /* Fyra staplade steg (Hora Flash- och bokningsflödes-mockuperna): fyra separata,
+     färdigfasade animationer i stället för en delad + animation-delay (se ESLint-notan
+     ovan). `step-dim-*` är samma tajmning för stegindikatorn (aldrig helt osynlig). */
+  --animate-step-fade-1: step-fade-1 10s ease-in-out infinite;
+  --animate-step-fade-2: step-fade-2 10s ease-in-out infinite;
+  --animate-step-fade-3: step-fade-3 10s ease-in-out infinite;
+  --animate-step-fade-4: step-fade-4 10s ease-in-out infinite;
+  --animate-step-dim-1: step-dim-1 10s ease-in-out infinite;
+  --animate-step-dim-2: step-dim-2 10s ease-in-out infinite;
+  --animate-step-dim-3: step-dim-3 10s ease-in-out infinite;
+  --animate-step-dim-4: step-dim-4 10s ease-in-out infinite;
+  @keyframes step-fade-1 {
+    0%,
+    2% { opacity: 0; }
+    6%,
+    21% { opacity: 1; }
+    25%,
+    100% { opacity: 0; }
+  }
+  @keyframes step-fade-2 {
+    0%,
+    27% { opacity: 0; }
+    31%,
+    46% { opacity: 1; }
+    50%,
+    100% { opacity: 0; }
+  }
+  @keyframes step-fade-3 {
+    0%,
+    52% { opacity: 0; }
+    56%,
+    71% { opacity: 1; }
+    75%,
+    100% { opacity: 0; }
+  }
+  @keyframes step-fade-4 {
+    0%,
+    77% { opacity: 0; }
+    81%,
+    96% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes step-dim-1 {
+    0%,
+    2% { opacity: 0.4; }
+    6%,
+    21% { opacity: 1; }
+    25%,
+    100% { opacity: 0.4; }
+  }
+  @keyframes step-dim-2 {
+    0%,
+    27% { opacity: 0.4; }
+    31%,
+    46% { opacity: 1; }
+    50%,
+    100% { opacity: 0.4; }
+  }
+  @keyframes step-dim-3 {
+    0%,
+    52% { opacity: 0.4; }
+    56%,
+    71% { opacity: 1; }
+    75%,
+    100% { opacity: 0.4; }
+  }
+  @keyframes step-dim-4 {
+    0%,
+    77% { opacity: 0.4; }
+    81%,
+    96% { opacity: 1; }
+    100% { opacity: 0.4; }
+  }
 }
 
 :root {
@@ -174,4 +347,11 @@
 /* Randigt mönster för en stängd dag i veckovyn. */
 @utility bg-closed-stripes {
   background-image: repeating-linear-gradient(135deg, var(--color-canvas) 0 10px, var(--color-stripe) 10px 20px);
+}
+
+/* "Para quién"-bannern: pausar animate-marquee/-marquee-reverse vid hover (WP-hemsida v2). */
+@utility marquee-pausable {
+  &:hover {
+    animation-play-state: paused;
+  }
 }

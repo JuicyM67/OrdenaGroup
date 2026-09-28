@@ -100,12 +100,8 @@ export default async function ParaIndustriaPage({
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-8">
-          {/* TODO_COPY: falta un título propio para la lista de servicios de
-              ejemplo por rubro (p.ej. "Servicios de ejemplo"); `sitio.para.titulo`
-              es el título del índice "Para quién es", no el de esta lista.
-              Avisado en el reporte de WP-hemsida. */}
           <h2 className="font-display text-24 font-bold tracking-display text-ink">
-            TODO_COPY: Servicios de ejemplo
+            {copy.sitio.para.serviciosTitulo}
           </h2>
           <Card radius="card" padding="none" className="mt-6">
             {industria.servicios.map((servicio) => (
