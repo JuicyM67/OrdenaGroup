@@ -74,10 +74,10 @@ export function SiteFooter() {
   const anio = new Date().getFullYear();
   return (
     <footer className="bg-lime-50">
-      <div className="mx-auto max-w-6xl px-4 pt-24 pb-10 sm:px-8 sm:pt-28">
+      <div className="px-4 pt-24 pb-4 sm:px-6 sm:pt-28 sm:pb-6 lg:px-8">
         <div
           data-surface="dark"
-          className="relative rounded-shell bg-dark px-6 pt-20 pb-10 text-on-dark sm:px-10 sm:pt-24 sm:pb-12"
+          className="relative rounded-shell bg-dark px-6 pt-20 pb-10 text-on-dark sm:px-10 sm:pt-24 sm:pb-12 lg:px-16"
         >
           <ContourLines />
 

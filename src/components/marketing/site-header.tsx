@@ -369,10 +369,11 @@ export function SiteHeader() {
               </IconButton>
             </Dialog.Trigger>
             <Dialog.Portal>
-              <Dialog.Overlay className="fixed inset-0 z-50 bg-ink/45" />
+              <Dialog.Overlay className="fixed inset-0 z-50 bg-dark" />
               <Dialog.Content
                 aria-label={copy.nav.secciones}
-                className="fixed inset-y-0 right-0 z-50 flex w-full max-w-80 flex-col gap-6 overflow-y-auto bg-surface p-6 shadow-popover"
+                data-surface="dark"
+                className="fixed inset-0 z-50 flex animate-fade-up flex-col gap-8 overflow-y-auto bg-dark px-6 pt-6 pb-8 text-on-dark"
               >
                 <div className="flex items-center justify-between">
                   <Dialog.Title asChild>
@@ -381,7 +382,7 @@ export function SiteHeader() {
                     </span>
                   </Dialog.Title>
                   <Dialog.Close asChild>
-                    <IconButton label={copy.sitio.nav.cerrar} tone="canvas">
+                    <IconButton label={copy.sitio.nav.cerrar} tone="dark-2">
                       <X
                         aria-hidden="true"
                         className="size-5"
@@ -395,18 +396,18 @@ export function SiteHeader() {
                   aria-label={copy.nav.principal}
                   className="flex flex-1 flex-col gap-1"
                 >
-                  <span className="px-3 text-12 font-bold tracking-caps text-muted uppercase">
+                  <span className="px-3 text-12 font-bold tracking-caps text-on-dark-muted uppercase">
                     {copy.sitio.megamenu.producto.titulo}
                   </span>
                   {PRODUCTO_ITEMS.map((item) => (
                     <Dialog.Close key={item.id} asChild>
                       <Link
                         href={item.href}
-                        className="flex items-center gap-3 rounded-event px-3 py-2.5 text-16 font-semibold text-ink hover:bg-canvas"
+                        className="flex items-center gap-3 rounded-event px-3 py-2.5 font-display text-24 font-semibold text-on-dark hover:bg-dark-2"
                       >
                         <item.icon
                           aria-hidden="true"
-                          className="size-4.5 shrink-0 text-muted"
+                          className="size-5 shrink-0 text-lime"
                           strokeWidth={strokeCard}
                         />
                         {item.titulo}
@@ -414,14 +415,14 @@ export function SiteHeader() {
                     </Dialog.Close>
                   ))}
 
-                  <span className="mt-3 px-3 text-12 font-bold tracking-caps text-muted uppercase">
+                  <span className="mt-3 px-3 text-12 font-bold tracking-caps text-on-dark-muted uppercase">
                     {copy.sitio.megamenu.paraQuien.titulo}
                   </span>
                   {INDUSTRIAS.map((industria) => (
                     <Dialog.Close key={industria.id} asChild>
                       <Link
                         href={industria.href}
-                        className="rounded-event px-3 py-2.5 text-16 font-semibold text-ink hover:bg-canvas"
+                        className="rounded-event px-3 py-2 text-18 font-semibold text-on-dark-soft hover:bg-dark-2 hover:text-on-dark"
                       >
                         {industria.nombre}
                       </Link>
@@ -430,20 +431,20 @@ export function SiteHeader() {
                   <Dialog.Close asChild>
                     <Link
                       href="/#para-quien"
-                      className="rounded-event px-3 py-2.5 text-14 font-semibold text-ink underline"
+                      className="rounded-event px-3 py-2 text-14 font-semibold text-lime underline"
                     >
                       {copy.sitio.megamenu.paraQuien.verTodas}
                     </Link>
                   </Dialog.Close>
 
-                  <span className="mt-3 px-3 text-12 font-bold tracking-caps text-muted uppercase">
+                  <span className="mt-3 px-3 text-12 font-bold tracking-caps text-on-dark-muted uppercase">
                     {copy.sitio.megamenu.recursos.titulo}
                   </span>
                   {RECURSOS_ITEMS.map((item) => (
                     <Dialog.Close key={item.href} asChild>
                       <Link
                         href={item.href}
-                        className="rounded-event px-3 py-2.5 text-16 font-semibold text-ink hover:bg-canvas"
+                        className="rounded-event px-3 py-2 text-18 font-semibold text-on-dark-soft hover:bg-dark-2 hover:text-on-dark"
                       >
                         {item.titulo}
                       </Link>
@@ -455,13 +456,13 @@ export function SiteHeader() {
                   <Dialog.Close asChild>
                     <Link
                       href="/login"
-                      className="text-center text-14 font-semibold text-ink underline"
+                      className="text-center text-16 font-semibold text-on-dark underline"
                     >
                       {copy.sitio.nav.entrar}
                     </Link>
                   </Dialog.Close>
                   <Dialog.Close asChild>
-                    <Button asChild variant="primary" size="xl">
+                    <Button asChild variant="accent" size="xl">
                       <Link href="/login">{copy.sitio.nav.ctaCrearAgenda}</Link>
                     </Button>
                   </Dialog.Close>
