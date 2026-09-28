@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { comun, errores, reserva } from "@/i18n";
+import { comun, errores } from "@/i18n";
 import type { PhoneError } from "@/lib/format/phone";
 
 import {
@@ -62,13 +62,7 @@ describe("fieldError", () => {
 
 describe("serverError", () => {
   it.each(SERVER_CODES)("%s har text", (code) => {
-    // business_unavailable har ingen egen errores.reserva-nyckel: samma text
-    // som den tomma sidans vacios.negocioNoDisponible.
-    const expected =
-      code === "business_unavailable"
-        ? reserva.vacios.negocioNoDisponible
-        : errores.reserva[code];
-    expect(serverError(code)).toBe(expected);
+    expect(serverError(code)).toBe(errores.reserva[code]);
   });
 
   it("en okänd kod ger comun.algoSalioMal", () => {

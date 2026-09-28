@@ -102,7 +102,7 @@ test.describe("Reserva — flödet", () => {
       .fill("+56 9 8765 4321");
     await page
       .getByRole("checkbox", {
-        name: new RegExp(reserva.terminosListaEspera.slice(0, 15)),
+        name: new RegExp(reserva.waitlist.terminos.slice(0, 15)),
       })
       .check();
     await page
@@ -429,9 +429,7 @@ test.describe("Reserva — robusthet (qa-granskning)", () => {
     await page
       .getByLabel(reserva.clienteForm.telefonoLabel)
       .fill("+56 9 1234 5678");
-    await page
-      .getByLabel(reserva.clienteForm.emailLabel)
-      .fill("no-es-correo");
+    await page.getByLabel(reserva.clienteForm.emailLabel).fill("no-es-correo");
     await page
       .getByRole("checkbox", {
         name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),

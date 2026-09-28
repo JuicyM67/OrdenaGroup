@@ -176,17 +176,21 @@ export function CustomerForm({
       email: emailResult.value ?? "",
       termsAccepted: true as const,
       marketing,
-      consentVersion: reserva.consentimientos.version,
       idempotencyKey,
       serviceId: selection.serviceId!,
       staffId: selection.staffId,
       date: selection.date!,
     };
     if (isWaitlist) {
-      onSubmitWaitlist(base as WaitlistFormOutput);
+      onSubmitWaitlist({
+        ...base,
+        // Väntelistans egen version (WP-03b), inte consentimientos.version.
+        consentVersion: reserva.waitlist.consentimientoVersion,
+      } as WaitlistFormOutput);
     } else {
       onSubmitBooking({
         ...base,
+        consentVersion: reserva.consentimientos.version,
         slotId: selection.slotId,
       } as CustomerFormOutput);
     }
@@ -327,11 +331,14 @@ export function CustomerForm({
             error={errors.terms}
           >
             {isWaitlist
-              ? reserva.terminosListaEspera
+              ? reserva.waitlist.terminos
               : reserva.consentimientos.terminos}{" "}
             {reserva.consentimientos.responsable({
               negocio: data.business.name,
             })}
+            {isWaitlist
+              ? ` ${reserva.consentimientos.privacidadLinkTexto}`
+              : null}
           </ConsentCheckbox>
           <ConsentCheckbox checked={marketing} onChange={setMarketing}>
             {reserva.consentimientos.marketing({ negocio: data.business.name })}

@@ -3,7 +3,11 @@ import { describe, expect, it } from "vitest";
 import { reserva } from "@/i18n";
 import type { PhoneError } from "@/lib/format/phone";
 
-import { customerFormSchema, type CustomerFormInput } from "./form-schema";
+import {
+  customerFormSchema,
+  waitlistFormSchema,
+  type CustomerFormInput,
+} from "./form-schema";
 
 function baseInput(
   overrides: Partial<CustomerFormInput> = {},
@@ -129,5 +133,27 @@ describe("customerFormSchema — namn, e-post, samtycken", () => {
         baseInput({ consentVersion: "2020-01-v0" as never }),
       ).success,
     ).toBe(false);
+  });
+});
+
+describe("waitlistFormSchema — egen consentVersion (WP-03b)", () => {
+  function waitlistInput(overrides: Partial<CustomerFormInput> = {}) {
+    // waitlistFormSchema stryper okända fält (t.ex. slotId) som ett vanligt
+    // Zod-objekt — inget behov av att ta bort det här i testet.
+    return baseInput({
+      consentVersion: reserva.waitlist.consentimientoVersion as never,
+      ...overrides,
+    });
+  }
+
+  it("godkänner reserva.waitlist.consentimientoVersion", () => {
+    expect(waitlistFormSchema.safeParse(waitlistInput()).success).toBe(true);
+  });
+
+  it("avvisar reserva.consentimientos.version (fel version för väntelistan)", () => {
+    const result = waitlistFormSchema.safeParse(
+      waitlistInput({ consentVersion: reserva.consentimientos.version }),
+    );
+    expect(result.success).toBe(false);
   });
 });

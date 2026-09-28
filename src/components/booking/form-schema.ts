@@ -41,11 +41,14 @@ export type CustomerFormInput = z.input<typeof customerFormSchema>;
 export type CustomerFormOutput = z.output<typeof customerFormSchema>;
 
 /** Väntelistan: samma formulär men utan hora (ingen `slotId`, den full dagen
- * räcker), och en egen samtyckestext (FRÅGA 5c: `terminosListaEspera`). */
+ * räcker), och en egen samtyckestext + version (FRÅGA 5c: `waitlist.terminos`,
+ * versionerad separat i `waitlist.consentimientoVersion` — WP-03b, inte
+ * `consentimientos.version`). */
 export const waitlistFormSchema = customerFormSchema
-  .omit({ slotId: true })
+  .omit({ slotId: true, consentVersion: true })
   .extend({
     date: z.string().min(1),
+    consentVersion: z.literal(reserva.waitlist.consentimientoVersion),
   });
 
 export type WaitlistFormInput = z.input<typeof waitlistFormSchema>;
