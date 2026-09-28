@@ -137,11 +137,11 @@ export default function LandingPage() {
               tone="lime"
               radius="hero"
               padding="xl"
-              className="relative flex flex-col justify-between gap-6 lg:w-5/12"
+              className="relative flex flex-col justify-between gap-6 lg:w-1/2"
             >
               <DecorativeBlob
                 tone="lilac"
-                className="pointer-events-none absolute -top-3 -right-3 z-0 size-14 opacity-90 sm:-top-6 sm:-right-6 sm:size-20"
+                className="pointer-events-none absolute -top-3 -right-3 z-0 size-8 opacity-90 sm:-top-7 sm:-right-7 sm:size-14"
               />
               <div className="relative z-10 flex flex-col gap-4">
                 <span className="inline-flex w-fit items-center rounded-full bg-ink px-3.5 py-1.5 text-13 font-bold tracking-caps text-on-dark uppercase">
@@ -154,7 +154,7 @@ export default function LandingPage() {
                   {landing.hero.subtitulo}
                 </p>
               </div>
-              <div className="relative z-10 flex flex-col gap-3 sm:flex-row">
+              <div className="relative z-10 flex flex-col flex-wrap gap-3 sm:flex-row">
                 <Button asChild variant="primary" size="xl">
                   <Link href="/login">{landing.hero.ctaPrimario}</Link>
                 </Button>
@@ -166,7 +166,7 @@ export default function LandingPage() {
               </div>
             </Card>
 
-            <HeroVisualPreview className="lg:w-7/12" />
+            <HeroVisualPreview className="lg:w-1/2" />
           </div>
 
           <Card
@@ -177,7 +177,7 @@ export default function LandingPage() {
           >
             <DecorativeBlob
               tone="lime"
-              className="pointer-events-none absolute -bottom-3 -left-3 z-0 size-14 opacity-80 sm:-bottom-6 sm:-left-6 sm:size-20"
+              className="pointer-events-none absolute -bottom-3 -left-3 z-0 size-8 opacity-80 sm:-bottom-7 sm:-left-7 sm:size-14"
             />
             <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:gap-10">
               {HERO_STATS.map((stat) => (
