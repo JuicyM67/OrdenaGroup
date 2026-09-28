@@ -2259,6 +2259,39 @@ export const sitio = {
     },
     hechoEnSantiago: landing.footer.hechoEnSantiago,
   },
+  /** Segunda versión del pie de página, con el calendario 3D flotante
+   * (WP-hemsida, exploración "footer.dc.html"): convive con `footer` de
+   * arriba (no lo reemplaza) hasta que se elija un diseño final. */
+  footer2: {
+    contacto: {
+      titulo: "Contacto",
+      /** La ciudad va literal, igual que en `reserva.header.ubicacion`
+       * (fase 1 solo vende en la Región Metropolitana, VISION
+       * "Santiago"): no es el nombre del producto (regla dura 10). */
+      ciudad: "Santiago, Chile",
+      /** aria-label del link de correo, cuyo texto visible es la casilla
+       * real del negocio (dato, no copy). */
+      correoAria: "Escríbenos un correo",
+    },
+    redes: {
+      titulo: "Síguenos",
+    },
+    irA: {
+      titulo: "Ir a",
+    },
+    legal: {
+      terminos: "Términos",
+      privacidad: "Privacidad",
+      /** Sin el símbolo © (cuenta como emoji para `REGLAS_DE_TONO.emoji`,
+       * U+00A9 es Extended_Pictographic): se escribe en palabras. */
+      derechos: (p: { anio: number }): string =>
+        `${p.anio}. Todos los derechos reservados.`,
+    },
+    novedad: {
+      etiqueta: "Nuevo",
+      texto: "Horas flash ya disponible",
+    },
+  },
   /** Sección de la portada con las cuatro razones grandes para elegirnos,
    * cada una con su propia imagen de producto (WP-hemsida). */
   inicio: {
@@ -2311,6 +2344,53 @@ export const sitio = {
       comision: {
         titulo: "Comisión",
         pie: "por reserva, siempre",
+      },
+    },
+    /** Franja de cifras justo bajo el hero de la portada (WP-hemsida,
+     * exploración "sida-v2-morka-band.dc.html"): el título grande y las tres
+     * cifras chicas ("24/7", "10 min", "$0"). Distinta de
+     * `heroBento.disponible`/`heroBento.comision` (misma cifra, otro lugar y
+     * otro pie de página, cada una con su propio texto). */
+    intro: {
+      titulo: "Todo lo que tu local necesita,",
+      tituloDestacado: "nada que sobre.",
+      stats: {
+        disponible: { valor: "24/7", pie: "reservas abiertas" },
+        minutos: { valor: "10 min", pie: "para empezar" },
+        comision: { valor: "$0", pie: "comisión" },
+      },
+    },
+    /** Franja oscura con las cuatro razones grandes para elegirnos, cada una
+     * en su propia tarjeta (WP-hemsida, exploración
+     * "sida-v1-bento.dc.html"). */
+    porQue: {
+      etiqueta: "POR QUÉ FUNCIONA",
+      titulo: "Menos mensajes,",
+      tituloDestacado: "más horas llenas.",
+      texto:
+        "Cuatro razones por las que las barberías, peluquerías y centros de estética se quedan.",
+      tarjetas: {
+        reservas: {
+          titulo: "Tus clientes reservan solos, a cualquier hora",
+          texto:
+            "Entran a tu link, eligen servicio, profesional y hora, y quedan confirmados al tiro.",
+        },
+        agenda: {
+          titulo: "Tu agenda ordenada, en el computador y el celular",
+        },
+        inasistencias: {
+          titulo: "Menos inasistencias",
+          pregunta: "¿Llegó?",
+        },
+        precio: {
+          titulo: "Un precio para todo tu local",
+          pie: "profesionales, mismo precio",
+        },
+        local: {
+          titulo: "Hecho para locales de verdad",
+          texto: "Barberías, peluquerías, estética y kinesiología.",
+          chip: (p: { n: number }): string => `+${p.n} reservas esta semana`,
+        },
       },
     },
     usp: {
@@ -2383,6 +2463,11 @@ export const sitio = {
           `Aviso enviado a ${p.n} ${p.n === 1 ? "cliente" : "clientes"}`,
         reservada: "¡Reservada!",
       },
+      /** Variante de `mock.reservada` con el nombre del cliente que tomó la
+       * hora (WP-hemsida, exploración "sida-v1-bento.dc.html"): mismo texto
+       * de maqueta, no un mensaje real a un cliente. */
+      reservadaPor: (p: { nombre: string }): string =>
+        `¡Reservada por ${p.nombre}!`,
     },
     /** Etiquetas cortas de las cuatro etapas de la maqueta animada del flujo
      * de reserva en la portada (WP-hemsida), las mismas que ve un cliente
@@ -2447,6 +2532,9 @@ export const sitio = {
       titulo: "Un precio para todo tu local",
       texto: landing.precios.subtitulo,
     },
+    /** Insignia sobre la tarjeta de plan recomendada de la tabla de precios
+     * (WP-hemsida, exploración "sida-v1-bento.dc.html"). */
+    masElegido: "Más elegido",
     compararTitulo: "Compara los planes",
     fundador: landing.precios.fundador,
     faq: {

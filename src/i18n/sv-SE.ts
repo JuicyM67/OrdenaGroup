@@ -412,6 +412,33 @@ export const sitio = {
     },
     hechoEnSantiago: landing.footer.hechoEnSantiago,
   },
+  /** Samma nycklar och funktionssignaturer som `es-CL.sitio.footer2`
+   * (WP-hemsida, utforskning "footer.dc.html"). `ciudad` är neutralt
+   * "Sverige" (ingen enskild ort, D-026), och `derechos`/`novedad` nämner
+   * inget WhatsApp eller belopp (D-027/D-028). */
+  footer2: {
+    contacto: {
+      titulo: "Kontakt",
+      ciudad: "Sverige",
+      correoAria: "Mejla oss",
+    },
+    redes: {
+      titulo: "Följ oss",
+    },
+    irA: {
+      titulo: "Gå till",
+    },
+    legal: {
+      terminos: "Villkor",
+      privacidad: "Integritet",
+      derechos: (p: { anio: number }): string =>
+        `${p.anio}. Alla rättigheter förbehållna.`,
+    },
+    novedad: {
+      etiqueta: "Nytt",
+      texto: "Flashtider redan tillgängliga",
+    },
+  },
   inicio: {
     /** Samma nycklar och samma funktionssignaturer som `es-CL.sitio.inicio
      * .heroBento` (WP-hemsida). Ingen `heroBento.siguiente` eller
@@ -458,6 +485,49 @@ export const sitio = {
       comision: {
         titulo: "Provision",
         pie: "per bokning, alltid",
+      },
+    },
+    /** Samma nycklar och funktionssignaturer som `es-CL.sitio.inicio.intro`
+     * (WP-hemsida, utforskning "sida-v2-morka-band.dc.html"). */
+    intro: {
+      titulo: "Allt ditt företag behöver,",
+      tituloDestacado: "inget onödigt.",
+      stats: {
+        disponible: { valor: "24/7", pie: "öppna bokningar" },
+        minutos: { valor: "10 min", pie: "för att komma igång" },
+        comision: { valor: "0 kr", pie: "i provision" },
+      },
+    },
+    /** Samma nycklar och funktionssignaturer som `es-CL.sitio.inicio.porQue`
+     * (WP-hemsida, utforskning "sida-v1-bento.dc.html"). */
+    porQue: {
+      etiqueta: "VARFÖR DET FUNKAR",
+      titulo: "Färre meddelanden,",
+      tituloDestacado: "fler fyllda tider.",
+      texto:
+        "Fyra skäl till att barberare, frisörer och hudvårdssalonger stannar kvar.",
+      tarjetas: {
+        reservas: {
+          titulo: "Dina kunder bokar själva, när som helst",
+          texto:
+            "De går in på din länk, väljer tjänst, anställd och tid, och är bekräftade direkt.",
+        },
+        agenda: {
+          titulo: "Din kalender i ordning, på datorn och i mobilen",
+        },
+        inasistencias: {
+          titulo: "Färre uteblivna besök",
+          pregunta: "Kom?",
+        },
+        precio: {
+          titulo: "Ett pris för hela ditt företag",
+          pie: "anställda, samma pris",
+        },
+        local: {
+          titulo: "Byggt för riktiga företag",
+          texto: "Barberare, frisörer, hud & skönhet och naprapater.",
+          chip: (p: { n: number }): string => `+${p.n} bokningar denna vecka`,
+        },
       },
     },
     usp: {
@@ -529,6 +599,9 @@ export const sitio = {
           `Avisering skickad till ${p.n} ${p.n === 1 ? "kund" : "kunder"}`,
         reservada: "Bokad!",
       },
+      /** Samma nycklar och funktionssignatur som
+       * `es-CL.sitio.inicio.flash.reservadaPor`. */
+      reservadaPor: (p: { nombre: string }): string => `Bokad av ${p.nombre}!`,
     },
     /** Korta etiketter för de fyra stegen i den animerade mockupen av
      * bokningsflödet på startsidan (wp/hemsida), samma steg som en riktig
@@ -588,6 +661,8 @@ export const sitio = {
       titulo: "Ett pris för hela ditt företag",
       texto: landing.precios.subtitulo,
     },
+    /** Samma nyckel som `es-CL.sitio.precios.masElegido`. */
+    masElegido: "Mest vald",
     compararTitulo: "Jämför planerna",
     fundador: landing.precios.fundador,
     faq: {
