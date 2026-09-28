@@ -2134,3 +2134,682 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
     cta: "Elegir Local",
   },
 ];
+
+// ---------------------------------------------------------------------------
+// sitio: sitio público completo — nav, footer y las páginas de marketing más
+// allá de la landing de una sola página (`landing`). Mismas reglas que
+// `landing` (GUIA §11: tú, sin voseo, acá sí se puede vender). El nombre del
+// producto nunca se escribe a mano (regla dura 10): entra como `{ nombre }`
+// en cada `meta`. Reutiliza texto de `landing` donde el concepto es el mismo
+// (GUIA §4, "mismo vocabulario"), en vez de duplicarlo.
+//
+// Lo que trae lista o número (secciones de Funcionalidades, filas de la
+// tabla de Precios, contenido por rubro de Para quién) no cabe en `Trad`
+// (mismo motivo que `PLANES_LANDING`): vive en `SITIO_FUNCIONALIDADES`,
+// `SITIO_PRECIOS_TABLA` y `SITIO_PARA_INDUSTRIAS`, después de `sitio`.
+// ---------------------------------------------------------------------------
+
+/** Mismo botón de conversión en todas las páginas del sitio (una sola
+ * fuente, como `LANDING_CTA_CREAR_GRATIS` dentro de `landing`). */
+const SITIO_CTA = LANDING_CTA_CREAR_GRATIS;
+
+/** Mismo nombre de rubro en el submenú de navegación, el pie de página y el
+ * índice de "Para quién" (GUIA §4). */
+const SITIO_INDUSTRIA = {
+  barberias: "Barberías",
+  peluquerias: "Peluquerías",
+  estetica: "Estética",
+  kinesiologia: "Kinesiología",
+} as const;
+
+const SITIO_PROXIMAMENTE = "Próximamente";
+
+export const sitio = {
+  nav: {
+    funcionalidades: "Funcionalidades",
+    paraQuien: "Para quién",
+    precios: "Precios",
+    preguntas: "Preguntas",
+    contacto: "Contacto",
+    entrar: "Entrar",
+    ctaCrearAgenda: landing.nav.ctaCrearAgenda,
+    paraQuienSubmenu: { ...SITIO_INDUSTRIA },
+  },
+  footer: {
+    descripcion: (p: { nombre: string }): string =>
+      `${p.nombre}, el sistema de reservas para pymes chilenas: barberías, peluquerías, estética y kinesiología.`,
+    columnas: {
+      producto: "Producto",
+      paraQuien: "Para quién",
+      empresa: "Empresa",
+    },
+    links: {
+      funcionalidades: "Funcionalidades",
+      precios: "Precios",
+      preguntas: "Preguntas",
+      contacto: "Contacto",
+      terminos: "Términos",
+      privacidad: "Privacidad",
+      ...SITIO_INDUSTRIA,
+    },
+    hechoEnSantiago: landing.footer.hechoEnSantiago,
+  },
+  /** Sección de la portada con las cuatro razones grandes para elegirnos,
+   * cada una con su propia imagen de producto (WP-hemsida). */
+  inicio: {
+    usp: {
+      reservasSolas: {
+        titulo: "Tus clientes reservan solos, a cualquier hora",
+        texto:
+          "Entran a tu link, eligen servicio, profesional y hora, y quedan confirmados al tiro. Sin llamadas ni conversar por WhatsApp uno a uno.",
+        puntos: {
+          punto1: "Disponible 24/7, de día o de noche",
+          punto2: "Sin apps que instalar, ni para ti ni para tus clientes",
+          punto3: "Funciona bien en cualquier celular, con poco internet",
+        },
+      },
+      agendaOrdenada: {
+        titulo: "Tu agenda ordenada, en el computador y en el celular",
+        texto:
+          'Cada profesional tiene su propia columna. En el celular, abre "Hoy" y ve el día completo de un vistazo.',
+        puntos: {
+          punto1: "Vista semana y vista día en el computador",
+          punto2: 'La vista "Hoy" en el celular, para usar con una mano',
+          punto3: "Reservas manuales y cambios de hora al instante",
+        },
+      },
+      menosInasistencias: {
+        titulo: "Menos inasistencias",
+        texto:
+          "Marca quién llegó y quién no vino desde tu celular. Los recordatorios automáticos por WhatsApp llegan próximamente.",
+        puntos: {
+          punto1: "Llegó y No vino con un toque",
+          punto2: `Recordatorios por WhatsApp — ${SITIO_PROXIMAMENTE}`,
+          punto3: `Historial de inasistencias por cliente — ${SITIO_PROXIMAMENTE}`,
+        },
+      },
+      precioUnico: {
+        titulo: "Un precio para todo tu local",
+        texto:
+          "Pagas un solo precio por tu negocio, agregues el equipo que agregues. Sin cobro por persona ni por reserva.",
+        puntos: {
+          punto1: "Sin cobro por cada profesional que sumas",
+          punto2: "Sin comisión por reserva",
+          punto3: "Plan Gratis para partir con un profesional",
+        },
+      },
+    },
+    /** "Empieza gratis. Planes pagados desde $9.990 al mes.": `precio` llega
+     * ya formateado desde `src/lib/format/` (regla dura 5). */
+    precioDesde: (p: { precio: string }): string =>
+      `Empieza gratis. Planes pagados desde ${p.precio} al mes.`,
+    verFuncionalidades: "Ver todas las funcionalidades",
+  },
+  funcionalidades: {
+    meta: {
+      titulo: (p: { nombre: string }): string =>
+        `Funcionalidades — ${p.nombre}`,
+      descripcion: (p: { nombre: string }): string =>
+        `Todo lo que incluye ${p.nombre}: link de reservas, agenda por profesional, Hoy en el celular y recordatorios por WhatsApp.`,
+    },
+    hero: {
+      titulo: "Todo lo que necesitas para llenar tu agenda",
+      texto:
+        "Desde tu link de reservas hasta la agenda del día a día, pensado para un local con uno o varios profesionales.",
+    },
+    /** Etiqueta sobre cada sección de `SITIO_FUNCIONALIDADES` con
+     * `proximamente: true`. */
+    proximamenteBadge: SITIO_PROXIMAMENTE,
+    cta: {
+      titulo: "¿Lista para ordenar tu agenda?",
+      boton: SITIO_CTA,
+    },
+  },
+  precios: {
+    meta: {
+      titulo: (p: { nombre: string }): string => `Precios — ${p.nombre}`,
+      descripcion: (p: { nombre: string }): string =>
+        `Precios de ${p.nombre} en CLP al mes, un solo precio por local. 30 días de prueba en los planes pagados, sin permanencia.`,
+    },
+    hero: {
+      titulo: "Un precio para todo tu local",
+      texto: landing.precios.subtitulo,
+    },
+    compararTitulo: "Compara los planes",
+    fundador: landing.precios.fundador,
+    faq: {
+      iva: {
+        pregunta: "¿Los precios incluyen IVA?",
+        respuesta:
+          "No. Los precios que ves son netos; el IVA se agrega al momento de pagar.",
+      },
+      cambiarPlan: {
+        pregunta: "¿Puedo cambiar de plan cuando quiera?",
+        respuesta:
+          "Sí. Subes o bajas de plan cuando quieras, sin costo extra ni permanencia.",
+      },
+      masWhatsapp: {
+        pregunta: "¿Qué pasa si se me acaba el WhatsApp incluido?",
+        respuesta:
+          "Puedes agregar un paquete extra de WhatsApp o subir a un plan con más cantidad incluida.",
+      },
+      permanencia: {
+        pregunta: landing.preguntas.items.permanencia.pregunta,
+        respuesta: landing.preguntas.items.permanencia.respuesta,
+      },
+      fundador: {
+        pregunta: "¿Qué es el plan Fundador?",
+        respuesta:
+          "Los primeros negocios que se suman pagan la mitad de su plan para siempre.",
+      },
+    },
+  },
+  /** Índice de la sección "Para quién" (el detalle de cada rubro vive en
+   * `SITIO_PARA_INDUSTRIAS`, fuera de `Trad`). */
+  para: {
+    titulo: "Para quién es",
+    subtitulo: "Elige tu rubro para ver ejemplos pensados para ti.",
+  },
+  preguntas: {
+    meta: {
+      titulo: (p: { nombre: string }): string =>
+        `Preguntas frecuentes — ${p.nombre}`,
+      descripcion: (p: { nombre: string }): string =>
+        `Respuestas sobre cómo empezar, cómo reservan tus clientes, precios y cómo cuidamos tus datos en ${p.nombre}.`,
+    },
+    hero: {
+      titulo: "Preguntas frecuentes",
+      texto: "Si no encuentras tu respuesta acá, escríbenos por WhatsApp.",
+    },
+    grupos: {
+      empezar: {
+        titulo: "Empezar",
+        preguntas: {
+          instalar: {
+            pregunta: landing.preguntas.items.instalar.pregunta,
+            respuesta: landing.preguntas.items.instalar.respuesta,
+          },
+          cuantoDemora: {
+            pregunta: "¿Cuánto me demoro en configurarlo?",
+            respuesta:
+              "Menos de 10 minutos con los pasos guiados: servicios, equipo, horarios y tu link de reservas.",
+          },
+          ayudaConfig: {
+            pregunta: landing.preguntas.items.ayudaConfig.pregunta,
+            respuesta: landing.preguntas.items.ayudaConfig.respuesta,
+          },
+        },
+      },
+      reservas: {
+        titulo: "Reservas",
+        preguntas: {
+          comoReservan: {
+            pregunta: landing.preguntas.items.comoReservan.pregunta,
+            respuesta: landing.preguntas.items.comoReservan.respuesta,
+          },
+          noLlego: {
+            pregunta: landing.preguntas.items.noLlego.pregunta,
+            respuesta: landing.preguntas.items.noLlego.respuesta,
+          },
+          cambiarHora: {
+            pregunta: "¿Mis clientes pueden cambiar o cancelar su hora solos?",
+            respuesta:
+              "Próximamente. Por ahora, tú puedes moverla o cancelarla desde tu agenda.",
+          },
+        },
+      },
+      pagos: {
+        titulo: "Pagos y precios",
+        preguntas: {
+          permanencia: {
+            pregunta: landing.preguntas.items.permanencia.pregunta,
+            respuesta: landing.preguntas.items.permanencia.respuesta,
+          },
+          iva: {
+            pregunta: "¿Los precios incluyen IVA?",
+            respuesta:
+              "No. Los precios que ves son netos; el IVA se agrega al momento de pagar.",
+          },
+          abono: {
+            pregunta: "¿Quién recibe la plata del abono?",
+            respuesta:
+              "Llega directo a tu propia cuenta de Mercado Pago. Nunca pasa por nosotros.",
+          },
+        },
+      },
+      datos: {
+        titulo: "Datos y seguridad",
+        preguntas: {
+          datos: {
+            pregunta: landing.preguntas.items.datos.pregunta,
+            respuesta: landing.preguntas.items.datos.respuesta,
+          },
+          consentimiento: {
+            pregunta: "¿Piden permiso a mis clientes para escribirles?",
+            respuesta:
+              "Sí. Antes de reservar aceptan los términos, y el aviso de marketing nunca viene marcado por defecto.",
+          },
+          dondeViven: {
+            pregunta: "¿Dónde se guardan mis datos?",
+            respuesta:
+              "En servidores en la nube, con acceso protegido para que solo tú y tu equipo vean la información de tu negocio.",
+          },
+        },
+      },
+    },
+  },
+  contacto: {
+    meta: {
+      titulo: (p: { nombre: string }): string => `Contacto — ${p.nombre}`,
+      descripcion: (p: { nombre: string }): string =>
+        `Escríbenos por WhatsApp o correo y te ayudamos a poner tu negocio en línea con ${p.nombre}.`,
+    },
+    hero: {
+      titulo: "Hablemos",
+      texto: "Escríbenos y te ayudamos a poner tu negocio en línea.",
+    },
+    whatsapp: {
+      titulo: "Escríbenos por WhatsApp",
+      texto: "Respondemos tus preguntas y te ayudamos a armar tu agenda.",
+      boton: "Abrir WhatsApp",
+    },
+    correo: {
+      titulo: "Escríbenos por correo",
+      texto: "Cuéntanos sobre tu negocio y te contactamos a la brevedad.",
+      boton: "Enviar correo",
+    },
+    onboarding: {
+      titulo: "Te lo dejamos listo",
+      texto:
+        "Si tu negocio está en Providencia o Ñuñoa, vamos a dejarte la agenda configurada en persona, en 15 a 20 minutos.",
+    },
+  },
+} as const satisfies Trad;
+
+/** Una sección de la página Funcionalidades. No vive dentro de `sitio`
+ * porque `proximamente` es `boolean` y `puntos` es un arreglo: `Trad` no
+ * admite ninguno de los dos (mismo motivo que `PlanLanding`). */
+export interface SitioFuncionalidadSeccion {
+  readonly id: string;
+  readonly etiqueta: string;
+  readonly titulo: string;
+  readonly texto: string;
+  readonly puntos: readonly [string, string, string];
+  readonly proximamente: boolean;
+}
+
+/** Orden: lo que ya existe en el producto primero (F5–F3b), lo planeado
+ * después (fase 2 de MVP_SPEC.md), cada uno marcado con `proximamente`. */
+export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
+  {
+    id: "link-reservas",
+    etiqueta: "Reservas online",
+    titulo: "Tu link de reservas, listo para compartir",
+    texto:
+      "Cada negocio tiene su propia página de reservas. Tus clientes eligen servicio, profesional y hora, y quedan confirmados al tiro, sin llamadas ni conversar por WhatsApp uno a uno.",
+    puntos: [
+      "Página con tu marca, en tu propio link",
+      'Elige servicio, profesional o "Cualquiera", día y hora',
+      "Funciona bien en cualquier celular, con poco internet",
+    ],
+    proximamente: false,
+  },
+  {
+    id: "agenda",
+    etiqueta: "Para tu día a día",
+    titulo: "Una agenda ordenada por profesional",
+    texto:
+      "Mira la semana completa o un día, con una columna para cada profesional. Lo que reservan tus clientes aparece solo, sin que tengas que anotarlo.",
+    puntos: [
+      "Vista semana y vista día",
+      "Una columna por profesional",
+      "Los horarios se calculan solos: buffers, horarios y personal",
+    ],
+    proximamente: false,
+  },
+  {
+    id: "hoy",
+    etiqueta: "Desde tu celular",
+    titulo: "El día de hoy, en tu bolsillo",
+    texto:
+      'Abre "Hoy" en tu celular y ve las horas del día, marca quién llegó y quién no vino, sin entrar al computador.',
+    puntos: [
+      "Lista del día ordenada por hora",
+      "Botones Llegó y No vino",
+      "Pensada para usar con una mano",
+    ],
+    proximamente: false,
+  },
+  {
+    id: "reservas-manuales",
+    etiqueta: "Control total",
+    titulo: "Agrega y mueve horas tú mismo",
+    texto:
+      "Registra un cliente que llega sin reserva, cambia una hora de lugar o cancélala, todo desde la misma agenda.",
+    puntos: [
+      "Reservas manuales para clientes sin cita previa",
+      "Mueve una hora a otro día o profesional en segundos",
+      "Cancela una reserva cuando haga falta",
+    ],
+    proximamente: false,
+  },
+  {
+    id: "ajustes",
+    etiqueta: "Configuración",
+    titulo: "Todo tu negocio, en un solo lugar",
+    texto:
+      "Configura tus servicios, tu equipo, tus horarios y tus reglas de reserva. Los cambios se reflejan al tiro en tu página de reservas.",
+    puntos: [
+      "Servicios: nombre, duración, precio y buffer",
+      "Profesionales: horarios propios y qué servicios hacen",
+      "Horarios y reglas del negocio, con anticipación mínima y máxima",
+    ],
+    proximamente: false,
+  },
+  {
+    id: "recordatorios",
+    etiqueta: SITIO_PROXIMAMENTE,
+    titulo: "Recordatorios automáticos por WhatsApp",
+    texto:
+      "Menos olvidos: tus clientes reciben un recordatorio antes de su hora, y pueden confirmar o avisar que necesitan cambiarla.",
+    puntos: [
+      "Confirmación apenas reservan",
+      "Recordatorio antes de la hora, con la fecha exacta",
+      "Aviso por correo si el WhatsApp falla",
+    ],
+    proximamente: true,
+  },
+  {
+    id: "lista-espera",
+    etiqueta: SITIO_PROXIMAMENTE,
+    titulo: "Cuando alguien cancela, esa hora se ocupa sola",
+    texto:
+      "Si un día está lleno, tus clientes se anotan en la lista de espera. Apenas se libera una hora, les avisamos automáticamente.",
+    puntos: [
+      "Se anotan por servicio y día",
+      "Aviso automático apenas hay una cancelación",
+      "La primera persona en responder se queda con la hora",
+    ],
+    proximamente: true,
+  },
+  {
+    id: "abono",
+    etiqueta: SITIO_PROXIMAMENTE,
+    titulo: "Pide un abono al reservar",
+    texto:
+      "Reduce las inasistencias pidiendo un abono al momento de reservar. La plata llega directo a tu propia cuenta de Mercado Pago.",
+    puntos: [
+      "Tú decides el monto o el porcentaje",
+      "El dinero es siempre tuyo, no lo tocamos",
+      "La reserva se confirma solo con el abono pagado",
+    ],
+    proximamente: true,
+  },
+  {
+    id: "fichas-clientes",
+    etiqueta: SITIO_PROXIMAMENTE,
+    titulo: "Historial de cada cliente, a mano",
+    texto:
+      "Cuántas veces ha venido, si ha faltado antes y tus propias notas, todo en una ficha por cliente.",
+    puntos: [
+      "Historial de visitas e inasistencias",
+      "Notas privadas de tu equipo",
+      "Búsqueda rápida por nombre o teléfono",
+    ],
+    proximamente: true,
+  },
+  {
+    id: "reportes",
+    etiqueta: SITIO_PROXIMAMENTE,
+    titulo: "Cuánto vendiste y cómo te fue",
+    texto:
+      "Ingresos del día, la semana y el mes, más un resumen de las horas que recuperaste gracias a la lista de espera.",
+    puntos: [
+      "Ingresos por día, semana y mes",
+      "Inasistencias de los últimos 30 días",
+      "Resumen semanal de horas recuperadas",
+    ],
+    proximamente: true,
+  },
+];
+
+/** Una fila de la tabla comparativa de Precios. No vive dentro de `sitio`
+ * porque es un objeto con cuatro valores por fila, no una hoja de `Trad`. */
+export interface SitioPrecioFila {
+  readonly funcion: string;
+  readonly valores: {
+    readonly gratis: string;
+    readonly emprende: string;
+    readonly equipo: string;
+    readonly local: string;
+  };
+}
+
+/** Mismo contenido que `PLANES_LANDING`, en formato de tabla comparativa. */
+export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
+  {
+    funcion: "Profesionales",
+    valores: {
+      gratis: "1",
+      emprende: "1",
+      equipo: "Hasta 5",
+      local: "Hasta 12",
+    },
+  },
+  {
+    funcion: "Recordatorios",
+    valores: {
+      gratis: "Por correo",
+      emprende: "WhatsApp, ~150 al mes",
+      equipo: "WhatsApp, ~600 al mes",
+      local: "WhatsApp, más cantidad",
+    },
+  },
+  {
+    funcion: "Lista de espera",
+    valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
+  },
+  {
+    funcion: "Tarjeta de sellos digital",
+    valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
+  },
+  {
+    funcion: "Abono con Mercado Pago",
+    valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
+  },
+  {
+    funcion: "Horas flash",
+    valores: { gratis: "—", emprende: "—", equipo: "✓", local: "✓" },
+  },
+  {
+    funcion: "Te echamos de menos",
+    valores: { gratis: "—", emprende: "—", equipo: "✓", local: "✓" },
+  },
+  {
+    funcion: "Informes",
+    valores: { gratis: "—", emprende: "—", equipo: "✓", local: "✓" },
+  },
+  {
+    funcion: "Soporte",
+    valores: {
+      gratis: "Por correo",
+      emprende: "Por WhatsApp",
+      equipo: "Por WhatsApp",
+      local: "Prioritario",
+    },
+  },
+];
+
+/** Contenido de la página "Para quién" de un rubro. No vive dentro de
+ * `sitio` porque `servicios` trae `minutos` (número) y varios campos son
+ * arreglos: `Trad` no admite ninguno de los dos. */
+export interface SitioParaIndustria {
+  readonly id: "barberias" | "peluquerias" | "estetica" | "kinesiologia";
+  readonly nombre: string;
+  readonly meta: {
+    readonly titulo: (p: { nombre: string }) => string;
+    readonly descripcion: (p: { nombre: string }) => string;
+  };
+  readonly hero: { readonly titulo: string; readonly texto: string };
+  readonly beneficios: readonly [string, string, string];
+  readonly servicios: readonly {
+    readonly nombre: string;
+    readonly minutos: number;
+  }[];
+  readonly faq: readonly {
+    readonly pregunta: string;
+    readonly respuesta: string;
+  }[];
+  readonly cta: string;
+}
+
+export const SITIO_PARA_INDUSTRIAS: readonly SitioParaIndustria[] = [
+  {
+    id: "barberias",
+    nombre: SITIO_INDUSTRIA.barberias,
+    meta: {
+      titulo: (p) => `Barberías — ${p.nombre}`,
+      descripcion: (p) =>
+        `Reservas online para barberías con ${p.nombre}: agenda por barbero, reservas manuales y tu propio link de reservas.`,
+    },
+    hero: {
+      titulo: "Reservas para barberías, sin llamadas de ida y vuelta",
+      texto:
+        "Tus clientes reservan su corte o su perfilado de barba solos, desde tu link. Tú ves tu día ordenado, con o sin cita previa.",
+    },
+    beneficios: [
+      "Agenda por barbero, cada uno con su propio horario",
+      "Reservas manuales para los que llegan sin cita",
+      "Marca Llegó o No vino desde tu celular",
+    ],
+    servicios: [
+      { nombre: "Corte clásico", minutos: 30 },
+      { nombre: "Perfilado de barba", minutos: 20 },
+      { nombre: "Corte + barba", minutos: 45 },
+    ],
+    faq: [
+      {
+        pregunta: "¿Puedo tener varios barberos en la misma agenda?",
+        respuesta:
+          "Sí. Cada barbero tiene su propio horario y sus propios servicios.",
+      },
+      {
+        pregunta: "¿Sirve si trabajo solo, sin local?",
+        respuesta:
+          "Sí. El plan Gratis es para un profesional y ya incluye tu link de reservas.",
+      },
+    ],
+    cta: SITIO_CTA,
+  },
+  {
+    id: "peluquerias",
+    nombre: SITIO_INDUSTRIA.peluquerias,
+    meta: {
+      titulo: (p) => `Peluquerías — ${p.nombre}`,
+      descripcion: (p) =>
+        `Reservas online para peluquerías con ${p.nombre}: servicios con su duración real y agenda por estilista.`,
+    },
+    hero: {
+      titulo: "Tu peluquería, con la agenda al día",
+      texto:
+        "Corte, color, tratamientos: cada servicio con su duración real, para que la agenda no se te desordene.",
+    },
+    beneficios: [
+      "Servicios con la duración que corresponde a cada uno",
+      "Agenda por estilista, con sus propios horarios",
+      "Tu link de reservas para compartir en Instagram",
+    ],
+    servicios: [
+      { nombre: "Corte de dama", minutos: 45 },
+      { nombre: "Color completo", minutos: 120 },
+      { nombre: "Tratamiento capilar", minutos: 40 },
+      { nombre: "Peinado", minutos: 30 },
+    ],
+    faq: [
+      {
+        pregunta: "¿Puedo poner servicios largos, como color?",
+        respuesta:
+          "Sí. Cada servicio tiene su propia duración, y la agenda respeta ese tiempo.",
+      },
+      {
+        pregunta: "¿Mis clientas pueden elegir con qué estilista atenderse?",
+        respuesta: 'Sí, o pueden elegir "Cualquiera" si no tienen preferencia.',
+      },
+    ],
+    cta: SITIO_CTA,
+  },
+  {
+    id: "estetica",
+    nombre: SITIO_INDUSTRIA.estetica,
+    meta: {
+      titulo: (p) => `Estética y uñas — ${p.nombre}`,
+      descripcion: (p) =>
+        `Reservas online para estética y uñas con ${p.nombre}: agenda por profesional y buffer entre citas.`,
+    },
+    hero: {
+      titulo: "Estética y uñas, reservado sin mensajes de ida y vuelta",
+      texto:
+        "Tus clientas reservan manicure, pedicure o un tratamiento facial desde tu link, sin escribirte por WhatsApp una por una.",
+    },
+    beneficios: [
+      "Agenda por profesional, con buffer entre citas",
+      "Nombres de servicio neutrales, pensados para tu rubro",
+      "Reservas manuales para tus clientas frecuentes",
+    ],
+    servicios: [
+      { nombre: "Manicure", minutos: 45 },
+      { nombre: "Pedicure", minutos: 50 },
+      { nombre: "Tratamiento facial", minutos: 60 },
+    ],
+    faq: [
+      {
+        pregunta: "¿Puedo dejar tiempo entre una cita y otra?",
+        respuesta:
+          "Sí, con el buffer de cada servicio, que se suma solo al calcular las horas disponibles.",
+      },
+      {
+        pregunta: "¿Puedo tener más de un box o profesional?",
+        respuesta:
+          "Sí. Cada profesional tiene su propia agenda y sus propios servicios.",
+      },
+    ],
+    cta: SITIO_CTA,
+  },
+  {
+    id: "kinesiologia",
+    nombre: SITIO_INDUSTRIA.kinesiologia,
+    meta: {
+      titulo: (p) => `Kinesiología — ${p.nombre}`,
+      descripcion: (p) =>
+        `Reservas online para kinesiología y masajes con ${p.nombre}: nombres de servicio neutrales y agenda por profesional.`,
+    },
+    hero: {
+      titulo: "Kinesiología y masajes, con tus horas ordenadas",
+      texto:
+        "Tus pacientes reservan una sesión desde tu link. Tú decides qué nombre usar para cada servicio, sin detalles clínicos.",
+    },
+    beneficios: [
+      "Nombres de servicio neutrales, sin datos de salud",
+      "Agenda por profesional, con la duración real de cada sesión",
+      "Notas privadas, sin campos que inviten a anotar datos de salud",
+    ],
+    servicios: [
+      { nombre: "Sesión de kinesiología", minutos: 45 },
+      { nombre: "Sesión (60 min)", minutos: 60 },
+      { nombre: "Masaje descontracturante", minutos: 50 },
+    ],
+    faq: [
+      {
+        pregunta: "¿Puedo escribir el diagnóstico del paciente en el servicio?",
+        respuesta:
+          'No te lo recomendamos: usa un nombre general, como "Sesión de kinesiología", y guarda el detalle clínico en tu propia ficha, fuera del sistema.',
+      },
+      {
+        pregunta: "¿Quién puede ver las notas de una reserva?",
+        respuesta:
+          "Solo tú y tu equipo. Te pedimos no anotar datos de salud ahí tampoco.",
+      },
+    ],
+    cta: SITIO_CTA,
+  },
+];
