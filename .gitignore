@@ -12,6 +12,7 @@ supabase/.branches
 supabase/.temp
 *.tsbuildinfo
 /playwright/.cache/
+/playwright/.auth/
 .DS_Store
 *.log
 next-env.d.ts
