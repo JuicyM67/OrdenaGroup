@@ -136,6 +136,7 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   reservadas: 1,
   horasCancelacion: 4,
   negocio: "Barbería Norte",
+  url: "https://example.com/barberia-norte",
   cliente: "Joaquín",
   nombre: "Diego",
   servicio: "Corte + barba",
