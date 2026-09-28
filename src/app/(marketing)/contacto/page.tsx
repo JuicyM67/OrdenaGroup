@@ -52,7 +52,11 @@ export default function ContactoPage() {
               className="w-fit"
             >
               {whatsappHref ? (
-                <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={whatsappHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
                   {copy.sitio.contacto.whatsapp.boton}
                 </a>
               ) : (
@@ -85,7 +89,12 @@ export default function ContactoPage() {
         </div>
 
         <div className="mx-auto max-w-4xl px-4 pb-14 sm:px-8">
-          <Card tone="lilac" radius="tile" padding="lg" className="flex flex-col gap-2">
+          <Card
+            tone="lilac"
+            radius="tile"
+            padding="lg"
+            className="flex flex-col gap-2"
+          >
             <h2 className="text-19 leading-snug font-bold text-ink">
               {copy.sitio.contacto.onboarding.titulo}
             </h2>

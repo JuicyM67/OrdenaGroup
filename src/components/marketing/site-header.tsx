@@ -108,7 +108,12 @@ export function SiteHeader() {
           >
             {copy.sitio.nav.entrar}
           </Link>
-          <Button asChild variant="primary" size="sm" className="hidden sm:inline-flex">
+          <Button
+            asChild
+            variant="primary"
+            size="sm"
+            className="hidden sm:inline-flex"
+          >
             <Link href="/login">{copy.sitio.nav.ctaCrearAgenda}</Link>
           </Button>
 
@@ -119,7 +124,11 @@ export function SiteHeader() {
                 tone="canvas"
                 className="lg:hidden"
               >
-                <Menu aria-hidden="true" className="size-5" strokeWidth={strokeNav} />
+                <Menu
+                  aria-hidden="true"
+                  className="size-5"
+                  strokeWidth={strokeNav}
+                />
               </IconButton>
             </Dialog.Trigger>
             <Dialog.Portal>
@@ -139,7 +148,11 @@ export function SiteHeader() {
                         (existe `comun.cerrar` en es-CL.ts, pero `comun` no está
                         en `MarketingCopy`). Avisado en el reporte de WP-hemsida. */}
                     <IconButton label="TODO_COPY: Cerrar" tone="canvas">
-                      <X aria-hidden="true" className="size-5" strokeWidth={strokeNav} />
+                      <X
+                        aria-hidden="true"
+                        className="size-5"
+                        strokeWidth={strokeNav}
+                      />
                     </IconButton>
                   </Dialog.Close>
                 </div>

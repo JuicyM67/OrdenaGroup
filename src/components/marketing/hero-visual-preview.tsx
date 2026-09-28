@@ -46,7 +46,9 @@ type MiniEvent = {
 const COLUMNS: readonly { day: string; events: readonly MiniEvent[] }[] = [
   {
     day: DEMO.dagar[0]!,
-    events: [{ title: DEMO.tjanster[0]!, time: "10:00", tone: staffBgClass(1) }],
+    events: [
+      { title: DEMO.tjanster[0]!, time: "10:00", tone: staffBgClass(1) },
+    ],
   },
   {
     day: DEMO.dagar[1]!,
@@ -57,7 +59,9 @@ const COLUMNS: readonly { day: string; events: readonly MiniEvent[] }[] = [
   },
   {
     day: DEMO.dagar[2]!,
-    events: [{ title: DEMO.tjanster[2]!, time: "12:30", tone: staffBgClass(3) }],
+    events: [
+      { title: DEMO.tjanster[2]!, time: "12:30", tone: staffBgClass(3) },
+    ],
   },
   {
     day: DEMO.dagar[3]!,
@@ -174,7 +178,9 @@ export function HeroVisualPreview({ className }: { className?: string }) {
       >
         <div className="flex flex-col items-start gap-2">
           <span className="text-13 text-on-dark-muted">
-            {copy.hoy.siguiente({ relativo: copy.hoy.relativo.enMin({ n: 20 }) })}
+            {copy.hoy.siguiente({
+              relativo: copy.hoy.relativo.enMin({ n: 20 }),
+            })}
           </span>
           <Chip size="sm" weight="bold" tone="success" className="shrink-0">
             {copy.estados.confirmada}

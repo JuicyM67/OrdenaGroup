@@ -133,11 +133,7 @@ export default function FuncionalidadesPage() {
                 {preview ? (
                   <FeaturePreview
                     variant={preview}
-                    className={
-                      reverse
-                        ? "flex-1 lg:order-1"
-                        : "flex-1"
-                    }
+                    className={reverse ? "flex-1 lg:order-1" : "flex-1"}
                   />
                 ) : null}
               </Card>

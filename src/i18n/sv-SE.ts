@@ -193,7 +193,8 @@ export const landing = {
       },
       reservan: {
         titulo: "Ta emot bokningar",
-        texto: "Dina kunder bokar själva, när de vill. Du ser allt i din kalender.",
+        texto:
+          "Dina kunder bokar själva, när de vill. Du ser allt i din kalender.",
       },
     },
   },
@@ -207,8 +208,7 @@ export const landing = {
       },
       agendaPorProfesional: {
         titulo: "Kalender per anställd",
-        texto:
-          "Varje person i teamet har sin egen kalender och egna tider.",
+        texto: "Varje person i teamet har sin egen kalender och egna tider.",
       },
       recordatorios: {
         titulo: "Automatiska påminnelser",
@@ -461,8 +461,7 @@ export const sitio = {
   },
   preguntas: {
     meta: {
-      titulo: (p: { nombre: string }): string =>
-        `Vanliga frågor — ${p.nombre}`,
+      titulo: (p: { nombre: string }): string => `Vanliga frågor — ${p.nombre}`,
       descripcion: (p: { nombre: string }): string =>
         `Svar om hur du kommer igång, hur dina kunder bokar, priser och hur vi hanterar dina uppgifter i ${p.nombre}.`,
     },
@@ -804,8 +803,7 @@ export const SITIO_PARA_INDUSTRIAS: readonly SitioParaIndustria[] = [
     faq: [
       {
         pregunta: "Kan jag ha flera barberare i samma kalender?",
-        respuesta:
-          "Ja. Varje barberare har sina egna tider och egna tjänster.",
+        respuesta: "Ja. Varje barberare har sina egna tider och egna tjänster.",
       },
       {
         pregunta: "Funkar det om jag jobbar själv, utan lokal?",

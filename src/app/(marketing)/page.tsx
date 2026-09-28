@@ -68,7 +68,10 @@ const PARA_QUIEN = [
   { icon: Scissors, label: copy.landing.paraQuien.items.barberias },
   { icon: Sparkles, label: copy.landing.paraQuien.items.peluquerias },
   { icon: Gem, label: copy.landing.paraQuien.items.esteticaYUnas },
-  { icon: HeartPulse, label: copy.landing.paraQuien.items.kinesiologiaYMasajes },
+  {
+    icon: HeartPulse,
+    label: copy.landing.paraQuien.items.kinesiologiaYMasajes,
+  },
 ] as const;
 
 const PREGUNTAS = [

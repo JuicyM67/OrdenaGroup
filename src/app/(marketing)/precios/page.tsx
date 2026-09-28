@@ -94,17 +94,11 @@ export default function PreciosPage() {
 
         <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-8">
           <SectionHeading title={copy.sitio.precios.compararTitulo} />
-          <Card
-            radius="card"
-            padding="none"
-            className="mt-8 overflow-x-auto"
-          >
+          <Card radius="card" padding="none" className="mt-8 overflow-x-auto">
             <table className="w-full min-w-160 border-collapse text-left text-14">
               <thead>
                 <tr className="border-b border-line">
-                  <th className="px-5 py-4 font-semibold text-muted">
-                    {" "}
-                  </th>
+                  <th className="px-5 py-4 font-semibold text-muted"> </th>
                   {copy.PLANES.map((plan) => (
                     <th
                       key={plan.id}

@@ -58,7 +58,12 @@ export default async function ParaIndustriaPage({
 
       <main className="flex-1">
         <section className="mx-auto max-w-6xl px-4 py-10 sm:px-8 sm:py-14">
-          <Card tone="lime" radius="hero" padding="xl" className="flex flex-col gap-4">
+          <Card
+            tone="lime"
+            radius="hero"
+            padding="xl"
+            className="flex flex-col gap-4"
+          >
             <span className="inline-flex w-fit items-center rounded-full bg-ink px-3.5 py-1.5 text-13 font-bold tracking-caps text-on-dark uppercase">
               {industria.nombre}
             </span>

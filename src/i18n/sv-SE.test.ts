@@ -103,9 +103,7 @@ describe("sv-SE: förbjudna ord (D-026/D-027/D-028: fel marknad eller fel kanal)
     // Tekniska id:n (samma som es-CL) visas aldrig och räknas inte.
     const traffar = HOJOR.filter(
       (h) => !h.path.endsWith(".id") && monster.test(h.texto),
-    ).map(
-      (h) => h.path,
-    );
+    ).map((h) => h.path);
     expect(traffar).toEqual([]);
   });
 });

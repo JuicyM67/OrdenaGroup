@@ -14,8 +14,18 @@ import { WEEKDAY_MIN } from "@/lib/format/calendar-es-CL";
 export type FeaturePreviewVariant = "reservas" | "agenda" | "hoy";
 
 const AGENDA_COLUMNS = [
-  { day: WEEKDAY_MIN[0]!, title: "Corte", time: "10:00", tone: staffBgClass(1) },
-  { day: WEEKDAY_MIN[1]!, title: "Color", time: "11:00", tone: staffBgClass(2) },
+  {
+    day: WEEKDAY_MIN[0]!,
+    title: "Corte",
+    time: "10:00",
+    tone: staffBgClass(1),
+  },
+  {
+    day: WEEKDAY_MIN[1]!,
+    title: "Color",
+    time: "11:00",
+    tone: staffBgClass(2),
+  },
   { day: WEEKDAY_MIN[2]!, title: "Uñas", time: "12:30", tone: staffBgClass(3) },
 ] as const;
 
@@ -46,9 +56,7 @@ function AgendaPreview() {
     <div className="grid w-full max-w-96 grid-cols-3 gap-3 rounded-tile bg-surface p-4 shadow-popover">
       {AGENDA_COLUMNS.map((column) => (
         <div key={column.day} className="flex flex-col gap-2">
-          <span className="text-13 font-semibold text-muted">
-            {column.day}
-          </span>
+          <span className="text-13 font-semibold text-muted">{column.day}</span>
           <div
             className={cn(
               "flex flex-col rounded-event px-2.25 py-1.75 text-ink",

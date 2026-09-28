@@ -146,9 +146,7 @@ describe("sitio: marca", () => {
       sitio.preguntas,
       sitio.contacto,
     ]) {
-      expect(pagina.meta.titulo({ nombre: brand.name })).toContain(
-        brand.name,
-      );
+      expect(pagina.meta.titulo({ nombre: brand.name })).toContain(brand.name);
       expect(pagina.meta.descripcion({ nombre: brand.name })).toContain(
         brand.name,
       );
@@ -273,9 +271,10 @@ describe("SITIO_PRECIOS_TABLA", () => {
     for (const fila of SITIO_PRECIOS_TABLA) {
       expect(fila.funcion.length, fila.funcion).toBeGreaterThan(0);
       for (const clave of ["gratis", "emprende", "equipo", "local"] as const) {
-        expect(fila.valores[clave].length, `${fila.funcion}.${clave}`).toBeGreaterThan(
-          0,
-        );
+        expect(
+          fila.valores[clave].length,
+          `${fila.funcion}.${clave}`,
+        ).toBeGreaterThan(0);
       }
     }
   });
@@ -305,9 +304,7 @@ describe("SITIO_PARA_INDUSTRIAS", () => {
       );
       expect(industria.servicios.length, industria.id).toBeLessThanOrEqual(4);
       for (const servicio of industria.servicios) {
-        expect(Number.isInteger(servicio.minutos), servicio.nombre).toBe(
-          true,
-        );
+        expect(Number.isInteger(servicio.minutos), servicio.nombre).toBe(true);
         expect(servicio.minutos, servicio.nombre).toBeGreaterThan(0);
       }
       expect(industria.faq.length, industria.id).toBe(2);
