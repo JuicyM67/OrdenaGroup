@@ -32,10 +32,20 @@ DBURL="${DBURL/\[YOUR-PASSWORD\]/$DBPASS}"
 echo "   ${DBURL%%:*}://…@${DBURL##*@}"
 
 echo "3/4 Sätter inloggningslänkar i Supabase Auth…"
+AUTH_JSON=$(APP_URL="$APP_URL" python3 -c '
+import json,os,pathlib
+d=pathlib.Path("supabase/templates")
+print(json.dumps({
+  "site_url": os.environ["APP_URL"],
+  "uri_allow_list": os.environ["APP_URL"] + "/auth/confirm",
+  "mailer_subjects_magic_link": "Tu link para entrar",
+  "mailer_templates_magic_link_content": (d/"magic_link.html").read_text(),
+  "mailer_subjects_confirmation": "Confirma tu cuenta",
+  "mailer_templates_confirmation_content": (d/"confirmation.html").read_text(),
+}))')
 curl -fsS -X PATCH "${auth[@]}" -H "Content-Type: application/json" \
-  "$API/config/auth" \
-  -d "{\"site_url\":\"$APP_URL\",\"uri_allow_list\":\"$APP_URL/auth/confirm\"}" >/dev/null
-echo "   Site URL och redirect satta"
+  "$API/config/auth" -d "$AUTH_JSON" >/dev/null
+echo "   Site URL, redirect och e-postmallar satta"
 
 echo "4/4 Lägger in miljövariabler i Vercel (Production)…"
 setenv() {

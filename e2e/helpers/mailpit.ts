@@ -48,7 +48,12 @@ export async function waitForConfirmLink(
     if (latest) {
       const full = await fetchMessage(latest.ID);
       const match = /href="([^"]*\/auth\/confirm\?[^"]+)"/.exec(full.HTML);
-      if (match?.[1]) return match[1].replace(/&amp;/g, "&");
+      if (match?.[1]) {
+        // Bara sökväg + query: länken byggs med SiteURL (port 3000 lokalt),
+        // men e2e kör på sin egen port. `page.goto` löser den mot baseURL.
+        const url = new URL(match[1].replace(/&amp;/g, "&"));
+        return `${url.pathname}${url.search}`;
+      }
     }
     if (Date.now() > deadline) {
       throw new Error(

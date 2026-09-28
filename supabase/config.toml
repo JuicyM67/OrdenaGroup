@@ -155,13 +155,12 @@ max_indexes = 5
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-# WP-15: port 3115 (den här worktreens dev/e2e-port, README "Köra flera agenter parallellt") i
-# stället för 3000 — 3000 är reserverad för huvudworktreen och ska aldrig köras härifrån.
-site_url = "http://127.0.0.1:3115"
+site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = ["http://127.0.0.1:3115", "https://127.0.0.1:3115"]
+# 3000 = huvudworktreen, 3115 = WP-15:s e2e-port.
+additional_redirect_urls = ["http://127.0.0.1:3000/auth/confirm", "http://127.0.0.1:3115/auth/confirm"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -252,14 +251,13 @@ otp_expiry = 3600
 # WP-15 (F1): acceso con link mágico. Texto fijo, ver docs/content/email-templates.md §5 y
 # `email.acceso` en src/i18n/es-CL.ts (copiado tal cual a los .html, D-016). El asunto es el
 # resultado ya interpolado de `email.acceso.magicLink.asunto`/`confirmation.asunto`
-# (`brand.name`, hoy "llena") — TOML no puede importar `src/config/brand.ts` (regla dura 10),
-# así que si el nombre cambia hay que actualizar también estas dos líneas a mano.
+# Asunto sin el nombre del producto: el nombre solo vive en src/config/brand.ts (regla dura 10).
 [auth.email.template.magic_link]
-subject = "Tu link para entrar a llena"
+subject = "Tu link para entrar"
 content_path = "./supabase/templates/magic_link.html"
 
 [auth.email.template.confirmation]
-subject = "Confirma tu cuenta de llena"
+subject = "Confirma tu cuenta"
 content_path = "./supabase/templates/confirmation.html"
 
 # Uncomment to customize notification email template
