@@ -106,6 +106,16 @@
 
   /* ---------- Skuggor (endast svävande lager) ---------- */
   --shadow-popover: 0 18px 48px rgb(22 22 26 / 0.18), 0 2px 6px rgb(22 22 26 / 0.08);
+  /* Liquid glass-navet (WP-hemsida v2, retro 2026-09-28, punkt 2): mjuk yttre skugga +
+     en ljus inre highlight (imiterar glasets kant), i stället för --shadow-popovers rena
+     dropp-skugga. Egen token eftersom D-015 nollställer --shadow-* — samma mönster som
+     --shadow-popover ovan. */
+  --shadow-glass: 0 12px 32px rgb(22 22 26 / 0.12), 0 1px 2px rgb(22 22 26 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.7);
+
+  /* ---------- Blur (WP-hemsida v2, retro 2026-09-28, punkt 2) ----------
+     D-015 nollställer --blur-* (ingen referens i docs/design/reference/ använder blur).
+     Navets glaseffekt (backdrop-blur-glass) är det första undantaget. */
+  --blur-glass: 20px;
 
   /* ---------- Textstorlekar (px-namn, se DESIGN.md §3 för rollnamn) ---------- */
   --text-10: 10px;
@@ -413,6 +423,120 @@
     90% { opacity: 1; transform: translateY(-20px) scale(0.9); }
     96%,
     100% { opacity: 0; transform: translateY(-26px) scale(0.7); }
+  }
+
+  /* Hero-bentogridet på startsidan (WP-hemsida v2, retro 2026-09-28, punkt 2 —
+     "Nuevo hero" mot `.visual-diff/ref/hero-mix-ac.html`). Alla loopar oändliga
+     (dekoration av ett levande produkt), `prefers-reduced-motion` stänger av dem
+     (globals.css) och landar på respektive keyframes sista bildruta. */
+
+  /* Lodrät "nu"-linje som glider över veckokalendern (kalenderrutan är `position:
+     relative`, linjen `absolute` med `left` i procent — inga andra egenskaper). */
+  --animate-hero-now-line: hero-now-line 9s linear infinite;
+  @keyframes hero-now-line {
+    from { left: 0%; }
+    to { left: 100%; }
+  }
+
+  /* Toast "Nueva reserva …" som glider in uppe till höger i kalenderkortet. */
+  --animate-hero-toast: hero-toast 10s ease-in-out infinite;
+  @keyframes hero-toast {
+    0%,
+    34% { opacity: 0; transform: translateY(-14px); }
+    40%,
+    78% { opacity: 1; transform: translateY(0); }
+    84%,
+    100% { opacity: 0; transform: translateY(-14px); }
+  }
+
+  /* Sol/måne i omloppsbana runt den lilla "24/7"-rutan. */
+  --animate-hero-orbit: hero-orbit 9s linear infinite;
+  @keyframes hero-orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Himlen bakom omloppsbanan skiftar mellan dag och natt i samma takt. */
+  --animate-hero-sky: hero-sky 9s ease-in-out infinite;
+  @keyframes hero-sky {
+    0%,
+    40% { background-color: var(--color-sky); }
+    50%,
+    90% { background-color: var(--color-dark-2); }
+    100% { background-color: var(--color-sky); }
+  }
+
+  /* Kommissionsrutan: 15 % → 10 % → 5 % → $0 rullar lodrätt, ett stopp per siffra
+     (fyra rader staplade i ett fönster med `overflow:hidden`, se comision-card.tsx). */
+  --animate-hero-comision: hero-comision 6s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  @keyframes hero-comision {
+    0%,
+    10% { transform: translateY(0); }
+    20%,
+    28% { transform: translateY(-25%); }
+    38%,
+    46% { transform: translateY(-50%); }
+    58%,
+    92% { transform: translateY(-75%); }
+    100% { transform: translateY(0); }
+  }
+
+  /* Länkrutan: "Copiar" → "Copiado" (knappens bakgrund och de två etiketterna byter
+     fas tillsammans — tre synkade animationer på tre olika element). */
+  --animate-hero-copy-btn: hero-copy-btn 7s ease infinite;
+  @keyframes hero-copy-btn {
+    0%,
+    35% { background-color: var(--color-ink); }
+    36%,
+    58% { background-color: var(--color-success-fg); }
+    60%,
+    100% { background-color: var(--color-ink); }
+  }
+  --animate-hero-copy-out: hero-copy-out 7s ease infinite;
+  @keyframes hero-copy-out {
+    0%,
+    35% { opacity: 1; }
+    36%,
+    58% { opacity: 0; }
+    60%,
+    100% { opacity: 1; }
+  }
+  --animate-hero-copy-in: hero-copy-in 7s ease infinite;
+  @keyframes hero-copy-in {
+    0%,
+    35% { opacity: 0; }
+    37%,
+    58% { opacity: 1; }
+    60%,
+    100% { opacity: 0; }
+  }
+
+  /* Länkens tre delningsknappar: en ljus lime-ring pulserar ut, en efter en
+     (`delay-*`-klasser i komponenten, samma tajmning för alla tre). */
+  --animate-hero-share: hero-share 7s ease-out infinite;
+  @keyframes hero-share {
+    0%,
+    58% { transform: scale(1); box-shadow: 0 0 0 0 rgb(227 243 107 / 0); }
+    62% { transform: scale(1.12); box-shadow: 0 0 0 8px rgb(227 243 107 / 0.45); }
+    68%,
+    100% { transform: scale(1); box-shadow: 0 0 0 14px rgb(227 243 107 / 0); }
+  }
+
+  /* Länken skrivs ut, tecken för tecken (bredden animeras 0 → 100 % av en fast
+     bred förälder, se hero-bento.tsx), plus en blinkande markör bredvid. */
+  --animate-hero-type: hero-type 7s steps(21, end) infinite;
+  @keyframes hero-type {
+    0%,
+    4% { width: 0%; }
+    22%,
+    100% { width: 100%; }
+  }
+  --animate-hero-caret: hero-caret 0.8s steps(1) infinite;
+  @keyframes hero-caret {
+    0%,
+    49% { opacity: 1; }
+    50%,
+    100% { opacity: 0; }
   }
 }
 

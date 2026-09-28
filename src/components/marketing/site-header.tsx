@@ -1,12 +1,19 @@
 // Header delad av alla sidor på sitio-webben (WP-hemsida, utökad i WP-hemsida v2 med en
-// megameny): logga, nav ("Funcionalidades" och "Para quién" öppnar samma breda panel —
-// kolumnerna Producto/Para quién/Recursos + ett destacado-kort för Horas flash), "Entrar"
-// och CTA. Radix NavigationMenu på skrivbord (tangentbord: pilar mellan triggers, Escape
-// stänger, Tab går igenom panelen). Ingen Viewport-komponent: med bara två triggers som
-// delar exakt samma innehåll ger den inget extra (ingen bredd-/höjdmorph att vinna), och
-// varje Content renderas i stället in-place, positionerad mot den (relativa) headern —
-// samma mönster som undermenyns tidigare Popover. Mobilmenyn (Radix Dialog) grupperar
-// samma innehåll (Producto/Para quién/Recursos) i en enda kolumn.
+// megameny; retro 2026-09-28 punkt 2 bytte skalet mot ett flytande "liquid glass"-nav, se
+// `.visual-diff/ref/nav-ref.png` — halvtransparent yta, `backdrop-blur-glass`, tunn ljus
+// kant och `--shadow-glass`): logga, nav ("Funcionalidades" och "Para quién" öppnar samma
+// breda panel — kolumnerna Producto/Para quién/Recursos + ett destacado-kort för Horas
+// flash), "Entrar" (glasknapp) och CTA (ink). Radix NavigationMenu på skrivbord
+// (tangentbord: pilar mellan triggers, Escape stänger, Tab går igenom panelen). Ingen
+// Viewport-komponent: med bara två triggers som delar exakt samma innehåll ger den inget
+// extra (ingen bredd-/höjdmorph att vinna), och varje Content renderas i stället in-place,
+// positionerad mot den (relativa) headern — samma mönster som undermenyns tidigare Popover.
+// `NavigationMenu.Root` körs kontrollerad (`value`/`onValueChange`) bara för att kunna ge
+// den öppna triggerns "inre pill" ett eget utseende i JS — CSS-attributvarianter
+// (`data-[state=open]:…`) räknas som ett godtyckligt Tailwind-värde och är förbjudna
+// (D-015, `no-restricted-syntax`, se globals.css-kommentaren vid `toggle-on`). Mobilmenyn
+// (Radix Dialog) grupperar samma innehåll (Producto/Para quién/Recursos) i en enda kolumn,
+// oförändrad (solid vit — bara den flytande pillen ovanför blev glas).
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
@@ -29,6 +36,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
+import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/icon-button";
 import { LogoMark } from "@/components/ui/logo-mark";
 import { strokeArrow, strokeCard, strokeNav } from "@/components/ui/icons";
@@ -92,8 +100,13 @@ const INDUSTRIAS = copy.SITIO_PARA_INDUSTRIAS.map((industria) => ({
   href: `/para/${industria.id}`,
 }));
 
+// Länken/triggerns "inre pill" (glas-knapp) vid hover — och, för triggerna, när den egna
+// panelen är öppen (se `isOpen` i `SiteHeader`, aldrig via CSS-attributvarianter). Samma
+// klass på länkar och triggers, så alla nav-punkter känns likadana.
 const navLinkClass =
-  "text-14 font-semibold text-ink transition-colors duration-150 ease-out hover:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+  "rounded-full px-3 py-1.75 text-14 font-semibold text-ink transition-colors duration-150 ease-out hover:bg-surface/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
+const navLinkOpenClass = "bg-surface/70 shadow-popover";
 
 const megaLinkClass =
   "group flex items-start gap-3 rounded-event p-2.5 transition-colors duration-150 ease-out hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
@@ -102,7 +115,7 @@ const megaLinkClass =
  * kolumner oavsett vilken av dem som öppnade den. */
 function MegaMenuPanel() {
   return (
-    <div className="grid grid-cols-12 gap-8 rounded-panel bg-surface p-6 shadow-popover">
+    <div className="grid grid-cols-12 gap-8 rounded-panel border border-surface/60 bg-surface/95 p-6 shadow-glass backdrop-blur-glass backdrop-saturate-150">
       <div className="col-span-5 flex flex-col gap-3">
         <span className="text-12 font-bold tracking-caps text-muted uppercase">
           {copy.sitio.megamenu.producto.titulo}
@@ -221,11 +234,17 @@ function MegaMenuPanel() {
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Kontrollerat värde, bara för triggerns "öppen"-pill (se filkommentaren ovan om
+  // varför inte `data-[state=open]:…`).
+  const [menuValue, setMenuValue] = useState("");
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-canvas">
-      <div className="relative mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-4 sm:px-8">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5">
+    <header className="sticky top-4 z-40 px-4 sm:px-8">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 rounded-full border border-surface/60 bg-surface/70 px-3 shadow-glass backdrop-blur-glass backdrop-saturate-150 sm:px-5">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2.5 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
           <LogoMark label={brand.name} size={40} decorative />
           <span className="font-display text-19 font-bold tracking-display text-ink">
             {brand.name}
@@ -236,11 +255,17 @@ export function SiteHeader() {
           aria-label={copy.nav.principal}
           className="hidden lg:block"
           delayDuration={100}
+          value={menuValue}
+          onValueChange={setMenuValue}
         >
-          <NavigationMenu.List className="flex items-center gap-8">
+          <NavigationMenu.List className="flex items-center gap-2">
             <NavigationMenu.Item value="funcionalidades">
               <NavigationMenu.Trigger
-                className={`${navLinkClass} flex items-center gap-1 outline-none`}
+                className={cn(
+                  navLinkClass,
+                  "flex items-center gap-1 outline-none",
+                  menuValue === "funcionalidades" ? navLinkOpenClass : "",
+                )}
               >
                 {copy.sitio.nav.funcionalidades}
                 <ChevronDown
@@ -255,7 +280,9 @@ export function SiteHeader() {
                 // headern), så en `absolute`/`w-full` här skulle bara bli lika bred som
                 // navraden. `fixed` + `inset-x-0` gör panelen oberoende av det, och
                 // `mx-auto max-w-6xl` inuti återskapar samma breddram som resten av sidan.
-                className="fixed inset-x-0 top-20 z-40"
+                // `top-22`: navets nya höjd (glas-pillen är `h-16` med `top-4` marginal,
+                // + 8px luft) i stället för det gamla `h-20`-navets `top-20`.
+                className="fixed inset-x-0 top-22 z-40"
               >
                 <div className="mx-auto max-w-6xl px-4 sm:px-8">
                   <MegaMenuPanel />
@@ -265,7 +292,11 @@ export function SiteHeader() {
 
             <NavigationMenu.Item value="para-quien">
               <NavigationMenu.Trigger
-                className={`${navLinkClass} flex items-center gap-1 outline-none`}
+                className={cn(
+                  navLinkClass,
+                  "flex items-center gap-1 outline-none",
+                  menuValue === "para-quien" ? navLinkOpenClass : "",
+                )}
               >
                 {copy.sitio.nav.paraQuien}
                 <ChevronDown
@@ -275,12 +306,8 @@ export function SiteHeader() {
                 />
               </NavigationMenu.Trigger>
               <NavigationMenu.Content
-                // `fixed` i stället för `absolute`: Radix lägger en egen
-                // `position: relative`-wrapper runt <List> (bredd = navraden, inte hela
-                // headern), så en `absolute`/`w-full` här skulle bara bli lika bred som
-                // navraden. `fixed` + `inset-x-0` gör panelen oberoende av det, och
-                // `mx-auto max-w-6xl` inuti återskapar samma breddram som resten av sidan.
-                className="fixed inset-x-0 top-20 z-40"
+                // Se kommentaren i "funcionalidades" ovan (samma mönster, samma panel).
+                className="fixed inset-x-0 top-22 z-40"
               >
                 <div className="mx-auto max-w-6xl px-4 sm:px-8">
                   <MegaMenuPanel />
@@ -312,13 +339,15 @@ export function SiteHeader() {
           </NavigationMenu.List>
         </NavigationMenu.Root>
 
-        <div className="flex shrink-0 items-center gap-3">
-          <Link
-            href="/login"
-            className="hidden text-14 font-semibold text-ink underline transition-colors duration-150 ease-out hover:text-pending-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:inline"
+        <div className="flex shrink-0 items-center gap-2.5">
+          <Button
+            asChild
+            variant="glass"
+            size="sm"
+            className="hidden sm:inline-flex"
           >
-            {copy.sitio.nav.entrar}
-          </Link>
+            <Link href="/login">{copy.sitio.nav.entrar}</Link>
+          </Button>
           <Button
             asChild
             variant="primary"
@@ -332,8 +361,8 @@ export function SiteHeader() {
             <Dialog.Trigger asChild>
               <IconButton
                 label={copy.nav.secciones}
-                tone="canvas"
-                className="lg:hidden"
+                tone="ghost"
+                className="hover:bg-surface/70 lg:hidden"
               >
                 <Menu
                   aria-hidden="true"

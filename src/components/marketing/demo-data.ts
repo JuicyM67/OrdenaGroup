@@ -13,6 +13,10 @@ export const DEMO = {
     pris2: formatClp(18_000),
     kund: "Joaquín Rivas",
     lank: "tunegocio.cl/reservar",
+    // Sista siffran i hero-bentogridets rullande "Comisión"-ruta (WP-hemsida v2,
+    // retro 2026-09-28, punkt 2): 15 %/10 %/5 % är dekor, det fasta priset formateras
+    // per marknad precis som alla andra belopp (regel dura 5).
+    comisionFinal: formatClp(0),
   },
   SE: {
     dagar: ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"],
@@ -23,5 +27,6 @@ export const DEMO = {
     pris2: "895 kr",
     kund: "Elsa Lindqvist",
     lank: "dittforetag.se/boka",
+    comisionFinal: "0 kr",
   },
 }[market];

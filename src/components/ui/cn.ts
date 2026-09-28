@@ -109,7 +109,10 @@ const leading = ["mega", "hero", "snug", "event", "body", "relaxed"];
 const bgImages = ["agenda", "closed-stripes"];
 
 /** --shadow-* i tokens.css utöver Tailwinds inbyggda "", "inner", "none". */
-const shadows = ["popover"];
+const shadows = ["popover", "glass"];
+
+/** --blur-* i tokens.css (D-015 nollställer den; "glass" är första undantaget, navet). */
+const blurs = ["glass"];
 
 // Tailwind har en klassgrupp per sida/hörn för border-radius (rounded-t-*, rounded-tl-* …).
 // Våra radie-tokens ska gå att kombinera/ersätta i alla dessa, inte bara den logiska
@@ -140,6 +143,8 @@ const customTwMerge = extendTailwindMerge({
       "bg-image": [{ bg: bgImages }],
       "border-color": [{ border: colors }],
       shadow: [{ shadow: shadows }],
+      blur: [{ blur: blurs }],
+      "backdrop-blur": [{ "backdrop-blur": blurs }],
       rounded: [{ rounded: radii }],
       ...Object.fromEntries(
         roundedSideGroups.map((group) => [group, [{ [group]: radii }]]),

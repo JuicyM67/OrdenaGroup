@@ -30,14 +30,13 @@ import { TextLink } from "@/components/ui/text-link";
 import { strokeCard } from "@/components/ui/icons";
 import { BentoGrid } from "@/components/marketing/bento-grid";
 import { CtaBand } from "@/components/marketing/cta-band";
-import { DecorativeBlob } from "@/components/marketing/decorative-blob";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
 import { FlashMockup } from "@/components/marketing/flash-mockup";
 import {
   FlujoPhoneMockup,
   FlujoSteps,
 } from "@/components/marketing/flujo-mockup";
-import { HeroVisualPreview } from "@/components/marketing/hero-visual-preview";
+import { HeroSection } from "@/components/marketing/hero-bento";
 import { RubrosMarquee } from "@/components/marketing/rubros-marquee";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
@@ -70,12 +69,6 @@ const PREGUNTAS = [
   copy.landing.preguntas.items.ayudaConfig,
 ] as const;
 
-const HERO_STATS = [
-  copy.landing.heroStats.siempreAbierto,
-  copy.landing.heroStats.minutos,
-  copy.landing.heroStats.comision,
-] as const;
-
 const FLASH_PUNTOS = [
   copy.sitio.inicio.flash.puntos.punto1,
   copy.sitio.inicio.flash.puntos.punto2,
@@ -88,82 +81,7 @@ export default function LandingPage() {
       <SiteHeader />
 
       <main className="flex-1">
-        {/* Hero */}
-        <section className="mx-auto max-w-6xl px-4 py-10 sm:px-8 sm:py-14">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch">
-            <Card
-              as="section"
-              aria-label={copy.landing.hero.titulo({ tagline: brand.tagline })}
-              tone="lime"
-              radius="hero"
-              padding="xl"
-              className="relative flex flex-col justify-between gap-6 lg:w-1/2"
-            >
-              <DecorativeBlob
-                tone="lilac"
-                className="pointer-events-none absolute -top-3 -right-3 z-0 size-8 opacity-90 sm:-top-7 sm:-right-7 sm:size-14"
-              />
-              <div className="relative z-10 flex flex-col gap-4">
-                <span className="inline-flex w-fit items-center rounded-full bg-ink px-3.5 py-1.5 text-13 font-bold tracking-caps text-on-dark uppercase">
-                  {copy.landing.hero.etiqueta}
-                </span>
-                <h1 className="font-display text-30 leading-hero font-semibold tracking-display text-ink sm:text-40">
-                  {copy.landing.hero.titulo({ tagline: brand.tagline })}
-                </h1>
-                <p className="max-w-md text-16 leading-relaxed text-on-lime-soft">
-                  {copy.landing.hero.subtitulo}
-                </p>
-              </div>
-              <div className="relative z-10 flex flex-col flex-wrap gap-3 sm:flex-row">
-                <Button asChild variant="primary" size="xl">
-                  <Link href="/login">{copy.landing.hero.ctaPrimario}</Link>
-                </Button>
-                <Button asChild variant="secondary" size="xl">
-                  <Link href="/barberia-norte">
-                    {copy.landing.hero.ctaSecundario}
-                  </Link>
-                </Button>
-              </div>
-            </Card>
-
-            <HeroVisualPreview className="lg:w-1/2" />
-          </div>
-
-          <Card
-            tone="dark"
-            radius="hero"
-            padding="xl"
-            className="relative mt-5 flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <DecorativeBlob
-              tone="lime"
-              className="pointer-events-none absolute -bottom-3 -left-3 z-0 size-8 opacity-80 sm:-bottom-7 sm:-left-7 sm:size-14"
-            />
-            <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:gap-10">
-              {HERO_STATS.map((stat) => (
-                <div key={stat.etiqueta} className="flex flex-col gap-1">
-                  <span className="font-display text-38 font-semibold tracking-display">
-                    {stat.valor}
-                  </span>
-                  <span className="max-w-48 text-13 text-on-dark-muted">
-                    {stat.etiqueta}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="relative z-10 flex flex-col gap-3 sm:max-w-70 sm:items-end sm:text-right">
-              <p className="text-14 text-on-dark-soft">
-                {copy.landing.heroStats.texto}
-              </p>
-              <TextLink
-                href="#como-funciona"
-                className="text-on-dark hover:text-lime"
-              >
-                {copy.landing.heroStats.cta}
-              </TextLink>
-            </div>
-          </Card>
-        </section>
+        <HeroSection />
 
         {/* USP: cuatro razones grandes, cada una con su propia mini-mockup (sitio.inicio.usp) */}
         <section className="mx-auto max-w-6xl px-4 py-14 sm:px-8">

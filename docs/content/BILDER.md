@@ -16,3 +16,4 @@ Bilden visar en tom lokal (inga personer i fokus, inga igenkännbara ansikten), 
 telefonmockup byggd av tokens/komponenter i stället för ett foto, se `cta-band.tsx`. Strängen
 `sitio.cta.fondoAlt` (es-CL/sv-SE) används inte längre av något — kvar i i18n tills
 copywriter-es-cl städar bort den (utanför det här arbetspaketets ägarskap).
+| `hero-salong.webp` | Heron (bento), fotorutan | se källa | https://unsplash.com/photos/a-hair-salon-with-chairs-and-a-mirror-DUvovc88OfE |

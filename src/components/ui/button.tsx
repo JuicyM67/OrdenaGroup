@@ -17,6 +17,10 @@ const button = cva(
         "outline-dark":
           "border border-dark-border bg-transparent font-semibold text-on-dark",
         inverse: "bg-surface font-bold tracking-caps text-ink uppercase",
+        // Glaset i det flytande navet (WP-hemsida v2, retro 2026-09-28, punkt 2):
+        // halvtransparent i stället för secondary (helt vit), så bakgrunden syns igenom.
+        glass:
+          "border border-surface/60 bg-surface/50 font-semibold text-ink backdrop-blur-glass",
       },
       size: {
         xs: "h-7.5 rounded-full px-3.5 text-12",
