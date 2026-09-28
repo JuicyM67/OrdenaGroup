@@ -11,6 +11,8 @@ import { cn } from "./cn";
 export type SegmentedControlOption = {
   value: string;
   label: ReactNode;
+  /** Radix hoppar över alternativet i piltangentsnavigeringen (WP-12: "Mes"). */
+  disabled?: boolean;
 };
 
 export type SegmentedControlProps = {
@@ -44,10 +46,12 @@ export function SegmentedControl({
         <ToggleGroup.Item
           key={option.value}
           value={option.value}
+          disabled={option.disabled}
           className={cn(
             "h-9 w-24 rounded-event text-13 font-semibold text-ink transition-colors duration-150 ease-out",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
             "toggle-on:bg-surface toggle-on:font-bold",
+            "disabled:pointer-events-none disabled:opacity-40",
           )}
         >
           {option.label}

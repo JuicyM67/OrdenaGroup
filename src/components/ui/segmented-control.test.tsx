@@ -58,6 +58,32 @@ describe("SegmentedControl", () => {
     expect(onValueChange).toHaveBeenCalledWith("day");
   });
 
+  it("ett disabled alternativ går inte att välja och hoppas över av piltangenterna", async () => {
+    const onValueChange = vi.fn();
+    const withDisabled = [
+      { value: "month", label: "Mes", disabled: true },
+      { value: "week", label: "Semana" },
+      { value: "day", label: "Día" },
+    ];
+    render(
+      <SegmentedControl
+        aria-label="Vista"
+        value="week"
+        onValueChange={onValueChange}
+        options={withDisabled}
+      />,
+    );
+    const month = screen.getByRole("radio", { name: "Mes" });
+    expect(month).toBeDisabled();
+    await userEvent.click(month, { pointerEventsCheck: 0 });
+    expect(onValueChange).not.toHaveBeenCalled();
+
+    screen.getByRole("radio", { name: "Día" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+    // Runt om Día: Mes är disabled, så piltangenten hoppar tillbaka till Semana.
+    expect(screen.getByRole("radio", { name: "Semana" })).toHaveFocus();
+  });
+
   it("vald knapp kan inte avmarkeras (värdet blir aldrig tomt)", async () => {
     const onValueChange = vi.fn();
     render(

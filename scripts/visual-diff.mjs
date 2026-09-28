@@ -27,10 +27,27 @@ const STRICT = process.env.VISUAL_STRICT === "1";
 // Hela skärmarna (WP-11–14). "– pendiente" (varken ✓ eller ✗) tills routen finns, om inte STRICT.
 const screens = [
   { name: "main", url: "/design-lab/main", width: 1440, height: 900, ref: "Main.png" },
-  { name: "agenda", url: "/design-lab/agenda", width: 1440, height: 900, ref: "Agenda.png" },
+  // hasPopover: standardläget visar Martina Lagos-popovern öppen (Radix, portalerad) —
+  // väntar på att den faktiskt hunnit rendera innan skärmdumpen tas (granskningsfynd).
+  { name: "agenda", url: "/design-lab/agenda", width: 1440, height: 900, ref: "Agenda.png", hasPopover: true },
   { name: "reserva", url: "/design-lab/reserva", width: 390, height: 1060, ref: "Reserva.png" },
   { name: "hoy", url: "/design-lab/hoy", width: 390, height: 844, ref: "Hoy.png" },
   { name: "hora-flash", url: "/design-lab/hora-flash", width: 360, height: 640, ref: "HoraFlash.png" },
+  // WP-12: dagvyn saknar en egen ritad referens. De här tre regionerna är identiska mellan
+  // vecko- och dagvyn (rail/sidopanel, verktygsraden, dagraden — vald dag = idag = fredag i
+  // fixturen), och jämförs ändå mot Agenda.png. Se docs/tasks/plans/WP-12.md steg 8.
+  {
+    name: "agenda-dia",
+    url: "/design-lab/agenda-dia",
+    width: 1440,
+    height: 900,
+    ref: "Agenda.png",
+    regions: [
+      { name: "rail-aside", clip: { x: 0, y: 0, width: 428, height: 900 } },
+      { name: "toolbar", clip: { x: 448, y: 36, width: 956, height: 48 } },
+      { name: "day-pills", clip: { x: 448, y: 156, width: 956, height: 72 } },
+    ],
+  },
 ];
 
 // Viewport per referensskärm, för utsnitten (WP-02 steg 7). Måste matcha screens ovan så att
@@ -102,7 +119,12 @@ for (const item of items) {
     viewport: { width: item.width, height: item.height },
     deviceScaleFactor: scale,
   });
-  const response = await page.goto(BASE + item.url, { waitUntil: "networkidle" });
+  // "networkidle" hänger ibland (WP-12, granskningsfynd): Next.js `<Link>`-prefetch mot
+  // en route som inte finns än i det här worktreet (t.ex. NavRailLogo → /app/inicio,
+  // innan WP-11 är mergad) håller kvar en keep-alive-anslutning som Chromium aldrig
+  // räknar som "idle", trots att svaret (404) redan kommit. "load" + `document.fonts.ready`
+  // nedan räcker för en stillastående design lab-sida.
+  const response = await page.goto(BASE + item.url, { waitUntil: "load" });
   if (response?.status() === 404) {
     await page.close();
     if (STRICT) {
@@ -115,36 +137,67 @@ for (const item of items) {
     continue;
   }
   await page.evaluate(() => document.fonts.ready);
+  // Bästa-försök: låter nätverket (webbteckensnitt m.m.) bli klart inom 3 s, utan att
+  // blockera obegränsat på den flakiga NavRailLogo-prefetchen mot en route som saknas i
+  // det här worktreet (se kommentaren ovan om "load" i stället för "networkidle").
+  await page.waitForLoadState("networkidle", { timeout: 3000 }).catch(() => {});
+  if (item.hasPopover) {
+    // Radix Popover.Content är portalerad och kan hinna vara oöppnad än vid `load`.
+    await page
+      .waitForSelector("[data-radix-popper-content-wrapper]", { timeout: 3000 })
+      .catch(() => {});
+  }
+
+  // Regioner (WP-12, agenda-dia): en skärmdump av hela viewporten, jämförd mot samma ref i
+  // flera separata utsnitt (ingen egen `clip` på item-nivå). Bakåtkompatibelt: poster utan
+  // `regions` beter sig precis som förut (ett enda utsnitt, `item.clip` eller hela sidan).
+  const regions = item.regions ?? [
+    { name: item.name, clip: item.clip ?? { x: 0, y: 0, width: item.width, height: item.height } },
+  ];
 
   const shotPath = path.join(outDir, `${item.name}.actual.png`);
-  const clip = item.clip ?? { x: 0, y: 0, width: item.width, height: item.height };
-  await page.screenshot({ path: shotPath, clip });
+  await page.screenshot({ path: shotPath });
   await page.close();
 
   const actual = PNG.sync.read(fs.readFileSync(shotPath));
-  const refClip = {
-    x: Math.round(clip.x * scale),
-    y: Math.round(clip.y * scale),
-    width: Math.round(clip.width * scale),
-    height: Math.round(clip.height * scale),
-  };
-  const w = Math.min(refClip.width, actual.width);
-  const h = Math.min(refClip.height, actual.height);
-  const cropRef = new PNG({ width: w, height: h });
-  PNG.bitblt(ref, cropRef, refClip.x, refClip.y, w, h, 0, 0);
-  const cropActual = new PNG({ width: w, height: h });
-  PNG.bitblt(actual, cropActual, 0, 0, w, h, 0, 0);
 
-  const diff = new PNG({ width: w, height: h });
-  const bad = pixelmatch(cropRef.data, cropActual.data, diff.data, w, h, { threshold: 0.1 });
-  fs.writeFileSync(path.join(outDir, `${item.name}.diff.png`), PNG.sync.write(diff));
-  const ratio = bad / (w * h);
-  const sizeOk = refClip.width === actual.width && refClip.height === actual.height;
-  const ok = ratio <= THRESHOLD && sizeOk;
-  if (!ok) failed++;
-  console.log(
-    `${ok ? "✓" : "✗"} ${item.name}: ${(ratio * 100).toFixed(2)} % avvikelse${sizeOk ? "" : ` (storleken skiljer sig: ref ${refClip.width}x${refClip.height} vs actual ${actual.width}x${actual.height})`} → ${outDir}/${item.name}.diff.png`,
-  );
+  for (const region of regions) {
+    const label = item.regions ? `${item.name}:${region.name}` : item.name;
+    const clip = region.clip;
+    // actual (helsides-skärmdump vid deviceScaleFactor=scale) och ref (Nx-export) är samma
+    // fysiska upplösning — samma skalade utsnitt fungerar för båda.
+    const scaledClip = {
+      x: Math.round(clip.x * scale),
+      y: Math.round(clip.y * scale),
+      width: Math.round(clip.width * scale),
+      height: Math.round(clip.height * scale),
+    };
+    const availableW = Math.min(
+      ref.width - scaledClip.x,
+      actual.width - scaledClip.x,
+    );
+    const availableH = Math.min(
+      ref.height - scaledClip.y,
+      actual.height - scaledClip.y,
+    );
+    const w = Math.min(scaledClip.width, availableW);
+    const h = Math.min(scaledClip.height, availableH);
+    const cropRef = new PNG({ width: w, height: h });
+    PNG.bitblt(ref, cropRef, scaledClip.x, scaledClip.y, w, h, 0, 0);
+    const cropActual = new PNG({ width: w, height: h });
+    PNG.bitblt(actual, cropActual, scaledClip.x, scaledClip.y, w, h, 0, 0);
+
+    const diff = new PNG({ width: w, height: h });
+    const bad = pixelmatch(cropRef.data, cropActual.data, diff.data, w, h, { threshold: 0.1 });
+    fs.writeFileSync(path.join(outDir, `${label.replace(":", "-")}.diff.png`), PNG.sync.write(diff));
+    const ratio = bad / (w * h);
+    const sizeOk = w === scaledClip.width && h === scaledClip.height;
+    const ok = ratio <= THRESHOLD && sizeOk;
+    if (!ok) failed++;
+    console.log(
+      `${ok ? "✓" : "✗"} ${label}: ${(ratio * 100).toFixed(2)} % avvikelse${sizeOk ? "" : ` (storleken skiljer sig: förväntad ${scaledClip.width}x${scaledClip.height}, jämfört ${w}x${h})`} → ${outDir}/${label.replace(":", "-")}.diff.png`,
+    );
+  }
 }
 
 await browser.close();

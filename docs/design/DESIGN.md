@@ -161,10 +161,10 @@ Kolumnen "Referens" anger vilken fil i `docs/design/reference/` (och bild i `doc
 | **StatusChip** | 12/700, padding 6×12, radie 12 (10 i små varianter). | Main, Agenda |
 | **MiniCalendar** | Ljus (Main) och mörk (Agenda) variant. Veckan börjar måndag. Celler 30 breda. Valt datum: ljus = ink-cirkel vit text; mörk = lime-cirkel ink text. Mörk variant markerar aktuell vecka med `dark-2`-band. Prick 4 px violet = dag med bokningar. | Main, Agenda |
 | **FlashCard** | `dark`, radie 24. Lime ikonruta 56, text, vit rund pil-knapp 44. | Main |
-| **SegmentedControl** | Container vit 45 % opacitet, padding 4, radie 16. Knappar 96×36, radie 12. Vald = vit. | Agenda |
+| **SegmentedControl** | Container vit 45 % opacitet, padding 4, radie 16. Knappar 96×36, radie 12. Vald = vit. `disabled` per alternativ (WP-12: "Mes"), `disabled:opacity-40`, hoppas över av piltangenterna. | Agenda |
 | **DayPill (desktop)** | Höjd 72, radie 16, bg vit 38 %. Idag = vit, dag + siffra i `violet`. Stängd dag = vit 20 %. | Agenda |
 | **WeekGrid** | Vit panel radie 22. Timme = 94 px, tidskolumn 64. Linjer `line`. Dagkolumner flex-1 med border-left `line`. Nu-linje 2 px `alert` med prick 10 px. Stängd dag: randigt mönster + "Cerrado". | Agenda |
-| **EventBlock** | Absolut positionerad, inset 5 px, radie 12, padding 7/9. Bakgrund = personalens färg. Flash = lime + svart tagg "Flash −20%". Från väntelista = peach + tagg "Lista de espera". Blockering = `#F1F1EE`, text muted. Vald = 2 px ink-kant. Tid visas om höjd ≥ 44, avatar om ≥ 96. | Agenda |
+| **EventBlock** | Absolut positionerad, inset 5 px, radie 12, padding 7/9. Bakgrund = personalens färg. Flash = lime + svart tagg "Flash −20%". Från väntelista = peach + tagg "Lista de espera". Blockering = `#F1F1EE`, text muted. Vald = 2 px ink-kant. Tid visas om höjd ≥ 44, avatar om ≥ 96. Överlappande profesionales i samma kolumn (veckovyn, D-021): `left`/`width` i procent i stället för det fasta insetet. | Agenda |
 | **EventPopover** | 290 bred, vit, radie 20, padding 18/20, `shadow-popover`. Namn + telefon maskerad, chips, tid och betalning med ikoner, tre knappar (Llegó = primär ink, No vino / Mover = sekundära med border). Radix Popover. | Agenda |
 | **SidePanelCard (mörk)** | `dark`, radie 24, padding 20. Rubrik 17/600. Kryssrutor med `accent-color: lime`. | Agenda |
 | **ServiceCard** | Vit, min-höjd 72, radie 22, padding 12/16/12/12. Ikonruta 44 radie 14 i tint. Vald = 2 px ink-kant (osynlig 2 px kant annars, så inget hoppar). | Reserva |
@@ -240,7 +240,38 @@ annars `nav.notificacionesNuevas({ n })` (`notificationsLabel`, `data.notificati
 
 ### Byggt i WP-12
 
-_Fylls i av WP-12._
+Agenda (desktop): veckovy exakt enligt `docs/design/reference/Agenda.dc.html`, och en
+dagvy i samma formspråk (härledd, ingen ritad referens — verifierad med stilparitet mot
+veckovyn och delregioner mot `Agenda.png`, se `e2e/agenda.spec.ts` och
+`scripts/visual-diff.mjs` `agenda-dia`). D-021: `style` i `src/components/agenda/**`
+används bara för `top`/`height`/`left`/`width` som räknas ur data (block, lanes,
+nu-linje) — allt annat är tokens/klasser.
+
+| Komponent | Fil | API |
+|---|---|---|
+| AgendaShell | `src/components/agenda/agenda-shell.tsx` | `rail`, `aside`, `children`; ram `bg-night p-4 gap-4`, `h-dvh` (design lab: `className="h-full"` i en `h-225 w-360`-artboard) |
+| AgendaRail | `src/components/agenda/agenda-rail.tsx` | `staff`, `highlightedStaffId` (FRÅGA 5: senast visade profesional i dagvyn), `onSelectStaff` |
+| StaffRailButton | `src/components/agenda/staff-rail-button.tsx` | `staff`, `selected` (`ring-2 ring-lime`, fokusring utanför via `outline-offset-2`), `onSelect` |
+| MonthCard | `src/components/agenda/month-card.tsx` | `month`, `selected`, `today`, `highlightWeekOf`, `onSelect`/`onPrevMonth`/`onNextMonth`; wrapper runt `MiniCalendar variant="dark"` |
+| StaffFilter | `src/components/agenda/staff-filter.tsx` | `staff`, `visibleStaffIds`, `counts`, `onToggle`; sista ikryssade `aria-disabled` + `aria-describedby` (kan inte kryssas ur) |
+| LegendCard | `src/components/agenda/legend-card.tsx` | statisk, tre prickar (lime/peach/blocked) |
+| WaitlistSummary | `src/components/agenda/waitlist-summary.tsx` | `waitlist` (`null` → renderar inget) |
+| AgendaToolbar | `src/components/agenda/agenda-toolbar.tsx` | `title`, `onToday`/`onPrevWeek`/`onNextWeek`/`onNewBooking` |
+| DayPillRow | `src/components/agenda/day-pill-row.tsx` | `days`, `today`, `closedDates`, `gmtLabel`, `vista` (`semana`\|`dia`, styr om vald dag får vit bakgrund), `selectedDate`, `onSelectDay` |
+| TimeGrid | `src/components/agenda/time-grid.tsx` | `startHour`/`endHour`/`headerHeight` (0 vecka, 44 dag), `columns` (`key`, `header?`, `closed`, redan positionerade `items`), `allColumnsClosed?` (dagvyn: en enda `ClosedDay` över alla kolumner i stället för en per kolumn, under kolumnhuvudet), `initialScrollHour`; gemensam för vecko- **och** dagvyn |
+| ClosedDay | `src/components/agenda/closed-day.tsx` | bara konstanter/klasser, inget `style` |
+| EventBlock | `src/components/agenda/event-block.tsx` | `variant` (staff/flash/waitlist), `staffColor`, `selected`, `title`, `meta`, `showAvatar`, `top`/`height` (alltid `style`), `lane?` (`left`/`width` i `style` när `lanes > 1`) |
+| BlockItem | `src/components/agenda/block-item.tsx` | `kind` (time_off_kind), `top`/`height`, `lane?` (samma mönster som EventBlock — ett block som bara gäller några av de synliga profesionales delar lane med en krockande bokning i stället för att ritas i full bredd ovanpå den); blockering/lunch, `<div>`, inte klickbar |
+| NowLine | `src/components/agenda/now-line.tsx` | `top` (enda geometrin i `style`); vänster/höger/prick är klasser |
+| EventPopover | `src/components/agenda/event-popover.tsx` | `booking`, `staffName`, `tz`, `open`/`onOpenChange`, `onLlego`/`onNoVino`/`onMover`, `trigger`; Radix Popover icke-modal, `side="left" align="start" sideOffset={16} alignOffset={-49}` |
+| DayGrid | `src/components/agenda/day-grid.tsx` | *(härledd, ingen ritad referens, WP-12 FRÅGA 2)* `date`, `gridRange`, `visibleStaff` (ordnad med `highlightedStaffId` först), `selectedBookingId`, `renderTrigger`, `onSelectBooking`. Bygger `TimeGrid` med en kolumn per profesional: kolumnhuvud 44 px (prick 10 i personalfärg, namn 13/700, `reservasCount` 12 `muted`, `border-b border-line`). Ingen avatar i blocken (kolumnen säger redan vem) och inga lanes mellan olika profesionales (en kolumn per person). Stängd dag: en enda `ClosedDay` över alla kolumner (`allColumnsClosed`). |
+| agenda-view.ts, geometry.ts, layout-events.ts | `src/components/agenda/` | Rena funktioner: `weekDates`/`focusDate`/`weekTitle`/`offsetLabel`/`sectionAria`/`popoverModel`/`statusChip`/`weekdayMinLabels`/`localDateOf` (lokal dag för en ISO-sträng med valfri offset, aldrig `startsWith`), `eventBox`/`showTime`/`showAvatar`/`nowTop`/`gridHours`/`initialScrollHour` (avrundad nedåt till hel timme)/`formatHourLabel`, `layoutLanes`/`mergeCommonBlocks` |
+| AgendaScreen | `src/components/agenda/agenda-screen.tsx` | `data` (`AgendaData`), `initialVista`/`initialFecha`; håller `vista`, fokusdag, synliga profesionales, vald bokning och de lokala Llegó/No vino-överskrivningarna (FRÅGA 7); `?vista=&fecha=` via `router.replace` |
+
+Textkällor: `agenda.bloque.meta`/`agenda.bloque.aria` (blockets tidsrad/aria-label) och
+`agenda.panel.minimoUnProfesional` (WP-03b, FRÅGA 6) i `src/i18n/es-CL.ts`.
+`weekdayMinLabels` (`agenda-view.ts`) använder `formatLocalDate(date, "weekdayMin")`
+(WP-10, `src/lib/format/dates.ts`).
 
 ### Byggt i WP-13
 
