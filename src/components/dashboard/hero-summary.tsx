@@ -36,7 +36,10 @@ export function HeroSummary({
   const variant = heroVariant(week);
   const horasText = inicio.hero.horas({ n: week.recoveredHours });
   const montoText = formatClp(week.recoveredClp);
-  const highlightPart = `${horasText} · ${montoText}`;
+  const highlightPart = inicio.hero.destacado({
+    horas: horasText,
+    monto: montoText,
+  });
   const summaryFull =
     variant === "recuperado"
       ? inicio.hero.resumen({ horas: horasText, monto: montoText })

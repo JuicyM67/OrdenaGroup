@@ -74,7 +74,7 @@ export function CalendarCard({
               "weekdayDayMonthLong",
             );
             return marked.has(date)
-              ? `${base}, ${calendario.diaConReservas}`
+              ? calendario.diaConReservas({ fecha: base })
               : base;
           },
         }}
