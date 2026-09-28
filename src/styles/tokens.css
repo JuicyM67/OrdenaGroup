@@ -106,6 +106,16 @@
 
   /* ---------- Skuggor (endast svävande lager) ---------- */
   --shadow-popover: 0 18px 48px rgb(22 22 26 / 0.18), 0 2px 6px rgb(22 22 26 / 0.08);
+  /* Liquid glass-navet (WP-hemsida v2, retro 2026-09-28, punkt 2): mjuk yttre skugga +
+     en ljus inre highlight (imiterar glasets kant), i stället för --shadow-popovers rena
+     dropp-skugga. Egen token eftersom D-015 nollställer --shadow-* — samma mönster som
+     --shadow-popover ovan. */
+  --shadow-glass: 0 12px 32px rgb(22 22 26 / 0.12), 0 1px 2px rgb(22 22 26 / 0.06), inset 0 1px 0 rgb(255 255 255 / 0.7);
+
+  /* ---------- Blur (WP-hemsida v2, retro 2026-09-28, punkt 2) ----------
+     D-015 nollställer --blur-* (ingen referens i docs/design/reference/ använder blur).
+     Navets glaseffekt (backdrop-blur-glass) är det första undantaget. */
+  --blur-glass: 20px;
 
   /* ---------- Textstorlekar (px-namn, se DESIGN.md §3 för rollnamn) ---------- */
   --text-10: 10px;
@@ -148,6 +158,443 @@
   /* ---------- Agenda ---------- */
   --agenda-hour: 94px;          /* höjd per timme i veckovyn */
   --agenda-gutter: 64px;        /* tidskolumnens bredd */
+
+  /* ---------- Animation (WP-hemsida v2 — hemsidan blir rörlig) ----------
+     Ingen referens i docs/design/reference/ (nytt för hemsidan, inte produkt-UI).
+     `prefers-reduced-motion: reduce` stänger av allt (src/app/globals.css). ESLint (D-015)
+     förbjuder både `style={}` (utom top/height/left/width, D-021) och `[...]`-värden i
+     klassnamn i src/components och src/app — så varje stegs fördröjning är inbakad i en
+     egen namngiven @keyframes i stället för `animation-delay` via en Tailwind-klass eller
+     inline style. Tidsvärden (sekunder i keyframes, `delay-*`) är rena CSS-tajmningar,
+     inte designtokens — samma mönster som `duration-150`/`ease-out` i komponenterna. */
+  --animate-fade-up: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pop-in: pop-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-marquee: marquee 34s linear infinite;
+  --animate-marquee-reverse: marquee-reverse 38s linear infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  /* Rotationen är inbakad (i stället för en Tailwind `-rotate-*`-klass på samma element):
+     animationen äger `transform` under hela loopen, så den skulle annars nollställa
+     kortets vridning i vila (WP-hemsida v2, "Siguiente"-kortet i heron). */
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0) rotate(-1deg);
+    }
+    50% {
+      transform: translateY(-6px) rotate(-1deg);
+    }
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  /* Oändlig rullning, "Para quién"-bannern: dubblerat innehåll, 50% = en hel runda. */
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  @keyframes marquee-reverse {
+    from {
+      transform: translateX(-50%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  /* BookingBar-mockupen i heron: två tidsknappar "väljs" växelvis i en loop
+     (canvas → ink → canvas), en halv runda ur fas med varandra. */
+  --animate-select-glow-a: select-glow-a 6s ease-in-out infinite;
+  --animate-select-glow-b: select-glow-b 6s ease-in-out infinite;
+  @keyframes select-glow-a {
+    0%,
+    28% {
+      background-color: var(--color-canvas);
+      color: var(--color-ink);
+    }
+    36%,
+    64% {
+      background-color: var(--color-ink);
+      color: var(--color-on-dark);
+    }
+    72%,
+    100% {
+      background-color: var(--color-canvas);
+      color: var(--color-ink);
+    }
+  }
+  @keyframes select-glow-b {
+    0%,
+    64% {
+      background-color: var(--color-canvas);
+      color: var(--color-ink);
+    }
+    72%,
+    100% {
+      background-color: var(--color-ink);
+      color: var(--color-on-dark);
+    }
+    /* Fortsätter i samma "ink"-läge in i nästa runda tills 28% (se select-glow-a). */
+  }
+
+  /* Fyra staplade steg (Hora Flash- och bokningsflödes-mockuperna): fyra separata,
+     färdigfasade animationer i stället för en delad + animation-delay (se ESLint-notan
+     ovan). `step-dim-*` är samma tajmning för stegindikatorn (aldrig helt osynlig). */
+  --animate-step-fade-1: step-fade-1 10s ease-in-out infinite;
+  --animate-step-fade-2: step-fade-2 10s ease-in-out infinite;
+  --animate-step-fade-3: step-fade-3 10s ease-in-out infinite;
+  --animate-step-fade-4: step-fade-4 10s ease-in-out infinite;
+  --animate-step-dim-1: step-dim-1 10s ease-in-out infinite;
+  --animate-step-dim-2: step-dim-2 10s ease-in-out infinite;
+  --animate-step-dim-3: step-dim-3 10s ease-in-out infinite;
+  --animate-step-dim-4: step-dim-4 10s ease-in-out infinite;
+  @keyframes step-fade-1 {
+    0%,
+    2% { opacity: 0; }
+    6%,
+    21% { opacity: 1; }
+    25%,
+    100% { opacity: 0; }
+  }
+  @keyframes step-fade-2 {
+    0%,
+    27% { opacity: 0; }
+    31%,
+    46% { opacity: 1; }
+    50%,
+    100% { opacity: 0; }
+  }
+  @keyframes step-fade-3 {
+    0%,
+    52% { opacity: 0; }
+    56%,
+    71% { opacity: 1; }
+    75%,
+    100% { opacity: 0; }
+  }
+  @keyframes step-fade-4 {
+    0%,
+    77% { opacity: 0; }
+    81%,
+    96% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+  @keyframes step-dim-1 {
+    0%,
+    2% { color: var(--color-muted); }
+    6%,
+    21% { color: var(--color-ink); }
+    25%,
+    100% { color: var(--color-muted); }
+  }
+  @keyframes step-dim-2 {
+    0%,
+    27% { color: var(--color-muted); }
+    31%,
+    46% { color: var(--color-ink); }
+    50%,
+    100% { color: var(--color-muted); }
+  }
+  @keyframes step-dim-3 {
+    0%,
+    52% { color: var(--color-muted); }
+    56%,
+    71% { color: var(--color-ink); }
+    75%,
+    100% { color: var(--color-muted); }
+  }
+  @keyframes step-dim-4 {
+    0%,
+    77% { color: var(--color-muted); }
+    81%,
+    96% { color: var(--color-ink); }
+    100% { color: var(--color-muted); }
+  }
+
+  /* Bokningsflödes-mockupen (WP-hemsida v2, retro 2026-09-28, punkt 2): skärmarna glider i
+     stället för att bara tona. Samma fyra tidsfönster som step-fade-1…4 ovan (måste vara i
+     exakt synk, telefonen visar bara en skärm åt gången) men med ett tillagt `translateX` —
+     nästa skärm glider in från höger, den aktiva glider ut åt vänster. Övergången mellan en
+     rundas 100 % och nästa rundas 0 % är ett hopp (aldrig synligt: opaciteten är 0 i båda
+     ändarna), samma mönster som step-fade-*. */
+  --animate-step-slide-1: step-slide-1 10s ease-in-out infinite;
+  --animate-step-slide-2: step-slide-2 10s ease-in-out infinite;
+  --animate-step-slide-3: step-slide-3 10s ease-in-out infinite;
+  --animate-step-slide-4: step-slide-4 10s ease-in-out infinite;
+  @keyframes step-slide-1 {
+    0%,
+    2% { opacity: 0; transform: translateX(0); }
+    6%,
+    21% { opacity: 1; transform: translateX(0); }
+    25%,
+    100% { opacity: 0; transform: translateX(-18px); }
+  }
+  @keyframes step-slide-2 {
+    0%,
+    27% { opacity: 0; transform: translateX(18px); }
+    31%,
+    46% { opacity: 1; transform: translateX(0); }
+    50%,
+    100% { opacity: 0; transform: translateX(-18px); }
+  }
+  @keyframes step-slide-3 {
+    0%,
+    52% { opacity: 0; transform: translateX(18px); }
+    56%,
+    71% { opacity: 1; transform: translateX(0); }
+    75%,
+    100% { opacity: 0; transform: translateX(-18px); }
+  }
+  @keyframes step-slide-4 {
+    0%,
+    77% { opacity: 0; transform: translateX(18px); }
+    81%,
+    96% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(18px); }
+  }
+
+  /* Stegindikatorn bredvid telefonen (FlujoSteps): en lodrät linje som fylls i takt med
+     step-slide-1…4 ovan, i stället för bara fyra prickars opacitet. Håller kvar fyllnadsgraden
+     mellan varje stegs fönster (paus = "klart med det steget"), och nollställs snabbt på
+     slutet (98–100 %) inför nästa runda. */
+  --animate-flujo-progress: flujo-progress 10s ease-in-out infinite;
+  @keyframes flujo-progress {
+    0%,
+    2% { height: 4%; }
+    21%,
+    25% { height: 25%; }
+    46%,
+    50% { height: 50%; }
+    71%,
+    75% { height: 75%; }
+    96% { height: 100%; }
+    98%,
+    100% { height: 0%; }
+  }
+
+  /* "Finger"-tryckpuls på den valda tiden i HoraFrame (steg 2, aktivt 25–50 % av rundan):
+     en ring som växer ut från knappen och tonar bort, som ett tryck på skärmen. */
+  --animate-flujo-tap: flujo-tap 10s ease-in-out infinite;
+  @keyframes flujo-tap {
+    0%,
+    32% { opacity: 0; transform: scale(0.5); }
+    35% { opacity: 0.7; transform: scale(0.7); }
+    42%,
+    100% { opacity: 0; transform: scale(1.7); }
+  }
+
+  /* Checkmark-pop och konfettiutbrott när ConfirmadaFrame visas (steg 4, 75–100 % av
+     rundan): checken studsar in, fyra konfettiprickar (rena tokenfärger) flyger ut. */
+  --animate-flujo-check-pop: flujo-check-pop 10s ease-in-out infinite;
+  --animate-flujo-confetti: flujo-confetti 10s ease-in-out infinite;
+  @keyframes flujo-check-pop {
+    0%,
+    75% { opacity: 0; transform: scale(0.5); }
+    79% { opacity: 1; transform: scale(1.15); }
+    83%,
+    96% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.5); }
+  }
+  @keyframes flujo-confetti {
+    0%,
+    76% { opacity: 0; transform: translateY(0) scale(0.6); }
+    80% { opacity: 1; transform: translateY(-4px) scale(1); }
+    90% { opacity: 1; transform: translateY(-20px) scale(0.9); }
+    96%,
+    100% { opacity: 0; transform: translateY(-26px) scale(0.7); }
+  }
+
+  /* Hero-bentogridet på startsidan (WP-hemsida v2, retro 2026-09-28, punkt 2 —
+     "Nuevo hero" mot `.visual-diff/ref/hero-mix-ac.html`). Alla loopar oändliga
+     (dekoration av ett levande produkt), `prefers-reduced-motion` stänger av dem
+     (globals.css) och landar på respektive keyframes sista bildruta. */
+
+  /* Lodrät "nu"-linje som glider över veckokalendern (kalenderrutan är `position:
+     relative`, linjen `absolute` med `left` i procent — inga andra egenskaper). */
+  --animate-hero-now-line: hero-now-line 9s linear infinite;
+  @keyframes hero-now-line {
+    from { left: 0%; }
+    to { left: 100%; }
+  }
+
+  /* Toast "Nueva reserva …" som glider in uppe till höger i kalenderkortet. */
+  --animate-hero-toast: hero-toast 10s ease-in-out infinite;
+  @keyframes hero-toast {
+    0%,
+    34% { opacity: 0; transform: translateY(-14px); }
+    40%,
+    78% { opacity: 1; transform: translateY(0); }
+    84%,
+    100% { opacity: 0; transform: translateY(-14px); }
+  }
+
+  /* Sol/måne i omloppsbana runt den lilla "24/7"-rutan. */
+  --animate-hero-orbit: hero-orbit 9s linear infinite;
+  @keyframes hero-orbit {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  /* Himlen bakom omloppsbanan skiftar mellan dag och natt i samma takt. */
+  --animate-hero-sky: hero-sky 9s ease-in-out infinite;
+  @keyframes hero-sky {
+    0%,
+    40% { background-color: var(--color-sky); }
+    50%,
+    90% { background-color: var(--color-dark-2); }
+    100% { background-color: var(--color-sky); }
+  }
+
+  /* Kommissionsrutan: 15 % → 10 % → 5 % → $0 rullar lodrätt, ett stopp per siffra
+     (fyra rader staplade i ett fönster med `overflow:hidden`, se comision-card.tsx). */
+  --animate-hero-comision: hero-comision 6s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  @keyframes hero-comision {
+    0%,
+    10% { transform: translateY(0); }
+    20%,
+    28% { transform: translateY(-25%); }
+    38%,
+    46% { transform: translateY(-50%); }
+    58%,
+    92% { transform: translateY(-75%); }
+    100% { transform: translateY(0); }
+  }
+
+  /* Länkrutan: "Copiar" → "Copiado" (knappens bakgrund och de två etiketterna byter
+     fas tillsammans — tre synkade animationer på tre olika element). */
+  --animate-hero-copy-btn: hero-copy-btn 7s ease infinite;
+  @keyframes hero-copy-btn {
+    0%,
+    35% { background-color: var(--color-ink); }
+    36%,
+    58% { background-color: var(--color-success-fg); }
+    60%,
+    100% { background-color: var(--color-ink); }
+  }
+  --animate-hero-copy-out: hero-copy-out 7s ease infinite;
+  @keyframes hero-copy-out {
+    0%,
+    35% { opacity: 1; }
+    36%,
+    58% { opacity: 0; }
+    60%,
+    100% { opacity: 1; }
+  }
+  --animate-hero-copy-in: hero-copy-in 7s ease infinite;
+  @keyframes hero-copy-in {
+    0%,
+    35% { opacity: 0; }
+    37%,
+    58% { opacity: 1; }
+    60%,
+    100% { opacity: 0; }
+  }
+
+  /* Länkens tre delningsknappar: en ljus lime-ring pulserar ut, en efter en
+     (`delay-*`-klasser i komponenten, samma tajmning för alla tre). */
+  --animate-hero-share: hero-share 7s ease-out infinite;
+  @keyframes hero-share {
+    0%,
+    58% { transform: scale(1); box-shadow: 0 0 0 0 rgb(227 243 107 / 0); }
+    62% { transform: scale(1.12); box-shadow: 0 0 0 8px rgb(227 243 107 / 0.45); }
+    68%,
+    100% { transform: scale(1); box-shadow: 0 0 0 14px rgb(227 243 107 / 0); }
+  }
+
+  /* Länken skrivs ut, tecken för tecken (bredden animeras 0 → 100 % av en fast
+     bred förälder, se hero-bento.tsx), plus en blinkande markör bredvid. */
+  --animate-hero-type: hero-type 7s steps(21, end) infinite;
+  @keyframes hero-type {
+    0%,
+    4% { width: 0%; }
+    22%,
+    100% { width: 100%; }
+  }
+  --animate-hero-caret: hero-caret 0.8s steps(1) infinite;
+  @keyframes hero-caret {
+    0%,
+    49% { opacity: 1; }
+    50%,
+    100% { opacity: 0; }
+  }
+
+  /* Startsidan efter heron (WP-hemsida, retro: sektionerna mappade från
+     `.visual-diff/ref/sida-v1-bento.html`/`sida-v2-morka-band.html`/`footer.html`, ingen
+     `.dc.html`-referens finns för de här — se docs/design/DESIGN.md §3). Fyra nya
+     animationer utan tidigare motsvarighet i tokens.css: */
+
+  /* "Por qué funciona"-bentot, agenda-rutan: staplarna växer in. Tailwinds `delay-*` sätter
+     bara `transition-delay`, inte `animation-delay` — så staggringen mellan staplarna är en
+     andra, fasförskjuten keyframe (samma mönster som step-fade-1…4 ovan) i stället för en
+     delad animation + delay-klass. `transform-origin` sätts med Tailwinds `origin-bottom`
+     i komponenten. */
+  --animate-grow-bar: grow-bar 5s ease-in-out infinite;
+  @keyframes grow-bar {
+    0% { transform: scaleY(0.1); }
+    30%,
+    90% { transform: scaleY(1); }
+    100% { transform: scaleY(0.1); }
+  }
+  --animate-grow-bar-delay: grow-bar-delay 5s ease-in-out infinite;
+  @keyframes grow-bar-delay {
+    0%,
+    15% { transform: scaleY(0.1); }
+    45%,
+    100% { transform: scaleY(1); }
+  }
+
+  /* Samma bentot, inasistencias-rutan: en toggle-knapp som glider mellan av/på. */
+  --animate-toggle-knob: toggle-knob 4s ease-in-out infinite;
+  @keyframes toggle-knob {
+    0%,
+    45% { left: 4px; background-color: var(--color-surface); }
+    50%,
+    95% { left: 48px; background-color: var(--color-lime); }
+    100% { left: 4px; }
+  }
+
+  /* Samma bentot, pris-rutan: en lodrät sifferrulle (tre stopp i stället för
+     `--animate-hero-comision`s fyra — olika antal rader, samma teknik). */
+  --animate-count-roll: count-roll 6s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  @keyframes count-roll {
+    0%,
+    20% { transform: translateY(0); }
+    30%,
+    50% { transform: translateY(-33.333%); }
+    60%,
+    90% { transform: translateY(-66.666%); }
+    100% { transform: translateY(0); }
+  }
+
+  /* Footerns 3D-kalender: skuggellipsen krymper/tonar i takt med att kalendern
+     (`animate-float`, redan i tokens.css) svävar uppåt. */
+  --animate-shadow-pulse: shadow-pulse 6s ease-in-out infinite;
+  @keyframes shadow-pulse {
+    0%,
+    100% { transform: scale(1); opacity: 0.55; }
+    50% { transform: scale(0.85); opacity: 0.35; }
+  }
 }
 
 :root {
@@ -174,4 +621,11 @@
 /* Randigt mönster för en stängd dag i veckovyn. */
 @utility bg-closed-stripes {
   background-image: repeating-linear-gradient(135deg, var(--color-canvas) 0 10px, var(--color-stripe) 10px 20px);
+}
+
+/* "Para quién"-bannern: pausar animate-marquee/-marquee-reverse vid hover (WP-hemsida v2). */
+@utility marquee-pausable {
+  &:hover {
+    animation-play-state: paused;
+  }
 }

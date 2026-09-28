@@ -4,17 +4,23 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { landing } from "../src/i18n";
+import { landing, sitio } from "../src/i18n/es-CL.marketing";
 
-test("renderar med rubrik, nav och CTA:er", async ({ page }) => {
+test("renderar med rubrik, nav och CTA:er", async ({ page, isMobile }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  // Mobil: glas-naven visar bara logga + meny; CTA:n finns i heron.
   await expect(
-    page
-      .getByRole("banner")
-      .getByRole("link", { name: landing.nav.ctaCrearAgenda, exact: true }),
+    isMobile
+      ? page
+          .getByRole("main")
+          .getByRole("link", { name: landing.hero.ctaPrimario })
+          .first()
+      : page
+          .getByRole("banner")
+          .getByRole("link", { name: landing.nav.ctaCrearAgenda, exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: landing.precios.titulo }),
@@ -24,21 +30,15 @@ test("renderar med rubrik, nav och CTA:er", async ({ page }) => {
   ).toBeVisible();
 });
 
-test("hero: etiqueta, vista previa de producto y banda de cifras", async ({
-  page,
-}) => {
+test("hero: novedad y vista previa de producto", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByText(landing.hero.etiqueta)).toBeVisible();
+  await expect(
+    page.getByText(sitio.inicio.heroBento.nuevo.texto),
+  ).toBeVisible();
   await expect(
     page.getByRole("img", { name: landing.hero.vistaPreviaAria }),
   ).toBeVisible();
-  await expect(
-    page.getByText(landing.heroStats.siempreAbierto.valor),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: landing.heroStats.cta }),
-  ).toHaveAttribute("href", "#como-funciona");
 });
 
 test('"Entrar" lleva a /login', async ({ page, isMobile }) => {
@@ -95,9 +95,14 @@ test("preguntas frecuentes: se puede abrir una pregunta (details/summary nativo)
 
 test.describe("axe (wcag2a, wcag2aa, wcag21aa)", () => {
   test("/ sin violaciones", async ({ page }) => {
+    // Stillastående animationer (samma som för besökare med minskad rörelse) och
+    // utan de dekorativa produktmockuperna (aria-hidden): de byter färg mitt i
+    // animationen och bär ingen information.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+      .exclude('[aria-hidden="true"]')
       .analyze();
     expect(results.violations).toEqual([]);
   });

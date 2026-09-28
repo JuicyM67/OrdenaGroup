@@ -120,6 +120,33 @@ Se `tokens.css`. Regler:
 | `--radius-badge` | `8px` | Taggar i Hoy, flash-bricka |
 | `--radius-tag` | `6px` | Tagg i kalenderblock |
 
+### Nya tokens (WP-hemsida v2, retro 2026-09-28: nytt hero + glas-nav)
+
+Ingen `.dc.html`-referens (hemsidan, inte produkt-UI) — mappat från `.visual-diff/ref/hero-mix-ac.html`
+(hex → tokens, se filhuvudet) och `.visual-diff/ref/nav-ref.png`. D-015 nollställer `--blur-*`; det
+här är första gången hemsidan behöver det (flytande nav i "liquid glass").
+
+| Token | Värde | Källa |
+|---|---|---|
+| `--blur-glass` | `20px` | Navets `backdrop-blur-glass`, megamenyns panel |
+| `--shadow-glass` | mjuk skugga + ljus inre highlight (se tokens.css) | Nav, megameny — glaskänsla i stället för `--shadow-popover` |
+
+`Button` fick en `glass`-variant (border + halvtransparent yta + `backdrop-blur-glass`) för
+"Entrar" i det nya navet, se §7.
+
+### Nya tokens (WP-hemsida, startsidan efter heron + footer)
+
+Ingen `.dc.html`-referens (samma skäl som ovan). Mappat från `.visual-diff/ref/sida-v1-bento.html`,
+`.visual-diff/ref/sida-v2-morka-band.html` och `.visual-diff/ref/footer.html`. Fyra nya
+animationer utan tidigare motsvarighet: `--animate-grow-bar` (bentots agenda-staplar, växer
+in med `delay-*`-stagger), `--animate-toggle-knob` (bentots inasistencias-toggle),
+`--animate-count-roll` (bentots pris-siffra, samma teknik som `--animate-hero-comision` men
+tre rader i stället för fyra) och `--animate-shadow-pulse` (footerns 3D-kalender, synkad med
+`--animate-float`). Ingen ny radie- eller färgtoken: footerns mörka kort återanvänder
+`rounded-shell` (närmast referensens 48 px) och kalenderns gradienter förenklades till platta
+tonfyllningar (`fill-lime`/`fill-surface`/…) eftersom SVG:ns `stop-color` inte går att uttrycka
+som en Tailwind-klass — se `calendar-3d.tsx`.
+
 ## 5. Form och luft
 
 - Radier: se tokens (`shell` 32 → `chip` 10). Tumregel: ju större yta, desto större radie. Cirkelformade knappar för ikonknappar (48×48) och avatarer.
@@ -187,7 +214,7 @@ WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är k
 
 | Komponent | Fil | API |
 |---|---|---|
-| Button | `src/components/ui/button.tsx` | `variant` (primary/secondary/accent/outline-dark/inverse), `size` (xs…2xl), `asChild` (Radix Slot) |
+| Button | `src/components/ui/button.tsx` | `variant` (primary/secondary/accent/outline-dark/inverse/glass, WP-hemsida v2), `size` (xs…2xl), `asChild` (Radix Slot) |
 | IconButton | `src/components/ui/icon-button.tsx` | `label` (obligatorisk, blir aria-label), `tone`, `size`, `shape`, `badge?`, `asChild?` (Radix Slot, WP-11; stöds inte tillsammans med `badge`) |
 | Chip | `src/components/ui/chip.tsx` | `tone` (…/peach-50, WP-11), `size` (md/sm/xs/tag/trend/badge, WP-11), `weight` (default/bold, WP-11, läggs efter `size` så `cn()` låter `font-bold` vinna), inget eget utsnitt (se steg 7) |
 | Pill | `src/components/ui/pill.tsx` | `selected`, `aria-pressed` |
