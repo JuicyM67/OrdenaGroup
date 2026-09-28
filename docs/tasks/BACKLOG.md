@@ -57,3 +57,12 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 - **Dag 1:** WP-00 (en agent). Samtidigt: WP-03 (copywriter).
 - **Därefter parallellt i 3–4 worktrees:** WP-01 (db) · WP-02 → WP-11/12/13/14 (ui) · WP-04 → WP-10 (scheduling) · WP-16 (integrations, efter WP-01).
 - `qa-reviewer` granskar varje PR; `security-reviewer` granskar alla PR:er som rör `supabase/`, `src/app/api/` eller `src/server/payments/`.
+
+## Sverige (D-025–D-028)
+
+| ID | Titel | Agent | Beror på | Status |
+|---|---|---|---|---|
+| M1 | Marknad i koden: `MARKET` (CL/SE), marknadskonfig (språk, valuta, tidszon, telefonland, id-nummer, varumärke, leverantörer), `businesses.country/currency/locale`, belopp i minsta enhet med valuta, telefon +46, organisationsnummer, varumärke per marknad i `brand.ts` | scheduling-engineer + db-engineer | – | ◐ |
+| M2 | Svenska: språkstruktur för flera språk (samma typade nycklar), `sv-SE` för alla skärmar, landning och e-post | copywriter (sv) + ui-engineer | M1 | ☐ |
+| M3 | Svensk installation: Supabase `eu-north-1`, Vercel `arn1`, domän `.se`, staging-workflow per marknad | integrations-engineer | M1 | ☐ |
+| M4 | Stripe-abonnemang (SE), ClickSend SMS (SE), svenska villkor och integritetspolicy (GDPR), moms 25 % | integrations-engineer | M2, M3 | ☐ |
