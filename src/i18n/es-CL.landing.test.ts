@@ -158,6 +158,66 @@ describe("landing e inicio.tuLink: marca", () => {
 });
 
 // ---------------------------------------------------------------------------
+// hero: etiqueta y vista previa (rediseño con imagen de producto)
+// ---------------------------------------------------------------------------
+
+describe("landing.hero: etiqueta y vistaPreviaAria", () => {
+  it("no están vacías y no nombran el producto a mano", () => {
+    expect(landing.hero.etiqueta.length).toBeGreaterThan(0);
+    expect(landing.hero.vistaPreviaAria.length).toBeGreaterThan(0);
+    expect(PATRON_MARCA.test(landing.hero.etiqueta)).toBe(false);
+    expect(PATRON_MARCA.test(landing.hero.vistaPreviaAria)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// heroStats: banda oscura con tres cifras bajo el hero
+// ---------------------------------------------------------------------------
+
+describe("landing.heroStats", () => {
+  it("tiene exactamente las tres cifras esperadas, cada una con valor y etiqueta", () => {
+    expect(Object.keys(landing.heroStats)).toEqual(
+      expect.arrayContaining([
+        "siempreAbierto",
+        "minutos",
+        "comision",
+        "texto",
+        "cta",
+      ]),
+    );
+    for (const clave of ["siempreAbierto", "minutos", "comision"] as const) {
+      const stat = landing.heroStats[clave];
+      expect(stat.valor.length, clave).toBeGreaterThan(0);
+      expect(stat.etiqueta.length, clave).toBeGreaterThan(0);
+    }
+  });
+
+  it("minutos usa el mismo tiempo que el onboarding (menos de 10 minutos, MVP_SPEC.md F1)", () => {
+    expect(landing.heroStats.minutos.valor).toBe("10 min");
+  });
+
+  it("comision no cobra nada por reserva", () => {
+    expect(landing.heroStats.comision.valor).toBe("$0");
+  });
+
+  it("ningún valor o etiqueta menciona un porcentaje (nada de estadísticas inventadas)", () => {
+    for (const clave of ["siempreAbierto", "minutos", "comision"] as const) {
+      const stat = landing.heroStats[clave];
+      expect(stat.valor).not.toMatch(/%/);
+      expect(stat.etiqueta).not.toMatch(/%/);
+    }
+  });
+
+  it("texto mide 140 caracteres o menos", () => {
+    expect(landing.heroStats.texto.length).toBeLessThanOrEqual(140);
+  });
+
+  it("cta no está vacío", () => {
+    expect(landing.heroStats.cta.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // SEO: descripción ≤ 155 caracteres (con el nombre real de la marca)
 // ---------------------------------------------------------------------------
 

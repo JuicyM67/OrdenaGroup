@@ -1908,6 +1908,9 @@ export const landing = {
     ctaCrearAgenda: "Crear mi agenda",
   },
   hero: {
+    /** Pequeña etiqueta sobre el título (rediseño del hero: tarjeta lima a
+     * la izquierda, imagen de producto a la derecha, banda oscura debajo). */
+    etiqueta: "Reservas para tu local",
     /** Recibe la tagline como parámetro (nunca escrita a mano acá, regla
      * dura 10): quien arma la pantalla la llama con `brand.tagline`. */
     titulo: (p: { tagline: string }): string => p.tagline,
@@ -1915,6 +1918,32 @@ export const landing = {
       "El sistema de reservas para barberías, peluquerías, estética y kinesiología. Tus clientes reservan solos con un link, sin llamadas ni mensajes uno a uno.",
     ctaPrimario: LANDING_CTA_CREAR_GRATIS,
     ctaSecundario: "Ver una agenda de ejemplo",
+    /** aria-label de la imagen de producto a la derecha del hero (rediseño,
+     * sin `.dc.html` de referencia todavía). */
+    vistaPreviaAria: "Vista previa de la agenda y de una reserva",
+  },
+  /** Banda oscura con tres cifras debajo del hero (rediseño). Solo hechos
+   * verificables (GUIA §11: "no promete nada que no esté en los documentos
+   * de producto"), nunca un porcentaje inventado de inasistencias evitadas:
+   * `minutos` repite el tiempo de `onboarding.bienvenida` ("menos de 10
+   * minutos", MVP_SPEC.md F1), `comision` repite que el precio es único por
+   * local (`landing.beneficios.items.precioUnico`), sin cobro por reserva. */
+  heroStats: {
+    siempreAbierto: {
+      valor: "24/7",
+      etiqueta: "Tus clientes reservan cuando quieren, de día o de noche.",
+    },
+    minutos: {
+      valor: "10 min",
+      etiqueta: "Es lo que toma armar tu agenda con los pasos guiados.",
+    },
+    comision: {
+      valor: "$0",
+      etiqueta: "No cobramos comisión por cada reserva que recibes.",
+    },
+    texto:
+      "Reservas todo el día, sin llamadas ni mensajes de ida y vuelta. Tú ves cada hora ordenada en tu agenda.",
+    cta: "Ver cómo funciona",
   },
   comoFunciona: {
     titulo: "Cómo funciona",
