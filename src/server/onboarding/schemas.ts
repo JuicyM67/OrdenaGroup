@@ -57,13 +57,16 @@ export const RUBRO_KEYS = [
   "otro",
 ] as const;
 
-const businessNameSchema = z
+// Exporterade (utöver onboardingInputSchema) så att src/server/owner/ajustes-schemas.ts
+// (WP-15b) kan bygga vidare på exakt samma regler ("samma slug-regler och reserverade
+// namn som onboarding") utan att duplicera dem.
+export const businessNameSchema = z
   .string({ error: "business.name_invalid_type" })
   .trim()
   .min(1, { error: "business.name_empty" })
   .max(120, { error: "business.name_too_long" });
 
-const slugSchema = z
+export const slugSchema = z
   .string({ error: "business.slug_invalid_type" })
   .check((ctx) => {
     const v = ctx.value;
@@ -84,7 +87,7 @@ const slugSchema = z
     }
   });
 
-const comunaSchema = z
+export const comunaSchema = z
   .string({ error: "business.comuna_invalid_type" })
   .trim()
   .min(1, { error: "business.comuna_empty" })
@@ -102,7 +105,7 @@ export const businessInputSchema = z.object({
   phone: chileanPhoneInputSchema,
 });
 
-const serviceInputSchema = z.object({
+export const serviceInputSchema = z.object({
   name: z
     .string({ error: "services.name_invalid_type" })
     .trim()
@@ -116,17 +119,19 @@ const serviceInputSchema = z.object({
   priceClp: clpInputSchema,
 });
 
+export const staffNameSchema = z
+  .string({ error: "staff.name_invalid_type" })
+  .trim()
+  .min(1, { error: "staff.name_empty" })
+  .max(120, { error: "staff.name_too_long" });
+
 const staffInputSchema = z.object({
-  name: z
-    .string({ error: "staff.name_invalid_type" })
-    .trim()
-    .min(1, { error: "staff.name_empty" })
-    .max(120, { error: "staff.name_too_long" }),
+  name: staffNameSchema,
   // Index in i `services` (samma array som skickas i samma anrop).
   serviceIndexes: z.array(z.number().int().nonnegative()).max(200),
 });
 
-const hoursInputSchema = z
+export const hoursInputSchema = z
   .object({
     weekday: z.union([
       z.literal(1),

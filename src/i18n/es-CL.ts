@@ -37,6 +37,7 @@ export const comun = {
   sinConexion: "Estás sin conexión. Revisa tu internet.",
   algoSalioMal: "Algo salió mal. Intenta de nuevo.",
   reintentar: "Reintentar",
+  editar: "Editar",
   volver: "Volver",
   noMantener: "No, mantener",
   cancelarReserva: "Cancelar reserva",
