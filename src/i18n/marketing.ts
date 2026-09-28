@@ -29,14 +29,14 @@ type PlanTexto = Omit<esCLSitio.PlanLanding, "precioClp">;
 export type MarketingCopy = Widen<
   Pick<typeof esCL, "nav" | "estados" | "hoy"> &
     Pick<
-    typeof esCLSitio,
-    | "landing"
-    | "sitio"
-    | "SITIO_FUNCIONALIDADES"
-    | "SITIO_PRECIOS_TABLA"
-    | "SITIO_PARA_INDUSTRIAS"
-    | "SITIO_RUBROS_MARQUEE"
-  >
+      typeof esCLSitio,
+      | "landing"
+      | "sitio"
+      | "SITIO_FUNCIONALIDADES"
+      | "SITIO_PRECIOS_TABLA"
+      | "SITIO_PARA_INDUSTRIAS"
+      | "SITIO_RUBROS_MARQUEE"
+    >
 > & { readonly PLANES: readonly PlanTexto[] };
 
 const cl: MarketingCopy = {

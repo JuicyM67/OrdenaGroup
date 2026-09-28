@@ -6,7 +6,6 @@
  */
 import type { Trad } from "./index";
 
-
 // ---------------------------------------------------------------------------
 // landing: página pública de marketing (no tiene `.dc.html` de referencia:
 // no hay prueba de paridad de diseño, solo de tono y de marca, igual que las
