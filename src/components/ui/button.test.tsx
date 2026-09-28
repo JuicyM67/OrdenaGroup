@@ -15,12 +15,12 @@ describe("Button", () => {
   it("asChild renderar en länk med samma klasser", () => {
     render(
       <Button asChild variant="accent">
-        <a href="/reservar">Reservar</a>
+        <a href="#reservar">Reservar</a>
       </Button>,
     );
     const link = screen.getByRole("link", { name: "Reservar" });
     expect(link.tagName).toBe("A");
-    expect(link).toHaveAttribute("href", "/reservar");
+    expect(link).toHaveAttribute("href", "#reservar");
     expect(link.className).toContain("bg-lime");
   });
 

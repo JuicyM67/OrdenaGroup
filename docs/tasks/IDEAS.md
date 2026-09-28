@@ -49,3 +49,6 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-27 | Append-only-logg för samtycken (en rad per typ och version) i stället för en kolumn per kund | security-reviewer (WP-03b) | Tre samtyckesversioner skriver annars över varandras bevis | 1 (WP-26) |
 | 2026-09-27 | Synktest mellan "vencen en 15 minutos" i `email.acceso` och `otp_expiry` i SUPABASE_CONFIG | security-reviewer (WP-03b) | Lokal `otp_expiry` är 3600 | 1 (WP-15) |
 | 2026-09-27 | Card-tonerna lilac/peach/lime sätter `data-surface="light"` så att `on-dark:` inte läcker in i pastellkort | qa-reviewer (WP-11) | Roten till fokusringsfelet i Inicio | 2 |
+| 2026-09-28 | Reserva: bakåt från bekräftelsen ska inte öppna valen med den bokade tiden | qa-reviewer (WP-13) | Undviker dubbelbokning av misstag | 1 (WP-20) |
+| 2026-09-28 | Reserva: behåll namn/telefon/e-post efter `slot_taken` och "Volver"; formulärgränser som WP-10 (namn 120, e-post 254, uuid) | qa-reviewer (WP-13) | Mindre omskrivning på mobil, samma regler som servern | 1 (WP-20) |
+| 2026-09-28 | Reserva: fler e2e-varianter (isolering via action, LA-tidszon, 360 px i alla lägen, pekskärm) | qa-reviewer (WP-13) | Täckning | 2 |

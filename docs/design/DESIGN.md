@@ -55,6 +55,7 @@ WP-02, se §7). `src/app/globals.css` motverkar det med `html { line-height: nor
 | stat | display | 38 (belopp 32) | 600 | −0.02em | "14", "$486.000" |
 | time-xl | display | 44 / 1 | 600 | −0.02em | "15:00" på nästa kund |
 | day-number | display | 30 desktop · 22 mobil | 700 | −0.02em | dag-pills |
+| step-title | sans | 16 / 1.25 | 700 | | "1 · Elige el servicio" (Reserva), "Resto del día" (Hoy) |
 | card-title | sans | 18 | 700 | | "Agenda de hoy" |
 | feature-title | sans | 19 / 1.2 | 700 | | pastellkortens rubrik |
 | body-strong | sans | 15 | 600–700 | | klientnamn, tjänst |
@@ -81,6 +82,7 @@ Tailwinds standardtema är nollställt (§12), så storlekarna heter efter px (`
 | time-xl | `font-display text-44 leading-none font-semibold tracking-display` |
 | day-number (desktop) | `font-display text-30 font-bold tracking-display` |
 | day-number (mobil) | `font-display text-22 font-bold` |
+| step-title | `font-sans text-16 font-bold leading-event` |
 | card-title | `font-sans text-18 font-bold` |
 | feature-title | `font-sans text-19 leading-snug font-bold` |
 | body-strong | `font-sans text-15 font-semibold` (ibland `font-bold`) |
@@ -275,7 +277,38 @@ Textkällor: `agenda.bloque.meta`/`agenda.bloque.aria` (blockets tidsrad/aria-la
 
 ### Byggt i WP-13
 
-_Fylls i av WP-13._
+Reserva (`/{slug}`, mobil). Steg 1–4 (val) har referens (`Reserva.dc.html`).
+Datasteget och bekräftelsen (steg 5–6) är härledda — ingen referens finns, formen är
+godkänd via skärmdumpar i PR E (FRÅGA 2 i planen).
+
+| Komponent | Fil | API |
+|---|---|---|
+| BusinessHeader | `src/components/booking/business-header.tsx` | `business` (`BookingBusiness`) |
+| ServiceCard | `src/components/booking/service-card.tsx` | `service`, `selected`, `onSelect` |
+| StaffPicker | `src/components/booking/staff-picker.tsx` | `staff`, `selectedId`, `onSelect` (raden scrollar horisontellt, `-mx-5 px-5 overflow-x-auto snap-x`) |
+| DayPicker / DayButton | `src/components/booking/day-picker.tsx`, `day-button.tsx` | `DayPicker`: `headingId`, `days`, `selectedDate`, `onSelect` (sidor om 6, `snap-mandatory`). `DayButton`: `date`, `selected`, `full`, `flash`, `onSelect` |
+| TimeSlot(Grid) | `src/components/booking/time-slot.tsx`, `time-slot-grid.tsx` | `TimeSlotGrid`: `slots`, `selectedSlotId`, `onSelect`. `TimeSlot`: `slot`, `selected`, `onSelect` (flash → `Chip size="badge" tone="lime"`) |
+| WaitlistCard | `src/components/booking/waitlist-card.tsx` | `date`, `joined`, `duplicate?` |
+| BookingBar | `src/components/booking/booking-bar.tsx` | `summary`, `price` (`BarPrice \| null`), `ctaLabel`, `ctaDisabled?`, `onCta?` **eller** `formId` (submit via `form=`) |
+| TextField (generell) | `src/components/ui/text-field.tsx` | `label`, `hint?`, `error?`, `required?`, resten av native `<input>`-props; `scroll-mb-28`, `aria-describedby` pekar på både hint och fel |
+| ConsentCheckbox | `src/components/booking/consent-checkbox.tsx` | `checked`, `onChange`, `required?`, `error?`, `children` (aldrig `defaultChecked`) |
+| CustomerForm | `src/components/booking/customer-form.tsx` | `formId`, `data`, `selection`, `day`, `submitting`, `serverErrorCode`, `onBack`, `onSubmitBooking`, `onSubmitWaitlist`, `initialErrors?` (design lab) — **härledd, ingen referens** |
+| Confirmation | `src/components/booking/confirmation.tsx` | `data`, `selection`, `day` — **härledd, ingen referens** |
+| BookingScreen (orkestrerare) | `src/components/booking/booking-screen.tsx` | `data`, `submitBooking`, `joinWaitlist`, `initialState?`/`loadingHorarios?`/`initialFormErrors?`/`forceOffline?` (design lab) |
+| Vy-modell, flöde, text | `src/components/booking/types.ts`, `flow-state.ts`, `summary.ts`, `errors.ts`, `form-schema.ts` | Se filkommentarerna; `bookingFlowReducer`/`canContinue` är en ren reducer utan data-import |
+
+BusinessHeader använder `formatWeekdayRange`/`initialsOf` från `src/lib/format/`
+(WP-10 PR 0), inte en egen kopia.
+
+**Visuell felsökning (steg-rubriker, 16/700):** utan en explicit `leading-*`-klass
+föll `<h2>`-rubrikerna ("1 · Elige el servicio" m.fl.) tillbaka på webbläsarens
+naturliga radavstånd för Plus Jakarta Sans 700 vid 16 px, vilket gav en rad 1 px
+högre än referensbilden — och det ackumulerades nedåt hela sidan till 2,03 %
+avvikelse (`npm run visual reserva`). `leading-event` (redan `1.25`, se §12) ger
+exakt samma höjd som referensen; ny roll **step-title** (§3) dokumenterar det.
+Ingen ny token behövdes. Efter fixen: 0,55 %. Samma rubrikmönster
+(`text-16 font-bold`, utan `leading-event`) finns i `rest-of-day.tsx` (Hoy,
+WP-14) — se om step-title-rollen ska tillämpas där också.
 
 ### Byggt i WP-14
 
