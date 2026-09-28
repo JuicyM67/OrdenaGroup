@@ -45,7 +45,7 @@ test("Ajustes: cambiar el precio de un servicio se ve en /barberia-norte", async
   await expect(row).toBeVisible();
   await expect(row).toContainText("$12.000");
 
-  await row.getByRole("button", { name: "TODO_COPY: Editar" }).click();
+  await row.getByRole("button", { name: "Editar" }).click();
   const editor = page.getByTestId("service-editor");
   const priceField = editor.getByLabel("Precio");
   await priceField.fill("");
