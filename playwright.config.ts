@@ -20,11 +20,26 @@ export default defineConfig({
   },
   projects: [
     {
+      // WP-15: loggar in en ägare en gång (magisk länk mot lokal Supabase + Mailpit) och
+      // sparar sessionen (storageState) för desktop/mobile — se e2e/auth.setup.ts. Filnamnet
+      // (*.setup.ts, inte *.spec.ts) räcker för att desktop/mobile inte också kör den som ett
+      // vanligt test (Playwrights standard testMatch är bara *.spec.ts/*.test.ts).
+      //
+      // Kräver BASE_URL=http://127.0.0.1:<port> (inte "localhost"): Supabases lokala
+      // auth.site_url är satt till 127.0.0.1 (supabase/config.toml), så sessionscookien
+      // sätts på den domänen — "localhost" skulle vara en annan cookie-origin och tappa
+      // sessionen mellan setup och desktop/mobile.
+      name: "setup",
+      testMatch: /.*\.setup\.ts/,
+    },
+    {
       name: "desktop",
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
+        storageState: "playwright/.auth/owner.json",
       },
+      dependencies: ["setup"],
     },
     {
       name: "mobile",
@@ -34,7 +49,9 @@ export default defineConfig({
         isMobile: true,
         hasTouch: true,
         deviceScaleFactor: 2,
+        storageState: "playwright/.auth/owner.json",
       },
+      dependencies: ["setup"],
     },
   ],
   webServer: {

@@ -52,3 +52,8 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-28 | Reserva: bakåt från bekräftelsen ska inte öppna valen med den bokade tiden | qa-reviewer (WP-13) | Undviker dubbelbokning av misstag | 1 (WP-20) |
 | 2026-09-28 | Reserva: behåll namn/telefon/e-post efter `slot_taken` och "Volver"; formulärgränser som WP-10 (namn 120, e-post 254, uuid) | qa-reviewer (WP-13) | Mindre omskrivning på mobil, samma regler som servern | 1 (WP-20) |
 | 2026-09-28 | Reserva: fler e2e-varianter (isolering via action, LA-tidszon, 360 px i alla lägen, pekskärm) | qa-reviewer (WP-13) | Täckning | 2 |
+| 2026-09-28 | Rate limit/captcha på `/login` (alla anrop går från Vercels IP mot Supabase) | security-reviewer (WP-15) | Skyddar mot mejlbombning och att e-postkvoten töms | 1 (före pilot) |
+| 2026-09-28 | Bekräftelsesida med POST i `/auth/confirm` så att länkskannrar (Outlook Safe Links) inte förbrukar länken | security-reviewer (WP-15) | Annars får ägaren `otp_expired` | 1 |
+| 2026-09-28 | Stoppa andra företag per ägare i `submitOnboarding`; `getOwnerBusiness` filtrera på roll owner/admin | security-reviewer (WP-15) | Slug-squatting, staff hamnar i ägarvyn | 1 (WP-15b) |
+| 2026-09-28 | Synka `email.acceso` i i18n med mallarna (utan kod, "link" i stället för "código") | orkestrerare (WP-15) | Mallarna förenklades i WP-15 | 1 (copywriter) |
+| 2026-09-28 | Egen SMTP (Resend) för Supabase Auth i staging/prod | orkestrerare (WP-15) | Inbyggd e-post har låg kvot | 1 (före pilot) |

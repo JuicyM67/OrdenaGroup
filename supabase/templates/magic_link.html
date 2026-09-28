@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es-CL">
+  <body style="font-family: sans-serif; white-space: pre-wrap">
+    <p>Haz clic en este link para entrar a tu cuenta:</p>
+    <p>
+      <a
+        href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink"
+        >Entrar</a
+      >
+    </p>
+    <p>
+      El link vence en 15 minutos. Si no pediste este correo, puedes ignorarlo.
+    </p>
+    <p>
+      No compartas este link con nadie. Nunca te lo vamos a pedir por WhatsApp
+      ni por teléfono.
+    </p>
+  </body>
+</html>
