@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import {
@@ -15,7 +17,7 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 
-import { submitCustomerBooking } from "./submit";
+import { createCustomerBooking, saveBookingConsent } from "./submit";
 
 const at = (date: string, time: string) =>
   fromLocal(date as LocalDate, time as LocalTime, SANTIAGO).getTime();
@@ -51,17 +53,16 @@ async function consentRow(customerId: string) {
   return r.rows[0]!;
 }
 
-describe("submitCustomerBooking", () => {
+describe("createCustomerBooking + saveBookingConsent", () => {
   it("skapar bokningen och sparar samtycket på kundraden (marketing accepterat)", async () => {
-    const result = await submitCustomerBooking({
+    const result = await createCustomerBooking({
       businessId: biz.id,
       serviceId: biz.services.corte!,
       staffId: biz.staff.diego!,
       start: iso(at(TUE, "11:00")),
       name: "Camila Rojas",
       phone: phone(),
-      marketing: true,
-      consentVersion: "2026-10-v1",
+      idempotencyKey: randomUUID(),
       now: NOW,
     });
     expect(result.ok).toBe(true);
@@ -74,6 +75,13 @@ describe("submitCustomerBooking", () => {
     );
     expect(booking.rows[0]!.status).toBe("confirmed");
 
+    await saveBookingConsent({
+      businessId: biz.id,
+      customerId: result.value.customerId,
+      marketing: true,
+      consentVersion: "2026-10-v1",
+      now: NOW,
+    });
     const consent = await consentRow(result.value.customerId);
     expect(consent.consent_terms_at).not.toBeNull();
     expect(consent.consent_marketing_at).not.toBeNull();
@@ -82,20 +90,26 @@ describe("submitCustomerBooking", () => {
   });
 
   it("marketing avmarkerat: consent_marketing_at förblir null", async () => {
-    const result = await submitCustomerBooking({
+    const result = await createCustomerBooking({
       businessId: biz.id,
       serviceId: biz.services.corte!,
       staffId: biz.staff.matias!,
       start: iso(at(TUE, "12:00")),
       name: "Ana Pérez",
       phone: phone(),
-      marketing: false,
-      consentVersion: "2026-10-v1",
+      idempotencyKey: randomUUID(),
       now: NOW,
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
+    await saveBookingConsent({
+      businessId: biz.id,
+      customerId: result.value.customerId,
+      marketing: false,
+      consentVersion: "2026-10-v1",
+      now: NOW,
+    });
     const consent = await consentRow(result.value.customerId);
     expect(consent.consent_terms_at).not.toBeNull();
     expect(consent.consent_marketing_at).toBeNull();
@@ -103,20 +117,19 @@ describe("submitCustomerBooking", () => {
     expect(consent.consent_channel).toBe("web");
   });
 
-  it("fel start (utanför öppettid): inget skrivs, inget samtycke sparas", async () => {
+  it("fel start (utanför öppettid): ingen ny kund skapas", async () => {
     const before = await adminQuery<{ n: string }>(
       "select count(*)::text as n from public.customers where business_id = $1",
       [biz.id],
     );
-    const result = await submitCustomerBooking({
+    const result = await createCustomerBooking({
       businessId: biz.id,
       serviceId: biz.services.corte!,
       staffId: biz.staff.diego!,
       start: iso(at(TUE, "23:00")),
       name: "Pedro Vidal",
       phone: phone(),
-      marketing: false,
-      consentVersion: "2026-10-v1",
+      idempotencyKey: randomUUID(),
       now: NOW,
     });
     expect(result.ok).toBe(false);
@@ -128,5 +141,37 @@ describe("submitCustomerBooking", () => {
       [biz.id],
     );
     expect(after.rows[0]!.n).toBe(before.rows[0]!.n);
+  });
+
+  it("omförsök (samma idempotencyKey, exakt samma anrop): en bokning, samma svar; samtycket kan sparas på nytt", async () => {
+    const request = {
+      businessId: biz.id,
+      serviceId: biz.services.corte!,
+      staffId: biz.staff.tomas!,
+      start: iso(at(TUE, "16:00")),
+      name: "Joaquín Soto",
+      phone: phone(),
+      idempotencyKey: randomUUID(),
+      now: NOW,
+    };
+    const first = await createCustomerBooking(request);
+    if (!first.ok) throw new Error(first.error);
+    const retry = await createCustomerBooking(request);
+    if (!retry.ok) throw new Error(retry.error);
+    // Samma bokning i allt utom manageToken (klartexten kan inte återskapas
+    // vid en träff, se create.ts).
+    expect(retry.value).toEqual({ ...first.value, manageToken: "" });
+
+    // "Skrivs om vid ett idempotent omförsök" (granskningsfynd): samma
+    // customerId, går att köra igen utan fel.
+    await saveBookingConsent({
+      businessId: biz.id,
+      customerId: retry.value.customerId,
+      marketing: true,
+      consentVersion: "2026-10-v1",
+      now: NOW,
+    });
+    const consent = await consentRow(retry.value.customerId);
+    expect(consent.consent_terms_at).not.toBeNull();
   });
 });

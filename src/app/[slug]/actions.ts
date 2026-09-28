@@ -19,10 +19,13 @@ import {
   waitlistFormSchema,
 } from "@/components/booking/form-schema";
 import type { BookingActionResult } from "@/components/booking/types";
-import { submitCustomerBooking } from "@/server/bookings/submit";
+import { resolveBusinessBySlug } from "@/server/bookings/business";
+import {
+  createCustomerBooking,
+  saveBookingConsent,
+} from "@/server/bookings/submit";
+import { pgErrorCode } from "@/server/db/errors";
 import { systemClock } from "@/server/scheduling/clock";
-
-import { resolveBusinessBySlug } from "./business";
 
 export async function createBooking(
   slug: string,
@@ -37,7 +40,8 @@ export async function createBooking(
   const business = await resolveBusinessBySlug(slug);
   if (!business) return { ok: false, code: "not_found" };
 
-  const result = await submitCustomerBooking({
+  const now = systemClock();
+  const result = await createCustomerBooking({
     businessId: business.id,
     serviceId: parsed.data.serviceId,
     staffId: parsed.data.staffId,
@@ -45,12 +49,37 @@ export async function createBooking(
     name: parsed.data.name,
     phone: parsed.data.phone,
     email: parsed.data.email || undefined,
-    marketing: parsed.data.marketing,
-    consentVersion: parsed.data.consentVersion,
-    now: systemClock(),
+    idempotencyKey: parsed.data.idempotencyKey,
+    now,
   });
+  if (!result.ok) return { ok: false, code: result.error };
 
-  return result.ok ? { ok: true } : { ok: false, code: result.error };
+  // Granskningsfynd: bokningen är redan committad här — svara alltid att den
+  // lyckades, även om samtycket (en separat transaktion, submit.ts) inte
+  // sparas. Ett omförsök (samma idempotencyKey) når `createCustomerBooking`s
+  // idempotens-gren och kör den här skrivningen igen. `pgErrorCode` läser
+  // bara SQLSTATE (aldrig namn/telefon/e-post) — se src/server/db/errors.ts.
+  try {
+    await saveBookingConsent({
+      businessId: business.id,
+      customerId: result.value.customerId,
+      marketing: parsed.data.marketing,
+      consentVersion: parsed.data.consentVersion,
+      now,
+    });
+  } catch (e) {
+    // Utanför src/server (console.* är bara förbjudet där) — ingen persondata.
+    console.error(
+      "createBooking: kunde inte spara samtycket (bokningen lyckades ändå)",
+      {
+        businessId: business.id,
+        bookingId: result.value.id,
+        sqlstate: pgErrorCode(e),
+      },
+    );
+  }
+
+  return { ok: true };
 }
 
 /**

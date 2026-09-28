@@ -10,12 +10,12 @@ import type {
 } from "@/components/booking/form-schema";
 import type { BookingActionResult } from "@/components/booking/types";
 import { reserva } from "@/i18n";
-import { withServiceTx } from "@/server/db/tx";
+import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { loadReservaPageData } from "@/server/bookings/page-data";
+import { withServiceTx } from "@/server/db/tx";
 import { systemClock } from "@/server/scheduling/clock";
 
 import { createBooking, joinWaitlist } from "./actions";
-import { resolveBusinessBySlug } from "./business";
 
 // VERCEL_ENV/databasen måste läsas per request (samma skäl som tidigare:
 // design-lab/layout.tsx), och tillgängligheten ändras minut för minut.

@@ -1,10 +1,10 @@
 /**
  * Sluggen → företagets id (WP-20). Den enda `businesses`-frågan som filtrerar
- * på `slug` i stället för `id`/`business_id` (`server/boundaries.test.ts`
- * kräver `id = $N` för en fråga som bara rör `businesses`) — måste därför
- * ligga utanför `src/server/`. Efter uppslagningen är `id` den betrodda
- * `businessId` som all vidare kod (`src/server/scheduling`,
- * `src/server/bookings`) filtrerar på.
+ * på `slug` i stället för `id`/`business_id`: `server/boundaries.test.ts` har
+ * ett uttryckligt, namngivet undantag för just den här filen (den kan inte
+ * filtrera på sin egen primärnyckel — den är precis det uppslagningen letar
+ * upp). Efter uppslagningen är `id` den betrodda `businessId` som all vidare
+ * kod (`src/server/scheduling`, `src/server/bookings`) filtrerar på.
  *
  * `cache()` (React, per request) gör att `generateMetadata` och sidan
  * (`page.tsx`) delar samma anrop i stället för att slå upp sluggen två

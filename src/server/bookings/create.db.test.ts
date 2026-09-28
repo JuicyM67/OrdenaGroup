@@ -386,6 +386,68 @@ describe("Cualquiera", () => {
   });
 });
 
+describe("idempotens (granskningsfynd)", () => {
+  // Egen profesional (matias) och egna tider (10:00–15:00) som inga andra
+  // tester i den här filen rör, så att overlap-kontrollen aldrig blandas in.
+  it("samma idempotencyKey (exakt samma anrop igen): en bokning, samma svar andra gången", async () => {
+    const before = await counts(biz);
+    // Byggs EN gång (samma telefon/namn/tid) — en riktig omförsök skickar
+    // om exakt samma formulär, inte ett nytt (annat än `phone()` skulle
+    // annars ge en ny kund vid varje anrop, se `base()`).
+    const request = base(biz, {
+      staffId: biz.staff.matias,
+      start: iso(at(TUE, "10:00")),
+      idempotencyKey: "c0000000-0000-4000-8000-000000000001",
+    });
+
+    const first = await createBooking(request);
+    if (!first.ok) throw new Error(first.error);
+    const second = await createBooking(request);
+    if (!second.ok) throw new Error(second.error);
+
+    // Samma bokning i allt utom manageToken: klartexten kan inte återskapas
+    // vid en träff (bara hashen sparas, se create.ts). Inget i WP-20 läser
+    // den vid en lyckad bokning.
+    expect(second.value).toEqual({ ...first.value, manageToken: "" });
+    expect(first.value.manageToken).not.toBe("");
+    const after = await counts(biz);
+    expect(after.bookings).toBe(before.bookings + 1);
+    expect(after.customers).toBe(before.customers + 1);
+  });
+
+  it("ingen idempotencyKey: två skilda anrop ger två bokningar (som förut)", async () => {
+    const before = await counts(biz);
+    const first = await createBooking(
+      base(biz, { staffId: biz.staff.matias, start: iso(at(TUE, "12:15")) }),
+    );
+    const second = await createBooking(
+      base(biz, { staffId: biz.staff.matias, start: iso(at(TUE, "13:00")) }),
+    );
+    if (!first.ok || !second.ok) throw new Error("setup");
+    expect(second.value.id).not.toBe(first.value.id);
+    expect(await counts(biz)).toEqual({
+      bookings: before.bookings + 2,
+      customers: before.customers + 2,
+    });
+  });
+
+  it("samma nyckel i olika företag krockar inte (indexet är per business_id)", async () => {
+    const key = "c0000000-0000-4000-8000-000000000002";
+    const a = await createBooking(
+      base(biz, {
+        staffId: biz.staff.matias,
+        start: iso(at(TUE, "14:00")),
+        idempotencyKey: key,
+      }),
+    );
+    const b = await createBooking(
+      base(other, { start: iso(at(TUE, "14:00")), idempotencyKey: key }),
+    );
+    expect(a.ok).toBe(true);
+    expect(b.ok).toBe(true);
+  });
+});
+
 describe("sommartid", () => {
   it("lör 5 sep 2026 23:15 (öppet 22:00–24:00, 30 min) sparas som [03:15Z,03:45Z)", async () => {
     const r = await createBooking(

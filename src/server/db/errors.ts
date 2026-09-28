@@ -26,6 +26,18 @@ export function isNoOverlapViolation(e: unknown): boolean {
 }
 
 /**
+ * WP-20 (granskningsfynd): unikt index `bookings_business_id_idempotency_key_uidx`
+ * — ett omförsök med samma `idempotencyKey` ska returnera den befintliga
+ * bokningen som lyckad, inte ett fel.
+ */
+export function isIdempotencyKeyViolation(e: unknown): boolean {
+  return (
+    pgErrorCode(e) === "23505" &&
+    field(e, "constraint") === "bookings_business_id_idempotency_key_uidx"
+  );
+}
+
+/**
  * Deadlock (40P01) eller serialiseringsfel (40001): två transaktioner krockade.
  * Hela transaktionen kan köras om (se `runAs`).
  */

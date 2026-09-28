@@ -27,7 +27,7 @@ import { ANY_STAFF, type DayInput } from "@/server/scheduling/types";
 
 /**
  * Sidans data för `/{slug}` (WP-20). Läser `businessId` (redan slug→id-
- * upplöst av `src/app/[slug]/business.ts`) och bygger samma vy-typer som
+ * upplöst av `src/server/bookings/business.ts`) och bygger samma vy-typer som
  * `BookingScreen` redan tar emot från fixturerna.
  *
  * Kunden ser tillgänglighet för de kommande `RANGE_DAYS` dagarna, inte hela

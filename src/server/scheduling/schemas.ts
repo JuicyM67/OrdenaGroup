@@ -118,6 +118,11 @@ export const createBookingRequestSchema = z.strictObject({
   start: instantSchema,
   customer: customerInputSchema,
   notes: z.string().trim().max(500).optional(),
+  // WP-20 (granskningsfynd): klientgenererad (crypto.randomUUID(), se
+  // form-schema.ts), alltid en riktig v4-uuid — `uuid` (z.guid()) accepterar
+  // den. Utan nyckel (ägarens manuella bokning) skrivs ingen rad i det
+  // partiella unika indexet (create.ts).
+  idempotencyKey: uuid.optional(),
 });
 
 /** Kundens flytt: bokningen identifieras bara med länkens token. */
