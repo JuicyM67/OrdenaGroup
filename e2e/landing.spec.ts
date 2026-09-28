@@ -4,17 +4,23 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
-import { landing, sitio } from "../src/i18n";
+import { landing, sitio } from "../src/i18n/es-CL.marketing";
 
-test("renderar med rubrik, nav och CTA:er", async ({ page }) => {
+test("renderar med rubrik, nav och CTA:er", async ({ page, isMobile }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  // Mobil: glas-naven visar bara logga + meny; CTA:n finns i heron.
   await expect(
-    page
-      .getByRole("banner")
-      .getByRole("link", { name: landing.nav.ctaCrearAgenda, exact: true }),
+    isMobile
+      ? page
+          .getByRole("main")
+          .getByRole("link", { name: landing.hero.ctaPrimario })
+          .first()
+      : page
+          .getByRole("banner")
+          .getByRole("link", { name: landing.nav.ctaCrearAgenda, exact: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: landing.precios.titulo }),

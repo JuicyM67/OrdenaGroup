@@ -6,6 +6,7 @@
 import { market } from "@/config/brand";
 
 import * as esCL from "./es-CL";
+import * as esCLSitio from "./es-CL.marketing";
 import * as svSE from "./sv-SE";
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för literaler. */
@@ -23,14 +24,12 @@ type Widen<T> = T extends string
             ? { readonly [K in keyof T]: Widen<T[K]> }
             : T;
 
-type PlanTexto = Omit<esCL.PlanLanding, "precioClp">;
+type PlanTexto = Omit<esCLSitio.PlanLanding, "precioClp">;
 
 export type MarketingCopy = Widen<
-  Pick<
-    typeof esCL,
-    | "nav"
-    | "estados"
-    | "hoy"
+  Pick<typeof esCL, "nav" | "estados" | "hoy"> &
+    Pick<
+    typeof esCLSitio,
     | "landing"
     | "sitio"
     | "SITIO_FUNCIONALIDADES"
@@ -40,7 +39,11 @@ export type MarketingCopy = Widen<
   >
 > & { readonly PLANES: readonly PlanTexto[] };
 
-const cl: MarketingCopy = { ...esCL, PLANES: esCL.PLANES_LANDING };
+const cl: MarketingCopy = {
+  ...esCL,
+  ...esCLSitio,
+  PLANES: esCLSitio.PLANES_LANDING,
+};
 const se: MarketingCopy = { ...svSE };
 
 const copies: Record<typeof market, MarketingCopy> = { CL: cl, SE: se };

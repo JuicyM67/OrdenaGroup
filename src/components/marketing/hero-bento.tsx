@@ -290,6 +290,7 @@ function LinkTile() {
         </span>
       </div>
       <div
+        role="group"
         aria-label={BENTO.link.compartirAria}
         className="flex justify-end gap-2"
       >

@@ -36,7 +36,7 @@ import type {
   SitioFuncionalidadSeccion,
   SitioParaIndustria,
   SitioPrecioFila,
-} from "./es-CL";
+} from "./es-CL.marketing";
 import type { Trad } from "./index";
 
 // ---------------------------------------------------------------------------

@@ -302,34 +302,34 @@
   }
   @keyframes step-dim-1 {
     0%,
-    2% { opacity: 0.4; }
+    2% { color: var(--color-muted); }
     6%,
-    21% { opacity: 1; }
+    21% { color: var(--color-ink); }
     25%,
-    100% { opacity: 0.4; }
+    100% { color: var(--color-muted); }
   }
   @keyframes step-dim-2 {
     0%,
-    27% { opacity: 0.4; }
+    27% { color: var(--color-muted); }
     31%,
-    46% { opacity: 1; }
+    46% { color: var(--color-ink); }
     50%,
-    100% { opacity: 0.4; }
+    100% { color: var(--color-muted); }
   }
   @keyframes step-dim-3 {
     0%,
-    52% { opacity: 0.4; }
+    52% { color: var(--color-muted); }
     56%,
-    71% { opacity: 1; }
+    71% { color: var(--color-ink); }
     75%,
-    100% { opacity: 0.4; }
+    100% { color: var(--color-muted); }
   }
   @keyframes step-dim-4 {
     0%,
-    77% { opacity: 0.4; }
+    77% { color: var(--color-muted); }
     81%,
-    96% { opacity: 1; }
-    100% { opacity: 0.4; }
+    96% { color: var(--color-ink); }
+    100% { color: var(--color-muted); }
   }
 
   /* Bokningsflödes-mockupen (WP-hemsida v2, retro 2026-09-28, punkt 2): skärmarna glider i

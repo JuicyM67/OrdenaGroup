@@ -10,7 +10,8 @@ import { describe, expect, it } from "vitest";
 
 import { brand } from "@/config/brand";
 
-import { inicio, landing, PLANES_LANDING } from "./es-CL";
+import { inicio } from "./es-CL";
+import { landing, PLANES_LANDING } from "./es-CL.marketing";
 import {
   NOMBRES_FIXTURE,
   paraCadaHoja,

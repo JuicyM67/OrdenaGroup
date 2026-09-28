@@ -15,7 +15,7 @@ import {
   SITIO_PARA_INDUSTRIAS,
   SITIO_PRECIOS_TABLA,
   SITIO_RUBROS_MARQUEE,
-} from "./es-CL";
+} from "./es-CL.marketing";
 import {
   NOMBRES_FIXTURE,
   paraCadaHoja,
