@@ -487,6 +487,7 @@ export const sitio = {
      * bokningsflödet på startsidan (wp/hemsida), samma steg som en riktig
      * kund ser (se `landing.hero` och `landing.comoFunciona`). */
     flujo: {
+      etiqueta: "Onlinebokning",
       titulo: "Att boka tar mindre än en minut",
       texto: "Så här ser din kund hela processen, från början till slut.",
       pasos: {

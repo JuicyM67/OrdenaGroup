@@ -2337,6 +2337,7 @@ export const sitio = {
      * de reserva en la portada (WP-hemsida), las mismas que ve un cliente
      * real en `/[slug]` (ver `reserva.pasos` y `reserva.confirmacion`). */
     flujo: {
+      etiqueta: "Reserva en línea",
       titulo: "Reservar toma menos de un minuto",
       texto: "Así ve tu cliente el proceso completo, de principio a fin.",
       pasos: {
