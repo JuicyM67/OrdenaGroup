@@ -2683,8 +2683,8 @@ export const SITIO_PARA_INDUSTRIAS: readonly SitioParaIndustria[] = [
       "Marca Llegó o No vino desde tu celular",
     ],
     servicios: [
-      { nombre: "Corte clásico", minutos: 30 },
-      { nombre: "Perfilado de barba", minutos: 20 },
+      { nombre: "Corte de pelo", minutos: 30 },
+      { nombre: "Arreglo de barba", minutos: 20 },
       { nombre: "Corte + barba", minutos: 45 },
     ],
     faq: [
