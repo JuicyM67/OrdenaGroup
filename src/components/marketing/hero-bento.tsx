@@ -366,7 +366,7 @@ function HeroBentoGrid() {
     <div
       role="img"
       aria-label={copy.landing.hero.vistaPreviaAria}
-      className="mt-9 grid grid-cols-2 gap-3.5 lg:h-115 lg:grid-cols-4 lg:grid-rows-2"
+      className="mt-9 grid grid-cols-2 gap-3.5 lg:h-140 lg:grid-cols-4 lg:grid-rows-2 xl:h-150 xl:gap-4"
     >
       <PhotoTile />
       <CalendarTile />
@@ -384,8 +384,8 @@ export function HeroSection() {
     copy.landing.hero.titulo({ tagline: brand.tagline }),
   );
   return (
-    <section className="mx-auto max-w-6xl px-4 py-10 sm:px-8 sm:py-14">
-      <div className="flex flex-col items-center gap-4 text-center">
+    <section className="px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-4 text-center">
         <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface py-1.5 pr-3.5 pl-1.5 text-13 font-semibold text-ink">
           <Chip tone="lime" size="xs">
             {BENTO.nuevo.etiqueta}
