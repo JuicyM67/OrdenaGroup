@@ -159,8 +159,8 @@ site_url = "http://127.0.0.1:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-# 3000 = huvudworktreen, 3115 = WP-15:s e2e-port, 3122 = WP-15b:s e2e-port.
-additional_redirect_urls = ["http://127.0.0.1:3000/auth/confirm", "http://127.0.0.1:3115/auth/confirm", "http://127.0.0.1:3122/auth/confirm"]
+# 3000 = huvudworktreen, 3115 = WP-15:s e2e-port, 3122 = WP-15b:s e2e-port, 3123 = WP-21b:s e2e-port.
+additional_redirect_urls = ["http://127.0.0.1:3000/auth/confirm", "http://127.0.0.1:3115/auth/confirm", "http://127.0.0.1:3122/auth/confirm", "http://127.0.0.1:3123/auth/confirm"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.

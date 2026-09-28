@@ -8,19 +8,19 @@ import "server-only";
  */
 import { withOwnerTx } from "@/server/db/tx";
 
-export type OwnerBusiness = { id: string; slug: string };
+export type OwnerBusiness = { id: string; slug: string; name: string };
 
 export async function getOwnerBusiness(
   userId: string,
 ): Promise<OwnerBusiness | null> {
   return withOwnerTx(userId, async (q) => {
-    const r = await q.query<{ id: string; slug: string }>(
-      `select b.id, b.slug
+    const r = await q.query<{ id: string; slug: string; name: string }>(
+      `select b.id, b.slug, b.name
        from public.memberships m
        join public.businesses b on b.id = m.business_id
        limit 1`,
     );
     const row = r.rows[0];
-    return row ? { id: row.id, slug: row.slug } : null;
+    return row ? { id: row.id, slug: row.slug, name: row.name } : null;
   });
 }

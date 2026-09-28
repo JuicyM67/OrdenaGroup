@@ -1,7 +1,7 @@
 -- INV-3/INV-4: tenant-isolering för `customers`, plus dataskyddsregler (Ley 21.719).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(38);
+select plan(45);
 \ir _helpers.psql
 
 insert into public.customers (id, business_id, phone_e164, name) values
@@ -103,6 +103,14 @@ select lives_ok(
   'ownerA kan sätta consent_channel = manual'
 );
 
+-- Skärpning WP-21b (krav från security-reviewer före WP-21, docs/tasks/IDEAS.md
+-- 2026-09-27): authenticated (ägaren) får aldrig sätta consent_marketing_at, inte
+-- ens med consent_channel = 'manual' — bara kunden själv ger marknadsföringssamtycke.
+select throws_ok(
+  $$ insert into public.customers (business_id, phone_e164, name, consent_terms_at, consent_marketing_at, consent_version, consent_channel) values ('aaaaaaaa-0000-0000-0000-000000000001', '+56900006669', 'X', now(), now(), 'v1', 'manual') $$,
+  '42501'
+);
+
 -- Granskningsfynd (blockerande): ägaren måste kunna redigera en kund med
 -- web/whatsapp-samtycke UTAN att röra samtycket. Cliente Web
 -- (…3000-…-000098) har consent_channel = 'web' från fixturen ovan.
@@ -153,6 +161,52 @@ select throws_ok(
 select lives_ok(
   $$ update public.customers set consent_channel = 'manual', consent_terms_at = now(), consent_version = 'v1' where id = 'aaaaaaaa-3000-0000-0000-000000000096' $$,
   'ownerA kan sätta consent_channel = manual med ett nytt samtycke via update'
+);
+
+-- Skärpning WP-21b: samma spärr gäller en UPDATE, inte bara INSERT. …096 har nu
+-- consent_channel = manual (testet ovan) utan marketing.
+select throws_ok(
+  $$ update public.customers set consent_marketing_at = now() where id = 'aaaaaaaa-3000-0000-0000-000000000096' $$,
+  '42501'
+);
+select is(
+  (select consent_marketing_at from public.customers where id = 'aaaaaaaa-3000-0000-0000-000000000096'),
+  null,
+  'consent_marketing_at på …096 är fortfarande null efter det nekade försöket'
+);
+
+-- Skärpning WP-21b: ägaren kan inte skriva över ett samtycke som redan kommer
+-- från web/whatsapp genom att sätta consent_channel = 'manual'. Cliente Web 2
+-- (…097) är fortfarande 'web' (det tidigare marketing-försöket ovan nekades).
+select throws_ok(
+  $$ update public.customers set consent_channel = 'manual', consent_terms_at = now(), consent_version = 'manual-2026-10-v1' where id = 'aaaaaaaa-3000-0000-0000-000000000097' $$,
+  '42501'
+);
+select is(
+  (select consent_channel from public.customers where id = 'aaaaaaaa-3000-0000-0000-000000000097')::text,
+  'web',
+  'consent_channel på …097 är fortfarande web efter det nekade försöket att skriva över med manual'
+);
+
+-- Samma spärr gäller kanalen 'whatsapp'.
+reset role;
+insert into public.customers (id, business_id, phone_e164, name, consent_terms_at, consent_version, consent_channel) values
+  ('aaaaaaaa-3000-0000-0000-000000000093', 'aaaaaaaa-0000-0000-0000-000000000001', '+56900009300', 'Cliente WhatsApp', now(), 'v1', 'whatsapp');
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+select throws_ok(
+  $$ update public.customers set consent_channel = 'manual', consent_terms_at = now() where id = 'aaaaaaaa-3000-0000-0000-000000000093' $$,
+  '42501'
+);
+
+-- Anonymisering (WP-26-liknande flöde) fungerar fortfarande efter skärpningen,
+-- även för en kund med web-samtycke.
+select lives_ok(
+  $$ update public.customers
+     set name = null, phone_e164 = null, anonymized_at = now(),
+         consent_terms_at = null, consent_marketing_at = null, consent_version = null, consent_channel = null
+     where id = 'aaaaaaaa-3000-0000-0000-000000000097' $$,
+  'ownerA kan fortfarande anonymisera en web-kund efter skärpningen'
 );
 
 reset role;

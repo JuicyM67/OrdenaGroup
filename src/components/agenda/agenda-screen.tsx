@@ -12,7 +12,9 @@ import {
   addLocalDays,
   formatTime,
   isoWeekdayOf,
+  toWallClock,
   type LocalDate,
+  type LocalTime,
   type TimeZone,
 } from "@/lib/format/dates";
 import { agenda, calendario } from "@/i18n";
@@ -44,12 +46,20 @@ import {
 } from "./geometry";
 import { layoutLanes, mergeCommonBlocks } from "./layout-events";
 import { LegendCard } from "./legend-card";
+import type {
+  ManualBookingCatalogService,
+  ManualBookingSubmit,
+} from "./manual-booking-dialog";
+import { ManualBookingDialog } from "./manual-booking-dialog";
 import { MonthCard } from "./month-card";
+import { MoveDialog } from "./move-dialog";
 import { NowLine } from "./now-line";
 import { StaffFilter } from "./staff-filter";
 import { TimeGrid, type TimeGridColumn } from "./time-grid";
 import type { AgendaBooking, AgendaData, StaffId } from "./types";
 import { WaitlistSummary } from "./waitlist-summary";
+
+export type AgendaActionResult = { ok: true } | { ok: false; error: string };
 
 type Vista = "semana" | "dia";
 
@@ -76,6 +86,23 @@ export type AgendaScreenProps = {
     bookingId: string,
     status: "completed" | "no_show",
   ) => void | Promise<void>;
+  /** WP-21b: tjänster + vilka profesionales som utför dem, för "Nueva reserva"-dialogen.
+   * `[]` i design lab (props saknas). */
+  catalog?: readonly ManualBookingCatalogService[];
+  /** WP-21b: företagets namn, till samtyckesrutans hjälptext. */
+  businessName?: string;
+  /** WP-21b: sparar en manuell bokning (server action). `undefined` i design lab — knappen
+   * "Nueva reserva" är då kvar som no-op (WP-21). */
+  onCreateManualBooking?: (
+    input: ManualBookingSubmit,
+  ) => Promise<AgendaActionResult>;
+  /** WP-21b: flyttar en bokning (server action). `undefined` i design lab — "Mover" stänger
+   * bara popovern (WP-21, oförändrat beteende). */
+  onMoveBooking?: (input: {
+    bookingId: string;
+    date: LocalDate;
+    time: LocalTime;
+  }) => Promise<AgendaActionResult>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -103,6 +130,10 @@ export function AgendaScreen({
   autoScrollToNow = true,
   showMover = true,
   onArrival,
+  catalog = [],
+  businessName = "",
+  onCreateManualBooking,
+  onMoveBooking,
 }: AgendaScreenProps) {
   const router = useRouter();
   const tz = data.timezone as TimeZone;
@@ -129,6 +160,20 @@ export function AgendaScreen({
   const [arrivalOverrides, setArrivalOverrides] = useState<
     Record<string, "completed" | "no_show">
   >({});
+  const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [movingBooking, setMovingBooking] = useState<AgendaBooking | null>(
+    null,
+  );
+  // Sr-only-annonsering (samma mönster som HoyScreen): "Toast" för Mover
+  // (agenda.toast.movida) är en aria-live-region, inte en synlig snackbar —
+  // det finns ingen synlig toast-komponent i kodbasen än (WP-21b).
+  const [announcement, setAnnouncement] = useState<{
+    id: number;
+    text: string;
+  } | null>(null);
+  function announce(text: string) {
+    setAnnouncement((prev) => ({ id: (prev?.id ?? 0) + 1, text }));
+  }
 
   function goTo(nextVista: Vista, nextFocus: LocalDate) {
     setVista(nextVista);
@@ -195,7 +240,14 @@ export function AgendaScreen({
             () => undefined,
           );
         }}
-        onMover={showMover ? () => setPopoverOpen(false) : undefined}
+        onMover={
+          showMover
+            ? () => {
+                setPopoverOpen(false);
+                if (onMoveBooking) setMovingBooking(booking);
+              }
+            : undefined
+        }
         trigger={trigger}
       />
     );
@@ -331,112 +383,158 @@ export function AgendaScreen({
   const offsetLbl = offsetLabel(focus, tz);
 
   return (
-    <AgendaShell
-      className={className}
-      rail={
-        <AgendaRail
-          staff={data.staff}
-          highlightedStaffId={highlightedStaffId}
-          onSelectStaff={(id) => {
-            setHighlightedStaffId(id);
-            // Klick på en profesional som just kryssats ur i filtret ska göra hen
-            // synlig igen, annars visar dagvyn en tom kolumn (granskningsfynd).
-            setVisibleStaffIds((prev) =>
-              prev.has(id) ? prev : new Set(prev).add(id),
-            );
-            goTo("dia", focus);
-          }}
-        />
-      }
-      aside={
-        <>
-          <MonthCard
-            month={browsedMonth}
-            selected={focus}
-            today={today}
-            highlightWeekOf={week[0] as LocalDate}
-            onSelect={(date) => goTo(vista, date)}
-            onPrevMonth={() => setBrowsedMonth(prevMonth)}
-            onNextMonth={() => setBrowsedMonth(nextMonth)}
-          />
-          <StaffFilter
+    <>
+      <AgendaShell
+        className={className}
+        rail={
+          <AgendaRail
             staff={data.staff}
-            visibleStaffIds={visibleStaffIds}
-            counts={data.weekCounts}
-            onToggle={(id) =>
-              setVisibleStaffIds((prev) => {
-                if (prev.has(id)) {
-                  if (prev.size <= 1) return prev;
-                  const next = new Set(prev);
-                  next.delete(id);
-                  return next;
-                }
-                return new Set(prev).add(id);
-              })
-            }
+            highlightedStaffId={highlightedStaffId}
+            onSelectStaff={(id) => {
+              setHighlightedStaffId(id);
+              // Klick på en profesional som just kryssats ur i filtret ska göra hen
+              // synlig igen, annars visar dagvyn en tom kolumn (granskningsfynd).
+              setVisibleStaffIds((prev) =>
+                prev.has(id) ? prev : new Set(prev).add(id),
+              );
+              goTo("dia", focus);
+            }}
           />
-          <LegendCard />
-          <WaitlistSummary waitlist={data.waitlist} />
-        </>
-      }
-    >
-      <AgendaToolbar
-        title={weekTitle(focus)}
-        onToday={() => goTo(vista, today)}
-        onPrevWeek={() => goTo(vista, addLocalDays(focus, -7))}
-        onNextWeek={() => goTo(vista, addLocalDays(focus, 7))}
-        onNewBooking={() => {
-          /* WP-21: crear reserva manual, sin efecto en WP-12. */
-        }}
-      />
-      <div className="mt-3 flex justify-end">
-        <SegmentedControl
-          aria-label={agenda.vistaAria}
-          value={vista}
-          onValueChange={(v) => {
-            if (v === "semana" || v === "dia") goTo(v, focus);
+        }
+        aside={
+          <>
+            <MonthCard
+              month={browsedMonth}
+              selected={focus}
+              today={today}
+              highlightWeekOf={week[0] as LocalDate}
+              onSelect={(date) => goTo(vista, date)}
+              onPrevMonth={() => setBrowsedMonth(prevMonth)}
+              onNextMonth={() => setBrowsedMonth(nextMonth)}
+            />
+            <StaffFilter
+              staff={data.staff}
+              visibleStaffIds={visibleStaffIds}
+              counts={data.weekCounts}
+              onToggle={(id) =>
+                setVisibleStaffIds((prev) => {
+                  if (prev.has(id)) {
+                    if (prev.size <= 1) return prev;
+                    const next = new Set(prev);
+                    next.delete(id);
+                    return next;
+                  }
+                  return new Set(prev).add(id);
+                })
+              }
+            />
+            <LegendCard />
+            <WaitlistSummary waitlist={data.waitlist} />
+          </>
+        }
+      >
+        <AgendaToolbar
+          title={weekTitle(focus)}
+          onToday={() => goTo(vista, today)}
+          onPrevWeek={() => goTo(vista, addLocalDays(focus, -7))}
+          onNextWeek={() => goTo(vista, addLocalDays(focus, 7))}
+          onNewBooking={() => {
+            if (onCreateManualBooking) setManualDialogOpen(true);
           }}
-          options={[
-            { value: "mes", label: calendario.vista.mes, disabled: true },
-            { value: "semana", label: calendario.vista.semana },
-            { value: "dia", label: calendario.vista.dia },
-          ]}
         />
-      </div>
-      <DayPillRow
-        days={week}
-        today={today}
-        closedDates={closedDates}
-        gmtLabel={offsetLbl}
-        vista={vista}
-        selectedDate={vista === "dia" ? focus : null}
-        onSelectDay={(date) => goTo("dia", date)}
-      />
-      {vista === "semana" ? (
-        <TimeGrid
-          ariaLabel={sectionAria(week[0] as LocalDate, week[6] as LocalDate)}
-          startHour={gridRange.startHour}
-          endHour={gridRange.endHour}
-          headerHeight={0}
-          columns={weekColumns}
-          initialScrollHour={scrollHour}
-        />
-      ) : (
-        <DayGrid
-          data={data}
-          date={focus}
-          tz={tz}
+        <div className="mt-3 flex justify-end">
+          <SegmentedControl
+            aria-label={agenda.vistaAria}
+            value={vista}
+            onValueChange={(v) => {
+              if (v === "semana" || v === "dia") goTo(v, focus);
+            }}
+            options={[
+              { value: "mes", label: calendario.vista.mes, disabled: true },
+              { value: "semana", label: calendario.vista.semana },
+              { value: "dia", label: calendario.vista.dia },
+            ]}
+          />
+        </div>
+        <DayPillRow
+          days={week}
           today={today}
-          now={now}
-          gridRange={gridRange}
-          visibleStaff={visibleStaff}
-          highlightedStaffId={highlightedStaffId}
-          selectedBookingId={selectedBookingId}
-          renderTrigger={renderPopoverIfSelected}
-          onSelectBooking={selectBooking}
-          initialScrollHour={scrollHour}
+          closedDates={closedDates}
+          gmtLabel={offsetLbl}
+          vista={vista}
+          selectedDate={vista === "dia" ? focus : null}
+          onSelectDay={(date) => goTo("dia", date)}
         />
-      )}
-    </AgendaShell>
+        {vista === "semana" ? (
+          <TimeGrid
+            ariaLabel={sectionAria(week[0] as LocalDate, week[6] as LocalDate)}
+            startHour={gridRange.startHour}
+            endHour={gridRange.endHour}
+            headerHeight={0}
+            columns={weekColumns}
+            initialScrollHour={scrollHour}
+          />
+        ) : (
+          <DayGrid
+            data={data}
+            date={focus}
+            tz={tz}
+            today={today}
+            now={now}
+            gridRange={gridRange}
+            visibleStaff={visibleStaff}
+            highlightedStaffId={highlightedStaffId}
+            selectedBookingId={selectedBookingId}
+            renderTrigger={renderPopoverIfSelected}
+            onSelectBooking={selectBooking}
+            initialScrollHour={scrollHour}
+          />
+        )}
+      </AgendaShell>
+
+      {onCreateManualBooking ? (
+        <ManualBookingDialog
+          open={manualDialogOpen}
+          onOpenChange={setManualDialogOpen}
+          services={catalog}
+          staff={data.staff}
+          businessName={businessName}
+          defaultDate={focus}
+          onSubmit={async (input) => {
+            const result = await onCreateManualBooking(input);
+            if (result.ok) router.refresh();
+            return result;
+          }}
+        />
+      ) : null}
+
+      {onMoveBooking && movingBooking ? (
+        <MoveDialog
+          key={movingBooking.id}
+          open={movingBooking != null}
+          onOpenChange={(open) => {
+            if (!open) setMovingBooking(null);
+          }}
+          bookingId={movingBooking.id}
+          defaultDate={toWallClock(toInstant(movingBooking.start), tz).date}
+          defaultTime={toWallClock(toInstant(movingBooking.start), tz).time}
+          onSubmit={async (input) => {
+            const result = await onMoveBooking(input);
+            if (result.ok) {
+              announce(agenda.toast.movida);
+              setMovingBooking(null);
+              router.refresh();
+            }
+            return result;
+          }}
+        />
+      ) : null}
+
+      <div role="status" className="sr-only">
+        {announcement ? (
+          <span key={announcement.id}>{announcement.text}</span>
+        ) : null}
+      </div>
+    </>
   );
 }
