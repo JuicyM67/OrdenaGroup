@@ -201,7 +201,42 @@ WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är k
 
 ### Byggt i WP-11
 
-_Fylls i av WP-11._
+Skärmen Inicio (Main.dc.html, desktop, F6). Vy-modell och rena funktioner:
+`src/components/dashboard/types.ts` (`InicioData`, `TodayBooking`), `inicio-view.ts`
+(`todayLabel`, `upcomingToday`, `statusChip`, `heroVariant`, `splitHighlight`,
+`noShowTrendLabel`, `notificationsLabel`, `mustParseInstant`). Fixtures:
+`src/app/design-lab/main/fixtures.ts` (`getInicioFixtures`, tillstånd `referencia`/`vacio`/
+`lleno`/`sin-flash`). Skärmen: `src/components/dashboard/inicio-screen.tsx`, design lab
+`src/app/design-lab/main/page.tsx` (`?estado=`), riktig route
+`src/app/(app)/app/inicio/page.tsx` (grind D-020, noindex).
+
+Initialer (`initialsOf`, WP-10) och procent (`formatPercent`, WP-10) räknas alltid ur
+`owner.name`/`clientName`/`stats.noShowPct` vid renderingen — datan bär inga färdig­formaterade
+strängar för dem. `owner.firstName` (hero-hälsningen) kommer redan klar från datan — ingen
+egen namnformatering i UI:t (QA, ersätter tidigare `firstName()`). Veckodagarna i
+CalendarCard kommer från `WEEKDAY_MIN` (`src/lib/format/calendar-es-CL.ts`, WP-10), och
+`dayLabel` lägger till `calendario.diaConReservas` för dagar med prick (WP-03b) — pricken är
+annars ensam bärare av informationen. Notisknappen: `nav.notificaciones` utan aviseringar,
+annars `nav.notificacionesNuevas({ n })` (`notificationsLabel`, `data.notifications.count`).
+`upcomingToday` filtrerar också bort `cancelled`/`no_show` (QA) — de hände inte, oavsett tid.
+
+| Komponent | Fil | API |
+|---|---|---|
+| AppShell | `src/components/dashboard/app-shell.tsx` | `rail`, `children`, `className` (overridar `h-dvh`, t.ex. `h-225` i design lab) |
+| MainNav | `src/components/dashboard/main-nav.tsx` | `active` (`MainNavKey`), `hrefs?` (standard `DEFAULT_MAIN_NAV_HREFS`); alla länkar `prefetch={false}` (sidorna finns inte än, annars blockerar Next.js prefetch-loop `npm run visual`, se R-anteckning i koden) |
+| HeroSummary | `src/components/dashboard/hero-summary.tsx` | `ownerFirstName`, `week`, `features`, `detailHref`, `onEnviarRecordatorio?`; `as="section"` med `aria-label={inicio.resumenSemanaAria}`; "Enviar recordatorio"-knappen har `on-dark:focus-visible:outline-ink` (QA: annars lime fokusring på lime FeatureCard, osynlig) |
+| FeatureCard | `src/components/dashboard/feature-card.tsx` | `index`, `tone` (lilac/peach/lime), `icon`, `title`, `meta`, `progress?`, `action?` (rund 34-knapp i stället för progress) |
+| ProgressBar | `src/components/dashboard/progress-bar.tsx` | `value` (0–1); SVG, `aria-hidden`, ingen `style` |
+| StatTile | `src/components/dashboard/stat-tile.tsx` | variant `number`/`amount`/`percent`; `meta`/`trendLabel` alltid från anroparen |
+| Sparkline | `src/components/dashboard/sparkline.tsx` | `values` (`revenueSeries`); Catmull-Rom → kubiska Bézier-segment, se R3 |
+| AgendaToday | `src/components/dashboard/agenda-today.tsx` | `bookings`, `href`; `min-h-0` + `overflow-y-auto` internt, sidan klipper aldrig bort bokningar |
+| AgendaRow | `src/components/dashboard/agenda-row.tsx` | `booking` (`TodayBooking`), `onMoreOptions?`; `<li>`, tid alltid i `SANTIAGO` |
+| CalendarCard | `src/components/dashboard/calendar-card.tsx` | `month`, `today`, `markedDates`; klientkomponent, `"use client"` |
+| FlashCard | `src/components/dashboard/flash-card.tsx` | `activeFlash` (`InicioData["activeFlash"]`), `href`; `null` → `inicio.flashCard.vacio` + länk för att skapa en (`?estado=sin-flash`, testat) |
+
+**Tillägg i delade `ui/`-filer (WP-11, PR C):** `IconButton` fick storleken `36` (AgendaRow
+"Más opciones"); `NavRailLink` fick ett valfritt `prefetch`-prop (standard följer Next.js;
+`false` för länkar till sidor som inte finns än).
 
 ### Byggt i WP-12
 

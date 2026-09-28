@@ -76,6 +76,12 @@ export type NavRailLinkProps = {
   label: string;
   icon: ReactNode;
   active?: boolean;
+  /**
+   * `false` för länkar till sidor som inte finns än (t.ex. `/app/clientes` i WP-11–14, se
+   * respektive plans §2): Next.js prefetchar annars länkar i viewport per default, vilket
+   * ger ständiga 404-RSC-förfrågningar som aldrig blir "networkidle" i `npm run visual`.
+   */
+  prefetch?: boolean;
 };
 
 export function NavRailLink({
@@ -83,10 +89,12 @@ export function NavRailLink({
   label,
   icon,
   active = false,
+  prefetch,
 }: NavRailLinkProps) {
   return (
     <Link
       href={href}
+      prefetch={prefetch}
       aria-label={label}
       aria-current={active ? "page" : undefined}
       className={cn(
