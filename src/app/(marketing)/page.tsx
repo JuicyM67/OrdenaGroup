@@ -33,7 +33,10 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { DecorativeBlob } from "@/components/marketing/decorative-blob";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
 import { FlashMockup } from "@/components/marketing/flash-mockup";
-import { FlujoMockup } from "@/components/marketing/flujo-mockup";
+import {
+  FlujoPhoneMockup,
+  FlujoSteps,
+} from "@/components/marketing/flujo-mockup";
 import { HeroVisualPreview } from "@/components/marketing/hero-visual-preview";
 import { RubrosMarquee } from "@/components/marketing/rubros-marquee";
 import { SectionHeading } from "@/components/marketing/section-heading";
@@ -184,17 +187,33 @@ export default function LandingPage() {
           </Card>
         </section>
 
-        {/* Cómo funciona: mockup animado del flujo de reserva completo */}
+        {/* Cómo funciona: texto + indicador de pasos a la izquierda, teléfono a la derecha
+            (retro 2026-09-28, punto 3 — mismo patrón de dos columnas que Horas flash). */}
         <section
           id="como-funciona"
           className="mx-auto max-w-6xl scroll-mt-24 px-4 py-14 sm:px-8"
         >
-          <SectionHeading
-            title={copy.sitio.inicio.flujo.titulo}
-            subtitle={copy.sitio.inicio.flujo.texto}
-          />
-          <div className="mt-8">
-            <FlujoMockup />
+          <div className="flex flex-col items-center gap-10 lg:flex-row">
+            <div className="flex flex-1 flex-col gap-4">
+              <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-ink px-3.5 py-1.5 text-13 font-bold tracking-caps text-on-dark uppercase">
+                <Calendar
+                  aria-hidden="true"
+                  className="size-3.5"
+                  strokeWidth={strokeCard}
+                />
+                {copy.sitio.inicio.flujo.etiqueta}
+              </span>
+              <h2 className="font-display text-30 font-bold tracking-display text-ink sm:text-32">
+                {copy.sitio.inicio.flujo.titulo}
+              </h2>
+              <p className="max-w-md text-15 text-muted">
+                {copy.sitio.inicio.flujo.texto}
+              </p>
+              <FlujoSteps className="mt-2" />
+            </div>
+            <div className="w-full flex-1">
+              <FlujoPhoneMockup />
+            </div>
           </div>
         </section>
 
@@ -339,8 +358,6 @@ export default function LandingPage() {
           text={copy.landing.ctaFinal.texto}
           buttonLabel={copy.landing.ctaFinal.boton}
           href="/login"
-          imageSrc="/images/sitio/cta-barberia.webp"
-          imageAlt={copy.sitio.cta.fondoAlt}
         />
       </main>
 
