@@ -126,7 +126,7 @@ export function HeroVisualPreview({ className }: { className?: string }) {
           fria. Nedskalad bort på mobil (ren agenda + "Siguiente" räcker där). */}
       <div
         aria-hidden="true"
-        className="absolute -top-4 right-0 z-20 hidden w-6/12 rotate-2 rounded-tile bg-surface p-4 shadow-popover sm:-top-11 sm:block sm:w-4/12"
+        className="absolute right-0 bottom-4 z-20 hidden w-6/12 rotate-2 rounded-tile bg-surface p-4 shadow-popover sm:block sm:w-4/12"
       >
         <div className="truncate text-15 font-bold text-ink">Corte + barba</div>
         <div className="truncate text-13 text-muted">
@@ -149,10 +149,10 @@ export function HeroVisualPreview({ className }: { className?: string }) {
           i det motsatta hörnet mot bokningskortet ovan — de korsar aldrig varandra. */}
       <div
         aria-hidden="true"
-        className="absolute bottom-0 left-0 z-30 w-8/12 -rotate-1 rounded-hero bg-dark p-5 text-on-dark shadow-popover sm:w-4/12"
+        className="absolute bottom-0 left-0 z-30 w-8/12 -rotate-1 rounded-hero bg-dark p-5 text-on-dark shadow-popover sm:w-5/12"
       >
-        <div className="flex items-center justify-between gap-2">
-          <span className="truncate text-13 text-on-dark-muted">
+        <div className="flex flex-col items-start gap-2">
+          <span className="text-13 text-on-dark-muted">
             {hoy.siguiente({ relativo: hoy.relativo.enMin({ n: 20 }) })}
           </span>
           <Chip size="sm" weight="bold" tone="success" className="shrink-0">
