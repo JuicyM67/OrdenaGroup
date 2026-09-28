@@ -538,6 +538,63 @@
     50%,
     100% { opacity: 0; }
   }
+
+  /* Startsidan efter heron (WP-hemsida, retro: sektionerna mappade från
+     `.visual-diff/ref/sida-v1-bento.html`/`sida-v2-morka-band.html`/`footer.html`, ingen
+     `.dc.html`-referens finns för de här — se docs/design/DESIGN.md §3). Fyra nya
+     animationer utan tidigare motsvarighet i tokens.css: */
+
+  /* "Por qué funciona"-bentot, agenda-rutan: staplarna växer in. Tailwinds `delay-*` sätter
+     bara `transition-delay`, inte `animation-delay` — så staggringen mellan staplarna är en
+     andra, fasförskjuten keyframe (samma mönster som step-fade-1…4 ovan) i stället för en
+     delad animation + delay-klass. `transform-origin` sätts med Tailwinds `origin-bottom`
+     i komponenten. */
+  --animate-grow-bar: grow-bar 5s ease-in-out infinite;
+  @keyframes grow-bar {
+    0% { transform: scaleY(0.1); }
+    30%,
+    90% { transform: scaleY(1); }
+    100% { transform: scaleY(0.1); }
+  }
+  --animate-grow-bar-delay: grow-bar-delay 5s ease-in-out infinite;
+  @keyframes grow-bar-delay {
+    0%,
+    15% { transform: scaleY(0.1); }
+    45%,
+    100% { transform: scaleY(1); }
+  }
+
+  /* Samma bentot, inasistencias-rutan: en toggle-knapp som glider mellan av/på. */
+  --animate-toggle-knob: toggle-knob 4s ease-in-out infinite;
+  @keyframes toggle-knob {
+    0%,
+    45% { left: 4px; background-color: var(--color-surface); }
+    50%,
+    95% { left: 48px; background-color: var(--color-lime); }
+    100% { left: 4px; }
+  }
+
+  /* Samma bentot, pris-rutan: en lodrät sifferrulle (tre stopp i stället för
+     `--animate-hero-comision`s fyra — olika antal rader, samma teknik). */
+  --animate-count-roll: count-roll 6s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+  @keyframes count-roll {
+    0%,
+    20% { transform: translateY(0); }
+    30%,
+    50% { transform: translateY(-33.333%); }
+    60%,
+    90% { transform: translateY(-66.666%); }
+    100% { transform: translateY(0); }
+  }
+
+  /* Footerns 3D-kalender: skuggellipsen krymper/tonar i takt med att kalendern
+     (`animate-float`, redan i tokens.css) svävar uppåt. */
+  --animate-shadow-pulse: shadow-pulse 6s ease-in-out infinite;
+  @keyframes shadow-pulse {
+    0%,
+    100% { transform: scale(1); opacity: 0.55; }
+    50% { transform: scale(0.85); opacity: 0.35; }
+  }
 }
 
 :root {

@@ -38,10 +38,10 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/icon-button";
-import { LogoMark } from "@/components/ui/logo-mark";
 import { strokeArrow, strokeCard, strokeNav } from "@/components/ui/icons";
-import { brand } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
+
+import { BrandLogo } from "./brand-logo";
 
 const PRODUCTO_ITEMS: readonly {
   id: string;
@@ -243,12 +243,9 @@ export function SiteHeader() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 rounded-full border border-surface/60 bg-surface/70 px-3 shadow-glass backdrop-blur-glass backdrop-saturate-150 sm:px-5">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2.5 rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="flex shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <LogoMark label={brand.name} size={40} decorative />
-          <span className="font-display text-19 font-bold tracking-display text-ink">
-            {brand.name}
-          </span>
+          <BrandLogo size="sm" decorative />
         </Link>
 
         <NavigationMenu.Root
@@ -379,8 +376,8 @@ export function SiteHeader() {
               >
                 <div className="flex items-center justify-between">
                   <Dialog.Title asChild>
-                    <span className="font-display text-19 font-bold tracking-display text-ink">
-                      {brand.name}
+                    <span>
+                      <BrandLogo size="sm" decorative />
                     </span>
                   </Dialog.Title>
                   <Dialog.Close asChild>

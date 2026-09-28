@@ -134,6 +134,19 @@ här är första gången hemsidan behöver det (flytande nav i "liquid glass").
 `Button` fick en `glass`-variant (border + halvtransparent yta + `backdrop-blur-glass`) för
 "Entrar" i det nya navet, se §7.
 
+### Nya tokens (WP-hemsida, startsidan efter heron + footer)
+
+Ingen `.dc.html`-referens (samma skäl som ovan). Mappat från `.visual-diff/ref/sida-v1-bento.html`,
+`.visual-diff/ref/sida-v2-morka-band.html` och `.visual-diff/ref/footer.html`. Fyra nya
+animationer utan tidigare motsvarighet: `--animate-grow-bar` (bentots agenda-staplar, växer
+in med `delay-*`-stagger), `--animate-toggle-knob` (bentots inasistencias-toggle),
+`--animate-count-roll` (bentots pris-siffra, samma teknik som `--animate-hero-comision` men
+tre rader i stället för fyra) och `--animate-shadow-pulse` (footerns 3D-kalender, synkad med
+`--animate-float`). Ingen ny radie- eller färgtoken: footerns mörka kort återanvänder
+`rounded-shell` (närmast referensens 48 px) och kalenderns gradienter förenklades till platta
+tonfyllningar (`fill-lime`/`fill-surface`/…) eftersom SVG:ns `stop-color` inte går att uttrycka
+som en Tailwind-klass — se `calendar-3d.tsx`.
+
 ## 5. Form och luft
 
 - Radier: se tokens (`shell` 32 → `chip` 10). Tumregel: ju större yta, desto större radie. Cirkelformade knappar för ikonknappar (48×48) och avatarer.

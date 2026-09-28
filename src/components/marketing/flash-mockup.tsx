@@ -1,8 +1,12 @@
-// Hora Flash-mockup (WP-hemsida v2, punkt 5): fyra staplade tillstånd i samma mörka kort —
-// en ledig tid, sedan rabatt-brickan, sedan avisot till kunderna, sedan "¡Reservada!" —
-// med samma teknik som FlujoMockup (en färdigfasad `animate-step-fade-N` per tillstånd,
-// tokens.css). `copy.sitio.inicio.flash.mock` är etiketter för den här maquetan, inte
-// riktiga WhatsApp-mallar (de lever i `plantillasWhatsapp`). Rent dekorativ (`aria-hidden`).
+// Hora Flash-mockup (WP-hemsida, retro: sektionen mappad om från
+// `.visual-diff/ref/sida-v1-bento.html`, punkt "HORAS FLASH"): fyra staplade tillstånd i
+// samma glaskort — en ledig tid (mörk), sedan rabatt-brickan (lime), sedan avisot till
+// kunderna, sedan "¡Reservada por {nombre}!" — med samma teknik som FlujoMockup (en
+// färdigfasad `animate-step-fade-N` per tillstånd, tokens.css). `copy.sitio.inicio.flash.mock`
+// är etiketter för den här maquetan, inte riktiga WhatsApp-mallar (de lever i
+// `plantillasWhatsapp`). Kortet ligger ovanpå ett foto (`flash-band.tsx`), därför den
+// halvtransparenta `bg-dark-2/75` + `backdrop-blur-glass` i stället för en solid `tone="dark"`.
+// Rent dekorativ (`aria-hidden`).
 import { Bell, Check, Clock, Zap } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -10,6 +14,8 @@ import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { strokeCard } from "@/components/ui/icons";
 import { copy } from "@/i18n/marketing";
+
+import { DEMO } from "./demo-data";
 
 const STEP_ANIMATIONS = [
   "animate-step-fade-1",
@@ -64,7 +70,9 @@ function EstadoReservada() {
       <span className="flex size-12 items-center justify-center rounded-full bg-lime text-ink">
         <Check aria-hidden="true" className="size-6" strokeWidth={strokeCard} />
       </span>
-      <span className="text-17 font-bold text-on-dark">{MOCK.reservada}</span>
+      <span className="text-17 font-bold text-on-dark">
+        {copy.sitio.inicio.flash.reservadaPor({ nombre: DEMO.kund })}
+      </span>
     </div>
   );
 }
@@ -76,7 +84,7 @@ export function FlashMockup() {
       radius="hero"
       padding="xl"
       aria-hidden="true"
-      className="relative h-64 w-full max-w-md overflow-hidden"
+      className="relative h-64 w-full max-w-md overflow-hidden border border-dark-border bg-dark-2/75 backdrop-blur-glass"
     >
       <span className="flex size-11 items-center justify-center rounded-icon bg-lime text-ink">
         <Zap aria-hidden="true" className="size-5.5" strokeWidth={strokeCard} />

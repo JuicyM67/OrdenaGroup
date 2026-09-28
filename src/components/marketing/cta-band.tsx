@@ -86,12 +86,14 @@ function CtaPhonePreview({ className }: { className?: string }) {
       </Card>
 
       {/* Cifra + ícono, sin texto (retro: "bara siffror/ikoner" es la opción explícita
-          cuando no hay una frase corta ya existente para "+N reservas esta semana"). */}
+          cuando no hay una frase corta ya existente para "+N reservas esta semana").
+          `-top-8`/`p-3` (más arriba y más compacta que antes): con `-top-5`/`padding="md"`
+          la tarjeta se extendía hasta tapar "Siguiente…" del teléfono (retro, punto 7). */}
       <Card
         tone="surface"
         radius="tile"
-        padding="md"
-        className="absolute -top-5 -left-5 flex w-22 flex-col items-start gap-1 shadow-popover sm:-left-9"
+        padding="none"
+        className="absolute -top-8 -left-6 flex w-20 flex-col items-start gap-1 p-3 shadow-popover sm:-left-10"
       >
         <Calendar
           aria-hidden="true"
