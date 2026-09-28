@@ -57,3 +57,5 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-28 | Stoppa andra företag per ägare i `submitOnboarding`; `getOwnerBusiness` filtrera på roll owner/admin | security-reviewer (WP-15) | Slug-squatting, staff hamnar i ägarvyn | 1 (WP-15b) |
 | 2026-09-28 | Synka `email.acceso` i i18n med mallarna (utan kod, "link" i stället för "código") | orkestrerare (WP-15) | Mallarna förenklades i WP-15 | 1 (copywriter) |
 | 2026-09-28 | Egen SMTP (Resend) för Supabase Auth i staging/prod | orkestrerare (WP-15) | Inbyggd e-post har låg kvot | 1 (före pilot) |
+| 2026-09-28 | Rate limiting på publik bokning (per IP och telefon) | security-reviewer (WP-20) | Annars kan vem som helst fylla en agenda med falska bokningar | 1 (före pilot) |
+| 2026-09-28 | Samtycke från publik bokning ska inte skriva över ägarens register (`manual`) på befintlig kundrad med obekräftat nummer | security-reviewer (WP-20) | Tredje part kan annars ändra någon annans samtycke | 1 (WP-26) |

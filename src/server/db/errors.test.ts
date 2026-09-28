@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { isNoOverlapViolation, pgErrorCode } from "./errors";
+import {
+  isIdempotencyKeyViolation,
+  isNoOverlapViolation,
+  pgErrorCode,
+} from "./errors";
 
 describe("isNoOverlapViolation", () => {
   it("23P01 på no_overlap", () => {
@@ -19,6 +23,32 @@ describe("isNoOverlapViolation", () => {
     [undefined],
   ])("inte för %j", (e) => {
     expect(isNoOverlapViolation(e)).toBe(false);
+  });
+});
+
+describe("isIdempotencyKeyViolation", () => {
+  it("23505 på bookings_business_id_idempotency_key_uidx", () => {
+    expect(
+      isIdempotencyKeyViolation({
+        code: "23505",
+        constraint: "bookings_business_id_idempotency_key_uidx",
+      }),
+    ).toBe(true);
+  });
+
+  it.each([
+    [{ code: "23505", constraint: "bookings_manage_token_hash_key" }],
+    [
+      {
+        code: "23P01",
+        constraint: "bookings_business_id_idempotency_key_uidx",
+      },
+    ],
+    [{ code: "23505" }],
+    [null],
+    [undefined],
+  ])("inte för %j", (e) => {
+    expect(isIdempotencyKeyViolation(e)).toBe(false);
   });
 });
 

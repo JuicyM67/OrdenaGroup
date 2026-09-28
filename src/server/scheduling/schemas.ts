@@ -24,8 +24,14 @@ import {
 
 const MAX_RANGE_DAYS = 62;
 
-const uuid = z.uuid();
-export const staffChoiceSchema = z.union([z.literal("any"), z.uuid()]);
+// `z.guid()`, inte `z.uuid()` (WP-20, granskningsfynd): `z.uuid()` kräver
+// giltig RFC 4122-version/variant i nibblarna, men Postgres `uuid`-kolumnen
+// gör det inte — och seedens läsbara "vanity"-id:n (t.ex.
+// `b0000000-0000-0000-0000-000000000001`, se supabase/seed.sql) har inte
+// det. Motorn ska acceptera exakt det databasen accepterar, inte en strängare
+// delmängd (annars nekas en riktig bokning mot ett giltigt `business_id`).
+const uuid = z.guid();
+export const staffChoiceSchema = z.union([z.literal("any"), uuid]);
 
 /** 32 byte base64url (43 tecken), se bookings/token.ts. */
 export const manageTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
@@ -36,7 +42,7 @@ export const manageTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
 
 export const actorSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("customer") }),
-  z.strictObject({ kind: z.literal("owner"), userId: z.uuid() }),
+  z.strictObject({ kind: z.literal("owner"), userId: uuid }),
 ]);
 
 export const engineContextSchema = z.strictObject({
@@ -112,6 +118,11 @@ export const createBookingRequestSchema = z.strictObject({
   start: instantSchema,
   customer: customerInputSchema,
   notes: z.string().trim().max(500).optional(),
+  // WP-20 (granskningsfynd): klientgenererad (crypto.randomUUID(), se
+  // form-schema.ts), alltid en riktig v4-uuid — `uuid` (z.guid()) accepterar
+  // den. Utan nyckel (ägarens manuella bokning) skrivs ingen rad i det
+  // partiella unika indexet (create.ts).
+  idempotencyKey: uuid.optional(),
 });
 
 /** Kundens flytt: bokningen identifieras bara med länkens token. */

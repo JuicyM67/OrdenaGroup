@@ -21,6 +21,7 @@ export type Database = {
           deposit_clp: number;
           discount_clp: number;
           id: string;
+          idempotency_key: string | null;
           manage_token_hash: string | null;
           notes: string | null;
           pending_expires_at: string | null;
@@ -44,6 +45,7 @@ export type Database = {
           deposit_clp?: number;
           discount_clp?: number;
           id?: string;
+          idempotency_key?: string | null;
           manage_token_hash?: string | null;
           notes?: string | null;
           pending_expires_at?: string | null;
@@ -67,6 +69,7 @@ export type Database = {
           deposit_clp?: number;
           discount_clp?: number;
           id?: string;
+          idempotency_key?: string | null;
           manage_token_hash?: string | null;
           notes?: string | null;
           pending_expires_at?: string | null;

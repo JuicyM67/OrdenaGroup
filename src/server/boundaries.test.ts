@@ -137,6 +137,17 @@ function sqlOffenders(code: string): string[] {
 const appApiDir = path.join(srcDir, "app", "api");
 const isTestSupport = (f: string) =>
   rel(f) === "server/db/testing.ts" || /(^|\/)__fixtures__\//.test(rel(f));
+
+/**
+ * WP-20 (granskningsfynd): den enda tillåtna `businesses`-frågan utan
+ * `business_id`/`id = $N` i produktionskod — löser en okänd, klientstyrd
+ * `slug` (`/[slug]`-routen) till den betrodda `businessId` som all annan kod
+ * sedan filtrerar på (ARCHITECTURE princip 3). Kan inte filtrera på sin egen
+ * primärnyckel: den är precis det uppslagningen letar upp. Undantaget gäller
+ * per fil, inte per fråga — filen ska bara göra den här ena uppslagningen,
+ * se testet nedan som bevisar att undantaget faktiskt gör något.
+ */
+const SLUG_LOOKUP_EXCEPTION = "server/bookings/business.ts";
 /** All produktionskod som kan köra SQL: src/server och src/app/api. */
 const productionSources = [
   ...serverSources,
@@ -314,9 +325,16 @@ describe("src/server gränser", () => {
     expect(productionSources.map(rel)).not.toContain("server/db/testing.ts");
     const offenders: string[] = [];
     for (const f of productionSources) {
+      if (rel(f) === SLUG_LOOKUP_EXCEPTION) continue;
       for (const s of sqlOffenders(read(f))) offenders.push(`${rel(f)}: ${s}`);
     }
     expect(offenders).toEqual([]);
+  });
+
+  it(`${SLUG_LOOKUP_EXCEPTION} finns och skulle annars ha flaggats (bevisar att undantaget gör något)`, () => {
+    const f = productionSources.find((x) => rel(x) === SLUG_LOOKUP_EXCEPTION);
+    expect(f).toBeDefined();
+    expect(sqlOffenders(read(f!))).not.toEqual([]);
   });
 
   it("bara testkod importerar @/server/db/testing", () => {

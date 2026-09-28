@@ -1,7 +1,10 @@
 import "server-only";
 
 import type { E164 } from "@/lib/format/phone";
-import { isNoOverlapViolation } from "@/server/db/errors";
+import {
+  isIdempotencyKeyViolation,
+  isNoOverlapViolation,
+} from "@/server/db/errors";
 import { lockStaffForBooking } from "@/server/db/locks";
 import type { Queryable } from "@/server/db/pool";
 import { toTstzrange } from "@/server/db/tstzrange";
@@ -80,7 +83,57 @@ export type CreateInput = {
   source: BookingSource;
   actor: Actor;
   now: Date;
+  /** WP-20 (granskningsfynd): ett omförsök med samma nyckel returnerar den
+   * befintliga bokningen i stället för att försöka skapa en till. */
+  idempotencyKey?: string | undefined;
 };
+
+type IdempotencyRow = {
+  id: string;
+  staff_id: string;
+  service_id: string;
+  customer_id: string;
+  s: number;
+  pe: number;
+  price_clp: number;
+};
+
+/**
+ * Den bokning som redan finns för `(business_id, idempotencyKey)` — ett
+ * omförsök (svaret tappades förra gången, men bokningen committades).
+ * `manageToken` kan inte återskapas (bara hashen sparas, R6/qa) och lämnas
+ * tom: inget i WP-20 läser den (`BookingActionOk` har inget tokenfält).
+ */
+async function findByIdempotencyKey(
+  q: Queryable,
+  businessId: string,
+  idempotencyKey: string,
+): Promise<CreatedBooking | undefined> {
+  const r = await q.query<IdempotencyRow>(
+    `select id, staff_id, service_id, customer_id, price_clp,
+            extract(epoch from lower(period))::float8 * 1000 as s,
+            extract(epoch from upper(period))::float8 * 1000 as pe
+       from public.bookings
+      where business_id = $1 and idempotency_key = $2`,
+    [businessId, idempotencyKey],
+  );
+  const x = r.rows[0];
+  if (!x) return undefined;
+  return {
+    id: x.id,
+    businessId,
+    staffId: x.staff_id,
+    serviceId: x.service_id,
+    customerId: x.customer_id,
+    start: new Date(Math.round(x.s)).toISOString(),
+    end: new Date(Math.round(x.pe)).toISOString(),
+    priceClp: x.price_clp,
+    discountClp: 0,
+    depositClp: 0,
+    status: "confirmed",
+    manageToken: "",
+  };
+}
 
 /** Inre steg (för tester): kör i anroparens transaktion. */
 export async function createIn(
@@ -88,6 +141,22 @@ export async function createIn(
   input: CreateInput,
 ): Promise<Result<CreatedBooking, BookingError>> {
   const start = input.start.getTime();
+
+  // Omförsök (granskningsfynd): kollas allra först, före `loadSnapshot`/
+  // `checkStart`. En riktig omförsök (svaret tappades, klienten skickar om
+  // exakt samma formulär) skulle annars underkännas av motorns egen
+  // tillgänglighetskontroll — den redan committade bokningen gör ju att
+  // exakt den kandidaten/tiden inte längre "fits" (`checkStart` ser den som
+  // upptagen av sig själv och svarar `slot_taken`, aldrig en nyckelkrock).
+  if (input.idempotencyKey) {
+    const existing = await findByIdempotencyKey(
+      q,
+      input.businessId,
+      input.idempotencyKey,
+    );
+    if (existing) return ok(existing);
+  }
+
   const loaded = await loadSnapshot(q, {
     businessId: input.businessId,
     serviceId: input.serviceId,
@@ -131,9 +200,9 @@ export async function createIn(
           `insert into public.bookings
              (business_id, staff_id, service_id, customer_id, period, blocked,
               status, source, price_clp, discount_clp, deposit_clp,
-              manage_token_hash, notes)
+              manage_token_hash, notes, idempotency_key)
            values ($1, $2, $3, $4, $5::tstzrange, $6::tstzrange,
-                   'confirmed', $7::public.booking_source, $8, 0, 0, $9, $10)
+                   'confirmed', $7::public.booking_source, $8, 0, 0, $9, $10, $11)
            returning id`,
           [
             input.businessId,
@@ -146,6 +215,7 @@ export async function createIn(
             priceClp,
             hash,
             input.notes ?? null,
+            input.idempotencyKey ?? null,
           ],
         );
         return r.rows[0]!.id;
@@ -165,9 +235,37 @@ export async function createIn(
         manageToken: token,
       });
     } catch (e) {
+      // Nyckelkrock (sällsynt här — den vanliga vägen fångas redan av
+      // kontrollen ovan, före låsningen): en konkurrerande omförsök hann
+      // committa mellan den kontrollen och det här insert-försöket.
+      if (isIdempotencyKeyViolation(e)) {
+        const existing = input.idempotencyKey
+          ? await findByIdempotencyKey(
+              q,
+              input.businessId,
+              input.idempotencyKey,
+            )
+          : undefined;
+        if (existing) return ok(existing);
+        throw e; // raden borta samtidigt (extremt osannolikt): programmeringsfel.
+      }
       if (!isNoOverlapViolation(e)) throw e;
-      // Någon hann före: prova nästa profesional ("Cualquiera").
+      // Någon hann före: prova nästa profesional ("Cualquiera"). Kan också
+      // bero på en konkurrerande omförsök med samma nyckel (samma kandidat,
+      // samma tid) — sista kontrollen nedan täcker det fallet.
     }
+  }
+  // Sista skyddsnätet (granskningsfynd): alla kandidater gav `no_overlap`
+  // mot en konkurrerande omförsök som committade EFTER kontrollen ovan men
+  // FÖRE insert-försöken — den ger alltså aldrig en 23505 att fånga i
+  // `catch`, bara `no_overlap` mot sin egen, redan committade rad.
+  if (input.idempotencyKey) {
+    const existing = await findByIdempotencyKey(
+      q,
+      input.businessId,
+      input.idempotencyKey,
+    );
+    if (existing) return ok(existing);
   }
   return err("slot_taken");
 }
