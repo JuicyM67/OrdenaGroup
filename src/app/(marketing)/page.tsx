@@ -25,6 +25,8 @@ import { Card } from "@/components/ui/card";
 import { LogoMark } from "@/components/ui/logo-mark";
 import { TextLink } from "@/components/ui/text-link";
 import { strokeCard } from "@/components/ui/icons";
+import { DecorativeBlob } from "@/components/marketing/decorative-blob";
+import { HeroVisualPreview } from "@/components/marketing/hero-visual-preview";
 import { brand } from "@/config/brand";
 import { landing, nav, PLANES_LANDING } from "@/i18n";
 import { formatClp } from "@/lib/format/clp";
@@ -76,6 +78,12 @@ const PREGUNTAS = [
   landing.preguntas.items.ayudaConfig,
 ] as const;
 
+const HERO_STATS = [
+  landing.heroStats.siempreAbierto,
+  landing.heroStats.minutos,
+  landing.heroStats.comision,
+] as const;
+
 export default function LandingPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
@@ -122,27 +130,77 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="mx-auto max-w-6xl px-4 py-10 sm:px-8 sm:py-14">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-stretch">
+            <Card
+              as="section"
+              aria-label={landing.hero.titulo({ tagline: brand.tagline })}
+              tone="lime"
+              radius="hero"
+              padding="xl"
+              className="relative flex flex-col justify-between gap-6 lg:w-1/2"
+            >
+              <DecorativeBlob
+                tone="lilac"
+                className="pointer-events-none absolute -top-3 -right-3 z-0 size-8 opacity-90 sm:-top-7 sm:-right-7 sm:size-14"
+              />
+              <div className="relative z-10 flex flex-col gap-4">
+                <span className="inline-flex w-fit items-center rounded-full bg-ink px-3.5 py-1.5 text-13 font-bold tracking-caps text-on-dark uppercase">
+                  {landing.hero.etiqueta}
+                </span>
+                <h1 className="font-display text-30 leading-hero font-semibold tracking-display text-ink sm:text-40">
+                  {landing.hero.titulo({ tagline: brand.tagline })}
+                </h1>
+                <p className="max-w-md text-16 leading-relaxed text-on-lime-soft">
+                  {landing.hero.subtitulo}
+                </p>
+              </div>
+              <div className="relative z-10 flex flex-col flex-wrap gap-3 sm:flex-row">
+                <Button asChild variant="primary" size="xl">
+                  <Link href="/login">{landing.hero.ctaPrimario}</Link>
+                </Button>
+                <Button asChild variant="secondary" size="xl">
+                  <Link href="/barberia-norte">
+                    {landing.hero.ctaSecundario}
+                  </Link>
+                </Button>
+              </div>
+            </Card>
+
+            <HeroVisualPreview className="lg:w-1/2" />
+          </div>
+
           <Card
-            as="section"
-            aria-label={landing.hero.titulo({ tagline: brand.tagline })}
             tone="dark"
             radius="hero"
             padding="xl"
-            className="flex flex-col gap-6"
+            className="relative mt-5 flex flex-col gap-8 sm:flex-row sm:items-center sm:justify-between"
           >
-            <h1 className="font-display text-30 leading-hero font-semibold tracking-display text-on-dark sm:text-40">
-              {landing.hero.titulo({ tagline: brand.tagline })}
-            </h1>
-            <p className="max-w-2xl text-16 leading-relaxed text-on-dark-soft">
-              {landing.hero.subtitulo}
-            </p>
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild variant="accent" size="xl">
-                <Link href="/login">{landing.hero.ctaPrimario}</Link>
-              </Button>
-              <Button asChild variant="outline-dark" size="xl">
-                <Link href="/barberia-norte">{landing.hero.ctaSecundario}</Link>
-              </Button>
+            <DecorativeBlob
+              tone="lime"
+              className="pointer-events-none absolute -bottom-3 -left-3 z-0 size-8 opacity-80 sm:-bottom-7 sm:-left-7 sm:size-14"
+            />
+            <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:gap-10">
+              {HERO_STATS.map((stat) => (
+                <div key={stat.etiqueta} className="flex flex-col gap-1">
+                  <span className="font-display text-38 font-semibold tracking-display">
+                    {stat.valor}
+                  </span>
+                  <span className="max-w-48 text-13 text-on-dark-muted">
+                    {stat.etiqueta}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="relative z-10 flex flex-col gap-3 sm:max-w-70 sm:items-end sm:text-right">
+              <p className="text-14 text-on-dark-soft">
+                {landing.heroStats.texto}
+              </p>
+              <TextLink
+                href="#como-funciona"
+                className="text-on-dark hover:text-lime"
+              >
+                {landing.heroStats.cta}
+              </TextLink>
             </div>
           </Card>
         </section>

@@ -24,6 +24,23 @@ test("renderar med rubrik, nav och CTA:er", async ({ page }) => {
   ).toBeVisible();
 });
 
+test("hero: etiqueta, vista previa de producto y banda de cifras", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await expect(page.getByText(landing.hero.etiqueta)).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: landing.hero.vistaPreviaAria }),
+  ).toBeVisible();
+  await expect(
+    page.getByText(landing.heroStats.siempreAbierto.valor),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: landing.heroStats.cta }),
+  ).toHaveAttribute("href", "#como-funciona");
+});
+
 test('"Entrar" lleva a /login', async ({ page, isMobile }) => {
   test.skip(
     isMobile,
