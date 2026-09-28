@@ -36,3 +36,6 @@ Hämtat 2026-09-28. **Bara innehåll**: det gamla varumärket och den gamla desi
 
 ## Kundcitat (gamla, kan inte återanvändas utan tillstånd)
 - "Otroligt smidigt: kunderna bokar själva och jag slipper telefonen."
+
+## Priser (beslutade av ägaren 2026-09-28)
+Månadspris per plan, samma tre planer som i Chile: **299 kr, 499 kr och 799 kr**, exklusive moms. Belopp lagras som heltal öre (29900, 49900, 79900), se D-025.
