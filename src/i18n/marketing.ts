@@ -6,6 +6,7 @@
 import { market } from "@/config/brand";
 
 import * as esCL from "./es-CL";
+import * as svSE from "./sv-SE";
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för literaler. */
 type Widen<T> = T extends string
@@ -39,9 +40,9 @@ export type MarketingCopy = Widen<
 > & { readonly PLANES: readonly PlanTexto[] };
 
 const cl: MarketingCopy = { ...esCL, PLANES: esCL.PLANES_LANDING };
+const se: MarketingCopy = { ...svSE };
 
-// SE läggs till när sv-SE.ts finns: `const se: MarketingCopy = { ...svSE }`.
-const copies: Record<typeof market, MarketingCopy> = { CL: cl, SE: cl };
+const copies: Record<typeof market, MarketingCopy> = { CL: cl, SE: se };
 
 export const copy: MarketingCopy = copies[market];
 
