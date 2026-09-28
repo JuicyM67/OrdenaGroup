@@ -4,11 +4,13 @@
 // (EventBlock/NextClientCard/ServiceCard/TimeSlot), för de kräver knappar, onClick och
 // fulla datamodeller som inte passar en `aria-hidden`-dekoration. Det här är den
 // "förenklad preview-variant" som specen tillåter: samma tokens/klasser och samma
-// vy-hjälpare (`staffBgClass`) som de riktiga komponenterna, inga egna färger.
+// vy-hjälpare (`staffBgClass`) som de riktiga komponenterna, inga egna färger. Text via
+// `copy` (WP-hemsida, D-025/D-026), aldrig direkt från `@/i18n`, så bytet av marknad
+// (CL/SE) räcker för att byta text här också.
 import { staffBgClass } from "@/components/agenda/agenda-view";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
-import { estados, hoy, landing } from "@/i18n";
+import { copy } from "@/i18n/marketing";
 import { formatClp } from "@/lib/format/clp";
 import { formatDuration } from "@/lib/format/dates";
 import { WEEKDAY_MIN } from "@/lib/format/calendar-es-CL";
@@ -59,7 +61,7 @@ function AgendaEvent({ event }: { event: MiniEvent }) {
     >
       {event.flash ? (
         <Chip size="tag" tone="ink" className="mb-0.75 w-fit self-start">
-          {estados.flashConDescuento({ porcentaje: 20 })}
+          {copy.estados.flashConDescuento({ porcentaje: 20 })}
         </Chip>
       ) : null}
       <span className="truncate text-event-title leading-event font-bold">
@@ -76,7 +78,7 @@ export function HeroVisualPreview({ className }: { className?: string }) {
   return (
     <div
       role="img"
-      aria-label={landing.hero.vistaPreviaAria}
+      aria-label={copy.landing.hero.vistaPreviaAria}
       className={cn(
         // Alla lager är `absolute` (ingen egen flödeshöjd), så ytan behöver en egen höjd
         // på mobil/tablet. Från `lg` stretchar flex-raden (items-stretch) den i stället
@@ -153,10 +155,10 @@ export function HeroVisualPreview({ className }: { className?: string }) {
       >
         <div className="flex flex-col items-start gap-2">
           <span className="text-13 text-on-dark-muted">
-            {hoy.siguiente({ relativo: hoy.relativo.enMin({ n: 20 }) })}
+            {copy.hoy.siguiente({ relativo: copy.hoy.relativo.enMin({ n: 20 }) })}
           </span>
           <Chip size="sm" weight="bold" tone="success" className="shrink-0">
-            {estados.confirmada}
+            {copy.estados.confirmada}
           </Chip>
         </div>
         <div className="mt-3 font-display text-32 leading-none font-semibold tracking-display">
@@ -165,10 +167,10 @@ export function HeroVisualPreview({ className }: { className?: string }) {
         <div className="mt-2 truncate text-16 font-bold">Joaquín Rivas</div>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <span className="flex h-10 items-center justify-center rounded-control bg-lime text-13 font-bold text-ink">
-            {hoy.acciones.llego}
+            {copy.hoy.acciones.llego}
           </span>
           <span className="flex h-10 items-center justify-center rounded-control border border-dark-border text-13 font-semibold text-on-dark">
-            {hoy.acciones.noVino}
+            {copy.hoy.acciones.noVino}
           </span>
         </div>
       </div>
