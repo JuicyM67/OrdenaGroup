@@ -9,10 +9,15 @@
 // saknar data helt, så hela testet hoppas över då. Ett enda test (inte flera): undviker
 // upprepade magic-link-inloggningar mot samma e-post (max_frequency 1s, supabase/config.toml)
 // och håller filen billig att köra — se CLAUDE.md "spara tokens".
+//
+// WP-21b (samma test, samma inloggade session — ingen ny magic-link): manuell bokning och
+// flytt. "18:11"/"18:31" (nära stängning, utanför rutnätet) är valda för att sannolikt vara
+// lediga hos alla tre profesionales oavsett vilken veckodag testet råkar köras (seedens
+// bokningar ligger på hela/halva timmar tidigare på dagen, se supabase/seed.sql).
 import { expect, test } from "@playwright/test";
 import pg from "pg";
 
-import { reserva } from "../src/i18n";
+import { agenda, comun, reserva } from "../src/i18n";
 import { waitForConfirmLink } from "./helpers/mailpit";
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -72,7 +77,25 @@ async function bookedLocalDateFor(name: string): Promise<string> {
   });
 }
 
-test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, och en ny reserva på /barberia-norte syns i Agenda", async ({
+/** Den lokala tiden (America/Santiago, "HH:MM") för kundens senast skapade bokning. */
+async function bookedLocalTimeFor(name: string): Promise<string> {
+  return withDb(async (client) => {
+    const r = await client.query<{ local_time: string }>(
+      `select to_char(lower(bk.period) at time zone 'America/Santiago', 'HH24:MI') as local_time
+         from public.bookings bk
+         join public.customers c on c.id = bk.customer_id
+        where c.name = $1
+        order by bk.created_at desc
+        limit 1`,
+      [name],
+    );
+    const row = r.rows[0];
+    if (!row) throw new Error(`ingen bokning hittad för ${name}`);
+    return row.local_time;
+  });
+}
+
+test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reserva på /barberia-norte syns i Agenda, och en manuell bokning kan skapas och flyttas (WP-21b)", async ({
   page,
 }, testInfo) => {
   const today = new Intl.DateTimeFormat("en-CA", {
@@ -217,4 +240,73 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, och en ny r
   const bookedDate = await bookedLocalDateFor(newCustomer);
   await page.goto(`/app/agenda?vista=dia&fecha=${bookedDate}`);
   await expect(page.getByText(newCustomer)).toBeVisible();
+
+  // --- WP-21b: reserva manual desde Agenda ("Nueva reserva") ---
+  await page.goto(`/app/agenda?vista=dia&fecha=${today}`);
+  const manualCustomer = `E2E Manual ${testInfo.workerIndex}-${Date.now()}`;
+  const manualPhone = `+569${Math.floor(10_000_000 + Math.random() * 89_999_999)}`;
+
+  // Hay dos botones con el mismo nombre accesible: el de AgendaRail (decorativo, sin
+  // handler, WP-12) y el de AgendaToolbar (el real, WP-21b) — este último es el último
+  // en el DOM (AgendaShell: rail, aside, main).
+  await page.getByRole("button", { name: agenda.nuevaReserva }).last().click();
+  const manualDialog = page.getByRole("dialog", {
+    name: agenda.manual.tituloNueva,
+  });
+  await expect(manualDialog).toBeVisible();
+  await manualDialog
+    .getByLabel(agenda.manual.campos.servicio, { exact: true })
+    .selectOption({ label: "Corte clásico" });
+  await manualDialog
+    .getByLabel(agenda.manual.campos.dia, { exact: true })
+    .fill(today);
+  await manualDialog
+    .getByLabel(agenda.manual.campos.hora, { exact: true })
+    .fill("18:11");
+  await manualDialog
+    .getByLabel(agenda.manual.campos.cliente, { exact: true })
+    .fill(manualCustomer);
+  await manualDialog
+    .getByLabel(agenda.manual.campos.telefono, { exact: true })
+    .fill(manualPhone);
+  await manualDialog
+    .getByRole("button", { name: agenda.manual.ctaGuardar })
+    .click();
+  await expect(manualDialog).toBeHidden();
+
+  await page.goto(`/app/agenda?vista=dia&fecha=${today}`);
+  await expect(page.getByText(manualCustomer)).toBeVisible();
+  expect(await bookedLocalTimeFor(manualCustomer)).toBe("18:11");
+
+  // --- WP-21b: mover la reserva manual a otra hora, desde el popover ---
+  await page.getByText(manualCustomer).click();
+  await page
+    .getByRole("dialog", { name: "Detalle de la reserva" })
+    .getByRole("button", { name: agenda.popover.acciones.mover })
+    .click();
+  const moveDialog = page.getByRole("dialog", { name: agenda.mover.titulo });
+  await expect(moveDialog).toBeVisible();
+  await moveDialog
+    .getByLabel(agenda.manual.campos.dia, { exact: true })
+    .fill(today);
+  // 18:20 + 35 min (Corte clásico) = 18:55, dentro del horario (cierra 19:00) — 18:31
+  // se pasaría de la hora de cierre y daría outside_hours.
+  await moveDialog
+    .getByLabel(agenda.manual.campos.hora, { exact: true })
+    .fill("18:20");
+  await moveDialog.getByRole("button", { name: comun.confirmar }).click();
+  // El título del diálogo cambia al confirmar (paso 2) — el nombre accesible de
+  // `moveDialog` ya no aplica, así que se usa un locator nuevo con el título del paso 2.
+  const confirmStep = page.getByRole("dialog", {
+    name: agenda.confirmarAviso.mover.titulo,
+  });
+  await expect(confirmStep).toBeVisible();
+  await confirmStep
+    .getByRole("button", { name: agenda.confirmarAviso.mover.ctaSi })
+    .click();
+  await expect(confirmStep).toBeHidden();
+
+  await page.reload();
+  await expect(page.getByText(manualCustomer)).toBeVisible();
+  expect(await bookedLocalTimeFor(manualCustomer)).toBe("18:20");
 });

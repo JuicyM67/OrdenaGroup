@@ -33,7 +33,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | ID | Titel | Agent | Beror på | F# | Status |
 |---|---|---|---|---|---|
 | WP-20 | Koppla Reserva mot schemamotorn, samtycken, bekräftelse, kundens `r/[token]`-sida (se, flytta, avboka) | ui-engineer + scheduling-engineer | WP-10, WP-13, WP-16 | F5, F7 | ◐ (slim: `/{slug}` mot riktig data + samtycke klart, se docs/tasks/plans/WP-20.md; väntelistan, `r/[token]`, e-post/WhatsApp, handpenning kvar) |
-| WP-21 | Koppla Agenda/Hoy/Inicio mot riktig data, manuell bokning, Llegó/No vino | ui-engineer | WP-10, WP-11, WP-12, WP-14 | F6, F9 | ◐ |
+| WP-21 | Koppla Agenda/Hoy/Inicio mot riktig data, manuell bokning, Llegó/No vino | ui-engineer | WP-10, WP-11, WP-12, WP-14 | F6, F9 | ◐ (slim: riktig data + Llegó/No vino klart, se docs/tasks/plans/WP-21.md; manuell bokning + flytt klart, se docs/tasks/plans/WP-21b.md; Caja och väntelista kvar) |
 | WP-22 | Påminnelser 24 h + knappsvar Confirmo/Necesito cambiar | integrations-engineer | WP-16, WP-20 | F7 | ☐ |
 | WP-23 | Väntelista end-to-end (sequential + broadcast) | scheduling-engineer + integrations-engineer | WP-10, WP-16 | F8 | ☐ |
 | WP-24 | Kassa: markera betald, summeringar | ui-engineer + db-engineer | WP-21 | F10 | ☐ |
