@@ -5,22 +5,44 @@
 // svarskroppen trots status 404). proxy.ts (Next 16:s efterträdare till middleware.ts, se
 // https://nextjs.org/docs/messages/middleware-to-proxy) kör innan routing/rendering och kan
 // därför svara med en tom 404 utan att någon sida någonsin renderas.
-import { NextResponse } from "next/server";
+//
+// WP-15: samma fil förnyar nu även Supabase-sessionen (`refreshSupabaseSession`) och
+// stänger `/app/*` för utloggade (redirect till `/login`) — matcher utökad nedan, medvetet
+// snävt (bara de rutter som behöver det), inte alla rutter (D-019/§"Delade mappar").
+// `/login` och `/auth/*` matchas också, så att en redan inloggad ägare som öppnar `/login`
+// kan skickas vidare av sidan själv (page.tsx), med färska cookies.
+import { NextResponse, type NextRequest } from "next/server";
 
 import { isDesignLabEnabled } from "@/app/design-lab/gate";
+import { refreshSupabaseSession } from "@/lib/supabase/proxy";
 
-export function proxy() {
-  if (
-    !isDesignLabEnabled({
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      DESIGN_LAB: process.env.DESIGN_LAB,
-    })
-  ) {
-    return new NextResponse(null, { status: 404 });
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  if (pathname.startsWith("/design-lab")) {
+    if (
+      !isDesignLabEnabled({
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        DESIGN_LAB: process.env.DESIGN_LAB,
+      })
+    ) {
+      return new NextResponse(null, { status: 404 });
+    }
+    return NextResponse.next();
   }
-  return NextResponse.next();
+
+  const { response, userId } = await refreshSupabaseSession(request);
+
+  if (pathname.startsWith("/app") && userId === null) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  return response;
 }
 
 export const config = {
-  matcher: "/design-lab/:path*",
+  matcher: ["/design-lab/:path*", "/app/:path*", "/login", "/auth/:path*"],
 };
