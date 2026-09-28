@@ -7,8 +7,12 @@ import { waitForConfirmLink } from "./helpers/mailpit";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
-test("login → onboarding → länk till bokningssidan", async ({ page }) => {
-  const email = `wp15-flow-${Date.now()}@example.test`;
+test("login → onboarding → länk till bokningssidan", async ({
+  page,
+}, testInfo) => {
+  // Unik per projekt: desktop och mobil kör parallellt, och samma adress inom
+  // en sekund stoppas av Supabase (`max_frequency`).
+  const email = `wp15-flow-${testInfo.project.name}-${Date.now()}@example.test`;
 
   await page.goto("/login");
   await page.getByLabel("Correo").fill(email);

@@ -12,7 +12,10 @@ API="https://api.supabase.com/v1/projects/$REF"
 
 read -rsp "Supabase access token (sbp_…): " TOKEN; echo
 read -rsp "Databaslösenord för staging: " DBPASS; echo
-auth=(-H "Authorization: Bearer $TOKEN")
+# Token i en temporär headerfil (0600), inte som curl-argument (syns annars i `ps`).
+HDR=$(mktemp); chmod 600 "$HDR"; trap 'rm -f "$HDR"' EXIT
+printf 'Authorization: Bearer %s\n' "$TOKEN" > "$HDR"; unset TOKEN
+auth=(-H "@$HDR")
 
 echo "1/4 Hämtar publik nyckel…"
 PUBLISHABLE=$(curl -fsS "${auth[@]}" "$API/api-keys?reveal=true" | python3 -c '
@@ -26,9 +29,11 @@ echo "2/4 Hämtar anslutning via Supavisor (transaction mode)…"
 DBURL=$(curl -fsS "${auth[@]}" "$API/config/database/pooler" | python3 -c '
 import json,sys
 pools=json.load(sys.stdin)
-p=[x for x in pools if x.get("pool_mode")=="transaction"] or pools
+p=[x for x in pools if x.get("pool_mode")=="transaction"]
+if not p: sys.exit("Ingen pool i transaction mode hittades")
 print(p[0]["connection_string"])')
-DBURL="${DBURL/\[YOUR-PASSWORD\]/$DBPASS}"
+ENCPASS=$(DBPASS="$DBPASS" python3 -c 'import os,urllib.parse;print(urllib.parse.quote(os.environ["DBPASS"],safe=""))')
+DBURL="${DBURL/\[YOUR-PASSWORD\]/$ENCPASS}"; unset DBPASS ENCPASS
 echo "   ${DBURL%%:*}://…@${DBURL##*@}"
 
 echo "3/4 Sätter inloggningslänkar i Supabase Auth…"
@@ -40,6 +45,7 @@ print(json.dumps({
   "uri_allow_list": os.environ["APP_URL"] + "/auth/confirm",
   "mailer_subjects_magic_link": "Tu link para entrar",
   "mailer_templates_magic_link_content": (d/"magic_link.html").read_text(),
+  "mailer_otp_exp": 900,
   "mailer_subjects_confirmation": "Confirma tu cuenta",
   "mailer_templates_confirmation_content": (d/"confirmation.html").read_text(),
 }))')
