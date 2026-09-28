@@ -105,8 +105,17 @@ jobs:
       # senare CLI-version tar bort flaggan är alternativet att köra
       # `supabase/tests/*.sql` manuellt med `psql "$DATABASE_URL" -f <fil>`
       # mot samma anslutningssträng som `db push` använde.
+      # 070_seed_sanity förutsätter en nyss seedad databas (t.ex. exakt 23
+      # bokningar) och körs därför bara efter reseed; staging används för test.
       - name: Kör pgTAP mot staging
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
-        run: npx supabase test db --linked
+          RESEED: ${{ github.event_name == 'workflow_dispatch' && inputs.reseed == true }}
+        run: |
+          if [ "$RESEED" = "true" ]; then
+            npx supabase test db --linked
+          else
+            mapfile -t files < <(ls supabase/tests/*.test.sql | grep -v 070_seed_sanity)
+            npx supabase test db --linked "${files[@]}"
+          fi
