@@ -35,33 +35,16 @@ test.describe("Agenda — rutter", () => {
     expect(response?.status()).toBe(200);
   });
 
-  test("/app/agenda svarar 200 (grind öppen lokalt/i CI, D-020)", async ({
+  // WP-21: /app/agenda visar riktig data (D-020s grind borttagen, D-024). Den delade
+  // storageState-sessionen (playwright.config.ts) saknar företag, så den redirectas till
+  // onboarding, precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
+  // innehåll (noindex, ?vista=&fecha=, en ägare MED företag) testas i e2e/owner-live.spec.ts,
+  // som loggar in som den seedade ägaren i stället.
+  test("/app/agenda utan negocio → redirige a /app/onboarding", async ({
     page,
   }) => {
-    const response = await page.goto("/app/agenda");
-    expect(response?.status()).toBe(200);
-  });
-
-  test("/app/agenda har noindex", async ({ page }) => {
     await page.goto("/app/agenda");
-    const robots = page.locator('meta[name="robots"]');
-    await expect(robots).toHaveAttribute("content", /noindex/);
-  });
-
-  test("/app/agenda?vista=dia&fecha=2026-10-02 visar dagvyn", async ({
-    page,
-  }) => {
-    await page.goto("/app/agenda?vista=dia&fecha=2026-10-02");
-    await expect(page.getByRole("radio", { name: "Día" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    await expect(
-      page
-        .getByTestId("day-column")
-        .first()
-        .getByText("Diego", { exact: true }),
-    ).toBeVisible();
+    await page.waitForURL("**/app/onboarding");
   });
 });
 
@@ -277,20 +260,16 @@ test.describe("Agenda — tangentbord", () => {
   });
 });
 
-test.describe("Agenda — 1280×800", () => {
+// "Agenda — 1280×800, ingen horisontell scroll på /app/agenda": flyttad till
+// e2e/owner-live.spec.ts (WP-21) — kräver en ägare MED företag, som den delade
+// storageState-sessionen här saknar (se "Agenda — rutter" ovan).
+test.describe("Agenda — panelen scrollar vertikalt inuti (inte sidan)", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
-  test("ingen horisontell scroll, rutnätet scrollar vertikalt inuti panelen", async ({
+  test("rutnätet scrollar vertikalt inuti panelen (/design-lab/agenda)", async ({
     page,
   }) => {
-    await page.goto("/app/agenda");
-    const overflow = await page.evaluate(
-      () =>
-        document.documentElement.scrollWidth <=
-        document.documentElement.clientWidth,
-    );
-    expect(overflow).toBe(true);
-
+    await page.goto("/design-lab/agenda");
     const panel = page.getByTestId("time-grid").locator("> div").first();
     const canScroll = await panel.evaluate(
       (el) => el.scrollHeight > el.clientHeight,

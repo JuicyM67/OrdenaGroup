@@ -1,0 +1,220 @@
+// WP-21: ägaren ser sina RIKTIGA bokningar (inte fixtures) i Inicio/Agenda/Hoy, och Llegó
+// sparas mot databasen. Loggar in som den seedade ägaren (supabase/seed.sql,
+// dueno@example.com → "Barbería Norte", slug barberia-norte) i stället för den delade
+// storageState-sessionen (playwright.config.ts): den ägaren saknar företag (redirectas till
+// /app/onboarding, se e2e/onboarding.spec.ts) och har inga bokningar att visa. Egen, fräsch
+// session (som e2e/onboarding.spec.ts).
+//
+// seed.sql lägger bokningar måndag–lördag i DEN AKTUELLA veckan (relativt db reset); söndag
+// saknar data helt, så hela testet hoppas över då. Ett enda test (inte flera): undviker
+// upprepade magic-link-inloggningar mot samma e-post (max_frequency 1s, supabase/config.toml)
+// och håller filen billig att köra — se CLAUDE.md "spara tokens".
+import { expect, test } from "@playwright/test";
+import pg from "pg";
+
+import { reserva } from "../src/i18n";
+import { waitForConfirmLink } from "./helpers/mailpit";
+
+test.use({ storageState: { cookies: [], origins: [] } });
+test.skip(
+  ({ isMobile }) => isMobile,
+  "ett enda test (desktop-projektet); byter viewport internt för 360 px-kontrollerna",
+);
+
+const OWNER_EMAIL = "dueno@example.com";
+const DATABASE_URL =
+  process.env.DATABASE_URL ??
+  "postgresql://postgres:postgres@127.0.0.1:54322/postgres";
+
+async function withDb<T>(fn: (client: pg.Client) => Promise<T>): Promise<T> {
+  const client = new pg.Client({ connectionString: DATABASE_URL });
+  await client.connect();
+  try {
+    return await fn(client);
+  } finally {
+    await client.end();
+  }
+}
+
+/** Bokningens status för kunden `name` (senast skapad först — den nya reservan). */
+async function bookingStatusFor(name: string): Promise<string> {
+  return withDb(async (client) => {
+    const r = await client.query<{ status: string }>(
+      `select bk.status::text as status
+         from public.bookings bk
+         join public.customers c on c.id = bk.customer_id
+        where c.name = $1
+        order by bk.created_at desc
+        limit 1`,
+      [name],
+    );
+    const row = r.rows[0];
+    if (!row) throw new Error(`ingen bokning hittad för ${name}`);
+    return row.status;
+  });
+}
+
+/** Det lokala datumet (America/Santiago) för kundens senast skapade bokning. */
+async function bookedLocalDateFor(name: string): Promise<string> {
+  return withDb(async (client) => {
+    const r = await client.query<{ local_date: string }>(
+      `select to_char(lower(bk.period) at time zone 'America/Santiago', 'YYYY-MM-DD') as local_date
+         from public.bookings bk
+         join public.customers c on c.id = bk.customer_id
+        where c.name = $1
+        order by bk.created_at desc
+        limit 1`,
+      [name],
+    );
+    const row = r.rows[0];
+    if (!row) throw new Error(`ingen bokning hittad för ${name}`);
+    return row.local_date;
+  });
+}
+
+test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, och en ny reserva på /barberia-norte syns i Agenda", async ({
+  page,
+}, testInfo) => {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Santiago",
+  }).format(new Date());
+  const weekday = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Santiago",
+    weekday: "short",
+  }).format(new Date());
+  test.skip(weekday === "Sun", "seed.sql lägger inga bokningar på söndagar");
+
+  // --- Inloggning: den seedade ägaren (redan ett företag) ---
+  await page.goto("/login");
+  await page.getByLabel("Correo").fill(OWNER_EMAIL);
+  await page.getByRole("button", { name: "Enviarme el link" }).click();
+  await expect(
+    page.getByText(`Te enviamos un link a ${OWNER_EMAIL}.`),
+  ).toBeVisible();
+  const link = await waitForConfirmLink(OWNER_EMAIL);
+  await page.goto(link);
+  await page.waitForURL("**/app/inicio");
+
+  // --- Inicio: företagets riktiga namn (inte fixturens "Barbería Norte" i design lab-vis,
+  // det ÄR samma namn i seeden — men det bevisar ändå att sidan läser businesses.name). ---
+  await expect(page.getByText("Barbería Norte").first()).toBeVisible();
+
+  // --- 1280×800: sin scroll horizontal (F6, min 1280 px). Om heroen klipps eller inte
+  // beror på texternas längd i de tomma tillstånden (inga pixeltester i WP-21, se
+  // CLAUDE.md — det hör till npm run visual). ---
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto("/app/inicio");
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+
+  // --- Agenda: noindex + dagvyn för idag visar en riktig bokning ur seeden ---
+  await page.goto("/app/agenda");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex/,
+  );
+
+  await page.goto(`/app/agenda?vista=dia&fecha=${today}`);
+  await expect(page.getByRole("radio", { name: "Día" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  const firstBlock = page.getByTestId("event-block").first();
+  await expect(firstBlock).toBeVisible();
+
+  // --- 1280×800: sin scroll horizontal en Agenda (F6, min 1280 px) ---
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`/app/agenda?vista=dia&fecha=${today}`);
+  expect(
+    await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    ),
+  ).toBe(true);
+
+  // --- Llegó: marca el primer bloque de hoy y persiste tras recargar (R7) ---
+  const clientName = (
+    await page
+      .getByTestId("event-block")
+      .first()
+      .locator(".text-event-title")
+      .innerText()
+  ).trim();
+  await page.getByTestId("event-block").first().click();
+  await page
+    .getByRole("dialog", { name: "Detalle de la reserva" })
+    .getByRole("button", { name: "Llegó" })
+    .click();
+  await page.waitForTimeout(300); // server action (fire-and-forget), ver agenda-screen.tsx
+  expect(await bookingStatusFor(clientName)).toBe("completed");
+  await page.reload();
+  await page.getByTestId("event-block").first().click();
+  await expect(
+    page
+      .getByRole("dialog", { name: "Detalle de la reserva" })
+      // Statuschipen (span), inte "Llegó"-knappen (button) — samma text finns i båda.
+      .locator("span", { hasText: "Llegó" }),
+  ).toBeVisible();
+
+  // --- Hoy: noindex + sin scroll horizontal a 360 px (F6, mobil) ---
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/app/hoy");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Hoy" }),
+  ).toBeVisible();
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    /noindex/,
+  );
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(
+    360,
+  );
+
+  // --- Reserva nueva en /barberia-norte (F5) → syns i ägarens Agenda ---
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const newCustomer = `E2E WP-21 ${testInfo.workerIndex}-${Date.now()}`;
+  const newPhone = `+569${Math.floor(10_000_000 + Math.random() * 89_999_999)}`;
+
+  await page.goto("/barberia-norte");
+  await expect(
+    page.getByRole("heading", { name: "Barbería Norte" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Corte clásico/ }).click();
+  const daySection = page.locator('[aria-labelledby="paso-dia-hora"]');
+  await daySection.getByRole("button").first().waitFor();
+  await daySection.getByRole("button").first().click();
+  const firstTime = page
+    .getByRole("button", { name: /Elegir la hora/ })
+    .first();
+  await firstTime.waitFor();
+  await firstTime.click();
+  await page
+    .getByRole("button", { name: reserva.bookingBar.ctaReservar })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: reserva.clienteForm.titulo }),
+  ).toBeVisible();
+  await page.getByLabel(reserva.clienteForm.nombreLabel).fill(newCustomer);
+  await page.getByLabel(reserva.clienteForm.telefonoLabel).fill(newPhone);
+  await page
+    .getByRole("checkbox", {
+      name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
+    })
+    .check();
+  await page
+    .getByRole("button", { name: reserva.antesDeConfirmar.ctaConfirmar })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: reserva.confirmacion.titulo }),
+  ).toBeVisible();
+
+  const bookedDate = await bookedLocalDateFor(newCustomer);
+  await page.goto(`/app/agenda?vista=dia&fecha=${bookedDate}`);
+  await expect(page.getByText(newCustomer)).toBeVisible();
+});

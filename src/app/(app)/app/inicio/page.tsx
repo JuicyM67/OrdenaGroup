@@ -1,15 +1,15 @@
-// D-020 (D-019 i planen): fixture-routes är bara aktiva utanför produktion
-// (`isDesignLabEnabled`, öppen i staging med `DESIGN_LAB=1`). Testar layouten på en riktig
-// URL/fönsterstorlek utan att fiktiva bokningar syns publikt — se
-// docs/tasks/plans/WP-11.md §4 steg 7. Ingen `src/app/(app)/layout.tsx` här (utanför scope,
-// se planen §2): inloggning och den delade layouten för `(app)` är WP-15.
+// WP-21: riktig data (D-020s grind och fixtures flyttade till /design-lab/main, se
+// docs/decisions/DECISIONS.md D-024). Ägare utan företag → /app/onboarding.
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
-import { isDesignLabEnabled } from "@/app/design-lab/gate";
-import { getInicioFixtures } from "@/app/design-lab/main/fixtures";
 import { InicioScreen } from "@/components/dashboard/inicio-screen";
 import { inicio } from "@/i18n";
+import { SANTIAGO, toLocalDate } from "@/lib/format/dates";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import { loadOwnerInicio } from "@/server/owner/inicio";
+import { ownerNameParts } from "@/server/owner/shared";
 
 export const metadata: Metadata = {
   title: inicio.titulo,
@@ -19,18 +19,20 @@ export const metadata: Metadata = {
 // VERCEL_ENV måste läsas per request, se src/app/design-lab/layout.tsx.
 export const dynamic = "force-dynamic";
 
-export default function InicioPage() {
-  if (
-    !isDesignLabEnabled({
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      DESIGN_LAB: process.env.DESIGN_LAB,
-    })
-  ) {
-    notFound();
-  }
+export default async function InicioPage() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  // WP-21: ersätts av riktig data (Supabase, server actions, auth).
-  const data = getInicioFixtures("referencia");
+  const business = await getOwnerBusiness(user.id);
+  if (!business) redirect("/app/onboarding");
+
+  const now = new Date();
+  const today = toLocalDate(now, SANTIAGO);
+  const owner = ownerNameParts(user.email);
+  const data = await loadOwnerInicio(user.id, business.id, today, now, owner);
 
   return <InicioScreen data={data} />;
 }
