@@ -62,7 +62,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 
 | ID | Titel | Agent | Beror på | Status |
 |---|---|---|---|---|
-| M1 | Marknad i koden: `MARKET` (CL/SE), marknadskonfig (språk, valuta, tidszon, telefonland, id-nummer, varumärke, leverantörer), `businesses.country/currency/locale`, belopp i minsta enhet med valuta, telefon +46, organisationsnummer, varumärke per marknad i `brand.ts` | scheduling-engineer + db-engineer | – | ◐ |
+| M1 | Marknad i koden: `MARKET` (CL/SE), marknadskonfig (språk, valuta, tidszon, telefonland, id-nummer, varumärke, leverantörer), `businesses.country/currency/locale`, belopp i minsta enhet med valuta, telefon +46, organisationsnummer, varumärke per marknad i `brand.ts` | scheduling-engineer + db-engineer | – | ☐ (pausad: hemsidan först) |
 | M2 | Svenska: språkstruktur för flera språk (samma typade nycklar), `sv-SE` för alla skärmar, landning och e-post | copywriter (sv) + ui-engineer | M1 | ☐ |
 | M3 | Svensk installation: Supabase `eu-north-1`, Vercel `arn1`, domän `.se`, staging-workflow per marknad | integrations-engineer | M1 | ☐ |
 | M4 | Stripe-abonnemang (SE), ClickSend SMS (SE), svenska villkor och integritetspolicy (GDPR), moms 25 % | integrations-engineer | M2, M3 | ☐ |

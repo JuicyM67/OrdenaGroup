@@ -11,7 +11,7 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 **Varför:** Stripe används bara för att företag i Sverige ska kunna gå med och betala för sin plan. **Konsekvens:** abonnemang: Flow i CL (oförändrat), Stripe i SE. Handpenning via Mercado Pago (D-008, D-022) gäller bara CL; i SE finns ingen betalning från kunder.
 
 ### D-026 · 2026-09-28 · Varumärke per marknad
-**Varför:** ett spanskt namn fungerar inte i Sverige. **Konsekvens:** CL = "Ordena Calender", SE = "Booking Buddy" (arbetsnamn; varumärke och domäner kontrolleras hos INAPI respektive PRV/EUIPO). `src/config/brand.ts` väljer varumärke utifrån marknaden; namnet finns fortfarande bara där (regel 10). Ersätter arbetsnamnet i D-001.
+**Varför:** ett spanskt namn fungerar inte i Sverige. **Konsekvens:** CL = "Ordena Calendar", SE = "Booking Buddy" (domänen bookingbuddy.se ägs redan; varumärket kontrolleras hos INAPI respektive PRV/EUIPO). `src/config/brand.ts` väljer varumärke utifrån marknaden; namnet finns fortfarande bara där (regel 10). Ersätter arbetsnamnet i D-001.
 
 ### D-025 · 2026-09-28 · En kodbas, flera marknader, en installation per region
 **Varför:** ägaren vill driva tjänsten i både Chile och Sverige; två kopior av koden vore dubbelt underhåll, och data ska stanna i respektive region (Ley 21.719, GDPR). **Konsekvens:** miljövariabeln `MARKET` (`CL`/`SE`) styr språk, valuta, telefon, id-nummer, tidszon, varumärke och leverantörer per installation. CL: Vercel `gru1` + Supabase `sa-east-1` + domän `.cl`. SE: Vercel `arn1` + Supabase `eu-north-1` + domän `.se`. Belopp lagras i minsta enhet med valuta (CLP heltal, SEK öre). Ersätter "bara es-CL" i D-016: texter per språk (`es-CL`, `sv-SE`) med samma typade nycklar.
