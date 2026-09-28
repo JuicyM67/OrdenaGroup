@@ -340,6 +340,128 @@ test.describe("Reserva — flödet", () => {
   });
 });
 
+test.describe("Reserva — robusthet (qa-granskning)", () => {
+  test("inga hydreringsfel: tom pageerror/console-error-lista", async ({
+    page,
+  }) => {
+    const errors: string[] = [];
+    page.on("pageerror", (err) => {
+      errors.push(String(err));
+    });
+    page.on("console", (msg) => {
+      if (msg.type() === "error") errors.push(msg.text());
+    });
+
+    await page.goto("/barberia-norte");
+    await page.waitForLoadState("networkidle");
+    await page.goto("/design-lab/reserva");
+    await page.waitForLoadState("networkidle");
+    await page.goto("/design-lab/reserva?estado=datos");
+    await page.waitForLoadState("networkidle");
+
+    expect(errors).toEqual([]);
+  });
+
+  test("nätverksfel (avbrutet anrop) visar network-felet; nytt försök (samma formulär) lyckas", async ({
+    page,
+  }) => {
+    await page.goto("/barberia-norte");
+    await selectService(page, /Corte clásico/);
+    await selectDay(page, "Viernes 2 de octubre");
+    await page.getByRole("button", { name: /Elegir la hora 10:00/ }).click();
+    await page
+      .getByRole("button", { name: reserva.bookingBar.ctaReservar })
+      .click();
+    await page.getByLabel(reserva.clienteForm.nombreLabel).fill("Ana Pérez");
+    await page
+      .getByLabel(reserva.clienteForm.telefonoLabel)
+      .fill("+56 9 1234 5678");
+    await page
+      .getByRole("checkbox", {
+        name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
+      })
+      .check();
+
+    let attempt = 0;
+    await page.route(
+      (url) => url.pathname === "/barberia-norte",
+      async (route) => {
+        const request = route.request();
+        if (request.method() === "POST" && request.headers()["next-action"]) {
+          attempt++;
+          if (attempt === 1) {
+            await route.abort("failed");
+            return;
+          }
+        }
+        await route.continue();
+      },
+    );
+
+    await page
+      .getByRole("button", { name: reserva.antesDeConfirmar.ctaConfirmar })
+      .click();
+    await expect(page.getByText(errores.reserva.network)).toBeVisible();
+
+    // Formuläret avmonterades aldrig (kvar på "datos") — samma idempotencyKey
+    // används automatiskt igen. Andra försöket (route.continue()) lyckas.
+    await page
+      .getByRole("button", { name: reserva.antesDeConfirmar.ctaConfirmar })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: reserva.confirmacion.titulo }),
+    ).toBeVisible();
+    expect(attempt).toBe(2);
+  });
+
+  test("ogiltig e-post visar errores.reserva.emailInvalido", async ({
+    page,
+  }) => {
+    await page.goto("/barberia-norte");
+    await selectService(page, /Corte clásico/);
+    await selectDay(page, "Viernes 2 de octubre");
+    await page.getByRole("button", { name: /Elegir la hora 10:00/ }).click();
+    await page
+      .getByRole("button", { name: reserva.bookingBar.ctaReservar })
+      .click();
+
+    await page.getByLabel(reserva.clienteForm.nombreLabel).fill("Ana Pérez");
+    await page
+      .getByLabel(reserva.clienteForm.telefonoLabel)
+      .fill("+56 9 1234 5678");
+    await page
+      .getByLabel(reserva.clienteForm.emailLabel)
+      .fill("no-es-correo");
+    await page
+      .getByRole("checkbox", {
+        name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
+      })
+      .check();
+    await page
+      .getByRole("button", { name: reserva.antesDeConfirmar.ctaConfirmar })
+      .click();
+
+    await expect(page.getByText(errores.reserva.emailInvalido)).toBeVisible();
+  });
+
+  test("profesional utan egen data visar sinHorariosEnRango, inte Cualquieras tider", async ({
+    page,
+  }) => {
+    await page.goto("/barberia-norte");
+    await selectService(page, /Corte clásico/);
+    await page.getByRole("button", { name: "Diego" }).click();
+    // "diego" finns inte i availability.c (bara "any" i fixturen) — item 13.
+    await expect(
+      page.getByText(reserva.vacios.sinHorariosEnRango),
+    ).toBeVisible();
+    // "Viernes 2 de octubre" finns annars (med "Cualquiera"/"any") — får inte
+    // dyka upp här, annars visas Cualquieras tider som om de vore Diegos.
+    await expect(
+      page.getByRole("button", { name: "Viernes 2 de octubre" }),
+    ).toHaveCount(0);
+  });
+});
+
 test.describe("Reserva — prestanda (FRÅGA 7)", () => {
   // Budget (godkänd av ägaren): ≤ 170 kB gzip JS för /[slug], första tjänsten
   // klickbar inom 3,5 s, 4G (150 ms RTT, 1,6 Mbit/s ned / 750 kbit/s upp) och

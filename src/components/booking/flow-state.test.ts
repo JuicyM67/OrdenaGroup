@@ -211,4 +211,23 @@ describe("bookingFlowReducer", () => {
     ];
     expect(steps).toHaveLength(3);
   });
+
+  it("reset går tillbaka till initialFlowState (bakåt från bekräftelsen, item 7)", () => {
+    const afterBooking: BookingFlowState = {
+      step: "confirmacion",
+      selection: {
+        serviceId: "cb",
+        staffId: "any",
+        date: d("2026-10-06"),
+        slotId: "cb-2026-10-06-1130",
+      },
+      waitlistJoined: false,
+      formStatus: "idle",
+      errorCode: null,
+      removedSlotIds: [],
+    };
+    expect(bookingFlowReducer(afterBooking, { type: "reset" })).toEqual(
+      initialFlowState,
+    );
+  });
 });

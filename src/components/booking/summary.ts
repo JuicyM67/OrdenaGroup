@@ -22,8 +22,10 @@ export function findDay(
   date: LocalDate | null,
 ): DayAvailability | null {
   if (!selection.serviceId || !date) return null;
-  const byStaff = data.availability[selection.serviceId];
-  const days = byStaff?.[selection.staffId] ?? byStaff?.any;
+  // Ingen fallback till "any" för en namngiven profesional utan egen data
+  // (qa-granskning, item 13): annars visas Cualquieras tider som om de vore
+  // den valda profesionalens, i stället för `vacios.sinHorariosEnRango`.
+  const days = data.availability[selection.serviceId]?.[selection.staffId];
   return days?.find((d) => d.date === date) ?? null;
 }
 

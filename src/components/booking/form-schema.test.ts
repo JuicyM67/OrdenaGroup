@@ -80,6 +80,26 @@ describe("customerFormSchema — namn, e-post, samtycken", () => {
     ).toBe(false);
   });
 
+  it("namn längre än 120 tecken avvisas (name.too_long)", () => {
+    const result = customerFormSchema.safeParse(
+      baseInput({ name: "a".repeat(121) }),
+    );
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("name.too_long");
+    }
+  });
+
+  it("e-post längre än 254 tecken avvisas (email.invalid)", () => {
+    const result = customerFormSchema.safeParse(
+      baseInput({ email: `${"a".repeat(250)}@x.cl` }),
+    );
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe("email.invalid");
+    }
+  });
+
   it("termsAccepted: false avvisas (consentimientoRequerido)", () => {
     const result = customerFormSchema.safeParse(
       baseInput({ termsAccepted: false as unknown as true }),

@@ -3,7 +3,13 @@
 // priser eller lediga tider räknas ut här (hård regel 2).
 "use client";
 
-import { useEffect, useId, useReducer, useState } from "react";
+import {
+  useEffect,
+  useId,
+  useReducer,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { comun, reserva } from "@/i18n";
 
@@ -24,7 +30,11 @@ import { ServiceCard } from "./service-card";
 import { StaffPicker } from "./staff-picker";
 import { barPrice, findDay, summaryText } from "./summary";
 import { TimeSlotGrid } from "./time-slot-grid";
-import type { BookingActionResult, BookingPageData } from "./types";
+import type {
+  BookingActionResult,
+  BookingPageData,
+  CustomerContact,
+} from "./types";
 import { WaitlistCard } from "./waitlist-card";
 
 const SELECTION_ALERT_CODES = new Set([
@@ -32,6 +42,29 @@ const SELECTION_ALERT_CODES = new Set([
   "too_soon",
   "outside_hours",
 ]);
+
+const NO_CONTACT: CustomerContact = { name: "", phone: "", email: "" };
+
+// useSyncExternalStore (qa-granskning, item 1): `navigator.onLine` finns inte
+// på servern (Node), så en `useState`-initializer som läser den ger olika
+// resultat på server och klient → hydreringsfel #418 på varje sidladdning.
+// Servergissningen är "online" (`getServerSnapshot` → true); klienten synkar
+// till det riktiga värdet i samma commit som hydreringen, utan ett extra
+// render-steg som en `useEffect`-baserad lösning skulle kräva.
+function subscribeOnline(callback: () => void): () => void {
+  window.addEventListener("online", callback);
+  window.addEventListener("offline", callback);
+  return () => {
+    window.removeEventListener("online", callback);
+    window.removeEventListener("offline", callback);
+  };
+}
+function getOnlineSnapshot(): boolean {
+  return navigator.onLine;
+}
+function getServerOnlineSnapshot(): boolean {
+  return true;
+}
 
 export interface BookingScreenProps {
   data: BookingPageData;
@@ -65,26 +98,23 @@ export function BookingScreen({
     bookingFlowReducer,
     initialState ?? initialFlowState,
   );
-  const [isOffline, setIsOffline] = useState(
-    () =>
-      !!forceOffline || (typeof navigator !== "undefined" && !navigator.onLine),
+  const isBrowserOnline = useSyncExternalStore(
+    subscribeOnline,
+    getOnlineSnapshot,
+    getServerOnlineSnapshot,
   );
+  const isOffline = !!forceOffline || !isBrowserOnline;
   const formId = useId();
 
-  useEffect(() => {
-    const onOffline = () => {
-      setIsOffline(true);
-    };
-    const onOnline = () => {
-      setIsOffline(false);
-    };
-    window.addEventListener("offline", onOffline);
-    window.addEventListener("online", onOnline);
-    return () => {
-      window.removeEventListener("offline", onOffline);
-      window.removeEventListener("online", onOnline);
-    };
-  }, []);
+  // Kundens namn/telefon/e-post (qa-granskning, item 9): hör till skärmen, inte
+  // till formulärkomponenten, så att de överlever `slot_taken` och "Volver"
+  // (CustomerForm avmonteras när steget går tillbaka till "seleccion").
+  // Samtyckena bor kvar lokalt i CustomerForm och nollställs alltså varje gång
+  // den monteras igen — de är aldrig förkryssade.
+  const [contact, setContact] = useState<CustomerContact>(NO_CONTACT);
+  function updateContact(patch: Partial<CustomerContact>) {
+    setContact((prev) => ({ ...prev, ...patch }));
+  }
 
   // Historik (planens steg 5): `datos` läggs som `?paso=datos` (pushState) så att
   // bakåtknappen på Android går tillbaka till valen med allt kvar. Bekräftelsen
@@ -101,13 +131,20 @@ export function BookingScreen({
 
   useEffect(() => {
     const onPopState = () => {
-      dispatch({ type: "go_back" });
+      // Bakåt från bekräftelsen (qa-granskning, item 7): nollställ i stället
+      // för att öppna valen med den redan bokade tiden.
+      if (state.step === "confirmacion") {
+        dispatch({ type: "reset" });
+        setContact(NO_CONTACT);
+      } else {
+        dispatch({ type: "go_back" });
+      }
     };
     window.addEventListener("popstate", onPopState);
     return () => {
       window.removeEventListener("popstate", onPopState);
     };
-  }, []);
+  }, [state.step]);
 
   if (data.business.status === "frozen") {
     return (
@@ -134,10 +171,10 @@ export function BookingScreen({
   const dayIsFull = day?.state === "full";
   const barVisible = canContinue(selection, dayIsFull);
 
+  // Ingen fallback till "any" (qa-granskning, item 13): annars visas
+  // Cualquieras dagar/tider som om de vore en namngiven profesionals.
   const daysForSelection = selection.serviceId
-    ? (data.availability[selection.serviceId]?.[selection.staffId] ??
-      data.availability[selection.serviceId]?.any ??
-      [])
+    ? (data.availability[selection.serviceId]?.[selection.staffId] ?? [])
     : [];
 
   const visibleSlots = (day?.slots ?? []).filter(
@@ -164,18 +201,33 @@ export function BookingScreen({
     dispatch({ type: "select_staff", staffId, keepDay });
   }
 
+  // try/catch (qa-granskning, item 2): ett avbrutet/nätverksfel (t.ex.
+  // `page.route(...).abort()`) kastar i `fetch`, inte ett `{ ok: false }`-svar.
+  // Utan fångst skulle det bli en okontrollerad avvisad Promise och `submitting`
+  // skulle stå kvar i "submitting" för alltid. `submittingRef` i CustomerForm
+  // släpps av att `submitting`-propen går tillbaka till `false`, och samma
+  // `idempotencyKey` (state i CustomerForm, avmonteras inte vid ett fel) används
+  // automatiskt igen vid ett nytt försök.
   async function handleSubmitBooking(input: CustomerFormOutput) {
     dispatch({ type: "submit_start" });
-    const result = await submitBooking(input);
-    if (result.ok) dispatch({ type: "submit_success" });
-    else dispatch({ type: "submit_error", code: result.code });
+    try {
+      const result = await submitBooking(input);
+      if (result.ok) dispatch({ type: "submit_success" });
+      else dispatch({ type: "submit_error", code: result.code });
+    } catch {
+      dispatch({ type: "submit_error", code: "network" });
+    }
   }
 
   async function handleSubmitWaitlist(input: WaitlistFormOutput) {
     dispatch({ type: "join_waitlist_start" });
-    const result = await joinWaitlist(input);
-    if (result.ok) dispatch({ type: "join_waitlist_success" });
-    else dispatch({ type: "join_waitlist_error", code: result.code });
+    try {
+      const result = await joinWaitlist(input);
+      if (result.ok) dispatch({ type: "join_waitlist_success" });
+      else dispatch({ type: "join_waitlist_error", code: result.code });
+    } catch {
+      dispatch({ type: "join_waitlist_error", code: "network" });
+    }
   }
 
   const summary = summaryText(selection, data, day);
@@ -297,12 +349,12 @@ export function BookingScreen({
                   joined={state.waitlistJoined}
                   duplicate={state.errorCode === "waitlist_duplicate"}
                 />
-              ) : visibleSlots.length === 0 ? (
-                <p className="text-14 text-muted">
-                  {reserva.vacios.sinHorariosEseDia}
-                </p>
               ) : (
                 <>
+                  {/* Felrutan ska synas även när tiden som togs bort var den
+                   * sista kvarvarande (qa-granskning, item 14) — den står
+                   * alltså som ett eget villkor, inte nästlad i grenen som
+                   * bara gäller när `visibleSlots` inte är tom. */}
                   {state.errorCode &&
                   SELECTION_ALERT_CODES.has(state.errorCode) ? (
                     <div
@@ -312,13 +364,19 @@ export function BookingScreen({
                       {serverError(state.errorCode)}
                     </div>
                   ) : null}
-                  <TimeSlotGrid
-                    slots={visibleSlots}
-                    selectedSlotId={selection.slotId}
-                    onSelect={(slotId) => {
-                      dispatch({ type: "select_slot", slotId });
-                    }}
-                  />
+                  {visibleSlots.length === 0 ? (
+                    <p className="text-14 text-muted">
+                      {reserva.vacios.sinHorariosEseDia}
+                    </p>
+                  ) : (
+                    <TimeSlotGrid
+                      slots={visibleSlots}
+                      selectedSlotId={selection.slotId}
+                      onSelect={(slotId) => {
+                        dispatch({ type: "select_slot", slotId });
+                      }}
+                    />
+                  )}
                 </>
               )
             ) : null}
@@ -332,6 +390,8 @@ export function BookingScreen({
           day={day}
           submitting={state.formStatus === "submitting"}
           serverErrorCode={state.errorCode}
+          contact={contact}
+          onContactChange={updateContact}
           onBack={() => {
             dispatch({ type: "go_back" });
           }}

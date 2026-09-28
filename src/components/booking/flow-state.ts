@@ -63,7 +63,8 @@ export type BookingFlowAction =
   | { type: "submit_error"; code: BookingServerErrorCode }
   | { type: "join_waitlist_start" }
   | { type: "join_waitlist_success" }
-  | { type: "join_waitlist_error"; code: BookingServerErrorCode };
+  | { type: "join_waitlist_error"; code: BookingServerErrorCode }
+  | { type: "reset" };
 
 /** Koder som skickar tillbaka kunden till valen (steg 3), med felraden ovanför tiderna. */
 const SELECTION_ERROR_CODES = new Set<BookingServerErrorCode>([
@@ -162,6 +163,11 @@ export function bookingFlowReducer(
       }
       return { ...state, formStatus: "idle", errorCode: action.code };
     }
+    // Bakåt från bekräftelsen (qa-granskning, item 7): ska inte öppna valen
+    // med den redan bokade tiden. `popstate`-hanteraren i booking-screen.tsx
+    // dispatchar den här i stället för `go_back` när steget var "confirmacion".
+    case "reset":
+      return initialFlowState;
   }
 }
 

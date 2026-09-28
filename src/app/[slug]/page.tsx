@@ -11,20 +11,32 @@ import type {
 import type { BookingActionResult } from "@/components/booking/types";
 import { reserva } from "@/i18n";
 
-import { isDesignLabEnabled } from "../design-lab/gate";
+import { isDesignLabEnabled, type DesignLabEnv } from "../design-lab/gate";
 import { fixtureBusinesses } from "../design-lab/reserva/fixtures";
-import { createBookingAction, joinWaitlistAction } from "./actions";
+import { createBooking, joinWaitlist } from "./actions";
 
 // VERCEL_ENV måste läsas per request (samma skäl som design-lab/layout.tsx).
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug: string }>;
 
+function gateEnv(): DesignLabEnv {
+  return {
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    DESIGN_LAB: process.env.DESIGN_LAB,
+  };
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Params;
 }): Promise<Metadata> {
+  // Grinden även här (qa-granskning, item 16): annars läcker företagsnamnet i
+  // <title> för en okänd/stängd sida innan sidkomponenten hinner 404:a.
+  if (!isDesignLabEnabled(gateEnv())) {
+    return { robots: { index: false, follow: false } };
+  }
   const { slug } = await params;
   const business = fixtureBusinesses[slug];
   return {
@@ -37,12 +49,7 @@ export async function generateMetadata({
 }
 
 export default async function ReservaPage({ params }: { params: Params }) {
-  if (
-    !isDesignLabEnabled({
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      DESIGN_LAB: process.env.DESIGN_LAB,
-    })
-  ) {
+  if (!isDesignLabEnabled(gateEnv())) {
     notFound();
   }
 
@@ -50,18 +57,31 @@ export default async function ReservaPage({ params }: { params: Params }) {
   const data = fixtureBusinesses[slug];
   if (!data) notFound();
 
+  // Bara de här två closurerna är riktiga server actions (qa-granskning,
+  // item 5): `slug` binds på servern (fri variabel i closuren, aldrig ett
+  // klientkontrollerat argument), och grinden körs igen inne i closuren —
+  // en anropare som fått tag i själva action-referensen (t.ex. från
+  // `.next/server/server-reference-manifest.json`) kan varken välja ett
+  // annat företag eller komma förbi grinden om miljön stängts efter att
+  // sidan laddades.
   async function submitBooking(
     input: CustomerFormOutput,
   ): Promise<BookingActionResult> {
     "use server";
-    return createBookingAction(slug, input);
+    if (!isDesignLabEnabled(gateEnv())) {
+      return { ok: false, code: "business_unavailable" };
+    }
+    return createBooking(slug, input);
   }
 
   async function submitWaitlist(
     input: WaitlistFormOutput,
   ): Promise<BookingActionResult> {
     "use server";
-    return joinWaitlistAction(slug, input);
+    if (!isDesignLabEnabled(gateEnv())) {
+      return { ok: false, code: "business_unavailable" };
+    }
+    return joinWaitlist(slug, input);
   }
 
   return (

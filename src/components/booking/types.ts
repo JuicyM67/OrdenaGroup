@@ -8,6 +8,10 @@
  */
 import type { Clp } from "@/lib/format/clp";
 import type { IsoWeekday, LocalDate, LocalTime } from "@/lib/format/dates";
+// `import type` raderas helt vid kompilering (ingen JS-emission), så den här
+// filen kan vara "use client"-säker trots att @/server/bookings/types har
+// `import "server-only"` som värde-import — se qa-granskningen (item 11).
+import type { BookingError } from "@/server/bookings/types";
 import type { Database } from "@/types/database";
 
 export type BusinessStatus = Database["public"]["Enums"]["business_status"];
@@ -77,21 +81,22 @@ export interface BookingPageData {
   readonly availability: BookingAvailability;
 }
 
-/** Samma koder som `BookingError` (SCHEDULING.md, WP-10) plus `network` (klientfel).
- * Matchar nycklarna i `errores.reserva` (utom fältfelen `telefono`/`nombreVacio`/
- * `emailInvalido`/`consentimientoRequerido`), typat uttömmande i `errors.ts`. */
+/** `BookingError` (`@/server/bookings/types`, WP-10) plus `network` (klientfel,
+ * anropet nådde aldrig servern) och `waitlist_duplicate` (bara väntelistan,
+ * inte en del av `BookingError`). Matchar nycklarna i `errores.reserva` (utom
+ * fältfelen `telefono`/`nombreVacio`/`emailInvalido`/`consentimientoRequerido`),
+ * typat uttömmande i `errors.ts`. */
 export type BookingServerErrorCode =
-  | "slot_taken"
-  | "too_soon"
-  | "too_far"
-  | "service_not_offered"
-  | "not_found"
-  | "invalid_status"
-  | "outside_cancel_window"
-  | "invalid_input"
-  | "outside_hours"
-  | "waitlist_duplicate"
-  | "network";
+  BookingError | "network" | "waitlist_duplicate";
+
+/** Kundens uppgifter i datasteget — vanlig typ (ingen Zod), så att
+ * `customer-form.tsx`/`booking-screen.tsx` kan importera den utan att dra in
+ * `form-schema.ts` (Zod, bara server) i klientbunten (qa-granskning, item 6). */
+export interface CustomerContact {
+  readonly name: string;
+  readonly phone: string;
+  readonly email: string;
+}
 
 export interface BookingActionOk {
   readonly ok: true;

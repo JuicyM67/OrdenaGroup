@@ -2,7 +2,7 @@
  * Fältfel och serverfel → text (`errores.reserva.*`). Uttömmande via `satisfies
  * Record<...>`, se docs/tasks/plans/WP-13.md steg 5.
  */
-import { comun, errores } from "@/i18n";
+import { comun, errores, reserva } from "@/i18n";
 import type { PhoneError } from "@/lib/format/phone";
 
 import type { BookingServerErrorCode } from "./types";
@@ -44,6 +44,9 @@ const SERVER_MESSAGES = {
   outside_hours: errores.reserva.outside_hours,
   waitlist_duplicate: errores.reserva.waitlist_duplicate,
   network: errores.reserva.network,
+  // Ingen egen `errores.reserva`-nyckel (qa-granskning, item 5/11): samma text
+  // som den tomma sidans `vacios.negocioNoDisponible` — negocio inte aktivt.
+  business_unavailable: reserva.vacios.negocioNoDisponible,
 } satisfies Record<BookingServerErrorCode, string>;
 
 const PHONE_ERROR_KINDS = new Set<string>([

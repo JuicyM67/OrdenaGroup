@@ -134,3 +134,17 @@ describe("summaryText", () => {
     );
   });
 });
+
+describe("findDay — profesional utan egen data", () => {
+  it("faller inte tillbaka till Cualquiera när den valda profesionalen saknar egen data (item 13)", () => {
+    const data = makeData([flashDay]);
+    // "matias" no está en `availability.cb` (solo "any" y "diego" en makeData).
+    const selection: BookingSelection = {
+      serviceId: "cb",
+      staffId: "matias",
+      date: flashDay.date,
+      slotId: null,
+    };
+    expect(findDay(data, selection, selection.date)).toBeNull();
+  });
+});

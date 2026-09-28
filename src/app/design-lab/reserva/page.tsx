@@ -18,7 +18,8 @@ import type {
   BookingPageData,
 } from "@/components/booking/types";
 
-import { createBookingAction, joinWaitlistAction } from "../../[slug]/actions";
+import { isDesignLabEnabled } from "../gate";
+import { createBooking, joinWaitlist } from "../../[slug]/actions";
 import {
   barberiaNorte,
   barberiaPausada,
@@ -253,14 +254,30 @@ export default async function DesignLabReservaPage({
     input: CustomerFormOutput,
   ): Promise<BookingActionResult> {
     "use server";
-    return createBookingAction(slug, input);
+    if (
+      !isDesignLabEnabled({
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        DESIGN_LAB: process.env.DESIGN_LAB,
+      })
+    ) {
+      return { ok: false, code: "business_unavailable" };
+    }
+    return createBooking(slug, input);
   }
 
   async function submitWaitlist(
     input: WaitlistFormOutput,
   ): Promise<BookingActionResult> {
     "use server";
-    return joinWaitlistAction(slug, input);
+    if (
+      !isDesignLabEnabled({
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        DESIGN_LAB: process.env.DESIGN_LAB,
+      })
+    ) {
+      return { ok: false, code: "business_unavailable" };
+    }
+    return joinWaitlist(slug, input);
   }
 
   return (

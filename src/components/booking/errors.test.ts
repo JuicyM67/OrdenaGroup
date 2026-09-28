@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { comun, errores } from "@/i18n";
+import { comun, errores, reserva } from "@/i18n";
 import type { PhoneError } from "@/lib/format/phone";
 
 import {
@@ -32,6 +32,7 @@ const SERVER_CODES: readonly BookingServerErrorCode[] = [
   "outside_hours",
   "waitlist_duplicate",
   "network",
+  "business_unavailable",
 ];
 
 describe("fieldError", () => {
@@ -61,7 +62,13 @@ describe("fieldError", () => {
 
 describe("serverError", () => {
   it.each(SERVER_CODES)("%s har text", (code) => {
-    expect(serverError(code)).toBe(errores.reserva[code]);
+    // business_unavailable har ingen egen errores.reserva-nyckel: samma text
+    // som den tomma sidans vacios.negocioNoDisponible.
+    const expected =
+      code === "business_unavailable"
+        ? reserva.vacios.negocioNoDisponible
+        : errores.reserva[code];
+    expect(serverError(code)).toBe(expected);
   });
 
   it("en okänd kod ger comun.algoSalioMal", () => {

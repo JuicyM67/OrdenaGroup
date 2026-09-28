@@ -1,10 +1,20 @@
 /**
- * Server-action-stubbar (WP-13 R5): validerar indata på nytt med samma Zod-schema
- * som klienten och svarar ur fixturerna. `createBooking`/riktig tillgänglighet,
- * sparade samtycken, outbox och WhatsApp-bekräftelse är WP-20 — den här filen
- * ersätts helt då. Loggar aldrig indata (varken `console` eller namn/telefon).
+ * Server-stubbar (WP-13 R5): validerar indata på nytt med Zod-schemat och
+ * svarar ur fixturerna. `createBooking`/riktig tillgänglighet, sparade
+ * samtycken, outbox och WhatsApp-bekräftelse är WP-20 — den här filen ersätts
+ * helt då. Loggar aldrig indata (varken `console` eller namn/telefon).
+ *
+ * Säkerhet (qa-granskning, item 5): **inte** `"use server"` här. Dessa är
+ * vanliga funktioner som tar `slug` som en vanlig parameter — om filen vore
+ * en server-action-modul skulle `slug` vara en del av det klientanropsbara
+ * kontraktet, och vem som helst skulle kunna anropa
+ * `createBooking(vilketFöretagSomHelst, …)` direkt (förbi
+ * `isDesignLabEnabled()`-grinden och tenant-isoleringen). De enda riktiga
+ * server actionsen är de inbäddade closurerna i `page.tsx` (och design lab:s
+ * `page.tsx`), som binder `slug` på servern och kör grinden i själva
+ * closuren. `import "server-only"` stoppar ett klientimport-misstag.
  */
-"use server";
+import "server-only";
 
 import {
   customerFormSchema,
@@ -26,12 +36,13 @@ function findDayFor(
   staffId: string,
   date: string,
 ) {
-  const byStaff = business.availability[serviceId];
-  const days = byStaff?.[staffId] ?? byStaff?.any;
+  // Ingen fallback till "any" (qa-granskning, item 13): samma regel som
+  // `summary.ts`s `findDay` och `booking-screen.tsx`s `daysForSelection`.
+  const days = business.availability[serviceId]?.[staffId];
   return days?.find((d) => d.date === date) ?? null;
 }
 
-export async function createBookingAction(
+export async function createBooking(
   slug: string,
   input: unknown,
 ): Promise<BookingActionResult> {
@@ -40,6 +51,9 @@ export async function createBookingAction(
 
   const business = fixtureBusinesses[slug];
   if (!business) return { ok: false, code: "not_found" };
+  if (business.business.status !== "active") {
+    return { ok: false, code: "business_unavailable" };
+  }
 
   const { serviceId, staffId, date, slotId } = parsed.data;
 
@@ -59,7 +73,7 @@ export async function createBookingAction(
   return { ok: true };
 }
 
-export async function joinWaitlistAction(
+export async function joinWaitlist(
   slug: string,
   input: unknown,
 ): Promise<BookingActionResult> {
@@ -68,6 +82,9 @@ export async function joinWaitlistAction(
 
   const business = fixtureBusinesses[slug];
   if (!business) return { ok: false, code: "not_found" };
+  if (business.business.status !== "active") {
+    return { ok: false, code: "business_unavailable" };
+  }
 
   const { serviceId, staffId, date } = parsed.data;
 

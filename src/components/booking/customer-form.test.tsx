@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { errores, reserva } from "@/i18n";
@@ -7,7 +8,11 @@ import type { LocalDate } from "@/lib/format/dates";
 
 import { CustomerForm } from "./customer-form";
 import type { BookingSelection } from "./flow-state";
-import type { BookingPageData, DayAvailability } from "./types";
+import type {
+  BookingPageData,
+  CustomerContact,
+  DayAvailability,
+} from "./types";
 
 const d = (s: string) => s as LocalDate;
 
@@ -53,8 +58,13 @@ const selection: BookingSelection = {
   slotId: "slot-1000",
 };
 
-function renderForm() {
-  return render(
+const NO_CONTACT: CustomerContact = { name: "", phone: "", email: "" };
+
+/** Håller `contact`-state precis som `BookingScreen` gör (qa-granskning,
+ * item 9: namn/telefon/e-post ägs inte längre av CustomerForm själv). */
+function Harness() {
+  const [contact, setContact] = useState<CustomerContact>(NO_CONTACT);
+  return (
     <>
       <CustomerForm
         formId="f"
@@ -63,6 +73,10 @@ function renderForm() {
         day={day}
         submitting={false}
         serverErrorCode={null}
+        contact={contact}
+        onContactChange={(patch) => {
+          setContact((prev) => ({ ...prev, ...patch }));
+        }}
         onBack={vi.fn()}
         onSubmitBooking={vi.fn()}
         onSubmitWaitlist={vi.fn()}
@@ -72,8 +86,12 @@ function renderForm() {
       <button type="submit" form="f">
         {reserva.antesDeConfirmar.ctaConfirmar}
       </button>
-    </>,
+    </>
   );
+}
+
+function renderForm() {
+  return render(<Harness />);
 }
 
 describe("CustomerForm — samtycken", () => {
