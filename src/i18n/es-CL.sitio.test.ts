@@ -14,6 +14,7 @@ import {
   SITIO_FUNCIONALIDADES,
   SITIO_PARA_INDUSTRIAS,
   SITIO_PRECIOS_TABLA,
+  SITIO_RUBROS_MARQUEE,
 } from "./es-CL";
 import {
   NOMBRES_FIXTURE,
@@ -24,9 +25,16 @@ import {
   type Rama,
 } from "./test-helpers";
 
+/** Incluye `hora`, `pct` y `n` por las funciones de `sitio.inicio.flash.mock`
+ * (WP-hemsida): como todas las funciones de `sitio` se invocan con la misma
+ * muestra genérica, cualquier función nueva debe usar uno de estos nombres
+ * de parámetro (o sumar uno acá). */
 const MUESTRA_GENERICA = {
   nombre: "texto de ejemplo",
   precio: "$9.990",
+  hora: "15:00",
+  pct: "20",
+  n: "3",
 } as const;
 
 function invocarGenerico(fn: (p: never) => string): string {
@@ -319,5 +327,24 @@ describe("SITIO_PARA_INDUSTRIAS", () => {
     for (const servicio of kine!.servicios) {
       expect(prohibidas.test(servicio.nombre), servicio.nombre).toBe(false);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// SITIO_RUBROS_MARQUEE
+// ---------------------------------------------------------------------------
+
+describe("SITIO_RUBROS_MARQUEE", () => {
+  it("tiene al menos 20 rubros, cada uno con un emoji y un nombre no vacíos", () => {
+    expect(SITIO_RUBROS_MARQUEE.length).toBeGreaterThanOrEqual(20);
+    for (const rubro of SITIO_RUBROS_MARQUEE) {
+      expect(rubro.emoji.length, rubro.nombre).toBeGreaterThan(0);
+      expect(rubro.nombre.length, rubro.nombre).toBeGreaterThan(0);
+    }
+  });
+
+  it("no repite ningún nombre de rubro", () => {
+    const nombres = SITIO_RUBROS_MARQUEE.map((r) => r.nombre);
+    expect(new Set(nombres).size).toBe(nombres.length);
   });
 });

@@ -329,9 +329,69 @@ export const sitio = {
     entrar: "Logga in",
     ctaCrearAgenda: landing.nav.ctaCrearAgenda,
     paraQuienSubmenu: { ...SITIO_BRANSCH },
-    /** Väntar på att `es-CL.ts` får samma nyckel (blockerad av
-     * behörighetssystemet i den här sessionen, se rapporten). */
+    /** Knapp för att stänga den öppna megamenyn eller mobilmenyn. */
     cerrar: "Stäng",
+  },
+  /** Innehållet i skrivbordsmegamenyn (wp/hemsida): sektionen "Produkt" med
+   * dess sex funktioner, genvägen till "Vem är det för" och de tre länkarna
+   * under "Resurser", plus det utvalda kortet som puffar för Flashtider.
+   * Samma nycklar och samma teckengräns (`texto` ~60 tecken) som i
+   * `es-CL.ts`. Ingen WhatsApp (D-028): påminnelser nämns här som sms. */
+  megamenu: {
+    producto: {
+      titulo: "Produkt",
+      items: {
+        reservas: {
+          titulo: "Bokningar",
+          texto: "Din bokningslänk, redo att dela.",
+        },
+        agenda: {
+          titulo: "Kalender",
+          texto: "Din veckokalender, per anställd.",
+        },
+        hoy: {
+          titulo: "Idag",
+          texto: "Dagens schema, ordnat i mobilen.",
+        },
+        flash: {
+          titulo: "Flashtider",
+          texto: "Rabatt i sista minuten för lediga tider.",
+        },
+        recordatorios: {
+          titulo: "Påminnelser",
+          texto: "Automatiska påminnelser via sms.",
+        },
+        listaEspera: {
+          titulo: "Väntelista",
+          texto: "När någon avbokar fylls tiden av sig själv.",
+        },
+      },
+    },
+    paraQuien: {
+      titulo: "Vem är det för",
+      verTodas: "Se alla branscher",
+    },
+    recursos: {
+      titulo: "Resurser",
+      precios: {
+        titulo: "Priser",
+        texto: "Ett pris per företag, ingen avgift per anställd.",
+      },
+      preguntas: {
+        titulo: "Vanliga frågor",
+        texto: "Svar på dina frågor innan du börjar.",
+      },
+      contacto: {
+        titulo: "Kontakt",
+        texto: "Mejla oss om du har frågor.",
+      },
+    },
+    destacado: {
+      etiqueta: "Nytt",
+      titulo: "Flashtider",
+      texto: "Sälj dina lediga tider med rabatt innan de går förlorade.",
+      cta: "Se hur det funkar",
+    },
   },
   footer: {
     descripcion: (p: { nombre: string }): string =>
@@ -395,9 +455,63 @@ export const sitio = {
         },
       },
     },
+    /** Branscher i bucklan ovanför hero på startsidan (wp/hemsida): "För
+     * alla verksamheter som jobbar med tider". Detaljerna för varje bransch
+     * finns i `SITIO_RUBROS_MARQUEE`, utanför `Trad`. */
+    marquee: {
+      titulo: "För alla verksamheter som jobbar med tider",
+      aria: "Branscher som bokar tid med en kalender",
+    },
+    /** Sektionen som förklarar Flashtider på startsidan (wp/hemsida): `mock`
+     * är de korta etiketterna i den animerade mockupen, inte text som en
+     * riktig kund får. */
+    flash: {
+      etiqueta: "Flashtider",
+      titulo: "Sälj dina lediga tider innan de går förlorade",
+      texto:
+        "När en tid blir ledig i sista minuten erbjuder du den med rabatt till dina kunder. Den som bokar först får den.",
+      puntos: {
+        punto1: "Du väljer rabatten och hur länge den gäller",
+        punto2: "Vi skickar ett sms till dina kunder",
+        punto3: "Så fort någon bokar stängs den för de andra",
+      },
+      mock: {
+        horaLibre: (p: { hora: string }): string => `Ledig tid ${p.hora}`,
+        descuento: (p: { pct: number }): string => `−${p.pct}%`,
+        notificacion: (p: { n: number }): string =>
+          `Avisering skickad till ${p.n} ${p.n === 1 ? "kund" : "kunder"}`,
+        reservada: "Bokad!",
+      },
+    },
+    /** Korta etiketter för de fyra stegen i den animerade mockupen av
+     * bokningsflödet på startsidan (wp/hemsida), samma steg som en riktig
+     * kund ser (se `landing.hero` och `landing.comoFunciona`). */
+    flujo: {
+      titulo: "Att boka tar mindre än en minut",
+      texto: "Så här ser din kund hela processen, från början till slut.",
+      pasos: {
+        servicio: "Väljer tjänst",
+        hora: "Väljer tid",
+        datos: "Fyller i sina uppgifter",
+        confirmada: "Bokad!",
+      },
+    },
+    /** Titel för sektionen med alla funktioner i en överblick (bento grid)
+     * på startsidan (wp/hemsida). Ersätter inte `funcionalidades.hero` här
+     * nedanför, som är oförändrad. */
+    bento: {
+      titulo: "Allt du behöver för att fylla din kalender",
+      subtitulo:
+        "En snabb överblick över allt som ingår, från bokningslänken till vardagen.",
+    },
     precioDesde: (p: { precio: string }): string =>
       `Börja gratis. Betalplaner från ${p.precio} i månaden.`,
     verFuncionalidades: "Se alla funktioner",
+  },
+  /** Sista konverteringsbandet på startsidan (CTA band, wp/hemsida): har en
+   * bakgrundsbild, därför behövs en egen alt-text. */
+  cta: {
+    fondoAlt: "En frisör som tittar på sin mobil mellan kunder, i sin salong.",
   },
   funcionalidades: {
     meta: {
@@ -458,6 +572,9 @@ export const sitio = {
   para: {
     titulo: "Vem är det för",
     subtitulo: "Välj din bransch för att se exempel som passar dig.",
+    /** Rubrik över exempeltjänsterna i `SitioParaIndustria.servicios` på
+     * varje branschsida (wp/hemsida). */
+    serviciosTitulo: "Exempel på tjänster",
   },
   preguntas: {
     meta: {
@@ -928,6 +1045,46 @@ export const SITIO_PARA_INDUSTRIAS: readonly SitioParaIndustria[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// SITIO_RUBROS_MARQUEE: branscher i bucklan ovanför hero på startsidan
+// (wp/hemsida). Ligger inte i `sitio` eftersom det är en lista med
+// emoji/namn-par, inte en hylla av `Trad` (samma skäl som listorna ovan).
+// Emojin är en del av bandets design, inte produkttext, så den räknas inte
+// med i sv-SE.test.ts förbjudna ord/varumärkeskontroll (som bara läser
+// strängar, inte emoji). Naprapati ersätter kinesiología (D-026: annan
+// bransch i Sverige).
+// ---------------------------------------------------------------------------
+
+export const SITIO_RUBROS_MARQUEE: readonly {
+  readonly emoji: string;
+  readonly nombre: string;
+}[] = [
+  { emoji: "💈", nombre: "Barberare" },
+  { emoji: "✂️", nombre: "Frisör" },
+  { emoji: "💅", nombre: "Naglar" },
+  { emoji: "👁️", nombre: "Fransar" },
+  { emoji: "✏️", nombre: "Bryn" },
+  { emoji: "🧴", nombre: "Hudvård" },
+  { emoji: "💆", nombre: "Massage" },
+  { emoji: "🦴", nombre: "Naprapati" },
+  { emoji: "🦵", nombre: "Fysioterapi" },
+  { emoji: "🧠", nombre: "Psykolog" },
+  { emoji: "🥦", nombre: "Kostrådgivare" },
+  { emoji: "🏋️", nombre: "Personlig träning" },
+  { emoji: "🧘", nombre: "Yoga" },
+  { emoji: "🤸", nombre: "Pilates" },
+  { emoji: "🖋️", nombre: "Tatuering" },
+  { emoji: "💎", nombre: "Piercing" },
+  { emoji: "🐶", nombre: "Hundtrim" },
+  { emoji: "🐾", nombre: "Veterinär" },
+  { emoji: "🦷", nombre: "Tandvård" },
+  { emoji: "📷", nombre: "Fotografering" },
+  { emoji: "📚", nombre: "Kurser & lektioner" },
+  { emoji: "🧖", nombre: "Spa" },
+  { emoji: "💄", nombre: "Makeup" },
+  { emoji: "🦶", nombre: "Fotvård" },
+];
+
+// ---------------------------------------------------------------------------
 // PLANES: samma som PLANES_LANDING i es-CL.ts, utan `precioClp` (beloppen
 // bor i `src/config/pricing.ts`, D-025).
 // ---------------------------------------------------------------------------
@@ -996,5 +1153,6 @@ export const svSE = {
   SITIO_FUNCIONALIDADES,
   SITIO_PRECIOS_TABLA,
   SITIO_PARA_INDUSTRIAS,
+  SITIO_RUBROS_MARQUEE,
   PLANES,
 } satisfies MarketingCopy;

@@ -2174,6 +2174,71 @@ export const sitio = {
     entrar: "Entrar",
     ctaCrearAgenda: landing.nav.ctaCrearAgenda,
     paraQuienSubmenu: { ...SITIO_INDUSTRIA },
+    /** Botón para cerrar el megamenú de escritorio o el menú de celular,
+     * cuando ya está abierto (WP-hemsida). */
+    cerrar: "Cerrar",
+  },
+  /** Contenido del megamenú de escritorio (WP-hemsida): la sección
+   * "Producto" con sus seis funcionalidades, el acceso directo a "Para
+   * quién" y los tres links de "Recursos", más la tarjeta destacada que
+   * promociona Horas flash. `texto` de cada ítem y de cada link de recursos
+   * mide ~60 caracteres o menos (cabe en la columna del menú); los títulos
+   * no tienen ese límite. */
+  megamenu: {
+    producto: {
+      titulo: "Producto",
+      items: {
+        reservas: {
+          titulo: "Reservas",
+          texto: "Tu link de reservas, listo para compartir.",
+        },
+        agenda: {
+          titulo: "Agenda",
+          texto: "Tu agenda semanal, por profesional.",
+        },
+        hoy: {
+          titulo: "Hoy",
+          texto: "El día de hoy, ordenado en tu celular.",
+        },
+        flash: {
+          titulo: "Horas flash",
+          texto: "Descuento de último minuto para horas libres.",
+        },
+        recordatorios: {
+          titulo: "Recordatorios",
+          texto: "Recordatorios automáticos por WhatsApp.",
+        },
+        listaEspera: {
+          titulo: "Lista de espera",
+          texto: "Cuando alguien cancela, la hora se ocupa sola.",
+        },
+      },
+    },
+    paraQuien: {
+      titulo: "Para quién",
+      verTodas: "Ver todos los rubros",
+    },
+    recursos: {
+      titulo: "Recursos",
+      precios: {
+        titulo: "Precios",
+        texto: "Un precio por local, sin cobro por persona.",
+      },
+      preguntas: {
+        titulo: "Preguntas frecuentes",
+        texto: "Resuelve tus dudas antes de partir.",
+      },
+      contacto: {
+        titulo: "Contacto",
+        texto: "Escríbenos por WhatsApp o correo.",
+      },
+    },
+    destacado: {
+      etiqueta: "Nuevo",
+      titulo: "Horas flash",
+      texto: "Vende tus horas libres con descuento antes de perderlas.",
+      cta: "Descubre cómo funciona",
+    },
   },
   footer: {
     descripcion: (p: { nombre: string }): string =>
@@ -2239,11 +2304,66 @@ export const sitio = {
         },
       },
     },
+    /** Rubros que pasan en bucle sobre el hero de la portada (WP-hemsida):
+     * "Para cualquier negocio que trabaje con horas". El detalle de cada
+     * rubro vive en `SITIO_RUBROS_MARQUEE`, fuera de `Trad`. */
+    marquee: {
+      titulo: "Para cualquier negocio que trabaje con horas",
+      aria: "Ejemplos de rubros que reservan hora",
+    },
+    /** Sección que explica Horas flash en la portada (WP-hemsida): `mock`
+     * son las etiquetas cortas de la maqueta animada (no textos que recibe
+     * un cliente real; esos viven en `plantillasWhatsapp.listaEsperaOferta`
+     * y similares). */
+    flash: {
+      etiqueta: "Horas flash",
+      titulo: "Vende tus horas libres antes de perderlas",
+      texto:
+        "Cuando te queda una hora libre a último minuto, la ofreces con descuento a tus clientes. La primera persona en reservar se la queda.",
+      puntos: {
+        punto1: "Tú eliges el descuento y por cuánto tiempo dura",
+        punto2: "Se las avisamos por WhatsApp a tus clientes",
+        punto3: "Apenas alguien reserva, se cierra para los demás",
+      },
+      mock: {
+        horaLibre: (p: { hora: string }): string => `Hora libre ${p.hora}`,
+        descuento: (p: { pct: number }): string => `−${p.pct}%`,
+        notificacion: (p: { n: number }): string =>
+          `Aviso enviado a ${p.n} ${p.n === 1 ? "cliente" : "clientes"}`,
+        reservada: "¡Reservada!",
+      },
+    },
+    /** Etiquetas cortas de las cuatro etapas de la maqueta animada del flujo
+     * de reserva en la portada (WP-hemsida), las mismas que ve un cliente
+     * real en `/[slug]` (ver `reserva.pasos` y `reserva.confirmacion`). */
+    flujo: {
+      titulo: "Reservar toma menos de un minuto",
+      texto: "Así ve tu cliente el proceso completo, de principio a fin.",
+      pasos: {
+        servicio: "Elige el servicio",
+        hora: "Elige la hora",
+        datos: "Escribe sus datos",
+        confirmada: "¡Confirmada!",
+      },
+    },
+    /** Título de la sección con todas las funcionalidades en un vistazo
+     * (bento grid) de la portada (WP-hemsida). No reemplaza
+     * `funcionalidades.hero` de abajo, que sigue igual. */
+    bento: {
+      titulo: "Todo lo que necesitas para llenar tu agenda",
+      subtitulo:
+        "Un vistazo rápido a todo lo que trae tu agenda, del link de reservas al día a día.",
+    },
     /** "Empieza gratis. Planes pagados desde $9.990 al mes.": `precio` llega
      * ya formateado desde `src/lib/format/` (regla dura 5). */
     precioDesde: (p: { precio: string }): string =>
       `Empieza gratis. Planes pagados desde ${p.precio} al mes.`,
     verFuncionalidades: "Ver todas las funcionalidades",
+  },
+  /** Franja de conversión final de la portada (CTA band, WP-hemsida): trae
+   * una foto de fondo, por eso necesita su propio alt de accesibilidad. */
+  cta: {
+    fondoAlt: "Un barbero revisando su celular entre clientes, en su local.",
   },
   funcionalidades: {
     meta: {
@@ -2309,6 +2429,10 @@ export const sitio = {
   para: {
     titulo: "Para quién es",
     subtitulo: "Elige tu rubro para ver ejemplos pensados para ti.",
+    /** Título sobre los servicios de ejemplo de
+     * `SitioParaIndustria.servicios` en la página de cada rubro
+     * (WP-hemsida). */
+    serviciosTitulo: "Servicios de ejemplo",
   },
   preguntas: {
     meta: {
@@ -2812,4 +2936,44 @@ export const SITIO_PARA_INDUSTRIAS: readonly SitioParaIndustria[] = [
     ],
     cta: SITIO_CTA,
   },
+];
+
+// ---------------------------------------------------------------------------
+// SITIO_RUBROS_MARQUEE: rubros que pasan en bucle sobre el hero de la
+// portada (WP-hemsida). No vive dentro de `sitio` porque es un arreglo de
+// pares emoji/nombre, no una hoja de `Trad` (mismo motivo que las listas de
+// arriba). El emoji es parte del diseño de esta franja, no texto de
+// producto: por eso este arreglo, a diferencia del resto de
+// `es-CL.sitio.test.ts`, no pasa por `REGLAS_DE_TONO` (que prohíbe emoji en
+// `sitio`).
+// ---------------------------------------------------------------------------
+
+export const SITIO_RUBROS_MARQUEE: readonly {
+  readonly emoji: string;
+  readonly nombre: string;
+}[] = [
+  { emoji: "💈", nombre: "Barbería" },
+  { emoji: "✂️", nombre: "Peluquería" },
+  { emoji: "💅", nombre: "Uñas" },
+  { emoji: "👁️", nombre: "Pestañas" },
+  { emoji: "✏️", nombre: "Cejas" },
+  { emoji: "🧴", nombre: "Cuidado de la piel" },
+  { emoji: "💆", nombre: "Masajes" },
+  { emoji: "🦴", nombre: "Kinesiología" },
+  { emoji: "🦵", nombre: "Fisioterapia" },
+  { emoji: "🧠", nombre: "Psicología" },
+  { emoji: "🥦", nombre: "Nutrición" },
+  { emoji: "🏋️", nombre: "Entrenamiento personal" },
+  { emoji: "🧘", nombre: "Yoga" },
+  { emoji: "🤸", nombre: "Pilates" },
+  { emoji: "🖋️", nombre: "Tatuajes" },
+  { emoji: "💎", nombre: "Piercing" },
+  { emoji: "🐶", nombre: "Peluquería canina" },
+  { emoji: "🐾", nombre: "Veterinaria" },
+  { emoji: "🦷", nombre: "Odontología" },
+  { emoji: "📷", nombre: "Fotografía" },
+  { emoji: "📚", nombre: "Clases particulares" },
+  { emoji: "🧖", nombre: "Spa" },
+  { emoji: "💄", nombre: "Maquillaje" },
+  { emoji: "🦶", nombre: "Podología" },
 ];

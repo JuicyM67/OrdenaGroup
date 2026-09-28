@@ -130,6 +130,21 @@ describe("sv-SE: SITIO_PARA_INDUSTRIAS har samma id:n som es-CL", () => {
   });
 });
 
+describe("sv-SE: SITIO_RUBROS_MARQUEE", () => {
+  it("har minst 20 branscher, var och en med emoji och namn", () => {
+    expect(svSE.SITIO_RUBROS_MARQUEE.length).toBeGreaterThanOrEqual(20);
+    for (const bransch of svSE.SITIO_RUBROS_MARQUEE) {
+      expect(bransch.emoji.length, bransch.nombre).toBeGreaterThan(0);
+      expect(bransch.nombre.length, bransch.nombre).toBeGreaterThan(0);
+    }
+  });
+
+  it("inget namn upprepas", () => {
+    const namn = svSE.SITIO_RUBROS_MARQUEE.map((r) => r.nombre);
+    expect(new Set(namn).size).toBe(namn.length);
+  });
+});
+
 describe("sv-SE: SITIO_FUNCIONALIDADES har samma id:n som es-CL", () => {
   it("samma tio id:n, i samma ordning (kontrakt mot funcionalidades/page.tsx: ICONS/PREVIEWS letar upp med dessa nycklar)", () => {
     expect(svSE.SITIO_FUNCIONALIDADES.map((s) => s.id)).toEqual([

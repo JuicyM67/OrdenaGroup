@@ -36,6 +36,7 @@ export type MarketingCopy = Widen<
     | "SITIO_FUNCIONALIDADES"
     | "SITIO_PRECIOS_TABLA"
     | "SITIO_PARA_INDUSTRIAS"
+    | "SITIO_RUBROS_MARQUEE"
   >
 > & { readonly PLANES: readonly PlanTexto[] };
 
