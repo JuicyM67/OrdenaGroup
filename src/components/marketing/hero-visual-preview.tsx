@@ -10,10 +10,29 @@
 import { staffBgClass } from "@/components/agenda/agenda-view";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
+import { market } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
 import { formatClp } from "@/lib/format/clp";
 import { formatDuration } from "@/lib/format/dates";
 import { WEEKDAY_MIN } from "@/lib/format/calendar-es-CL";
+
+// Exempeldata per marknad (dekoration, inte UI-text). Belopp i CLP resp. kr.
+const DEMO = {
+  CL: {
+    dagar: WEEKDAY_MIN,
+    tjanster: ["Corte", "Color", "Uñas", "Masaje", "Barba"],
+    kort: "Corte + barba",
+    pris: formatClp(12_000),
+    kund: "Joaquín Rivas",
+  },
+  SE: {
+    dagar: ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"],
+    tjanster: ["Klippning", "Färg", "Naglar", "Massage", "Skägg"],
+    kort: "Klippning + skägg",
+    pris: "450 kr",
+    kund: "Elsa Lindqvist",
+  },
+}[market];
 
 type MiniEvent = {
   title: string;
@@ -26,25 +45,25 @@ type MiniEvent = {
 // kinesiología — los mismos de `landing.paraQuien`), para que el recorte se vea lleno.
 const COLUMNS: readonly { day: string; events: readonly MiniEvent[] }[] = [
   {
-    day: WEEKDAY_MIN[0]!,
-    events: [{ title: "Corte", time: "10:00", tone: staffBgClass(1) }],
+    day: DEMO.dagar[0]!,
+    events: [{ title: DEMO.tjanster[0]!, time: "10:00", tone: staffBgClass(1) }],
   },
   {
-    day: WEEKDAY_MIN[1]!,
+    day: DEMO.dagar[1]!,
     events: [
-      { title: "Color", time: "11:00", tone: staffBgClass(2) },
+      { title: DEMO.tjanster[1]!, time: "11:00", tone: staffBgClass(2) },
       { title: "Flash", time: "12:15", tone: "bg-lime", flash: true },
     ],
   },
   {
-    day: WEEKDAY_MIN[2]!,
-    events: [{ title: "Uñas", time: "12:30", tone: staffBgClass(3) }],
+    day: DEMO.dagar[2]!,
+    events: [{ title: DEMO.tjanster[2]!, time: "12:30", tone: staffBgClass(3) }],
   },
   {
-    day: WEEKDAY_MIN[3]!,
+    day: DEMO.dagar[3]!,
     events: [
-      { title: "Masaje", time: "13:15", tone: staffBgClass(4) },
-      { title: "Barba", time: "14:00", tone: staffBgClass(5) },
+      { title: DEMO.tjanster[3]!, time: "13:15", tone: staffBgClass(4) },
+      { title: DEMO.tjanster[4]!, time: "14:00", tone: staffBgClass(5) },
     ],
   },
 ];
@@ -130,9 +149,9 @@ export function HeroVisualPreview({ className }: { className?: string }) {
         aria-hidden="true"
         className="absolute right-0 bottom-4 z-20 hidden w-6/12 rotate-2 rounded-tile bg-surface p-4 shadow-popover sm:block sm:w-4/12"
       >
-        <div className="truncate text-15 font-bold text-ink">Corte + barba</div>
+        <div className="truncate text-15 font-bold text-ink">{DEMO.kort}</div>
         <div className="truncate text-13 text-muted">
-          {formatDuration(35)} · {formatClp(12_000)}
+          {formatDuration(35)} · {DEMO.pris}
         </div>
         <div className="mt-3 grid grid-cols-3 gap-1.5">
           <span className="flex h-10 items-center justify-center rounded-control bg-surface text-13 font-bold text-ink">
@@ -164,7 +183,7 @@ export function HeroVisualPreview({ className }: { className?: string }) {
         <div className="mt-3 font-display text-32 leading-none font-semibold tracking-display">
           15:00
         </div>
-        <div className="mt-2 truncate text-16 font-bold">Joaquín Rivas</div>
+        <div className="mt-2 truncate text-16 font-bold">{DEMO.kund}</div>
         <div className="mt-4 grid grid-cols-2 gap-2">
           <span className="flex h-10 items-center justify-center rounded-control bg-lime text-13 font-bold text-ink">
             {copy.hoy.acciones.llego}
