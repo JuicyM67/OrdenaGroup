@@ -1,8 +1,9 @@
 "use client";
 
 // Se Hoy.dc.html + docs/tasks/plans/WP-14.md §4 steg 2–4. Skalet, headern och flikraden, samt
-// statushanteringen för Llegó/No vino (FRÅGA 1, svar: ja — fixture-läget ändras lokalt och
-// callbacken byts mot servern i WP-21).
+// statushanteringen för Llegó/No vino (FRÅGA 1, svar: ja — fixture-läget ändras lokalt). WP-21:
+// `onArrival` sparar samma ändring mot servern (server action bunden i page.tsx) — `undefined`
+// i design lab, bara den lokala statusen ändras.
 import {
   Bell,
   Calendar,
@@ -32,12 +33,17 @@ import type { HoyBooking, HoyData } from "./types";
 
 export type HoyScreenProps = {
   data: HoyData;
+  /** WP-21: sparar Llegó/No vino mot servern. `undefined` i design lab. */
+  onArrival?: (
+    bookingId: string,
+    status: "completed" | "no_show",
+  ) => void | Promise<void>;
 };
 
 /** Hur länge Llegó/No vino-knapparna är inaktiva efter ett tryck (optimistisk uppdatering). */
 const OPTIMISTIC_LOCK_MS = 400;
 
-export function HoyScreen({ data }: HoyScreenProps) {
+export function HoyScreen({ data, onArrival }: HoyScreenProps) {
   // `data` byts bara genom en ny instans av skärmen (anroparen sätter `key`, t.ex. per
   // `?estado=` i design lab) — annars skulle den lokala Llegó/No vino-statusen tappas varje
   // gång servern skickar samma dag på nytt.
@@ -88,6 +94,7 @@ export function HoyScreen({ data }: HoyScreenProps) {
       prev.map((b) => (b.id === id ? { ...b, status } : b)),
     );
     setAnnouncement((prev) => ({ id: (prev?.id ?? 0) + 1, text: message }));
+    void Promise.resolve(onArrival?.(id, status)).catch(() => undefined);
     pendingTimeoutRef.current = window.setTimeout(() => {
       setPendingId(null);
       pendingTimeoutRef.current = null;

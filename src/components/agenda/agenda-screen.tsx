@@ -67,6 +67,15 @@ export type AgendaScreenProps = {
    * rullning) — `npm run visual agenda`.
    */
   autoScrollToNow?: boolean;
+  /** Standard `true` (design lab). WP-21: `/app/agenda` sätter `false` — flytt finns inte
+   * än, se `event-popover.tsx`. */
+  showMover?: boolean;
+  /** WP-21: sparar Llegó/No vino mot servern (server action, bunden till ägaren och
+   * företaget i `page.tsx`). `undefined` i design lab — bara den lokala statusen ändras. */
+  onArrival?: (
+    bookingId: string,
+    status: "completed" | "no_show",
+  ) => void | Promise<void>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -92,6 +101,8 @@ export function AgendaScreen({
   initialSelectedBookingId,
   className,
   autoScrollToNow = true,
+  showMover = true,
+  onArrival,
 }: AgendaScreenProps) {
   const router = useRouter();
   const tz = data.timezone as TimeZone;
@@ -169,16 +180,22 @@ export function AgendaScreen({
         tz={tz}
         open={popoverOpen}
         onOpenChange={setPopoverOpen}
-        onLlego={() =>
+        onLlego={() => {
           setArrivalOverrides((prev) => ({
             ...prev,
             [booking.id]: "completed",
-          }))
-        }
-        onNoVino={() =>
-          setArrivalOverrides((prev) => ({ ...prev, [booking.id]: "no_show" }))
-        }
-        onMover={() => setPopoverOpen(false)}
+          }));
+          void Promise.resolve(onArrival?.(booking.id, "completed")).catch(
+            () => undefined,
+          );
+        }}
+        onNoVino={() => {
+          setArrivalOverrides((prev) => ({ ...prev, [booking.id]: "no_show" }));
+          void Promise.resolve(onArrival?.(booking.id, "no_show")).catch(
+            () => undefined,
+          );
+        }}
+        onMover={showMover ? () => setPopoverOpen(false) : undefined}
         trigger={trigger}
       />
     );

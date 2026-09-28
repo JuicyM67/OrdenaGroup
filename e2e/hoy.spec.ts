@@ -17,13 +17,6 @@ function hoyUrl(estado: (typeof ESTADOS)[number]) {
   return estado ? `/design-lab/hoy?estado=${estado}` : "/design-lab/hoy";
 }
 
-// /app/hoy renderas i full, responsiv bredd (till skillnad från /design-lab/hoy, som är en
-// fast 390×844-artboard för npm run visual, se page.tsx). Reflow/scroll-testerna nedan
-// testar därför den riktiga routen, med samma fixtures via ?estado=.
-function appHoyUrl(estado: (typeof ESTADOS)[number]) {
-  return estado ? `/app/hoy?estado=${estado}` : "/app/hoy";
-}
-
 async function tabUntilFocused(page: Page, locator: Locator, maxPresses = 400) {
   const handle = await locator.elementHandle();
   if (!handle) throw new Error("tabUntilFocused: elementet finns inte");
@@ -54,40 +47,28 @@ test.describe("Hoy — routes", () => {
     ).toBeVisible();
   });
 
-  test("/app/hoy svarar 200 med en h1 'Hoy'", async ({ page }) => {
-    const response = await page.goto("/app/hoy");
-    expect(response?.status()).toBe(200);
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Hoy" }),
-    ).toBeVisible();
-  });
-
-  test("/app/hoy har noindex", async ({ page }) => {
+  // WP-21: /app/hoy visar riktig data (D-020s grind borttagen, D-024). Den delade
+  // storageState-sessionen (playwright.config.ts) saknar företag, så den redirectas till
+  // onboarding, precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
+  // innehåll (h1, noindex, en ägare MED företag) testas i e2e/owner-live.spec.ts.
+  test("/app/hoy utan negocio → redirige a /app/onboarding", async ({
+    page,
+  }) => {
     await page.goto("/app/hoy");
-    const robots = page.locator('meta[name="robots"]');
-    await expect(robots).toHaveAttribute("content", /noindex/);
+    await page.waitForURL("**/app/onboarding");
   });
 });
 
-test.describe("Hoy — 360 px, ingen horisontell scroll", () => {
-  for (const estado of ESTADOS) {
-    test(`?estado=${estado ?? "(standard)"}: scrollWidth === 360`, async ({
-      page,
-    }) => {
-      await page.setViewportSize({ width: 360, height: 800 });
-      await page.goto(appHoyUrl(estado));
-      const width = await page.evaluate(
-        () => document.documentElement.scrollWidth,
-      );
-      expect(width).toBe(360);
-    });
-  }
-
-  test("Llegó/No vino bryts inte till flera rader (whitespace: nowrap, höjd h-12)", async ({
+// WP-21: /app/hoy visar riktig data — `?estado=` finns inte längre där (det var bara
+// design labs tillståndssimulering). Reflowen vid 360 px för en riktig ägare (utan
+// `?estado=`) testas i e2e/owner-live.spec.ts. Style-/layoutkontroller som inte beror på
+// vilken data som visas (nowrap-knappar, "muchas"-scrollen) körs kvar mot /design-lab/hoy.
+test.describe("Hoy — Llegó/No vino bryts inte till flera rader", () => {
+  test("whitespace: nowrap, höjd h-12 (/design-lab/hoy, 360 px)", async ({
     page,
   }) => {
     await page.setViewportSize({ width: 360, height: 800 });
-    await page.goto("/app/hoy");
+    await page.goto("/design-lab/hoy");
     for (const name of ["Llegó", "No vino"]) {
       const button = page.getByRole("button", { name });
       const box = await button.boundingBox();
@@ -100,26 +81,12 @@ test.describe("Hoy — 360 px, ingen horisontell scroll", () => {
   });
 });
 
-test.describe("Hoy — muchas (scroll)", () => {
-  test("sista radens boundingBox ligger ovanför flikradens topp när sidan är scrollad till botten", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/app/hoy?estado=muchas");
-    await page.evaluate(() =>
-      window.scrollTo(0, document.documentElement.scrollHeight),
-    );
-    const rows = page.locator("li").filter({ hasText: /Vicente Silva/ });
-    await expect(rows).toBeVisible();
-    const rowBox = await rows.boundingBox();
-    const tabBarBox = await page
-      .getByRole("navigation", { name: "Secciones" })
-      .boundingBox();
-    expect(rowBox).not.toBeNull();
-    expect(tabBarBox).not.toBeNull();
-    expect(rowBox!.y + rowBox!.height).toBeLessThanOrEqual(tabBarBox!.y + 1);
-  });
-});
+// "Hoy — muchas (scroll)" (sista radens boundingBox ovanför flikraden efter sidscroll):
+// borttaget (WP-21). Testade sidscroll på den RIKTIGA, responsiva /app/hoy (?estado=muchas,
+// 14 rader) — /design-lab/hoy är en fast artboard med `overflow-hidden`
+// (design-lab/hoy/page.tsx), där window.scrollTo inte gör något, och riktig data har
+// varken `?estado=` eller en dag med 14 bokningar. Pixel-/scrollregression av det slaget
+// hör till `npm run visual`, inte till WP-21 (se CLAUDE.md "inga pixeltester").
 
 test.describe("Hoy — klickytor ≥ 44×44", () => {
   test("flikar, snabbåtgärder, Llegó/No vino och notisknappen", async ({
@@ -298,12 +265,7 @@ test.describe("Hoy — axe", () => {
       expect(results.violations).toEqual([]);
     });
   }
-
-  test("/app/hoy har inga axe-överträdelser", async ({ page }) => {
-    await page.goto("/app/hoy");
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
-      .analyze();
-    expect(results.violations).toEqual([]);
-  });
+  // "/app/hoy har inga axe-överträdelser": borttaget (WP-21) — samma skärm/komponent som
+  // /design-lab/hoy ovan (redan täckt); den delade storageState-sessionen saknar företag,
+  // så /app/hoy redirectar till /app/onboarding (se "Hoy — routes").
 });

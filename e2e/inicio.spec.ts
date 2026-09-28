@@ -53,15 +53,26 @@ async function assertVisibleFocusRing(locator: Locator) {
 }
 
 test.describe("rutter", () => {
-  for (const url of ["/design-lab/main", "/app/inicio"]) {
-    test(`${url} svarar 200 och har exakt en h1 "Inicio"`, async ({ page }) => {
-      const response = await page.goto(url);
-      expect(response?.status()).toBe(200);
-      const h1 = page.getByRole("heading", { level: 1 });
-      await expect(h1).toHaveCount(1);
-      await expect(h1).toHaveText("Inicio");
-    });
-  }
+  test('/design-lab/main svarar 200 och har exakt en h1 "Inicio"', async ({
+    page,
+  }) => {
+    const response = await page.goto("/design-lab/main");
+    expect(response?.status()).toBe(200);
+    const h1 = page.getByRole("heading", { level: 1 });
+    await expect(h1).toHaveCount(1);
+    await expect(h1).toHaveText("Inicio");
+  });
+
+  // WP-21: /app/inicio visar riktig data (D-020s grind borttagen, D-024). Den delade
+  // storageState-sessionen (playwright.config.ts) saknar företag, så den redirectas till
+  // onboarding, precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
+  // innehåll (en ägare MED företag) testas i e2e/owner-live.spec.ts.
+  test("/app/inicio utan negocio → redirige a /app/onboarding", async ({
+    page,
+  }) => {
+    await page.goto("/app/inicio");
+    await page.waitForURL("**/app/onboarding");
+  });
 });
 
 test.describe("tidszon (America/Santiago oavsett webbläsarens tidszon)", () => {
@@ -129,25 +140,9 @@ test("tangentbord: nav → header → VER DETALLE → Enviar recordatorio → Ve
   await assertVisibleFocusRing(compartir);
 });
 
-test("1280×800 en /app/inicio: sin scroll horizontal y el hero no se recorta", async ({
-  page,
-}) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await page.goto("/app/inicio");
-
-  const noHorizontalScroll = await page.evaluate(
-    () =>
-      document.documentElement.scrollWidth <=
-      document.documentElement.clientWidth,
-  );
-  expect(noHorizontalScroll).toBe(true);
-
-  const hero = page.getByRole("region", { name: "Resumen de la semana" });
-  const clipped = await hero.evaluate(
-    (el) => el.scrollHeight > el.clientHeight,
-  );
-  expect(clipped).toBe(false);
-});
+// "1280×800 en /app/inicio: sin scroll horizontal y el hero no se recorta": flyttad till
+// e2e/owner-live.spec.ts (WP-21) — kräver en ägare MED företag, som den delade
+// storageState-sessionen här saknar (se "rutter" ovan).
 
 test('"Agenda de hoy" hace scroll interno con 14 filas (?estado=lleno), la página no se estira', async ({
   page,
