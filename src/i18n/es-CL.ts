@@ -486,6 +486,29 @@ export const inicio = {
       porcentaje: number;
     }): string => `${p.fecha} · ${p.hora} · −${p.porcentaje}%`,
   },
+  /** Agregado al final por copywriter-es-cl (tarjeta del link de reservas en
+   * Inicio, para copiarlo o compartirlo por WhatsApp): mismo patrón que
+   * `estados.pendientePago`, única excepción permitida en esta exportación
+   * ya existente. `titulo` repite a propósito el mismo texto que
+   * `negocio.slug.label` (GUIA §4: mismo vocabulario para el mismo
+   * concepto), y `ayuda` repite el texto de
+   * `landing.comoFunciona.pasos.compartir.texto` (mismo consejo, dos
+   * lugares). */
+  tuLink: {
+    titulo: "Tu link de reservas",
+    ayuda: "Pégalo en tu Instagram y compártelo por WhatsApp.",
+    copiar: "Copiar link",
+    copiado: "Link copiado",
+    compartirWhatsapp: "Compartir por WhatsApp",
+    /** Mensaje prellenado de un link `wa.me/?text=…` que el dueño le manda a
+     * sus clientes: no es una plantilla de Meta (no pasa por la revisión de
+     * WhatsApp), es texto de sesión que el propio dueño edita y envía. */
+    mensajeWhatsapp: (p: { negocio: string; url: string }): string =>
+      `Hola, puedes reservar tu hora en ${p.negocio} aquí: ${p.url}`,
+    /** GUIA: "página de reservas" es el término fijo para la página a la que
+     * lleva el link (distinta del link en sí). */
+    abrir: "Ver mi página de reservas",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -1844,3 +1867,241 @@ export const abono = {
     devolverEnMercadopago: "Devuélvelo desde tu cuenta de Mercado Pago.",
   },
 } as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// landing: página pública de marketing (no tiene `.dc.html` de referencia:
+// no hay prueba de paridad de diseño, solo de tono y de marca, igual que las
+// exportaciones de WP-03b). Mismas reglas de GUIA_DE_ESTILO.md, más una
+// propia: ningún texto estático puede contener el verbo "llenar" en 3.ª
+// persona singular, porque coincide con `brand.name` y
+// activaría el mismo patrón que protege el nombre del producto (regla dura
+// 10). Por eso acá se dice "llenar tu agenda", "se ocupa sola", "llenó" en
+// pretérito, nunca esa forma: la única fuente de la frase del lema es
+// `brand.tagline`, recibida como parámetro en `hero.titulo`.
+//
+// Los precios (heltal CLP, regla dura 5) no caben en `Trad` (solo strings o
+// funciones que devuelven string), así que viven aparte en `PLANES_LANDING`,
+// mismo patrón que `plantillasWhatsapp`/`CAJA_METODOS_MANUALES`: la UI los
+// formatea con `src/lib/format/` (WP-04), igual que cualquier otro monto.
+// ---------------------------------------------------------------------------
+
+/** Mismo botón en el hero y en el cierre de la página (una sola fuente). */
+const LANDING_CTA_CREAR_GRATIS = "Crear mi agenda gratis";
+
+/** Mismo consejo que `inicio.tuLink.ayuda` (GUIA §4: mismo vocabulario para
+ * el mismo concepto, en dos lugares distintos). */
+const LANDING_PEGALO_EN_INSTAGRAM =
+  "Pégalo en tu Instagram y compártelo por WhatsApp.";
+
+export const landing = {
+  meta: {
+    titulo: (p: { nombre: string }): string =>
+      `${p.nombre} — reservas online para tu negocio`,
+    /** ≤ 155 caracteres (con `brand.name` real, ver `es-CL.landing.test.ts`). */
+    descripcion: (p: { nombre: string }): string =>
+      `${p.nombre} es el sistema de reservas para barberías, peluquerías, estética y kinesiología. Tus clientes reservan solos con un link. Prueba gratis.`,
+  },
+  nav: {
+    precios: "Precios",
+    preguntas: "Preguntas",
+    entrar: "Entrar",
+    ctaCrearAgenda: "Crear mi agenda",
+  },
+  hero: {
+    /** Recibe la tagline como parámetro (nunca escrita a mano acá, regla
+     * dura 10): quien arma la pantalla la llama con `brand.tagline`. */
+    titulo: (p: { tagline: string }): string => p.tagline,
+    subtitulo:
+      "El sistema de reservas para barberías, peluquerías, estética y kinesiología. Tus clientes reservan solos con un link, sin llamadas ni mensajes uno a uno.",
+    ctaPrimario: LANDING_CTA_CREAR_GRATIS,
+    ctaSecundario: "Ver una agenda de ejemplo",
+  },
+  comoFunciona: {
+    titulo: "Cómo funciona",
+    pasos: {
+      crear: {
+        titulo: "Crea tu agenda",
+        texto: "Cárgala en minutos: tus servicios, tu equipo y tus horarios.",
+      },
+      compartir: {
+        titulo: "Comparte tu link",
+        texto: LANDING_PEGALO_EN_INSTAGRAM,
+      },
+      reservan: {
+        titulo: "Recibe tus reservas",
+        texto:
+          "Tus clientes reservan solos, cuando quieran. Tú ves todo en tu agenda.",
+      },
+    },
+  },
+  beneficios: {
+    titulo: "Todo lo que necesitas para llenar tu agenda",
+    items: {
+      linkPropio: {
+        titulo: "Tu link de reservas",
+        texto:
+          "Una página con tu marca donde tus clientes reservan solos, sin apps que instalar.",
+      },
+      agendaPorProfesional: {
+        titulo: "Agenda por profesional",
+        texto:
+          "Cada persona de tu equipo tiene su propio calendario y sus propios horarios.",
+      },
+      recordatorios: {
+        titulo: "Recordatorios automáticos",
+        texto:
+          "Por WhatsApp en los planes pagados, por correo en el plan gratis. Menos olvidos, menos horas vacías.",
+      },
+      listaDeEspera: {
+        titulo: "Lista de espera",
+        texto:
+          "Si alguien cancela, avisamos a quien está esperando y esa hora se ocupa sola.",
+      },
+      abono: {
+        titulo: "Abono para reducir inasistencias",
+        texto:
+          "Pide un abono al reservar. La plata llega directo a tu propia cuenta de Mercado Pago.",
+      },
+      precioUnico: {
+        titulo: "Un precio para todo tu local",
+        texto:
+          "Sin cobros por persona: pagas un solo precio, agregues el equipo que agregues.",
+      },
+    },
+  },
+  paraQuien: {
+    titulo: "Para quién es",
+    items: {
+      barberias: "Barberías",
+      peluquerias: "Peluquerías",
+      esteticaYUnas: "Estética y uñas",
+      kinesiologiaYMasajes: "Kinesiología y masajes",
+    },
+  },
+  precios: {
+    titulo: "Precios",
+    subtitulo:
+      "Precios en CLP al mes + IVA. 30 días de prueba en planes pagados, sin permanencia.",
+    /** Sin comprometer un número exacto de cupos: GO_TO_MARKET.md todavía
+     * los deja como rango ("50–100"). */
+    fundador:
+      "Los primeros negocios que se suman pagan la mitad para siempre (plan Fundador).",
+  },
+  preguntas: {
+    titulo: "Preguntas frecuentes",
+    items: {
+      instalar: {
+        pregunta: "¿Necesito instalar algo?",
+        respuesta:
+          "No. Todo funciona desde el navegador, tanto para ti como para tus clientes.",
+      },
+      comoReservan: {
+        pregunta: "¿Cómo reservan mis clientes?",
+        respuesta:
+          "Entran a tu link, eligen servicio, profesional y hora, y quedan confirmados al tiro. Sin llamadas ni conversar por WhatsApp.",
+      },
+      noLlego: {
+        pregunta: "¿Qué pasa si alguien no llega?",
+        respuesta:
+          'Marcas "No vino" en tu agenda y, si pediste abono, tú decides qué hacer con esa plata.',
+      },
+      permanencia: {
+        pregunta: "¿Tiene permanencia?",
+        respuesta:
+          "No. Los planes pagados tienen 30 días de prueba y puedes cambiarte de plan o darte de baja cuando quieras.",
+      },
+      datos: {
+        pregunta: "¿Qué pasa con mis datos y los de mis clientes?",
+        respuesta:
+          "Son tuyos. Puedes exportarlos o pedir que los eliminemos cuando quieras.",
+      },
+      ayudaConfig: {
+        pregunta: "¿Me ayudan a configurarlo?",
+        respuesta:
+          "En el onboarding la dejas lista en minutos. Si prefieres, también te acompañamos por WhatsApp.",
+      },
+    },
+  },
+  ctaFinal: {
+    titulo: "¿Lista para dejar de perder horas?",
+    texto:
+      "Crea tu cuenta gratis, sin tarjeta de crédito. Si quieres WhatsApp y lista de espera, tienes 30 días de prueba en los planes pagados.",
+    boton: LANDING_CTA_CREAR_GRATIS,
+  },
+  footer: {
+    texto: "El sistema de reservas para pymes chilenas.",
+    links: {
+      precios: "Precios",
+      entrar: "Entrar",
+    },
+    hechoEnSantiago: "Hecho en Santiago.",
+  },
+} as const satisfies Trad;
+
+/** Un plan de precios de la landing (WP-XX, sin `.dc.html` de referencia).
+ * `precioClp` es un heltal CLP (regla dura 5): la UI lo formatea con
+ * `src/lib/format/` como cualquier otro monto, en vez de guardar acá un
+ * string ya formateado que quedaría desactualizado si cambia el criterio de
+ * formato. No vive dentro de `landing` porque `Trad` no admite números ni
+ * arrays (mismo motivo que `plantillasWhatsapp`/`CAJA_METODOS_MANUALES`). */
+export interface PlanLanding {
+  readonly id: "gratis" | "emprende" | "equipo" | "local";
+  readonly nombre: string;
+  /** Heltal CLP, 0 para el plan Gratis. */
+  readonly precioClp: number;
+  readonly puntos: readonly string[];
+  readonly cta: string;
+}
+
+/** Contenido de GO_TO_MARKET.md §Prissättning, en el mismo orden. */
+export const PLANES_LANDING: readonly PlanLanding[] = [
+  {
+    id: "gratis",
+    nombre: "Gratis",
+    precioClp: 0,
+    puntos: [
+      "1 profesional",
+      "Tu link de reservas",
+      "Calendario",
+      "Recordatorios por correo",
+    ],
+    cta: "Elegir Gratis",
+  },
+  {
+    id: "emprende",
+    nombre: "Emprende",
+    precioClp: 9990,
+    puntos: [
+      "1 profesional",
+      "Recordatorios por WhatsApp (~150 al mes)",
+      "Lista de espera",
+      "Tarjeta de sellos digital",
+      "Abono para reservar",
+    ],
+    cta: "Elegir Emprende",
+  },
+  {
+    id: "equipo",
+    nombre: "Equipo",
+    precioClp: 19990,
+    puntos: [
+      "Hasta 5 profesionales",
+      "~600 WhatsApp al mes",
+      "Horas flash",
+      "Te echamos de menos",
+      "Informes",
+    ],
+    cta: "Elegir Equipo",
+  },
+  {
+    id: "local",
+    nombre: "Local",
+    precioClp: 34990,
+    puntos: [
+      "Hasta 12 profesionales",
+      "Más WhatsApp incluido",
+      "Soporte prioritario",
+    ],
+    cta: "Elegir Local",
+  },
+];

@@ -220,7 +220,33 @@ Ningún campo de notas libres pide ni sugiere anotar datos de salud:
 - `horarios.bloqueos.notaAyuda` (nota de un bloqueo o ausencia, por ejemplo
   una licencia médica): "Solo tu equipo la ve. No anotes datos de salud."
 
-## 10. Cómo revisar un texto nuevo
+## 11. Landing pública (`landing`, `PLANES_LANDING`, `inicio.tuLink`)
+
+- Mismo tono que el resto del producto (tú, cercana, sin anglicismos), pero
+  con permiso para vender: acá sí se puede decir "gratis", "prueba" o nombrar
+  un plan por su precio, algo que las plantillas de WhatsApp (utility) tienen
+  prohibido (§6).
+- **Nunca la palabra "llena" suelta.** Es la 3.ª persona de "llenar" y
+  coincide exactamente con `brand.name`: la prueba de marca la trataría como
+  el nombre del producto escrito a mano. Se dice "llenar tu agenda", "se
+  ocupa sola", "llenó" (pretérito) — nunca "se llena". La única frase que
+  puede decir "tu agenda se llena sola" es `brand.tagline`, y solo entra a la
+  landing como parámetro (`hero.titulo({ tagline })`), nunca escrita a mano
+  en `es-CL.ts`.
+- **No promete nada que no esté en los documentos de producto.** Los
+  cupos del plan Fundador son un rango en GO_TO_MARKET.md ("50–100"): la
+  landing no compromete un número. El tiempo de configuración es el que dice
+  MVP_SPEC.md ("menos de 10 minutos" en el onboarding), nunca "hoy mismo" ni
+  otra promesa sin fuente.
+- Los precios (`PLANES_LANDING`) son heltal CLP (regla dura 5), no strings
+  ya formateados: la landing los formatea igual que cualquier otro monto del
+  producto, con `src/lib/format/`.
+- `inicio.tuLink` (tarjeta para copiar/compartir el link de reservas) usa el
+  mismo vocabulario fijo que el resto del producto: "link de reservas"
+  (nunca "enlace"), "página de reservas" para la página a la que lleva ese
+  link.
+
+## 12. Cómo revisar un texto nuevo
 
 1. ¿Está en `docs/design/reference/*.dc.html`? Cópialo tal cual, incluyendo
    mayúsculas, tildes y los caracteres especiales (`·`, `−`, `ª`).
