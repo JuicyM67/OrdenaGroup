@@ -10,29 +10,10 @@
 import { staffBgClass } from "@/components/agenda/agenda-view";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
-import { market } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
-import { formatClp } from "@/lib/format/clp";
 import { formatDuration } from "@/lib/format/dates";
-import { WEEKDAY_MIN } from "@/lib/format/calendar-es-CL";
 
-// Exempeldata per marknad (dekoration, inte UI-text). Belopp i CLP resp. kr.
-const DEMO = {
-  CL: {
-    dagar: WEEKDAY_MIN,
-    tjanster: ["Corte", "Color", "Uñas", "Masaje", "Barba"],
-    kort: "Corte + barba",
-    pris: formatClp(12_000),
-    kund: "Joaquín Rivas",
-  },
-  SE: {
-    dagar: ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"],
-    tjanster: ["Klippning", "Färg", "Naglar", "Massage", "Skägg"],
-    kort: "Klippning + skägg",
-    pris: "450 kr",
-    kund: "Elsa Lindqvist",
-  },
-}[market];
+import { DEMO } from "./demo-data";
 
 type MiniEvent = {
   title: string;

@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { strokeCard } from "@/components/ui/icons";
 import { copy } from "@/i18n/marketing";
-import { formatClp } from "@/lib/format/clp";
+import { DEMO } from "./demo-data";
 
 const STEP_ANIMATIONS = [
   "animate-step-fade-1",
@@ -40,14 +40,14 @@ function ServicioFrame() {
     <div className="flex flex-col gap-2">
       <span className="text-13 font-bold text-on-dark-muted">{PASOS[0]}</span>
       <div className="flex items-center justify-between rounded-tile bg-lime px-3.5 py-3">
-        <span className="text-14 font-bold text-ink">Corte + barba</span>
-        <span className="text-13 font-semibold text-ink">
-          {formatClp(12_000)}
-        </span>
+        <span className="text-14 font-bold text-ink">{DEMO.kort}</span>
+        <span className="text-13 font-semibold text-ink">{DEMO.pris}</span>
       </div>
       <div className="flex items-center justify-between rounded-tile bg-dark-2 px-3.5 py-3">
-        <span className="text-14 font-semibold text-on-dark-soft">Color</span>
-        <span className="text-13 text-on-dark-muted">{formatClp(18_000)}</span>
+        <span className="text-14 font-semibold text-on-dark-soft">
+          {DEMO.tjanst2}
+        </span>
+        <span className="text-13 text-on-dark-muted">{DEMO.pris2}</span>
       </div>
     </div>
   );
@@ -79,7 +79,7 @@ function DatosFrame() {
     <div className="flex flex-col gap-2">
       <span className="text-13 font-bold text-on-dark-muted">{PASOS[2]}</span>
       <div className="flex h-9 items-center rounded-control bg-dark-2 px-3.5 text-14 font-semibold text-on-dark-soft">
-        Joaquín Rivas
+        {DEMO.kund}
       </div>
       <div className="flex h-9 items-center rounded-control bg-dark-2 px-3.5 text-14 font-semibold text-on-dark-soft">
         +56 9 …

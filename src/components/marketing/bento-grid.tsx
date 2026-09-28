@@ -12,6 +12,7 @@ import Image from "next/image";
 import { Card, type CardProps } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { strokeCard } from "@/components/ui/icons";
+import { DEMO } from "./demo-data";
 
 export type BentoItem = {
   icon: LucideIcon;
@@ -75,7 +76,7 @@ function LinkMockup() {
       className="flex w-fit items-center gap-1.5 rounded-full bg-dark-2 px-3 py-1.5 text-11 font-semibold text-on-dark"
     >
       <Link2 aria-hidden="true" className="size-3.5" strokeWidth={strokeCard} />
-      tunegocio.cl/reservar
+      {DEMO.lank}
     </div>
   );
 }

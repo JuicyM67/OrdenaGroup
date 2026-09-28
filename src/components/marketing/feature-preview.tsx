@@ -7,22 +7,22 @@ import { staffBgClass } from "@/components/agenda/agenda-view";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { copy } from "@/i18n/marketing";
-import { formatClp } from "@/lib/format/clp";
 import { formatDuration } from "@/lib/format/dates";
 import { WEEKDAY_MIN } from "@/lib/format/calendar-es-CL";
+import { DEMO } from "./demo-data";
 
 export type FeaturePreviewVariant = "reservas" | "agenda" | "hoy";
 
 const AGENDA_COLUMNS = [
   {
     day: WEEKDAY_MIN[0]!,
-    title: "Corte",
+    title: DEMO.tjanster[0]!,
     time: "10:00",
     tone: staffBgClass(1),
   },
   {
     day: WEEKDAY_MIN[1]!,
-    title: "Color",
+    title: DEMO.tjanster[1]!,
     time: "11:00",
     tone: staffBgClass(2),
   },
@@ -32,9 +32,9 @@ const AGENDA_COLUMNS = [
 function ReservasPreview() {
   return (
     <div className="w-full max-w-80 rounded-tile bg-surface p-4 shadow-popover">
-      <div className="text-15 font-bold text-ink">Corte + barba</div>
+      <div className="text-15 font-bold text-ink">{DEMO.kort}</div>
       <div className="text-13 text-muted">
-        {formatDuration(35)} · {formatClp(12_000)}
+        {formatDuration(35)} · {DEMO.pris}
       </div>
       <div className="mt-3 grid grid-cols-3 gap-1.5">
         <span className="flex h-10 items-center justify-center rounded-control bg-canvas text-13 font-bold text-ink">
@@ -90,7 +90,7 @@ function HoyPreview() {
       <div className="mt-3 font-display text-32 leading-none font-semibold tracking-display">
         15:00
       </div>
-      <div className="mt-2 truncate text-16 font-bold">Joaquín Rivas</div>
+      <div className="mt-2 truncate text-16 font-bold">{DEMO.kund}</div>
       <div className="mt-4 grid grid-cols-2 gap-2">
         <span className="flex h-10 items-center justify-center rounded-control bg-lime text-13 font-bold text-ink">
           {copy.hoy.acciones.llego}

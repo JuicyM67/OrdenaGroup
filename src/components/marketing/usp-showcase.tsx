@@ -20,6 +20,7 @@ import { Card, type CardProps } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { strokeCard } from "@/components/ui/icons";
 import { copy } from "@/i18n/marketing";
+import { DEMO } from "./demo-data";
 
 type UspTone = "lime" | "lavender" | "peach" | "dark";
 
@@ -51,7 +52,7 @@ function LinkVisual() {
   return (
     <div className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-11 font-semibold text-on-dark">
       <Link2 aria-hidden="true" className="size-3.5" strokeWidth={strokeCard} />
-      tunegocio.cl/reservar
+      {DEMO.lank}
     </div>
   );
 }
