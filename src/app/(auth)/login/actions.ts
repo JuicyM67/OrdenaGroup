@@ -40,10 +40,15 @@ export async function requestMagicLink(
 
   try {
     const supabase = await createSupabaseServerClient();
-    // Ingen `emailRedirectTo`: länken i mejlet byggs av mallen själv
-    // (supabase/templates/magic_link.html, D-019) mot `{{ .SiteURL }}/auth/confirm`, som
-    // efter verifiering går vidare till /app (default i src/app/auth/confirm/route.ts).
-    const { error } = await supabase.auth.signInWithOtp({ email });
+    // Med våra mallar (lokalt) byggs länken mot `{{ .SiteURL }}/auth/confirm?token_hash=…`.
+    // Utan egna mallar (staging utan egen SMTP) går Supabases standardlänk via
+    // `/auth/v1/verify` och tillbaka hit med `?code=`; `emailRedirectTo` pekar den till
+    // `/auth/confirm`, som hanterar båda (src/app/auth/confirm/route.ts).
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: appUrl ? { emailRedirectTo: `${appUrl}/auth/confirm` } : {},
+    });
     if (error) return { ok: false, code: mapAuthErrorCode(error.code) };
     return { ok: true };
   } catch {
