@@ -43,8 +43,14 @@ select ok(
   ),
   'inga e-postadresser utanför @example.com'
 );
+-- Bara seed-företagets medlemmar: i staging finns även riktiga testinloggningar.
 select ok(
-  not exists (select 1 from auth.users where email is not null and email !~ '@example\.com$'),
+  not exists (
+    select 1 from auth.users u
+    join public.memberships m on m.user_id = u.id
+    join public.businesses b on b.id = m.business_id
+    where b.slug = 'barberia-norte' and u.email is not null and u.email !~ '@example\.com$'
+  ),
   'ägarens e-post är också @example.com'
 );
 -- qa6/K6: företagets eget telefonnummer är också fiktivt (+5690000xxxx).
