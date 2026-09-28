@@ -59,3 +59,4 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-28 | Egen SMTP (Resend) för Supabase Auth i staging/prod | orkestrerare (WP-15) | Inbyggd e-post har låg kvot | 1 (före pilot) |
 | 2026-09-28 | Rate limiting på publik bokning (per IP och telefon) | security-reviewer (WP-20) | Annars kan vem som helst fylla en agenda med falska bokningar | 1 (före pilot) |
 | 2026-09-28 | Samtycke från publik bokning ska inte skriva över ägarens register (`manual`) på befintlig kundrad med obekräftat nummer | security-reviewer (WP-20) | Tredje part kan annars ändra någon annans samtycke | 1 (WP-26) |
+| 2026-09-28 | Egna felmeddelanden för regelfälten i Ajustes (framförhållning, dagar framåt, avbokningsfönster, rutnät) i stället för `comun.algoSalioMal` | ui-engineer (WP-15b) | Tydligare för ägaren | 1 (copywriter) |

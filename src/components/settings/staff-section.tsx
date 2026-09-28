@@ -4,6 +4,7 @@
 // hace) y activar/desactivar. Sin eliminar ni color (fuera del alcance, ver la plan). Un
 // solo formulario abierto a la vez.
 import { useState } from "react";
+import { comun } from "@/i18n/es-CL";
 
 import { validateRequired } from "@/components/onboarding/client-validation";
 import { Button } from "@/components/ui/button";
@@ -14,7 +15,6 @@ import { TextField } from "@/components/ui/text-field";
 import { ajustes, profesionales } from "@/i18n";
 
 import { ajustesErrorText } from "./error-text";
-import { CTA_EDITAR } from "./shared-copy";
 import type {
   AjustesActions,
   AjustesService,
@@ -239,7 +239,7 @@ export function StaffSection({
                   size="sm"
                   onClick={() => startEdit(s)}
                 >
-                  {CTA_EDITAR}
+                  {comun.editar}
                 </Button>
                 <Button
                   type="button"

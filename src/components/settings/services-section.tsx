@@ -5,6 +5,7 @@
 // servicio con reservas; en vez de manejar ese error, esta pantalla no ofrece borrar —
 // ver `docs/tasks/plans/WP-15b.md`). Un solo formulario abierto a la vez (nuevo o editar).
 import { useState } from "react";
+import { comun } from "@/i18n/es-CL";
 
 import {
   validateDurationMin,
@@ -20,7 +21,6 @@ import { formatClp } from "@/lib/format/clp";
 import { formatDuration } from "@/lib/format/dates";
 
 import { ajustesErrorText } from "./error-text";
-import { CTA_EDITAR } from "./shared-copy";
 import type { AjustesActions, AjustesService } from "./types";
 
 type RowForm = {
@@ -290,7 +290,7 @@ export function ServicesSection({
                   size="sm"
                   onClick={() => startEdit(s)}
                 >
-                  {CTA_EDITAR}
+                  {comun.editar}
                 </Button>
                 <Button
                   type="button"
