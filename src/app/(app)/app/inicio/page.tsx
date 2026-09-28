@@ -34,5 +34,10 @@ export default async function InicioPage() {
   const owner = ownerNameParts(user.email);
   const data = await loadOwnerInicio(user.id, business.id, today, now, owner);
 
-  return <InicioScreen data={data} />;
+  return (
+    <InicioScreen
+      data={data}
+      bookingLink={{ slug: business.slug, businessName: business.name }}
+    />
+  );
 }

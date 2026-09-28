@@ -8,6 +8,7 @@ import { useState } from "react";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
 import { PageHeader } from "@/components/ui/page-header";
+import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { nav } from "@/i18n";
 
 import { BusinessSection } from "./business-section";
@@ -35,6 +36,8 @@ export function AjustesScreen({ data, actions }: AjustesScreenProps) {
             onSaved={setBusiness}
             action={actions.updateBusinessSettings}
           />
+
+          <TuLinkCard slug={business.slug} businessName={business.name} />
 
           <ServicesSection
             services={data.services}

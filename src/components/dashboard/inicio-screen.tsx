@@ -7,6 +7,7 @@ import { Bell, Search } from "lucide-react";
 import { IconButton } from "@/components/ui/icon-button";
 import { PageHeader } from "@/components/ui/page-header";
 import { UserPill } from "@/components/ui/user-pill";
+import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { inicio, nav } from "@/i18n";
 import { formatClp } from "@/lib/format/clp";
 import { SANTIAGO, toLocalDate } from "@/lib/format/dates";
@@ -37,13 +38,23 @@ export type InicioScreenProps = {
    * höjdklassgrupp, så `cn()` (tailwind-merge) låter den vinna.
    */
   shellClassName?: string;
+  /**
+   * Slug/nombre para la tarjeta "Tu link de reservas" (aside). Solo se pasa desde la
+   * página real /app/inicio — el design lab (fixtures) no lo incluye, así que
+   * `npm run visual main` sigue comparando exactamente el mismo árbol que hoy.
+   */
+  bookingLink?: { slug: string; businessName: string };
 };
 
 const DETAIL_HREF = "#detalle-semana";
 const AGENDA_HREF = "/app/agenda";
 const FLASH_HREF = "/app/flash";
 
-export function InicioScreen({ data, shellClassName }: InicioScreenProps) {
+export function InicioScreen({
+  data,
+  shellClassName,
+  bookingLink,
+}: InicioScreenProps) {
   const now = mustParseInstant(data.now, "InicioScreen");
   const bookings = upcomingToday(data.today, now);
   const notificationsCount = data.notifications.count;
@@ -111,13 +122,19 @@ export function InicioScreen({ data, shellClassName }: InicioScreenProps) {
           <AgendaToday bookings={bookings} href={AGENDA_HREF} />
         </div>
 
-        <aside className="flex w-90 shrink-0 flex-col gap-4">
+        <aside className="flex w-90 shrink-0 flex-col gap-4 overflow-y-auto">
           <CalendarCard
             month={data.calendar.month}
             today={toLocalDate(now, SANTIAGO)}
             markedDates={data.calendar.markedDates}
           />
           <FlashCard activeFlash={data.activeFlash} href={FLASH_HREF} />
+          {bookingLink ? (
+            <TuLinkCard
+              slug={bookingLink.slug}
+              businessName={bookingLink.businessName}
+            />
+          ) : null}
         </aside>
       </div>
     </AppShell>
