@@ -1569,6 +1569,12 @@ export const servicios = {
     categoryLabel: "Categoría (opcional)",
     profesionalesLabel: "¿Quién lo hace?",
     mostrarEnPaginaLabel: "Mostrar en la página de reservas",
+    /** Nuevo en WP-41 (`services.description`, ≤ 500 caracteres): se
+     * muestra en la página de reservas junto a la duración del servicio
+     * (`perfil.publico.servicioDetalle`). */
+    descripcionLabel: "Descripción (opcional)",
+    descripcionPlaceholder: "Cuéntale al cliente qué incluye este servicio.",
+    descripcionAyuda: "Se muestra en tu página de reservas.",
     subirAria: "Subir",
     bajarAria: "Bajar",
   },
@@ -1580,6 +1586,8 @@ export const servicios = {
      * reservas lo bloquea la base de datos (plan, paso 3). */
     service_in_use:
       "Ese servicio tiene reservas. Desactívalo en vez de borrarlo.",
+    /** Nuevo en WP-41, tope del mismo campo de arriba. */
+    descripcionMuyLarga: "La descripción no puede tener más de 500 caracteres.",
   },
   vacio: "Agrega los servicios que ofreces.",
   contador: (p: { n: number }): string =>
@@ -1597,6 +1605,12 @@ export const servicios = {
 export const profesionales = {
   campos: {
     nameLabel: "Nombre",
+    /** Nuevo en WP-41 (`staff.title`, opcional): rol o especialidad, se
+     * muestra bajo el nombre en la página de reservas (p. ej.
+     * "Colorista"). */
+    tituloLabel: "Rol o especialidad (opcional)",
+    tituloPlaceholder: "Ej: Colorista",
+    tituloAyuda: "Se muestra en tu página de reservas.",
     colorLabel: "Color",
     serviciosLabel: "Servicios que hace",
     horarioLabel: "Horario",
@@ -2321,5 +2335,142 @@ export const formulario = {
     preguntaGuardada: "Pregunta guardada.",
     preguntaEliminada: "Pregunta eliminada.",
     deshacer: comun.deshacer,
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// perfil: WP-41 — el perfil público del negocio (`/[slug]`, secciones nuevas
+// sobre el catálogo de WP-40) y Ajustes → "Perfil" (portada, logo, galería,
+// sobre nosotros, Instagram). Se agrega al final del archivo (mismo criterio
+// que las áreas de WP-03b/WP-40, ver `docs/content/README.md`): evita
+// conflictos con otros paquetes que también tocan `es-CL.ts`.
+//
+// Referencia de diseño: `.visual-diff/ref/ProfilDesktop.dc.html` y
+// `ProfilMobil.dc.html` (boceto en sueco, no `docs/design/reference/`: mismo
+// caso que WP-40/`formulario`, no hay paridad palabra a palabra que
+// revisar, solo tono y marca).
+//
+// Estados vacíos (plan de WP-41, "Contenido"): si el negocio no tiene
+// galería o no escribió "Sobre nosotros", esa sección completa se oculta —
+// no hace falta ningún texto de reemplazo, por eso no hay claves `vacio`
+// acá para esos dos casos. La página sin servicios sigue usando
+// `reserva.vacios.sinServicios`; el negocio congelado o inexistente sigue
+// usando `reserva.vacios.negocioNoDisponible`/`paginaNoExiste` (mismo
+// texto, no se duplica acá).
+// ---------------------------------------------------------------------------
+
+export const perfil = {
+  /** `/[slug]`: encabezado, secciones y acciones de la página pública. */
+  publico: {
+    /** Los dos chips del encabezado (diseño: "Öppet nu · till 19:00" /
+     * "Nästa lediga tid: idag 15:30"). `hasta`, `dia`, `hora` y `cuando` ya
+     * vienen formateados (WP-04/motor de disponibilidad): acá solo se arma
+     * la frase alrededor. */
+    chips: {
+      abiertoAhora: (p: { hasta: string }): string =>
+        `Abierto ahora · hasta ${p.hasta}`,
+      cerrado: "Cerrado",
+      /** Chip de cerrado con la próxima apertura, cuando se conoce (p. ej.
+       * "Abre lun a las 10:00"). Si no se conoce, se usa `cerrado` a
+       * secas. */
+      abreA: (p: { dia: string; hora: string }): string =>
+        `Abre ${p.dia} a las ${p.hora}`,
+      proximaHora: (p: { cuando: string }): string =>
+        `Próxima hora: ${p.cuando}`,
+    },
+    /** Títulos de sección (`<h2>` en el diseño). `comoLlegar` reutiliza el
+     * mismo texto que `email.comun.comoLlegar` (GUIA §2: mismo vocabulario
+     * para el mismo concepto). */
+    secciones: {
+      reservarHora: "Reservar hora",
+      /** Mismo texto que `onboarding.pasos.equipo`/`ajustes.secciones.equipo`
+       * ("Equipo"), no "Profesionales": GUIA §2, mismo vocabulario que el
+       * resto de la app para el mismo concepto. */
+      profesionales: onboarding.pasos.equipo,
+      sobreNosotros: "Sobre nosotros",
+      horario: "Horario",
+      comoLlegar: email.comun.comoLlegar,
+      contacto: "Contacto",
+    },
+    /** Link "Vägbeskrivning →" del diseño: abre Google/Apple Maps, sin mapa
+     * incrustado en v1 (plan, "Contenido"). */
+    verRuta: "Ver ruta →",
+    /** Pestañas de la versión mobile (`role="tablist"` bajo la portada). */
+    tabs: {
+      servicios: "Servicios",
+      equipo: onboarding.pasos.equipo,
+      nosotros: "Nosotros",
+      info: "Info",
+    },
+    /** Botón de cada fila de servicio: mismo texto que
+     * `reserva.bookingBar.ctaReservar`, reutilizado para que nunca se
+     * desalineen. */
+    reservar: reserva.bookingBar.ctaReservar,
+    /** Botón fijo del "booking bar" mobile ("Boka nu" en el diseño). */
+    reservarAhora: "Reservar ahora",
+    /** "60 min · Tvätt, klippning och föning" en el diseño: `duracion` ya
+     * viene formateada (`formatDuration`, WP-04). Si el servicio no tiene
+     * descripción, se muestra solo la duración (regla dura 6: el
+     * componente no arma esta frase por su cuenta). */
+    servicioDetalle: (p: { duracion: string; descripcion?: string }): string =>
+      p.descripcion ? `${p.duracion} · ${p.descripcion}` : p.duracion,
+    /** Título de la tarjeta oscura del panel lateral/aside ("Snabbast in"
+     * en el diseño). */
+    masRapido: "Más rápido",
+    /** "Idag · Klippning dam" bajo los horarios de esa misma tarjeta. Los
+     * botones de hora de adentro reutilizan `reserva.horaAria` (mismo
+     * botón, mismo aria-label que en el paso 3 de Reserva). */
+    masRapidoDetalle: (p: { dia: string; servicio: string }): string =>
+      `${p.dia} · ${p.servicio}`,
+    /** Mosaico "+ 8 bilder" de la galería: cuántas fotos hay además de las
+     * que ya se ven en la grilla. */
+    nFotos: (p: { n: number }): string =>
+      `+${p.n} ${p.n === 1 ? "foto" : "fotos"}`,
+    /** aria-label del link a Instagram de la tarjeta de contacto. */
+    instagramAria: (p: { negocio: string }): string =>
+      `Instagram de ${p.negocio}`,
+  },
+  /** Ajustes → "Perfil": portada, logo, galería, sobre nosotros e
+   * Instagram (`ajustes.secciones` todavía no tiene una fila para esta
+   * pantalla nueva; quien construya la navegación la agrega con este mismo
+   * título). */
+  ajustes: {
+    titulo: "Perfil",
+    ayuda: "Así te ven tus clientes en tu página de reservas.",
+    campos: {
+      sobreNosotrosLabel: "Sobre nosotros",
+      sobreNosotrosPlaceholder:
+        "Cuéntales a tus clientes quiénes son, en qué son buenos y qué pueden esperar.",
+      sobreNosotrosAyuda: "Se muestra en tu página de reservas.",
+      instagramLabel: "Instagram",
+      instagramPlaceholder: "@tunegocio",
+      instagramAyuda: "Solo tu usuario, sin el link completo.",
+      portadaLabel: "Imagen de portada",
+      portadaAyuda: "Se ve en la parte de arriba de tu página de reservas.",
+      logoLabel: "Logo",
+      logoAyuda: "Si no subes uno, mostramos las iniciales de tu negocio.",
+      galeriaLabel: "Galería",
+      galeriaAyuda: "Hasta 12 fotos de tu local o tu trabajo.",
+    },
+    botones: {
+      subir: "Subir imagen",
+      cambiar: "Cambiar",
+      eliminar: "Eliminar",
+      moverArriba: "Mover arriba",
+      moverAbajo: "Mover abajo",
+    },
+    errores: {
+      tipoInvalido: "Ese archivo no es una imagen. Usa JPG, PNG o WEBP.",
+      demasiadoGrande: "La imagen pesa más de 2 MB. Usa una más liviana.",
+      maxImagenes:
+        "Ya tienes 12 fotos en tu galería. Elimina una para agregar otra.",
+      subidaFallida: "No pudimos subir la imagen. Intenta de nuevo.",
+    },
+    toast: {
+      imagenSubida: "Imagen agregada.",
+      imagenEliminada: "Imagen eliminada.",
+      /** Mismo texto que `ajustes.cambiosGuardados` (una sola definición). */
+      cambiosGuardados: ajustes.cambiosGuardados,
+    },
   },
 } as const satisfies Trad;

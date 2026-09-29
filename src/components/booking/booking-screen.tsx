@@ -32,6 +32,7 @@ import {
   type BookingFlowState,
 } from "./flow-state";
 import type { CustomerFormOutput, WaitlistFormOutput } from "./form-schema";
+import { type MobileTab, ProfileBrowse } from "./profile-browse";
 import { ServiceCard } from "./service-card";
 import { StaffPicker } from "./staff-picker";
 import { barPrice, findDay, summaryText } from "./summary";
@@ -131,6 +132,21 @@ export function BookingScreen({
     tabs.length > 0
       ? servicesForCategory(data.services, categoryId)
       : data.services;
+
+  // WP-41: företagsprofilen (`ProfileBrowse`) är den nya starten på `/{slug}`
+  // — "Boka" på en tjänst väljer den (samma reducer som förut) och växlar
+  // till den befintliga profesional/dag/hora-vyn ("picker"). Fixturer utan
+  // `data.profile` (design lab, `e2e/design-lab-reserva.spec.ts`) hoppar
+  // rakt till "picker" — oförändrat beteende där. `mobileTab` är profilens
+  // egen flikstat (Tjänster/Personal/Om oss/Info), skild från `categoryId`.
+  const [viewMode, setViewMode] = useState<"profile" | "picker">(
+    data.profile ? "profile" : "picker",
+  );
+  const [mobileTab, setMobileTab] = useState<MobileTab>("servicios");
+  function bookService(serviceId: string) {
+    selectService(serviceId);
+    setViewMode("picker");
+  }
 
   // Historik (planens steg 5): `datos` läggs som `?paso=datos` (pushState) så att
   // bakåtknappen på Android går tillbaka till valen med allt kvar. Bekräftelsen
@@ -274,143 +290,182 @@ export function BookingScreen({
     ctaAction = undefined;
   }
 
+  // WP-41: `ProfileBrowse` (viewMode "profile") svämmar över hela bredden
+  // (omslagsbild, sidopanel på dator) och sköter sin egen padding/sticky
+  // bokningsrad per brytpunkt — den ärver inte den gamla mobilpaddingen
+  // (`p-5 pb-35`) som resten av flödet fortfarande använder.
+  const isProfileBrowse = state.step === "seleccion" && viewMode === "profile";
+
   return (
-    <div className="relative flex min-h-full flex-col gap-6 p-5 pb-35">
+    <div
+      className={
+        isProfileBrowse
+          ? "relative flex min-h-full flex-col"
+          : "relative flex min-h-full flex-col gap-6 p-5 pb-35"
+      }
+    >
       {state.step === "seleccion" ? (
-        <>
-          <BusinessHeader business={data.business} />
-
-          <section
-            aria-labelledby="paso-servicio"
-            className="flex flex-col gap-2.5"
-          >
-            <h2
-              id="paso-servicio"
-              className="text-16 leading-event font-bold text-ink"
-            >
-              {reserva.pasos.servicio}
-            </h2>
-            {tabs.length > 0 ? (
-              <CategoryTabs
-                tabs={tabs}
-                selectedId={categoryId}
-                onSelect={setCategoryId}
-              />
+        isProfileBrowse && data.profile ? (
+          <ProfileBrowse
+            data={data}
+            profile={data.profile}
+            tabs={tabs}
+            categoryId={categoryId}
+            onSelectCategory={setCategoryId}
+            visibleServices={visibleServices}
+            onBookService={bookService}
+            mobileTab={mobileTab}
+            onSelectMobileTab={setMobileTab}
+          />
+        ) : (
+          <>
+            {data.profile ? (
+              // WP-41: ingen referens för den här länken (ny, bara i "picker"-läget
+              // — se kommentaren vid `viewMode` ovan). Vanlig `<button>`, inte
+              // `TextLink` (den är till riktig navigation via `next/link`, det här
+              // är bara ett lokalt vy-byte).
+              <button
+                type="button"
+                onClick={() => setViewMode("profile")}
+                className="self-start text-13 font-semibold text-ink underline transition-colors duration-150 ease-out hover:text-pending-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none"
+              >
+                {comun.volver}
+              </button>
             ) : null}
-            <div className="flex flex-col gap-2.5">
-              {visibleServices.length === 0 ? (
-                <p className="text-14 text-muted">
-                  {formulario.categorias.vacia}
-                </p>
-              ) : (
-                visibleServices.map((service) => (
-                  <ServiceCard
-                    key={service.id}
-                    service={service}
-                    selected={selection.serviceId === service.id}
-                    onSelect={() => {
-                      selectService(service.id);
-                    }}
-                  />
-                ))
-              )}
-            </div>
-          </section>
+            <BusinessHeader business={data.business} />
 
-          <section
-            aria-labelledby="paso-profesional"
-            className="flex flex-col gap-2.5"
-          >
-            <h2
-              id="paso-profesional"
-              className="text-16 leading-event font-bold text-ink"
+            <section
+              aria-labelledby="paso-servicio"
+              className="flex flex-col gap-2.5"
             >
-              {reserva.pasos.profesional}
-            </h2>
-            <StaffPicker
-              staff={data.staff}
-              selectedId={selection.staffId}
-              onSelect={selectStaff}
-            />
-          </section>
+              <h2
+                id="paso-servicio"
+                className="text-16 leading-event font-bold text-ink"
+              >
+                {reserva.pasos.servicio}
+              </h2>
+              {tabs.length > 0 ? (
+                <CategoryTabs
+                  tabs={tabs}
+                  selectedId={categoryId}
+                  onSelect={setCategoryId}
+                />
+              ) : null}
+              <div className="flex flex-col gap-2.5">
+                {visibleServices.length === 0 ? (
+                  <p className="text-14 text-muted">
+                    {formulario.categorias.vacia}
+                  </p>
+                ) : (
+                  visibleServices.map((service) => (
+                    <ServiceCard
+                      key={service.id}
+                      service={service}
+                      selected={selection.serviceId === service.id}
+                      onSelect={() => {
+                        selectService(service.id);
+                      }}
+                    />
+                  ))
+                )}
+              </div>
+            </section>
 
-          <section
-            aria-labelledby="paso-dia-hora"
-            className="flex flex-col gap-2.5"
-          >
-            {selection.serviceId && daysForSelection.length > 0 ? (
-              <DayPicker
-                headingId="paso-dia-hora"
-                days={daysForSelection}
-                selectedDate={selection.date}
-                onSelect={(date) => {
-                  dispatch({ type: "select_day", date });
-                }}
+            <section
+              aria-labelledby="paso-profesional"
+              className="flex flex-col gap-2.5"
+            >
+              <h2
+                id="paso-profesional"
+                className="text-16 leading-event font-bold text-ink"
+              >
+                {reserva.pasos.profesional}
+              </h2>
+              <StaffPicker
+                staff={data.staff}
+                selectedId={selection.staffId}
+                onSelect={selectStaff}
               />
-            ) : (
-              <>
-                <h2
-                  id="paso-dia-hora"
-                  className="text-16 leading-event font-bold text-ink"
-                >
-                  {reserva.pasos.diaYHora}
-                </h2>
-                <p className="text-14 text-muted">
-                  {!selection.serviceId
-                    ? reserva.vacios.eligeServicio
-                    : reserva.vacios.sinHorariosEnRango}
-                </p>
-              </>
-            )}
+            </section>
 
-            {selection.date && day ? (
-              loadingHorarios ? (
-                <p
-                  role="status"
-                  aria-busy="true"
-                  className="text-14 text-muted"
-                >
-                  {reserva.vacios.cargandoHorarios}
-                </p>
-              ) : day.state === "full" ? (
-                <WaitlistCard
-                  date={day.date}
-                  joined={state.waitlistJoined}
-                  duplicate={state.errorCode === "waitlist_duplicate"}
+            <section
+              aria-labelledby="paso-dia-hora"
+              className="flex flex-col gap-2.5"
+            >
+              {selection.serviceId && daysForSelection.length > 0 ? (
+                <DayPicker
+                  headingId="paso-dia-hora"
+                  days={daysForSelection}
+                  selectedDate={selection.date}
+                  onSelect={(date) => {
+                    dispatch({ type: "select_day", date });
+                  }}
                 />
               ) : (
                 <>
-                  {/* Felrutan ska synas även när tiden som togs bort var den
-                   * sista kvarvarande (qa-granskning, item 14) — den står
-                   * alltså som ett eget villkor, inte nästlad i grenen som
-                   * bara gäller när `visibleSlots` inte är tom. */}
-                  {state.errorCode &&
-                  SELECTION_ALERT_CODES.has(state.errorCode) ? (
-                    <div
-                      role="alert"
-                      className="rounded-tile bg-peach-50 p-3 text-13 text-ink"
-                    >
-                      {serverError(state.errorCode)}
-                    </div>
-                  ) : null}
-                  {visibleSlots.length === 0 ? (
-                    <p className="text-14 text-muted">
-                      {reserva.vacios.sinHorariosEseDia}
-                    </p>
-                  ) : (
-                    <TimeSlotGrid
-                      slots={visibleSlots}
-                      selectedSlotId={selection.slotId}
-                      onSelect={(slotId) => {
-                        dispatch({ type: "select_slot", slotId });
-                      }}
-                    />
-                  )}
+                  <h2
+                    id="paso-dia-hora"
+                    className="text-16 leading-event font-bold text-ink"
+                  >
+                    {reserva.pasos.diaYHora}
+                  </h2>
+                  <p className="text-14 text-muted">
+                    {!selection.serviceId
+                      ? reserva.vacios.eligeServicio
+                      : reserva.vacios.sinHorariosEnRango}
+                  </p>
                 </>
-              )
-            ) : null}
-          </section>
-        </>
+              )}
+
+              {selection.date && day ? (
+                loadingHorarios ? (
+                  <p
+                    role="status"
+                    aria-busy="true"
+                    className="text-14 text-muted"
+                  >
+                    {reserva.vacios.cargandoHorarios}
+                  </p>
+                ) : day.state === "full" ? (
+                  <WaitlistCard
+                    date={day.date}
+                    joined={state.waitlistJoined}
+                    duplicate={state.errorCode === "waitlist_duplicate"}
+                  />
+                ) : (
+                  <>
+                    {/* Felrutan ska synas även när tiden som togs bort var den
+                     * sista kvarvarande (qa-granskning, item 14) — den står
+                     * alltså som ett eget villkor, inte nästlad i grenen som
+                     * bara gäller när `visibleSlots` inte är tom. */}
+                    {state.errorCode &&
+                    SELECTION_ALERT_CODES.has(state.errorCode) ? (
+                      <div
+                        role="alert"
+                        className="rounded-tile bg-peach-50 p-3 text-13 text-ink"
+                      >
+                        {serverError(state.errorCode)}
+                      </div>
+                    ) : null}
+                    {visibleSlots.length === 0 ? (
+                      <p className="text-14 text-muted">
+                        {reserva.vacios.sinHorariosEseDia}
+                      </p>
+                    ) : (
+                      <TimeSlotGrid
+                        slots={visibleSlots}
+                        selectedSlotId={selection.slotId}
+                        onSelect={(slotId) => {
+                          dispatch({ type: "select_slot", slotId });
+                        }}
+                      />
+                    )}
+                  </>
+                )
+              ) : null}
+            </section>
+          </>
+        )
       ) : state.step === "datos" ? (
         <CustomerForm
           formId={formId}
@@ -432,7 +487,7 @@ export function BookingScreen({
         <Confirmation data={data} selection={selection} day={day} />
       )}
 
-      {isOffline && state.step !== "confirmacion" ? (
+      {!isProfileBrowse && isOffline && state.step !== "confirmacion" ? (
         <p role="status" className="text-13 text-ink">
           {comun.sinConexion}
         </p>

@@ -321,15 +321,50 @@ export type Database = {
           },
         ];
       };
+      business_images: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          id: string;
+          path: string;
+          sort: number;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          id?: string;
+          path: string;
+          sort?: number;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          id?: string;
+          path?: string;
+          sort?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "business_images_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       businesses: {
         Row: {
+          about: string | null;
           accent_color: string | null;
           address: string | null;
           cancel_window_hours: number;
           category: string;
           comuna: string;
+          cover_url: string | null;
           created_at: string;
           id: string;
+          instagram: string | null;
           logo_url: string | null;
           max_days_ahead: number;
           min_notice_minutes: number;
@@ -345,13 +380,16 @@ export type Database = {
           waitlist_mode: Database["public"]["Enums"]["waitlist_mode"];
         };
         Insert: {
+          about?: string | null;
           accent_color?: string | null;
           address?: string | null;
           cancel_window_hours?: number;
           category: string;
           comuna: string;
+          cover_url?: string | null;
           created_at?: string;
           id?: string;
+          instagram?: string | null;
           logo_url?: string | null;
           max_days_ahead?: number;
           min_notice_minutes?: number;
@@ -367,13 +405,16 @@ export type Database = {
           waitlist_mode?: Database["public"]["Enums"]["waitlist_mode"];
         };
         Update: {
+          about?: string | null;
           accent_color?: string | null;
           address?: string | null;
           cancel_window_hours?: number;
           category?: string;
           comuna?: string;
+          cover_url?: string | null;
           created_at?: string;
           id?: string;
+          instagram?: string | null;
           logo_url?: string | null;
           max_days_ahead?: number;
           min_notice_minutes?: number;
@@ -725,6 +766,7 @@ export type Database = {
           created_at: string;
           deposit_kind: Database["public"]["Enums"]["deposit_kind"];
           deposit_value: number | null;
+          description: string | null;
           duration_min: number;
           id: string;
           name: string;
@@ -741,6 +783,7 @@ export type Database = {
           created_at?: string;
           deposit_kind?: Database["public"]["Enums"]["deposit_kind"];
           deposit_value?: number | null;
+          description?: string | null;
           duration_min: number;
           id?: string;
           name: string;
@@ -757,6 +800,7 @@ export type Database = {
           created_at?: string;
           deposit_kind?: Database["public"]["Enums"]["deposit_kind"];
           deposit_value?: number | null;
+          description?: string | null;
           duration_min?: number;
           id?: string;
           name?: string;
@@ -791,6 +835,7 @@ export type Database = {
           id: string;
           name: string;
           sort: number;
+          title: string | null;
           updated_at: string;
         };
         Insert: {
@@ -801,6 +846,7 @@ export type Database = {
           id?: string;
           name: string;
           sort?: number;
+          title?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -811,6 +857,7 @@ export type Database = {
           id?: string;
           name?: string;
           sort?: number;
+          title?: string | null;
           updated_at?: string;
         };
         Relationships: [

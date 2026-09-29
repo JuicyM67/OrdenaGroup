@@ -43,6 +43,7 @@ import {
   horarios,
   negocio,
   onboarding,
+  perfil,
   profesionales,
   email,
   servicios,
@@ -93,6 +94,8 @@ const AREAS_V2: Record<string, Rama> = {
   // WP-40 (D-031): agregada acá en vez de un tercer archivo de prueba
   // (mismas reglas de estructura/tono/marca que el resto de WP-03b).
   formulario,
+  // WP-41: mismo criterio, sin un tercer archivo de prueba.
+  perfil,
 };
 
 // ---------------------------------------------------------------------------
@@ -160,6 +163,12 @@ const MUESTRA_GENERICA_V2: Record<string, unknown> = {
   y: 5,
   etiqueta: "Alergias",
   valor: "No",
+  /** Agregados por copywriter-es-cl junto con `perfil` (WP-41). */
+  dia: "lun",
+  hora: "10:00",
+  cuando: "hoy 15:30",
+  duracion: "60 min",
+  descripcion: "Tinte, corte y peinado",
 };
 
 function invocarGenerico(fn: unknown): unknown {

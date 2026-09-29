@@ -2,7 +2,7 @@
 -- rader i katalogen (bara sin egen businesses-/membership-rad, se 010/011).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(18);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -77,6 +77,12 @@ select throws_ok(
 );
 select throws_ok(
   $$ insert into public.staff (business_id, name, color) values ('aaaaaaaa-0000-0000-0000-000000000001', 'X', 'staff-7') $$,
+  '23514'
+);
+
+-- WP-41 steg 1: title (rollen som visas på profilsidan), max 100 tecken.
+select throws_ok(
+  $$ insert into public.staff (business_id, name, color, title) values ('aaaaaaaa-0000-0000-0000-000000000001', 'X', 'staff-1', repeat('a', 101)) $$,
   '23514'
 );
 

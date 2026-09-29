@@ -15,10 +15,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
+import { Textarea } from "@/components/ui/textarea";
 import { TextField } from "@/components/ui/text-field";
 import { ajustes, formulario, servicios } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
 import { formatMoney, moneyInputValue, parseMoney } from "@/lib/format/money";
+import { SERVICE_DESCRIPTION_MAX } from "@/lib/validation/profile";
 
 import { ajustesErrorText } from "./error-text";
 import type {
@@ -43,6 +45,7 @@ type RowForm = {
   durationMin: string;
   priceClp: string;
   bufferAfterMin: string;
+  description: string;
 };
 type RowErrors = Partial<Record<keyof RowForm, string>>;
 
@@ -51,6 +54,7 @@ const EMPTY_FORM: RowForm = {
   durationMin: "",
   priceClp: "",
   bufferAfterMin: "0",
+  description: "",
 };
 
 function toRowForm(s: AjustesService): RowForm {
@@ -59,6 +63,7 @@ function toRowForm(s: AjustesService): RowForm {
     durationMin: String(s.durationMin),
     priceClp: moneyInputValue(s.priceClp),
     bufferAfterMin: String(s.bufferAfterMin),
+    description: s.description,
   };
 }
 
@@ -80,12 +85,17 @@ function validateRow(form: RowForm): { errors: RowErrors; payload?: unknown } {
     bufferN >= 0 &&
     bufferN <= 600;
 
+  const description = form.description.trim();
+  const descriptionOk = description.length <= SERVICE_DESCRIPTION_MAX;
+
   const errors: RowErrors = {};
   if (!name.ok) errors.name = ajustesErrorText(name.code);
   if (!durationMin.ok) errors.durationMin = ajustesErrorText(durationMin.code);
   if (!priceClp.ok) errors.priceClp = ajustesErrorText(priceClp.code);
   if (!bufferOk)
     errors.bufferAfterMin = ajustesErrorText("services.buffer_invalid");
+  if (!descriptionOk)
+    errors.description = ajustesErrorText("services.description_too_long");
   if (Object.keys(errors).length > 0) return { errors };
 
   return {
@@ -95,6 +105,7 @@ function validateRow(form: RowForm): { errors: RowErrors; payload?: unknown } {
       durationMin: form.durationMin,
       priceClp: form.priceClp,
       bufferAfterMin: bufferN,
+      description,
     },
   };
 }
@@ -205,6 +216,17 @@ function ServiceForm({
             }
             error={errors.bufferAfterMin}
           />
+          <Textarea
+            label={servicios.campos.descripcionLabel}
+            placeholder={servicios.campos.descripcionPlaceholder}
+            hint={
+              errors.description ? undefined : servicios.campos.descripcionAyuda
+            }
+            value={form.description}
+            onChange={(e) => onChange({ ...form, description: e.target.value })}
+            error={errors.description}
+            maxLength={SERVICE_DESCRIPTION_MAX}
+          />
           <div className="flex gap-3">
             <Button
               type="button"
@@ -292,6 +314,7 @@ export function ServicesSection({
               priceClp: priceFromForm(form.priceClp),
               bufferAfterMin: Number(form.bufferAfterMin),
               active: true,
+              description: form.description.trim(),
             },
           ]);
           setEditingId(null);
@@ -310,6 +333,7 @@ export function ServicesSection({
                     durationMin: Number(form.durationMin),
                     priceClp: priceFromForm(form.priceClp),
                     bufferAfterMin: Number(form.bufferAfterMin),
+                    description: form.description.trim(),
                   }
                 : s,
             ),

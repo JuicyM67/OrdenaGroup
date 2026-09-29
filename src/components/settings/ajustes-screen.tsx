@@ -22,6 +22,8 @@ import { BookingFormSection } from "./booking-form-section";
 import { BusinessSection } from "./business-section";
 import { CategorySection } from "./category-section";
 import { HoursSection } from "./hours-section";
+import { ProfileSection } from "./profile-section";
+import type { ProfileActions, ProfileSettingsData } from "./profile-types";
 import { ServicesSection } from "./services-section";
 import { StaffSection } from "./staff-section";
 import type { AjustesActions, AjustesBusiness, AjustesData } from "./types";
@@ -33,6 +35,8 @@ export type AjustesScreenProps = {
   bookingFormActions: BookingFormActions;
   /** Laddar om kategorier/frågor från servern efter en ändring (`null` = fel, behåller det gamla). */
   loadBookingFormBundle: () => Promise<BookingFormBundle | null>;
+  profile: ProfileSettingsData;
+  profileActions: ProfileActions;
 };
 
 export function AjustesScreen({
@@ -41,6 +45,8 @@ export function AjustesScreen({
   bookingForm: initialBookingForm,
   bookingFormActions,
   loadBookingFormBundle,
+  profile,
+  profileActions,
 }: AjustesScreenProps) {
   const [business, setBusiness] = useState<AjustesBusiness>(data.business);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
@@ -63,6 +69,8 @@ export function AjustesScreen({
           />
 
           <TuLinkCard slug={business.slug} businessName={business.name} />
+
+          <ProfileSection data={profile} actions={profileActions} />
 
           <ServicesSection
             services={data.services}
@@ -100,6 +108,7 @@ export function AjustesScreen({
               create: actions.createStaff,
               update: actions.updateStaff,
               setActive: actions.setStaffActive,
+              updateTitle: profileActions.updateStaffTitle,
             }}
           />
 

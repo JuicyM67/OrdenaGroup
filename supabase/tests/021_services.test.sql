@@ -3,7 +3,7 @@
 -- service_categories).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(28);
 \ir _helpers.psql
 
 insert into public.services (id, business_id, name, duration_min, price_clp) values
@@ -138,6 +138,16 @@ select is(
   'category_id sätts till null när kategorin tas bort, tjänsten finns kvar'
 );
 reset role;
+
+-- WP-41 steg 1: description (profilsidan), max 500 tecken.
+select lives_ok(
+  $$ insert into public.services (business_id, name, duration_min, price_clp, description) values ('aaaaaaaa-0000-0000-0000-000000000001', 'X', 30, 5000, 'Corte a tijera y máquina, incluye lavado.') $$,
+  'en beskrivning inom gränsen är okej'
+);
+select throws_ok(
+  $$ insert into public.services (business_id, name, duration_min, price_clp, description) values ('aaaaaaaa-0000-0000-0000-000000000001', 'X', 30, 5000, repeat('a', 501)) $$,
+  '23514'
+);
 
 select finish();
 rollback;

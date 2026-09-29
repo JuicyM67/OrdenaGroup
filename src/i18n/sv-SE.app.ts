@@ -1229,6 +1229,9 @@ export const servicios: Widen<typeof Es.servicios> = {
     categoryLabel: "Kategori (valfritt)",
     profesionalesLabel: "Vem utför den?",
     mostrarEnPaginaLabel: "Visa på bokningssidan",
+    descripcionLabel: "Beskrivning (valfritt)",
+    descripcionPlaceholder: "Berätta för kunden vad som ingår i tjänsten.",
+    descripcionAyuda: "Visas på din bokningssida.",
     subirAria: "Flytta upp",
     bajarAria: "Flytta ner",
   },
@@ -1238,6 +1241,7 @@ export const servicios: Widen<typeof Es.servicios> = {
     bufferInvalido: "Extra tiden kan inte vara negativ.",
     service_in_use:
       "Den tjänsten har bokningar. Inaktivera den i stället för att ta bort den.",
+    descripcionMuyLarga: "Beskrivningen får inte vara längre än 500 tecken.",
   },
   vacio: "Lägg till de tjänster du erbjuder.",
   contador: (p: { n: number }): string =>
@@ -1255,6 +1259,9 @@ export const servicios: Widen<typeof Es.servicios> = {
 export const profesionales: Widen<typeof Es.profesionales> = {
   campos: {
     nameLabel: "Namn",
+    tituloLabel: "Roll eller specialitet (valfritt)",
+    tituloPlaceholder: "T.ex: Färgspecialist",
+    tituloAyuda: "Visas på din bokningssida.",
     colorLabel: "Färg",
     serviciosLabel: "Tjänster hen utför",
     horarioLabel: "Öppettider",
@@ -1806,6 +1813,92 @@ export const formulario: Widen<typeof Es.formulario> = {
 };
 
 // ---------------------------------------------------------------------------
+// perfil: WP-41 — företagets publika profil (`/[slug]`) och Inställningar →
+// "Profil" (omslagsbild, logga, galleri, om oss, Instagram). Samma nycklar
+// som `Es.perfil`; texten är hämtad direkt ur designutkasten
+// (`.visual-diff/ref/ProfilDesktop.dc.html`, `ProfilMobil.dc.html`) där de
+// redan är på svenska.
+// ---------------------------------------------------------------------------
+
+export const perfil: Widen<typeof Es.perfil> = {
+  publico: {
+    chips: {
+      abiertoAhora: (p: { hasta: string }): string =>
+        `Öppet nu · till ${p.hasta}`,
+      cerrado: "Stängt",
+      abreA: (p: { dia: string; hora: string }): string =>
+        `Öppnar ${p.dia} kl. ${p.hora}`,
+      proximaHora: (p: { cuando: string }): string =>
+        `Nästa lediga tid: ${p.cuando}`,
+    },
+    secciones: {
+      reservarHora: "Boka tid",
+      profesionales: onboarding.pasos.equipo,
+      sobreNosotros: "Om oss",
+      horario: "Öppettider",
+      comoLlegar: email.comun.comoLlegar,
+      contacto: "Kontakt",
+    },
+    verRuta: "Vägbeskrivning →",
+    tabs: {
+      servicios: "Tjänster",
+      equipo: onboarding.pasos.equipo,
+      nosotros: "Om oss",
+      info: "Info",
+    },
+    reservar: reserva.bookingBar.ctaReservar,
+    reservarAhora: "Boka nu",
+    servicioDetalle: (p: { duracion: string; descripcion?: string }): string =>
+      p.descripcion ? `${p.duracion} · ${p.descripcion}` : p.duracion,
+    masRapido: "Snabbast in",
+    masRapidoDetalle: (p: { dia: string; servicio: string }): string =>
+      `${p.dia} · ${p.servicio}`,
+    nFotos: (p: { n: number }): string =>
+      `+${p.n} ${p.n === 1 ? "bild" : "bilder"}`,
+    instagramAria: (p: { negocio: string }): string =>
+      `Instagram för ${p.negocio}`,
+  },
+  ajustes: {
+    titulo: "Profil",
+    ayuda: "Så här ser dina kunder dig på din bokningssida.",
+    campos: {
+      sobreNosotrosLabel: "Om oss",
+      sobreNosotrosPlaceholder:
+        "Berätta för dina kunder vilka ni är, vad ni är bra på och vad de kan förvänta sig.",
+      sobreNosotrosAyuda: "Visas på din bokningssida.",
+      instagramLabel: "Instagram",
+      instagramPlaceholder: "@dittforetag",
+      instagramAyuda: "Bara ditt användarnamn, utan hela länken.",
+      portadaLabel: "Omslagsbild",
+      portadaAyuda: "Visas högst upp på din bokningssida.",
+      logoLabel: "Logga",
+      logoAyuda: "Laddar du inte upp en visar vi ditt företags initialer.",
+      galeriaLabel: "Galleri",
+      galeriaAyuda: "Upp till 12 bilder från din lokal eller ditt arbete.",
+    },
+    botones: {
+      subir: "Ladda upp bild",
+      cambiar: "Byt",
+      eliminar: "Ta bort",
+      moverArriba: "Flytta upp",
+      moverAbajo: "Flytta ner",
+    },
+    errores: {
+      tipoInvalido: "Den filen är inte en bild. Använd JPG, PNG eller WEBP.",
+      demasiadoGrande: "Bilden väger mer än 2 MB. Använd en lättare bild.",
+      maxImagenes:
+        "Du har redan 12 bilder i ditt galleri. Ta bort en för att lägga till en till.",
+      subidaFallida: "Vi kunde inte ladda upp bilden. Försök igen.",
+    },
+    toast: {
+      imagenSubida: "Bilden har lagts till.",
+      imagenEliminada: "Bilden har tagits bort.",
+      cambiosGuardados: ajustes.cambiosGuardados,
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
@@ -1838,5 +1931,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   caja,
   abono,
   formulario,
+  perfil,
 };
 void _check;

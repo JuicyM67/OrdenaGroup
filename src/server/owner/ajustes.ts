@@ -41,12 +41,16 @@ export type AjustesService = {
   priceClp: number;
   bufferAfterMin: number;
   active: boolean;
+  /** WP-41: "" = ingen beskrivning. */
+  description: string;
 };
 
 export type AjustesStaffMember = {
   id: string;
   name: string;
   active: boolean;
+  /** WP-41: roll, "" = ingen (ändras via `updateStaffTitle`, profile.ts). */
+  title: string;
   serviceIds: string[];
 };
 
@@ -128,9 +132,15 @@ type ServiceRow = {
   price_clp: number;
   buffer_after_min: number;
   active: boolean;
+  description: string | null;
 };
 
-type StaffRow = { id: string; name: string; active: boolean };
+type StaffRow = {
+  id: string;
+  name: string;
+  active: boolean;
+  title: string | null;
+};
 type StaffServiceRow = { staff_id: string; service_id: string };
 type HoursRow = { weekday: number; start_time: string; end_time: string };
 
@@ -154,14 +164,15 @@ export async function loadAjustesDataIn(
   if (!b) throw new Error("loadAjustesData: företaget hittades inte");
 
   const servicesRes = await q.query<ServiceRow>(
-    `select id, name, duration_min, price_clp, buffer_after_min, active
+    `select id, name, duration_min, price_clp, buffer_after_min, active,
+            description
        from public.services
       where business_id = $1
       order by sort, name`,
     [businessId],
   );
   const staffRes = await q.query<StaffRow>(
-    `select id, name, active
+    `select id, name, active, title
        from public.staff
       where business_id = $1
       order by sort, name`,
@@ -227,11 +238,13 @@ export async function loadAjustesDataIn(
       priceClp: s.price_clp,
       bufferAfterMin: s.buffer_after_min,
       active: s.active,
+      description: s.description ?? "",
     })),
     staff: staffRes.rows.map((s) => ({
       id: s.id,
       name: s.name,
       active: s.active,
+      title: s.title ?? "",
       serviceIds: serviceIdsByStaff.get(s.id) ?? [],
     })),
     hours,
@@ -323,8 +336,8 @@ export async function createService(
     return await withOwnerTx(userId, async (q) => {
       const sort = await nextSort(q, "services", businessId);
       const r = await q.query<{ id: string }>(
-        `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort)
-         values ($1, $2, $3, $4, $5, $6) returning id`,
+        `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort, description)
+         values ($1, $2, $3, $4, $5, $6, $7) returning id`,
         [
           businessId,
           input.name,
@@ -332,6 +345,7 @@ export async function createService(
           input.priceClp,
           input.bufferAfterMin,
           sort,
+          input.description ?? null,
         ],
       );
       const id = r.rows[0]?.id;
@@ -360,8 +374,10 @@ export async function updateService(
   try {
     return await withOwnerTx(userId, async (q) => {
       const r = await q.query(
+        // WP-41: `description` utelämnad (äldre formulär) = oförändrad.
         `update public.services
-            set name = $1, duration_min = $2, price_clp = $3, buffer_after_min = $4
+            set name = $1, duration_min = $2, price_clp = $3, buffer_after_min = $4,
+                description = case when $7::boolean then $8 else description end
           where id = $5 and business_id = $6`,
         [
           input.name,
@@ -370,6 +386,8 @@ export async function updateService(
           input.bufferAfterMin,
           serviceId,
           businessId,
+          input.description !== undefined,
+          input.description ?? null,
         ],
       );
       return assertUpdated(r.rowCount) ?? { ok: true };

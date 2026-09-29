@@ -20,12 +20,17 @@ export type AjustesService = {
   priceClp: number;
   bufferAfterMin: number;
   active: boolean;
+  /** WP-41: "" = sin descripción. */
+  description: string;
 };
 
 export type AjustesStaffMember = {
   id: string;
   name: string;
   active: boolean;
+  /** WP-41: rol, "" = sin rol (se guarda con `ProfileActions.updateStaffTitle`,
+   * no con `updateStaff`: mismo split que en `src/server/owner/profile.ts`). */
+  title: string;
   serviceIds: string[];
 };
 

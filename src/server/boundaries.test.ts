@@ -106,6 +106,8 @@ const TENANT_TABLES = [
   "booking_question_targets",
   "booking_answers",
   "customer_answers",
+  // WP-41
+  "business_images",
 ] as const;
 
 /** Sträng- och mallitteraler som ser ut som SQL. */

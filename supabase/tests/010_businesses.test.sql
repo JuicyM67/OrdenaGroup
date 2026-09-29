@@ -5,7 +5,7 @@
 -- "inte tillämpligt" (en business kan inte peka på en annan business).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(46);
 \ir _helpers.psql
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
@@ -66,6 +66,23 @@ select throws_ok(
 select throws_ok(
   $$ update public.businesses set id = 'aaaaaaaa-0000-0000-0000-000000000099' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
   '42501'
+);
+
+-- WP-41 steg 1 (fortsättning, 20260929140000_business_profile_grants_and_media_check.sql):
+-- ownerA får också ändra about/cover_url/instagram (kolumngrant, saknades i
+-- den ursprungliga B2/qa4-listan eftersom kolumnerna inte fanns än när den
+-- skrevs). Fortfarande som authenticated/ownerA.
+select lives_ok(
+  $$ update public.businesses set about = 'Historia de la barbería.' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  'ownerA kan ändra about (tillåten kolumn)'
+);
+select lives_ok(
+  $$ update public.businesses set cover_url = 'https://example.com/cover.jpg' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  'ownerA kan ändra cover_url (tillåten kolumn)'
+);
+select lives_ok(
+  $$ update public.businesses set instagram = 'barberia.norte' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  'ownerA kan ändra instagram (tillåten kolumn)'
 );
 
 -- 5. anon: select, insert, update, delete -> permission denied.
@@ -198,6 +215,49 @@ select throws_ok(
 select lives_ok(
   $$ insert into public.businesses (slug, name, comuna, category, logo_url) values ('wp01-test-logo', 'X', 'Providencia', 'barberia', 'https://example.com/logo.png') $$,
   'https:// accepteras'
+);
+
+-- WP-41 steg 1: about (max 1500 tecken), cover_url (samma https-regel som
+-- logo_url), instagram (handtag utan @, 1–30 tecken a-z/0-9/./_).
+select throws_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, about) values ('wp41-test-about', 'X', 'Providencia', 'barberia', repeat('a', 1501)) $$,
+  '23514'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, about) values ('wp41-test-about', 'X', 'Providencia', 'barberia', 'Barbería de barrio en Providencia.') $$,
+  'about inom gränsen är okej'
+);
+select throws_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, cover_url) values ('wp41-test-cover', 'X', 'Providencia', 'barberia', 'http://example.com/cover.jpg') $$,
+  '23514'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, cover_url) values ('wp41-test-cover', 'X', 'Providencia', 'barberia', 'https://example.com/cover.jpg') $$,
+  'cover_url https:// accepteras'
+);
+select throws_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, instagram) values ('wp41-test-ig', 'X', 'Providencia', 'barberia', '@barberianorte') $$,
+  '23514'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, instagram) values ('wp41-test-ig', 'X', 'Providencia', 'barberia', 'barberia.norte_cl') $$,
+  'instagram-handtag utan @ accepteras'
+);
+
+-- 20260929140000: lokal Supabase Storage svarar med
+-- http://127.0.0.1:<port>/... (ingen TLS lokalt). Checken tillåter
+-- uttryckligen bara de två loopback-värdnamnen, inget annat http://-ursprung.
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, cover_url) values ('wp41-test-cover-local', 'X', 'Providencia', 'barberia', 'http://127.0.0.1:54321/storage/v1/object/public/business-media/x.jpg') $$,
+  'cover_url http://127.0.0.1:<port>/... accepteras (lokal Storage)'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, logo_url) values ('wp41-test-logo-local', 'X', 'Providencia', 'barberia', 'http://localhost:54321/storage/v1/object/public/business-media/x.jpg') $$,
+  'logo_url http://localhost:<port>/... accepteras (lokal Storage)'
+);
+select throws_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, cover_url) values ('wp41-test-cover-bad-http', 'X', 'Providencia', 'barberia', 'http://evil.example.com/cover.jpg') $$,
+  '23514'
 );
 
 -- Säkerhet S2 (rättad): service_role kan radera ett företag (WP-26), och

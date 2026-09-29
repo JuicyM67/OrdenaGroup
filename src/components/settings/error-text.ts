@@ -7,6 +7,7 @@ import {
   comun,
   horarios,
   negocio,
+  perfil,
   profesionales,
   servicios,
   validacion,
@@ -44,12 +45,30 @@ const KNOWN: Record<string, string> = {
   "services.name_empty": servicios.errores.nombreVacio,
   "services.duration_invalid": servicios.errores.duracionInvalida,
   "services.buffer_invalid": servicios.errores.bufferInvalido,
+  // WP-41
+  "services.description_too_long": servicios.errores.descripcionMuyLarga,
   "staff.name_empty": profesionales.errores.nombreVacio,
   "hours.business_hours_start_before_end":
     horarios.errores.business_hours_start_before_end,
   "hours.business_hours_no_overlap": horarios.errores.business_hours_no_overlap,
   "hours.range_required": comun.algoSalioMal,
   "hours.weekday_duplicate": comun.algoSalioMal,
+  // WP-41 (src/lib/validation/profile.ts): sin copy específico todavía para
+  // about/instagram/título → `comun.algoSalioMal` (mismo patrón que
+  // `business.address_too_long` arriba); las imágenes sí tienen copy propio
+  // en `perfil.ajustes.errores`.
+  "staff.title_too_long": comun.algoSalioMal,
+  "profile.about_too_long": comun.algoSalioMal,
+  "profile.instagram_invalid": comun.algoSalioMal,
+  "profile.image_kind_invalid": comun.algoSalioMal,
+  "profile.image_type_invalid": perfil.ajustes.errores.tipoInvalido,
+  "profile.image_size_invalid": perfil.ajustes.errores.demasiadoGrande,
+  "profile.image_too_large": perfil.ajustes.errores.demasiadoGrande,
+  "profile.gallery_full": perfil.ajustes.errores.maxImagenes,
+  "profile.upload_failed": perfil.ajustes.errores.subidaFallida,
+  "profile.upload_missing": perfil.ajustes.errores.subidaFallida,
+  "profile.image_url_invalid": comun.algoSalioMal,
+  "profile.text_invalid_type": comun.algoSalioMal,
   invalid_input: comun.algoSalioMal,
   unauthorized: comun.algoSalioMal,
   unknown: comun.algoSalioMal,

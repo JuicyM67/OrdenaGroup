@@ -10,6 +10,7 @@ import { nav } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { loadAjustesData } from "@/server/owner/ajustes";
+import { loadProfileSettings } from "@/server/owner/profile";
 
 import {
   createServiceAction,
@@ -37,6 +38,14 @@ import {
   setServiceCategoryAction,
   updateQuestionAction,
 } from "./booking-form-actions";
+import {
+  confirmImageUploadAction,
+  createImageUploadAction,
+  deleteImageAction,
+  reorderImagesAction,
+  updateBusinessProfileAction,
+  updateStaffTitleAction,
+} from "./profile-actions";
 
 export const metadata: Metadata = {
   title: nav.ajustes,
@@ -62,6 +71,7 @@ export default async function AjustesPage() {
   if (!business) redirect("/app/onboarding");
 
   const data = await loadAjustesData(user.id, business.id);
+  const profile = await loadProfileSettings(user.id, business.id);
   const bundleResult = await loadBookingFormBundleAction();
   const bookingForm = bundleResult.ok
     ? bundleResult.data
@@ -105,6 +115,15 @@ export default async function AjustesPage() {
         getQuestionsForService: getQuestionsForServiceAction,
       }}
       loadBookingFormBundle={loadBookingFormBundle}
+      profile={profile}
+      profileActions={{
+        updateBusinessProfile: updateBusinessProfileAction,
+        updateStaffTitle: updateStaffTitleAction,
+        createImageUpload: createImageUploadAction,
+        confirmImageUpload: confirmImageUploadAction,
+        deleteImage: deleteImageAction,
+        reorderImages: reorderImagesAction,
+      }}
     />
   );
 }

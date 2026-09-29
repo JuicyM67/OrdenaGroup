@@ -30,6 +30,9 @@ export interface BookingService {
   /** `null` = utan kategori (WP-40, D-031). Frivilligt fält (befintliga
    * fixturer/tester saknar det) — behandla en saknad nyckel som `null`. */
   readonly categoryId?: string | null;
+  /** WP-41: tjänstens beskrivning på profilen (≤ 500 tecken). Frivilligt
+   * (saknas/`null` = ingen beskrivning). */
+  readonly description?: string | null;
 }
 
 /** Tjänstekategori (WP-40, D-031): egna rader i `service_categories`, bara
@@ -42,6 +45,8 @@ export interface BookingServiceCategory {
 export interface BookingStaffMember {
   readonly id: string;
   readonly name: string;
+  /** WP-41: roll ("Estilista senior"). Frivilligt, `null` = ingen roll. */
+  readonly title?: string | null;
 }
 
 /** `"any"` = "Cualquiera" (R8 av WP-02), annars `BookingStaffMember["id"]`. */
@@ -77,6 +82,39 @@ export interface BookingBusiness {
   readonly status: BusinessStatus;
 }
 
+/** WP-41: en rad i `business_hours` (väggtid, `end` får vara "24:00"). */
+export interface BookingProfileHours {
+  readonly weekday: IsoWeekday;
+  readonly start: LocalTime;
+  readonly end: LocalTime;
+}
+
+/** WP-41: företagsprofilen på `/{slug}`. Allt färdigberäknat på servern. */
+export interface BookingProfile {
+  readonly about: string | null;
+  /** Publika https-URL:er (bucket `business-media`) eller `null`. */
+  readonly coverUrl: string | null;
+  readonly logoUrl: string | null;
+  /** Handtag utan "@". */
+  readonly instagram: string | null;
+  readonly address: string | null;
+  /** E.164. */
+  readonly phone: string | null;
+  /** Galleriets publika URL:er i ägarens ordning (max 12). */
+  readonly gallery: readonly string[];
+  /** Öppettider per veckodag, sorterade (veckodag, start). Stängd dag saknas. */
+  readonly hours: readonly BookingProfileHours[];
+  /** Öppet just nu (öppettider minus stängning för hela företaget). */
+  readonly openNow:
+    | { readonly open: true; readonly closesAt: LocalTime }
+    | { readonly open: false };
+  /** Första lediga tid (någon tjänst, "Cualquiera", 14 dagar framåt). */
+  readonly nextAvailable: {
+    readonly start: IsoInstant;
+    readonly serviceId: string;
+  } | null;
+}
+
 /** `availability[serviceId][staffId | "any"]` → dagarna för den kombinationen.
  * Stängda dagar skickas inte (steg 1). */
 export type BookingAvailability = Record<
@@ -101,6 +139,8 @@ export interface BookingPageData {
   readonly questionsByService?: Readonly<
     Record<string, readonly BookingQuestionDef[]>
   >;
+  /** WP-41: profilen. Frivilligt (fixturer/tester utan profil). */
+  readonly profile?: BookingProfile;
 }
 
 /** `BookingError` (`@/server/bookings/types`, WP-10) plus `network` (klientfel,
