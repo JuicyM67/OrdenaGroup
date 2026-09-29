@@ -3,7 +3,7 @@
 -- Chiles regler och att databasen lagrar/jämför korrekt i UTC oavsett dem.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(11);
+select plan(12);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -75,7 +75,8 @@ select throws_ok(
   '23P01'
 );
 
--- businesses.timezone: default America/Santiago, annan zon avvisas (v1).
+-- businesses.timezone: default America/Santiago, bara Chile eller Sverige
+-- tillåts (D-025/D-026, 20260929100000_businesses_timezone_markets.sql).
 select is(
   (select timezone from public.businesses where id = 'aaaaaaaa-0000-0000-0000-000000000001'),
   'America/Santiago',
@@ -84,6 +85,10 @@ select is(
 select throws_ok(
   $$ insert into public.businesses (slug, name, comuna, category, timezone) values ('wp01-test-tz', 'X', 'Providencia', 'barberia', 'America/New_York') $$,
   '23514'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, timezone) values ('wp-m1-test-tz-se', 'X', 'Providencia', 'barberia', 'Europe/Stockholm') $$,
+  'Europe/Stockholm accepteras (D-025/D-026, Sveriges installation)'
 );
 
 select finish();
