@@ -116,7 +116,10 @@ test("tangentbord: nav → header → VER DETALLE → Enviar recordatorio → Ve
   await tabUntilFocused(page, verAgenda);
   await assertVisibleFocusRing(verAgenda);
 
-  const rows = page.getByRole("listitem");
+  // Bara "Agenda de hoy"-raderna (har "Más opciones"); "Kommande bokningar" har egna listrader.
+  const rows = page
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("button", { name: "Más opciones" }) });
   const rowCount = await rows.count();
   expect(rowCount).toBeGreaterThan(0);
   for (let i = 0; i < rowCount; i++) {
@@ -149,7 +152,10 @@ test('"Agenda de hoy" hace scroll interno con 14 filas (?estado=lleno), la pági
 }) => {
   await page.goto("/design-lab/main?estado=lleno");
 
-  const rows = page.getByRole("listitem");
+  // Bara "Agenda de hoy"-raderna (har "Más opciones"); "Kommande bokningar" har egna listrader.
+  const rows = page
+    .getByRole("listitem")
+    .filter({ has: page.getByRole("button", { name: "Más opciones" }) });
   await expect(rows).toHaveCount(14);
 
   const list = page.locator("ul", { has: rows.first() });
