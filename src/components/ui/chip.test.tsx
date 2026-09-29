@@ -39,6 +39,17 @@ describe("Chip", () => {
     expect(el.className).toContain("text-11");
   });
 
+  it('tone="lavender" ger bg-lavender text-on-lilac-soft (WP-40 "gäller för")', () => {
+    render(
+      <Chip tone="lavender" size="sm">
+        Färgning, Slingor
+      </Chip>,
+    );
+    const el = screen.getByText("Färgning, Slingor");
+    expect(el.className).toContain("bg-lavender");
+    expect(el.className).toContain("text-on-lilac-soft");
+  });
+
   it('tone="peach-50" ger bg-peach-50 text-ink (Hoy "Abono")', () => {
     render(
       <Chip tone="peach-50" size="xs">

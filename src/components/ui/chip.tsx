@@ -16,6 +16,9 @@ const chip = cva("inline-flex w-fit items-center justify-center font-bold", {
       peach: "bg-peach text-ink",
       "peach-50": "bg-peach-50 text-ink",
       lime: "bg-lime text-ink",
+      // WP-40 (`falt-A-bokningsformular.html`): "gäller för"-chippen på en
+      // bokningsfråga (tjänster/kategorier den gäller för).
+      lavender: "bg-lavender text-on-lilac-soft",
       ink: "bg-ink text-on-dark",
     },
     size: {

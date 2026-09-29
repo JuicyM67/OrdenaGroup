@@ -378,6 +378,45 @@ manuella bokning) är oförändrad. **Känd brist:** `es-CL.ts`s `clienteForm.em
 ("Correo (opcional)") och `emailAyuda` är inte uppdaterade för CL:s nya obligatoriska
 fält (copywriter-es-cl äger `src/i18n/`) — flaggat i PR:en, inte löst här.
 
+### Byggt i WP-40 (Ajustes: kategorier och bokningsformulär, D-031)
+
+Referenser: `.visual-diff/ref/falt-A-bokningsformular.html` (Ajustes → "Formulario de
+reserva"), `falt-B-per-tjanst.html` (tjänstens redigering, flik "Frågor vid bokning"),
+`falt-kategorier.html` (kategorier + "Gäller för"-panelen). Byggt i `src/components/settings/`
+och kompletterar den befintliga, oritade Ajustes-skärmen (WP-15b): sektionerna staplas som kort
+i stället för referensens skrivbordsflikar (samma avvikelse som redan fanns för Företaget/
+Tjänster/Personal/Öppettider), mobil först.
+
+**Medvetna avvikelser mot referenserna** (ingen `npm run visual` finns för Ajustes, se ovan):
+- **Ordning** av kategorier och frågor sker med upp/ner-knappar (`servicios.campos.subirAria`/
+  `bajarAria`, redan förberedda text­nycklar) i stället för drag — tillgängligt med tangentbord,
+  inget nytt drag-bibliotek.
+- **Frågetypen** väljs i en `Select` (samma fält som `falt-B` redan ritar) i stället för
+  `falt-A`:s svävande panel med sju knappar — en `<select>` räcker för sju alternativ och är mer
+  tillgänglig.
+- **Förhandsvisningen** (`question-preview.tsx`) är en egen, enkel telefonmockup — återanvänder
+  inte kundens bokningsformulär (byggs parallellt av en annan ui-engineer i `src/components/
+  booking/`). Fälten där är medvetet egna, kompakta `<input>`/`<textarea>` i stället för
+  `TextField`/`Textarea`/`Select` (de är minst 52 px höga, för stora för en 300 px telefonram).
+- **"Quitar" i vy B** tar bara bort tjänsten direkt när frågan redan har ett uttryckligt mål på
+  just den tjänsten (`applies_to = 'targets'`); gäller frågan via "alla tjänster" eller via
+  kategorin får ägaren ändra "Gäller för" i vy A i stället (`service-questions-tab.tsx`).
+- Två `TODO_COPY`-platshållare (inga nya risker, bara text): rubriken på kategorisektionen och
+  fliketiketten "Tiempo y precio" i tjänstens redigerare — ingen befintlig nyckel i
+  `formulario`/`servicios`/`ajustes` täcker dem, se koden.
+
+| Komponent | Fil | API |
+|---|---|---|
+| Switch | `src/components/ui/switch.tsx` | `checked`, `onChange`, `label` (blir aria-label), `disabled?`; 40×24, `role="switch"` |
+| Chip (ny ton) | `src/components/ui/chip.tsx` | `tone="lavender"` (`bg-lavender text-on-lilac-soft`) — "gäller för"-chippen på en fråga |
+| CategorySection | `src/components/settings/category-section.tsx` | skapa/döpa om/ta bort (Radix Dialog-bekräftelse)/ordna kategorier, gruppera tjänster, kategori-`select` per tjänst |
+| BookingFormSection | `src/components/settings/booking-form-section.tsx` | vy A: låst rad, förslagsbanner, hela frågekatalogen, förhandsvisning per vald tjänst |
+| ServiceQuestionsTab | `src/components/settings/service-questions-tab.tsx` | vy B: frågorna för en tjänst, "+ Från förslag"/"+ Egen fråga", "Quitar" |
+| AppliesToPanel | `src/components/settings/applies-to-panel.tsx` | delad "Gäller för"-panel (alla/valda, kategori- och tjänstval, sökfält, `too_many_questions`-fel) |
+| QuestionEditor | `src/components/settings/question-editor.tsx` | delat formulär för ny/redigera fråga (alla 7 typer), `footer?` (vy B:s "använd även i andra tjänster") |
+| QuestionRow, QuestionPreview, BookingSuggestionsBanner | samma mapp | frågerad, egen förhandsvisning, branschförslagsbanner |
+| `booking-form-resolve.ts`, `booking-form-industry.ts`, `booking-form-error-text.ts`, `booking-form-types.ts` | samma mapp | rena klientfunktioner/typer, dubblerade mot `src/server/booking-questions/resolve.ts` respektive `src/server/owner/booking-questions*` (server-only-filer importeras aldrig från klientkod) |
+
 ### Byggt i WP-40 (kundsidan och visning av svar)
 
 Kategoriflikar på Reserva (`falt-kategorier.html`, telefonmockupen) och de dynamiska
