@@ -10,7 +10,8 @@
 -- 'confirmed' (beräknas mot `now()` när `db reset` körs).
 
 -- Företaget ------------------------------------------------------------
-insert into public.businesses (id, slug, name, comuna, category, phone, address, accent_color)
+-- WP-41 steg 1: `about` är en kort presentationstext för profilsidan.
+insert into public.businesses (id, slug, name, comuna, category, phone, address, accent_color, about)
 values (
   'b0000000-0000-0000-0000-000000000001',
   'barberia-norte',
@@ -19,7 +20,8 @@ values (
   'barberia',
   '+56900000000',
   'Av. Ficticia 1234, Providencia',
-  '#E3F36B'
+  '#E3F36B',
+  'Barbería de barrio en Providencia. Cortes clásicos, arreglo de barba y atención sin apuro, de lunes a sábado.'
 );
 
 -- Personal: Diego, Matías, Tomás (Reserva: alla gör alla tjänster) --------
@@ -39,10 +41,11 @@ insert into public.service_categories (id, business_id, name, sort) values
   ('b0000000-0000-0000-0000-000000000903', 'b0000000-0000-0000-0000-000000000001', 'Övrigt', 3);
 
 -- Tjänster ---------------------------------------------------------------
-insert into public.services (id, business_id, name, duration_min, price_clp, buffer_after_min, sort, category_id) values
-  ('b0000000-0000-0000-0000-000000000201', 'b0000000-0000-0000-0000-000000000001', 'Corte clásico', 35, 12000, 0, 1, 'b0000000-0000-0000-0000-000000000902'),
-  ('b0000000-0000-0000-0000-000000000202', 'b0000000-0000-0000-0000-000000000001', 'Corte + barba', 50, 18000, 0, 2, 'b0000000-0000-0000-0000-000000000902'),
-  ('b0000000-0000-0000-0000-000000000203', 'b0000000-0000-0000-0000-000000000001', 'Perfilado de barba', 20, 8000, 0, 3, 'b0000000-0000-0000-0000-000000000902');
+-- WP-41 steg 1: `description` syns på profilsidan under varje tjänst.
+insert into public.services (id, business_id, name, duration_min, price_clp, buffer_after_min, sort, category_id, description) values
+  ('b0000000-0000-0000-0000-000000000201', 'b0000000-0000-0000-0000-000000000001', 'Corte clásico', 35, 12000, 0, 1, 'b0000000-0000-0000-0000-000000000902', 'Corte a tijera y máquina, incluye lavado y peinado final.'),
+  ('b0000000-0000-0000-0000-000000000202', 'b0000000-0000-0000-0000-000000000001', 'Corte + barba', 50, 18000, 0, 2, 'b0000000-0000-0000-0000-000000000902', 'Corte clásico más arreglo de barba con toalla caliente y navaja.'),
+  ('b0000000-0000-0000-0000-000000000203', 'b0000000-0000-0000-0000-000000000001', 'Perfilado de barba', 20, 8000, 0, 3, 'b0000000-0000-0000-0000-000000000902', 'Delineado y prolijo de barba, sin corte de pelo.');
 
 -- Alla profesionales gör alla tjänster.
 insert into public.staff_services (business_id, staff_id, service_id)

@@ -5,7 +5,7 @@
 -- "inte tillämpligt" (en business kan inte peka på en annan business).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(40);
 \ir _helpers.psql
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
@@ -198,6 +198,33 @@ select throws_ok(
 select lives_ok(
   $$ insert into public.businesses (slug, name, comuna, category, logo_url) values ('wp01-test-logo', 'X', 'Providencia', 'barberia', 'https://example.com/logo.png') $$,
   'https:// accepteras'
+);
+
+-- WP-41 steg 1: about (max 1500 tecken), cover_url (samma https-regel som
+-- logo_url), instagram (handtag utan @, 1–30 tecken a-z/0-9/./_).
+select throws_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, about) values ('wp41-test-about', 'X', 'Providencia', 'barberia', repeat('a', 1501)) $$,
+  '23514'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, about) values ('wp41-test-about', 'X', 'Providencia', 'barberia', 'Barbería de barrio en Providencia.') $$,
+  'about inom gränsen är okej'
+);
+select throws_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, cover_url) values ('wp41-test-cover', 'X', 'Providencia', 'barberia', 'http://example.com/cover.jpg') $$,
+  '23514'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, cover_url) values ('wp41-test-cover', 'X', 'Providencia', 'barberia', 'https://example.com/cover.jpg') $$,
+  'cover_url https:// accepteras'
+);
+select throws_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, instagram) values ('wp41-test-ig', 'X', 'Providencia', 'barberia', '@barberianorte') $$,
+  '23514'
+);
+select lives_ok(
+  $$ insert into public.businesses (slug, name, comuna, category, instagram) values ('wp41-test-ig', 'X', 'Providencia', 'barberia', 'barberia.norte_cl') $$,
+  'instagram-handtag utan @ accepteras'
 );
 
 -- Säkerhet S2 (rättad): service_role kan radera ett företag (WP-26), och
