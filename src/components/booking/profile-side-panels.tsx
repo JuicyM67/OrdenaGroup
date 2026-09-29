@@ -9,7 +9,12 @@ import { APP_TZ, formatDuration, formatTime } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { formatPhone, type E164 } from "@/lib/format/phone";
 
-import { fastestTimeDetail, hoursRows, mapsUrl, mustParseInstant } from "./profile-view";
+import {
+  fastestTimeDetail,
+  hoursRows,
+  mapsUrl,
+  mustParseInstant,
+} from "./profile-view";
 import type { BookingProfile, BookingService, IsoInstant } from "./types";
 
 // Rena externa länkar (Google Maps, Instagram) — `<a>` rakt av, inte
@@ -42,7 +47,12 @@ export function FastestTimesCard({
   if (!service) return null;
 
   return (
-    <Card tone="dark" radius="tile" padding="lg" className="flex flex-col gap-3">
+    <Card
+      tone="dark"
+      radius="tile"
+      padding="lg"
+      className="flex flex-col gap-3"
+    >
       <p className="text-16 font-semibold">{perfil.publico.masRapido}</p>
       <button
         type="button"
@@ -69,7 +79,10 @@ export function HoursCard({ profile }: { profile: BookingProfile }) {
       </p>
       <div className="flex flex-col gap-1 text-14 text-ink-soft">
         {rows.map((row) => (
-          <div key={row.label} className="flex items-baseline justify-between gap-2.5">
+          <div
+            key={row.label}
+            className="flex items-baseline justify-between gap-2.5"
+          >
             <span>{row.label}</span>
             <span>{row.value}</span>
           </div>

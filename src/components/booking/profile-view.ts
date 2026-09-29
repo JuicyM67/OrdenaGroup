@@ -16,11 +16,7 @@ import {
   type IsoWeekday,
 } from "@/lib/format/dates";
 
-import type {
-  BookingProfile,
-  BookingProfileHours,
-  IsoInstant,
-} from "./types";
+import type { BookingProfile, BookingProfileHours, IsoInstant } from "./types";
 
 /** Samma mönster som `dashboard/inicio-view.ts`: kastar hellre än att tysta ett datafel. */
 export function mustParseInstant(iso: IsoInstant, fn: string): Date {
@@ -44,7 +40,10 @@ function whenLabel(now: Date, start: Date): string {
   const today = toLocalDate(now, APP_TZ);
   const day = toLocalDate(start, APP_TZ);
   const time = formatTime(start, APP_TZ);
-  const dia = day === today ? calendario.hoy : formatLocalDate(day, "weekdayDayMonthShort");
+  const dia =
+    day === today
+      ? calendario.hoy
+      : formatLocalDate(day, "weekdayDayMonthShort");
   return `${dia} ${time}`;
 }
 
@@ -77,7 +76,9 @@ export function fastestTimeDetail(
 function whenLabelDayOnly(now: Date, start: Date): string {
   const today = toLocalDate(now, APP_TZ);
   const day = toLocalDate(start, APP_TZ);
-  return day === today ? calendario.hoy : formatLocalDate(day, "weekdayDayShort");
+  return day === today
+    ? calendario.hoy
+    : formatLocalDate(day, "weekdayDayShort");
 }
 
 export type HoursRow = { readonly label: string; readonly value: string };

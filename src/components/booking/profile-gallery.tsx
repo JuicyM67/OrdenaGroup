@@ -14,11 +14,7 @@ import { perfil } from "@/i18n";
 
 const VISIBLE = 6;
 
-export function ProfileGallery({
-  images,
-}: {
-  images: readonly string[];
-}) {
+export function ProfileGallery({ images }: { images: readonly string[] }) {
   if (images.length === 0) return null;
   const visible = images.slice(0, VISIBLE);
   const rest = images.length - visible.length;

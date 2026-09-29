@@ -230,7 +230,9 @@ function MobileBookBar({
   return (
     <div className="fixed inset-x-3 bottom-3.5 z-10 flex items-center justify-between gap-3 rounded-panel bg-ink px-3.5 py-3 text-on-dark shadow-popover">
       <div className="min-w-0">
-        {label ? <p className="truncate text-12 text-on-dark-muted">{label}</p> : null}
+        {label ? (
+          <p className="truncate text-12 text-on-dark-muted">{label}</p>
+        ) : null}
         {service ? (
           <p className="truncate text-13 text-on-dark-soft">
             {formatDuration(service.durationMin)} ·{" "}

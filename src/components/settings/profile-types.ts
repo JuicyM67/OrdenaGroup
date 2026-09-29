@@ -21,15 +21,12 @@ export type ImageUploadTicket =
   | { ok: false; code: string };
 
 export type ConfirmImageResult =
-  | { ok: true; url: string; imageId?: string }
-  | { ok: false; code: string };
+  { ok: true; url: string; imageId?: string } | { ok: false; code: string };
 
 export type ImageKind = "cover" | "logo" | "gallery";
 
 export type DeleteImageTarget =
-  | { kind: "gallery"; id: string }
-  | { kind: "cover" }
-  | { kind: "logo" };
+  { kind: "gallery"; id: string } | { kind: "cover" } | { kind: "logo" };
 
 export type ProfileActions = {
   updateBusinessProfile: (input: unknown) => Promise<ProfileMutationResult>;

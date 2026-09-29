@@ -218,7 +218,10 @@ function GalleryField({
         setError(ajustesErrorText(result.code));
         break;
       }
-      current = [...current, { id: result.imageId ?? result.url, url: result.url }];
+      current = [
+        ...current,
+        { id: result.imageId ?? result.url, url: result.url },
+      ];
       onChange(current);
     }
     setBusy(false);

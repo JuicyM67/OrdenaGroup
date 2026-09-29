@@ -40,9 +40,7 @@ export function ProfileServiceRow({
       className="flex w-full items-center gap-4 rounded-icon bg-surface p-3.5 text-left transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none lg:rounded-none lg:border-b lg:border-line-strong lg:bg-transparent lg:p-0 lg:py-4 lg:last:border-b-0"
     >
       <span aria-hidden="true" className="min-w-0 grow">
-        <span className="block text-15 font-bold text-ink">
-          {service.name}
-        </span>
+        <span className="block text-15 font-bold text-ink">{service.name}</span>
         <span className="mt-0.5 block truncate text-13 text-muted">
           {detalle}
         </span>

@@ -223,9 +223,7 @@ function ServiceForm({
               errors.description ? undefined : servicios.campos.descripcionAyuda
             }
             value={form.description}
-            onChange={(e) =>
-              onChange({ ...form, description: e.target.value })
-            }
+            onChange={(e) => onChange({ ...form, description: e.target.value })}
             error={errors.description}
             maxLength={SERVICE_DESCRIPTION_MAX}
           />

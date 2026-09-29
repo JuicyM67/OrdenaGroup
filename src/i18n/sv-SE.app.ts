@@ -1839,10 +1839,7 @@ export const perfil: Widen<typeof Es.perfil> = {
     },
     reservar: reserva.bookingBar.ctaReservar,
     reservarAhora: "Boka nu",
-    servicioDetalle: (p: {
-      duracion: string;
-      descripcion?: string;
-    }): string =>
+    servicioDetalle: (p: { duracion: string; descripcion?: string }): string =>
       p.descripcion ? `${p.duracion} · ${p.descripcion}` : p.duracion,
     masRapido: "Snabbast in",
     masRapidoDetalle: (p: { dia: string; servicio: string }): string =>

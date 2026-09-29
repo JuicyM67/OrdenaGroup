@@ -119,7 +119,10 @@ export function StaffSection({
     setActive: AjustesActions["setStaffActive"];
     /** WP-41: rol, guardado aparte (`src/server/owner/profile.ts`
      * `updateStaffTitle`, no `updateStaff`). */
-    updateTitle: (id: string, title: string) => Promise<{ ok: true } | { ok: false; code: string }>;
+    updateTitle: (
+      id: string,
+      title: string,
+    ) => Promise<{ ok: true } | { ok: false; code: string }>;
   };
 }) {
   const [list, setList] = useState(staff);

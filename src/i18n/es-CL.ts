@@ -1573,8 +1573,7 @@ export const servicios = {
     service_in_use:
       "Ese servicio tiene reservas. Desactívalo en vez de borrarlo.",
     /** Nuevo en WP-41, tope del mismo campo de arriba. */
-    descripcionMuyLarga:
-      "La descripción no puede tener más de 500 caracteres.",
+    descripcionMuyLarga: "La descripción no puede tener más de 500 caracteres.",
   },
   vacio: "Agrega los servicios que ofreces.",
   contador: (p: { n: number }): string =>
@@ -2399,10 +2398,7 @@ export const perfil = {
      * viene formateada (`formatDuration`, WP-04). Si el servicio no tiene
      * descripción, se muestra solo la duración (regla dura 6: el
      * componente no arma esta frase por su cuenta). */
-    servicioDetalle: (p: {
-      duracion: string;
-      descripcion?: string;
-    }): string =>
+    servicioDetalle: (p: { duracion: string; descripcion?: string }): string =>
       p.descripcion ? `${p.duracion} · ${p.descripcion}` : p.duracion,
     /** Título de la tarjeta oscura del panel lateral/aside ("Snabbast in"
      * en el diseño). */

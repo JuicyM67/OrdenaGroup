@@ -26,9 +26,7 @@ export function ProfileStaff({
             tone={staffTone(i)}
           />
           <div className="min-w-0">
-            <p className="truncate text-15 font-bold text-ink">
-              {member.name}
-            </p>
+            <p className="truncate text-15 font-bold text-ink">{member.name}</p>
             {member.title ? (
               <p className="truncate text-12 text-muted">{member.title}</p>
             ) : null}
