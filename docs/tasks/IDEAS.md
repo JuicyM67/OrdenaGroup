@@ -85,3 +85,12 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Visa varningen om känsliga uppgifter även vid enklicksaktivering av förslag (allergier).
 - COMPLIANCE.md: Resend som biträde (ägarmejl kan innehålla svar).
 - F6 (personal): bestäm om personal ska se svar som kan innehålla hälsodata.
+
+## Från säkerhetsgranskningen av WP-41 (2026-09-29, icke-blockerande)
+- DB-check som låser `cover_url`/`logo_url` till vår bucket och företagets mapp; ta bort localhost-undantaget i migrationen (profilsidan filtrerar redan i `page-data.ts`).
+- `business_images.path`: CHECK med samma regex som servern (`<bid>/<uuid>.(jpg|png|webp)`) + max 12 i DB.
+- Storage: bara uppladdning via signerad URL (ta bort insert/update för authenticated) + städjobb för föräldralösa filer.
+- CSP med `img-src 'self' <supabase-host>`.
+- `createImageUpload`: try/catch runt DB-fel.
+- Ägarens UI: tydliggör att telefon/adress visas publikt.
+- WP-26: radering av företag ska tömma `business-media/<bid>/`.

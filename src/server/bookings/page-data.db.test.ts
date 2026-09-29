@@ -169,13 +169,14 @@ describe("loadReservaPageData · profil (WP-41)", () => {
         `update public.businesses
             set about = 'Salón en Providencia', instagram = 'salon.nova',
                 address = 'Av. Providencia 1234', phone = '+56912345678',
-                cover_url = 'https://proj.supabase.co/c.jpg'
+                cover_url = 'https://proj.supabase.co/storage/v1/object/public/business-media/' || $1::text || '/cccccccc-cccc-4ccc-8ccc-cccccccccccc.jpg'
           where id = $1`,
         [b.id],
       );
       await adminQuery(
         `insert into public.business_images (business_id, path, sort)
-         values ($1::uuid, $1::text || '/b.png', 2), ($1::uuid, $1::text || '/a.jpg', 1)`,
+         values ($1::uuid, $1::text || '/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png', 2), ($1::uuid, $1::text || '/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg', 1),
+                ($1::uuid, $1::text || '/../annan/x.jpg', 3)`,
         [b.id],
       );
       await adminQuery(
@@ -193,11 +194,13 @@ describe("loadReservaPageData · profil (WP-41)", () => {
       expect(p.instagram).toBe("salon.nova");
       expect(p.address).toBe("Av. Providencia 1234");
       expect(p.phone).toBe("+56912345678");
-      expect(p.coverUrl).toBe("https://proj.supabase.co/c.jpg");
+      expect(p.coverUrl).toBe(
+        `https://proj.supabase.co/storage/v1/object/public/business-media/${b.id}/cccccccc-cccc-4ccc-8ccc-cccccccccccc.jpg`,
+      );
       expect(p.logoUrl).toBeNull();
       expect(p.gallery).toEqual([
-        `https://proj.supabase.co/storage/v1/object/public/business-media/${b.id}/a.jpg`,
-        `https://proj.supabase.co/storage/v1/object/public/business-media/${b.id}/b.png`,
+        `https://proj.supabase.co/storage/v1/object/public/business-media/${b.id}/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.jpg`,
+        `https://proj.supabase.co/storage/v1/object/public/business-media/${b.id}/bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb.png`,
       ]);
       expect(p.hours).toHaveLength(6);
       expect(p.hours[0]).toEqual({ weekday: 1, start: "10:00", end: "19:00" });

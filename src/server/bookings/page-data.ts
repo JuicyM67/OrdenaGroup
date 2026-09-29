@@ -37,7 +37,7 @@ import {
   type HoursRow as EngineHoursRow,
 } from "@/server/scheduling/types";
 
-import { publicMediaUrl } from "./media";
+import { mediaPathFromUrl, publicMediaUrl } from "./media";
 
 /**
  * Sidans data för `/{slug}` (WP-20). Läser `businessId` (redan slug→id-
@@ -176,7 +176,12 @@ async function loadGallery(
       order by sort, created_at`,
     [businessId],
   );
-  return r.rows.map((x) => publicMediaUrl(x.path));
+  // Bara filer som servern själv laddat upp i företagets mapp (säkerhetsgranskning
+  // WP-41: rader kan skrivas direkt via Data API, så sökvägen litas inte på blint).
+  const own = new RegExp(`^${businessId}/[0-9a-f-]{36}\\.(jpg|png|webp)$`);
+  return r.rows
+    .filter((x) => own.test(x.path))
+    .map((x) => publicMediaUrl(x.path));
 }
 
 export async function loadReservaPageData(
@@ -199,8 +204,16 @@ export async function loadReservaPageData(
   const gallery = await loadGallery(q, businessId);
   const profileBase: Omit<BookingProfile, "nextAvailable"> = {
     about: biz.about,
-    coverUrl: biz.cover_url,
-    logoUrl: biz.logo_url,
+    // Bara bilder i vår bucket och företagets egen mapp visas publikt (ingen extern
+    // URL eller localhost, säkerhetsgranskning WP-41).
+    coverUrl:
+      biz.cover_url && mediaPathFromUrl(biz.cover_url, businessId)
+        ? biz.cover_url
+        : null,
+    logoUrl:
+      biz.logo_url && mediaPathFromUrl(biz.logo_url, businessId)
+        ? biz.logo_url
+        : null,
     instagram: biz.instagram,
     address: biz.address,
     phone: biz.phone,
