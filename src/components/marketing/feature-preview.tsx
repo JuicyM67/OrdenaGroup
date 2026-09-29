@@ -183,10 +183,10 @@ function HoyPreview() {
       </div>
       <div className="mt-2 truncate text-16 font-bold">{DEMO.kund}</div>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <span className="flex h-10 animate-func-toggle-llego items-center justify-center rounded-control text-13 font-bold">
+        <span className="flex h-10 animate-func-toggle-llego items-center justify-center rounded-control bg-lime text-13 font-bold text-ink">
           {copy.hoy.acciones.llego}
         </span>
-        <span className="flex h-10 animate-func-toggle-novino items-center justify-center rounded-control border text-13 font-semibold">
+        <span className="flex h-10 animate-func-toggle-novino items-center justify-center rounded-control border border-dark-border text-13 font-semibold text-on-dark">
           {copy.hoy.acciones.noVino}
         </span>
       </div>
