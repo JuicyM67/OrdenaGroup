@@ -141,13 +141,15 @@ describe("varje fråga i service-vägen bär rätt business_id", () => {
         now: NOW,
       }),
     );
-    expect(moved.value.ok).toBe(true);
+    if (!moved.value.ok) throw new Error(moved.value.error);
     expect(assertScoped(moved.queries, biz.id)).toBeGreaterThanOrEqual(8);
+    // D-029: flytten roterade token.
+    const newToken = moved.value.value.booking.manageToken;
 
     const cancelled = await capture((q) =>
       cancelIn(q, {
         businessId: biz.id,
-        ref: { manageToken: token },
+        ref: { manageToken: newToken },
         actor: customer,
         now: NOW,
       }),

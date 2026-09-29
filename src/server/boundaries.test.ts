@@ -148,6 +148,13 @@ const isTestSupport = (f: string) =>
  * se testet nedan som bevisar att undantaget faktiskt gör något.
  */
 const SLUG_LOOKUP_EXCEPTION = "server/bookings/business.ts";
+/**
+ * WP-16 (D-029, IDEAS rad 47): kundens länk `/r/[token]` slår upp bokningen
+ * på bara `manage_token_hash` (unik) — token är det enda kunden har. Filen
+ * gör exakt ett sådant uppslag (→ `business_id`); all övrig SQL i den
+ * filtrerar på `business_id`. Testet nedan håller undantaget så smalt.
+ */
+const TOKEN_LOOKUP_EXCEPTION = "server/bookings/manage.ts";
 /** All produktionskod som kan köra SQL: src/server och src/app/api. */
 const productionSources = [
   ...serverSources,
@@ -335,6 +342,36 @@ describe("src/server gränser", () => {
     const f = productionSources.find((x) => rel(x) === SLUG_LOOKUP_EXCEPTION);
     expect(f).toBeDefined();
     expect(sqlOffenders(read(f!))).not.toEqual([]);
+  });
+
+  it(`${TOKEN_LOOKUP_EXCEPTION}: de enda frågorna utan business_id-filter slår upp på bara manage_token_hash (D-029)`, () => {
+    const f = productionSources.find((x) => rel(x) === TOKEN_LOOKUP_EXCEPTION);
+    expect(f).toBeDefined();
+    const unfiltered = sqlStrings(read(f!)).filter(
+      (s) =>
+        tenantTablesIn(s).length > 0 && !/\bbusiness_id\s*=\s*\$\d/.test(s),
+    );
+    // Undantaget finns (annars behövs det inte) och är bara hash-uppslaget.
+    expect(unfiltered).toHaveLength(1);
+    for (const s of unfiltered) {
+      expect(tenantTablesIn(s)).toEqual(["bookings"]);
+      expect(s).toMatch(/\bwhere\s+(?:bk\.)?manage_token_hash\s*=\s*\$1\s*$/);
+    }
+    // Ingen annan produktionsfil slår upp bokningar på bara token-hashen.
+    const others = productionSources
+      .filter((x) => rel(x) !== TOKEN_LOOKUP_EXCEPTION)
+      .flatMap((x) =>
+        sqlStrings(read(x))
+          .filter(
+            (s) =>
+              /\bmanage_token_hash\s*=\s*\$\d/.test(s) &&
+              !/\bbusiness_id\s*=\s*\$\d/.test(s),
+          )
+          .map(
+            (s) => `${rel(x)}: ${s.replace(/\s+/g, " ").trim().slice(0, 80)}`,
+          ),
+      );
+    expect(others).toEqual([]);
   });
 
   it("bara testkod importerar @/server/db/testing", () => {

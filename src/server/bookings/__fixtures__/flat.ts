@@ -56,7 +56,10 @@ async function toRequest(flat: Flat): Promise<Flat> {
 }
 
 export async function moveBooking(flat: Flat) {
-  return realMove(...split(await toRequest(flat)));
+  const r = await realMove(...split(await toRequest(flat)));
+  // D-029: flytten roterar token; nästa kundanrop ska använda den nya.
+  if (r.ok) tokens.set(r.value.booking.id, r.value.booking.manageToken);
+  return r;
 }
 
 export async function cancelBooking(flat: Flat) {

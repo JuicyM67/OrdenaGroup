@@ -11,11 +11,13 @@
 // `src/app/[slug]/actions.ts`/`submit.ts`, WP-20).
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 import { AgendaScreen } from "@/components/agenda/agenda-screen";
 import { parseLocalDate, APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pgErrorCode } from "@/server/db/errors";
+import { kickOutbox } from "@/server/messaging/outbox";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { loadOwnerAgendaWeek } from "@/server/owner/agenda";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
@@ -71,6 +73,7 @@ export default async function AppAgendaPage({
       input,
     );
     if (!result.ok) return { ok: false as const, error: result.error };
+    after(() => kickOutbox()); // WP-16: bekräftelse + ägarmejl direkt
     if (result.value.consent) {
       try {
         await saveManualConsent(
@@ -103,6 +106,7 @@ export default async function AppAgendaPage({
       input,
     );
     if (!result.ok) return { ok: false as const, error: result.error };
+    after(() => kickOutbox()); // WP-16: flyttmeddelandet direkt
     return { ok: true as const };
   };
 

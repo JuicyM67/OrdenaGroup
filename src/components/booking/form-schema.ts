@@ -13,6 +13,7 @@ import "server-only";
 
 import { z } from "zod";
 
+import type { Market } from "@/config/brand";
 import { reserva } from "@/i18n";
 import { mobileInputSchema } from "@/lib/format/schemas";
 
@@ -36,6 +37,24 @@ export const customerFormSchema = z.object({
   date: z.string().min(1),
   slotId: z.string().min(1).nullable(),
 });
+
+/**
+ * D-030: i CL är e-post obligatorisk i Reserva (enda kanalen tills WhatsApp
+ * finns); SE oförändrat. Tom e-post ger samma kod som en ogiltig
+ * ("email.invalid"), så `errors.ts` behöver ingen ny text.
+ */
+export function customerFormSchemaFor(m: Market) {
+  if (m !== "CL") return customerFormSchema;
+  return customerFormSchema.superRefine((v, ctx) => {
+    if (v.email === "") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["email"],
+        message: "email.invalid",
+      });
+    }
+  });
+}
 
 export type CustomerFormInput = z.input<typeof customerFormSchema>;
 export type CustomerFormOutput = z.output<typeof customerFormSchema>;

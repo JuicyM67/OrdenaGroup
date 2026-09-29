@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { Queryable } from "@/server/db/pool";
+import { enqueueBookingEvent } from "@/server/messaging/outbox";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { runAs } from "@/server/scheduling/run";
 import {
@@ -31,7 +32,7 @@ type CancelResult = Result<
  * (`by` följer aktören). Idempotent: redan avbokad → ok med `freed = null`.
  * Kunden bara fram till start − cancel_window_hours (även om företaget är
  * fryst); ägaren alltid. `cancelled_at` är den injicerade klockan.
- * Väntelistan (WP-23) anropas inte här.
+ * Väntelistan (WP-23) anropas inte här. Köar `cancelled` efter commit (WP-16).
  */
 export async function cancelBooking(
   request: CancelBookingRequest,
@@ -52,7 +53,18 @@ export async function cancelBooking(
     reason = p.data.reason;
   }
   const input = { ...c, ref, reason };
-  return runAs(c.actor, (q) => cancelIn(q, input));
+  const result = await runAs(c.actor, (q) => cancelIn(q, input));
+  // WP-16: efter commit (enqueueBookingEvent kastar aldrig). En redan
+  // avbokad bokning (`freed === null`) köar inget nytt.
+  if (result.ok && result.value.freed !== null) {
+    await enqueueBookingEvent({
+      type: "cancelled",
+      bookingId: result.value.bookingId,
+      businessId: c.businessId,
+      by: c.actor.kind,
+    });
+  }
+  return result;
 }
 
 export type CancelInput = {

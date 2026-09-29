@@ -100,7 +100,15 @@ describe("kundvägen tar token, inte bookingId", () => {
     );
     if (!moved.ok) throw new Error(moved.error);
     expect(moved.value.booking.id).toBe(x.id);
-    const cancelled = await cancelBooking({ manageToken: x.token }, ctx(biz));
+    // D-029: flytten roterar token — den gamla länken slutar gälla.
+    const rotated = moved.value.booking.manageToken;
+    expect(rotated).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(rotated).not.toBe(x.token);
+    expect(await cancelBooking({ manageToken: x.token }, ctx(biz))).toEqual({
+      ok: false,
+      error: "not_found",
+    });
+    const cancelled = await cancelBooking({ manageToken: rotated }, ctx(biz));
     expect(cancelled.ok && cancelled.value.bookingId).toBe(x.id);
     expect((await status(biz, x.id)).status).toBe("cancelled");
     expect((await status(biz, y.id)).status).toBe("confirmed");
