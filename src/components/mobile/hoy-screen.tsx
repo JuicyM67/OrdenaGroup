@@ -16,7 +16,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { IconButton } from "@/components/ui/icon-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { agenda, hoy, nav } from "@/i18n/es-CL";
+import { agenda, hoy, nav } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 
 import {

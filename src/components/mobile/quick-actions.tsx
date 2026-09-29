@@ -1,7 +1,7 @@
 // Se docs/design/DESIGN.md §7 "QuickActionTile" (Hoy), rutnätet av tre snabbåtgärder.
 import { CreditCard, List, Zap } from "lucide-react";
 
-import { hoy } from "@/i18n/es-CL";
+import { hoy } from "@/i18n";
 
 import { QuickActionTile } from "./quick-action-tile";
 import type { HoyLinks } from "./types";

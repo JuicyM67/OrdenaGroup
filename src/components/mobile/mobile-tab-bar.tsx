@@ -4,7 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cn } from "@/components/ui/cn";
-import { nav } from "@/i18n/es-CL";
+import { nav } from "@/i18n";
 
 export type MobileTabItem = {
   key: string;

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
-import { comun, hoy } from "@/i18n/es-CL";
+import { comun, hoy } from "@/i18n";
 import { formatTime, APP_TZ } from "@/lib/format/dates";
 
 import { nextChip, parseInstantOrThrow, relative } from "./hoy-view";

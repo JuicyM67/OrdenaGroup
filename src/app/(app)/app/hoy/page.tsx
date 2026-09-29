@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { HoyScreen } from "@/components/mobile/hoy-screen";
-import { hoy } from "@/i18n/es-CL";
+import { hoy } from "@/i18n";
 import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";

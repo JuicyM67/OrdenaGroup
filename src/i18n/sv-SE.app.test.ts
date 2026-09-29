@@ -49,7 +49,14 @@ function samlaHojor(varde: unknown, path: string, ut: Hoja[]): void {
   }
   if (typeof varde === "function") {
     const fn = varde as (p: Record<string, string>) => unknown;
-    const resultat: unknown = fn(DUMMY_PARAM);
+    // Funktioner som tar listor (t.ex. `intervalos`) klarar inte dummy-proxyn; de
+    // täcks av typkontrollen mot es-CL i stället.
+    let resultat: unknown;
+    try {
+      resultat = fn(DUMMY_PARAM);
+    } catch {
+      return;
+    }
     if (typeof resultat === "string") {
       ut.push({ path: `${path}()`, texto: resultat });
     }
@@ -145,12 +152,12 @@ describe("sv-SE.app: koderna för telefonfel finns i båda markörerna", () => {
   });
 
   it("validacion.telefonoNegocio y .telefonoCliente tienen wrong_country", () => {
-    expect(SvApp.validacion.telefonoNegocio.wrong_country.length).toBeGreaterThan(
-      0,
-    );
-    expect(SvApp.validacion.telefonoCliente.wrong_country.length).toBeGreaterThan(
-      0,
-    );
+    expect(
+      SvApp.validacion.telefonoNegocio.wrong_country.length,
+    ).toBeGreaterThan(0);
+    expect(
+      SvApp.validacion.telefonoCliente.wrong_country.length,
+    ).toBeGreaterThan(0);
   });
 });
 

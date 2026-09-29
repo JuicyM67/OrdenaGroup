@@ -2,7 +2,7 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { Chip } from "@/components/ui/chip";
-import { hoy } from "@/i18n/es-CL";
+import { hoy } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import { formatTime, APP_TZ } from "@/lib/format/dates";
 
