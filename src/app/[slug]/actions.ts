@@ -14,7 +14,6 @@
  */
 import "server-only";
 
-import { after } from "next/server";
 
 import {
   customerFormSchemaFor,
@@ -58,7 +57,7 @@ export async function createBooking(
   });
   if (!result.ok) return { ok: false, code: result.error };
   // WP-16: bekräftelsen skickas direkt efter svaret, utan att vänta på cron.
-  after(() => kickOutbox());
+  void kickOutbox();
 
   // Granskningsfynd: bokningen är redan committad här — svara alltid att den
   // lyckades, även om samtycket (en separat transaktion, submit.ts) inte
