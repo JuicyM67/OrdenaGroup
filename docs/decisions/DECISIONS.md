@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-031 · 2026-09-29 · Tjänstekategorier och bokningsfrågor
+**Varför:** fler branscher behöver egna frågor, och frisörer m.fl. vill gruppera tjänster (Dam/Herr/Övrigt). **Konsekvens:** kategorier är egna rader (`service_categories`), fritextkolumnen `services.category` migreras och tas bort. Bokningsfrågor lagras normaliserat med kopia av etikett/typ i `booking_answers`; branschförslagen finns i kod. Förslag för 8 branscher; "Allergier" bara där det berör, inga andra hälsofrågor i förslagen.
+
 ### D-030 · 2026-09-29 · Utkorgens schemaläggare via GitHub Actions, en påminnelse (24 h), e-post krävs i CL
 **Varför:** ägaren vill slippa hemligheter i Supabase Vault; bekräftelser går ändå direkt via `kickOutbox`. **Konsekvens:** `.github/workflows/outbox-cron.yml` anropar `/api/cron/outbox` var 5:e minut per marknad med `CRON_SECRET`; påminnelsen 24 h kan komma upp till ~15 min sent. Bara 24 h-påminnelse (SE: e-post + SMS, CL: e-post, WhatsApp när WP för Meta är klart). E-post är obligatorisk i Reserva för CL tills WhatsApp finns.
 

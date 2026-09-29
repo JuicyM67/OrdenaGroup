@@ -53,6 +53,12 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-35 | Säljarvy för förmedlare | ui-engineer + db-engineer | WP-01 | F18 |
 | WP-36 | Intern admin | ui-engineer | WP-34 | F19 |
 
+## Utökningar
+
+| ID | Titel | Agent | Beror på | F# | Status |
+|---|---|---|---|---|---|
+| WP-40 | Tjänstekategorier + frågor vid bokning (branschförslag, 7 typer, per tjänst/kategori, max 5, svar i agenda/Hoy/mejl/kundkort) | db-engineer + scheduling-engineer + copywriter-es-cl + integrations-engineer + ui-engineer | WP-15, WP-20, WP-21 | F1, F5, F6 | ◐ (plan klar, se docs/tasks/plans/WP-40-falt-kategorier.md; 2 FRÅGA öppna) |
+
 ## Parallellisering — förslag
 - **Dag 1:** WP-00 (en agent). Samtidigt: WP-03 (copywriter).
 - **Därefter parallellt i 3–4 worktrees:** WP-01 (db) · WP-02 → WP-11/12/13/14 (ui) · WP-04 → WP-10 (scheduling) · WP-16 (integrations, efter WP-01).

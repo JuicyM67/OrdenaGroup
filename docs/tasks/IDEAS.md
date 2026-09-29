@@ -69,3 +69,10 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - `/r/[token]`: `loadBookingByToken` anropas två gånger (metadata + sida) – använd React `cache()`; rate limit när den finns för publika bokningen.
 - `ManageScreen` får `businessId`/`bookingId` i klientpayload – skicka bara det som visas.
 - `message_outbox`-FK mot `bookings` saknar `on delete` – behövs inför radering (WP-26).
+
+## Uppskjutet från WP-40 (frågor vid bokning, 2026-09-29)
+- Bilduppladdning som svarstyp (t.ex. foto på önskad frisyr).
+- Frågor som påverkar pris eller längd på tjänsten.
+- Villkorade frågor (visa fråga B bara om svaret på A är ja).
+- Frågor i manuell bokning från agendan (WP-40 visar bara befintliga svar).
+- Statistik/sammanställning över svar.
