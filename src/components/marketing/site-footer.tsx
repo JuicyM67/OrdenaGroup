@@ -24,11 +24,19 @@ const INDUSTRIAS = copy.SITIO_PARA_INDUSTRIAS.map((industria) => ({
   href: `/para/${industria.id}`,
 }));
 
+// "Horas flash"/"Ventajas": mismo motivo que en `site-header.tsx` (sitio-v6, sin una
+// entrada propia en `copy.sitio.footer.links` todavía) — reutilizan
+// `megamenu.producto.items.flash.titulo` y `ventajas.hero.etiqueta`, nunca texto inventado.
 const PRODUCTO_LINKS = [
   { href: "/funcionalidades", label: copy.sitio.footer.links.funcionalidades },
   { href: "/precios", label: copy.sitio.footer.links.precios },
   { href: "/preguntas", label: copy.sitio.footer.links.preguntas },
   { href: "/contacto", label: copy.sitio.footer.links.contacto },
+  {
+    href: "/horas-flash",
+    label: copy.sitio.megamenu.producto.items.flash.titulo,
+  },
+  { href: "/ventajas", label: copy.sitio.ventajas.hero.etiqueta },
 ] as const;
 
 const footerLinkClass =

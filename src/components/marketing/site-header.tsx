@@ -70,7 +70,7 @@ const PRODUCTO_ITEMS: readonly {
   },
   {
     id: "flash",
-    href: "/#horas-flash",
+    href: "/horas-flash",
     icon: Zap,
     ...copy.sitio.megamenu.producto.items.flash,
   },
@@ -88,10 +88,20 @@ const PRODUCTO_ITEMS: readonly {
   },
 ];
 
+// "Ventajas": sin una entrada propia en `copy.sitio.megamenu.recursos` (sitio-v6, ninguna
+// pantalla de diseño dibujó el megamenú con esta página todavía) — `titulo` reutiliza
+// `ventajas.hero.etiqueta` y `texto` reutiliza `ventajas.comparacion.titulo` (encargo:
+// nunca texto inventado), ambas ya dentro del límite de ~60 caracteres del resto de la
+// columna.
 const RECURSOS_ITEMS = [
   { href: "/precios", ...copy.sitio.megamenu.recursos.precios },
   { href: "/preguntas", ...copy.sitio.megamenu.recursos.preguntas },
   { href: "/contacto", ...copy.sitio.megamenu.recursos.contacto },
+  {
+    href: "/ventajas",
+    titulo: copy.sitio.ventajas.hero.etiqueta,
+    texto: copy.sitio.ventajas.comparacion.titulo,
+  },
 ] as const;
 
 const INDUSTRIAS = copy.SITIO_PARA_INDUSTRIAS.map((industria) => ({
@@ -195,7 +205,7 @@ function MegaMenuPanel() {
       <div className="col-span-3">
         <NavigationMenu.Link asChild>
           <Link
-            href="/#horas-flash"
+            href="/horas-flash"
             className="group flex h-full flex-col justify-between gap-4 rounded-card bg-dark p-5 text-on-dark transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
           >
             <div className="flex items-center justify-between">
