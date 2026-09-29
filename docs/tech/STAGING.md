@@ -163,3 +163,18 @@ workflowen första gången:
   `link` och `--linked` som lokala agentkommandon i alla worktrees.
 - Sentry och PostHog ingår **inte** i den här staging-uppsättningen (se
   `docs/tasks/plans/WP-05.md`) — läggs till i ett senare arbetspaket.
+
+## Sverige (Booking Buddy, D-025)
+
+| | Chile | Sverige |
+|---|---|---|
+| Supabase | `bligjpmisejtdnbfwhqx` (sa-east-1) | eget projekt i eu-north-1 (Stockholm) |
+| GitHub Environment | `staging` | `staging-se` (bara `main`) |
+| Vercel-projekt | `ordenagroup` (funktioner i gru1) | `bookingbuddy` (funktioner i arn1, `NEXT_PUBLIC_MARKET=SE`) |
+| Publik adress | https://ordenacalendar.vercel.app | https://bookingbuddy-se.vercel.app |
+
+Koppla Sverige: skapa projektet i Supabase, lägg `STAGING_SUPABASE_ACCESS_TOKEN`,
+`STAGING_SUPABASE_DB_PASSWORD` och `STAGING_SUPABASE_PROJECT_REF` i Environment
+`staging-se`, kör `bash scripts/setup-staging-env.sh se` och sedan workflowen
+"Deploy staging" manuellt med reseed. Funktionsregionen sätts per Vercel-projekt
+(inte i `vercel.json`).

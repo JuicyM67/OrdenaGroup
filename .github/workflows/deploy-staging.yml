@@ -30,11 +30,19 @@ concurrency:
 
 jobs:
   deploy:
+    # En körning per marknad (D-025): Chile (staging) och Sverige (staging-se). Varje
+    # GitHub Environment har egna hemligheter med samma namn. Sverige hoppas över tills
+    # dess hemligheter finns.
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [staging, staging-se]
+    name: deploy (${{ matrix.env }})
     runs-on: ubuntu-latest
     # Hemligheterna ligger i GitHub Environment "staging", som bara `main` får
     # använda (deployment branch policy). En workflow på någon annan branch
     # kommer alltså inte åt dem.
-    environment: staging
+    environment: ${{ matrix.env }}
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
@@ -56,7 +64,9 @@ jobs:
       # med ett kryptiskt CLI-fel längre ner. Ingen hemlighet skrivs till
       # loggen — bara namnen på dem som saknas.
       - name: Kontrollera att repo-hemligheterna finns
+        id: secrets
         env:
+          ENV_NAME: ${{ matrix.env }}
           STAGING_SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           STAGING_SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
           STAGING_SUPABASE_PROJECT_REF: ${{ secrets.STAGING_SUPABASE_PROJECT_REF }}
@@ -65,6 +75,12 @@ jobs:
           [ -z "$STAGING_SUPABASE_ACCESS_TOKEN" ] && missing+=("STAGING_SUPABASE_ACCESS_TOKEN")
           [ -z "$STAGING_SUPABASE_DB_PASSWORD" ] && missing+=("STAGING_SUPABASE_DB_PASSWORD")
           [ -z "$STAGING_SUPABASE_PROJECT_REF" ] && missing+=("STAGING_SUPABASE_PROJECT_REF")
+          if [ "${#missing[@]}" -gt 0 ] && [ "$ENV_NAME" = "staging-se" ]; then
+            echo "::notice::staging-se är inte konfigurerad än (${missing[*]}), hoppar över."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "::error::Saknade repo-hemligheter (Settings -> Secrets and variables -> Actions): ${missing[*]}. Se docs/tech/STAGING.md."
             exit 1
@@ -75,6 +91,7 @@ jobs:
       # .claude/settings.json (`--linked`, `link`, `db push` är blockerade
       # lokalt). Det här jobbet rör bara staging, aldrig produktion.
       - name: Länka mot staging-projektet
+        if: steps.secrets.outputs.ready == 'true'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
@@ -82,6 +99,7 @@ jobs:
         run: npx supabase link --project-ref "$PROJECT_REF"
 
       - name: Kör migrationer mot staging (db push)
+        if: steps.secrets.outputs.ready == 'true'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
@@ -91,7 +109,7 @@ jobs:
       # databasen (kör om alla migrationer och laddar seed.sql från noll).
       # Detta raderar all data i staging. Körs aldrig automatiskt vid push.
       - name: Nollställ och seed:a staging (bara manuellt, reseed=true)
-        if: github.event_name == 'workflow_dispatch' && inputs.reseed == true
+        if: steps.secrets.outputs.ready == 'true' && github.event_name == 'workflow_dispatch' && inputs.reseed == true
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
@@ -108,6 +126,7 @@ jobs:
       # 070_seed_sanity förutsätter en nyss seedad databas (t.ex. exakt 23
       # bokningar) och körs därför bara efter reseed; staging används för test.
       - name: Kör pgTAP mot staging
+        if: steps.secrets.outputs.ready == 'true'
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
