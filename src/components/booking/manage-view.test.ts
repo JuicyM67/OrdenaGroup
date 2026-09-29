@@ -51,9 +51,7 @@ describe("manageState", () => {
 
   it("locked: fortfarande i framtiden, men utanför avbokningsfönstret", () => {
     const b = booking({ canCancel: false });
-    expect(manageState(b, new Date("2026-10-06T12:00:00.000Z"))).toBe(
-      "locked",
-    );
+    expect(manageState(b, new Date("2026-10-06T12:00:00.000Z"))).toBe("locked");
   });
 
   it("cancellable: inom fönstret, status ändringsbar", () => {

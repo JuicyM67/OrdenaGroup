@@ -14,7 +14,12 @@
  * `import type`) i en sådan fil — den här filen saknar pragmat och är den
  * godkända indirektionspunkten, precis som `booking/types.ts`.
  */
-import { formatDate, formatTime, parseInstant, type TimeZone } from "@/lib/format/dates";
+import {
+  formatDate,
+  formatTime,
+  parseInstant,
+  type TimeZone,
+} from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import type { ManagedBooking } from "@/server/bookings/manage";
 
@@ -34,8 +39,7 @@ export function mustParseInstant(iso: string, fn: string): Date {
  * klientsäker form — `BookingError` importeras bara som typ, av samma skäl
  * som `ManagedBooking` ovan). */
 export type ManageCancelResult =
-  | { readonly ok: true }
-  | { readonly ok: false; readonly code: string };
+  { readonly ok: true } | { readonly ok: false; readonly code: string };
 
 /**
  * `cancelled`/`past` är dödlägen (bara `ctaReservarOtraHora`, WP-16-planen

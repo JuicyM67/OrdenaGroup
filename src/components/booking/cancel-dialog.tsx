@@ -50,11 +50,7 @@ export function CancelDialog({
               </Dialog.Title>
               <Dialog.Close asChild>
                 <IconButton label={comun.cerrar} tone="ghost" size={30}>
-                  <X
-                    aria-hidden="true"
-                    className="size-4"
-                    strokeWidth={2.2}
-                  />
+                  <X aria-hidden="true" className="size-4" strokeWidth={2.2} />
                 </IconButton>
               </Dialog.Close>
             </div>

@@ -57,9 +57,9 @@ describe("ManageScreen — bokningskortet", () => {
 describe("ManageScreen — avboka (dentro del plazo)", () => {
   it("öppnar dialogen, bekräftar och visar cancelacionConfirmada + länken", async () => {
     const user = userEvent.setup();
-    const onCancel = vi.fn(
-      async (): Promise<ManageCancelResult> => ({ ok: true }),
-    );
+    const onCancel = vi.fn(async (): Promise<ManageCancelResult> => ({
+      ok: true,
+    }));
     render(
       <ManageScreen booking={booking()} now={NOW_BEFORE} onCancel={onCancel} />,
     );
@@ -68,7 +68,9 @@ describe("ManageScreen — avboka (dentro del plazo)", () => {
       screen.getByRole("button", { name: gestion.ctaCancelarReserva }),
     );
     expect(
-      screen.getByRole("heading", { name: gestion.confirmarCancelacion.titulo }),
+      screen.getByRole("heading", {
+        name: gestion.confirmarCancelacion.titulo,
+      }),
     ).toBeInTheDocument();
 
     await user.click(
@@ -76,7 +78,9 @@ describe("ManageScreen — avboka (dentro del plazo)", () => {
     );
 
     expect(onCancel).toHaveBeenCalledTimes(1);
-    expect(await screen.findByText(gestion.cancelacionConfirmada)).toBeInTheDocument();
+    expect(
+      await screen.findByText(gestion.cancelacionConfirmada),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: gestion.ctaReservarOtraHora }),
     ).toHaveAttribute("href", "/barberia-norte");
@@ -84,9 +88,9 @@ describe("ManageScreen — avboka (dentro del plazo)", () => {
 
   it("'No, mantener' stänger dialogen utan att anropa onCancel", async () => {
     const user = userEvent.setup();
-    const onCancel = vi.fn(
-      async (): Promise<ManageCancelResult> => ({ ok: true }),
-    );
+    const onCancel = vi.fn(async (): Promise<ManageCancelResult> => ({
+      ok: true,
+    }));
     render(
       <ManageScreen booking={booking()} now={NOW_BEFORE} onCancel={onCancel} />,
     );
@@ -108,12 +112,10 @@ describe("ManageScreen — avboka (dentro del plazo)", () => {
 
   it("ett serverfel visar comun.algoSalioMal i stället för att krascha", async () => {
     const user = userEvent.setup();
-    const onCancel = vi.fn(
-      async (): Promise<ManageCancelResult> => ({
-        ok: false,
-        code: "outside_cancel_window",
-      }),
-    );
+    const onCancel = vi.fn(async (): Promise<ManageCancelResult> => ({
+      ok: false,
+      code: "outside_cancel_window",
+    }));
     render(
       <ManageScreen booking={booking()} now={NOW_BEFORE} onCancel={onCancel} />,
     );
@@ -165,7 +167,9 @@ describe("ManageScreen — dödlägen", () => {
     await user.click(
       screen.getByRole("button", { name: gestion.confirmarCancelacion.ctaSi }),
     );
-    expect(await screen.findByText(gestion.cancelacionConfirmada)).toBeInTheDocument();
+    expect(
+      await screen.findByText(gestion.cancelacionConfirmada),
+    ).toBeInTheDocument();
     expect(screen.queryByText(gestion.yaCancelada)).not.toBeInTheDocument();
   });
 

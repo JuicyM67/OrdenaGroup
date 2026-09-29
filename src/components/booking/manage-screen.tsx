@@ -140,7 +140,7 @@ function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-13 text-muted">{label}</span>
-      <span className="text-15 font-bold text-ink text-right">{value}</span>
+      <span className="text-right text-15 font-bold text-ink">{value}</span>
     </div>
   );
 }
