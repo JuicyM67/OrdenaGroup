@@ -3,8 +3,8 @@
 // PR-rapporten). Fem rutor: reservas (lime, länk som skrivs ut), local (foto, row-span-2,
 // svävande chip), agenda (lavender, växande staplar), inasistencias (peach, toggle) och
 // precio (mörk, rullande siffra). Mobil: staplas i en enkel 2-kolumnsgrid utan fasta
-// radhöjder; `lg:` återskapar den exakta 4×2-bentot med `lg:h-120` (två 240px-rader minus
-// mellanrum, samma mönster som referensens `grid-template-rows:repeat(2,240px)`).
+// radhöjder. `lg:` ger 4×2 där raderna växer med innehållet (en fast höjd fick rutorna att
+// överlappa); foto och agenda spänner båda raderna så ingen cell blir tom.
 import Image from "next/image";
 
 import { Card } from "@/components/ui/card";
@@ -90,11 +90,11 @@ const BARS: readonly {
   delay: boolean;
   active?: boolean;
 }[] = [
-  { height: 40, delay: false },
-  { height: 62, delay: true },
-  { height: 52, delay: false },
-  { height: 70, delay: true, active: true },
-  { height: 58, delay: false },
+  { height: 57, delay: false },
+  { height: 89, delay: true },
+  { height: 74, delay: false },
+  { height: 100, delay: true, active: true },
+  { height: 83, delay: false },
 ];
 
 function AgendaTile() {
@@ -103,16 +103,16 @@ function AgendaTile() {
       tone="surface"
       radius="tile"
       padding="lg"
-      className="col-span-2 flex flex-col justify-between gap-4 bg-lavender lg:col-span-1 lg:col-start-4 lg:row-start-1"
+      className="col-span-2 flex flex-col justify-between gap-4 bg-lavender lg:col-span-1 lg:col-start-4 lg:row-span-2 lg:row-start-1"
     >
       <h3 className="text-19 leading-snug font-bold text-ink">
         {P.tarjetas.agenda.titulo}
       </h3>
-      <div aria-hidden="true" className="flex h-17.5 items-end gap-1.5">
+      <div aria-hidden="true" className="flex h-17.5 items-end gap-1.5 lg:h-40">
         {BARS.map((bar, i) => (
           <span
             key={i}
-            style={{ height: bar.height }}
+            style={{ height: `${bar.height}%` }}
             className={cn(
               "w-full origin-bottom rounded-badge",
               bar.delay ? "animate-grow-bar-delay" : "animate-grow-bar",
@@ -131,7 +131,7 @@ function InasistenciasTile() {
       tone="peach"
       radius="tile"
       padding="lg"
-      className="col-span-2 flex flex-col justify-between gap-5 lg:col-span-1 lg:col-start-1 lg:row-start-2"
+      className="col-span-2 flex min-h-56 flex-col justify-between gap-5 lg:col-span-1 lg:col-start-1 lg:row-start-2"
     >
       <h3 className="text-19 leading-snug font-bold text-ink">
         {P.tarjetas.inasistencias.titulo}
@@ -160,7 +160,7 @@ function PrecioTile() {
       tone="dark"
       radius="tile"
       padding="lg"
-      className="col-span-2 flex flex-col justify-between gap-5 lg:col-span-1 lg:col-start-2 lg:row-start-2"
+      className="col-span-2 flex min-h-56 flex-col justify-between gap-5 lg:col-span-1 lg:col-start-2 lg:row-start-2"
     >
       <h3 className="text-19 leading-snug font-bold text-on-dark">
         {P.tarjetas.precio.titulo}
@@ -199,7 +199,7 @@ export function PorQueBento() {
         <p className="max-w-sm text-15 leading-relaxed text-muted">{P.texto}</p>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 gap-4 lg:h-120 lg:grid-cols-4 lg:grid-rows-2">
+      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <ReservasTile />
         <LocalTile />
         <AgendaTile />
