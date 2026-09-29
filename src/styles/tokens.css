@@ -793,3 +793,15 @@
     animation-play-state: paused;
   }
 }
+
+/* WP-42: safe-area-insets för ägarens mobilskal (kompakt topprad, MobileTabBar) — `env()` är
+   ingen "godtycklig" färg/radie/skugga (D-015 gäller inte den typen av värde) utan enda sättet
+   att nå notch-/hemindikator-utrymmet, se docs/design/DESIGN.md §5. */
+@utility pt-safe-t {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+/* `MobileTabBar`: samma avstånd som `bottom-4` (1rem) plus insetet, så fältet flyttar sig
+   ovanför hemindikatorn i stället för att bara växa på höjden. */
+@utility bottom-safe-b {
+  bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+}
