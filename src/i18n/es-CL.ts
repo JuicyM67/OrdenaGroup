@@ -1071,11 +1071,8 @@ export const email = {
       `Tu hora en ${p.negocio} quedó confirmada`,
     /** Texto corto que muchos clientes de correo muestran junto al asunto
      * en la bandeja de entrada, antes de abrir el mensaje. */
-    preheader: (p: {
-      servicio: string;
-      fecha: string;
-      hora: string;
-    }): string => `${p.servicio} el ${p.fecha} a las ${p.hora}.`,
+    preheader: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `${p.servicio} el ${p.fecha} a las ${p.hora}.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -2080,7 +2077,7 @@ export const sms = {
     pct: number;
     link: string;
   }): string =>
-    `Hora flash en ${p.negocio}: −${p.pct}% si reservas hoy a las ${p.hora}. ${p.link}`,
+    `Hora flash en ${p.negocio}: -${p.pct}% si reservas hoy a las ${p.hora}. ${p.link}`,
   /** Al dueño: sin link, porque revisa la reserva desde la propia app. */
   nuevaReservaDueno: (p: {
     cliente: string;

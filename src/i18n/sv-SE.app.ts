@@ -869,11 +869,8 @@ export const email: Widen<typeof Es.email> = {
   reservaConfirmada: {
     asunto: (p: { negocio: string }): string =>
       `Din tid hos ${p.negocio} är bekräftad`,
-    preheader: (p: {
-      servicio: string;
-      fecha: string;
-      hora: string;
-    }): string => `${p.servicio} den ${p.fecha} kl. ${p.hora}.`,
+    preheader: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `${p.servicio} den ${p.fecha} kl. ${p.hora}.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -1005,8 +1002,7 @@ export const email: Widen<typeof Es.email> = {
     asunto: (p: { negocio: string; pct: number }): string =>
       `Flashtid hos ${p.negocio}: −${p.pct}%`,
     preheader: "Det är ont om tid att utnyttja den.",
-    titulo: (p: { pct: number }): string =>
-      `−${p.pct}% under en begränsad tid`,
+    titulo: (p: { pct: number }): string => `−${p.pct}% under en begränsad tid`,
     texto: (p: { servicio: string; fecha: string; hora: string }): string =>
       `Passa på med ${p.servicio} den ${p.fecha} kl. ${p.hora} med rabatt. Den tar snart slut.`,
     cta: "Boka nu",
@@ -1648,7 +1644,7 @@ export const sms: Widen<typeof Es.sms> = {
     pct: number;
     link: string;
   }): string =>
-    `Flashtid hos ${p.negocio}: −${p.pct}% om du bokar idag kl. ${p.hora}. ${p.link}`,
+    `Flashtid hos ${p.negocio}: -${p.pct}% om du bokar idag kl. ${p.hora}. ${p.link}`,
   nuevaReservaDueno: (p: {
     cliente: string;
     servicio: string;

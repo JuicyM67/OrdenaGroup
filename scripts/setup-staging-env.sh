@@ -13,12 +13,16 @@ if [ "$MARKET" = "se" ]; then
   read -rp "Supabase project ref för Booking Buddy (Settings → General): " REF
   APP_URL="https://bookingbuddy-se.vercel.app"
   VERCEL_PROJECT="bookingbuddy"
-  SPANISH_TEMPLATES=0
+  TEMPLATE_DIR="sv-SE"
+  SMTP_ADMIN_EMAIL="onboarding@bookingbuddy.se"
+  SMTP_SENDER_NAME="Booking Buddy"
 else
   REF="bligjpmisejtdnbfwhqx"
   APP_URL="https://ordenagroup-matias-lopezs-projects-c1b12c12.vercel.app"
   VERCEL_PROJECT="ordenagroup"
-  SPANISH_TEMPLATES=1
+  TEMPLATE_DIR="es-CL"
+  SMTP_ADMIN_EMAIL="administracion@ordenagroup.cl"
+  SMTP_SENDER_NAME="Ordena Calendar"
 fi
 API="https://api.supabase.com/v1/projects/$REF"
 # Vercel-kommandona körs i en tillfällig mapp länkad till rätt projekt.
@@ -78,23 +82,53 @@ print(json.dumps({"site_url": os.environ["APP_URL"],
 patch_auth "$BASE_JSON" || { echo "   Kunde inte sätta Site URL/redirect."; exit 1; }
 echo "   Site URL och redirect satta"
 
-# Egna e-postmallar kräver egen SMTP i Supabase. Utan det används standardmejlet,
-# som appen också hanterar (`?code=` i /auth/confirm).
-if [ "$SPANISH_TEMPLATES" = 1 ]; then
-TPL_JSON=$(python3 -c '
-import json,pathlib
-d=pathlib.Path("supabase/templates")
+# Egna e-postmallar kräver egen SMTP i Supabase (annars ignorerar Supabase
+# `mailer_templates_*_content` och skickar sitt eget standardmejl, som appen
+# också hanterar via `?code=` i /auth/confirm). Fråga efter en Resend-nyckel
+# (tyst inmatning, aldrig loggad/som argument): om ägaren ger en sätts SMTP
+# mot smtp.resend.com och mallarna tas i bruk på riktigt; annars hoppas SMTP
+# över och mallarna sätts ändå (best effort, ignoreras tills SMTP finns).
+read -rsp "Resend API-nyckel för $SMTP_ADMIN_EMAIL (tom = hoppa över SMTP): " RESEND_KEY; echo
+if [ -n "$RESEND_KEY" ]; then
+  SMTP_JSON=$(RESEND_KEY="$RESEND_KEY" SMTP_ADMIN_EMAIL="$SMTP_ADMIN_EMAIL" SMTP_SENDER_NAME="$SMTP_SENDER_NAME" python3 -c '
+import json,os
 print(json.dumps({
-  "mailer_subjects_magic_link": "Tu link para entrar",
+  "smtp_host": "smtp.resend.com",
+  "smtp_port": 465,
+  "smtp_user": "resend",
+  "smtp_pass": os.environ["RESEND_KEY"],
+  "smtp_admin_email": os.environ["SMTP_ADMIN_EMAIL"],
+  "smtp_sender_name": os.environ["SMTP_SENDER_NAME"],
+  "rate_limit_email_sent": 100,
+}))')
+  unset RESEND_KEY
+  if patch_auth "$SMTP_JSON" >/dev/null 2>&1; then
+    echo "   SMTP satt (smtp.resend.com, avsändare $SMTP_ADMIN_EMAIL)"
+  else
+    echo "   Kunde inte sätta SMTP. Mallarna sätts ändå (ignoreras av Supabase tills SMTP finns)."
+  fi
+else
+  unset RESEND_KEY
+  echo "   SMTP hoppat över. Mallarna sätts ändå (ignoreras av Supabase tills SMTP finns)."
+fi
+
+# Mallarna: samma HTML/ämnen som `supabase/templates/$TEMPLATE_DIR/`
+# (genererade av `scripts/render-auth-templates.ts` från `email.acceso.*`,
+# se den filen för hur man regenererar dem efter en textändring).
+TPL_JSON=$(TEMPLATE_DIR="$TEMPLATE_DIR" python3 -c '
+import json,os,pathlib
+d=pathlib.Path("supabase/templates")/os.environ["TEMPLATE_DIR"]
+subjects=json.loads((d/"subjects.json").read_text())
+print(json.dumps({
+  "mailer_subjects_magic_link": subjects["magic_link"],
   "mailer_templates_magic_link_content": (d/"magic_link.html").read_text(),
-  "mailer_subjects_confirmation": "Confirma tu cuenta",
+  "mailer_subjects_confirmation": subjects["confirmation"],
   "mailer_templates_confirmation_content": (d/"confirmation.html").read_text(),
 }))')
 if patch_auth "$TPL_JSON" >/dev/null 2>&1; then
-  echo "   E-postmallar satta"
+  echo "   E-postmallar satta ($TEMPLATE_DIR)"
 else
-  echo "   E-postmallar hoppades över (kräver egen SMTP). Standardmejlet fungerar ändå."
-fi
+  echo "   E-postmallar hoppades över. Standardmejlet fungerar ändå."
 fi
 
 echo "4/4 Lägger in miljövariabler i Vercel (Production)…"

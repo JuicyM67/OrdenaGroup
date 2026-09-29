@@ -249,17 +249,20 @@ otp_expiry = 900
 # subject = "You have been invited"
 # content_path = "./supabase/templates/invite.html"
 
-# WP-15 (F1): acceso con link mágico. Texto fijo, ver docs/content/email-templates.md §5 y
-# `email.acceso` en src/i18n/es-CL.ts (copiado tal cual a los .html, D-016). El asunto es el
-# resultado ya interpolado de `email.acceso.magicLink.asunto`/`confirmation.asunto`
-# Asunto sin el nombre del producto: el nombre solo vive en src/config/brand.ts (regla dura 10).
+# WP-15/WP-16 (F1): acceso con link mágico. Fuente: `email.acceso` en src/i18n/es-CL.ts,
+# renderizado con la misma capa/HTML que src/server/messaging/email/ vía
+# `scripts/render-auth-templates.ts` (regenerar ese script tras cualquier cambio de copy).
+# El asunto es el resultado ya interpolado de `email.acceso.magicLink.asunto`/
+# `confirmation.asunto` (ver supabase/templates/es-CL/subjects.json). Local dev es siempre CL
+# (una sola stack, ver SUPABASE_CONFIG.md) — la carpeta sv-SE es para el proyecto Supabase de
+# Suecia, configurada por `scripts/setup-staging-env.sh`, no por este archivo.
 [auth.email.template.magic_link]
-subject = "Tu link para entrar"
-content_path = "./supabase/templates/magic_link.html"
+subject = "Tu link para entrar a Ordena Calendar"
+content_path = "./supabase/templates/es-CL/magic_link.html"
 
 [auth.email.template.confirmation]
-subject = "Confirma tu cuenta"
-content_path = "./supabase/templates/confirmation.html"
+subject = "Confirma tu cuenta de Ordena Calendar"
+content_path = "./supabase/templates/es-CL/confirmation.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]
