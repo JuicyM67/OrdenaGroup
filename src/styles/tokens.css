@@ -269,6 +269,42 @@
   --animate-step-dim-2: step-dim-2 10s ease-in-out infinite;
   --animate-step-dim-3: step-dim-3 10s ease-in-out infinite;
   --animate-step-dim-4: step-dim-4 10s ease-in-out infinite;
+  /* Sifferrutan i stegindikatorn: lime när steget är aktivt, annars canvas (samma takt). */
+  --animate-step-badge-1: step-badge-1 10s ease-in-out infinite;
+  --animate-step-badge-2: step-badge-2 10s ease-in-out infinite;
+  --animate-step-badge-3: step-badge-3 10s ease-in-out infinite;
+  --animate-step-badge-4: step-badge-4 10s ease-in-out infinite;
+  @keyframes step-badge-1 {
+    0%,
+    2% { background-color: var(--color-canvas); }
+    6%,
+    21% { background-color: var(--color-lime); }
+    25%,
+    100% { background-color: var(--color-canvas); }
+  }
+  @keyframes step-badge-2 {
+    0%,
+    27% { background-color: var(--color-canvas); }
+    31%,
+    46% { background-color: var(--color-lime); }
+    50%,
+    100% { background-color: var(--color-canvas); }
+  }
+  @keyframes step-badge-3 {
+    0%,
+    52% { background-color: var(--color-canvas); }
+    56%,
+    71% { background-color: var(--color-lime); }
+    75%,
+    100% { background-color: var(--color-canvas); }
+  }
+  @keyframes step-badge-4 {
+    0%,
+    77% { background-color: var(--color-canvas); }
+    81%,
+    96% { background-color: var(--color-lime); }
+    100% { background-color: var(--color-canvas); }
+  }
   @keyframes step-fade-1 {
     0%,
     2% { opacity: 0; }
