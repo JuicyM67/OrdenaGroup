@@ -4,6 +4,7 @@
 "use client";
 
 import { ChevronLeft } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Card } from "@/components/ui/card";
@@ -15,7 +16,6 @@ import { comun, reserva } from "@/i18n";
 // filkommentaren i `booking-questions.ts`) trots att den drar in Zod — en
 // medveten avvikelse från qa-granskningens item 6 (som gäller
 // `form-schema.ts`, servern), godkänd av planen (steg 8).
-import { validateAnswers } from "@/lib/validation/booking-questions";
 
 import {
   EMAIL_MAX,
@@ -34,7 +34,7 @@ import {
 import type { BookingSelection } from "./flow-state";
 // Bara typer (raderas vid kompilering, drar inte in Zod — qa-granskning, item 6).
 import type { CustomerFormOutput, WaitlistFormOutput } from "./form-schema";
-import { QuestionField, type QuestionAnswerValue } from "./question-field";
+import type { QuestionAnswerValue } from "./question-field";
 import { barPrice, summaryText } from "./summary";
 import type {
   BookingPageData,
@@ -42,6 +42,12 @@ import type {
   CustomerContact,
   DayAvailability,
 } from "./types";
+
+// WP-40: frågefälten och deras validering laddas först när en tjänst har
+// frågor (JS-budget för /[slug], FRÅGA 7).
+const QuestionField = dynamic(() =>
+  import("./question-field").then((m) => m.QuestionField),
+);
 
 interface FieldErrors {
   name?: string;
@@ -162,7 +168,7 @@ export function CustomerForm({
     else if (next.terms) termsRef.current?.focus();
   }
 
-  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     // Ett andra klick medan anropet redan pågår skickar inget (planens R5).
     // `submittingRef` (synkron) fångar även två `click()` i samma tick,
@@ -205,8 +211,17 @@ export function CustomerForm({
     // innan anropet.
     const rawAnswers: Record<string, unknown> = {};
     for (const q of questions) rawAnswers[q.id] = answers[q.id];
-    const answerResult = validateAnswers(questions, rawAnswers);
+    // Stäng dubbelklicksskyddet medan valideringen laddas (async import).
+    submittingRef.current = true;
+    const answerResult =
+      questions.length === 0
+        ? ({ ok: true, value: [] } as const)
+        : (await import("@/lib/validation/booking-questions")).validateAnswers(
+            questions,
+            rawAnswers,
+          );
     if (!answerResult.ok) {
+      submittingRef.current = false;
       const nextAnswerErrors = answersToFieldErrors(
         questions,
         answerResult.error,
