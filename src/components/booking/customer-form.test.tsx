@@ -187,9 +187,9 @@ const dataWithQuestion: BookingPageData = {
 };
 
 describe("CustomerForm — preguntas dinámicas (WP-40)", () => {
-  it("renderiza la pregunta de la tjänst seleccionada", async () => {
+  it("renderiza la pregunta de la tjänst seleccionada", () => {
     renderForm({ data: dataWithQuestion });
-    expect(await screen.findByText("Hårlängd *")).toBeInTheDocument();
+    expect(screen.getByText("Hårlängd *")).toBeInTheDocument();
   });
 
   it("una pregunta obligatoria sin responder bloquea el envío", async () => {
