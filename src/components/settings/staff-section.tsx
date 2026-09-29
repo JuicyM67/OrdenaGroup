@@ -4,7 +4,7 @@
 // hace) y activar/desactivar. Sin eliminar ni color (fuera del alcance, ver la plan). Un
 // solo formulario abierto a la vez.
 import { useState } from "react";
-import { comun } from "@/i18n/es-CL";
+import { comun } from "@/i18n";
 
 import { validateRequired } from "@/components/onboarding/client-validation";
 import { Button } from "@/components/ui/button";

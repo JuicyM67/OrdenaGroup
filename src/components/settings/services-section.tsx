@@ -5,7 +5,7 @@
 // servicio con reservas; en vez de manejar ese error, esta pantalla no ofrece borrar —
 // ver `docs/tasks/plans/WP-15b.md`). Un solo formulario abierto a la vez (nuevo o editar).
 import { useState } from "react";
-import { comun } from "@/i18n/es-CL";
+import { comun } from "@/i18n";
 
 import {
   validateDurationMin,

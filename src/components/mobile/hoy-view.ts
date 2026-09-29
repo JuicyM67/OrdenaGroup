@@ -1,7 +1,7 @@
 // Rena funktioner för Hoy (Hoy.dc.html), se docs/tasks/plans/WP-14.md §4 steg 1. Ingen dold
 // klocka: `now` tas alltid emot som parameter. Formatering bara via `src/lib/format/`, text
 // bara via `@/i18n`.
-import { estados, hoy } from "@/i18n/es-CL";
+import { estados, hoy } from "@/i18n";
 import {
   formatDate,
   localDayRange,

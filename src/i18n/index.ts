@@ -16,6 +16,9 @@ export type Lov = string | ((p: never) => string);
 /** Un árbol de traducciones: cada hoja es un `Lov`, cada rama es otro `Trad`. */
 export type Trad = { readonly [k: string]: Lov | Trad };
 
-export * from "./es-CL";
+// Språk per marknad (M2, D-025/D-026): `i18n-locale` pekar på es-CL.ts (tsconfig, vitest)
+// och byts mot sv-SE.app.ts i SE-bygget (next.config.ts, turbopack.resolveAlias). Statisk
+// `export *` så att bundlern fortsatt kan rensa bort oanvända texter.
+export * from "i18n-locale";
 
 export type Mensajes = typeof import("./es-CL");
