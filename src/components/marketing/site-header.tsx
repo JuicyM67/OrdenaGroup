@@ -39,6 +39,7 @@ import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow, strokeCard, strokeNav } from "@/components/ui/icons";
+import { href, hrefIndustria, type IndustriaId } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 
 import { BrandLogo } from "./brand-logo";
@@ -52,37 +53,37 @@ const PRODUCTO_ITEMS: readonly {
 }[] = [
   {
     id: "reservas",
-    href: "/funcionalidades#link-reservas",
+    href: href("funcionalidades", "link-reservas"),
     icon: Link2,
     ...copy.sitio.megamenu.producto.items.reservas,
   },
   {
     id: "agenda",
-    href: "/funcionalidades#agenda",
+    href: href("funcionalidades", "agenda"),
     icon: Calendar,
     ...copy.sitio.megamenu.producto.items.agenda,
   },
   {
     id: "hoy",
-    href: "/funcionalidades#hoy",
+    href: href("funcionalidades", "hoy"),
     icon: Smartphone,
     ...copy.sitio.megamenu.producto.items.hoy,
   },
   {
     id: "flash",
-    href: "/horas-flash",
+    href: href("horasFlash"),
     icon: Zap,
     ...copy.sitio.megamenu.producto.items.flash,
   },
   {
     id: "recordatorios",
-    href: "/funcionalidades#recordatorios",
+    href: href("funcionalidades", "recordatorios"),
     icon: Bell,
     ...copy.sitio.megamenu.producto.items.recordatorios,
   },
   {
     id: "lista-espera",
-    href: "/funcionalidades#lista-espera",
+    href: href("funcionalidades", "lista-espera"),
     icon: List,
     ...copy.sitio.megamenu.producto.items.listaEspera,
   },
@@ -94,11 +95,11 @@ const PRODUCTO_ITEMS: readonly {
 // nunca texto inventado), ambas ya dentro del límite de ~60 caracteres del resto de la
 // columna.
 const RECURSOS_ITEMS = [
-  { href: "/precios", ...copy.sitio.megamenu.recursos.precios },
-  { href: "/preguntas", ...copy.sitio.megamenu.recursos.preguntas },
-  { href: "/contacto", ...copy.sitio.megamenu.recursos.contacto },
+  { href: href("precios"), ...copy.sitio.megamenu.recursos.precios },
+  { href: href("preguntas"), ...copy.sitio.megamenu.recursos.preguntas },
+  { href: href("contacto"), ...copy.sitio.megamenu.recursos.contacto },
   {
-    href: "/ventajas",
+    href: href("ventajas"),
     titulo: copy.sitio.ventajas.hero.etiqueta,
     texto: copy.sitio.ventajas.comparacion.titulo,
   },
@@ -107,7 +108,7 @@ const RECURSOS_ITEMS = [
 const INDUSTRIAS = copy.SITIO_PARA_INDUSTRIAS.map((industria) => ({
   id: industria.id,
   nombre: industria.nombre,
-  href: `/para/${industria.id}`,
+  href: hrefIndustria(industria.id as IndustriaId),
 }));
 
 // Länken/triggerns "inre pill" (glas-knapp) vid hover — och, för triggerna, när den egna
@@ -172,7 +173,7 @@ function MegaMenuPanel() {
         </ul>
         <NavigationMenu.Link asChild>
           <Link
-            href="/#para-quien"
+            href={href("inicio", "para-quien")}
             className="px-2.5 text-13 font-semibold text-ink underline transition-colors duration-150 ease-out hover:text-pending-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
             {copy.sitio.megamenu.paraQuien.verTodas}
@@ -205,7 +206,7 @@ function MegaMenuPanel() {
       <div className="col-span-3">
         <NavigationMenu.Link asChild>
           <Link
-            href="/horas-flash"
+            href={href("horasFlash")}
             className="group flex h-full flex-col justify-between gap-4 rounded-card bg-dark p-5 text-on-dark transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
           >
             <div className="flex items-center justify-between">
@@ -252,7 +253,7 @@ export function SiteHeader() {
     <header className="sticky top-4 z-40 px-4 sm:px-8">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 rounded-full border border-surface/60 bg-surface/70 px-3 shadow-glass backdrop-blur-glass backdrop-saturate-150 sm:px-5">
         <Link
-          href="/"
+          href={href("inicio")}
           className="flex shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
           <BrandLogo size="sm" decorative />
@@ -324,21 +325,21 @@ export function SiteHeader() {
 
             <NavigationMenu.Item>
               <NavigationMenu.Link asChild>
-                <Link href="/precios" className={navLinkClass}>
+                <Link href={href("precios")} className={navLinkClass}>
                   {copy.sitio.nav.precios}
                 </Link>
               </NavigationMenu.Link>
             </NavigationMenu.Item>
             <NavigationMenu.Item>
               <NavigationMenu.Link asChild>
-                <Link href="/preguntas" className={navLinkClass}>
+                <Link href={href("preguntas")} className={navLinkClass}>
                   {copy.sitio.nav.preguntas}
                 </Link>
               </NavigationMenu.Link>
             </NavigationMenu.Item>
             <NavigationMenu.Item>
               <NavigationMenu.Link asChild>
-                <Link href="/contacto" className={navLinkClass}>
+                <Link href={href("contacto")} className={navLinkClass}>
                   {copy.sitio.nav.contacto}
                 </Link>
               </NavigationMenu.Link>
@@ -440,7 +441,7 @@ export function SiteHeader() {
                   ))}
                   <Dialog.Close asChild>
                     <Link
-                      href="/#para-quien"
+                      href={href("inicio", "para-quien")}
                       className="rounded-event px-3 py-2 text-14 font-semibold text-lime underline"
                     >
                       {copy.sitio.megamenu.paraQuien.verTodas}

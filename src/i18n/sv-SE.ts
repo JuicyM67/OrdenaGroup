@@ -709,7 +709,7 @@ export const sitio = {
       masWhatsapp: {
         pregunta: "Vad händer om sms-kvoten tar slut?",
         respuesta:
-          "Du kan lägga till ett extra sms-paket eller uppgradera till en plan med fler sms ingående.",
+          "Du kan köpa ett extra sms-paket på 100 sms för 69 kr exkl. moms, eller uppgradera till en plan med fler sms ingående.",
       },
       permanencia: {
         pregunta: landing.preguntas.items.permanencia.pregunta,
@@ -864,9 +864,9 @@ export const sitio = {
       },
     },
     comparacion: {
-      titulo: "Så jämför vi oss med Bokadirekt",
+      titulo: "Så skiljer vi oss från Bokadirekt",
       texto:
-        "Bokadirekt är förmodligen det andra alternativet du tittar på. Så här ser de två sida vid sida.",
+        "Bokadirekt är förmodligen det andra alternativet du tittar på. Här är fakta, sida vid sida.",
       /** Källa och datum för siffrorna i `SITIO_COMPARACION` (utanför
        * `Trad`): utan detta är varje siffra om konkurrenten ett påstående
        * utan grund. */
@@ -875,6 +875,34 @@ export const sitio = {
        * uppdraget, inte valfri). */
       honestidad:
         "Bokadirekt är starkare på att ge dig nya kunder via sin egen marknadsplats: om det är viktigt för dig just nu, är det värt att veta.",
+    },
+    /** Kort lista med skillnader mot konkurrenten (samma uppdrag som
+     * `sitio.ventajas.diferencias` i `es-CL.marketing.ts`): kompletterar
+     * `comparacion` med en positiv vinkel, utan siffror. */
+    diferencias: {
+      titulo: "Så skiljer vi oss",
+      items: {
+        a: {
+          titulo: "Dina kunder, inte en marknadsplats",
+          texto:
+            "Du delar din egen bokningslänk: dina kunder ser bara ditt företag, aldrig en lista med konkurrenter.",
+        },
+        b: {
+          titulo: "Inga provisioner eller dolda avgifter",
+          texto:
+            "Du betalar din månadsplan och inget mer. Vi tar aldrig en procentsats per bokning.",
+        },
+        c: {
+          titulo: "Flashtider fyller luckorna",
+          texto:
+            "Sälj dina lediga tider med rabatt i sista minuten, i stället för att låta dem stå tomma.",
+        },
+        d: {
+          titulo: "Frågor anpassade efter din bransch",
+          texto:
+            "Bokningsformuläret ställer rätt frågor för barberare, frisörer, skönhet eller naprapati, utan onödiga fält.",
+        },
+      },
     },
     cta: {
       titulo: "Redo att testa utan bindningstid?",
@@ -1178,9 +1206,9 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     funcion: "Påminnelser",
     valores: {
       gratis: "Via mejl",
-      emprende: "Sms, ca 150/månad",
-      equipo: "Sms, ca 600/månad",
-      local: "Sms, mer ingående",
+      emprende: "Sms, 50/månad",
+      equipo: "Sms, 150/månad",
+      local: "Sms, 300/månad",
     },
   },
   {
@@ -1213,9 +1241,9 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
 // ---------------------------------------------------------------------------
 // SITIO_COMPARACION: jämförelse mot Bokadirekt (business.bokadirekt.se/
 // abonnemang, priser kontrollerade 29 september 2026, se
-// `sitio.ventajas.comparacion.nota`). Där ett fält inte går att verifiera på
-// deras prissida (t.ex. provision per bokning) står det uttryckligen, i
-// stället för att gissa en siffra.
+// `sitio.ventajas.comparacion.nota`). Bara belagda fakta: där ett fält inte
+// går att verifiera på deras prissida utelämnas raden helt, i stället för
+// att gissa en siffra eller skriva "ej angivet".
 // ---------------------------------------------------------------------------
 
 export const SITIO_COMPARACION: SitioComparacion = {
@@ -1223,43 +1251,31 @@ export const SITIO_COMPARACION: SitioComparacion = {
   filas: [
     {
       aspecto: "Pris från",
-      nosotros: "0 kr (Gratisplanen)",
-      valores: ["0 kr (Free-planen)"],
+      nosotros: "0 kr (Gratis)",
+      valores: ["0 kr (Free)"],
     },
     {
-      aspecto: "Användare som ingår i priset",
-      nosotros: "1 till 12, beroende på plan",
-      valores: ["1 användare i alla paket"],
+      aspecto: "Användare i priset",
+      nosotros: "Hela företaget (upp till 5/12 i Team/Företag)",
+      valores: ["1 användare per paket"],
     },
     {
-      aspecto: "Provision per bokning",
-      nosotros: "0 kr, alltid",
-      valores: ["Ej angivet på deras prissida"],
-    },
-    {
-      aspecto: "Bindningstid/uppsägning",
-      nosotros: "Ingen bindningstid, du avslutar när du vill",
+      aspecto: "Uppsägning",
+      nosotros: "Ingen bindningstid, avsluta när du vill",
       valores: ["3 månaders uppsägningstid"],
     },
     {
-      aspecto: "Påminnelser",
-      nosotros: "Via mejl ingår; sms kommer snart på betalplanerna",
-      valores: ["Ej angivet på deras prissida"],
-    },
-    {
-      aspecto: "Onlinebetalning",
-      nosotros: "Ingen kundbetalning i systemet",
-      valores: ["Ej angivet på deras prissida"],
-    },
-    {
       aspecto: "Marknadsplats för nya kunder",
-      nosotros: "Vi har ingen egen marknadsplats",
-      valores: ["Ja, synligheten beror på vilket paket du har"],
+      nosotros: "Nej – din egen bokningslänk, kunderna ser bara dig",
+      valores: ["Ja"],
     },
     {
-      aspecto: "Kassa/POS",
-      nosotros: "Vi har ingen kassa eller POS",
-      valores: ["Ej angivet på deras prissida"],
+      aspecto: "Paketpris med betald synlighet",
+      nosotros:
+        "299 / 499 / 799 kr per månad, samma synlighet för alla (din egen sida)",
+      valores: [
+        "Mini 295 / Plus 395 / Premium 695 kr per månad, högre paket ger bättre placering i sökresultat",
+      ],
     },
   ],
 };
@@ -1481,7 +1497,7 @@ export const PLANES: readonly PlanTexto[] = [
   {
     id: "emprende",
     nombre: "Starta",
-    puntos: ["1 anställd", "Sms-påminnelser (ca 150/månad)", "Väntelista"],
+    puntos: ["1 anställd", "Sms-påminnelser (50/månad)", "Väntelista"],
     cta: "Välj Starta",
   },
   {
@@ -1489,7 +1505,7 @@ export const PLANES: readonly PlanTexto[] = [
     nombre: "Team",
     puntos: [
       "Upp till 5 anställda",
-      "Ca 600 sms/månad",
+      "150 sms/månad",
       "Flashtider",
       "Vi saknar dig-påminnelser",
       "Rapporter",
@@ -1499,11 +1515,7 @@ export const PLANES: readonly PlanTexto[] = [
   {
     id: "local",
     nombre: "Företag",
-    puntos: [
-      "Upp till 12 anställda",
-      "Fler sms ingående",
-      "Prioriterad support",
-    ],
+    puntos: ["Upp till 12 anställda", "300 sms/månad", "Prioriterad support"],
     cta: "Välj Företag",
   },
 ];

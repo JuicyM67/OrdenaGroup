@@ -6,6 +6,7 @@
 // (D-025/D-026, `@/i18n/marketing`).
 import type { Metadata } from "next";
 import {
+  ClipboardList,
   Info,
   Link2,
   List,
@@ -33,6 +34,16 @@ export const metadata: Metadata = {
 
 const V = copy.sitio.ventajas;
 const COMPARACION = copy.SITIO_COMPARACION;
+
+/** Ton por tarjeta de `sitio.ventajas.diferencias.items` (cuatro tarjetas de color,
+ * mismo patrón que `ITEM_STYLE` más abajo — iconos reutilizados de los mismos conceptos
+ * (Users/Percent/Zap ya usados en `ITEM_STYLE`), nunca texto inventado). */
+const DIFERENCIAS_STYLE = [
+  { ...V.diferencias.items.a, icon: Users, tone: "lime" as const },
+  { ...V.diferencias.items.b, icon: Percent, tone: "peach" as const },
+  { ...V.diferencias.items.c, icon: Zap, tone: "lilac" as const },
+  { ...V.diferencias.items.d, icon: ClipboardList, tone: "surface" as const },
+];
 
 /** Ton por tarjeta (bento, mismo criterio que `funcionalidades/page.tsx` `SECTION_STYLE`):
  * seis pasteles distintos, ninguno repetido. */
@@ -108,6 +119,32 @@ export default function VentajasPage() {
                 </Card>
               );
             })}
+          </div>
+        </section>
+
+        <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-8">
+          <SectionHeading title={V.diferencias.titulo} />
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {DIFERENCIAS_STYLE.map((item) => (
+              <Card
+                key={item.titulo}
+                tone={item.tone}
+                radius="tile"
+                padding="md"
+                className="flex flex-col gap-3"
+              >
+                <span
+                  aria-hidden="true"
+                  className="flex size-9 items-center justify-center rounded-icon bg-ink text-on-dark"
+                >
+                  <item.icon className="size-4.5" strokeWidth={strokeCard} />
+                </span>
+                <h3 className="text-16 leading-snug font-bold text-ink">
+                  {item.titulo}
+                </h3>
+                <p className="text-14 text-muted">{item.texto}</p>
+              </Card>
+            ))}
           </div>
         </section>
 
