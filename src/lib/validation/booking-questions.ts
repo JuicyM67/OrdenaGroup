@@ -1,9 +1,13 @@
 /**
- * Svar på bokningsfrågor (WP-40 steg 3, D-031). Zod-schemat byggs från
+ * Svar på bokningsfrågor (WP-40 steg 3, D-031). Valideringen byggs från
  * serverns frågelista för vald tjänst — klientens lista litas aldrig på:
  * `createIn` (src/server/bookings/create.ts) laddar frågorna själv och
  * validerar med samma funktion. Filen är ren (ingen server-only, ingen klocka)
  * så att bokningsformuläret kan visa samma fältfel innan det skickar.
+ *
+ * Ren TypeScript utan Zod: filen importeras av bokningsformuläret i klienten, och
+ * Zod får inte hamna i klientbunten (JS-budget för /[slug], FRÅGA 7). Servern kan
+ * använda `buildAnswersSchema` i `booking-questions.schema.ts` (Zod-omslag).
  *
  * Felkoder (`AnswerIssueCode`) är data, inte text: UI mappar dem via i18n.
  *
@@ -15,8 +19,6 @@
  * tidpunkt. Det tolkas inte via `Date`, så sommartidsskiften i
  * `America/Santiago` kan inte flytta det.
  */
-import { z } from "zod";
-
 import { parseLocalDate } from "@/lib/format/dates";
 
 export const QUESTION_KINDS = [
@@ -79,106 +81,71 @@ function emptyToUndefined(v: unknown): unknown {
   return v;
 }
 
-/** Saknat värde → `required`, fel typ → `fallback`. */
-function typeError(fallback: AnswerIssueCode) {
-  return (iss: { input?: unknown }): AnswerIssueCode =>
-    iss.input === undefined ? "required" : fallback;
-}
-
-function numberPreprocess(v: unknown): unknown {
+function preprocess(q: BookingQuestionDef, v: unknown): unknown {
   const e = emptyToUndefined(v);
-  if (typeof e === "string" && /^\d+$/.test(e.trim())) return Number(e.trim());
+  if (q.kind === "number" && typeof e === "string" && /^\d+$/.test(e.trim())) {
+    return Number(e.trim());
+  }
   return e;
 }
 
-function valueSchema(q: BookingQuestionDef): z.ZodType<AnswerValue> {
+type FieldResult =
+  { ok: true; value: AnswerValue } | { ok: false; code: AnswerIssueCode };
+
+function checkValue(q: BookingQuestionDef, v: unknown): FieldResult {
   const options = q.options ?? [];
   switch (q.kind) {
     case "short_text":
-    case "long_text":
-      return z
-        .string({ error: typeError("invalid_type") })
-        .trim()
-        .max(
-          q.kind === "short_text"
-            ? ANSWER_LIMITS.shortText
-            : ANSWER_LIMITS.longText,
-          { error: "too_long" },
-        );
+    case "long_text": {
+      if (typeof v !== "string") return { ok: false, code: "invalid_type" };
+      const t = v.trim();
+      const max =
+        q.kind === "short_text"
+          ? ANSWER_LIMITS.shortText
+          : ANSWER_LIMITS.longText;
+      return t.length > max
+        ? { ok: false, code: "too_long" }
+        : { ok: true, value: t };
+    }
     case "single_choice":
-      return z
-        .string({ error: typeError("invalid_type") })
-        .refine((v) => options.includes(v), { error: "invalid_option" });
-    case "multi_choice":
-      return z
-        .array(z.string({ error: "invalid_type" }), {
-          error: typeError("invalid_type"),
-        })
-        .refine((v) => new Set(v).size === v.length, {
-          error: "duplicate_option",
-          abort: true,
-        })
-        .refine((v) => v.every((x) => options.includes(x)), {
-          error: "invalid_option",
-        });
+      if (typeof v !== "string") return { ok: false, code: "invalid_type" };
+      return options.includes(v)
+        ? { ok: true, value: v }
+        : { ok: false, code: "invalid_option" };
+    case "multi_choice": {
+      if (!Array.isArray(v) || !v.every((x) => typeof x === "string")) {
+        return { ok: false, code: "invalid_type" };
+      }
+      const list = v as string[];
+      if (new Set(list).size !== list.length) {
+        return { ok: false, code: "duplicate_option" };
+      }
+      return list.every((x) => options.includes(x))
+        ? { ok: true, value: list }
+        : { ok: false, code: "invalid_option" };
+    }
     case "number":
-      return z
-        .number({ error: typeError("invalid_number") })
-        .int({ error: "invalid_number" })
-        .min(0, { error: "invalid_number" })
-        .max(ANSWER_LIMITS.numberMax, { error: "invalid_number" });
+      return typeof v === "number" &&
+        Number.isInteger(v) &&
+        v >= 0 &&
+        v <= ANSWER_LIMITS.numberMax
+        ? { ok: true, value: v }
+        : { ok: false, code: "invalid_number" };
     case "yes_no":
-      return z.boolean({ error: typeError("invalid_type") });
+      return typeof v === "boolean"
+        ? { ok: true, value: v }
+        : { ok: false, code: "invalid_type" };
     case "date":
-      return z
-        .string({ error: typeError("invalid_date") })
-        .refine((v) => parseLocalDate(v).ok, { error: "invalid_date" });
+      return typeof v === "string" && parseLocalDate(v).ok
+        ? { ok: true, value: v }
+        : { ok: false, code: "invalid_date" };
   }
 }
 
-function fieldSchema(
-  q: BookingQuestionDef,
-): z.ZodType<AnswerValue | undefined> {
-  const inner = valueSchema(q);
-  const pre = q.kind === "number" ? numberPreprocess : emptyToUndefined;
-  return z.preprocess(pre, q.required ? inner : inner.optional());
-}
-
 /**
- * Zod-schema för `answers` (`Record<questionId, värde>`) byggt från
- * frågelistan. Okända nycklar avvisas (`unknown_question`), utdata är de
- * besvarade frågorna i frågelistans ordning. Issue-`message` är en
- * `AnswerIssueCode`, `path[0]` frågans id.
- */
-export function buildAnswersSchema(
-  questions: readonly BookingQuestionDef[],
-): z.ZodType<ValidatedAnswer[], Record<string, unknown>> {
-  const shape: Record<string, z.ZodType<AnswerValue | undefined>> = {};
-  for (const q of questions) shape[q.id] = fieldSchema(q);
-  return z.strictObject(shape, { error: "invalid_type" }).transform((obj) => {
-    const out: ValidatedAnswer[] = [];
-    for (const q of questions) {
-      const value = (obj as Record<string, AnswerValue | undefined>)[q.id];
-      if (value !== undefined) out.push({ questionId: q.id, value });
-    }
-    return out;
-  }) as unknown as z.ZodType<ValidatedAnswer[], Record<string, unknown>>;
-}
-
-const KNOWN_CODES = new Set<string>([
-  "required",
-  "invalid_type",
-  "too_long",
-  "invalid_option",
-  "duplicate_option",
-  "invalid_number",
-  "invalid_date",
-  "unknown_question",
-]);
-
-/**
- * Validerar `raw` mot frågelistan. Ett fel per fråga (det första), i
- * frågelistans ordning; okända frågor sist.
+ * Validerar `raw` (`Record<questionId, värde>`) mot frågelistan. Ett fel per
+ * fråga, i frågelistans ordning; okända frågor (`unknown_question`) sist. Utdata
+ * är de besvarade frågorna i frågelistans ordning.
  */
 export function validateAnswers(
   questions: readonly BookingQuestionDef[],
@@ -188,34 +155,25 @@ export function validateAnswers(
   if (typeof input !== "object" || Array.isArray(input)) {
     return { ok: false, error: [{ questionId: null, code: "invalid_type" }] };
   }
-  const r = buildAnswersSchema(questions).safeParse(input);
-  if (r.success) return { ok: true, value: r.data };
-
-  const seen = new Set<string>();
-  const found: AnswerIssue[] = [];
-  for (const issue of r.error.issues) {
-    if (issue.code === "unrecognized_keys") {
-      for (const key of issue.keys) {
-        if (seen.has(key)) continue;
-        seen.add(key);
-        found.push({ questionId: key, code: "unknown_question" });
-      }
+  const obj = input as Record<string, unknown>;
+  const known = new Set(questions.map((q) => q.id));
+  const errors: AnswerIssue[] = [];
+  const out: ValidatedAnswer[] = [];
+  for (const q of questions) {
+    const v = preprocess(q, obj[q.id]);
+    if (v === undefined) {
+      if (q.required) errors.push({ questionId: q.id, code: "required" });
       continue;
     }
-    const id = issue.path[0];
-    if (typeof id !== "string") {
-      return { ok: false, error: [{ questionId: null, code: "invalid_type" }] };
-    }
-    if (seen.has(id)) continue;
-    seen.add(id);
-    const code = KNOWN_CODES.has(issue.message)
-      ? (issue.message as AnswerIssueCode)
-      : "invalid_type";
-    found.push({ questionId: id, code });
+    const r = checkValue(q, v);
+    if (r.ok) out.push({ questionId: q.id, value: r.value });
+    else errors.push({ questionId: q.id, code: r.code });
   }
-  const order = new Map(questions.map((q, i) => [q.id, i]));
-  const rank = (x: AnswerIssue) =>
-    x.questionId !== null ? (order.get(x.questionId) ?? questions.length) : -1;
-  found.sort((a, b) => rank(a) - rank(b));
-  return { ok: false, error: found };
+  for (const key of Object.keys(obj)) {
+    if (!known.has(key))
+      errors.push({ questionId: key, code: "unknown_question" });
+  }
+  return errors.length > 0
+    ? { ok: false, error: errors }
+    : { ok: true, value: out };
 }

@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   ANSWER_LIMITS,
-  buildAnswersSchema,
   validateAnswers,
   type BookingQuestionDef,
 } from "./booking-questions";
+import { buildAnswersSchema } from "./booking-questions.schema";
 
 let seq = 0;
 function q(over: Partial<BookingQuestionDef> = {}): BookingQuestionDef {
