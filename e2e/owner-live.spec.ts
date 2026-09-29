@@ -226,6 +226,9 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
   await page.getByLabel(reserva.clienteForm.nombreLabel).fill(newCustomer);
   await page.getByLabel(reserva.clienteForm.telefonoLabel).fill(newPhone);
   await page
+    .getByLabel(reserva.clienteForm.emailLabel)
+    .fill("cliente@example.com");
+  await page
     .getByRole("checkbox", {
       name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
     })

@@ -14,24 +14,28 @@
  */
 import "server-only";
 
+import { after } from "next/server";
+
 import {
-  customerFormSchema,
+  customerFormSchemaFor,
   waitlistFormSchema,
 } from "@/components/booking/form-schema";
 import type { BookingActionResult } from "@/components/booking/types";
+import { market } from "@/config/brand";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import {
   createCustomerBooking,
   saveBookingConsent,
 } from "@/server/bookings/submit";
 import { pgErrorCode } from "@/server/db/errors";
+import { kickOutbox } from "@/server/messaging/outbox";
 import { systemClock } from "@/server/scheduling/clock";
 
 export async function createBooking(
   slug: string,
   input: unknown,
 ): Promise<BookingActionResult> {
-  const parsed = customerFormSchema.safeParse(input);
+  const parsed = customerFormSchemaFor(market).safeParse(input);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
   // slotId är instanten direkt (page-data.ts sätter BookingSlot.id = start):
   // saknas den kan motorn inte räkna ut en starttid.
@@ -53,6 +57,8 @@ export async function createBooking(
     now,
   });
   if (!result.ok) return { ok: false, code: result.error };
+  // WP-16: bekräftelsen skickas direkt efter svaret, utan att vänta på cron.
+  after(() => kickOutbox());
 
   // Granskningsfynd: bokningen är redan committad här — svara alltid att den
   // lyckades, även om samtycket (en separat transaktion, submit.ts) inte

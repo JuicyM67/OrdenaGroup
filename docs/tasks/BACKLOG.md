@@ -26,7 +26,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-13 | Skärm Reserva (kund) enligt `Reserva.dc.html` med fixtures, alla tillstånd | ui-engineer | WP-02, WP-03 | F5, F8 | ☑ |
 | WP-14 | Skärm Hoy (mobil ägare) enligt `Hoy.dc.html` | ui-engineer | WP-02 | F6 | ☑ |
 | WP-15 | Auth + onboarding i 4 steg (tjänster, personal, öppettider, länk) + Ajustes | ui-engineer | WP-01, WP-02, WP-03b | F1–F3 | ◐ (slim: auth + onboarding klart, se docs/tasks/plans/WP-15.md; Ajustes klar, se docs/tasks/plans/WP-15b.md — Mercado Pago/logo/accentfärg/väntelisteläge/radering av konto/inbjudan av personal kvar) |
-| WP-16 | Outbox + cron-infrastruktur + e-post (Resend) + WhatsApp-klient och webhook | integrations-engineer | WP-01 | F7 | ☐ |
+| WP-16 | Outbox + cron-infrastruktur + e-post (Resend) + WhatsApp-klient och webhook | integrations-engineer | WP-01 | F7 | ◐ (plan klar, slim: outbox + pg_cron + e-post/SMS (SE) + minimal `r/[token]`, se docs/tasks/plans/WP-16.md; WhatsApp-klient och webhook kvar) |
 
 ## Våg C — koppla ihop
 

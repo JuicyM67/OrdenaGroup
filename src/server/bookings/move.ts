@@ -5,6 +5,7 @@ import { lockStaffForBooking } from "@/server/db/locks";
 import type { Queryable } from "@/server/db/pool";
 import { toTstzrange } from "@/server/db/tstzrange";
 import { savepoint } from "@/server/db/tx";
+import { enqueueBookingEvent } from "@/server/messaging/outbox";
 import { staffOffersService } from "@/server/scheduling/availability";
 import { checkStart } from "@/server/scheduling/core/validate";
 import { loadSnapshot } from "@/server/scheduling/load";
@@ -26,6 +27,7 @@ import {
   lockBooking,
   type BookingRef,
 } from "./row";
+import { createManageToken } from "./token";
 import type { BookingError, Freed, MovedBooking } from "./types";
 
 const MIN = 60_000;
@@ -37,6 +39,7 @@ type MoveResult = Result<{ booking: MovedBooking; freed: Freed }, BookingError>;
  * ägaren med id. Behåller längd, buffert (upper − lower) och pris.
  * Tillgängligheten räknas om utan bokningen själv; målprofesionalerna låses
  * (advisory lock) före update och `no_overlap` har sista ordet.
+ * Roterar kundens token (D-029) och köar `moved` efter commit (WP-16).
  */
 export async function moveBooking(
   request: MoveBookingRequest,
@@ -58,9 +61,21 @@ export async function moveBooking(
     ({ newStart, newStaffId } = p.data);
   }
   const input = { ...c, ref, newStart, newStaffId };
-  return runAs(c.actor, (q) => moveIn(q, input), {
+  const result = await runAs(c.actor, (q) => moveIn(q, input), {
     onConflict: err("slot_taken"),
   });
+  // WP-16: efter commit (enqueueBookingEvent kastar aldrig). Den nya token
+  // går bara till meddelandet; den gamla länken gäller inte längre (D-029).
+  if (result.ok) {
+    await enqueueBookingEvent({
+      type: "moved",
+      bookingId: result.value.booking.id,
+      businessId: c.businessId,
+      token: result.value.booking.manageToken,
+      by: c.actor.kind,
+    });
+  }
+  return result;
 }
 
 export type MoveInput = {
@@ -122,12 +137,16 @@ export async function moveIn(
 
   const periodEnd = start + (b.periodEnd - b.start);
   const blockedEnd = start + (b.blockedEnd - b.start);
+  // D-029: en flytt roterar kundens token — gamla länkar slutar gälla och
+  // `moved`-meddelandet bär den nya. Bara hashen sparas.
+  const { token, hash } = createManageToken();
   for (const staffId of check.value) {
     try {
       await savepoint(q, () =>
         q.query(
           `update public.bookings
-              set staff_id = $3, period = $4::tstzrange, blocked = $5::tstzrange
+              set staff_id = $3, period = $4::tstzrange, blocked = $5::tstzrange,
+                  manage_token_hash = $6
             where business_id = $1 and id = $2`,
           [
             input.businessId,
@@ -135,6 +154,7 @@ export async function moveIn(
             staffId,
             toTstzrange({ start, end: periodEnd }),
             toTstzrange({ start, end: blockedEnd }),
+            hash,
           ],
         ),
       );
@@ -148,6 +168,7 @@ export async function moveIn(
           end: new Date(periodEnd).toISOString(),
           priceClp: b.priceClp,
           status: b.status as MovedBooking["status"],
+          manageToken: token,
         },
         freed: {
           staffId: b.staffId,

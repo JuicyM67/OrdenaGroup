@@ -322,8 +322,8 @@ export const reserva = {
     nombrePlaceholder: "Tu nombre",
     telefonoLabel: "Celular",
     telefonoPlaceholder: "+56 9 1234 5678",
-    emailLabel: "Correo (opcional)",
-    emailAyuda: "Te lo pedimos por si el mensaje de WhatsApp no llega.",
+    emailLabel: "Correo",
+    emailAyuda: "Aquí te llegan la confirmación y el recordatorio.",
     emailPlaceholder: "tucorreo@ejemplo.cl",
   },
   antesDeConfirmar: {

@@ -62,6 +62,7 @@ describe("createCustomerBooking + saveBookingConsent", () => {
       start: iso(at(TUE, "11:00")),
       name: "Camila Rojas",
       phone: phone(),
+      email: `c${phoneSeq}@example.com`,
       idempotencyKey: randomUUID(),
       now: NOW,
     });
@@ -97,6 +98,7 @@ describe("createCustomerBooking + saveBookingConsent", () => {
       start: iso(at(TUE, "12:00")),
       name: "Ana Pérez",
       phone: phone(),
+      email: `c${phoneSeq}@example.com`,
       idempotencyKey: randomUUID(),
       now: NOW,
     });
@@ -129,6 +131,7 @@ describe("createCustomerBooking + saveBookingConsent", () => {
       start: iso(at(TUE, "23:00")),
       name: "Pedro Vidal",
       phone: phone(),
+      email: `c${phoneSeq}@example.com`,
       idempotencyKey: randomUUID(),
       now: NOW,
     });
@@ -151,6 +154,7 @@ describe("createCustomerBooking + saveBookingConsent", () => {
       start: iso(at(TUE, "16:00")),
       name: "Joaquín Soto",
       phone: phone(),
+      email: `c${phoneSeq}@example.com`,
       idempotencyKey: randomUUID(),
       now: NOW,
     };

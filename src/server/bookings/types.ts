@@ -46,6 +46,9 @@ export type MovedBooking = {
   end: string;
   priceClp: Clp;
   status: "confirmed" | "pending_payment";
+  /** Ny klartext-token (D-029: flytten roterar den, gamla länkar slutar
+   * gälla). Bara SHA-256 sparas. Loggas aldrig. */
+  manageToken: string;
 };
 
 /** Intervallet (blocked, inkl. buffert) som blev ledigt, för väntelistan (WP-23). */

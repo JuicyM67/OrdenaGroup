@@ -9,6 +9,7 @@ import { lockStaffForBooking } from "@/server/db/locks";
 import type { Queryable } from "@/server/db/pool";
 import { toTstzrange } from "@/server/db/tstzrange";
 import { savepoint } from "@/server/db/tx";
+import { enqueueBookingEvent } from "@/server/messaging/outbox";
 import { staffOffersService } from "@/server/scheduling/availability";
 import { checkStart } from "@/server/scheduling/core/validate";
 import { loadSnapshot } from "@/server/scheduling/load";
@@ -68,9 +69,22 @@ export async function createBooking(
     now: c.now,
     source: sourceFor(c.actor, c.source),
   };
-  return runAs(input.actor, (q) => createIn(q, input), {
+  const result = await runAs(input.actor, (q) => createIn(q, input), {
     onConflict: err("slot_taken"),
   });
+  // WP-16: efter commit (enqueueBookingEvent kastar aldrig). Ett omförsök med
+  // samma idempotensnyckel ger den befintliga bokningen utan token
+  // (`manageToken === ""`) och köar inget nytt — första försöket gjorde det.
+  if (result.ok && result.value.manageToken !== "") {
+    await enqueueBookingEvent({
+      type: "created",
+      bookingId: result.value.id,
+      businessId: result.value.businessId,
+      token: result.value.manageToken,
+      by: input.actor.kind,
+    });
+  }
+  return result;
 }
 
 export type CreateInput = {

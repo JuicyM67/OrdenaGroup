@@ -104,10 +104,27 @@ loyalty_programs (business_id primary key, every_n_visits, reward_text, active)
 loyalty_cards (business_id, customer_id, stamps, rewards_redeemed, primary key (business_id, customer_id))
 
 -- Meddelanden
-message_outbox (id, business_id, booking_id null, to_phone, channel enum('whatsapp','email'),
-  template, payload jsonb, category enum('utility','marketing','service'),
-  status enum('queued','sending','sent','delivered','read','failed','dead'),
-  attempts default 0, next_attempt_at, provider_message_id, error, dedupe_key unique)
+-- WP-16 steg 1 (D-029/D-030): ingen adress i tabellen (varken telefon eller
+-- e-post) — workern slår upp den vid utskickstillfället via booking_id/
+-- recipient_kind. Bara kanalerna 'email'/'sms' i den här fasen; 'whatsapp'
+-- läggs till som ett nytt enum-värde i en egen WP.
+message_outbox (id, business_id, booking_id null,
+  channel enum('email','sms'), recipient_kind enum('customer','owner'),
+  template, payload jsonb (kan tillfälligt innehålla kundens klartext-token, D-029,
+    töms av workern när raden blir sent/dead/cancelled),
+  category enum('utility','marketing','service'),
+  status enum('queued','sending','sent','failed','dead','cancelled'),
+  attempts default 0, next_attempt_at default now(), sent_at, provider_message_id,
+  error (bara felkod, aldrig persondata), dedupe_key unique,
+  sammansatt FK (business_id, booking_id) -> bookings)
+  -- Index: (business_id), (status, next_attempt_at) (workerns plockning,
+  -- `for update skip locked`), (booking_id). RLS: authenticated (owner/admin)
+  -- får bara select, ingen insert/update/delete — kön skrivs/plockas bara av
+  -- service_role (D-019).
+  -- private.owner_emails(business_id) returns setof text: security definer,
+  -- läser auth.users via memberships.role='owner'; bara service_role får
+  -- exekvera den (ägarens e-post för nuevaReservaDueno/cancelacionDueno,
+  -- eftersom auth.users inte går att läsa direkt).
 inbound_events (provider, event_id, payload jsonb, received_at, primary key (provider, event_id))  -- INV-2: idempotens
 
 -- Integrationer och abonnemang

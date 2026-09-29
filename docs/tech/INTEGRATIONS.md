@@ -60,4 +60,51 @@
 | `weekly-report` | måndag 08:00 CLT | resumen_semanal |
 | `retention` | dagligen | anonymiserar enligt policy |
 
-Anropas av Supabase `pg_cron` + `pg_net` mot `/api/cron/[job]` med `CRON_SECRET` (timing-safe jämförelse).
+**D-030 (2026-09-29, ersätter raden ovan för `outbox`):** ingen `pg_cron`/`pg_net`/Vault. `outbox`
+anropas i stället av `.github/workflows/outbox-cron.yml` (GitHub Actions, var 5:e minut) mot
+`/api/cron/outbox` med `CRON_SECRET` (timing-safe jämförelse) — se WP-16 steg 2. Bekräftelser går
+ändå ut inom 1 min via `kickOutbox` (körs direkt efter commit i samma request, oberoende av cron).
+Bara 24 h-påminnelsen finns i v1 (ingen 2 h), och den kan komma upp till ~15 min sent. De övriga
+jobben i tabellen ovan är oförändrade tills sina respektive WP:er (schemaläggare beslutas då).
+
+Övrigt oförändrat: `pg_cron`/`pg_net` mot `/api/cron/[job]` med `CRON_SECRET` (timing-safe
+jämförelse), tills vidare bara relevant för jobb som inte är `outbox`.
+
+**WP-16 steg 1 (db-engineer), schemaändring av `message_outbox`:** kolumnen `to_phone` finns inte —
+tabellen lagrar ingen adress alls (varken telefon eller e-post), bara `recipient_kind`
+(`customer`/`owner`); adressen slås upp av workern vid utskickstillfället (kundens/personalens
+kontaktuppgift via `booking_id`, ägarens e-post via `private.owner_emails()`, service_role-bara).
+`channel` har bara `'email'`/`'sms'` i den här fasen (`'whatsapp'` läggs till som eget enum-värde i
+en senare WP, se DATA_MODEL.md). `status` saknar `delivered`/`read` tills leveransstatus-webhooks
+byggs; har i stället `cancelled` (väntande påminnelser för en flyttad/avbokad bokning avbryts).
+
+**WP-16 steg 2 (integrations-engineer), `src/server/messaging/outbox/`:**
+- `enqueueBookingEvent(e)` (`enqueue.ts`): anropas av bokningsmotorn (`src/server/bookings/`) EFTER
+  att bokningstransaktionen committats, öppnar en egen transaktion (`withServiceTx`) och kastar
+  aldrig vidare. `created` → kund `reservaConfirmada` + ägare `nuevaReservaDueno` (bara `by ===
+  "customer"`) + en köad `recordatorio` vid start − 24 h (hoppas över om det redan är för sent).
+  `moved` → avbryter väntande `recordatorio`-rader och köar `reservaMovida` + en ny `recordatorio`
+  (roterad token, D-029). `cancelled` → avbryter väntande `recordatorio`-rader och köar
+  `reservaCancelada` + ägare `cancelacionDueno` (bara `by === "customer"`). Kanalplan: CL = e-post
+  om kunden har en, SE = e-post (om kunden har en) + sms (kunden har alltid telefon). Ägaren får
+  alltid e-post, aldrig sms. `dedupe_key = <mall>:<kanal>:<mottagare>:<booking_id>:<start-epoch>`
+  (sekunder), `on conflict do nothing`.
+- `processOutbox({ limit, bookingId? })` (`worker.ts`): claim i en kort transaktion (`for update
+  skip locked`, `status = 'sending'`, `attempts++`), rader som fastnat i `sending` över 10 min
+  återköas. Läser bokning/kund/personal/tjänst/företag (kunddata, inte i kön, D-029) och renderar
+  datum/tid i `APP_TZ`/`APP_LOCALE` (`src/lib/format/dates.ts`). Skickar via `sendEmail`/`sendSms`
+  med `idempotencyKey = dedupe_key` (en ägare med flera konton får `dedupe_key:o<i>` per adress).
+  En `recordatorio` för en bokning som inte längre är `confirmed` → `cancelled` utan att skickas.
+  Fel: `error` får bara en kort kod (SQLSTATE, `OutboxSendError`-kod eller `http_<status>`), aldrig
+  meddelandetext/persondata. Backoff 1/5/15/60 min, `dead` efter 5 försök.
+- `kickOutbox()` (`kick.ts`): `after(() => processOutbox({ limit: 10 }))` — bekräftelsen går ut
+  inom 1 min oberoende av GitHub Actions-cronen. Utanför en request gör den ingenting.
+- `/api/cron/outbox` (POST/GET): `Authorization: Bearer $CRON_SECRET` (timing-safe), 401 annars,
+  annars `processOutbox({ limit: 50 })` och räknarna i svaret (aldrig persondata).
+- **Env:** `CRON_SECRET` (appen, jämförs i routen), `OUTBOX_CRON_URL_CL`/`OUTBOX_CRON_URL_SE` +
+  `CRON_SECRET` som GitHub-repohemligheter (`outbox-cron.yml`, satta manuellt av ägaren, aldrig av
+  en agent). E-post/sms-leverantörernas env står i `src/server/messaging/{email,sms}/send.ts`
+  (`RESEND_API_KEY`, `EMAIL_FROM_BOOKING`, `EMAIL_FROM_ACCOUNT`, `CLICKSEND_USERNAME`,
+  `CLICKSEND_API_KEY`, `SMS_SENDER_ID`) — saknas de körs fejk-läget (loggar i minnet, skickar inget
+  skarpt). Länkarna i meddelandena: `${NEXT_PUBLIC_APP_URL}/r/{token}` (gestión), `/{slug}`
+  (`reservaCancelada`, ingen token) och `/app/agenda` (ägarens mejl).

@@ -330,6 +330,81 @@ export type Database = {
           },
         ];
       };
+      message_outbox: {
+        Row: {
+          attempts: number;
+          booking_id: string | null;
+          business_id: string;
+          category: Database["public"]["Enums"]["message_category"];
+          channel: Database["public"]["Enums"]["message_channel"];
+          created_at: string;
+          dedupe_key: string;
+          error: string | null;
+          id: string;
+          next_attempt_at: string;
+          payload: NonNullable<Json>;
+          provider_message_id: string | null;
+          recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
+          sent_at: string | null;
+          status: Database["public"]["Enums"]["message_outbox_status"];
+          template: string;
+          updated_at: string;
+        };
+        Insert: {
+          attempts?: number;
+          booking_id?: string | null;
+          business_id: string;
+          category: Database["public"]["Enums"]["message_category"];
+          channel: Database["public"]["Enums"]["message_channel"];
+          created_at?: string;
+          dedupe_key: string;
+          error?: string | null;
+          id?: string;
+          next_attempt_at?: string;
+          payload?: NonNullable<Json>;
+          provider_message_id?: string | null;
+          recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["message_outbox_status"];
+          template: string;
+          updated_at?: string;
+        };
+        Update: {
+          attempts?: number;
+          booking_id?: string | null;
+          business_id?: string;
+          category?: Database["public"]["Enums"]["message_category"];
+          channel?: Database["public"]["Enums"]["message_channel"];
+          created_at?: string;
+          dedupe_key?: string;
+          error?: string | null;
+          id?: string;
+          next_attempt_at?: string;
+          payload?: NonNullable<Json>;
+          provider_message_id?: string | null;
+          recipient_kind?: Database["public"]["Enums"]["message_recipient_kind"];
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["message_outbox_status"];
+          template?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "message_outbox_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "message_outbox_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       payments: {
         Row: {
           amount_clp: number;
@@ -652,6 +727,11 @@ export type Database = {
       consent_channel: "web" | "whatsapp" | "manual";
       deposit_kind: "none" | "fixed" | "percent";
       member_role: "owner" | "staff" | "vendor" | "admin";
+      message_category: "utility" | "marketing" | "service";
+      message_channel: "email" | "sms";
+      message_outbox_status:
+        "queued" | "sending" | "sent" | "failed" | "dead" | "cancelled";
+      message_recipient_kind: "customer" | "owner";
       payment_kind: "deposit" | "balance" | "full";
       payment_method: "cash" | "card_terminal" | "transfer" | "mercadopago";
       payment_status: "pending" | "approved" | "rejected" | "refunded";
@@ -797,6 +877,17 @@ export const Constants = {
       consent_channel: ["web", "whatsapp", "manual"],
       deposit_kind: ["none", "fixed", "percent"],
       member_role: ["owner", "staff", "vendor", "admin"],
+      message_category: ["utility", "marketing", "service"],
+      message_channel: ["email", "sms"],
+      message_outbox_status: [
+        "queued",
+        "sending",
+        "sent",
+        "failed",
+        "dead",
+        "cancelled",
+      ],
+      message_recipient_kind: ["customer", "owner"],
       payment_kind: ["deposit", "balance", "full"],
       payment_method: ["cash", "card_terminal", "transfer", "mercadopago"],
       payment_status: ["pending", "approved", "rejected", "refunded"],

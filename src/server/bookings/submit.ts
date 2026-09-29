@@ -1,7 +1,8 @@
 import "server-only";
 
+import { market as installationMarket, type Market } from "@/config/brand";
 import { withServiceTx } from "@/server/db/tx";
-import type { Result } from "@/server/scheduling/result";
+import { err, type Result } from "@/server/scheduling/result";
 
 import { createBooking } from "./create";
 import type { BookingError, CreatedBooking } from "./types";
@@ -20,16 +21,28 @@ export type CreateCustomerBookingInput = {
    * `create.ts`). Klientgenererad (`crypto.randomUUID()`, form-schema.ts). */
   idempotencyKey: string;
   now: Date;
+  /** Installationens marknad; injiceras bara i tester. */
+  market?: Market | undefined;
 };
+
+/** D-030: i CL krävs kundens e-post i Reserva tills WhatsApp finns (e-post
+ * är den enda kanalen för bekräftelse och påminnelse). SE oförändrat. */
+export function customerEmailRequired(m: Market): boolean {
+  return m === "CL";
+}
 
 /**
  * Kundens bokning från `/{slug}` (WP-20): anropar bara motorns
- * `createBooking`. Samtycket sparas separat av `saveBookingConsent` — se den
+ * `createBooking`. I CL krävs e-post (D-030) → annars `invalid_input`. Samtycket sparas separat av `saveBookingConsent` — se den
  * funktionen för varför de inte körs i en enda transaktion.
  */
 export async function createCustomerBooking(
   input: CreateCustomerBookingInput,
 ): Promise<Result<CreatedBooking, BookingError>> {
+  const m = input.market ?? installationMarket;
+  if (customerEmailRequired(m) && !input.email?.trim()) {
+    return err("invalid_input");
+  }
   return createBooking(
     {
       serviceId: input.serviceId,
