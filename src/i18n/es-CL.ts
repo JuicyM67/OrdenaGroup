@@ -1069,6 +1069,10 @@ export const email = {
   reservaConfirmada: {
     asunto: (p: { negocio: string }): string =>
       `Tu hora en ${p.negocio} quedó confirmada`,
+    /** Texto corto que muchos clientes de correo muestran junto al asunto
+     * en la bandeja de entrada, antes de abrir el mensaje. */
+    preheader: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `${p.servicio} el ${p.fecha} a las ${p.hora}.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -1084,6 +1088,8 @@ export const email = {
   recordatorio24h: {
     asunto: (p: { negocio: string; fecha: string }): string =>
       `Recordatorio: tu hora en ${p.negocio} el ${p.fecha}`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Tu hora es el ${p.fecha} a las ${p.hora}.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -1097,6 +1103,8 @@ export const email = {
   reservaCancelada: {
     asunto: (p: { negocio: string }): string =>
       `Tu hora en ${p.negocio} fue cancelada`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Tu hora del ${p.fecha} a las ${p.hora} quedó cancelada.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -1109,6 +1117,8 @@ export const email = {
   reservaMovida: {
     asunto: (p: { negocio: string }): string =>
       `Tu hora en ${p.negocio} cambió de horario`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Ahora es el ${p.fecha} a las ${p.hora}.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -1119,25 +1129,145 @@ export const email = {
     }): string =>
       `Hola ${p.cliente}:\n\nTu hora en ${p.negocio} cambió.\n\nNuevo día: ${p.fecha}\nNueva hora: ${p.hora}\nProfesional: ${p.profesional}\n\nRevisa el detalle aquí: ${p.linkGestion}`,
   },
-  /** Pie de página de los cuatro correos. `plataforma` se recibe como
-   * parámetro (no se interpola `brand.name` acá): quien arma el correo en
-   * WP-16 decide qué nombre mostrar. */
+  /** Pie de página de los cuatro correos de arriba. `plataforma` se recibe
+   * como parámetro (no se interpola `brand.name` acá): quien arma el correo
+   * en WP-16 decide qué nombre mostrar. Los correos nuevos de abajo
+   * (`bienvenida`, `nuevaReservaDueno`, etc., agregados por copywriter-es-cl
+   * para completar los mails de marca) usan en cambio `comun.piePagina`, con
+   * `marca` como parámetro explícito: misma idea, pensada para una
+   * plantilla HTML con logo en vez de un correo de puro texto. */
   pie: (p: { negocio: string; plataforma: string }): string =>
     `Recibes este correo porque reservaste en ${p.negocio} a través de ${p.plataforma}.`,
-  /** Correos de acceso (Supabase Auth, WP-03b paso 2, F1). Son textos fijos
-   * (no funciones): las variables `{{ .ConfirmationURL }}` y `{{ .Token }}`
-   * son sintaxis de plantilla de Supabase, no interpolación de `es-CL.ts`,
-   * y deben quedar literales para que WP-15 las copie tal cual a
-   * `supabase/templates/*.html` (pregunta 3 del plan, R9). `brand.name`
-   * aparece una vez en cada asunto, como remitente. */
+  /** Piezas reutilizables para las plantillas HTML nuevas de abajo
+   * (`bienvenida`, `nuevaReservaDueno`, `cancelacionDueno`,
+   * `listaEsperaCupo`, `horaFlash`): saludo, pie de página con la marca y
+   * las etiquetas de botón más comunes. Los cuatro correos de reserva de
+   * arriba (WP-03) siguen con su propio `cuerpo` en texto plano: no se
+   * tocan para no romper lo que ya integró WP-16. */
+  comun: {
+    saludo: (p: { nombre: string }): string => `Hola ${p.nombre}:`,
+    /** "Enviado por {marca} en nombre de {negocio}.": `marca` llega como
+     * parámetro (regla dura 10), igual que en `acceso` más abajo. */
+    piePagina: (p: { marca: string; negocio: string }): string =>
+      `Enviado por ${p.marca} en nombre de ${p.negocio}.`,
+    porQueRecibes:
+      "Recibes este correo porque tienes una cuenta o una reserva con nosotros.",
+    ayuda: "¿Tienes dudas? Responde este correo o escríbenos por WhatsApp.",
+    verReserva: "Ver mi reserva",
+    cambiarHora: "Cambiar hora",
+    cancelar: "Cancelar reserva",
+    agregarCalendario: "Agregar al calendario",
+    comoLlegar: "Cómo llegar",
+  },
+  /** Al dueño, apenas termina el onboarding (F1). */
+  bienvenida: {
+    asunto: (p: { marca: string }): string => `Bienvenido a ${p.marca}`,
+    preheader: "Tu página de reservas ya está lista para recibir clientes.",
+    titulo: "¡Tu agenda está lista!",
+    texto:
+      "Ya puedes compartir tu link de reservas y empezar a recibir horas. Aquí tienes tres cosas para hacer hoy:",
+    pasos: {
+      link: "Copia tu link de reservas: está en Inicio y en Ajustes.",
+      compartir: "Compártelo por WhatsApp o pégalo en tu Instagram.",
+      recordatorios:
+        "Los recordatorios automáticos ya están activos, así tus clientes no se olvidan de su hora.",
+    },
+    cta: "Ir a mi agenda",
+  },
+  /** Al dueño, cuando un cliente reserva por su cuenta desde `/[slug]`. */
+  nuevaReservaDueno: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `Nueva reserva de ${p.cliente} el ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} a las ${p.hora}.`,
+    titulo: "Tienes una reserva nueva",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} reservó ${p.servicio} para el ${p.fecha} a las ${p.hora}.`,
+    cta: "Ver mi agenda",
+  },
+  /** Al dueño, cuando un cliente cancela su propia reserva desde
+   * `r/[token]` o por WhatsApp. Misma forma que `nuevaReservaDueno`. */
+  cancelacionDueno: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} canceló su hora del ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `Se liberó la hora de las ${p.hora} de ${p.servicio}.`,
+    titulo: "Una reserva se canceló",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} canceló su hora de ${p.servicio} del ${p.fecha} a las ${p.hora}. Esa hora ya quedó libre en tu agenda.`,
+    cta: "Ver mi agenda",
+  },
+  /** Al cliente en lista de espera, cuando se libera un cupo (respaldo por
+   * correo del WhatsApp `lista_espera_oferta`). */
+  listaEsperaCupo: {
+    asunto: (p: { negocio: string }): string =>
+      `Se liberó una hora en ${p.negocio}`,
+    preheader: (p: { servicio: string; fecha: string }): string =>
+      `${p.servicio} el ${p.fecha}. Confirma antes de que se acabe el tiempo.`,
+    titulo: "¡Se liberó tu hora!",
+    texto: (p: { servicio: string; fecha: string }): string =>
+      `Hay una hora libre para ${p.servicio} el ${p.fecha}. Es tuya si confirmas a tiempo.`,
+    cta: "Confirmar hora",
+    expira: (p: { minutos: number }): string =>
+      `Tienes ${p.minutos} min para confirmar antes de que se la ofrezcamos a otra persona.`,
+  },
+  /** Oferta de una hora liberada con descuento (marketing): respaldo por
+   * correo de la hora flash que el dueño comparte. */
+  horaFlash: {
+    asunto: (p: { negocio: string; pct: number }): string =>
+      `Hora flash en ${p.negocio}: −${p.pct}%`,
+    preheader: "Queda poco tiempo para aprovecharla.",
+    titulo: (p: { pct: number }): string => `−${p.pct}% por tiempo limitado`,
+    texto: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `Aprovecha ${p.servicio} el ${p.fecha} a las ${p.hora} con descuento. Se acaba pronto.`,
+    cta: "Reservar ahora",
+  },
+  /** Correos de acceso (Supabase Auth, WP-03b paso 2, F1): link mágico y
+   * confirmación de cuenta. Piezas separadas (ya no un solo `cuerpo` de
+   * texto plano) para que WP-15/WP-16 armen una plantilla HTML con botón:
+   * el link real (`{{ .ConfirmationURL }}`) va en el `href` del botón `cta`,
+   * y el código (`{{ .Token }}`) se escribe junto al texto de `codigo`
+   * directo en el HTML. Ninguno de los dos placeholders de Supabase vive ya
+   * en este archivo (a diferencia de la versión anterior de este bloque):
+   * son sintaxis de plantilla de Supabase, no interpolación de `es-CL.ts`.
+   * `asunto` recibe `marca` como parámetro en vez de interpolar `brand.name`
+   * directo (mismo criterio que `sv-SE.app.ts`, para que las dos plantillas
+   * tengan la misma forma; ver la nota de WP-M2 al inicio de ese archivo). */
   acceso: {
     magicLink: {
-      asunto: `Tu link para entrar a ${brand.name}`,
-      cuerpo: `Haz clic en este link para entrar a tu cuenta:\n\n{{ .ConfirmationURL }}\n\nO escribe este código en la pantalla de acceso: {{ .Token }}\n\nEl link y el código vencen en 15 minutos. Si no pediste este correo, puedes ignorarlo.\n\nNo compartas este código con nadie. Nunca te lo vamos a pedir por WhatsApp ni por teléfono.`,
+      asunto: (p: { marca: string }): string =>
+        `Tu link para entrar a ${p.marca}`,
+      preheader: "Haz clic en el link para entrar a tu cuenta.",
+      titulo: "Entra a tu cuenta",
+      texto:
+        "Haz clic en el botón para entrar a tu cuenta. Es un link de un solo uso.",
+      cta: "Entrar a mi cuenta",
+      codigo: "O usa este código:",
+      ignorar:
+        "Si no pediste este correo, puedes ignorarlo. No compartas este código con nadie.",
+      expira: "El link y el código vencen en 15 minutos.",
     },
     confirmation: {
-      asunto: `Confirma tu cuenta de ${brand.name}`,
-      cuerpo: `Haz clic en este link para confirmar tu cuenta y entrar:\n\n{{ .ConfirmationURL }}\n\nO escribe este código en la pantalla de acceso: {{ .Token }}\n\nEl link y el código vencen en 15 minutos. Si no creaste esta cuenta, puedes ignorar este correo.\n\nNo compartas este código con nadie. Nunca te lo vamos a pedir por WhatsApp ni por teléfono.`,
+      asunto: (p: { marca: string }): string =>
+        `Confirma tu cuenta de ${p.marca}`,
+      preheader: "Confirma tu cuenta para empezar a usarla.",
+      titulo: "Confirma tu cuenta",
+      texto: "Haz clic en el botón para confirmar tu cuenta y entrar.",
+      cta: "Confirmar mi cuenta",
+      codigo: "O usa este código:",
+      ignorar:
+        "Si no creaste esta cuenta, puedes ignorar este correo. No compartas este código con nadie.",
+      expira: "El link y el código vencen en 15 minutos.",
     },
   },
   /** Línea que WP-16/25 agregan dentro de `reservaConfirmada.cuerpo` cuando
@@ -1876,4 +2006,90 @@ export const abono = {
     abonoPorDevolver: "Abono por devolver",
     devolverEnMercadopago: "Devuélvelo desde tu cuenta de Mercado Pago.",
   },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// sms: los mismos nueve avisos que las plantillas de WhatsApp/correo, en una
+// variante pensada para un solo SMS (≤ 160 caracteres GSM-7, sin botones, sin
+// emoji, un solo link corto por mensaje). El nombre del remitente lo pone la
+// operadora/el proveedor de SMS (no va en el texto): acá nunca se interpola
+// `brand.name` ni se pide `marca` como parámetro, a diferencia de `email`.
+// `pie` es la línea de baja: se agrega solo a los SMS de marketing (hoy,
+// `horaFlash`); los de utilidad (confirmación, recordatorio, cambio,
+// cancelación, lista de espera, aviso al dueño, código de acceso) no la
+// llevan (Meta/D-016: la misma regla de "utility sin marketing" que las
+// plantillas de WhatsApp, aunque acá no hay revisión de Meta de por medio).
+// ---------------------------------------------------------------------------
+
+export const sms = {
+  reservaConfirmada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Tu hora en ${p.negocio} quedó confirmada: ${p.fecha} a las ${p.hora}. Detalle: ${p.link}`,
+  /** Recordatorio del día anterior (mismo momento que la plantilla de
+   * WhatsApp `recordatorio_24h`). */
+  recordatorio: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Recordatorio de ${p.negocio}: tu hora es el ${p.fecha} a las ${p.hora}. Detalle: ${p.link}`,
+  /** Recordatorio del mismo día (~2 h antes): sin `fecha`, porque "hoy" ya
+   * dice todo y deja más caracteres libres para el link. */
+  recordatorioHoy: (p: {
+    negocio: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Recordatorio de ${p.negocio}: tu hora es hoy a las ${p.hora}. Detalle: ${p.link}`,
+  reservaMovida: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Tu hora en ${p.negocio} cambió: ahora es el ${p.fecha} a las ${p.hora}. Detalle: ${p.link}`,
+  reservaCancelada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Tu hora en ${p.negocio} del ${p.fecha} a las ${p.hora} quedó cancelada. Reserva otra: ${p.link}`,
+  listaEsperaCupo: (p: {
+    negocio: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+    minutos: number;
+  }): string =>
+    `¡Hora libre en ${p.negocio}! ${p.servicio}, el ${p.fecha} ${p.hora}. Tienes ${p.minutos} min: ${p.link}`,
+  /** Marketing: se manda junto con `pie` (línea de baja), como mensaje
+   * aparte o al final del mismo SMS (lo decide quien arma el envío). */
+  horaFlash: (p: {
+    negocio: string;
+    hora: string;
+    pct: number;
+    link: string;
+  }): string =>
+    `Hora flash en ${p.negocio}: -${p.pct}% si reservas hoy a las ${p.hora}. ${p.link}`,
+  /** Al dueño: sin link, porque revisa la reserva desde la propia app. */
+  nuevaReservaDueno: (p: {
+    cliente: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+  }): string =>
+    `Nueva reserva: ${p.cliente} reservó ${p.servicio} el ${p.fecha} a las ${p.hora}.`,
+  /** Código de acceso (login sin contraseña): alternativa por SMS al correo
+   * de `email.acceso`. */
+  codigoAcceso: (p: { codigo: string }): string =>
+    `Tu código para entrar es ${p.codigo}. No lo compartas con nadie.`,
+  /** Línea de baja: ver la nota del bloque de arriba sobre cuándo se usa. */
+  pie: "Responde STOP para no recibir más.",
 } as const satisfies Trad;

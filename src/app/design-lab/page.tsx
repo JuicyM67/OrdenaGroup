@@ -9,6 +9,7 @@ const screens = [
   { href: "/design-lab/reserva", label: "Reserva", wp: "WP-13" },
   { href: "/design-lab/hoy", label: "Hoy", wp: "WP-14" },
   { href: "/design-lab/hora-flash", label: "Hora flash", wp: "WP-30" },
+  { href: "/design-lab/email", label: "Mejl & SMS", wp: "WP-16" },
 ];
 
 export default function DesignLabIndexPage() {

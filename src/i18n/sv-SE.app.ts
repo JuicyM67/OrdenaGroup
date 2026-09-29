@@ -20,8 +20,11 @@
  * `sv-SE.app.test.ts` mot `allBrandNames`): till skillnad från `es-CL.ts`
  * importerar den här filen inte `brand` och lånar aldrig in `brand.name` i en
  * sträng (varken direkt eller via en funktion som stänger över importen).
- * De tre ställena där es-CL skriver ut `brand.name` (bekräftelsemejlens
- * ämnesrad och `reserva.meta.vendidoPor`) är här generiska i stället.
+ * Det enda stället där `es-CL.ts` fortfarande skriver `brand.name` direkt är
+ * `reserva.meta.vendidoPor`, som här är generiskt i stället. Ämnesraden i
+ * `email.acceso.magicLink`/`confirmation` tar numera emot `marca` som
+ * parameter i båda filerna (copywriter-es-cl, samma form överallt i appen),
+ * så den behöver ingen egen lösning här.
  */
 import { acceso as accesoSv } from "./sv-SE.auth";
 
@@ -866,6 +869,8 @@ export const email: Widen<typeof Es.email> = {
   reservaConfirmada: {
     asunto: (p: { negocio: string }): string =>
       `Din tid hos ${p.negocio} är bekräftad`,
+    preheader: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `${p.servicio} den ${p.fecha} kl. ${p.hora}.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -881,6 +886,8 @@ export const email: Widen<typeof Es.email> = {
   recordatorio24h: {
     asunto: (p: { negocio: string; fecha: string }): string =>
       `Påminnelse: din tid hos ${p.negocio} den ${p.fecha}`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Din tid är den ${p.fecha} kl. ${p.hora}.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -894,6 +901,8 @@ export const email: Widen<typeof Es.email> = {
   reservaCancelada: {
     asunto: (p: { negocio: string }): string =>
       `Din tid hos ${p.negocio} avbokades`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Din tid den ${p.fecha} kl. ${p.hora} avbokades.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -906,6 +915,8 @@ export const email: Widen<typeof Es.email> = {
   reservaMovida: {
     asunto: (p: { negocio: string }): string =>
       `Din tid hos ${p.negocio} bytte tidpunkt`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Nu är den ${p.fecha} kl. ${p.hora}.`,
     cuerpo: (p: {
       cliente: string;
       negocio: string;
@@ -918,14 +929,109 @@ export const email: Widen<typeof Es.email> = {
   },
   pie: (p: { negocio: string; plataforma: string }): string =>
     `Du får det här mejlet eftersom du bokade hos ${p.negocio} via ${p.plataforma}.`,
+  comun: {
+    saludo: (p: { nombre: string }): string => `Hej ${p.nombre},`,
+    piePagina: (p: { marca: string; negocio: string }): string =>
+      `Skickat av ${p.marca} för ${p.negocio}.`,
+    porQueRecibes:
+      "Du får det här mejlet eftersom du har ett konto eller en bokning hos oss.",
+    ayuda: "Har du frågor? Svara på det här mejlet, så hjälper vi dig.",
+    verReserva: "Se min bokning",
+    cambiarHora: "Ändra tid",
+    cancelar: "Avboka tiden",
+    agregarCalendario: "Lägg till i kalendern",
+    comoLlegar: "Hitta hit",
+  },
+  bienvenida: {
+    asunto: (p: { marca: string }): string => `Välkommen till ${p.marca}`,
+    preheader: "Din bokningssida är redo att ta emot kunder.",
+    titulo: "Din kalender är redo!",
+    texto:
+      "Nu kan du dela din bokningslänk och börja ta emot tider. Här är tre saker att göra idag:",
+    pasos: {
+      link: "Kopiera din bokningslänk: den finns under Start och Inställningar.",
+      compartir: "Dela den via sms eller klistra in den på Instagram.",
+      recordatorios:
+        "De automatiska påminnelserna är redan aktiverade, så dina kunder glömmer inte sin tid.",
+    },
+    cta: "Gå till min kalender",
+  },
+  nuevaReservaDueno: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `Ny bokning från ${p.cliente} den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} kl. ${p.hora}.`,
+    titulo: "Du har en ny bokning",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} bokade ${p.servicio} den ${p.fecha} kl. ${p.hora}.`,
+    cta: "Se min kalender",
+  },
+  cancelacionDueno: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} avbokade sin tid den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `Tiden kl. ${p.hora} för ${p.servicio} blev ledig.`,
+    titulo: "En bokning avbokades",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} avbokade sin tid för ${p.servicio} den ${p.fecha} kl. ${p.hora}. Tiden är nu ledig i din kalender.`,
+    cta: "Se min kalender",
+  },
+  listaEsperaCupo: {
+    asunto: (p: { negocio: string }): string =>
+      `En tid hos ${p.negocio} blev ledig`,
+    preheader: (p: { servicio: string; fecha: string }): string =>
+      `${p.servicio} den ${p.fecha}. Bekräfta innan tiden går ut.`,
+    titulo: "Din tid blev ledig!",
+    texto: (p: { servicio: string; fecha: string }): string =>
+      `Det finns en ledig tid för ${p.servicio} den ${p.fecha}. Den är din om du bekräftar i tid.`,
+    cta: "Bekräfta tiden",
+    expira: (p: { minutos: number }): string =>
+      `Du har ${p.minutos} min på dig att bekräfta innan vi erbjuder den till någon annan.`,
+  },
+  horaFlash: {
+    asunto: (p: { negocio: string; pct: number }): string =>
+      `Flashtid hos ${p.negocio}: −${p.pct}%`,
+    preheader: "Det är ont om tid att utnyttja den.",
+    titulo: (p: { pct: number }): string => `−${p.pct}% under en begränsad tid`,
+    texto: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `Passa på med ${p.servicio} den ${p.fecha} kl. ${p.hora} med rabatt. Den tar snart slut.`,
+    cta: "Boka nu",
+  },
   acceso: {
     magicLink: {
-      asunto: `Din inloggningslänk`,
-      cuerpo: `Klicka på den här länken för att logga in på ditt konto:\n\n{{ .ConfirmationURL }}\n\nEller skriv in den här koden på inloggningssidan: {{ .Token }}\n\nLänken och koden gäller i 15 minuter. Om du inte bad om det här mejlet kan du bortse från det.\n\nDela aldrig den här koden med någon. Vi frågar aldrig efter den via sms eller telefon.`,
+      asunto: (p: { marca: string }): string =>
+        `Din inloggningslänk till ${p.marca}`,
+      preheader: "Klicka på länken för att logga in på ditt konto.",
+      titulo: "Logga in på ditt konto",
+      texto:
+        "Klicka på knappen för att logga in. Länken går bara att använda en gång.",
+      cta: "Logga in",
+      codigo: "Eller använd den här koden:",
+      ignorar:
+        "Om du inte bad om det här mejlet kan du bortse från det. Dela aldrig koden med någon.",
+      expira: "Länken och koden gäller i 15 minuter.",
     },
     confirmation: {
-      asunto: `Bekräfta ditt konto`,
-      cuerpo: `Klicka på den här länken för att bekräfta ditt konto och logga in:\n\n{{ .ConfirmationURL }}\n\nEller skriv in den här koden på inloggningssidan: {{ .Token }}\n\nLänken och koden gäller i 15 minuter. Om du inte skapade det här kontot kan du bortse från det här mejlet.\n\nDela aldrig den här koden med någon. Vi frågar aldrig efter den via sms eller telefon.`,
+      asunto: (p: { marca: string }): string =>
+        `Bekräfta ditt konto hos ${p.marca}`,
+      preheader: "Bekräfta ditt konto för att komma igång.",
+      titulo: "Bekräfta ditt konto",
+      texto: "Klicka på knappen för att bekräfta ditt konto och logga in.",
+      cta: "Bekräfta mitt konto",
+      codigo: "Eller använd den här koden:",
+      ignorar:
+        "Om du inte skapade det här kontot kan du bortse från mejlet. Dela aldrig koden med någon.",
+      expira: "Länken och koden gäller i 15 minuter.",
     },
   },
   abono: {
@@ -1479,6 +1585,79 @@ export const abono: Widen<typeof Es.abono> = {
 };
 
 // ---------------------------------------------------------------------------
+// sms: samma nio meddelanden som es-CL, för sms i stället för WhatsApp/
+// e-post (D-028): en enda kanal här, så till skillnad från
+// `plantillasWhatsapp`/`whatsappSesion` ovan (som redan är sms i sak men
+// behåller sina gamla exportnamn av formskäl) heter den här exporten helt
+// enkelt `sms`. Samma format som es-CL: ≤ 160 tecken, ingen emoji, en länk
+// per meddelande. `pie` läggs bara till marknadsförings-sms (idag
+// `horaFlash`); avsändarnamnet sätts av sms-leverantören, inte av texten.
+// ---------------------------------------------------------------------------
+
+export const sms: Widen<typeof Es.sms> = {
+  reservaConfirmada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}. Detaljer: ${p.link}`,
+  recordatorio: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Påminnelse från ${p.negocio}: din tid är ${p.fecha} kl. ${p.hora}. Detaljer: ${p.link}`,
+  recordatorioHoy: (p: {
+    negocio: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Påminnelse från ${p.negocio}: din tid är idag kl. ${p.hora}. Detaljer: ${p.link}`,
+  reservaMovida: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din tid hos ${p.negocio} ändrades: nu är den ${p.fecha} kl. ${p.hora}. Detaljer: ${p.link}`,
+  reservaCancelada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din tid hos ${p.negocio} den ${p.fecha} kl. ${p.hora} avbokades. Boka ny tid: ${p.link}`,
+  listaEsperaCupo: (p: {
+    negocio: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+    minutos: number;
+  }): string =>
+    `En tid hos ${p.negocio} blev ledig! ${p.servicio}, ${p.fecha} kl. ${p.hora}. Du har ${p.minutos} min: ${p.link}`,
+  horaFlash: (p: {
+    negocio: string;
+    hora: string;
+    pct: number;
+    link: string;
+  }): string =>
+    `Flashtid hos ${p.negocio}: -${p.pct}% om du bokar idag kl. ${p.hora}. ${p.link}`,
+  nuevaReservaDueno: (p: {
+    cliente: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+  }): string =>
+    `Ny bokning: ${p.cliente} bokade ${p.servicio} ${p.fecha} kl. ${p.hora}.`,
+  codigoAcceso: (p: { codigo: string }): string =>
+    `Din inloggningskod är ${p.codigo}. Dela den aldrig med någon.`,
+  pie: "Svara STOPP för att avsluta.",
+};
+
+// ---------------------------------------------------------------------------
 // Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
@@ -1497,6 +1676,7 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   plantillasWhatsapp,
   whatsappSesion,
   email,
+  sms,
   validacion,
   acceso,
   negocio,

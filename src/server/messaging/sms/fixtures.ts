@@ -1,0 +1,56 @@
+import "server-only";
+
+import type { Market } from "@/config/brand";
+
+import type { SmsTemplateMap, SmsTemplateName } from "./render";
+
+function base(market: Market) {
+  const isSe = market === "SE";
+  return {
+    negocio: isSe ? "Klipp & Skägg" : "Barbería Norte",
+    cliente: isSe ? "Erik" : "Joaquín",
+    servicio: isSe ? "Klippning + skägg" : "Corte + barba",
+    fecha: isSe ? "fre 2/10" : "vie 2 oct",
+    hora: "15:00",
+  };
+}
+
+export function smsFixtures(market: Market): {
+  [K in SmsTemplateName]: SmsTemplateMap[K];
+} {
+  const b = base(market);
+  const link = "https://app.example.com/r/abc123";
+  return {
+    reservaConfirmada: {
+      negocio: b.negocio,
+      fecha: b.fecha,
+      hora: b.hora,
+      link,
+    },
+    recordatorio: { negocio: b.negocio, fecha: b.fecha, hora: b.hora, link },
+    recordatorioHoy: { negocio: b.negocio, hora: b.hora, link },
+    reservaMovida: { negocio: b.negocio, fecha: b.fecha, hora: b.hora, link },
+    reservaCancelada: {
+      negocio: b.negocio,
+      fecha: b.fecha,
+      hora: b.hora,
+      link,
+    },
+    listaEsperaCupo: {
+      negocio: b.negocio,
+      servicio: b.servicio,
+      fecha: b.fecha,
+      hora: b.hora,
+      link,
+      minutos: 15,
+    },
+    horaFlash: { negocio: b.negocio, hora: b.hora, pct: 20, link },
+    nuevaReservaDueno: {
+      cliente: b.cliente,
+      servicio: b.servicio,
+      fecha: b.fecha,
+      hora: b.hora,
+    },
+    codigoAcceso: { codigo: "482913" },
+  };
+}

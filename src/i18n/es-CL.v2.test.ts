@@ -686,14 +686,40 @@ describe("email.acceso: tono y marca", () => {
   const plantillas = Object.entries(email.acceso);
 
   it.each(plantillas)("%s respeta las reglas de tono", (_nombre, p) => {
+    const textos = [
+      p.asunto({ marca: brand.name }),
+      p.preheader,
+      p.titulo,
+      p.texto,
+      p.cta,
+      p.codigo,
+      p.ignorar,
+      p.expira,
+    ];
     for (const [regla, patron] of Object.entries(REGLAS_DE_TONO)) {
-      expect(patron.test(p.asunto), `${regla} en asunto`).toBe(false);
-      expect(patron.test(p.cuerpo), `${regla} en cuerpo`).toBe(false);
+      for (const texto of textos) {
+        expect(patron.test(texto), `${regla}: "${texto}"`).toBe(false);
+      }
     }
   });
 
-  it.each(plantillas)("%s nombra la marca una vez en el asunto", (_n, p) => {
-    expect(p.asunto.split(brand.name).length - 1).toBe(1);
-    expect(PATRON_MARCA.test(p.cuerpo)).toBe(false);
-  });
+  it.each(plantillas)(
+    "%s nombra la marca una vez, solo en el asunto (marca llega por parámetro)",
+    (_n, p) => {
+      const asunto = p.asunto({ marca: brand.name });
+      expect(asunto.split(brand.name).length - 1).toBe(1);
+      const otros = [
+        p.preheader,
+        p.titulo,
+        p.texto,
+        p.cta,
+        p.codigo,
+        p.ignorar,
+        p.expira,
+      ];
+      for (const texto of otros) {
+        expect(PATRON_MARCA.test(texto), texto).toBe(false);
+      }
+    },
+  );
 });
