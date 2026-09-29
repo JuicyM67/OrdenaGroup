@@ -66,7 +66,7 @@ function LinkPreview() {
         {BENTO_LINK.titulo}
       </span>
       <div className="mt-2.5 flex items-center gap-1.5 rounded-panel bg-surface py-1.5 pr-1.5 pl-2.5">
-        <span className="relative inline-flex w-36 items-center overflow-hidden text-13 font-semibold whitespace-nowrap text-ink">
+        <span className="relative inline-flex min-w-0 flex-1 items-center truncate text-13 font-semibold text-ink">
           <span className="animate-hero-type overflow-hidden whitespace-nowrap">
             {DEMO.lank}
           </span>
@@ -77,7 +77,7 @@ function LinkPreview() {
         </span>
         <span
           aria-hidden="true"
-          className="relative inline-flex h-8 w-16.5 shrink-0 animate-hero-copy-btn items-center justify-center overflow-hidden rounded-control text-11 font-bold text-on-dark"
+          className="relative ml-auto inline-flex h-8 w-16.5 shrink-0 animate-hero-copy-btn items-center justify-center overflow-hidden rounded-control text-11 font-bold text-on-dark"
         >
           <span className="absolute animate-hero-copy-out">
             {BENTO_LINK.copiar}

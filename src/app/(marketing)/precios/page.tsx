@@ -25,6 +25,7 @@ import { SectionHeading } from "@/components/marketing/section-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { brand } from "@/config/brand";
+import { href } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 
 export const metadata: Metadata = {
@@ -114,7 +115,7 @@ export default function PreciosPage() {
             title={copy.sitio.precios.compararTitulo}
             subtitle={copy.sitio.precios.extra.jamfor.texto}
           />
-          <TextLink href="/contacto" className="mt-2 inline-block">
+          <TextLink href={href("contacto")} className="mt-2 inline-block">
             {copy.sitio.precios.extra.jamfor.cta}
           </TextLink>
           <Card radius="card" padding="none" className="mt-8 overflow-x-auto">

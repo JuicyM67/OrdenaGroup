@@ -13,6 +13,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { strokeArrow } from "@/components/ui/icons";
 import { brand } from "@/config/brand";
+import { href, hrefIndustria, type IndustriaId } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 
 import { BrandLogo } from "./brand-logo";
@@ -21,22 +22,25 @@ import { Calendar3D } from "./calendar-3d";
 const INDUSTRIAS = copy.SITIO_PARA_INDUSTRIAS.map((industria) => ({
   id: industria.id,
   nombre: industria.nombre,
-  href: `/para/${industria.id}`,
+  href: hrefIndustria(industria.id as IndustriaId),
 }));
 
 // "Horas flash"/"Ventajas": mismo motivo que en `site-header.tsx` (sitio-v6, sin una
 // entrada propia en `copy.sitio.footer.links` todavía) — reutilizan
 // `megamenu.producto.items.flash.titulo` y `ventajas.hero.etiqueta`, nunca texto inventado.
 const PRODUCTO_LINKS = [
-  { href: "/funcionalidades", label: copy.sitio.footer.links.funcionalidades },
-  { href: "/precios", label: copy.sitio.footer.links.precios },
-  { href: "/preguntas", label: copy.sitio.footer.links.preguntas },
-  { href: "/contacto", label: copy.sitio.footer.links.contacto },
   {
-    href: "/horas-flash",
+    href: href("funcionalidades"),
+    label: copy.sitio.footer.links.funcionalidades,
+  },
+  { href: href("precios"), label: copy.sitio.footer.links.precios },
+  { href: href("preguntas"), label: copy.sitio.footer.links.preguntas },
+  { href: href("contacto"), label: copy.sitio.footer.links.contacto },
+  {
+    href: href("horasFlash"),
     label: copy.sitio.megamenu.producto.items.flash.titulo,
   },
-  { href: "/ventajas", label: copy.sitio.ventajas.hero.etiqueta },
+  { href: href("ventajas"), label: copy.sitio.ventajas.hero.etiqueta },
 ] as const;
 
 const footerLinkClass =
