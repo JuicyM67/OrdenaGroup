@@ -14,6 +14,9 @@ import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { initialsOf } from "@/lib/format/initials";
 import { formatPercent } from "@/lib/format/percent";
 
+import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import { Avatar } from "@/components/ui/avatar";
+
 import { AgendaToday } from "./agenda-today";
 import { AppShell } from "./app-shell";
 import { CalendarCard } from "./calendar-card";
@@ -61,7 +64,11 @@ export function InicioScreen({
   const notificationsCount = data.notifications.count;
 
   return (
-    <AppShell rail={<MainNav active="inicio" />} className={shellClassName}>
+    <AppShell
+      rail={<MainNav active="inicio" />}
+      mobileTabBar={<OwnerMobileTabBar active="inicio" className="lg:hidden" />}
+      className={shellClassName}
+    >
       <PageHeader
         variant="desktop"
         title={inicio.titulo}
@@ -72,7 +79,14 @@ export function InicioScreen({
         })}
         actions={
           <>
-            <IconButton label={nav.buscar} tone="surface">
+            {/* WP-42: samma avvägning som Hoy (hoy-screen.tsx) — sökknappen ryms inte
+                bredvid titel + avisering + avatar på < lg, och sök finns inte på mobil
+                någon annanstans i produkten heller. */}
+            <IconButton
+              label={nav.buscar}
+              tone="surface"
+              className="hidden lg:inline-flex"
+            >
               <Search aria-hidden="true" className="size-5" strokeWidth={1.9} />
             </IconButton>
             <IconButton
@@ -82,10 +96,19 @@ export function InicioScreen({
             >
               <Bell aria-hidden="true" className="size-5" strokeWidth={1.9} />
             </IconButton>
-            <UserPill
-              name={data.owner.name}
-              initials={initialsOf(data.owner.name)}
-            />
+            <span className="hidden lg:contents">
+              <UserPill
+                name={data.owner.name}
+                initials={initialsOf(data.owner.name)}
+              />
+            </span>
+            <span aria-hidden="true" className="contents lg:hidden">
+              <Avatar
+                initials={initialsOf(data.owner.name)}
+                tone="lilac"
+                size={46}
+              />
+            </span>
           </>
         }
       />
@@ -97,9 +120,9 @@ export function InicioScreen({
         detailHref={DETAIL_HREF}
       />
 
-      <div className="flex min-h-0 flex-1 gap-6">
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-5">
-          <div className="grid grid-cols-3 gap-4">
+      <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:flex-row">
+        <div className="flex flex-col gap-5 lg:min-h-0 lg:min-w-0 lg:flex-1">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
             <StatTile
               variant="number"
               value={data.stats.bookingsToday}
@@ -123,7 +146,7 @@ export function InicioScreen({
           <AgendaToday bookings={bookings} href={AGENDA_HREF} />
         </div>
 
-        <aside className="flex w-90 shrink-0 flex-col gap-4 overflow-y-auto">
+        <aside className="flex w-full flex-col gap-4 lg:w-90 lg:shrink-0 lg:overflow-y-auto">
           <CalendarCard
             month={data.calendar.month}
             today={toLocalDate(now, APP_TZ)}
