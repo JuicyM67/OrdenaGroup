@@ -1,6 +1,6 @@
 /**
  * Inloggningstexter per marknad (D-025/D-026). Inloggningssidorna importerar härifrån i
- * stället för `acceso`/`comun` direkt, så att Booking Buddy får svenska. Namngivna
+ * stället för `acceso`/`comun` direkt, så att marknad SE får svenska. Namngivna
  * importer (inte `import * as`) så att bundlern kan rensa bort resten av es-CL.
  */
 import { market } from "@/config/brand";
