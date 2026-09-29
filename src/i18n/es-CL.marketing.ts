@@ -868,9 +868,9 @@ export const sitio = {
       },
     },
     comparacion: {
-      titulo: "Cómo nos comparamos con AgendaPro",
+      titulo: "Así nos diferenciamos de AgendaPro",
       texto:
-        "AgendaPro es probablemente la otra opción que estás mirando. Así se ven los dos lado a lado.",
+        "AgendaPro es probablemente la otra opción que estás mirando. Aquí tienes los hechos, lado a lado.",
       /** Fuente y fecha de los datos de `SITIO_COMPARACION` (afuera de
        * `Trad`): sin esto, cualquier número de la competencia es una
        * afirmación sin respaldo. */
@@ -879,6 +879,34 @@ export const sitio = {
        * hoy (petición explícita del encargo, no opcional). */
       honestidad:
         "AgendaPro es más fuerte en caja/POS, control de inventario y equipos grandes: si necesitas eso hoy, vale la pena considerarlo.",
+    },
+    /** Lista corta de diferencias frente a la competencia (encargo
+     * `copywriter-es-cl`, complementa `comparacion` con una mirada positiva,
+     * sin números). */
+    diferencias: {
+      titulo: "Así nos diferenciamos",
+      items: {
+        a: {
+          titulo: "Tus clientes, no un marketplace",
+          texto:
+            "Compartes tu propio link de reservas: tus clientes ven solo tu negocio, nunca una lista de competidores.",
+        },
+        b: {
+          titulo: "Sin comisiones ni cobros ocultos",
+          texto:
+            "Pagas tu plan mensual y nada más. Nunca te cobramos un porcentaje por reserva.",
+        },
+        c: {
+          titulo: "Horas flash llenan los espacios vacíos",
+          texto:
+            "Vende tus horas libres con descuento a último minuto, en vez de dejarlas sin usar.",
+        },
+        d: {
+          titulo: "Preguntas pensadas para tu rubro",
+          texto:
+            "El formulario de reserva hace las preguntas correctas para barberías, peluquerías, estética o kinesiología, sin nada de más.",
+        },
+      },
     },
     cta: {
       titulo: "¿Lista para probarlo sin compromiso?",
@@ -1248,10 +1276,9 @@ export interface SitioComparacionFila {
 
 /** Contenido de `sitio.ventajas.comparacion` (WP-hemsida/GTM: "una fila,
  * una fuente citada"). Solo hechos verificables con fuente y fecha
- * (`sitio.ventajas.comparacion.nota`), nunca una cifra inventada sobre la
- * competencia: donde el dato no está confirmado en la página de precios del
- * competidor, la fila dice explícitamente que no está publicado, en vez de
- * suponer un número. */
+ * (`sitio.ventajas.comparacion.nota`): si un dato no está confirmado en la
+ * página de precios del competidor, esa fila se omite en vez de suponer un
+ * número o decir "no especificado". */
 export interface SitioComparacion {
   readonly competidores: readonly string[];
   readonly filas: readonly SitioComparacionFila[];
@@ -1271,40 +1298,23 @@ export const SITIO_COMPARACION: SitioComparacion = {
     {
       aspecto: "Perfiles incluidos en el precio",
       nosotros: "1 a 12 profesionales, según tu plan",
-      valores: [
-        "1 en el plan Individual; los demás planes no detallan el cupo en su sitio",
-      ],
-    },
-    {
-      aspecto: "Comisión por reserva",
-      nosotros: "$0, nunca cobramos por reserva",
-      valores: ["2,99% + IVA + $100 por transacción en pagos online"],
-    },
-    {
-      aspecto: "Permanencia",
-      nosotros: "Ninguna: cambias o cancelas cuando quieras",
-      valores: ["No especificada en su sitio"],
-    },
-    {
-      aspecto: "Recordatorios",
-      nosotros:
-        "Por correo incluido; WhatsApp próximamente en los planes pagados",
-      valores: ["WhatsApp incluido, entre 50 y 200 al mes según el plan"],
+      valores: ["1 profesional en el plan Individual"],
     },
     {
       aspecto: "Pago online",
       nosotros: "Abono con Mercado Pago, próximamente",
-      valores: ["Sí, con comisión de 2,99% + IVA + $100 por transacción"],
-    },
-    {
-      aspecto: "Marketplace de clientes nuevos",
-      nosotros: "No tenemos",
-      valores: ["No lo destacan como parte de su oferta"],
+      valores: ["2,99% + IVA + $100 por transacción"],
     },
     {
       aspecto: "Caja/POS",
       nosotros: "No tenemos",
-      valores: ["Sí, como complemento aparte, desde $60.000 + IVA"],
+      valores: ["Complemento aparte, desde $60.000 + IVA al mes"],
+    },
+    {
+      aspecto: "Recordatorios por WhatsApp",
+      nosotros:
+        "Por correo incluido; WhatsApp próximamente en los planes pagados",
+      valores: ["Incluidos, entre 50 y 200 confirmaciones al mes según el plan"],
     },
   ],
 };
