@@ -4,6 +4,12 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-030 · 2026-09-29 · Utkorgens schemaläggare via GitHub Actions, en påminnelse (24 h), e-post krävs i CL
+**Varför:** ägaren vill slippa hemligheter i Supabase Vault; bekräftelser går ändå direkt via `kickOutbox`. **Konsekvens:** `.github/workflows/outbox-cron.yml` anropar `/api/cron/outbox` var 5:e minut per marknad med `CRON_SECRET`; påminnelsen 24 h kan komma upp till ~15 min sent. Bara 24 h-påminnelse (SE: e-post + SMS, CL: e-post, WhatsApp när WP för Meta är klart). E-post är obligatorisk i Reserva för CL tills WhatsApp finns.
+
+### D-029 · 2026-09-29 · Kundens token i utkorgen och rotation vid flytt
+**Varför:** databasen sparar bara hashen av kundens token, men påminnelser och flyttmeddelanden behöver länken. **Konsekvens:** klartext-token ligger i `message_outbox.payload` bara tills raden är `sent`/`dead`/`cancelled` och töms då; tabellen är oläsbar för `anon` och `authenticated` ser bara det egna företaget. En flytt roterar token (gamla länkar slutar gälla). `/r/[token]` slår upp på `manage_token_hash`.
+
 ### D-028 · 2026-09-28 · SMS via ClickSend i Sverige
 **Varför:** i Sverige används SMS snarare än WhatsApp för bekräftelser och påminnelser. **Konsekvens:** utkorgen (regel 4) får en SMS-leverantör (ClickSend) för marknaden SE; WhatsApp gäller CL. Samma mallar per händelse, text per språk.
 
