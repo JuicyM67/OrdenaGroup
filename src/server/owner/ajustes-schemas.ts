@@ -11,7 +11,7 @@ import "server-only";
  */
 import { z } from "zod";
 
-import { chileanPhoneInputSchema } from "@/lib/format/schemas";
+import { phoneInputSchema } from "@/lib/format/schemas";
 import {
   businessNameSchema,
   comunaSchema,
@@ -69,7 +69,7 @@ export const businessSettingsInputSchema = z.object({
   name: businessNameSchema,
   slug: slugSchema,
   comuna: comunaSchema,
-  phone: chileanPhoneInputSchema,
+  phone: phoneInputSchema,
   address: addressSchema,
   minNoticeMinutes: minNoticeMinutesSchema,
   maxDaysAhead: maxDaysAheadSchema,

@@ -9,7 +9,7 @@ import { strokeArrow, strokeCard } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
 import { Card } from "@/components/ui/card";
 import { inicio } from "@/i18n";
-import { formatClp } from "@/lib/format/clp";
+import { formatMoney } from "@/lib/format/money";
 import { formatLocalDate } from "@/lib/format/dates";
 
 import { FeatureCard } from "./feature-card";
@@ -35,7 +35,7 @@ export function HeroSummary({
 }: HeroSummaryProps) {
   const variant = heroVariant(week);
   const horasText = inicio.hero.horas({ n: week.recoveredHours });
-  const montoText = formatClp(week.recoveredClp);
+  const montoText = formatMoney(week.recoveredClp);
   const highlightPart = inicio.hero.destacado({
     horas: horasText,
     monto: montoText,

@@ -18,7 +18,17 @@ import {
   type LocalTime,
   type TimeZone,
 } from "./dates";
-import { isE164, parseChileanPhone, type E164 } from "./phone";
+import { parseMoney, type MoneyMinor } from "./money";
+import {
+  isE164,
+  parseChileanPhone,
+  parsePhone,
+  phoneErrorKey,
+  type E164,
+  type PhoneAllow,
+  type PhoneError,
+  type PhoneParseError,
+} from "./phone";
 import type { ParseResult } from "./result";
 import { parseRut, type Rut } from "./rut";
 
@@ -74,16 +84,44 @@ export const e164Schema: z.ZodType<E164> = z
     return z.NEVER;
   });
 
-/** Kundens telefon (F5/F9): bara chilenska mobilnummer. */
-export const chileanMobileInputSchema: z.ZodType<E164, string> = fromParser(
+/** Parserns felkod → i18n-nyckeln (`wrong_country` → `not_chilean`). */
+function withPhoneKey(
+  r: ParseResult<E164, PhoneParseError>,
+): ParseResult<E164, PhoneError> {
+  return r.ok ? r : { ok: false, error: phoneErrorKey(r.error) };
+}
+
+/** Kundens telefon (F5/F9) i installationens land: bara mobilnummer. */
+export const mobileInputSchema: z.ZodType<E164, string> = fromParser(
   "phone",
-  (s) => parseChileanPhone(s),
+  (s) => withPhoneKey(parsePhone(s)),
 );
 
-/** Företagets telefon (F1): mobil eller fast. */
-export const chileanPhoneInputSchema: z.ZodType<E164, string> = fromParser(
+/** Företagets telefon (F1) i installationens land: mobil eller fast. */
+export const phoneInputSchema: z.ZodType<E164, string> = fromParser(
   "phone",
-  (s) => parseChileanPhone(s, { allow: "mobile_or_fixed" }),
+  (s) => withPhoneKey(parsePhone(s, { allow: "mobile_or_fixed" })),
+);
+
+function chilean(allow: PhoneAllow): z.ZodType<E164, string> {
+  return fromParser("phone", (s) =>
+    withPhoneKey(parseChileanPhone(s, { allow })),
+  );
+}
+
+/** Bara chilenska mobilnummer, oavsett marknad. Appen använder `mobileInputSchema`. */
+export const chileanMobileInputSchema = chilean("mobile");
+
+/** Bara chilenska nummer, oavsett marknad. Appen använder `phoneInputSchema`. */
+export const chileanPhoneInputSchema = chilean("mobile_or_fixed");
+
+/**
+ * Prisfält i installationens valuta → minsta enheten (CLP: pesos, SEK: öre).
+ * Felkoderna har prefixet "clp" (samma i18n-nycklar, `validacion.clp.*`).
+ */
+export const moneyInputSchema: z.ZodType<MoneyMinor, string> = fromParser(
+  "clp",
+  parseMoney,
 );
 
 export const rutInputSchema: z.ZodType<Rut, string> = fromParser(

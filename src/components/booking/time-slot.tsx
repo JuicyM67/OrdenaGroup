@@ -2,7 +2,7 @@
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { reserva } from "@/i18n";
-import { formatTime, SANTIAGO } from "@/lib/format/dates";
+import { formatTime, APP_TZ } from "@/lib/format/dates";
 
 import type { BookingSlot } from "./types";
 
@@ -15,7 +15,7 @@ export function TimeSlot({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const hora = formatTime(new Date(slot.start), SANTIAGO);
+  const hora = formatTime(new Date(slot.start), APP_TZ);
   const flash = slot.discountPct !== undefined;
 
   return (

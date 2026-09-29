@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { addMonths, type YearMonth } from "@/components/ui/mini-calendar/grid";
 import { MiniCalendar } from "@/components/ui/mini-calendar/mini-calendar";
 import { calendario, inicio } from "@/i18n";
-import { WEEKDAY_MIN } from "@/lib/format/calendar-es-CL";
+import { WEEKDAY_MIN } from "@/lib/format/calendar";
 import { formatLocalDate, type LocalDate } from "@/lib/format/dates";
 
 // WEEKDAY_MIN är `readonly string[]` (7 element, testat i weekdays.test.ts); MiniCalendar

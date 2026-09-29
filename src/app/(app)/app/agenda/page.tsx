@@ -13,7 +13,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AgendaScreen } from "@/components/agenda/agenda-screen";
-import { parseLocalDate, SANTIAGO, toLocalDate } from "@/lib/format/dates";
+import { parseLocalDate, APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pgErrorCode } from "@/server/db/errors";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
@@ -50,9 +50,7 @@ export default async function AppAgendaPage({
   const { vista, fecha } = await searchParams;
   const parsedFecha = fecha ? parseLocalDate(fecha) : null;
   const now = new Date();
-  const focus = parsedFecha?.ok
-    ? parsedFecha.value
-    : toLocalDate(now, SANTIAGO);
+  const focus = parsedFecha?.ok ? parsedFecha.value : toLocalDate(now, APP_TZ);
 
   const [data, catalog] = await Promise.all([
     loadOwnerAgendaWeek(user.id, business.id, focus, now),

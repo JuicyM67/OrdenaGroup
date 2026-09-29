@@ -4,7 +4,7 @@
  * bunta med i klientkomponenten. Samma gränser som WP-10:s
  * `customerInputSchema` (`src/server/scheduling/schemas.ts`): namn max 120,
  * e-post max 254. Telefonen valideras med den riktiga, delade
- * `parseChileanPhone` (`@/lib/format/phone`), ingen egen kopia.
+ * `parsePhone` (`@/lib/format/phone`, installationens land), ingen egen kopia.
  *
  * `NAME_MAX` sätts som `maxLength` på fältet (`text-field.tsx`) i stället för
  * att kontrolleras här: webbläsaren hindrar redan inmatning längre än så, och
@@ -13,7 +13,7 @@
  * `form-schema.ts`) är den slutgiltiga kontrollen: en manipulerad förfrågan
  * som ändå överskrider gränsen ger `invalid_input`.
  */
-import { parseChileanPhone, type E164 } from "@/lib/format/phone";
+import { parsePhone, phoneErrorKey, type E164 } from "@/lib/format/phone";
 
 export const NAME_MAX = 120;
 export const EMAIL_MAX = 254;
@@ -34,8 +34,8 @@ export function validateName(raw: string): FieldResult<string> {
 }
 
 export function validatePhone(raw: string): FieldResult<E164> {
-  const r = parseChileanPhone(raw);
-  if (!r.ok) return { ok: false, code: `phone.${r.error}` };
+  const r = parsePhone(raw);
+  if (!r.ok) return { ok: false, code: `phone.${phoneErrorKey(r.error)}` };
   return { ok: true, value: r.value };
 }
 

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { InicioScreen } from "@/components/dashboard/inicio-screen";
 import { inicio } from "@/i18n";
-import { SANTIAGO, toLocalDate } from "@/lib/format/dates";
+import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { loadOwnerInicio } from "@/server/owner/inicio";
@@ -30,7 +30,7 @@ export default async function InicioPage() {
   if (!business) redirect("/app/onboarding");
 
   const now = new Date();
-  const today = toLocalDate(now, SANTIAGO);
+  const today = toLocalDate(now, APP_TZ);
   const owner = ownerNameParts(user.email);
   const data = await loadOwnerInicio(user.id, business.id, today, now, owner);
 

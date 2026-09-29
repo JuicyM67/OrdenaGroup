@@ -12,9 +12,9 @@ import "server-only";
 import { z } from "zod";
 
 import {
-  chileanPhoneInputSchema,
-  clpInputSchema,
   localTimeSchema,
+  moneyInputSchema,
+  phoneInputSchema,
 } from "@/lib/format/schemas";
 
 // Samma regex som `businesses_slug_format` (supabase/migrations/…businesses_memberships.sql):
@@ -102,7 +102,7 @@ export const businessInputSchema = z.object({
   slug: slugSchema,
   comuna: comunaSchema,
   category: categorySchema,
-  phone: chileanPhoneInputSchema,
+  phone: phoneInputSchema,
 });
 
 export const serviceInputSchema = z.object({
@@ -116,7 +116,8 @@ export const serviceInputSchema = z.object({
     .int({ error: "services.duration_invalid" })
     .min(5, { error: "services.duration_invalid" })
     .max(600, { error: "services.duration_invalid" }),
-  priceClp: clpInputSchema,
+  // Minsta enheten i installationens valuta (CLP: pesos, SEK: öre).
+  priceClp: moneyInputSchema,
 });
 
 export const staffNameSchema = z

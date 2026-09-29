@@ -11,7 +11,7 @@ import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { comun, hoy } from "@/i18n/es-CL";
-import { formatTime, SANTIAGO } from "@/lib/format/dates";
+import { formatTime, APP_TZ } from "@/lib/format/dates";
 
 import { nextChip, parseInstantOrThrow, relative } from "./hoy-view";
 import type { HoyBooking } from "./types";
@@ -104,7 +104,7 @@ export function NextClientCard({
       </div>
       <div>
         <div className="font-display text-44 leading-none font-semibold tracking-display">
-          {formatTime(start, SANTIAGO)}
+          {formatTime(start, APP_TZ)}
         </div>
         <div className="mt-2.5 text-18 font-bold">{booking.clientName}</div>
         <div className="mt-0.5 text-14 text-on-dark-soft">

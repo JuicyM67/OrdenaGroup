@@ -45,9 +45,9 @@ describe("parseChileanPhone (mobil, standard)", () => {
     ["+56 9 1234 56789", "invalid_length"],
     ["12345678", "invalid_length"],
     ["+56", "invalid_length"],
-    ["+54 9 11 1234 5678", "not_chilean"],
-    ["+1 415 555 0100", "not_chilean"],
-    ["0054 9 11 1234 5678", "not_chilean"],
+    ["+54 9 11 1234 5678", "wrong_country"],
+    ["+1 415 555 0100", "wrong_country"],
+    ["0054 9 11 1234 5678", "wrong_country"],
     ["+56 2 2123 4567", "not_mobile"],
     ["+56 32 212 3456", "not_mobile"],
     ["600 123 4567", "invalid_length"],
@@ -79,7 +79,7 @@ describe("parseChileanPhone (mobile_or_fixed, företagets telefon F1)", () => {
     ["800 123 456", "invalid_prefix"],
     ["112345678", "invalid_prefix"],
     ["012345678", "invalid_prefix"],
-    ["+54 11 1234 5678", "not_chilean"],
+    ["+54 11 1234 5678", "wrong_country"],
   ])("avvisar %j → %s", (input, error) => {
     expect(parseChileanPhone(input, opts)).toEqual({ ok: false, error });
   });

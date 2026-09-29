@@ -3,8 +3,8 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { Chip } from "@/components/ui/chip";
 import { hoy } from "@/i18n/es-CL";
-import { formatClp } from "@/lib/format/clp";
-import { formatTime, SANTIAGO } from "@/lib/format/dates";
+import { formatMoney } from "@/lib/format/money";
+import { formatTime, APP_TZ } from "@/lib/format/dates";
 
 import { parseInstantOrThrow, rowTag } from "./hoy-view";
 import type { HoyBooking, StaffColor } from "./types";
@@ -47,7 +47,7 @@ export function RestOfDay({
         <span className="text-13 text-muted">
           {hoy.restoDia.resumen({
             n: dayCount,
-            monto: formatClp(dayTotalClp),
+            monto: formatMoney(dayTotalClp),
           })}
         </span>
       </div>
@@ -66,7 +66,7 @@ export function RestOfDay({
                 className="flex h-14 items-center gap-3 border-t border-line"
               >
                 <span className="w-11.5 text-14 font-bold">
-                  {formatTime(start, SANTIAGO)}
+                  {formatTime(start, APP_TZ)}
                 </span>
                 <span
                   aria-hidden="true"

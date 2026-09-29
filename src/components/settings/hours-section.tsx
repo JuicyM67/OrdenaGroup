@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
 import { ajustes, horarios } from "@/i18n";
-import { WEEKDAY_LONG } from "@/lib/format/calendar-es-CL";
+import { WEEKDAY_LONG } from "@/lib/format/calendar";
 
 import { ajustesErrorText } from "./error-text";
 import type { AjustesActions, AjustesHour } from "./types";

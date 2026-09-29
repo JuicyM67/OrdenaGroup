@@ -13,7 +13,7 @@ import {
   addLocalDays,
   eachLocalDate,
   parseLocalTime,
-  SANTIAGO,
+  APP_TZ,
   toLocalDate,
 } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
@@ -168,7 +168,7 @@ export async function loadReservaPageData(
   const availability: Record<string, Record<string, DayAvailability[]>> = {};
 
   if (services.length > 0) {
-    const from = toLocalDate(now, SANTIAGO);
+    const from = toLocalDate(now, APP_TZ);
     const to = addLocalDays(from, RANGE_DAYS - 1);
     const dates = eachLocalDate(from, to);
     const staffChoices = [ANY_STAFF, ...staffRows.rows.map((s) => s.id)];

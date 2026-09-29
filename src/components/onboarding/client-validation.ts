@@ -4,9 +4,9 @@
  * (`src/server/onboarding/schemas.ts`). Felkoderna är samma strängar som servern
  * skickar (`onboardingErrorText` i `error-text.ts` mappar båda till samma text).
  */
-import { parseClp } from "@/lib/format/clp";
+import { parseMoney } from "@/lib/format/money";
 import { parseLocalTime, type LocalTime } from "@/lib/format/dates";
-import { parseChileanPhone, type E164 } from "@/lib/format/phone";
+import { parsePhone, phoneErrorKey, type E164 } from "@/lib/format/phone";
 
 export type FieldResult<T> =
   | { readonly ok: true; readonly value: T }
@@ -68,13 +68,13 @@ export function validateRequired(
 }
 
 export function validatePhone(raw: string): FieldResult<E164> {
-  const r = parseChileanPhone(raw, { allow: "mobile_or_fixed" });
-  if (!r.ok) return { ok: false, code: `phone.${r.error}` };
+  const r = parsePhone(raw, { allow: "mobile_or_fixed" });
+  if (!r.ok) return { ok: false, code: `phone.${phoneErrorKey(r.error)}` };
   return { ok: true, value: r.value };
 }
 
 export function validatePriceClp(raw: string): FieldResult<number> {
-  const r = parseClp(raw);
+  const r = parseMoney(raw);
   if (!r.ok) return { ok: false, code: `clp.${r.error}` };
   return { ok: true, value: r.value };
 }
