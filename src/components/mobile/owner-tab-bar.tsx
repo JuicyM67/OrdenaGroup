@@ -59,6 +59,9 @@ export type OwnerMobileTabBarProps = {
 
 /** `MobileTabBar` (DESIGN.md §7) med ägarskalets fyra mål. Anropas av AppShell/AgendaShell
  * på < lg, `lg:hidden` sätts av anroparen (samma mönster som `rail`/`aside`). */
-export function OwnerMobileTabBar({ active, className }: OwnerMobileTabBarProps) {
+export function OwnerMobileTabBar({
+  active,
+  className,
+}: OwnerMobileTabBarProps) {
   return <MobileTabBar items={ITEMS} active={active} className={className} />;
 }

@@ -445,7 +445,9 @@ export function AgendaScreen({
     <>
       <AgendaShell
         className={className}
-        mobileTabBar={<OwnerMobileTabBar active="agenda" className="lg:hidden" />}
+        mobileTabBar={
+          <OwnerMobileTabBar active="agenda" className="lg:hidden" />
+        }
         rail={
           <AgendaRail
             staff={data.staff}

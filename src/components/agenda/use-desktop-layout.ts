@@ -14,7 +14,9 @@ const QUERY = "(min-width: 1024px)";
 // kastar `getSnapshot`/`subscribe` redan vid första rendern i varje test som monterar
 // `AgendaScreen` (se `event-popover.test.tsx` samma mönster).
 function hasMatchMedia(): boolean {
-  return typeof window !== "undefined" && typeof window.matchMedia === "function";
+  return (
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+  );
 }
 
 function subscribe(callback: () => void): () => void {

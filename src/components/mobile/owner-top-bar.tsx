@@ -15,7 +15,7 @@ export function OwnerMobileTopBar() {
   return (
     <header
       data-surface="dark"
-      className="flex shrink-0 items-center justify-between gap-3 bg-ink px-5 pt-safe-t py-3 lg:hidden"
+      className="flex shrink-0 items-center justify-between gap-3 bg-ink px-5 py-3 pt-safe-t lg:hidden"
     >
       <span className="flex items-center gap-2.5">
         <LogoMark label={nav.volverAlInicio} size={40} decorative />

@@ -60,7 +60,9 @@ export function AjustesScreen({
   return (
     <AppShell
       rail={<MainNav active="ajustes" />}
-      mobileTabBar={<OwnerMobileTabBar active="ajustes" className="lg:hidden" />}
+      mobileTabBar={
+        <OwnerMobileTabBar active="ajustes" className="lg:hidden" />
+      }
     >
       <PageHeader variant="desktop" title={nav.ajustes} />
 
