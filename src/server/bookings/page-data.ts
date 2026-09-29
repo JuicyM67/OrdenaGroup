@@ -4,6 +4,8 @@ import type {
   BookingAvailability,
   BookingBusiness,
   BookingPageData,
+  BookingProfile,
+  BookingProfileHours,
   BookingService,
   BookingServiceCategory,
   BookingStaffMember,
@@ -13,9 +15,11 @@ import type {
 import {
   addLocalDays,
   eachLocalDate,
+  localDayRange,
   parseLocalTime,
   APP_TZ,
   toLocalDate,
+  type IsoWeekday,
 } from "@/lib/format/dates";
 import type { BookingQuestionDef } from "@/lib/validation/booking-questions";
 import { getQuestionsForServiceIn } from "@/server/booking-questions/catalog";
@@ -24,9 +28,16 @@ import {
   CUSTOMER_SLOT_LIMIT,
   staffOffersService,
 } from "@/server/scheduling/availability";
+import { firstFreeStart, openNow } from "@/server/scheduling/core/profile";
 import { dayStatus, slotsForDay } from "@/server/scheduling/core/slots";
 import { loadSnapshot } from "@/server/scheduling/load";
-import { ANY_STAFF, type DayInput } from "@/server/scheduling/types";
+import {
+  ANY_STAFF,
+  type DayInput,
+  type HoursRow as EngineHoursRow,
+} from "@/server/scheduling/types";
+
+import { publicMediaUrl } from "./media";
 
 /**
  * Sidans data för `/{slug}` (WP-20). Läser `businessId` (redan slug→id-
@@ -47,6 +58,10 @@ import { ANY_STAFF, type DayInput } from "@/server/scheduling/types";
  */
 const RANGE_DAYS = 21;
 
+/** WP-41: "Nästa lediga tid" letas så här långt fram (≤ RANGE_DAYS, så att
+ * den redan laddade ögonblicksbilden räcker). */
+const NEXT_FREE_DAYS = 14;
+
 /** `services` har ingen tint-kolumn (bara ett designval, inte data): cyklas
  * per tjänstens sorteringsordning. */
 const TINTS: readonly ServiceTint[] = ["lilac", "peach", "lime"];
@@ -56,6 +71,12 @@ type BusinessRow = {
   comuna: string;
   status: string;
   cancel_window_hours: number;
+  about: string | null;
+  cover_url: string | null;
+  logo_url: string | null;
+  instagram: string | null;
+  address: string | null;
+  phone: string | null;
 };
 
 type HoursRow = { weekday: number; start_time: string; end_time: string };
@@ -65,14 +86,20 @@ type ServiceRow = {
   duration_min: number;
   price_clp: number;
   category_id: string | null;
+  description: string | null;
 };
-type StaffRow = { id: string; name: string };
+type StaffRow = { id: string; name: string; title: string | null };
 type CategoryRow = { id: string; name: string };
+
+type LoadedHours = {
+  summary: Pick<BookingBusiness, "weekdaysOpen" | "open" | "close">;
+  rows: EngineHoursRow[];
+};
 
 async function loadHours(
   q: Queryable,
   businessId: string,
-): Promise<Pick<BookingBusiness, "weekdaysOpen" | "open" | "close">> {
+): Promise<LoadedHours> {
   const r = await q.query<HoursRow>(
     `select weekday, start_time::text as start_time, end_time::text as end_time
        from public.business_hours where business_id = $1`,
@@ -82,9 +109,12 @@ async function loadHours(
     // Ett felkonfigurerat företag (inga öppettider alls) — BusinessHeader
     // behöver ändå ett värde. Motorn visar redan "closed" varje dag.
     return {
-      weekdaysOpen: [1] as BookingBusiness["weekdaysOpen"],
-      open: "00:00" as BookingBusiness["open"],
-      close: "00:00" as BookingBusiness["close"],
+      summary: {
+        weekdaysOpen: [1] as BookingBusiness["weekdaysOpen"],
+        open: "00:00" as BookingBusiness["open"],
+        close: "00:00" as BookingBusiness["close"],
+      },
+      rows: [],
     };
   }
   const weekdaysOpen = [...new Set(r.rows.map((h) => h.weekday))].sort(
@@ -100,11 +130,53 @@ async function loadHours(
     if (!p.ok) throw new RangeError("page-data: öppettid ogiltig (slut)");
     return p.value;
   });
+  const rows: EngineHoursRow[] = r.rows
+    .map((h, i) => ({
+      weekday: h.weekday as IsoWeekday,
+      start: starts[i]!,
+      end: ends[i]!,
+    }))
+    .sort((a, b) => a.weekday - b.weekday || (a.start < b.start ? -1 : 1));
   return {
-    weekdaysOpen,
-    open: [...starts].sort()[0]!,
-    close: [...ends].sort().at(-1)!,
+    summary: {
+      weekdaysOpen,
+      open: [...starts].sort()[0]!,
+      close: [...ends].sort().at(-1)!,
+    },
+    rows,
   };
+}
+
+/** Frånvaro för hela företaget (`staff_id is null`) som berör dagens datum. */
+async function loadTodayClosures(
+  q: Queryable,
+  businessId: string,
+  now: Date,
+): Promise<{ start: number; end: number }[]> {
+  const day = localDayRange(toLocalDate(now, APP_TZ), APP_TZ);
+  const r = await q.query<{ s: number; e: number }>(
+    `select extract(epoch from lower(period))::float8 * 1000 as s,
+            extract(epoch from upper(period))::float8 * 1000 as e
+       from public.time_off
+      where business_id = $1 and staff_id is null
+        and period && tstzrange($2::timestamptz, $3::timestamptz, '[)')`,
+    [businessId, day.start.toISOString(), day.end.toISOString()],
+  );
+  return r.rows.map((x) => ({ start: Math.round(x.s), end: Math.round(x.e) }));
+}
+
+/** Galleriet (`business_images`) i ägarens ordning → publika URL:er. */
+async function loadGallery(
+  q: Queryable,
+  businessId: string,
+): Promise<string[]> {
+  const r = await q.query<{ path: string }>(
+    `select path from public.business_images
+      where business_id = $1
+      order by sort, created_at`,
+    [businessId],
+  );
+  return r.rows.map((x) => publicMediaUrl(x.path));
 }
 
 export async function loadReservaPageData(
@@ -114,7 +186,8 @@ export async function loadReservaPageData(
   const { businessId, slug, now } = params;
 
   const bizRes = await q.query<BusinessRow>(
-    `select name, comuna, status::text as status, cancel_window_hours
+    `select name, comuna, status::text as status, cancel_window_hours,
+            about, cover_url, logo_url, instagram, address, phone
        from public.businesses where id = $1`,
     [businessId],
   );
@@ -122,6 +195,19 @@ export async function loadReservaPageData(
   if (!biz) return null;
 
   const hours = await loadHours(q, businessId);
+  const closures = await loadTodayClosures(q, businessId, now);
+  const gallery = await loadGallery(q, businessId);
+  const profileBase: Omit<BookingProfile, "nextAvailable"> = {
+    about: biz.about,
+    coverUrl: biz.cover_url,
+    logoUrl: biz.logo_url,
+    instagram: biz.instagram,
+    address: biz.address,
+    phone: biz.phone,
+    gallery,
+    hours: hours.rows as readonly BookingProfileHours[],
+    openNow: openNow(hours.rows, closures, now, APP_TZ),
+  };
 
   const business: BookingBusiness = {
     slug,
@@ -129,7 +215,7 @@ export async function loadReservaPageData(
     comuna: biz.comuna,
     // D-011: bara Santiago-marknaden i v1, ingen egen kolumn för staden.
     city: "Santiago",
-    ...hours,
+    ...hours.summary,
     cancelWindowHours: biz.cancel_window_hours,
     status: biz.status as BookingBusiness["status"],
   };
@@ -141,18 +227,19 @@ export async function loadReservaPageData(
       services: [],
       staff: [],
       availability: {},
+      profile: { ...profileBase, nextAvailable: null },
     };
   }
 
   const serviceRows = await q.query<ServiceRow>(
-    `select id, name, duration_min, price_clp, category_id
+    `select id, name, duration_min, price_clp, category_id, description
        from public.services
       where business_id = $1 and active
       order by sort, name`,
     [businessId],
   );
   const staffRows = await q.query<StaffRow>(
-    `select id, name from public.staff
+    `select id, name, title from public.staff
       where business_id = $1 and active
       order by sort, name`,
     [businessId],
@@ -186,11 +273,14 @@ export async function loadReservaPageData(
     priceClp: s.price_clp,
     tint: TINTS[i % TINTS.length]!,
     categoryId: s.category_id,
+    description: s.description,
   }));
   const staff: BookingStaffMember[] = staffRows.rows.map((s) => ({
     id: s.id,
     name: s.name,
+    title: s.title,
   }));
+  let nextFree: { start: number; serviceId: string } | null = null;
 
   const availability: Record<string, Record<string, DayAvailability[]>> = {};
   // WP-40: kundens frågor per tjänst, redan upplösta (tjänst + kategori,
@@ -220,6 +310,15 @@ export async function loadReservaPageData(
       // just hämtad som aktiv tjänst i samma transaktion) — skyddar ändå mot
       // en race (tjänsten inaktiverad mellan frågorna) i stället för att kasta.
       if (!loaded.ok) continue;
+
+      const first = firstFreeStart(
+        loaded.value.snapshot,
+        dates.slice(0, NEXT_FREE_DAYS),
+        now,
+      );
+      if (first !== null && (nextFree === null || first < nextFree.start)) {
+        nextFree = { start: first, serviceId: service.id };
+      }
 
       const byStaff: Record<string, DayAvailability[]> = {};
       for (const staffChoice of staffChoices) {
@@ -261,5 +360,12 @@ export async function loadReservaPageData(
     availability: availability as BookingAvailability,
     categories,
     questionsByService,
+    profile: {
+      ...profileBase,
+      nextAvailable: nextFree && {
+        start: new Date(nextFree.start).toISOString(),
+        serviceId: nextFree.serviceId,
+      },
+    },
   };
 }

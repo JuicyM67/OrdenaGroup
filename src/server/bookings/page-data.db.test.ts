@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import {
   addLocalDays,
@@ -15,6 +15,7 @@ import {
   createTestBusiness,
   dropTestBusiness,
   insertTestBooking,
+  insertTestTimeOff,
   type TestBusiness,
 } from "@/server/db/testing";
 import { withServiceTx } from "@/server/db/tx";
@@ -156,5 +157,121 @@ describe("loadReservaPageData", () => {
       }),
     );
     expect(data).toBeNull();
+  });
+});
+
+describe("loadReservaPageData · profil (WP-41)", () => {
+  it("returnerar profilfälten, galleriet i ordning, beskrivning och roll", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://proj.supabase.co");
+    const b = await createTestBusiness();
+    try {
+      await adminQuery(
+        `update public.businesses
+            set about = 'Salón en Providencia', instagram = 'salon.nova',
+                address = 'Av. Providencia 1234', phone = '+56912345678',
+                cover_url = 'https://proj.supabase.co/c.jpg'
+          where id = $1`,
+        [b.id],
+      );
+      await adminQuery(
+        `insert into public.business_images (business_id, path, sort)
+         values ($1::uuid, $1::text || '/b.png', 2), ($1::uuid, $1::text || '/a.jpg', 1)`,
+        [b.id],
+      );
+      await adminQuery(
+        "update public.services set description = 'Con lavado' where id = $1",
+        [b.services.corte],
+      );
+      await adminQuery(
+        "update public.staff set title = 'Barbero' where id = $1",
+        [b.staff.diego],
+      );
+
+      const data = await load(b);
+      const p = data!.profile!;
+      expect(p.about).toBe("Salón en Providencia");
+      expect(p.instagram).toBe("salon.nova");
+      expect(p.address).toBe("Av. Providencia 1234");
+      expect(p.phone).toBe("+56912345678");
+      expect(p.coverUrl).toBe("https://proj.supabase.co/c.jpg");
+      expect(p.logoUrl).toBeNull();
+      expect(p.gallery).toEqual([
+        `https://proj.supabase.co/storage/v1/object/public/business-media/${b.id}/a.jpg`,
+        `https://proj.supabase.co/storage/v1/object/public/business-media/${b.id}/b.png`,
+      ]);
+      expect(p.hours).toHaveLength(6);
+      expect(p.hours[0]).toEqual({ weekday: 1, start: "10:00", end: "19:00" });
+
+      const corte = data!.services.find((s) => s.id === b.services.corte);
+      expect(corte!.description).toBe("Con lavado");
+      expect(
+        data!.services.find((s) => s.id === b.services.barba)!.description,
+      ).toBeNull();
+      expect(data!.staff.find((s) => s.id === b.staff.diego)!.title).toBe(
+        "Barbero",
+      );
+    } finally {
+      vi.unstubAllEnvs();
+      await dropTestBusiness(b);
+    }
+  });
+
+  it("öppet nu: stängt före öppning, öppet till 19:00, stängning för hela företaget räknas", async () => {
+    // Torsdag 2026-10-01, mån–lör 10:00–19:00, min_notice 60.
+    expect((await load(biz))!.profile!.openNow).toEqual({ open: false });
+    const noon = new Date(at("2026-10-01", "12:00"));
+    expect((await load(biz, noon))!.profile!.openNow).toEqual({
+      open: true,
+      closesAt: "19:00",
+    });
+    // Söndag: stängt.
+    const sunday = new Date(at("2026-10-04", "12:00"));
+    expect((await load(biz, sunday))!.profile!.openNow).toEqual({
+      open: false,
+    });
+
+    const b = await createTestBusiness();
+    try {
+      await insertTestTimeOff(b, {
+        start: at("2026-10-01", "13:00"),
+        end: at("2026-10-01", "14:00"),
+        kind: "lunch",
+      });
+      // Personalens frånvaro påverkar inte "öppet".
+      await insertTestTimeOff(b, {
+        start: at("2026-10-01", "10:00"),
+        end: at("2026-10-01", "19:00"),
+        staffKey: "diego",
+      });
+      expect((await load(b, noon))!.profile!.openNow).toEqual({
+        open: true,
+        closesAt: "13:00",
+      });
+      const lunch = new Date(at("2026-10-01", "13:30"));
+      expect((await load(b, lunch))!.profile!.openNow).toEqual({ open: false });
+    } finally {
+      await dropTestBusiness(b);
+    }
+  });
+
+  it("nästa lediga tid: första tiden framåt för någon tjänst och personal", async () => {
+    // 09:00 med 60 min framförhållning → 10:00 samma dag.
+    const next = (await load(biz))!.profile!.nextAvailable;
+    expect(next).not.toBeNull();
+    expect(next!.start).toBe(new Date(at("2026-10-01", "10:00")).toISOString());
+    expect(Object.values(biz.services)).toContain(next!.serviceId);
+
+    // Lördag 18:30: inget kvar idag, söndag stängt → måndag 10:00.
+    const late = new Date(at("2026-10-03", "18:30"));
+    expect((await load(biz, late))!.profile!.nextAvailable!.start).toBe(
+      new Date(at("2026-10-05", "10:00")).toISOString(),
+    );
+  });
+
+  it("nästa lediga tid är null utan tjänster eller för ett fruset företag", async () => {
+    expect((await load(noServices))!.profile!.nextAvailable).toBeNull();
+    const f = (await load(frozen))!.profile!;
+    expect(f.nextAvailable).toBeNull();
+    expect(f.gallery).toEqual([]);
   });
 });

@@ -12,6 +12,7 @@ import "server-only";
 import { z } from "zod";
 
 import { phoneInputSchema } from "@/lib/format/schemas";
+import { serviceDescriptionSchema } from "@/lib/validation/profile";
 import {
   businessNameSchema,
   comunaSchema,
@@ -86,6 +87,8 @@ const bufferAfterMinSchema = z.coerce
 
 export const ajustesServiceInputSchema = serviceInputSchema.extend({
   bufferAfterMin: bufferAfterMinSchema,
+  // WP-41: frivillig. Utelämnad = oförändrad vid uppdatering, "" = rensa.
+  description: serviceDescriptionSchema.optional(),
 });
 export type AjustesServiceInput = z.infer<typeof ajustesServiceInputSchema>;
 
