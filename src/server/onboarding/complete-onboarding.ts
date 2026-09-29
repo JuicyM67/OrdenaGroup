@@ -9,6 +9,7 @@ import "server-only";
  * `userId` kommer från den verifierade sessionen i anroparens closure (page.tsx), aldrig
  * från klienten (samma mönster som /[slug]/actions.ts).
  */
+import { marketConfig } from "@/config/market";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
@@ -123,14 +124,18 @@ export async function completeOnboarding(
 
   try {
     return await withOwnerTx(userId, async (q) => {
+      // Tidszonen kommer från installationens marknadskonfig (D-025), inte
+      // från klienten: `create_business()` tar emot den som en sjätte,
+      // servergivna parameter (20260929100000_businesses_timezone_markets.sql).
       const businessRow = await q.query<{ id: string }>(
-        "select public.create_business($1, $2, $3, $4, $5) as id",
+        "select public.create_business($1, $2, $3, $4, $5, $6) as id",
         [
           input.business.name,
           input.business.slug,
           input.business.comuna,
           input.business.category,
           input.business.phone,
+          marketConfig.timeZone,
         ],
       );
       const businessId = businessRow.rows[0]!.id;

@@ -7,7 +7,7 @@ import {
   localDayRange,
   minutesBetween,
   parseInstant,
-  SANTIAGO,
+  APP_TZ,
   toLocalDate,
 } from "@/lib/format/dates";
 
@@ -24,9 +24,9 @@ export function parseInstantOrThrow(instant: string): Date {
   return result.value;
 }
 
-/** "Viernes 2 de octubre" i America/Santiago. */
+/** "Viernes 2 de octubre" i appens tidszon. */
 export function todayLabel(now: Date): string {
-  return formatDate(now, SANTIAGO, "weekdayDayMonthLong");
+  return formatDate(now, APP_TZ, "weekdayDayMonthLong");
 }
 
 const OPEN_STATUSES = new Set(["confirmed", "pending_payment"]);
@@ -55,8 +55,8 @@ export function nextBooking(
   now: Date,
 ): HoyBooking | undefined {
   const { start: dayStart, end: dayEnd } = localDayRange(
-    toLocalDate(now, SANTIAGO),
-    SANTIAGO,
+    toLocalDate(now, APP_TZ),
+    APP_TZ,
   );
   return bookings
     .filter((b) => isEligibleToday(b, now, dayStart, dayEnd))
@@ -77,8 +77,8 @@ export function restOfDay(
   next: HoyBooking | undefined,
 ): HoyBooking[] {
   const { start: dayStart, end: dayEnd } = localDayRange(
-    toLocalDate(now, SANTIAGO),
-    SANTIAGO,
+    toLocalDate(now, APP_TZ),
+    APP_TZ,
   );
   return bookings
     .filter((b) => b.id !== next?.id)

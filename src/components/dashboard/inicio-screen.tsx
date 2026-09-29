@@ -9,8 +9,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { UserPill } from "@/components/ui/user-pill";
 import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { inicio, nav } from "@/i18n";
-import { formatClp } from "@/lib/format/clp";
-import { SANTIAGO, toLocalDate } from "@/lib/format/dates";
+import { formatMoney } from "@/lib/format/money";
+import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { initialsOf } from "@/lib/format/initials";
 import { formatPercent } from "@/lib/format/percent";
 
@@ -106,7 +106,7 @@ export function InicioScreen({
             />
             <StatTile
               variant="amount"
-              value={formatClp(data.stats.revenueWeekClp)}
+              value={formatMoney(data.stats.revenueWeekClp)}
               meta={inicio.stats.ingresosSemana}
               series={data.stats.revenueSeries}
             />
@@ -125,7 +125,7 @@ export function InicioScreen({
         <aside className="flex w-90 shrink-0 flex-col gap-4 overflow-y-auto">
           <CalendarCard
             month={data.calendar.month}
-            today={toLocalDate(now, SANTIAGO)}
+            today={toLocalDate(now, APP_TZ)}
             markedDates={data.calendar.markedDates}
           />
           <FlashCard activeFlash={data.activeFlash} href={FLASH_HREF} />

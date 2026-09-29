@@ -5,11 +5,11 @@
  * Reserva").
  */
 import { reserva } from "@/i18n";
-import { formatClp } from "@/lib/format/clp";
+import { formatMoney } from "@/lib/format/money";
 import {
   formatLocalDate,
   formatTime,
-  SANTIAGO,
+  APP_TZ,
   type LocalDate,
 } from "@/lib/format/dates";
 
@@ -46,7 +46,7 @@ export function summaryText(
 
   const slot = day?.slots.find((s) => s.id === selection.slotId);
   if (!slot) return "";
-  const hora = formatTime(new Date(slot.start), SANTIAGO);
+  const hora = formatTime(new Date(slot.start), APP_TZ);
   const staff = data.staff.find((p) => p.id === selection.staffId);
   if (!staff) {
     return reserva.resumen.sinProfesional({
@@ -74,10 +74,10 @@ export function barPrice(slot: {
   originalPriceClp?: number;
 }): BarPrice {
   return {
-    total: formatClp(slot.priceClp),
+    total: formatMoney(slot.priceClp),
     old:
       slot.originalPriceClp !== undefined
-        ? formatClp(slot.originalPriceClp)
+        ? formatMoney(slot.originalPriceClp)
         : null,
   };
 }

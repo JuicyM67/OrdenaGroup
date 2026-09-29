@@ -17,8 +17,8 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { TextField } from "@/components/ui/text-field";
 import { ajustes, servicios } from "@/i18n";
-import { formatClp } from "@/lib/format/clp";
 import { formatDuration } from "@/lib/format/dates";
+import { formatMoney, moneyInputValue, parseMoney } from "@/lib/format/money";
 
 import { ajustesErrorText } from "./error-text";
 import type { AjustesActions, AjustesService } from "./types";
@@ -42,9 +42,15 @@ function toRowForm(s: AjustesService): RowForm {
   return {
     name: s.name,
     durationMin: String(s.durationMin),
-    priceClp: String(s.priceClp),
+    priceClp: moneyInputValue(s.priceClp),
     bufferAfterMin: String(s.bufferAfterMin),
   };
+}
+
+/** Redan validerat i `validateRow`; minsta enheten (CLP: pesos, SEK: öre). */
+function priceFromForm(raw: string): number {
+  const r = parseMoney(raw);
+  return r.ok ? r.value : 0;
 }
 
 function validateRow(form: RowForm): { errors: RowErrors; payload?: unknown } {
@@ -195,7 +201,7 @@ export function ServicesSection({
               id: result.id,
               name: form.name.trim(),
               durationMin: Number(form.durationMin),
-              priceClp: Number(String(form.priceClp).replace(/[^\d]/g, "")),
+              priceClp: priceFromForm(form.priceClp),
               bufferAfterMin: Number(form.bufferAfterMin),
               active: true,
             },
@@ -214,9 +220,7 @@ export function ServicesSection({
                     ...s,
                     name: form.name.trim(),
                     durationMin: Number(form.durationMin),
-                    priceClp: Number(
-                      String(form.priceClp).replace(/[^\d]/g, ""),
-                    ),
+                    priceClp: priceFromForm(form.priceClp),
                     bufferAfterMin: Number(form.bufferAfterMin),
                   }
                 : s,
@@ -280,7 +284,7 @@ export function ServicesSection({
               <div className="min-w-0">
                 <p className="text-15 font-bold text-ink">{s.name}</p>
                 <p className="text-13 text-muted">
-                  {formatDuration(s.durationMin)} · {formatClp(s.priceClp)}
+                  {formatDuration(s.durationMin)} · {formatMoney(s.priceClp)}
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">

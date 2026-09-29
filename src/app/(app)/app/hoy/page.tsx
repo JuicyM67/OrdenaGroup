@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 
 import { HoyScreen } from "@/components/mobile/hoy-screen";
 import { hoy } from "@/i18n/es-CL";
-import { SANTIAGO, toLocalDate } from "@/lib/format/dates";
+import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
@@ -36,7 +36,7 @@ export default async function HoyPage() {
   if (!business) redirect("/app/onboarding");
 
   const now = new Date();
-  const today = toLocalDate(now, SANTIAGO);
+  const today = toLocalDate(now, APP_TZ);
   const { name: ownerName } = ownerNameParts(user.email);
   const data = await loadOwnerHoy(user.id, business.id, today, now, ownerName);
 

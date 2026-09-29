@@ -15,11 +15,11 @@ import "server-only";
 import { z } from "zod";
 
 import { clientes } from "@/i18n";
-import { fromLocal, SANTIAGO } from "@/lib/format/dates";
+import { APP_TZ, fromLocal } from "@/lib/format/dates";
 import {
-  chileanMobileInputSchema,
   localDateSchema,
   localTimeSchema,
+  mobileInputSchema,
 } from "@/lib/format/schemas";
 import { createBooking } from "@/server/bookings/create";
 import { moveBooking } from "@/server/bookings/move";
@@ -89,7 +89,7 @@ const manualBookingInputSchema = z.strictObject({
     .trim()
     .min(1, { error: "name.empty" })
     .max(120, { error: "name.too_long" }),
-  phone: chileanMobileInputSchema,
+  phone: mobileInputSchema,
   email: z.union([
     z.literal(""),
     z.email({ error: "email.invalid" }).max(254, { error: "email.invalid" }),
@@ -132,7 +132,7 @@ export async function createManualBooking(
   const p = manualBookingInputSchema.safeParse(input);
   if (!p.success) return err("invalid_input");
 
-  const start = fromLocal(p.data.date, p.data.time, SANTIAGO);
+  const start = fromLocal(p.data.date, p.data.time, APP_TZ);
 
   const result = await createBooking(
     {
@@ -213,7 +213,7 @@ export async function moveOwnerBooking(
   const p = moveOwnerInputSchema.safeParse(input);
   if (!p.success) return err("invalid_input");
 
-  const newStart = fromLocal(p.data.date, p.data.time, SANTIAGO);
+  const newStart = fromLocal(p.data.date, p.data.time, APP_TZ);
   const result = await moveBooking(
     { bookingId: p.data.bookingId, newStart: newStart.toISOString() },
     { businessId, actor: { kind: "owner", userId }, now },

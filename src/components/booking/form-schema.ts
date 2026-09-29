@@ -14,7 +14,7 @@ import "server-only";
 import { z } from "zod";
 
 import { reserva } from "@/i18n";
-import { chileanMobileInputSchema } from "@/lib/format/schemas";
+import { mobileInputSchema } from "@/lib/format/schemas";
 
 export const customerFormSchema = z.object({
   name: z
@@ -22,7 +22,7 @@ export const customerFormSchema = z.object({
     .trim()
     .min(1, { error: "name.empty" })
     .max(120, { error: "name.too_long" }),
-  phone: chileanMobileInputSchema,
+  phone: mobileInputSchema,
   email: z.union([
     z.literal(""),
     z.email({ error: "email.invalid" }).max(254, { error: "email.invalid" }),

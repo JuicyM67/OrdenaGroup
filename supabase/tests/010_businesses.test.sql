@@ -5,7 +5,7 @@
 -- "inte tillämpligt" (en business kan inte peka på en annan business).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(34);
 \ir _helpers.psql
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
@@ -129,6 +129,35 @@ select is(
        and mb.role = 'owner')::int,
   1,
   'create_business() skapade ett owner-medlemskap för uppringaren'
+);
+select is(
+  (select timezone from public.businesses where slug = 'nuevo-negocio-test'),
+  'America/Santiago',
+  'create_business() utan sjätte parameter behåller standard-timezone America/Santiago'
+);
+
+-- D-025/D-026 (20260929100000_businesses_timezone_markets.sql): servern
+-- skickar marketConfig.timeZone som sjätte parameter (aldrig klienten,
+-- se complete-onboarding.ts) — bevisar bara att parametern sätts och att
+-- CHECK-constraint fortfarande skyddar mot godtyckliga zoner.
+select set_config('request.jwt.claims', json_build_object('sub', '55555555-5555-5555-5555-555555555555', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select lives_ok(
+  $$ select public.create_business('Bokning SE', 'bokning-se-test', 'Providencia', 'barberia', null, 'Europe/Stockholm') $$,
+  'create_business() accepterar timezone-parametern för Sveriges installation'
+);
+-- (2-argsformen, samma mönster som övriga throws_ok-anrop i den här filen:
+-- pgTAPs 3-argsvariant tolkar det tredje argumentet som förväntat SQLERRM,
+-- inte som en fri beskrivning, när det andra argumentet är en 5-tecken kod.)
+select throws_ok(
+  $$ select public.create_business('Bad TZ', 'bad-tz-test', 'Providencia', 'barberia', null, 'America/New_York') $$,
+  '23514'
+);
+reset role;
+select is(
+  (select timezone from public.businesses where slug = 'bokning-se-test'),
+  'Europe/Stockholm',
+  'create_business() satte timezone från den sjätte parametern'
 );
 
 -- anon kan inte anropa create_business().

@@ -1,6 +1,6 @@
 // Se DESIGN.md §7 "AgendaRow" och docs/tasks/plans/WP-11.md §4 steg 5. En rad i "Agenda de
-// hoy". `<li>` (listan i agenda-today.tsx är en `<ul>`). Tiden visas alltid i Santiago,
-// oavsett processens/webbläsarens tidszon (`formatTime`/`SANTIAGO`, inte `booking.start`
+// hoy". `<li>` (listan i agenda-today.tsx är en `<ul>`). Tiden visas alltid i appens tidszon,
+// oavsett processens/webbläsarens tidszon (`formatTime`/`APP_TZ`, inte `booking.start`
 // tolkad med lokala Date-metoder).
 import { Ellipsis } from "lucide-react";
 
@@ -9,7 +9,7 @@ import { Chip } from "@/components/ui/chip";
 import { strokeCard } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
 import { nav, inicio } from "@/i18n";
-import { SANTIAGO, formatTime } from "@/lib/format/dates";
+import { APP_TZ, formatTime } from "@/lib/format/dates";
 import { initialsOf } from "@/lib/format/initials";
 
 import { mustParseInstant, statusChip } from "./inicio-view";
@@ -25,7 +25,7 @@ export function AgendaRow({ booking, onMoreOptions }: AgendaRowProps) {
   return (
     <li className="flex h-15 items-center gap-4 border-t border-line-strong">
       <span className="w-13 shrink-0 text-15 font-bold">
-        {formatTime(mustParseInstant(booking.start, "AgendaRow"), SANTIAGO)}
+        {formatTime(mustParseInstant(booking.start, "AgendaRow"), APP_TZ)}
       </span>
       <Avatar
         shape="square"

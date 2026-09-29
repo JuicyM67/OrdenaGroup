@@ -14,7 +14,7 @@ import {
   type LocalTime,
   type TimeZone,
 } from "@/lib/format/dates";
-import { formatClp } from "@/lib/format/clp";
+import { formatMoney } from "@/lib/format/money";
 import { maskPhone } from "@/lib/format/phone";
 import { agenda, calendario, comun, estados } from "@/i18n";
 
@@ -126,12 +126,12 @@ export function popoverModel(
 ): PopoverModel {
   const start = toInstant(booking.start);
   const end = toInstant(booking.end);
-  const price = formatClp(booking.priceClp);
+  const price = formatMoney(booking.priceClp);
   const payment =
     booking.depositPaidClp != null && booking.depositPaidClp > 0
       ? agenda.popover.pagoLinea({
           precio: price,
-          monto: formatClp(booking.depositPaidClp),
+          monto: formatMoney(booking.depositPaidClp),
         })
       : price;
   return {

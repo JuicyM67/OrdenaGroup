@@ -7,7 +7,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
-import { WEEKDAY_LONG } from "@/lib/format/calendar-es-CL";
+import { WEEKDAY_LONG } from "@/lib/format/calendar";
 import { horarios, onboarding } from "@/i18n";
 
 import { validateTimeRange } from "./client-validation";

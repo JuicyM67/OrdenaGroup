@@ -6,7 +6,7 @@ import type {
   InicioData,
   TodayBooking,
 } from "@/components/dashboard/types";
-import { localDayRange, SANTIAGO, type LocalDate } from "@/lib/format/dates";
+import { localDayRange, APP_TZ, type LocalDate } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
@@ -60,7 +60,7 @@ export async function loadOwnerInicioIn(
   );
   const biz = bizRes.rows[0] ?? { name: "", comuna: "" };
 
-  const { start, end } = localDayRange(today, SANTIAGO);
+  const { start, end } = localDayRange(today, APP_TZ);
   const bookingsRes = await q.query<BookingRow>(
     `select bk.id, c.name as client_name,
             sv.name as service_name, st.name as staff_name, st.color as staff_color,

@@ -3,7 +3,7 @@ import { Scissors } from "lucide-react";
 
 import { cn } from "@/components/ui/cn";
 import { strokeCard } from "@/components/ui/icons";
-import { formatClp } from "@/lib/format/clp";
+import { formatMoney } from "@/lib/format/money";
 import { formatDuration } from "@/lib/format/dates";
 
 import type { BookingService } from "./types";
@@ -53,7 +53,7 @@ export function ServiceCard({
         </span>
       </span>
       <span className="text-15 font-bold text-ink">
-        {formatClp(service.priceClp)}
+        {formatMoney(service.priceClp)}
       </span>
     </button>
   );

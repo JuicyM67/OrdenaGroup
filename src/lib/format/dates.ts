@@ -7,13 +7,9 @@
  * Regler: rena funktioner, klockan injiceras av anroparen, bara `getUTC*`
  * och `Intl.DateTimeFormat` med explicit `timeZone` (inga lokala Date-metoder).
  */
-import {
-  MONTH_LONG,
-  MONTH_SHORT,
-  WEEKDAY_LONG,
-  WEEKDAY_MIN,
-  WEEKDAY_SHORT,
-} from "./calendar-es-CL";
+import { marketConfig } from "@/config/market";
+
+import { APP_LOCALE, calendarNames, type CalendarLocale } from "./calendar";
 import { err, ok, type ParseResult } from "./result";
 
 export type TimeZone = string & { readonly __brand: "TimeZone" };
@@ -28,7 +24,18 @@ export type LocalTime = string & { readonly __brand: "LocalTime" };
 export type IsoWeekday = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 export type Disambiguation = "compatible" | "earlier" | "later";
 
+/** Chiles tidszon. För tester/fixtures; logik använder `APP_TZ`. */
 export const SANTIAGO = "America/Santiago" as TimeZone;
+/** Sveriges tidszon. För tester/fixtures; logik använder `APP_TZ`. */
+export const STOCKHOLM = "Europe/Stockholm" as TimeZone;
+
+/**
+ * Installationens tidszon (`marketConfig.timeZone`, D-025). Används där
+ * företagets egen `businesses.timezone` inte finns till hands.
+ */
+export const APP_TZ = marketConfig.timeZone as TimeZone;
+
+export { APP_LOCALE, type CalendarLocale };
 
 const MINUTE_MS = 60_000;
 const DAY_MS = 86_400_000;
@@ -411,7 +418,7 @@ export function localDayRange(
   };
 }
 
-/** 23, 24 eller 25 i Santiago. */
+/** 23, 24 eller 25 dagar med sommartidsbyte (Santiago, Stockholm). */
 export function localDayLengthHours(date: LocalDate, tz: TimeZone): number {
   const { start, end } = localDayRange(date, tz);
   return (end.getTime() - start.getTime()) / 3_600_000;
@@ -478,7 +485,7 @@ export function minutesBetween(a: Date, b: Date): number {
 }
 
 // ---------------------------------------------------------------------------
-// Visning (es-CL, 24 h, egna namntabeller, ingen ICU-text)
+// Visning (es-CL/sv-SE, 24 h, egna namntabeller, ingen ICU-text)
 // ---------------------------------------------------------------------------
 
 export type DatePreset =
@@ -505,24 +512,34 @@ function pick(table: readonly string[], index: number): string {
   return v;
 }
 
-export function formatLocalDate(date: LocalDate, preset: DatePreset): string {
+/** "2 de octubre" (es-CL) / "2 oktober" (sv-SE). */
+function dayMonth(day: number, monthLong: string, locale: CalendarLocale) {
+  return locale === "es-CL" ? `${day} de ${monthLong}` : `${day} ${monthLong}`;
+}
+
+export function formatLocalDate(
+  date: LocalDate,
+  preset: DatePreset,
+  locale: CalendarLocale = APP_LOCALE,
+): string {
   const [year, month, day] = localDateParts(date, "formatLocalDate");
+  const names = calendarNames(locale);
   const wd = isoWeekdayOf(date) - 1;
-  const wShort = pick(WEEKDAY_SHORT, wd);
-  const wLong = pick(WEEKDAY_LONG, wd);
-  const mShort = pick(MONTH_SHORT, month - 1);
-  const mLong = pick(MONTH_LONG, month - 1);
+  const wShort = pick(names.WEEKDAY_SHORT, wd);
+  const wLong = pick(names.WEEKDAY_LONG, wd);
+  const mShort = pick(names.MONTH_SHORT, month - 1);
+  const mLong = pick(names.MONTH_LONG, month - 1);
   switch (preset) {
     case "weekdayDayMonthShort":
       return `${wShort} ${day} ${mShort}`;
     case "weekdayDayMonthLong":
-      return `${wLong} ${day} de ${mLong}`;
+      return `${wLong} ${dayMonth(day, mLong, locale)}`;
     case "weekdayDayShort":
       return `${wShort} ${day}`;
     case "weekdayDayLong":
       return `${wLong} ${day}`;
     case "dayMonthLong":
-      return `${day} de ${mLong}`;
+      return dayMonth(day, mLong, locale);
     case "monthYear":
       return `${capitalize(mLong)} ${year}`;
     case "month":
@@ -530,13 +547,13 @@ export function formatLocalDate(date: LocalDate, preset: DatePreset): string {
     case "weekdayShort":
       return wShort;
     case "weekdayMin":
-      return pick(WEEKDAY_MIN, wd);
+      return pick(names.WEEKDAY_MIN, wd);
     case "weekdayShortLower":
       return wShort.toLowerCase();
     case "weekdayLongLower":
       return wLong.toLowerCase();
     case "weekdayDayMonthLongLower":
-      return `${wLong.toLowerCase()} ${day} de ${mLong}`;
+      return `${wLong.toLowerCase()} ${dayMonth(day, mLong, locale)}`;
   }
 }
 
@@ -544,8 +561,9 @@ export function formatDate(
   instant: Date,
   tz: TimeZone,
   preset: DatePreset,
+  locale: CalendarLocale = APP_LOCALE,
 ): string {
-  return formatLocalDate(toLocalDate(instant, tz), preset);
+  return formatLocalDate(toLocalDate(instant, tz), preset, locale);
 }
 
 const EN_DASH = "–";
@@ -560,11 +578,16 @@ function assertIsoWeekday(v: number, fn: string): void {
  * "Lun–Sáb" (öppettider i Reserva, en-dash utan mellanslag). Samma dag → "Mié".
  * Omlott över veckoslutet ("Sáb–Lun") är tillåtet.
  */
-export function formatWeekdayRange(from: IsoWeekday, to: IsoWeekday): string {
+export function formatWeekdayRange(
+  from: IsoWeekday,
+  to: IsoWeekday,
+  locale: CalendarLocale = APP_LOCALE,
+): string {
   assertIsoWeekday(from, "formatWeekdayRange");
   assertIsoWeekday(to, "formatWeekdayRange");
-  const a = pick(WEEKDAY_SHORT, from - 1);
-  return from === to ? a : `${a}${EN_DASH}${pick(WEEKDAY_SHORT, to - 1)}`;
+  const short = calendarNames(locale).WEEKDAY_SHORT;
+  const a = pick(short, from - 1);
+  return from === to ? a : `${a}${EN_DASH}${pick(short, to - 1)}`;
 }
 
 /** "15:00", "09:05", "00:00" (24 h). */

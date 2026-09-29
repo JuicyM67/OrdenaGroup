@@ -2,7 +2,7 @@
 // Ingen React, inget `new Date()` här — klockan tas alltid emot som parameter.
 import { estados, inicio, nav } from "@/i18n";
 import {
-  SANTIAGO,
+  APP_TZ,
   formatDate,
   localDayRange,
   parseInstant,
@@ -20,9 +20,9 @@ export function mustParseInstant(iso: string, fn: string): Date {
   return r.value;
 }
 
-/** "Viernes 2 de octubre" (Santiago, oavsett webbläsarens/processens tidszon). */
+/** "Viernes 2 de octubre" (appens tidszon, oavsett webbläsarens/processens tidszon). */
 export function todayLabel(now: Date): string {
-  return formatDate(now, SANTIAGO, "weekdayDayMonthLong");
+  return formatDate(now, APP_TZ, "weekdayDayMonthLong");
 }
 
 /** Visas aldrig i "Agenda de hoy", oavsett tid: cancelled/no_show hände inte (blev av). */
@@ -41,8 +41,8 @@ export function upcomingToday(
   bookings: readonly TodayBooking[],
   now: Date,
 ): TodayBooking[] {
-  const today = toLocalDate(now, SANTIAGO);
-  const { start: dayStart, end: dayEnd } = localDayRange(today, SANTIAGO);
+  const today = toLocalDate(now, APP_TZ);
+  const { start: dayStart, end: dayEnd } = localDayRange(today, APP_TZ);
   const nowMs = now.getTime();
   const dayStartMs = dayStart.getTime();
   const dayEndMs = dayEnd.getTime();

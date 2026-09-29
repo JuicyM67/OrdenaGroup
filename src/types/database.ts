@@ -638,6 +638,7 @@ export type Database = {
           name: string;
           phone?: string;
           slug: string;
+          timezone?: string;
         };
         Returns: string;
       };

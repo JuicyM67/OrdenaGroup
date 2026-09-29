@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { strokeArrow, strokeCard } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
 import { hoy, inicio } from "@/i18n";
-import { SANTIAGO, formatDate, formatTime } from "@/lib/format/dates";
+import { APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
 
 import { mustParseInstant } from "./inicio-view";
 import type { InicioData } from "./types";
@@ -87,8 +87,8 @@ export function FlashCard({ activeFlash, href }: FlashCardProps) {
         </div>
         <div className="mt-0.5 text-16 font-bold">
           {inicio.flashCard.fechaHoraDescuento({
-            fecha: formatDate(start, SANTIAGO, "weekdayDayShort"),
-            hora: formatTime(start, SANTIAGO),
+            fecha: formatDate(start, APP_TZ, "weekdayDayShort"),
+            hora: formatTime(start, APP_TZ),
             porcentaje: activeFlash.discountPct,
           })}
         </div>

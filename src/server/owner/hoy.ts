@@ -9,7 +9,7 @@ import type {
 import {
   isoWeekdayOf,
   localDayRange,
-  SANTIAGO,
+  APP_TZ,
   type LocalDate,
 } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
@@ -80,7 +80,7 @@ export async function loadOwnerHoyIn(
   );
   const closedToday = closedRes.rows.length === 0;
 
-  const { start, end } = localDayRange(today, SANTIAGO);
+  const { start, end } = localDayRange(today, APP_TZ);
   const bookingsRes = await q.query<BookingRow>(
     `select bk.id, c.name as client_name, c.visits_count,
             sv.name as service_name, st.name as staff_name, st.color as staff_color,

@@ -15,7 +15,7 @@ import {
   addLocalDays,
   localDayRange,
   startOfLocalWeek,
-  SANTIAGO,
+  APP_TZ,
   type LocalDate,
   type LocalTime,
 } from "@/lib/format/dates";
@@ -77,8 +77,8 @@ export async function loadOwnerAgendaWeekIn(
 ): Promise<AgendaData> {
   const weekStart = startOfLocalWeek(focus);
   const weekEnd = addLocalDays(weekStart, 6);
-  const rangeStart = localDayRange(weekStart, SANTIAGO).start;
-  const rangeEnd = localDayRange(weekEnd, SANTIAGO).end;
+  const rangeStart = localDayRange(weekStart, APP_TZ).start;
+  const rangeEnd = localDayRange(weekEnd, APP_TZ).end;
 
   const staffRes = await q.query<StaffRow>(
     `select id, name, color from public.staff
@@ -186,7 +186,7 @@ export async function loadOwnerAgendaWeekIn(
 
   return {
     now: now.toISOString(),
-    timezone: SANTIAGO,
+    timezone: APP_TZ,
     business: { hours },
     staff,
     bookings,
