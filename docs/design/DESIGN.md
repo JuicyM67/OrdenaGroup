@@ -358,6 +358,26 @@ Referensen (`Hoy.dc.html`) vinner (D-012): Llegó är sidans primärhandling, "C
 är en pastellruta bland tre likvärdiga snabbåtgärder och den aktiva fliken är
 navigationstillstånd, inte en handling — men färgen är densamma. Undantaget gäller bara Hoy.
 
+### Byggt i WP-16
+
+Kundens länk `/r/[token]` (mobil, F7). Härledd — ingen ritad referens (samma läge som
+datasteget/bekräftelsen i WP-13): rubrik + `Card radius="tile"` för bokningen, samma
+typografiskalor och komponenter som Reserva (Button, Card, TextLink). Ingen egen
+`.dc.html`, kortet jämförs mot Reserva-bekräftelsens formspråk (qa-granskning).
+
+| Komponent | Fil | API |
+|---|---|---|
+| ManageScreen | `src/components/booking/manage-screen.tsx` | `booking` (`ManagedBooking`), `now` (instant, injicerad), `onCancel` — **härledd, ingen referens** |
+| CancelDialog | `src/components/booking/cancel-dialog.tsx` | `open`, `onOpenChange`, `onConfirm`; Radix Dialog, samma mönster som `agenda/move-dialog.tsx`s bekräfta-steg (`rounded-panel bg-surface p-6 shadow-popover`) |
+| Vy-modell | `src/components/booking/manage-view.ts` | `manageState` (cancelled/past/locked/cancellable), `manageFields`, `mustParseInstant`; re-exporterar `ManagedBooking` (typ) åt `manage-screen.tsx` — filen saknar `"use client"`, så den är den godkända indirektionspunkten förbi `boundaries.test.ts` (samma mönster som `booking/types.ts`, WP-13 item 11) |
+
+**D-030 (samma PR):** e-postfältet i `CustomerForm` (`clienteForm.emailLabel`) är
+obligatoriskt i CL (`required` + `aria-required`, `validateEmailFor` i
+`client-validation.ts`), frivilligt i SE — `manual-booking-dialog.tsx` (ägarens
+manuella bokning) är oförändrad. **Känd brist:** `es-CL.ts`s `clienteForm.emailLabel`
+("Correo (opcional)") och `emailAyuda` är inte uppdaterade för CL:s nya obligatoriska
+fält (copywriter-es-cl äger `src/i18n/`) — flaggat i PR:en, inte löst här.
+
 ## 8. Rörelse
 
 - Övergångar 150–200 ms `ease-out` på färg och bakgrund. **Animera aldrig storlek eller position på klickytor** (hover gör att tryck missar).

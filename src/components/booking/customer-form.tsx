@@ -9,12 +9,13 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
+import { market } from "@/config/brand";
 import { comun, reserva } from "@/i18n";
 
 import {
   EMAIL_MAX,
   NAME_MAX,
-  validateEmail,
+  validateEmailFor,
   validateName,
   validatePhone,
 } from "./client-validation";
@@ -141,7 +142,7 @@ export function CustomerForm({
 
     const nameResult = validateName(contact.name);
     const phoneResult = validatePhone(contact.phone);
-    const emailResult = validateEmail(contact.email);
+    const emailResult = validateEmailFor(market, contact.email);
 
     const next: FieldErrors = {};
     if (!nameResult.ok) {
@@ -301,6 +302,12 @@ export function CustomerForm({
           type="email"
           autoComplete="email"
           maxLength={EMAIL_MAX}
+          // D-030: obligatorisk i CL (enda kanalen tills WhatsApp finns),
+          // frivillig i SE. `noValidate` på formuläret tystar webbläsarens
+          // egen bubbla — `aria-required` räcker för att märka fältet, och
+          // `validateEmailFor`/felkoden `email.invalid` är den riktiga
+          // kontrollen vid submit.
+          required={market === "CL"}
           value={contact.email}
           onChange={(e) => {
             onContactChange({ email: e.target.value });

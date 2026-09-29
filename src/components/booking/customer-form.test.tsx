@@ -122,6 +122,13 @@ describe("CustomerForm — samtycken", () => {
       screen.getByLabelText(reserva.clienteForm.telefonoLabel),
       "+56 9 1234 5678",
     );
+    // D-030: e-post obligatorisk i CL (installationens marknad i testmiljön,
+    // se `client-validation.test.ts`) — annars stannar fokus på e-postfältet
+    // i stället för villkorsrutan, som testet gäller.
+    await user.type(
+      screen.getByLabelText(reserva.clienteForm.emailLabel),
+      "ana@ejemplo.cl",
+    );
     await user.click(
       screen.getByRole("button", {
         name: reserva.antesDeConfirmar.ctaConfirmar,
