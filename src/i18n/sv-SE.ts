@@ -1515,11 +1515,7 @@ export const PLANES: readonly PlanTexto[] = [
   {
     id: "local",
     nombre: "Företag",
-    puntos: [
-      "Upp till 12 anställda",
-      "300 sms/månad",
-      "Prioriterad support",
-    ],
+    puntos: ["Upp till 12 anställda", "300 sms/månad", "Prioriterad support"],
     cta: "Välj Företag",
   },
 ];

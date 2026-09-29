@@ -1314,7 +1314,9 @@ export const SITIO_COMPARACION: SitioComparacion = {
       aspecto: "Recordatorios por WhatsApp",
       nosotros:
         "Por correo incluido; WhatsApp próximamente en los planes pagados",
-      valores: ["Incluidos, entre 50 y 200 confirmaciones al mes según el plan"],
+      valores: [
+        "Incluidos, entre 50 y 200 confirmaciones al mes según el plan",
+      ],
     },
   ],
 };

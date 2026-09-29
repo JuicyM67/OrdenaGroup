@@ -19,10 +19,7 @@ export type RouteId =
 
 /** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts` / `sv-SE.ts`). */
 export type IndustriaId =
-  | "barberias"
-  | "peluquerias"
-  | "estetica"
-  | "kinesiologia";
+  "barberias" | "peluquerias" | "estetica" | "kinesiologia";
 
 /** CL-sökvägen: exakt filsystemsrutten under `(marketing)/`, oavsett marknad. */
 const CL_ROUTES: Record<RouteId, string> = {
