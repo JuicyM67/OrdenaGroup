@@ -29,7 +29,17 @@ read -rsp "Supabase access token (sbp_…): " TOKEN; echo
 read -rsp "Databaslösenord för staging: " DBPASS; echo
 # Token i en temporär headerfil (0600), inte som curl-argument (syns annars i `ps`).
 HDR=$(mktemp); chmod 600 "$HDR"; trap 'rm -rf "$HDR" "$LINK"' EXIT
-printf 'Authorization: Bearer %s\n' "$TOKEN" > "$HDR"; unset TOKEN
+printf 'Authorization: Bearer %s\n' "$TOKEN" > "$HDR"
+
+# Sverige: lägg även hemligheterna i GitHub Environment `staging-se` (värdena går via
+# stdin till gh, aldrig som argument eller i loggen).
+if [ "$MARKET" = "se" ]; then
+  echo "0/4 Lägger hemligheter i GitHub (staging-se)…"
+  printf '%s' "$TOKEN" | gh secret set STAGING_SUPABASE_ACCESS_TOKEN --env staging-se
+  printf '%s' "$DBPASS" | gh secret set STAGING_SUPABASE_DB_PASSWORD --env staging-se
+  printf '%s' "$REF" | gh secret set STAGING_SUPABASE_PROJECT_REF --env staging-se
+fi
+unset TOKEN
 auth=(-H "@$HDR")
 
 echo "1/4 Hämtar publik nyckel…"
@@ -107,4 +117,9 @@ else
   echo "   Database → SSL Configuration → Download certificate) och kör skriptet igen."
 fi
 
-echo "Klart ($VERCEL_PROJECT). Värdena gäller från nästa deploy."
+if [ "$MARKET" = "se" ]; then
+  echo "Startar migrationer + seed mot Sveriges staging (GitHub Actions)…"
+  gh workflow run deploy-staging.yml -f reseed=true -f target=staging-se
+  echo "   Följ körningen: gh run watch  (eller GitHub → Actions)"
+fi
+echo "Klart ($VERCEL_PROJECT). Vercel-värdena gäller från nästa deploy."
