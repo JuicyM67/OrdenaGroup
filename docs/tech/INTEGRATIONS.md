@@ -60,4 +60,20 @@
 | `weekly-report` | måndag 08:00 CLT | resumen_semanal |
 | `retention` | dagligen | anonymiserar enligt policy |
 
-Anropas av Supabase `pg_cron` + `pg_net` mot `/api/cron/[job]` med `CRON_SECRET` (timing-safe jämförelse).
+**D-030 (2026-09-29, ersätter raden ovan för `outbox`):** ingen `pg_cron`/`pg_net`/Vault. `outbox`
+anropas i stället av `.github/workflows/outbox-cron.yml` (GitHub Actions, var 5:e minut) mot
+`/api/cron/outbox` med `CRON_SECRET` (timing-safe jämförelse) — se WP-16 steg 2. Bekräftelser går
+ändå ut inom 1 min via `kickOutbox` (körs direkt efter commit i samma request, oberoende av cron).
+Bara 24 h-påminnelsen finns i v1 (ingen 2 h), och den kan komma upp till ~15 min sent. De övriga
+jobben i tabellen ovan är oförändrade tills sina respektive WP:er (schemaläggare beslutas då).
+
+Övrigt oförändrat: `pg_cron`/`pg_net` mot `/api/cron/[job]` med `CRON_SECRET` (timing-safe
+jämförelse), tills vidare bara relevant för jobb som inte är `outbox`.
+
+**WP-16 steg 1 (db-engineer), schemaändring av `message_outbox`:** kolumnen `to_phone` finns inte —
+tabellen lagrar ingen adress alls (varken telefon eller e-post), bara `recipient_kind`
+(`customer`/`owner`); adressen slås upp av workern vid utskickstillfället (kundens/personalens
+kontaktuppgift via `booking_id`, ägarens e-post via `private.owner_emails()`, service_role-bara).
+`channel` har bara `'email'`/`'sms'` i den här fasen (`'whatsapp'` läggs till som eget enum-värde i
+en senare WP, se DATA_MODEL.md). `status` saknar `delivered`/`read` tills leveransstatus-webhooks
+byggs; har i stället `cancelled` (väntande påminnelser för en flyttad/avbokad bokning avbryts).
