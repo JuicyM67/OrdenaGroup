@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   turbopack: {
     root: import.meta.dirname,
+    // Språkfil per marknad, se src/i18n/index.ts.
+    resolveAlias: {
+      "i18n-locale":
+        process.env.NEXT_PUBLIC_MARKET === "SE"
+          ? "./src/i18n/sv-SE.app.ts"
+          : "./src/i18n/es-CL.ts",
+    },
   },
 };
 
