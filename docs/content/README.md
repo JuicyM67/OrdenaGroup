@@ -10,13 +10,17 @@ WP-15, WP-21, WP-24 y WP-25): `validacion`, `acceso`, `onboarding`,
 `ajustes` y `abono` en `es-CL.ts`. Categorías de servicios y preguntas del
 formulario de reserva se escriben en **WP-40** (D-031): `formulario` en
 `es-CL.ts` y las sugerencias por rubro en
-`src/i18n/presets/booking-questions.es-CL.ts`.
+`src/i18n/presets/booking-questions.es-CL.ts`. El perfil público del negocio
+(`/[slug]`) y Ajustes → "Perfil" (portada, logo, galería, sobre nosotros,
+Instagram) se escriben en **WP-41**: `perfil` en `es-CL.ts`, más los campos
+nuevos de descripción de servicio (`servicios.campos.descripcion*`) y de rol
+de profesional (`profesionales.campos.titulo*`).
 
 ## Dónde está cada cosa
 
 | Qué | Dónde |
 |---|---|
-| Todos los textos de la interfaz (Reserva, `r/[token]`, Inicio, Agenda, Hoy, onboarding, Clientes, Caja, Ajustes, abono, formulario de reserva) | `src/i18n/es-CL.ts` |
+| Todos los textos de la interfaz (Reserva, `r/[token]`, Inicio, Agenda, Hoy, onboarding, Clientes, Caja, Ajustes, abono, formulario de reserva, perfil público y Ajustes → Perfil) | `src/i18n/es-CL.ts` |
 | Sugerencias de preguntas por rubro (WP-40, D-031) | `src/i18n/presets/booking-questions.es-CL.ts` (espejo en sueco: `booking-questions.sv-SE.ts`) |
 | Tipos y punto de entrada (`import { reserva } from "@/i18n"`) | `src/i18n/index.ts` |
 | Utilidades de prueba compartidas (recorrer un área, tono, marca, fixtures) | `src/i18n/test-helpers.ts` |
@@ -45,11 +49,12 @@ solo recibe esos nombres ya formateados como parámetros de tipo `string`.
    `calendario`, `reserva`, `gestion`, `inicio`, `agenda`, `hoy`,
    `plantillasWhatsapp`, `whatsappSesion`, `email`, y desde WP-03b
    `validacion`, `acceso`, `onboarding`, `negocio`, `servicios`,
-   `profesionales`, `horarios`, `clientes`, `caja`, `ajustes`, `abono`, y
-   desde WP-40 `formulario`) — nunca sueltos en la raíz del archivo. Las
-   áreas de WP-03b y WP-40 se agregan siempre **al final** del archivo (ver
-   R7 del plan de WP-03b): es la única forma ya acordada de evitar
-   conflictos con otros paquetes que también tocan `es-CL.ts`. Excepción:
+   `profesionales`, `horarios`, `clientes`, `caja`, `ajustes`, `abono`,
+   desde WP-40 `formulario`, y desde WP-41 `perfil`) — nunca sueltos en la
+   raíz del archivo. Las áreas de WP-03b, WP-40 y WP-41 se agregan siempre
+   **al final** del archivo (ver R7 del plan de WP-03b): es la única forma
+   ya acordada de evitar conflictos con otros paquetes que también tocan
+   `es-CL.ts`. Excepción:
    `CAJA_METODOS_MANUALES` es una lista de códigos (`payment_method` sin
    `mercadopago`, D-022), no texto de producto, así que se exporta suelta
    junto a `caja` en vez de vivir dentro de un objeto `Trad` (que no admite

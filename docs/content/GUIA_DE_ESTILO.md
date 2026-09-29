@@ -43,6 +43,8 @@
 | Categoría del negocio (`businesses.category`) | **rubro** | "categoría" (esa palabra se reserva para `service_categories`, WP-40/D-031) |
 | Grupo de servicios que el dueño arma (Dam/Herr en el boceto, "Mujeres"/"Hombres" como ejemplo en `es-CL.ts`), visible como pestaña en la página de reservas | **categoría** | — (distinto del rubro del negocio, ver fila de arriba) |
 | Campo que el dueño agrega al formulario de reserva (`booking_questions`, WP-40) | **pregunta** | "campo" (se reserva para los campos fijos del formulario: nombre, celular, correo) |
+| Las personas que atienden, como título de sección en el perfil público y como pestaña mobile (`perfil`, WP-41) | **Equipo** (mismo texto que `onboarding.pasos.equipo`/`ajustes.secciones.equipo`) | "Personal", "Profesionales" (esas palabras quedan para otros contextos ya existentes, p. ej. `agenda.panel.profesionales`) |
+| Texto libre del negocio sobre sí mismo, en su perfil público (`businesses.about`, WP-41) | **Sobre nosotros** | "Acerca de", "Quiénes somos" |
 
 ## 3. Formato
 
