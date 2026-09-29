@@ -34,6 +34,13 @@ const DIM_ANIMATIONS = [
   "animate-step-dim-4",
 ] as const;
 
+const BADGE_ANIMATIONS = [
+  "animate-step-badge-1",
+  "animate-step-badge-2",
+  "animate-step-badge-3",
+  "animate-step-badge-4",
+] as const;
+
 const PASOS = [
   copy.sitio.inicio.flujo.pasos.servicio,
   copy.sitio.inicio.flujo.pasos.hora,
@@ -187,28 +194,27 @@ export function FlujoPhoneMockup({ className }: { className?: string }) {
   );
 }
 
-/** Lista numerada con una línea vertical que se va llenando (`animate-flujo-progress`,
- * tokens.css), en el mismo compás que `FlujoPhoneMockup`. Contenido real (no decorativo): los
- * cuatro pasos que ve el cliente, así que no lleva `aria-hidden`. */
+/** Pasos como tarjetas: la cifra va en un recuadro redondeado que se pone lime cuando el paso
+ * está activo (`animate-step-badge-*`), en el mismo compás que `FlujoPhoneMockup`. Contenido
+ * real (no decorativo): los cuatro pasos que ve el cliente, así que no lleva `aria-hidden`. */
 export function FlujoSteps({ className }: { className?: string }) {
   return (
-    <ol className={cn("relative flex flex-col gap-5", className)}>
-      <span
-        aria-hidden="true"
-        className="absolute top-3 bottom-3 left-3 w-0.5 -translate-x-1/2 bg-border"
-      >
-        <span className="block w-full animate-flujo-progress bg-ink" />
-      </span>
+    <ol className={cn("flex flex-col gap-2.5", className)}>
       {PASOS.map((paso, i) => (
         <li
           key={paso}
           className={cn(
-            "flex items-center gap-3 text-14 font-semibold text-ink",
+            "flex items-center gap-4 rounded-tile bg-surface py-2.5 pr-4 pl-2.5 text-16 font-semibold text-ink",
             DIM_ANIMATIONS[i],
           )}
         >
-          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-ink text-11 font-bold text-on-dark">
-            {i + 1}
+          <span
+            className={cn(
+              "flex size-10 shrink-0 items-center justify-center rounded-event bg-canvas font-display text-18 font-bold text-ink",
+              BADGE_ANIMATIONS[i],
+            )}
+          >
+            {String(i + 1).padStart(2, "0")}
           </span>
           {paso}
         </li>

@@ -115,7 +115,7 @@ export default function LandingPage() {
         <section id="para-quien" className="scroll-mt-24 py-10 sm:py-14">
           <SectionHeading
             title={copy.sitio.inicio.marquee.titulo}
-            className="mx-auto max-w-6xl px-4 sm:px-8"
+            className="mx-auto max-w-6xl items-center px-4 text-center sm:px-8"
           />
           <div className="mt-8">
             <RubrosMarquee />
