@@ -1523,5 +1523,6 @@ export const svSE = {
   SITIO_PRECIOS_TABLA,
   SITIO_PARA_INDUSTRIAS,
   SITIO_RUBROS_MARQUEE,
+  SITIO_COMPARACION,
   PLANES,
 } satisfies MarketingCopy;
