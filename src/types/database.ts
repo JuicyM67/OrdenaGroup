@@ -9,6 +9,176 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      booking_answers: {
+        Row: {
+          booking_id: string;
+          business_id: string;
+          created_at: string;
+          id: string;
+          kind_snapshot: Database["public"]["Enums"]["question_kind"];
+          label_snapshot: string;
+          question_id: string | null;
+          value: NonNullable<Json>;
+        };
+        Insert: {
+          booking_id: string;
+          business_id: string;
+          created_at?: string;
+          id?: string;
+          kind_snapshot: Database["public"]["Enums"]["question_kind"];
+          label_snapshot: string;
+          question_id?: string | null;
+          value: NonNullable<Json>;
+        };
+        Update: {
+          booking_id?: string;
+          business_id?: string;
+          created_at?: string;
+          id?: string;
+          kind_snapshot?: Database["public"]["Enums"]["question_kind"];
+          label_snapshot?: string;
+          question_id?: string | null;
+          value?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "booking_answers_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "booking_answers_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_answers_business_id_question_id_fkey";
+            columns: ["business_id", "question_id"];
+            isOneToOne: false;
+            referencedRelation: "booking_questions";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      booking_question_targets: {
+        Row: {
+          business_id: string;
+          category_id: string | null;
+          created_at: string;
+          id: string;
+          question_id: string;
+          service_id: string | null;
+        };
+        Insert: {
+          business_id: string;
+          category_id?: string | null;
+          created_at?: string;
+          id?: string;
+          question_id: string;
+          service_id?: string | null;
+        };
+        Update: {
+          business_id?: string;
+          category_id?: string | null;
+          created_at?: string;
+          id?: string;
+          question_id?: string;
+          service_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "booking_question_targets_business_id_category_id_fkey";
+            columns: ["business_id", "category_id"];
+            isOneToOne: false;
+            referencedRelation: "service_categories";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "booking_question_targets_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "booking_question_targets_business_id_question_id_fkey";
+            columns: ["business_id", "question_id"];
+            isOneToOne: false;
+            referencedRelation: "booking_questions";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "booking_question_targets_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      booking_questions: {
+        Row: {
+          active: boolean;
+          applies_to: Database["public"]["Enums"]["booking_question_applies_to"];
+          business_id: string;
+          created_at: string;
+          help: string | null;
+          id: string;
+          kind: Database["public"]["Enums"]["question_kind"];
+          label: string;
+          options: Json | null;
+          preset_key: string | null;
+          required: boolean;
+          save_to_customer: boolean;
+          sort: number;
+          updated_at: string;
+        };
+        Insert: {
+          active?: boolean;
+          applies_to?: Database["public"]["Enums"]["booking_question_applies_to"];
+          business_id: string;
+          created_at?: string;
+          help?: string | null;
+          id?: string;
+          kind: Database["public"]["Enums"]["question_kind"];
+          label: string;
+          options?: Json | null;
+          preset_key?: string | null;
+          required?: boolean;
+          save_to_customer?: boolean;
+          sort?: number;
+          updated_at?: string;
+        };
+        Update: {
+          active?: boolean;
+          applies_to?: Database["public"]["Enums"]["booking_question_applies_to"];
+          business_id?: string;
+          created_at?: string;
+          help?: string | null;
+          id?: string;
+          kind?: Database["public"]["Enums"]["question_kind"];
+          label?: string;
+          options?: Json | null;
+          preset_key?: string | null;
+          required?: boolean;
+          save_to_customer?: boolean;
+          sort?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "booking_questions_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       bookings: {
         Row: {
           blocked: unknown;
@@ -219,6 +389,55 @@ export type Database = {
           waitlist_mode?: Database["public"]["Enums"]["waitlist_mode"];
         };
         Relationships: [];
+      };
+      customer_answers: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          customer_id: string;
+          question_id: string;
+          updated_at: string;
+          value: NonNullable<Json>;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          customer_id: string;
+          question_id: string;
+          updated_at?: string;
+          value: NonNullable<Json>;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          customer_id?: string;
+          question_id?: string;
+          updated_at?: string;
+          value?: NonNullable<Json>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_answers_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_answers_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "customer_answers_business_id_question_id_fkey";
+            columns: ["business_id", "question_id"];
+            isOneToOne: false;
+            referencedRelation: "booking_questions";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
       };
       customers: {
         Row: {
@@ -462,12 +681,47 @@ export type Database = {
           },
         ];
       };
+      service_categories: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          sort: number;
+          updated_at: string;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          sort?: number;
+          updated_at?: string;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          sort?: number;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "service_categories_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       services: {
         Row: {
           active: boolean;
           buffer_after_min: number;
           business_id: string;
-          category: string | null;
+          category_id: string | null;
           created_at: string;
           deposit_kind: Database["public"]["Enums"]["deposit_kind"];
           deposit_value: number | null;
@@ -483,7 +737,7 @@ export type Database = {
           active?: boolean;
           buffer_after_min?: number;
           business_id: string;
-          category?: string | null;
+          category_id?: string | null;
           created_at?: string;
           deposit_kind?: Database["public"]["Enums"]["deposit_kind"];
           deposit_value?: number | null;
@@ -499,7 +753,7 @@ export type Database = {
           active?: boolean;
           buffer_after_min?: number;
           business_id?: string;
-          category?: string | null;
+          category_id?: string | null;
           created_at?: string;
           deposit_kind?: Database["public"]["Enums"]["deposit_kind"];
           deposit_value?: number | null;
@@ -518,6 +772,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "businesses";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "services_category_id_fkey";
+            columns: ["business_id", "category_id"];
+            isOneToOne: false;
+            referencedRelation: "service_categories";
+            referencedColumns: ["business_id", "id"];
           },
         ];
       };
@@ -719,6 +980,7 @@ export type Database = {
       };
     };
     Enums: {
+      booking_question_applies_to: "all" | "targets";
       booking_source: "web" | "manual" | "waitlist" | "flash";
       booking_status:
         "pending_payment" | "confirmed" | "completed" | "no_show" | "cancelled";
@@ -735,6 +997,14 @@ export type Database = {
       payment_kind: "deposit" | "balance" | "full";
       payment_method: "cash" | "card_terminal" | "transfer" | "mercadopago";
       payment_status: "pending" | "approved" | "rejected" | "refunded";
+      question_kind:
+        | "short_text"
+        | "long_text"
+        | "single_choice"
+        | "multi_choice"
+        | "number"
+        | "yes_no"
+        | "date";
       time_off_kind: "block" | "lunch" | "vacation" | "holiday";
       waitlist_mode: "sequential" | "broadcast";
     };
@@ -864,6 +1134,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      booking_question_applies_to: ["all", "targets"],
       booking_source: ["web", "manual", "waitlist", "flash"],
       booking_status: [
         "pending_payment",
@@ -891,6 +1162,15 @@ export const Constants = {
       payment_kind: ["deposit", "balance", "full"],
       payment_method: ["cash", "card_terminal", "transfer", "mercadopago"],
       payment_status: ["pending", "approved", "rejected", "refunded"],
+      question_kind: [
+        "short_text",
+        "long_text",
+        "single_choice",
+        "multi_choice",
+        "number",
+        "yes_no",
+        "date",
+      ],
       time_off_kind: ["block", "lunch", "vacation", "holiday"],
       waitlist_mode: ["sequential", "broadcast"],
     },
