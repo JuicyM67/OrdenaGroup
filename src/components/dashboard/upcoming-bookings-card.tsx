@@ -9,7 +9,12 @@ import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { TextLink } from "@/components/ui/text-link";
 import { inicio } from "@/i18n";
-import { APP_TZ, formatDate, formatTime, toLocalDate } from "@/lib/format/dates";
+import {
+  APP_TZ,
+  formatDate,
+  formatTime,
+  toLocalDate,
+} from "@/lib/format/dates";
 
 import { mustParseInstant, statusChip } from "./inicio-view";
 import type { TodayBooking } from "./types";
