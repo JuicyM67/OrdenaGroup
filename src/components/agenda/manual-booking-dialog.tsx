@@ -183,10 +183,12 @@ export function ManualBookingDialog({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-20 flex items-center justify-center bg-ink/45 p-4">
+        {/* WP-42: bottenark på mobil (items-end, rundade hörn bara upptill), centrerad dialog
+            från sm och uppåt. */}
+        <Dialog.Overlay className="fixed inset-0 z-20 flex items-end justify-center bg-ink/45 sm:items-center sm:p-4">
           <Dialog.Content
             aria-describedby={descriptionId}
-            className="flex max-h-full w-full max-w-md flex-col gap-4 overflow-y-auto rounded-panel bg-surface p-6 shadow-popover"
+            className="flex max-h-full w-full max-w-md flex-col gap-4 overflow-y-auto rounded-t-panel bg-surface p-6 shadow-popover sm:rounded-panel"
           >
             <div className="flex items-start justify-between">
               <Dialog.Title className="text-17 font-bold">

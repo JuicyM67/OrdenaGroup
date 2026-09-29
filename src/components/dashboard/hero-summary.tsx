@@ -56,9 +56,9 @@ export function HeroSummary({
       tone="dark"
       radius="hero"
       padding="xl"
-      className="flex h-68 shrink-0 gap-8"
+      className="flex flex-col gap-6 lg:h-68 lg:shrink-0 lg:flex-row lg:gap-8"
     >
-      <div className="flex flex-1 flex-col justify-between">
+      <div className="flex flex-1 flex-col justify-between gap-6 lg:gap-0">
         <div className="flex flex-col gap-3">
           <p className="text-15 text-on-dark-muted">
             {inicio.hola({ nombre: ownerFirstName })}
@@ -88,7 +88,7 @@ export function HeroSummary({
         </Button>
       </div>
 
-      <div className="flex shrink-0 gap-4">
+      <div className="flex flex-col gap-3 lg:shrink-0 lg:flex-row lg:gap-4">
         <FeatureCard
           index={1}
           tone="lilac"

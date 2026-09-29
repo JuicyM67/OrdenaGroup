@@ -199,6 +199,16 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
     360,
   );
 
+  // --- WP-42: sin scroll horizontal a 390 px (Inicio/Agenda/Ajustes, ägarens app-skal
+  // responsivo) — mismo patrón que el bloque de Hoy arriba. ---
+  await page.setViewportSize({ width: 390, height: 800 });
+  for (const path of ["/app/inicio", "/app/agenda", "/app/ajustes"]) {
+    await page.goto(path);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth),
+    ).toBe(390);
+  }
+
   // --- Reserva nueva en /barberia-norte (F5) → syns i ägarens Agenda ---
   await page.setViewportSize({ width: 1280, height: 800 });
   const newCustomer = `E2E WP-21 ${testInfo.workerIndex}-${Date.now()}`;

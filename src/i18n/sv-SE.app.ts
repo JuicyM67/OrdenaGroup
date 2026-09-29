@@ -130,6 +130,8 @@ export const calendario: Widen<typeof Es.calendario> = {
   mesSiguiente: "Nästa månad",
   semanaAnterior: "Föregående vecka",
   semanaSiguiente: "Nästa vecka",
+  diaAnterior: "Föregående dag",
+  diaSiguiente: "Nästa dag",
   zonaHoraria: (p: { offset: number }): string =>
     `GMT${p.offset < 0 ? "−" : "+"}${Math.abs(p.offset)}`,
 };

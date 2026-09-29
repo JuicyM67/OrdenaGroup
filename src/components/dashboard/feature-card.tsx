@@ -43,7 +43,7 @@ export function FeatureCard({
       tone={tone}
       radius="tile"
       padding="none"
-      className="flex w-49 flex-col p-5"
+      className="flex w-full flex-col p-5 lg:w-49"
     >
       <span className="text-13 font-semibold">
         {String(index).padStart(2, "0")}

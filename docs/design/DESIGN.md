@@ -166,6 +166,7 @@ ny komponent — ingen referens kräver en anpassad slider-skin.
 - Radier: se tokens (`shell` 32 → `chip` 10). Tumregel: ju större yta, desto större radie. Cirkelformade knappar för ikonknappar (48×48) och avatarer.
 - Mellanrum: 4-bas. Standardgap: 8, 10, 12, 16, 20, 24. Panelpadding desktop 28/32, kortpadding 20/22, mobilpadding 20.
 - Klickytor ≥ 44 px (ikonknappar 48, primärknappar 48–52 höga).
+- **Safe-area (WP-42):** `pt-safe-t` (padding) och `bottom-safe-b` (`bottom: 1rem + inset`, ersätter `bottom-4`) i `src/styles/tokens.css` (`@utility`) lägger `env(safe-area-inset-top/bottom)` ovanpå ägarskalets kompakta mobila topprad respektive `MobileTabBar`, så notch/hemindikator aldrig täcker innehåll eller tryckytor.
 
 ## 6. Ikoner
 

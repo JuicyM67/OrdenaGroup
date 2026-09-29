@@ -391,7 +391,7 @@ export function ServicesSection({
               key={s.id}
               data-testid="service-row"
               className={cn(
-                "flex items-center justify-between gap-3 rounded-tile bg-canvas p-4",
+                "flex flex-col items-start gap-3 rounded-tile bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between",
                 !s.active && "opacity-50",
               )}
             >
