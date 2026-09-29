@@ -140,8 +140,7 @@ export const errores: Widen<typeof Es.errores> = {
     slot_taken: "Någon tog just den tiden, välj en annan.",
     too_soon:
       "Det är för nära inpå för att boka den här tiden, välj en tid längre fram.",
-    too_far:
-      "Du kan inte boka så långt fram just nu, välj ett närmare datum.",
+    too_far: "Du kan inte boka så långt fram just nu, välj ett närmare datum.",
     service_not_offered: "Den tjänsten finns inte längre. Välj en annan.",
     not_found: "Vi hittade inte den bokningen.",
     invalid_status: "Den bokningen går inte att ändra längre.",
@@ -150,7 +149,8 @@ export const errores: Widen<typeof Es.errores> = {
     invalid_input: "Kontrollera uppgifterna och försök igen.",
     business_unavailable: "Det här företaget tar inte emot bokningar just nu.",
     outside_hours: "Den tiden är inte längre tillgänglig.",
-    network: "Vi kunde inte ansluta. Kontrollera din uppkoppling och försök igen.",
+    network:
+      "Vi kunde inte ansluta. Kontrollera din uppkoppling och försök igen.",
     waitlist_duplicate: "Du står redan på väntelistan för den här dagen.",
     nombreVacio: "Skriv ditt namn.",
     emailInvalido: "Kontrollera din e-postadress.",
@@ -177,8 +177,10 @@ export const errores: Widen<typeof Es.errores> = {
     outside_cancel_window:
       "Tiden för att avboka eller ändra den här bokningen har gått ut.",
     invalid_input: "Kontrollera uppgifterna och försök igen.",
-    business_unavailable: "Det går inte att skapa eller flytta bokningar just nu.",
-    network: "Vi kunde inte ansluta. Kontrollera din uppkoppling och försök igen.",
+    business_unavailable:
+      "Det går inte att skapa eller flytta bokningar just nu.",
+    network:
+      "Vi kunde inte ansluta. Kontrollera din uppkoppling och försök igen.",
   },
 };
 
@@ -987,7 +989,8 @@ export const validacion: Widen<typeof Es.validacion> = {
     invalid_chars: "Använd bara siffror, till exempel 070-123 45 67.",
     not_chilean: "Just nu tar vi bara emot svenska mobilnummer.",
     wrong_country: "Skriv ett svenskt mobilnummer.",
-    invalid_length: "Ett svenskt mobilnummer har 10 siffror. Kontrollera numret.",
+    invalid_length:
+      "Ett svenskt mobilnummer har 10 siffror. Kontrollera numret.",
     not_mobile: "Skriv ett svenskt mobilnummer, till exempel 070-123 45 67.",
     invalid_prefix: "Det numret är inte giltigt. Kontrollera riktnumret.",
     invalid_type: "Det mobilnumret är inte giltigt.",
@@ -1040,7 +1043,8 @@ export const negocio: Widen<typeof Es.negocio> = {
     vistaPrevia: (p: { url: string }): string => `Din länk: ${p.url}`,
   },
   errores: {
-    slug_taken: "Den länken används redan av ett annat företag. Prova en annan.",
+    slug_taken:
+      "Den länken används redan av ett annat företag. Prova en annan.",
     slug_reserved: "Den länken är inte tillgänglig. Prova en annan.",
     slug_invalid:
       "Använd 3–40 små bokstäver, siffror eller bindestreck, utan mellanslag.",
@@ -1185,8 +1189,7 @@ export const horarios: Widen<typeof Es.horarios> = {
     return `${r.slice(0, -1).join(", ")} och ${r[r.length - 1]}`;
   },
   errores: {
-    business_hours_start_before_end:
-      "Starttiden måste vara innan sluttiden.",
+    business_hours_start_before_end: "Starttiden måste vara innan sluttiden.",
     business_hours_no_overlap: "Den tiden krockar med en annan samma dag.",
   },
   bloqueos: {
@@ -1435,8 +1438,7 @@ export const abono: Widen<typeof Es.abono> = {
       `Kunden betalar ${p.monto} för att boka.`,
     errores: {
       porcentajeFueraDeRango: "Procentandelen måste vara mellan 1 och 100.",
-      montoMayorAlPrecio:
-        "Förskottet kan inte vara högre än tjänstens pris.",
+      montoMayorAlPrecio: "Förskottet kan inte vara högre än tjänstens pris.",
       mp_not_connected: "Anslut en betaltjänst för att begära förskott.",
     },
   },
@@ -1461,7 +1463,8 @@ export const abono: Widen<typeof Es.abono> = {
       `${p.negocio} fick din betalning, men tiden hade redan släppts. ${p.negocio} betalar tillbaka förskottet. Skriv till ${p.telefonoNegocio} för att lösa det.`,
   },
   gestion: {
-    abonoPagado: (p: { monto: string }): string => `Förskott betalt: ${p.monto}`,
+    abonoPagado: (p: { monto: string }): string =>
+      `Förskott betalt: ${p.monto}`,
     cancelarConAbonoDentroPlazo: (p: {
       monto: string;
       negocio: string;
