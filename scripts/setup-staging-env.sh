@@ -30,14 +30,14 @@ LINK=$(mktemp -d)
 vercel link --yes --project "$VERCEL_PROJECT" --scope "$SCOPE" --cwd "$LINK" >/dev/null
 
 read -rsp "Supabase access token (sbp_…): " TOKEN; echo
-read -rsp "Databaslösenord för staging: " DBPASS; echo
+read -rsp "Databaslösenord (tom = hoppa över databas, t.ex. bara mejl/SMTP): " DBPASS; echo
 # Token i en temporär headerfil (0600), inte som curl-argument (syns annars i `ps`).
 HDR=$(mktemp); chmod 600 "$HDR"; trap 'rm -rf "$HDR" "$LINK"' EXIT
 printf 'Authorization: Bearer %s\n' "$TOKEN" > "$HDR"
 
 # Sverige: lägg även hemligheterna i GitHub Environment `staging-se` (värdena går via
 # stdin till gh, aldrig som argument eller i loggen).
-if [ "$MARKET" = "se" ]; then
+if [ "$MARKET" = "se" ] && [ -n "$DBPASS" ]; then
   echo "0/4 Lägger hemligheter i GitHub (staging-se)…"
   printf '%s' "$TOKEN" | gh secret set STAGING_SUPABASE_ACCESS_TOKEN --env staging-se
   printf '%s' "$DBPASS" | gh secret set STAGING_SUPABASE_DB_PASSWORD --env staging-se
@@ -54,6 +54,8 @@ pick=[k for k in keys if k.get("type")=="publishable"] or [k for k in keys if k.
 print(pick[0]["api_key"])')
 echo "   ${PUBLISHABLE:0:16}…"
 
+DBURL=""
+if [ -n "$DBPASS" ]; then
 echo "2/4 Hämtar anslutning via Supavisor (transaction mode)…"
 DBURL=$(curl -fsS "${auth[@]}" "$API/config/database/pooler" | python3 -c '
 import json,sys
@@ -64,12 +66,15 @@ print(p[0]["connection_string"])')
 ENCPASS=$(DBPASS="$DBPASS" python3 -c 'import os,urllib.parse;print(urllib.parse.quote(os.environ["DBPASS"],safe=""))')
 DBURL="${DBURL/\[YOUR-PASSWORD\]/$ENCPASS}"; unset DBPASS ENCPASS
 echo "   ${DBURL%%:*}://…@${DBURL##*@}"
+else
+  echo "2/4 Databas hoppas över (inget lösenord angivet)"
+fi
 
 echo "3/4 Sätter inloggningslänkar i Supabase Auth…"
 patch_auth() {
   local out
   if ! out=$(curl -sS -w '\n%{http_code}' -X PATCH "${auth[@]}" \
-      -H "Content-Type: application/json" "$API/config/auth" -d "$1"); then
+      -H "Content-Type: application/json" "$API/config/auth" --data-binary @- <<<"$1"); then
     return 1
   fi
   [ "${out##*$'\n'}" = "200" ] || { echo "   Supabase svarade: ${out%$'\n'*}" | head -c 300; echo; return 1; }
@@ -94,16 +99,19 @@ if [ -n "$RESEND_KEY" ]; then
 import json,os
 print(json.dumps({
   "smtp_host": "smtp.resend.com",
-  "smtp_port": 465,
+  "smtp_port": "465",
   "smtp_user": "resend",
   "smtp_pass": os.environ["RESEND_KEY"],
   "smtp_admin_email": os.environ["SMTP_ADMIN_EMAIL"],
   "smtp_sender_name": os.environ["SMTP_SENDER_NAME"],
-  "rate_limit_email_sent": 100,
 }))')
   unset RESEND_KEY
-  if patch_auth "$SMTP_JSON" >/dev/null 2>&1; then
+  # Felmeddelandet från Supabase visas (innehåller aldrig nyckeln).
+  if patch_auth "$SMTP_JSON"; then
     echo "   SMTP satt (smtp.resend.com, avsändare $SMTP_ADMIN_EMAIL)"
+    patch_auth '{"rate_limit_email_sent": 100}' >/dev/null 2>&1 \
+      && echo "   Gräns för e-post höjd till 100/h" \
+      || echo "   Kunde inte höja e-postgränsen (sätt den i Supabase → Authentication → Rate Limits)."
   else
     echo "   Kunde inte sätta SMTP. Mallarna sätts ändå (ignoreras av Supabase tills SMTP finns)."
   fi
@@ -125,7 +133,7 @@ print(json.dumps({
   "mailer_subjects_confirmation": subjects["confirmation"],
   "mailer_templates_confirmation_content": (d/"confirmation.html").read_text(),
 }))')
-if patch_auth "$TPL_JSON" >/dev/null 2>&1; then
+if patch_auth "$TPL_JSON"; then
   echo "   E-postmallar satta ($TEMPLATE_DIR)"
 else
   echo "   E-postmallar hoppades över. Standardmejlet fungerar ändå."
@@ -140,6 +148,7 @@ setenv() {
 setenv NEXT_PUBLIC_SUPABASE_URL "https://$REF.supabase.co"
 setenv NEXT_PUBLIC_SUPABASE_ANON_KEY "$PUBLISHABLE"
 setenv NEXT_PUBLIC_APP_URL "$APP_URL"
+if [ -n "$DBURL" ]; then
 setenv DATABASE_URL "$DBURL"
 
 CERT=$(ls -t "$HOME"/Downloads/*.crt 2>/dev/null | head -1 || true)
@@ -150,8 +159,9 @@ else
   echo "   OBS: inget .crt i Hämtade filer. Ladda ner certifikatet (Project Settings →"
   echo "   Database → SSL Configuration → Download certificate) och kör skriptet igen."
 fi
+fi
 
-if [ "$MARKET" = "se" ]; then
+if [ "$MARKET" = "se" ] && [ -n "$DBURL" ]; then
   echo "Startar migrationer + seed mot Sveriges staging (GitHub Actions)…"
   gh workflow run deploy-staging.yml -f reseed=true -f target=staging-se
   echo "   Följ körningen: gh run watch  (eller GitHub → Actions)"
