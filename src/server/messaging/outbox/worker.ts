@@ -495,7 +495,7 @@ async function finalizeFailed(
     q.query(
       decision.status === "dead"
         ? `update public.message_outbox
-              set status = 'dead', error = $3
+              set status = 'dead', error = $3, payload = '{}'::jsonb
             where id = $1 and business_id = $2`
         : `update public.message_outbox
               set status = 'queued', error = $3,

@@ -4,8 +4,8 @@ import { after } from "next/server";
 
 import { processOutbox } from "./worker";
 
-/** Litet pass: bara den här bokningens rader (bekräftelse + ev. ägarmejl),
- * aldrig fler än så via `kickOutbox`. */
+/** Litet pass direkt efter en bokningshändelse: tar upp till 10 förfallna rader (vilka som
+ * helst, inte bara den här bokningens); resten tas av cron. */
 const KICK_LIMIT = 10;
 
 /**

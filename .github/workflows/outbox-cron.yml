@@ -15,9 +15,9 @@ on:
 permissions:
   contents: read
 
-# En körning i taget per marknad; en försenad körning hoppar inte över nästa.
+# En körning i taget (båda marknaderna i samma körning); en försenad körning köar nästa.
 concurrency:
-  group: outbox-cron-${{ github.job }}
+  group: outbox-cron
   cancel-in-progress: false
 
 jobs:

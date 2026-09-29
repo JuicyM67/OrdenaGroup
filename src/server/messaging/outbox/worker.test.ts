@@ -313,6 +313,10 @@ describe("processOutbox: claim → skicka → avsluta", () => {
       dead: 1,
     });
     expect(db.updatesMatching(/status = 'dead'/)).toHaveLength(1);
+    // D-029: kundens token töms även när raden ger upp.
+    expect(
+      db.updatesMatching(/status = 'dead'.*payload = '\{\}'::jsonb/s),
+    ).toHaveLength(1);
   });
 
   it("kundens e-post saknas (rad köad som e-post men kunden saknar en nu): fel, ingen krasch", async () => {
