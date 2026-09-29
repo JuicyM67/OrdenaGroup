@@ -1667,6 +1667,7 @@ export const sms: Widen<typeof Es.sms> = {
 // ---------------------------------------------------------------------------
 
 export const formulario: Widen<typeof Es.formulario> = {
+  sinPreguntas: "Du har inte lagt till några frågor än.",
   candado: {
     titulo: "Namn, telefon, e-post",
     ayuda: "Alltid med i formuläret.",
@@ -1700,6 +1701,7 @@ export const formulario: Widen<typeof Es.formulario> = {
       `Så ser kunden det · ${p.servicio}`,
   },
   categorias: {
+    titulo: "Kategorier",
     ctaNueva: "+ Ny kategori",
     nameLabel: "Kategorins namn",
     namePlaceholder: "T.ex: Dam",
@@ -1719,6 +1721,9 @@ export const formulario: Widen<typeof Es.formulario> = {
     pestanaTodas: "Alla",
   },
   servicioPregunta: {
+    pestanaDetalles: "Tid och pris",
+    sinPreguntas: "Tjänsten har inga frågor än.",
+    sinMasSugerencias: "Inga fler förslag för den här tjänsten.",
     pestana: "Frågor vid bokning",
     ctaDesdeSugerencias: (p: { bransch: string }): string =>
       `+ Från förslag för ${p.bransch}`,
@@ -1768,8 +1773,7 @@ export const formulario: Widen<typeof Es.formulario> = {
       invalid_option: "Välj ett alternativ i listan.",
       empty_selection: "Välj minst ett alternativ.",
       duplicate_option: "Välj inte samma alternativ två gånger.",
-      too_long: (p: { max: number }): string =>
-        `Skriv högst ${p.max} tecken.`,
+      too_long: (p: { max: number }): string => `Skriv högst ${p.max} tecken.`,
       invalid_number: "Skriv ett heltal, utan decimaler.",
       out_of_range: validacion.numeroEntero,
       invalid_date: "Det datumet finns inte.",

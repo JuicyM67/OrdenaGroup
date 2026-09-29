@@ -161,11 +161,8 @@ export function BookingFormSection({
               />
             ))}
             {settings.questions.length === 0 ? (
-              // TODO_COPY: falta un texto para "todavía no hay preguntas" —
-              // no hay una clave en `formulario` para esto, ver el reporte
-              // del WP-40.
               <p className="py-3 text-13 text-muted">
-                Todavía no agregaste preguntas.
+                {formulario.sinPreguntas}
               </p>
             ) : null}
           </div>

@@ -140,11 +140,7 @@ function ServiceForm({
             size="xs"
             onClick={() => setTab("detalles")}
           >
-            {/* TODO_COPY: falta una etiqueta corta para esta pestaña
-             * ("Tiempo y precio" o similar) — no hay una clave en
-             * `servicios.campos`/`ajustes` para esto todavía, ver el
-             * reporte del WP-40. */}
-            Tiempo y precio
+            {formulario.servicioPregunta.pestanaDetalles}
           </Button>
           <Button
             type="button"

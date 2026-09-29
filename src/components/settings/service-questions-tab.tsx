@@ -191,11 +191,8 @@ export function ServiceQuestionsTab({
           );
         })}
         {applying.length === 0 ? (
-          // TODO_COPY: falta un texto para "este servicio no tiene
-          // preguntas todavía" — no hay una clave en `formulario` para
-          // esto, ver el reporte del WP-40.
           <p className="text-13 text-muted">
-            Este servicio no tiene preguntas todavía.
+            {formulario.servicioPregunta.sinPreguntas}
           </p>
         ) : null}
       </div>
@@ -288,11 +285,8 @@ export function ServiceQuestionsTab({
             </div>
           ))}
           {unusedPresets.length === 0 ? (
-            // TODO_COPY: falta un texto para "no hay más sugerencias para
-            // este servicio" — no hay una clave en `formulario` para esto,
-            // ver el reporte del WP-40.
             <p className="text-13 text-muted">
-              No hay más sugerencias para este servicio.
+              {formulario.servicioPregunta.sinMasSugerencias}
             </p>
           ) : null}
         </div>

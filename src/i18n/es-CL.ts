@@ -2117,6 +2117,7 @@ export const sms = {
 // ---------------------------------------------------------------------------
 
 export const formulario = {
+  sinPreguntas: "Todavía no agregas preguntas.",
   /** Fila fija "Nombre, teléfono y correo" en vy A: siempre está en el
    * formulario, no se puede apagar ni mover (`falt-A`, fila "Låst"). */
   candado: {
@@ -2131,8 +2132,7 @@ export const formulario = {
      * `BOOKING_QUESTION_INDUSTRY_LABELS` (`src/i18n/presets/`), en
      * minúscula porque va a mitad de frase (GUIA §3): "Sugerencias para
      * peluquerías". */
-    titulo: (p: { bransch: string }): string =>
-      `Sugerencias para ${p.bransch}`,
+    titulo: (p: { bransch: string }): string => `Sugerencias para ${p.bransch}`,
     cuerpo: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "pregunta típica" : "preguntas típicas"} que puedes activar. Tú decides cuáles.`,
     ctaVer: "Ver sugerencias",
@@ -2165,6 +2165,7 @@ export const formulario = {
       `Así lo ve tu cliente · ${p.servicio}`,
   },
   categorias: {
+    titulo: "Categorías",
     ctaNueva: "+ Nueva categoría",
     nameLabel: "Nombre de la categoría",
     namePlaceholder: "Ej: Mujeres",
@@ -2196,6 +2197,9 @@ export const formulario = {
    * (`falt-B-per-tjanst.html`). Comparte datos y componentes con vy A (el
    * resto de las claves de `formulario`), filtrados a un solo servicio. */
   servicioPregunta: {
+    pestanaDetalles: "Tiempo y precio",
+    sinPreguntas: "Este servicio todavía no tiene preguntas.",
+    sinMasSugerencias: "No quedan más sugerencias para este servicio.",
     pestana: "Preguntas al reservar",
     ctaDesdeSugerencias: (p: { bransch: string }): string =>
       `+ Desde sugerencias para ${p.bransch}`,

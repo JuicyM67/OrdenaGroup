@@ -289,11 +289,9 @@ export function CategorySection({
     <Card radius="tile" padding="lg" className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3">
         <div>
-          {/* TODO_COPY: falta un título propio para esta sección
-           * ("Categorías de servicios" o similar) — no hay una clave en
-           * `formulario.categorias`/`ajustes.secciones` para esto todavía,
-           * ver el reporte del WP-40. */}
-          <h2 className="text-18 font-bold text-ink">Categorías</h2>
+          <h2 className="text-18 font-bold text-ink">
+            {formulario.categorias.titulo}
+          </h2>
           <p className="text-13 text-muted">{formulario.categorias.ayuda}</p>
         </div>
         {!creating ? (
