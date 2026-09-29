@@ -170,3 +170,46 @@ describe("sv-SE.app: plantillasWhatsapp är sms utan knappar (D-028)", () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// sms: varje meddelande ryms i ett enda sms (≤ 160 tecken). Långa, realistiska
+// exempelvärden (längre företags-/tjänste-/kundnamn än en vanlig dummy), så
+// att en mall som bara funkar med korta namn inte kommer igenom.
+// ---------------------------------------------------------------------------
+
+const EXEMPEL_SMS = {
+  negocio: "Salong Nord och Söder",
+  servicio: "Klippning och skäggtrimning",
+  fecha: "fredag 2 oktober",
+  hora: "15:00",
+  link: "https://exempel.se/r/aB3xQ9Lm2P7k",
+  cliente: "Erik Johansson",
+  minutos: 15,
+  pct: 20,
+  codigo: "482913",
+} as const;
+
+describe("sv-SE.app: sms ryms i 160 tecken", () => {
+  const meddelanden: Array<[string, string]> = [
+    ["reservaConfirmada", SvApp.sms.reservaConfirmada({ ...EXEMPEL_SMS })],
+    ["recordatorio", SvApp.sms.recordatorio({ ...EXEMPEL_SMS })],
+    ["recordatorioHoy", SvApp.sms.recordatorioHoy({ ...EXEMPEL_SMS })],
+    ["reservaMovida", SvApp.sms.reservaMovida({ ...EXEMPEL_SMS })],
+    ["reservaCancelada", SvApp.sms.reservaCancelada({ ...EXEMPEL_SMS })],
+    ["listaEsperaCupo", SvApp.sms.listaEsperaCupo({ ...EXEMPEL_SMS })],
+    ["horaFlash", SvApp.sms.horaFlash({ ...EXEMPEL_SMS })],
+    ["nuevaReservaDueno", SvApp.sms.nuevaReservaDueno({ ...EXEMPEL_SMS })],
+    [
+      "codigoAcceso",
+      SvApp.sms.codigoAcceso({ codigo: EXEMPEL_SMS.codigo }),
+    ],
+  ];
+
+  it.each(meddelanden)("%s ryms i 160 tecken", (_namn, text) => {
+    expect(text.length).toBeLessThanOrEqual(160);
+  });
+
+  it("pie (avslutsraden) är kort", () => {
+    expect(SvApp.sms.pie.length).toBeLessThanOrEqual(60);
+  });
+});

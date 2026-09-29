@@ -21,6 +21,7 @@ import {
   nav,
   plantillasWhatsapp,
   reserva,
+  sms,
   whatsappSesion,
 } from "./es-CL";
 import {
@@ -161,6 +162,15 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   linkGestion: "https://ejemplo.cl/r/abc123",
   linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
   plataforma: "la plataforma",
+  /** Agregados por copywriter-es-cl junto con `email.bienvenida`/`acceso` y
+   * `sms` (paso de correos completos + plantillas de SMS): mismo patrón que
+   * el resto, un valor cualquiera del tipo correcto para detectar restos
+   * rotos, no para verificar el texto exacto. */
+  marca: "la plataforma",
+  minutos: 15,
+  pct: 20,
+  link: "https://ejemplo.cl/r/abc123",
+  codigo: "482913",
 };
 
 function invocarGenerico(fn: unknown): unknown {
@@ -184,7 +194,12 @@ function revisarFuncionesGenerico(valor: unknown, ruta: string): void {
 }
 
 describe("cada función soporta parámetros genéricos sin dejar restos rotos", () => {
-  const raices: Record<string, unknown> = { ...AREAS, email, whatsappSesion };
+  const raices: Record<string, unknown> = {
+    ...AREAS,
+    email,
+    whatsappSesion,
+    sms,
+  };
   for (const [nombre, raiz] of Object.entries(raices)) {
     it(`${nombre}: ninguna función deja undefined/NaN/null/[object/llaves sueltas`, () => {
       revisarFuncionesGenerico(raiz, nombre);
@@ -641,6 +656,16 @@ const EJEMPLO = {
   linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
   telefonoNegocio: "+56 9 1234 5678",
   plataforma: "la plataforma",
+  /** Para los correos y SMS nuevos (`email.bienvenida`/`nuevaReservaDueno`/
+   * `cancelacionDueno`/`listaEsperaCupo`/`horaFlash`, `sms.*`): "la
+   * plataforma" en vez de `brand.name`, para no interferir con la prueba de
+   * "marca" de abajo (que exige que `brand.name` no aparezca fuera de
+   * `muestras`, la tabla de textos de UI). */
+  marca: "la plataforma",
+  minutos: 15,
+  pct: 20,
+  link: "https://ejemplo.cl/r/abc123",
+  codigo: "482913",
 } as const;
 
 const muestrasSesionYCorreo: string[] = [
@@ -676,6 +701,75 @@ const muestrasSesionYCorreo: string[] = [
   email.pie({ negocio: EJEMPLO.negocio, plataforma: EJEMPLO.plataforma }),
   whatsappSesion.baja({ negocio: EJEMPLO.negocio }),
   whatsappSesion.bajaTotal({ negocio: EJEMPLO.negocio }),
+  // Correos nuevos (comun, bienvenida, nuevaReservaDueno, cancelacionDueno,
+  // listaEsperaCupo, horaFlash): misma cobertura de tono/marca que los
+  // correos de reserva de arriba.
+  email.comun.saludo({ nombre: EJEMPLO.cliente }),
+  email.comun.piePagina({ marca: EJEMPLO.marca, negocio: EJEMPLO.negocio }),
+  email.comun.porQueRecibes,
+  email.comun.ayuda,
+  email.bienvenida.asunto({ marca: EJEMPLO.marca }),
+  email.bienvenida.preheader,
+  email.bienvenida.titulo,
+  email.bienvenida.texto,
+  email.bienvenida.pasos.link,
+  email.bienvenida.pasos.compartir,
+  email.bienvenida.pasos.recordatorios,
+  email.bienvenida.cta,
+  email.nuevaReservaDueno.asunto({
+    cliente: EJEMPLO.cliente,
+    fecha: EJEMPLO.fecha,
+  }),
+  email.nuevaReservaDueno.preheader({
+    servicio: EJEMPLO.servicio,
+    hora: EJEMPLO.hora,
+  }),
+  email.nuevaReservaDueno.titulo,
+  email.nuevaReservaDueno.texto({ ...EJEMPLO }),
+  email.nuevaReservaDueno.cta,
+  email.cancelacionDueno.asunto({
+    cliente: EJEMPLO.cliente,
+    fecha: EJEMPLO.fecha,
+  }),
+  email.cancelacionDueno.preheader({
+    servicio: EJEMPLO.servicio,
+    hora: EJEMPLO.hora,
+  }),
+  email.cancelacionDueno.titulo,
+  email.cancelacionDueno.texto({ ...EJEMPLO }),
+  email.cancelacionDueno.cta,
+  email.listaEsperaCupo.asunto({ negocio: EJEMPLO.negocio }),
+  email.listaEsperaCupo.preheader({
+    servicio: EJEMPLO.servicio,
+    fecha: EJEMPLO.fecha,
+  }),
+  email.listaEsperaCupo.titulo,
+  email.listaEsperaCupo.texto({
+    servicio: EJEMPLO.servicio,
+    fecha: EJEMPLO.fecha,
+  }),
+  email.listaEsperaCupo.cta,
+  email.listaEsperaCupo.expira({ minutos: EJEMPLO.minutos }),
+  email.horaFlash.asunto({ negocio: EJEMPLO.negocio, pct: EJEMPLO.pct }),
+  email.horaFlash.preheader,
+  email.horaFlash.titulo({ pct: EJEMPLO.pct }),
+  email.horaFlash.texto({
+    servicio: EJEMPLO.servicio,
+    fecha: EJEMPLO.fecha,
+    hora: EJEMPLO.hora,
+  }),
+  email.horaFlash.cta,
+  // sms: los nueve mensajes más `pie` (línea de baja).
+  sms.reservaConfirmada({ ...EJEMPLO }),
+  sms.recordatorio({ ...EJEMPLO }),
+  sms.recordatorioHoy({ ...EJEMPLO }),
+  sms.reservaMovida({ ...EJEMPLO }),
+  sms.reservaCancelada({ ...EJEMPLO }),
+  sms.listaEsperaCupo({ ...EJEMPLO }),
+  sms.horaFlash({ ...EJEMPLO }),
+  sms.nuevaReservaDueno({ ...EJEMPLO }),
+  sms.codigoAcceso({ codigo: EJEMPLO.codigo }),
+  sms.pie,
 ];
 
 const textosPlantillas: string[] = [];
@@ -702,31 +796,41 @@ describe("baja, bajaTotal y el pie del correo nombran al negocio", () => {
 });
 
 // ---------------------------------------------------------------------------
-// email.acceso: las variables de plantilla de Supabase son literales, no
-// interpolación de es-CL.ts (WP-03b paso 2, R9 del plan): cada cuerpo debe
-// tener exactamente los dos placeholders reales y ningún otro "{{" suelto
-// (una llave doble sin cerrar sería un placeholder roto en el correo).
+// email.acceso: desde que se separó en piezas (asunto, preheader, titulo,
+// texto, cta, codigo, ignorar, expira, pregunta del encargo de correos
+// completos), ninguna de ellas lleva ya los placeholders de Supabase
+// (`{{ .ConfirmationURL }}`, `{{ .Token }}`): quien arme el HTML en
+// `supabase/templates/*.html` los escribe literales junto al botón `cta` y
+// al texto de `codigo`. Acá solo queda comprobar que no quedó ninguna llave
+// doble suelta (un resto roto de la versión anterior de este bloque).
 // ---------------------------------------------------------------------------
 
-describe("email.acceso: variables de plantilla de Supabase", () => {
-  const CUERPOS = [
-    ["magicLink", email.acceso.magicLink.cuerpo],
-    ["confirmation", email.acceso.confirmation.cuerpo],
+describe("email.acceso: ya no tiene sintaxis de plantilla de Supabase", () => {
+  const PLANTILLAS = [
+    ["magicLink", email.acceso.magicLink],
+    ["confirmation", email.acceso.confirmation],
   ] as const;
 
-  it.each(CUERPOS)(
-    "%s.cuerpo tiene los dos placeholders y ningún otro '{{'",
-    (_nombre, cuerpo) => {
-      expect(cuerpo).toContain("{{ .ConfirmationURL }}");
-      expect(cuerpo).toContain("{{ .Token }}");
-      const totalDobleLlave = (cuerpo.match(/\{\{/g) ?? []).length;
-      expect(totalDobleLlave).toBe(2);
+  it.each(PLANTILLAS)(
+    "%s: ningún campo (fijo o llamado con `marca`) tiene una llave doble",
+    (_nombre, plantilla) => {
+      for (const [clave, valor] of Object.entries(plantilla)) {
+        const texto =
+          typeof valor === "function"
+            ? valor({ marca: "la plataforma" })
+            : valor;
+        expect(texto, clave).not.toContain("{{");
+      }
     },
   );
 
-  it("los asuntos no tienen ninguna llave doble", () => {
-    expect(email.acceso.magicLink.asunto).not.toContain("{{");
-    expect(email.acceso.confirmation.asunto).not.toContain("{{");
+  it("asunto interpola `marca` (no `brand.name` directo)", () => {
+    expect(
+      email.acceso.magicLink.asunto({ marca: "la plataforma" }),
+    ).toContain("la plataforma");
+    expect(
+      email.acceso.confirmation.asunto({ marca: "la plataforma" }),
+    ).toContain("la plataforma");
   });
 
   it("email.abono.lineaConfirmacion no usa sintaxis de plantilla de Supabase", () => {
@@ -736,6 +840,47 @@ describe("email.acceso: variables de plantilla de Supabase", () => {
       condiciones: "Si cancelas...",
     });
     expect(texto).not.toContain("{{");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// sms: cada mensaje cabe en un solo SMS (≤ 160 caracteres, el límite de un
+// segmento GSM-7). Valores de ejemplo largos y realistas (nombre de negocio
+// y de servicio más largos que los de `MUESTRA_GENERICA`), para no dejar
+// pasar una plantilla que solo funciona con nombres cortos.
+// ---------------------------------------------------------------------------
+
+const EJEMPLO_SMS = {
+  negocio: "Barbería y Estética del Centro",
+  servicio: "Corte + barba y diseño",
+  fecha: "viernes 2 de octubre",
+  hora: "15:00",
+  link: "https://ejemplo.cl/r/aB3xQ9Lm2P7k",
+  cliente: "Francisca Muñoz Vidal",
+  minutos: 15,
+  pct: 20,
+  codigo: "482913",
+} as const;
+
+describe("sms: cada mensaje cabe en un solo SMS (≤ 160 caracteres)", () => {
+  const mensajes: Array<[string, string]> = [
+    ["reservaConfirmada", sms.reservaConfirmada({ ...EJEMPLO_SMS })],
+    ["recordatorio", sms.recordatorio({ ...EJEMPLO_SMS })],
+    ["recordatorioHoy", sms.recordatorioHoy({ ...EJEMPLO_SMS })],
+    ["reservaMovida", sms.reservaMovida({ ...EJEMPLO_SMS })],
+    ["reservaCancelada", sms.reservaCancelada({ ...EJEMPLO_SMS })],
+    ["listaEsperaCupo", sms.listaEsperaCupo({ ...EJEMPLO_SMS })],
+    ["horaFlash", sms.horaFlash({ ...EJEMPLO_SMS })],
+    ["nuevaReservaDueno", sms.nuevaReservaDueno({ ...EJEMPLO_SMS })],
+    ["codigoAcceso", sms.codigoAcceso({ codigo: EJEMPLO_SMS.codigo })],
+  ];
+
+  it.each(mensajes)("%s cabe en 160 caracteres", (_nombre, texto) => {
+    expect(texto.length).toBeLessThanOrEqual(160);
+  });
+
+  it("pie (línea de baja) es corto, para dejar margen cuando se agrega al final de un mensaje de marketing", () => {
+    expect(sms.pie.length).toBeLessThanOrEqual(60);
   });
 });
 
