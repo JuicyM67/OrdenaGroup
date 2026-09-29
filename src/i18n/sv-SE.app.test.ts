@@ -199,10 +199,7 @@ describe("sv-SE.app: sms ryms i 160 tecken", () => {
     ["listaEsperaCupo", SvApp.sms.listaEsperaCupo({ ...EXEMPEL_SMS })],
     ["horaFlash", SvApp.sms.horaFlash({ ...EXEMPEL_SMS })],
     ["nuevaReservaDueno", SvApp.sms.nuevaReservaDueno({ ...EXEMPEL_SMS })],
-    [
-      "codigoAcceso",
-      SvApp.sms.codigoAcceso({ codigo: EXEMPEL_SMS.codigo }),
-    ],
+    ["codigoAcceso", SvApp.sms.codigoAcceso({ codigo: EXEMPEL_SMS.codigo })],
   ];
 
   it.each(meddelanden)("%s ryms i 160 tecken", (_namn, text) => {

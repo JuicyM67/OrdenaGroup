@@ -825,9 +825,9 @@ describe("email.acceso: ya no tiene sintaxis de plantilla de Supabase", () => {
   );
 
   it("asunto interpola `marca` (no `brand.name` directo)", () => {
-    expect(
-      email.acceso.magicLink.asunto({ marca: "la plataforma" }),
-    ).toContain("la plataforma");
+    expect(email.acceso.magicLink.asunto({ marca: "la plataforma" })).toContain(
+      "la plataforma",
+    );
     expect(
       email.acceso.confirmation.asunto({ marca: "la plataforma" }),
     ).toContain("la plataforma");
