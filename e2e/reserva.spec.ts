@@ -54,6 +54,9 @@ test.describe("Reserva (riktig data) — /barberia-norte", () => {
       .getByLabel(reserva.clienteForm.telefonoLabel)
       .fill("+56 9 1234 5678");
     await page
+      .getByLabel(reserva.clienteForm.emailLabel)
+      .fill("cliente@example.com");
+    await page
       .getByRole("checkbox", {
         name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
       })

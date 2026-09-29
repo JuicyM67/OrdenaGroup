@@ -95,6 +95,9 @@ test.describe("Reserva (fixturer) — flödet", () => {
       .getByLabel(reserva.clienteForm.telefonoLabel)
       .fill("+56 9 1234 5678");
     await page
+      .getByLabel(reserva.clienteForm.emailLabel)
+      .fill("cliente@example.com");
+    await page
       .getByRole("checkbox", {
         name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
       })
@@ -132,6 +135,9 @@ test.describe("Reserva (fixturer) — flödet", () => {
       .getByLabel(reserva.clienteForm.telefonoLabel)
       .fill("+56 9 8765 4321");
     await page
+      .getByLabel(reserva.clienteForm.emailLabel)
+      .fill("cliente@example.com");
+    await page
       .getByRole("checkbox", {
         name: new RegExp(reserva.waitlist.terminos.slice(0, 15)),
       })
@@ -166,6 +172,9 @@ test.describe("Reserva (fixturer) — flödet", () => {
     await page
       .getByLabel(reserva.clienteForm.telefonoLabel)
       .fill("+56 9 1234 5678");
+    await page
+      .getByLabel(reserva.clienteForm.emailLabel)
+      .fill("cliente@example.com");
     await page
       .getByRole("button", { name: reserva.antesDeConfirmar.ctaConfirmar })
       .click();
@@ -218,6 +227,9 @@ test.describe("Reserva (fixturer) — flödet", () => {
     await page
       .getByLabel(reserva.clienteForm.telefonoLabel)
       .fill("+56 9 1234 5678");
+    await page
+      .getByLabel(reserva.clienteForm.emailLabel)
+      .fill("cliente@example.com");
     await page
       .getByRole("checkbox", {
         name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
@@ -318,6 +330,9 @@ test.describe("Reserva (fixturer) — flödet", () => {
       .getByLabel(reserva.clienteForm.telefonoLabel)
       .fill("+56 9 1234 5678");
     await page
+      .getByLabel(reserva.clienteForm.emailLabel)
+      .fill("cliente@example.com");
+    await page
       .getByRole("checkbox", {
         name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
       })
@@ -355,6 +370,9 @@ test.describe("Reserva (fixturer) — flödet", () => {
     await page
       .getByLabel(reserva.clienteForm.telefonoLabel)
       .fill("+56 9 1234 5678");
+    await page
+      .getByLabel(reserva.clienteForm.emailLabel)
+      .fill("cliente@example.com");
     await page
       .getByRole("checkbox", {
         name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
