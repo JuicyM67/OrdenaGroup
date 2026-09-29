@@ -1687,6 +1687,10 @@ export const ajustes = {
     horario: "Horario",
     mercadopago: "Mercado Pago",
     cuenta: "Cuenta",
+    /** Pestaña nueva (WP-40, D-031): `falt-A-bokningsformular.html`.
+     * Mismo texto para la pestaña y para el título `<h1>` de la pantalla
+     * (mismo criterio que las otras filas de `secciones`). */
+    formularioReserva: "Formulario de reserva",
   },
   reglas: {
     minNoticeLabel: "Anticipación mínima",
@@ -2092,4 +2096,212 @@ export const sms = {
     `Tu código para entrar es ${p.codigo}. No lo compartas con nadie.`,
   /** Línea de baja: ver la nota del bloque de arriba sobre cuándo se usa. */
   pie: "Responde STOP para no recibir más.",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// formulario: categorías de servicios y preguntas del formulario de reserva
+// (WP-40, D-031). Cubre Ajustes → "Formulario de reserva" (vy A,
+// `.visual-diff/ref/falt-A-bokningsformular.html`), la pestaña "Frågor vid
+// bokning" de un servicio (vy B, `falt-B-per-tjanst.html`) y las categorías
+// de Servicios (`falt-kategorier.html`). Se agrega al final del archivo
+// (mismo criterio que las áreas de WP-03b, ver `docs/content/README.md`):
+// evita conflictos con otros paquetes que también tocan `es-CL.ts`.
+//
+// Las tres referencias de arriba son bocetos en sueco (`.visual-diff/ref/`,
+// no `docs/design/reference/*.dc.html`): no hay paridad palabra a palabra
+// que revisar acá (mismo caso que WP-03b, R1 de su plan), solo las reglas
+// de tono y marca de siempre (GUIA_DE_ESTILO.md). Las sugerencias de
+// preguntas por rubro viven aparte, en
+// `src/i18n/presets/booking-questions.es-CL.ts` (D-031: "los presets viven
+// en código", no acá ni en la base de datos).
+// ---------------------------------------------------------------------------
+
+export const formulario = {
+  /** Fila fija "Nombre, teléfono y correo" en vy A: siempre está en el
+   * formulario, no se puede apagar ni mover (`falt-A`, fila "Låst"). */
+  candado: {
+    titulo: "Nombre, teléfono y correo",
+    ayuda: "Siempre está en el formulario.",
+    etiqueta: "Fijo",
+  },
+  preguntasContador: (p: { n: number; max: number }): string =>
+    `Preguntas al cliente · ${p.n} de ${p.max}`,
+  sugerencias: {
+    /** `bransch` llega ya en español, de
+     * `BOOKING_QUESTION_INDUSTRY_LABELS` (`src/i18n/presets/`), en
+     * minúscula porque va a mitad de frase (GUIA §3): "Sugerencias para
+     * peluquerías". */
+    titulo: (p: { bransch: string }): string =>
+      `Sugerencias para ${p.bransch}`,
+    cuerpo: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "pregunta típica" : "preguntas típicas"} que puedes activar. Tú decides cuáles.`,
+    ctaVer: "Ver sugerencias",
+    ctaOcultar: "Ocultar sugerencias",
+  },
+  ctaNuevaPregunta: "+ Nueva pregunta",
+  /** `question_kind` (DB enum, WP-40 paso 1): mismo orden que
+   * `BookingQuestionKind` en `src/i18n/presets/booking-questions.es-CL.ts`. */
+  tipos: {
+    short_text: "Texto corto",
+    long_text: "Texto largo",
+    single_choice: "Opción única",
+    multi_choice: "Varias opciones",
+    number: "Número",
+    yes_no: "Sí/no",
+    date: "Fecha",
+  },
+  obligatoria: "Obligatoria",
+  opcional: "Opcional",
+  todosLosServicios: "Todos los servicios",
+  /** Insignia corta junto a una pregunta con `saveToCustomer`/
+   * `save_to_customer` activo (`falt-A`, "Sparas på kundkortet"). */
+  guardaEnFicha: "Se guarda en la ficha",
+  preview: {
+    /** "Así lo ve tu cliente · {servicio}" (`falt-A`, panel de la derecha).
+     * Los campos del propio formulario dentro del teléfono reutilizan
+     * `reserva.clienteForm.*` y `reserva.antesDeConfirmar.ctaConfirmar`: no
+     * hay copy nuevo para ellos acá. */
+    titulo: (p: { servicio: string }): string =>
+      `Así lo ve tu cliente · ${p.servicio}`,
+  },
+  categorias: {
+    ctaNueva: "+ Nueva categoría",
+    nameLabel: "Nombre de la categoría",
+    namePlaceholder: "Ej: Mujeres",
+    ayuda:
+      "Arrastra para ordenarlas. Se muestran como pestañas para tus clientes.",
+    vacia: "Todavía no tiene servicios.",
+    /** Grupo para los servicios sin categoría, en la lista de Ajustes →
+     * Servicios (no es una categoría real, no tiene fila en
+     * `service_categories`). */
+    sinAsignar: "Sin categoría",
+    ctaRenombrar: "Cambiar nombre",
+    ctaEliminar: "Eliminar categoría",
+    /** Borrar una categoría no borra sus servicios (`on delete set null`,
+     * plan de WP-40 paso 1): quedan en `sinAsignar`. */
+    confirmarEliminar: {
+      titulo: "¿Eliminar esta categoría?",
+      cuerpo:
+        "Sus servicios quedan sin categoría. Puedes asignarles otra cuando quieras.",
+      ctaSi: "Sí, eliminar",
+      ctaNo: comun.noMantener,
+    },
+    /** Pestaña "Todos" en la página de reservas del cliente, junto a las
+     * pestañas por categoría, para cuando el negocio tiene más de una
+     * (ui-engineer decide si la muestra: no está dibujada en
+     * `falt-kategorier.html`, que solo tiene las pestañas por categoría). */
+    pestanaTodas: "Todos",
+  },
+  /** vy B: pestaña "Frågor vid bokning" en la edición de un servicio
+   * (`falt-B-per-tjanst.html`). Comparte datos y componentes con vy A (el
+   * resto de las claves de `formulario`), filtrados a un solo servicio. */
+  servicioPregunta: {
+    pestana: "Preguntas al reservar",
+    ctaDesdeSugerencias: (p: { bransch: string }): string =>
+      `+ Desde sugerencias para ${p.bransch}`,
+    ctaPreguntaPropia: "+ Pregunta propia",
+    /** "también se usa en {servicios}" (`falt-B`, "används även i
+     * Slingor"): `servicios` ya viene como lista formateada (ver
+     * `horarios.intervalos` para el mismo patrón de armar una lista). */
+    tambienUsadaEn: (p: { servicios: string }): string =>
+      `también se usa en ${p.servicios}`,
+    usarEnOtrosServicios: "Usar esta pregunta también en otros servicios",
+    /** Quita la pregunta de este servicio (no la borra si se usa en otros;
+     * `formulario.editor.ctaEliminar` sí la borra del todo). */
+    ctaQuitar: "Quitar",
+  },
+  /** Panel "Gäller för" (`falt-kategorier.html`): a qué servicios apunta una
+   * pregunta (`booking_question_targets`, plan de WP-40 paso 1). */
+  aplicaA: {
+    titulo: "Aplica a",
+    todos: "Todos los servicios",
+    elegidos: "Servicios elegidos",
+    buscarPlaceholder: "Buscar servicio",
+    todaLaCategoria: (p: { nombre: string }): string =>
+      `Toda la categoría ${p.nombre}`,
+    /** "{x} de {y}" servicios elegidos de esa categoría (`falt-kategorier`,
+     * "3 av 3" / "1 av 2"). */
+    seleccion: (p: { x: number; y: number }): string => `${p.x} de ${p.y}`,
+    autoNuevosServicios:
+      "Agrega la pregunta automáticamente a los servicios nuevos de las categorías elegidas.",
+    ctaGuardar: (p: { n: number }): string =>
+      `Guardar · ${p.n} ${p.n === 1 ? "servicio" : "servicios"}`,
+  },
+  /** Formulario de "Ny fråga"/"Egen fråga" (`falt-A`, `falt-B`): mismos
+   * campos para crear una pregunta propia o editar una activada desde
+   * sugerencias. */
+  editor: {
+    tituloNueva: "Nueva pregunta",
+    etiquetaPropia: "Pregunta propia",
+    preguntaLabel: "Pregunta para el cliente",
+    preguntaPlaceholder: "Ej: ¿Qué color prefieres?",
+    ayudaLabel: "Texto de ayuda (opcional)",
+    tipoLabel: "Tipo de pregunta",
+    obligatoriaLabel: "Obligatoria",
+    alternativosLabel: "Alternativas",
+    ctaAgregarAlternativa: "+ Agregar",
+    ctaGuardar: "Guardar pregunta",
+    ctaEliminar: "Eliminar pregunta",
+  },
+  /** Botones "Ja"/"Nej" del switch de obligatoria (`falt-B`) y, del lado
+   * del cliente, de una pregunta de tipo `yes_no` en el formulario de
+   * reserva. */
+  siNo: {
+    si: "Sí",
+    no: "No",
+  },
+  /** Caja de aviso en vy A/B (`falt-B`, pie de la tarjeta): versión en
+   * español de Chile del boceto en sueco (que menciona el GDPR, que no
+   * aplica acá). Ley 21.719, no diagnósticos ni RUT — mismo criterio que
+   * `servicios.campos.nombreAyuda` y GUIA §9/§9.1. Revisado por
+   * security-reviewer (plan de WP-40 paso 8, §6). */
+  avisoDatosSensibles:
+    "No preguntes por salud, diagnósticos ni RUT. Esos datos necesitan protección especial según la Ley 21.719.",
+  errores: {
+    /** Tope duro del servidor (plan de WP-40 paso 3, §6): 5 preguntas por
+     * servicio, contando las que llegan por categoría. */
+    too_many_questions:
+      "Ese servicio ya tiene 5 preguntas, el máximo. Quita una antes de agregar otra.",
+    /** Nombres de código propuestos por `copywriter-es-cl` (mismo criterio
+     * que `acceso.errores`/`validacion`): scheduling-engineer confirma los
+     * códigos reales del esquema de Zod de
+     * `src/lib/validation/booking-questions.ts` (plan de WP-40 paso 3) y
+     * ajusta las claves si hace falta. Del lado del cliente en la página de
+     * reservas, no del dueño en Ajustes (esas usan `validacion`). */
+    respuesta: {
+      required: "Responde esta pregunta para reservar.",
+      invalid_option: "Elige una opción de la lista.",
+      empty_selection: "Elige al menos una opción.",
+      duplicate_option: "No repitas la misma opción.",
+      too_long: (p: { max: number }): string =>
+        `Escribe como máximo ${p.max} caracteres.`,
+      invalid_number: "Escribe un número entero, sin decimales.",
+      /** Mismo texto que `validacion.numeroEntero` (dueño en Ajustes): una
+       * sola definición para "número entero entre X y Y". */
+      out_of_range: validacion.numeroEntero,
+      invalid_date: "Esa fecha no existe.",
+      invalid_date_format: "Elige una fecha válida.",
+    },
+  },
+  /** Cómo se muestran las respuestas ya guardadas: agenda (detalle de la
+   * reserva), Hoy (tarjeta del cliente), la ficha del cliente y el correo
+   * "Tienes una reserva nueva" al dueño (plan de WP-40 paso 8; el correo lo
+   * arma integrations-engineer, plan paso 4). Una sola definición para las
+   * cuatro pantallas. */
+  visualizacion: {
+    titulo: "Respuestas de la reserva",
+    /** "{etiqueta}: {valor}", una respuesta por línea (para el correo en
+     * texto plano y como base de la fila en agenda/Hoy/ficha). */
+    par: (p: { etiqueta: string; valor: string }): string =>
+      `${p.etiqueta}: ${p.valor}`,
+    sinRespuestas: "No hay respuestas para esta reserva.",
+  },
+  toast: {
+    categoriaCreada: "Categoría creada.",
+    categoriaRenombrada: "Categoría actualizada.",
+    categoriaEliminada: "Categoría eliminada.",
+    preguntaGuardada: "Pregunta guardada.",
+    preguntaEliminada: "Pregunta eliminada.",
+    deshacer: comun.deshacer,
+  },
 } as const satisfies Trad;

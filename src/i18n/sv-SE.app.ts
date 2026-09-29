@@ -1338,6 +1338,7 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     horario: "Öppettider",
     mercadopago: "Betalningar",
     cuenta: "Konto",
+    formularioReserva: "Bokningsformulär",
   },
   reglas: {
     minNoticeLabel: "Minsta förvarning",
@@ -1658,6 +1659,140 @@ export const sms: Widen<typeof Es.sms> = {
 };
 
 // ---------------------------------------------------------------------------
+// formulario: tjänstekategorier och frågor i bokningsformuläret (WP-40,
+// D-031). Samma nycklar som `Es.formulario`; texten är hämtad direkt ur
+// designutkasten (`.visual-diff/ref/falt-A-bokningsformular.html`,
+// `falt-B-per-tjanst.html`, `falt-kategorier.html`) där de finns, eftersom
+// de utkasten redan är på svenska.
+// ---------------------------------------------------------------------------
+
+export const formulario: Widen<typeof Es.formulario> = {
+  candado: {
+    titulo: "Namn, telefon, e-post",
+    ayuda: "Alltid med i formuläret.",
+    etiqueta: "Låst",
+  },
+  preguntasContador: (p: { n: number; max: number }): string =>
+    `Frågor till kunden · ${p.n} av ${p.max}`,
+  sugerencias: {
+    titulo: (p: { bransch: string }): string => `Förslag för ${p.bransch}`,
+    cuerpo: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "vanlig fråga" : "vanliga frågor"} du kan slå på. Du bestämmer vilka.`,
+    ctaVer: "Visa förslag",
+    ctaOcultar: "Dölj förslag",
+  },
+  ctaNuevaPregunta: "+ Ny fråga",
+  tipos: {
+    short_text: "Kort text",
+    long_text: "Lång text",
+    single_choice: "Val i lista",
+    multi_choice: "Flera val",
+    number: "Siffra",
+    yes_no: "Ja/nej",
+    date: "Datum",
+  },
+  obligatoria: "Obligatorisk",
+  opcional: "Valfri",
+  todosLosServicios: "Alla tjänster",
+  guardaEnFicha: "Sparas på kundkortet",
+  preview: {
+    titulo: (p: { servicio: string }): string =>
+      `Så ser kunden det · ${p.servicio}`,
+  },
+  categorias: {
+    ctaNueva: "+ Ny kategori",
+    nameLabel: "Kategorins namn",
+    namePlaceholder: "T.ex: Dam",
+    ayuda:
+      "Dra för att ändra ordning. Kategorierna syns som flikar för kunden.",
+    vacia: "Har inga tjänster än.",
+    sinAsignar: "Utan kategori",
+    ctaRenombrar: "Byt namn",
+    ctaEliminar: "Ta bort kategori",
+    confirmarEliminar: {
+      titulo: "Ta bort den här kategorin?",
+      cuerpo:
+        "Tjänsterna blir utan kategori. Du kan ge dem en annan när du vill.",
+      ctaSi: "Ja, ta bort",
+      ctaNo: comun.noMantener,
+    },
+    pestanaTodas: "Alla",
+  },
+  servicioPregunta: {
+    pestana: "Frågor vid bokning",
+    ctaDesdeSugerencias: (p: { bransch: string }): string =>
+      `+ Från förslag för ${p.bransch}`,
+    ctaPreguntaPropia: "+ Egen fråga",
+    tambienUsadaEn: (p: { servicios: string }): string =>
+      `används även i ${p.servicios}`,
+    usarEnOtrosServicios: "Använd frågan även i andra tjänster",
+    ctaQuitar: "Ta bort",
+  },
+  aplicaA: {
+    titulo: "Gäller för",
+    todos: "Alla tjänster",
+    elegidos: "Valda tjänster",
+    buscarPlaceholder: "Sök tjänst",
+    todaLaCategoria: (p: { nombre: string }): string =>
+      `Hela kategorin ${p.nombre}`,
+    seleccion: (p: { x: number; y: number }): string => `${p.x} av ${p.y}`,
+    autoNuevosServicios:
+      "Lägg till automatiskt på nya tjänster i valda kategorier.",
+    ctaGuardar: (p: { n: number }): string =>
+      `Spara · ${p.n} ${p.n === 1 ? "tjänst" : "tjänster"}`,
+  },
+  editor: {
+    tituloNueva: "Ny fråga",
+    etiquetaPropia: "Egen fråga",
+    preguntaLabel: "Frågan kunden ser",
+    preguntaPlaceholder: "T.ex: Vilken nyans vill du ha?",
+    ayudaLabel: "Hjälptext (valfritt)",
+    tipoLabel: "Typ",
+    obligatoriaLabel: "Obligatorisk",
+    alternativosLabel: "Alternativ",
+    ctaAgregarAlternativa: "+ Lägg till",
+    ctaGuardar: "Spara fråga",
+    ctaEliminar: "Ta bort fråga",
+  },
+  siNo: {
+    si: "Ja",
+    no: "Nej",
+  },
+  avisoDatosSensibles:
+    "Fråga inte om hälsa, diagnoser eller personnummer. Sådana uppgifter kräver extra skydd enligt GDPR.",
+  errores: {
+    too_many_questions:
+      "Den tjänsten har redan 5 frågor, det maximala antalet. Ta bort en innan du lägger till en till.",
+    respuesta: {
+      required: "Svara på den här frågan för att boka.",
+      invalid_option: "Välj ett alternativ i listan.",
+      empty_selection: "Välj minst ett alternativ.",
+      duplicate_option: "Välj inte samma alternativ två gånger.",
+      too_long: (p: { max: number }): string =>
+        `Skriv högst ${p.max} tecken.`,
+      invalid_number: "Skriv ett heltal, utan decimaler.",
+      out_of_range: validacion.numeroEntero,
+      invalid_date: "Det datumet finns inte.",
+      invalid_date_format: "Välj ett giltigt datum.",
+    },
+  },
+  visualizacion: {
+    titulo: "Svar vid bokning",
+    par: (p: { etiqueta: string; valor: string }): string =>
+      `${p.etiqueta}: ${p.valor}`,
+    sinRespuestas: "Inga svar för den här bokningen.",
+  },
+  toast: {
+    categoriaCreada: "Kategori skapad.",
+    categoriaRenombrada: "Kategorin uppdaterad.",
+    categoriaEliminada: "Kategorin borttagen.",
+    preguntaGuardada: "Frågan sparad.",
+    preguntaEliminada: "Frågan borttagen.",
+    deshacer: comun.deshacer,
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
@@ -1689,5 +1824,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   CAJA_METODOS_MANUALES,
   caja,
   abono,
+  formulario,
 };
 void _check;

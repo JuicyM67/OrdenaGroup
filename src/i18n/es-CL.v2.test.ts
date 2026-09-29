@@ -39,6 +39,7 @@ import {
   caja,
   CAJA_METODOS_MANUALES,
   clientes,
+  formulario,
   horarios,
   negocio,
   onboarding,
@@ -89,6 +90,9 @@ const AREAS_V2: Record<string, Rama> = {
   caja,
   ajustes,
   abono,
+  // WP-40 (D-031): agregada acá en vez de un tercer archivo de prueba
+  // (mismas reglas de estructura/tono/marca que el resto de WP-03b).
+  formulario,
 };
 
 // ---------------------------------------------------------------------------
@@ -144,6 +148,18 @@ const MUESTRA_GENERICA_V2: Record<string, unknown> = {
   telefonoNegocio: "+56 9 1234 5678",
   canal: "por WhatsApp",
   seccion: "Servicios",
+  /** Agregados por `copywriter-es-cl` junto con `formulario` (WP-40,
+   * D-031): mismo criterio que el resto, un valor cualquiera del tipo
+   * correcto para detectar restos rotos, no para verificar el texto
+   * exacto. */
+  bransch: "peluquerías",
+  servicio: "Corte de pelo",
+  servicios: "Corte de pelo y Barba",
+  nombre: "Mujeres",
+  x: 3,
+  y: 5,
+  etiqueta: "Alergias",
+  valor: "No",
 };
 
 function invocarGenerico(fn: unknown): unknown {
