@@ -1,5 +1,7 @@
 // Hjälpkomponent till PageHeader (UserPill) och AgendaRow (WP-12). Visar initialer på en
 // tonad yta. Se DESIGN.md §7 "PageHeader"/"AgendaRow".
+// WP-41: tone="peach" tillagd (Profil, Personal-korten) — redan en token (`--color-peach`),
+// bara en ny variant i den här cva:n, ingen ny färg.
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "./cn";
@@ -21,6 +23,7 @@ const avatar = cva(
       tone: {
         lilac: "bg-lilac",
         "lilac-100": "bg-lilac-100",
+        peach: "bg-peach",
         "peach-50": "bg-peach-50",
         "lime-50": "bg-lime-50",
         sky: "bg-sky",

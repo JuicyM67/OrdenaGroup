@@ -13,6 +13,7 @@ import { cn } from "@/components/ui/cn";
 import { Pill } from "@/components/ui/pill";
 import { TextField } from "@/components/ui/text-field";
 import { ajustes, profesionales } from "@/i18n";
+import { STAFF_TITLE_MAX } from "@/lib/validation/profile";
 
 import { ajustesErrorText } from "./error-text";
 import type {
@@ -21,11 +22,11 @@ import type {
   AjustesStaffMember,
 } from "./types";
 
-type RowForm = { name: string; serviceIds: string[] };
-type RowErrors = { name?: string };
+type RowForm = { name: string; title: string; serviceIds: string[] };
+type RowErrors = { name?: string; title?: string };
 
 function toRowForm(s: AjustesStaffMember): RowForm {
-  return { name: s.name, serviceIds: s.serviceIds };
+  return { name: s.name, title: s.title, serviceIds: s.serviceIds };
 }
 
 function StaffForm({
@@ -64,6 +65,15 @@ function StaffForm({
         error={errors.name}
         maxLength={120}
       />
+      <TextField
+        label={profesionales.campos.tituloLabel}
+        placeholder={profesionales.campos.tituloPlaceholder}
+        hint={errors.title ? undefined : profesionales.campos.tituloAyuda}
+        value={form.title}
+        onChange={(e) => onChange({ ...form, title: e.target.value })}
+        error={errors.title}
+        maxLength={STAFF_TITLE_MAX}
+      />
       {services.length > 0 ? (
         <div className="flex flex-col gap-2">
           <span className="text-13 font-semibold text-ink">
@@ -94,6 +104,8 @@ function StaffForm({
   );
 }
 
+const EMPTY_FORM: RowForm = { name: "", title: "", serviceIds: [] };
+
 export function StaffSection({
   staff,
   services,
@@ -105,18 +117,21 @@ export function StaffSection({
     create: AjustesActions["createStaff"];
     update: AjustesActions["updateStaff"];
     setActive: AjustesActions["setStaffActive"];
+    /** WP-41: rol, guardado aparte (`src/server/owner/profile.ts`
+     * `updateStaffTitle`, no `updateStaff`). */
+    updateTitle: (id: string, title: string) => Promise<{ ok: true } | { ok: false; code: string }>;
   };
 }) {
   const [list, setList] = useState(staff);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
-  const [form, setForm] = useState<RowForm>({ name: "", serviceIds: [] });
+  const [form, setForm] = useState<RowForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<RowErrors>({});
   const [saving, setSaving] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
   function startNew() {
     setEditingId("new");
-    setForm({ name: "", serviceIds: [] });
+    setForm(EMPTY_FORM);
     setErrors({});
   }
 
@@ -133,8 +148,13 @@ export function StaffSection({
 
   async function submit() {
     const name = validateRequired(form.name, "staff.name_empty");
-    if (!name.ok) {
-      setErrors({ name: ajustesErrorText(name.code) });
+    const title = form.title.trim();
+    const titleOk = title.length <= STAFF_TITLE_MAX;
+    const nextErrors: RowErrors = {};
+    if (!name.ok) nextErrors.name = ajustesErrorText(name.code);
+    if (!titleOk) nextErrors.title = ajustesErrorText("staff.title_too_long");
+    if (Object.keys(nextErrors).length > 0) {
+      setErrors(nextErrors);
       return;
     }
     setErrors({});
@@ -145,6 +165,7 @@ export function StaffSection({
       if (editingId === "new") {
         const result = await actions.create(payload);
         if (result.ok) {
+          const titleResult = await actions.updateTitle(result.id, title);
           setList((prev) => [
             ...prev,
             {
@@ -152,6 +173,7 @@ export function StaffSection({
               name: payload.name,
               active: true,
               serviceIds: payload.serviceIds,
+              title: titleResult.ok ? title : "",
             },
           ]);
           setEditingId(null);
@@ -159,16 +181,27 @@ export function StaffSection({
           setErrors({ name: ajustesErrorText(result.code) });
         }
       } else if (editingId) {
-        const result = await actions.update(editingId, payload);
+        const [result, titleResult] = await Promise.all([
+          actions.update(editingId, payload),
+          actions.updateTitle(editingId, title),
+        ]);
         if (result.ok) {
           setList((prev) =>
             prev.map((s) =>
               s.id === editingId
-                ? { ...s, name: payload.name, serviceIds: payload.serviceIds }
+                ? {
+                    ...s,
+                    name: payload.name,
+                    serviceIds: payload.serviceIds,
+                    title: titleResult.ok ? title : s.title,
+                  }
                 : s,
             ),
           );
           setEditingId(null);
+          if (!titleResult.ok) {
+            setErrors({ title: ajustesErrorText(titleResult.code) });
+          }
         } else {
           setErrors({ name: ajustesErrorText(result.code) });
         }
@@ -223,6 +256,9 @@ export function StaffSection({
             >
               <div className="min-w-0">
                 <p className="text-15 font-bold text-ink">{s.name}</p>
+                {s.title ? (
+                  <p className="text-13 text-muted">{s.title}</p>
+                ) : null}
                 {s.serviceIds.length > 0 ? (
                   <p className="text-13 text-muted">
                     {services

@@ -32,6 +32,7 @@ import {
   type BookingFlowState,
 } from "./flow-state";
 import type { CustomerFormOutput, WaitlistFormOutput } from "./form-schema";
+import { type MobileTab, ProfileBrowse } from "./profile-browse";
 import { ServiceCard } from "./service-card";
 import { StaffPicker } from "./staff-picker";
 import { barPrice, findDay, summaryText } from "./summary";
@@ -131,6 +132,21 @@ export function BookingScreen({
     tabs.length > 0
       ? servicesForCategory(data.services, categoryId)
       : data.services;
+
+  // WP-41: företagsprofilen (`ProfileBrowse`) är den nya starten på `/{slug}`
+  // — "Boka" på en tjänst väljer den (samma reducer som förut) och växlar
+  // till den befintliga profesional/dag/hora-vyn ("picker"). Fixturer utan
+  // `data.profile` (design lab, `e2e/design-lab-reserva.spec.ts`) hoppar
+  // rakt till "picker" — oförändrat beteende där. `mobileTab` är profilens
+  // egen flikstat (Tjänster/Personal/Om oss/Info), skild från `categoryId`.
+  const [viewMode, setViewMode] = useState<"profile" | "picker">(
+    data.profile ? "profile" : "picker",
+  );
+  const [mobileTab, setMobileTab] = useState<MobileTab>("servicios");
+  function bookService(serviceId: string) {
+    selectService(serviceId);
+    setViewMode("picker");
+  }
 
   // Historik (planens steg 5): `datos` läggs som `?paso=datos` (pushState) så att
   // bakåtknappen på Android går tillbaka till valen med allt kvar. Bekräftelsen
@@ -274,10 +290,48 @@ export function BookingScreen({
     ctaAction = undefined;
   }
 
+  // WP-41: `ProfileBrowse` (viewMode "profile") svämmar över hela bredden
+  // (omslagsbild, sidopanel på dator) och sköter sin egen padding/sticky
+  // bokningsrad per brytpunkt — den ärver inte den gamla mobilpaddingen
+  // (`p-5 pb-35`) som resten av flödet fortfarande använder.
+  const isProfileBrowse = state.step === "seleccion" && viewMode === "profile";
+
   return (
-    <div className="relative flex min-h-full flex-col gap-6 p-5 pb-35">
+    <div
+      className={
+        isProfileBrowse
+          ? "relative flex min-h-full flex-col"
+          : "relative flex min-h-full flex-col gap-6 p-5 pb-35"
+      }
+    >
       {state.step === "seleccion" ? (
+        isProfileBrowse && data.profile ? (
+          <ProfileBrowse
+            data={data}
+            profile={data.profile}
+            tabs={tabs}
+            categoryId={categoryId}
+            onSelectCategory={setCategoryId}
+            visibleServices={visibleServices}
+            onBookService={bookService}
+            mobileTab={mobileTab}
+            onSelectMobileTab={setMobileTab}
+          />
+        ) : (
         <>
+          {data.profile ? (
+            // WP-41: ingen referens för den här länken (ny, bara i "picker"-läget
+            // — se kommentaren vid `viewMode` ovan). Vanlig `<button>`, inte
+            // `TextLink` (den är till riktig navigation via `next/link`, det här
+            // är bara ett lokalt vy-byte).
+            <button
+              type="button"
+              onClick={() => setViewMode("profile")}
+              className="self-start text-13 font-semibold text-ink underline transition-colors duration-150 ease-out hover:text-pending-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none"
+            >
+              {comun.volver}
+            </button>
+          ) : null}
           <BusinessHeader business={data.business} />
 
           <section
@@ -411,6 +465,7 @@ export function BookingScreen({
             ) : null}
           </section>
         </>
+        )
       ) : state.step === "datos" ? (
         <CustomerForm
           formId={formId}
@@ -432,7 +487,7 @@ export function BookingScreen({
         <Confirmation data={data} selection={selection} day={day} />
       )}
 
-      {isOffline && state.step !== "confirmacion" ? (
+      {!isProfileBrowse && isOffline && state.step !== "confirmacion" ? (
         <p role="status" className="text-13 text-ink">
           {comun.sinConexion}
         </p>
