@@ -3,13 +3,21 @@
 // `vista`, fokusdag, synliga profesionales, vald bokning och lokala statusändringar
 // (WP-12 FRÅGA 7). URL:en hålls i synk med `?vista=&fecha=` via `router.replace`
 // (ingen historikpost per klick).
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 
+import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import type { YearMonth } from "@/components/ui/mini-calendar/grid";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   addLocalDays,
+  formatLocalDate,
   formatTime,
   isoWeekdayOf,
   toWallClock,
@@ -51,13 +59,20 @@ import type {
   ManualBookingSubmit,
 } from "./manual-booking-dialog";
 import { ManualBookingDialog } from "./manual-booking-dialog";
+import { MobileDayNav } from "./mobile-day-nav";
 import { MonthCard } from "./month-card";
 import { MoveDialog } from "./move-dialog";
 import { NowLine } from "./now-line";
 import { StaffFilter } from "./staff-filter";
+import { StaffSwitcher } from "./staff-switcher";
 import { TimeGrid, type TimeGridColumn } from "./time-grid";
 import type { AgendaBooking, AgendaData, StaffId } from "./types";
+import { useIsDesktopLayout } from "./use-desktop-layout";
 import { WaitlistSummary } from "./waitlist-summary";
+
+/** WP-42: tröskel (px) för att en horisontell svep-gest på mobilens dagvy ska räknas som
+ * "byt dag" i stället för vertikal skrollning genom TimeGrid. */
+const SWIPE_THRESHOLD_PX = 48;
 
 export type AgendaActionResult = { ok: true } | { ok: false; error: string };
 
@@ -175,6 +190,37 @@ export function AgendaScreen({
     setAnnouncement((prev) => ({ id: (prev?.id ?? 0) + 1, text }));
   }
 
+  // WP-42: skrivbordets och mobilens dagnavigering/rubriker är CSS-dolda med varandra
+  // (`hidden lg:flex`/`lg:hidden`, billigt och utan hydreringsrisk) — men rutnätet med
+  // BOKNINGAR får bara monteras en gång, annars matchar `getByText`/`getByTestId` (Playwright
+  // filtrerar inte på synlighet för lokatorupplösning, bara för `.toBeVisible()`) samma
+  // bokning två gånger och strict mode-fel, se e2e/owner-live.spec.ts (WP-42-granskning).
+  // `useSyncExternalStore` (inte `useEffect`+`setState`, som React varnar för — cascading
+  // render) är Reacts egna rekommenderade mönster för att prenumerera på `matchMedia`:
+  // `getServerSnapshot` styr både SSR och den allra första klientrendern (ingen
+  // hydreringskrock), och synkas mot det riktiga värdet innan webbläsaren målar om.
+  const isDesktopLayout = useIsDesktopLayout();
+
+  // WP-42: svep vänster/höger byter dag i mobilens dagvy (touch-koordinater i en ref, inga
+  // re-renderingar under själva geste). Ignorerar geste som är mer vertikal än horisontell
+  // (TimeGrid behöver sin egen vertikala skroll) och kortare än tröskeln.
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  function handleDayTouchStart(e: ReactTouchEvent) {
+    const t = e.touches[0];
+    touchStart.current = t ? { x: t.clientX, y: t.clientY } : null;
+  }
+  function handleDayTouchEnd(e: ReactTouchEvent) {
+    const start = touchStart.current;
+    touchStart.current = null;
+    const t = e.changedTouches[0];
+    if (!start || !t) return;
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy) * 2)
+      return;
+    goTo("dia", addLocalDays(focus, dx < 0 ? 1 : -1));
+  }
+
   function goTo(nextVista: Vista, nextFocus: LocalDate) {
     setVista(nextVista);
     setFocus(nextFocus);
@@ -206,16 +252,29 @@ export function AgendaScreen({
     return override ? { ...booking, status: override } : booking;
   }
 
-  function selectBooking(id: string) {
+  // WP-42: skrivbordets (vecko-/dagvyn) och mobilens dagvy är BÅDA alltid kvar i DOM:en
+  // (bara CSS-dolda med `hidden`/`lg:hidden`, se render nedan — inget useEffect-gate, det
+  // skulle riskera ett synligt hopp i `npm run visual agenda` innan hydreringen hunnit
+  // klart). Samma bokning kan därför finnas i båda träden samtidigt. `EventPopover` portalar
+  // sitt innehåll till `document.body` (Radix) och skulle annars monteras dubbelt — en
+  // spökpopover top-left där triggerns `display:none`-förälder ger en 0×0-rect. `surface`
+  // låser popovern till den yta som faktiskt gjorde valet.
+  type Surface = "desktop" | "mobile";
+  const [selectionSurface, setSelectionSurface] = useState<Surface>("desktop");
+
+  function selectBooking(id: string, surface: Surface = "desktop") {
     setSelectedBookingId(id);
+    setSelectionSurface(surface);
     setPopoverOpen(true);
   }
 
   function renderPopoverIfSelected(
     booking: AgendaBooking,
     trigger: ReactNode,
+    surface: Surface = "desktop",
   ): ReactNode {
-    if (booking.id !== selectedBookingId) return trigger;
+    if (booking.id !== selectedBookingId || surface !== selectionSurface)
+      return trigger;
     const staffName = staffById.get(booking.staffId)?.name ?? "";
     return (
       <EventPopover
@@ -386,6 +445,7 @@ export function AgendaScreen({
     <>
       <AgendaShell
         className={className}
+        mobileTabBar={<OwnerMobileTabBar active="agenda" className="lg:hidden" />}
         rail={
           <AgendaRail
             staff={data.staff}
@@ -433,63 +493,120 @@ export function AgendaScreen({
           </>
         }
       >
-        <AgendaToolbar
-          title={weekTitle(focus)}
-          onToday={() => goTo(vista, today)}
-          onPrevWeek={() => goTo(vista, addLocalDays(focus, -7))}
-          onNextWeek={() => goTo(vista, addLocalDays(focus, 7))}
-          onNewBooking={() => {
-            if (onCreateManualBooking) setManualDialogOpen(true);
-          }}
-        />
-        <div className="mt-3 flex justify-end">
-          <SegmentedControl
-            aria-label={agenda.vistaAria}
-            value={vista}
-            onValueChange={(v) => {
-              if (v === "semana" || v === "dia") goTo(v, focus);
+        {/* Skrivbordet (≥ lg): vecko-/dagvyn, oförändrad (npm run visual agenda/agenda-dia). */}
+        <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+          <AgendaToolbar
+            title={weekTitle(focus)}
+            onToday={() => goTo(vista, today)}
+            onPrevWeek={() => goTo(vista, addLocalDays(focus, -7))}
+            onNextWeek={() => goTo(vista, addLocalDays(focus, 7))}
+            onNewBooking={() => {
+              if (onCreateManualBooking) setManualDialogOpen(true);
             }}
-            options={[
-              { value: "mes", label: calendario.vista.mes, disabled: true },
-              { value: "semana", label: calendario.vista.semana },
-              { value: "dia", label: calendario.vista.dia },
-            ]}
           />
-        </div>
-        <DayPillRow
-          days={week}
-          today={today}
-          closedDates={closedDates}
-          gmtLabel={offsetLbl}
-          vista={vista}
-          selectedDate={vista === "dia" ? focus : null}
-          onSelectDay={(date) => goTo("dia", date)}
-        />
-        {vista === "semana" ? (
-          <TimeGrid
-            ariaLabel={sectionAria(week[0] as LocalDate, week[6] as LocalDate)}
-            startHour={gridRange.startHour}
-            endHour={gridRange.endHour}
-            headerHeight={0}
-            columns={weekColumns}
-            initialScrollHour={scrollHour}
-          />
-        ) : (
-          <DayGrid
-            data={data}
-            date={focus}
-            tz={tz}
+          <div className="mt-3 flex justify-end">
+            <SegmentedControl
+              aria-label={agenda.vistaAria}
+              value={vista}
+              onValueChange={(v) => {
+                if (v === "semana" || v === "dia") goTo(v, focus);
+              }}
+              options={[
+                { value: "mes", label: calendario.vista.mes, disabled: true },
+                { value: "semana", label: calendario.vista.semana },
+                { value: "dia", label: calendario.vista.dia },
+              ]}
+            />
+          </div>
+          <DayPillRow
+            days={week}
             today={today}
-            now={now}
-            gridRange={gridRange}
-            visibleStaff={visibleStaff}
-            highlightedStaffId={highlightedStaffId}
-            selectedBookingId={selectedBookingId}
-            renderTrigger={renderPopoverIfSelected}
-            onSelectBooking={selectBooking}
-            initialScrollHour={scrollHour}
+            closedDates={closedDates}
+            gmtLabel={offsetLbl}
+            vista={vista}
+            selectedDate={vista === "dia" ? focus : null}
+            onSelectDay={(date) => goTo("dia", date)}
           />
-        )}
+          {isDesktopLayout ? (
+            vista === "semana" ? (
+              <TimeGrid
+                ariaLabel={sectionAria(
+                  week[0] as LocalDate,
+                  week[6] as LocalDate,
+                )}
+                startHour={gridRange.startHour}
+                endHour={gridRange.endHour}
+                headerHeight={0}
+                columns={weekColumns}
+                initialScrollHour={scrollHour}
+              />
+            ) : (
+              <DayGrid
+                data={data}
+                date={focus}
+                tz={tz}
+                today={today}
+                now={now}
+                gridRange={gridRange}
+                visibleStaff={visibleStaff}
+                highlightedStaffId={highlightedStaffId}
+                selectedBookingId={selectedBookingId}
+                renderTrigger={(b, t) =>
+                  renderPopoverIfSelected(b, t, "desktop")
+                }
+                onSelectBooking={(id) => selectBooking(id, "desktop")}
+                initialScrollHour={scrollHour}
+              />
+            )
+          ) : null}
+        </div>
+
+        {/* Mobil (< lg): dagvy som standard, en profesional åt gången (WP-42 — härledd,
+            ingen ritad referens). Ingen veckovy på mobil. */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 lg:hidden">
+          <MobileDayNav
+            title={formatLocalDate(focus, "weekdayDayMonthShort")}
+            onToday={() => goTo("dia", today)}
+            onPrevDay={() => goTo("dia", addLocalDays(focus, -1))}
+            onNextDay={() => goTo("dia", addLocalDays(focus, 1))}
+            onNewBooking={() => {
+              if (onCreateManualBooking) setManualDialogOpen(true);
+            }}
+          />
+          {data.staff.length > 1 ? (
+            <StaffSwitcher
+              staff={data.staff}
+              selectedId={highlightedStaffId}
+              onSelect={setHighlightedStaffId}
+            />
+          ) : null}
+          <div
+            className="flex min-h-0 flex-1 flex-col"
+            onTouchStart={handleDayTouchStart}
+            onTouchEnd={handleDayTouchEnd}
+          >
+            {!isDesktopLayout ? (
+              <DayGrid
+                data={data}
+                date={focus}
+                tz={tz}
+                today={today}
+                now={now}
+                gridRange={gridRange}
+                visibleStaff={data.staff.filter(
+                  (s) => s.id === highlightedStaffId,
+                )}
+                highlightedStaffId={highlightedStaffId}
+                selectedBookingId={selectedBookingId}
+                renderTrigger={(b, t) =>
+                  renderPopoverIfSelected(b, t, "mobile")
+                }
+                onSelectBooking={(id) => selectBooking(id, "mobile")}
+                initialScrollHour={scrollHour}
+              />
+            ) : null}
+          </div>
+        </div>
       </AgendaShell>
 
       {onCreateManualBooking ? (

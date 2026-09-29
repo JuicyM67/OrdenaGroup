@@ -6,7 +6,7 @@
 // se `agenda-screen.tsx` (`showMover`), och knappen döljs helt (utanför WP-21:s scope).
 import * as Popover from "@radix-ui/react-popover";
 import { X } from "lucide-react";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AnswersList } from "@/components/booking/answers-list";
 import { Button } from "@/components/ui/button";
@@ -48,15 +48,40 @@ export function EventPopover({
   trigger,
 }: EventPopoverProps) {
   const model = popoverModel(booking, staffName, tz);
+  // WP-42: `side="left" alignOffset={-49}` (desktopens Agenda.dc.html-placering, 1440 px
+  // brett rutnät med gott om utrymme till vänster om triggern) klipps mot vänsterkanten på
+  // en 390 px mobil (Radix Popper flippar inte förbi ett explicit `alignOffset`). Under `lg`
+  // används i stället en placering under triggern, centrerad och klämd inom skärmen av
+  // Poppers egen `shift`. `matchMedia` läses direkt (lazy `useState`-initierare) i stället
+  // för `useEffect`: `Popover.Content` monteras bara när `open` är sant (Radix), och
+  // popovern öppnas alltid efter ett klick — långt efter hydrering — så det finns inget
+  // server-/klientmarkup att stämma av mot (ingen hydreringsrisk) och `npm run visual
+  // agenda` (`hasPopover: true`, 1440 px) påverkas inte. `addEventListener("change", …)`
+  // täcker bara en live storleksändring av samma flik (sällsynt, men billigt att stödja).
+  // jsdom (Vitest) saknar `window.matchMedia` helt — samma vakt som
+  // `use-desktop-layout.ts` (agenda-screen.tsx).
+  const hasMatchMedia =
+    typeof window !== "undefined" && typeof window.matchMedia === "function";
+  const [compact, setCompact] = useState(
+    () => hasMatchMedia && window.matchMedia("(max-width: 1023px)").matches,
+  );
+  useEffect(() => {
+    if (!hasMatchMedia) return;
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const onChange = () => setCompact(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, [hasMatchMedia]);
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <Popover.Trigger asChild>{trigger}</Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
-          side="left"
-          align="start"
-          sideOffset={16}
-          alignOffset={-49}
+          side={compact ? "bottom" : "left"}
+          align={compact ? "center" : "start"}
+          sideOffset={compact ? 8 : 16}
+          alignOffset={compact ? 0 : -49}
+          collisionPadding={12}
           aria-label={agenda.popover.titulo}
           className="z-10 flex w-72.5 flex-col gap-3 rounded-panel bg-surface px-5 py-4.5 shadow-popover"
         >
