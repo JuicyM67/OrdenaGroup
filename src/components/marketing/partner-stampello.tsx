@@ -12,6 +12,8 @@ import { cn } from "@/components/ui/cn";
 import { strokeArrow } from "@/components/ui/icons";
 import { copy } from "@/i18n/marketing";
 
+import { StampelloWalletMock } from "./stampello-wallet-mock";
+
 const PARTNER = copy.sitio.partner.stampello;
 
 export function PartnerStampello({ compact }: { compact?: boolean }) {
@@ -22,37 +24,42 @@ export function PartnerStampello({ compact }: { compact?: boolean }) {
       padding={compact ? "lg" : "xl"}
       className="flex flex-col items-start gap-5 bg-sky lg:flex-row lg:items-center lg:justify-between"
     >
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <span className="inline-flex w-fit items-center rounded-full bg-ink px-3 py-1.25 text-12 font-bold tracking-caps text-on-dark uppercase">
-            {PARTNER.etiqueta}
-          </span>
-          <span className="font-display text-18 font-bold tracking-display text-ink">
-            Stampello
-          </span>
+      <div className="flex flex-col items-start gap-5">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="inline-flex w-fit items-center rounded-full bg-ink px-3 py-1.25 text-12 font-bold tracking-caps text-on-dark uppercase">
+              {PARTNER.etiqueta}
+            </span>
+            <span className="font-display text-18 font-bold tracking-display text-ink">
+              Stampello
+            </span>
+          </div>
+          <h2
+            className={cn(
+              "font-display font-bold tracking-display text-ink",
+              compact ? "text-22" : "text-26",
+            )}
+          >
+            {PARTNER.titulo}
+          </h2>
+          <p
+            className={cn("max-w-xl text-ink", compact ? "text-14" : "text-15")}
+          >
+            {PARTNER.texto}
+          </p>
         </div>
-        <h2
-          className={cn(
-            "font-display font-bold tracking-display text-ink",
-            compact ? "text-22" : "text-26",
-          )}
-        >
-          {PARTNER.titulo}
-        </h2>
-        <p className={cn("max-w-xl text-ink", compact ? "text-14" : "text-15")}>
-          {PARTNER.texto}
-        </p>
+        <Button asChild variant="primary" size="xl" className="w-fit shrink-0">
+          <a href={PARTNER.url} target="_blank" rel="noopener">
+            {PARTNER.cta}
+            <ArrowUpRight
+              aria-hidden="true"
+              className="size-4"
+              strokeWidth={strokeArrow}
+            />
+          </a>
+        </Button>
       </div>
-      <Button asChild variant="primary" size="xl" className="w-fit shrink-0">
-        <a href={PARTNER.url} target="_blank" rel="noopener">
-          {PARTNER.cta}
-          <ArrowUpRight
-            aria-hidden="true"
-            className="size-4"
-            strokeWidth={strokeArrow}
-          />
-        </a>
-      </Button>
+      <StampelloWalletMock />
     </Card>
   );
 }

@@ -57,5 +57,15 @@
       opacity: 1 !important;
       transform: none !important;
     }
+    /* Stampello-mockuppen (partner-stampello.tsx): visa bara resultatet av att lägga till
+       stämpeln (6/8), inte de överlappande lagren mitt i loopen. `animate-wallet-rise`
+       behöver ingen egen regel här — dess `both` i själva animationsvärdet (tokens.css)
+       räcker redan. */
+    .animate-wallet-stamp-out {
+      opacity: 0 !important;
+    }
+    .animate-wallet-stamp-in {
+      opacity: 1 !important;
+    }
   }
 }

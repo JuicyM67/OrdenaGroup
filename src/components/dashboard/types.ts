@@ -66,6 +66,13 @@ export type InicioData = {
     noShowTrend: "down" | "up" | "flat";
   };
   today: TodayBooking[];
+  /**
+   * Nästa (upp till 10) obekräftade/kommande bokningar från och med `now`, oavsett dag —
+   * inte bara innevarande vecka (WP-fixar-sv: ägaren missade en bokning för nästa vecka
+   * eftersom Agenda bara visar en vecka i taget). Samma radform som `today`
+   * (`TodayBooking`), så `AgendaRow`/`statusChip` kan återanvändas.
+   */
+  upcoming: TodayBooking[];
   calendar: {
     month: { year: number; month: number };
     markedDates: LocalDate[];

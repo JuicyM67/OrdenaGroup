@@ -28,6 +28,9 @@ const at = (date: string, time: string) =>
   fromLocal(date as LocalDate, time as LocalTime, SANTIAGO).getTime();
 
 const TUE = "2026-10-06" as LocalDate;
+// Una semana después de TUE (WP-fixar-sv, "Kommande bokningar"): fuera de la semana que
+// muestra la Agenda, para probar que `upcoming` no depende de qué semana mira el dueño.
+const NEXT_TUE = "2026-10-13" as LocalDate;
 
 let bizA: TestBusiness;
 let bizB: TestBusiness;
@@ -102,5 +105,35 @@ describe("loadOwnerInicio", () => {
     });
     expect(data.business.name).toBe("Barbería Test");
     expect(data.stats.bookingsToday).toBeGreaterThan(0);
+  });
+
+  it("upcoming incluye reservas de otra semana, no solo la actual, y respeta RLS", async () => {
+    const now = new Date(at(TUE, "09:00"));
+    const idHoy = await insertTestBooking(bizA, {
+      start: at(TUE, "14:00"),
+      durationMin: 35,
+    });
+    const idProximaSemana = await insertTestBooking(bizA, {
+      start: at(NEXT_TUE, "10:00"),
+      durationMin: 35,
+    });
+    await insertTestBooking(bizB, {
+      start: at(NEXT_TUE, "10:00"),
+      durationMin: 35,
+    });
+
+    const data = await loadOwnerInicio(bizA.ownerUserId, bizA.id, TUE, now, {
+      name: "Ana",
+      firstName: "Ana",
+    });
+    const upcomingIds = data.upcoming.map((b) => b.id);
+    expect(upcomingIds).toContain(idHoy);
+    expect(upcomingIds).toContain(idProximaSemana);
+
+    const dataB = await loadOwnerInicio(bizA.ownerUserId, bizB.id, TUE, now, {
+      name: "Ana",
+      firstName: "Ana",
+    });
+    expect(dataB.upcoming).toEqual([]);
   });
 });

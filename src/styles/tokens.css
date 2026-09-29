@@ -724,6 +724,41 @@
     92%,
     100% { opacity: 0; transform: translateY(-8px); }
   }
+
+  /* Stampello-mockuppen (partner-stampello.tsx, WP-fixar-sv): kortet reser sig ur
+     wallet-stacken en gång vid infästning (`both`, samma teknik som `fade-up`/`pop-in`). */
+  --animate-wallet-rise: wallet-rise 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  @keyframes wallet-rise {
+    from { opacity: 0; transform: translateY(28px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* En stämpel läggs till: "5/8" tonar/krymper bort medan "6/8" poppar in ovanpå (samma
+     tvålagersteknik som hero-copy-out/-in). Slutläget (100 %, även reducerad rörelse) är
+     "6/8" — resultatet av att stämpeln lades till, inte utgångsläget. */
+  --animate-wallet-stamp-out: wallet-stamp-out 6s ease-in-out infinite;
+  @keyframes wallet-stamp-out {
+    0%,
+    45% { opacity: 1; transform: scale(1); }
+    55%,
+    100% { opacity: 0; transform: scale(0.7); }
+  }
+  --animate-wallet-stamp-in: wallet-stamp-in 6s ease-in-out infinite;
+  @keyframes wallet-stamp-in {
+    0%,
+    45% { opacity: 0; transform: scale(0.7); }
+    50% { transform: scale(1.3); }
+    55%,
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* QR-koden andas lätt, en jämn loop (samma teknik som `shadow-pulse`). */
+  --animate-wallet-qr-pulse: wallet-qr-pulse 3s ease-in-out infinite;
+  @keyframes wallet-qr-pulse {
+    0%,
+    100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.85; }
+  }
 }
 
 :root {

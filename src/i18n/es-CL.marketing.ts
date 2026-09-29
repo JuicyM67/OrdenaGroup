@@ -1050,6 +1050,12 @@ export const sitio = {
         "Premia a tus clientes frecuentes con una tarjeta de sellos digital. Stampello es un servicio externo, pensado para negocios como el tuyo.",
       cta: "Conocer Stampello",
       url: "https://stampello.se",
+      /** Mockup de la tarjeta de wallet (WP-fixar-sv): recreación con nuestros tokens
+       * (nunca el naranjo de Stampello), no el producto real. */
+      tarjeta: {
+        sellosEtiqueta: "SELLOS",
+        premioEtiqueta: (p: { n: number }): string => `${p.n} SELLOS DAN`,
+      },
     },
   },
 } as const satisfies Trad;

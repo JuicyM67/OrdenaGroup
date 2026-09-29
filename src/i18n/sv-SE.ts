@@ -1047,6 +1047,10 @@ export const sitio = {
         "Belöna dina återkommande kunder med ett digitalt stämpelkort. Stampello är en fristående tjänst, gjord för företag som ditt.",
       cta: "Upptäck Stampello",
       url: "https://stampello.se",
+      tarjeta: {
+        sellosEtiqueta: "STÄMPLAR",
+        premioEtiqueta: (p: { n: number }): string => `${p.n} STÄMPLAR GER`,
+      },
     },
   },
 } as const satisfies Trad;

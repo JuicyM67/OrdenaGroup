@@ -129,7 +129,7 @@ export function BusinessStep({
       <TextField
         label={negocio.campos.phoneLabel}
         hint={errors.phone ? undefined : negocio.campos.phoneAyuda}
-        placeholder="+56 9 1234 5678"
+        placeholder={negocio.campos.phonePlaceholder}
         value={value.phone}
         onChange={(e) => onChange({ ...value, phone: e.target.value })}
         error={errors.phone}

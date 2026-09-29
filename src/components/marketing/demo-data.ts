@@ -17,6 +17,10 @@ export const DEMO = {
     // retro 2026-09-28, punkt 2): 15 %/10 %/5 % är dekor, det fasta priset formateras
     // per marknad precis som alla andra belopp (regel dura 5).
     comisionFinal: formatClp(0),
+    // Mockup del "wallet" en `partner-stampello.tsx` (WP-fixar-sv): nombre del negocio y
+    // premio de ejemplo para la tarjeta de sellos, decoración, no UI-text real.
+    walletNegocio: "Barbería Central",
+    walletPremio: "Café gratis",
   },
   SE: {
     dagar: ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"],
@@ -28,5 +32,7 @@ export const DEMO = {
     kund: "Elsa Lindqvist",
     lank: "dittforetag.se/boka",
     comisionFinal: "0 kr",
+    walletNegocio: "Salong Nova",
+    walletPremio: "Gratis kaffe",
   },
 }[market];

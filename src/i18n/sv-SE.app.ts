@@ -394,6 +394,13 @@ export const inicio: Widen<typeof Es.inicio> = {
       `${p.servicio} · med ${p.profesional}`,
     vacio: "Du har inga bokningar idag än.",
   },
+  proximasReservas: {
+    titulo: "Kommande bokningar",
+    verAgenda: "Se i kalendern",
+    vacio: "Du har inga kommande bokningar.",
+    fechaHora: (p: { fecha: string; hora: string }): string =>
+      `${p.fecha} · ${p.hora}`,
+  },
   flashCard: {
     titulo: "Aktiv flashtid",
     vacio: "Du har ingen aktiv flashtid än.",
@@ -1129,6 +1136,7 @@ export const negocio: Widen<typeof Es.negocio> = {
     phoneLabel: "Företagets telefonnummer",
     phoneAyuda:
       "Mobil eller fast telefon. Dina kunder ser det i bekräftelsen och använder det för att kontakta dig om de inte kan ändra tiden själva.",
+    phonePlaceholder: "070-123 45 67",
     addressLabel: "Adress (valfritt)",
     addressPlaceholder: "Gata och nummer",
   },
@@ -1215,6 +1223,7 @@ export const servicios: Widen<typeof Es.servicios> = {
       'Skriv till exempel "Naprapatbehandling" eller "Behandling (60 min)", inte diagnos eller specifik behandling.',
     durationLabel: "Tid (min)",
     priceLabel: "Pris",
+    pricePlaceholder: "100 kr",
     bufferLabel: "Extra tid efteråt",
     bufferAyuda: "För städning eller förberedelse. Kunden ser den inte.",
     categoryLabel: "Kategori (valfritt)",
