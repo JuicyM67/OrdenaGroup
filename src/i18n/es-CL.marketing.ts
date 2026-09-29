@@ -242,7 +242,6 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
       "1 profesional",
       "Recordatorios por WhatsApp (~150 al mes)",
       "Lista de espera",
-      "Tarjeta de sellos digital",
       "Abono para reservar",
     ],
     cta: "Elegir Emprende",
@@ -675,6 +674,31 @@ export const sitio = {
     masElegido: "Más elegido",
     compararTitulo: "Compara los planes",
     fundador: landing.precios.fundador,
+    /** Textos cortos extra para darle más vida a la página de Precios
+     * (arreglo `copywriter-es-cl`): un contador de "cuánto cuesta por
+     * profesional" (1 a 12), la lista de cosas que nunca se cobran, y un
+     * link corto hacia `ventajas` (comparación honesta). */
+    extra: {
+      raknare: {
+        titulo: "Cuánto cuesta por profesional",
+        texto: (p: { n: number }): string =>
+          `Con ${p.n} ${p.n === 1 ? "profesional" : "profesionales"} en tu equipo, sigues pagando el mismo precio de tu plan.`,
+        sufijo: "profesionales en tu equipo",
+      },
+      ingaAvgifter: {
+        titulo: "Sin sorpresas en la cuenta",
+        items: {
+          a: "Sin cobro por reserva",
+          b: "Sin costo de instalación",
+          c: "Sin permanencia",
+          d: "Cancela cuando quieras",
+        },
+      },
+      jamfor: {
+        texto: "¿Quieres ver cómo nos comparamos con otras opciones?",
+        cta: "Ver la comparación",
+      },
+    },
     faq: {
       iva: {
         pregunta: "¿Los precios incluyen IVA?",
@@ -700,6 +724,165 @@ export const sitio = {
         respuesta:
           "Los primeros negocios que se suman pagan la mitad de su plan para siempre.",
       },
+    },
+  },
+  /** Página propia de Horas flash (venta de último minuto de horas libres,
+   * F13 de MVP_SPEC.md). Hoy el aviso a los clientes va por correo; el aviso
+   * por WhatsApp llega próximamente (mismo criterio que
+   * `SITIO_FUNCIONALIDADES.recordatorios`). */
+  flashPagina: {
+    meta: {
+      titulo: (p: { nombre: string }): string => `Horas flash — ${p.nombre}`,
+      descripcion: (p: { nombre: string }): string =>
+        `Vende tus horas libres con descuento antes de perderlas, con ${p.nombre}. Tú eliges el descuento y cuánto dura.`,
+    },
+    hero: {
+      etiqueta: "Horas flash",
+      titulo: "Vende tus horas libres antes de perderlas",
+      texto:
+        "Cuando te queda una hora libre a último minuto, la ofreces con descuento a tus clientes. La primera persona en reservar se la queda.",
+      cta: SITIO_CTA,
+    },
+    comoFunciona: {
+      titulo: "Cómo funciona",
+      pasos: {
+        uno: {
+          titulo: "Marca la hora libre",
+          texto: "Elige la hora que quedó libre y el descuento, con un clic.",
+        },
+        dos: {
+          titulo: "Avisamos a tus clientes",
+          texto:
+            "Les llega un correo con la oferta y el link para reservar al tiro.",
+        },
+        tres: {
+          titulo: "Se cierra apenas alguien reserva",
+          texto:
+            "La primera persona en reservar se la queda; a los demás les avisamos que ya se ocupó.",
+        },
+      },
+    },
+    beneficios: {
+      titulo: "Por qué te conviene",
+      items: {
+        a: {
+          titulo: "Recupera horas que se iban a perder",
+          texto:
+            "Cada hora libre que vendes con descuento es plata que antes se perdía.",
+        },
+        b: {
+          titulo: "Tú decides el descuento",
+          texto: "Eliges el porcentaje y cuánto dura la oferta, hora por hora.",
+        },
+        c: {
+          titulo: "Por correo, con WhatsApp en camino",
+          texto:
+            "Hoy avisamos por correo a tus clientes; los avisos por WhatsApp llegan próximamente.",
+        },
+        d: {
+          titulo: "Se cierra sola",
+          texto:
+            "Apenas alguien reserva, la oferta desaparece para los demás. Sin dobles reservas.",
+        },
+      },
+    },
+    ejemplo: {
+      titulo: "Un ejemplo",
+      texto:
+        "Una hora libre de $15.000 con un 20% de descuento se vende en $12.000, en vez de quedar en $0.",
+    },
+    faq: {
+      titulo: "Preguntas frecuentes",
+      items: {
+        a: {
+          pregunta: "¿Cuánto tiempo dura una hora flash?",
+          respuesta:
+            "Tú decides: puede durar unos minutos o hasta que llegue la hora de la cita.",
+        },
+        b: {
+          pregunta: "¿Mis clientes reciben la oferta por WhatsApp?",
+          respuesta:
+            "Por ahora la reciben por correo. Los avisos por WhatsApp llegan próximamente.",
+        },
+        c: {
+          pregunta: "¿Qué pasa si nadie reserva la hora flash?",
+          respuesta:
+            "No pasa nada: la hora queda libre igual que antes, sin costo ni compromiso.",
+        },
+      },
+    },
+    cta: {
+      titulo: "¿Lista para vender tus horas libres?",
+      texto: "Crea tu cuenta gratis y activa tu primera hora flash en minutos.",
+      boton: SITIO_CTA,
+    },
+  },
+  /** Página propia "Por qué elegirnos": seis ventajas concretas (nada de
+   * promesas sin fuente, GUIA §11) más una comparación honesta contra la
+   * otra opción del mercado, con fuente y fecha en `comparacion.nota`. El
+   * detalle fila por fila vive en `SITIO_COMPARACION`, fuera de `Trad`
+   * (mismo motivo que `SITIO_PRECIOS_TABLA`). */
+  ventajas: {
+    meta: {
+      titulo: (p: { nombre: string }): string =>
+        `Por qué elegirnos — ${p.nombre}`,
+      descripcion: (p: { nombre: string }): string =>
+        `Seis razones concretas para elegir ${p.nombre}, y una comparación honesta con AgendaPro.`,
+    },
+    hero: {
+      etiqueta: "Por qué elegirnos",
+      titulo: "Seis razones para elegir una agenda hecha para tu negocio",
+      texto:
+        "Sin letra chica: acá tienes lo que de verdad incluye tu plan, y una comparación honesta con la otra opción que probablemente estás mirando.",
+    },
+    items: {
+      a: {
+        titulo: "Sin comisión por reserva",
+        texto:
+          "Pagas tu plan mensual y nada más. No te cobramos un porcentaje por cada hora que reservan tus clientes.",
+      },
+      b: {
+        titulo: "Un precio para todo tu negocio",
+        texto:
+          "El precio no sube porque sumes profesionales a tu equipo: pagas un plan, no una cuota por persona.",
+      },
+      c: {
+        titulo: "Tu propio link de reservas",
+        texto:
+          "Una página con tu marca donde tus clientes reservan solos, lista para compartir en Instagram o WhatsApp.",
+      },
+      d: {
+        titulo: "Horas flash",
+        texto:
+          "Vende tus horas libres con descuento antes de perderlas, en vez de dejarlas vacías.",
+      },
+      e: {
+        titulo: "Lista de espera automática",
+        texto:
+          "Si alguien cancela, avisamos a quien está esperando y esa hora se ocupa sola.",
+      },
+      f: {
+        titulo: "Soporte de personas reales",
+        texto:
+          "Te respondemos por WhatsApp, en español de Chile, sin mesa de ayuda automática.",
+      },
+    },
+    comparacion: {
+      titulo: "Cómo nos comparamos con AgendaPro",
+      texto:
+        "AgendaPro es probablemente la otra opción que estás mirando. Así se ven los dos lado a lado.",
+      /** Fuente y fecha de los datos de `SITIO_COMPARACION` (afuera de
+       * `Trad`): sin esto, cualquier número de la competencia es una
+       * afirmación sin respaldo. */
+      nota: "Precios según la página de precios de AgendaPro (agendapro.com/cl/planes), revisados el 29 de septiembre de 2026.",
+      /** Una sola frase honesta: dónde la competencia es mejor que nosotros
+       * hoy (petición explícita del encargo, no opcional). */
+      honestidad:
+        "AgendaPro es más fuerte en caja/POS, control de inventario y equipos grandes: si necesitas eso hoy, vale la pena considerarlo.",
+    },
+    cta: {
+      titulo: "¿Lista para probarlo sin compromiso?",
+      boton: SITIO_CTA,
     },
   },
   /** Índice de la sección "Para quién" (el detalle de cada rubro vive en
@@ -824,6 +1007,21 @@ export const sitio = {
       titulo: "Te lo dejamos listo",
       texto:
         "Si tu negocio está en Providencia o Ñuñoa, vamos a dejarte la agenda configurada en persona, en 15 a 20 minutos.",
+    },
+  },
+  /** Recomendación a un servicio externo, no parte del producto: la tarjeta
+   * de sellos digital la ofrece Stampello (stampello.se), una empresa
+   * aparte. No es una funcionalidad de `SITIO_FUNCIONALIDADES` ni de
+   * `PLANES_LANDING` (ver el reemplazo de `abono` en `sv-SE.ts` para el
+   * motivo). */
+  partner: {
+    stampello: {
+      etiqueta: "Recomendado",
+      titulo: "Tarjeta de sellos digital con Stampello",
+      texto:
+        "Premia a tus clientes frecuentes con una tarjeta de sellos digital. Stampello es un servicio externo, pensado para negocios como el tuyo.",
+      cta: "Conocer Stampello",
+      url: "https://stampello.se",
     },
   },
 } as const satisfies Trad;
@@ -1012,10 +1210,6 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Tarjeta de sellos digital",
-    valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
-  },
-  {
     funcion: "Abono con Mercado Pago",
     valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
   },
@@ -1041,6 +1235,79 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     },
   },
 ];
+
+/** Una fila de la tabla comparativa de la página `ventajas` (comparación
+ * honesta contra un competidor). No vive dentro de `sitio` porque trae un
+ * arreglo (`valores`, un valor por competidor de `SitioComparacion.
+ * competidores`, mismo orden): `Trad` no admite arreglos. */
+export interface SitioComparacionFila {
+  readonly aspecto: string;
+  readonly nosotros: string;
+  readonly valores: readonly string[];
+}
+
+/** Contenido de `sitio.ventajas.comparacion` (WP-hemsida/GTM: "una fila,
+ * una fuente citada"). Solo hechos verificables con fuente y fecha
+ * (`sitio.ventajas.comparacion.nota`), nunca una cifra inventada sobre la
+ * competencia: donde el dato no está confirmado en la página de precios del
+ * competidor, la fila dice explícitamente que no está publicado, en vez de
+ * suponer un número. */
+export interface SitioComparacion {
+  readonly competidores: readonly string[];
+  readonly filas: readonly SitioComparacionFila[];
+}
+
+/** Comparación contra AgendaPro (la otra opción visible en Chile), con los
+ * datos de `agendapro.com/cl/planes` revisados el 29 de septiembre de 2026
+ * (ver `sitio.ventajas.comparacion.nota`). */
+export const SITIO_COMPARACION: SitioComparacion = {
+  competidores: ["AgendaPro"],
+  filas: [
+    {
+      aspecto: "Precio desde",
+      nosotros: "$0 (plan Gratis)",
+      valores: ["$15.900 + IVA al mes (plan Individual)"],
+    },
+    {
+      aspecto: "Perfiles incluidos en el precio",
+      nosotros: "1 a 12 profesionales, según tu plan",
+      valores: [
+        "1 en el plan Individual; los demás planes no detallan el cupo en su sitio",
+      ],
+    },
+    {
+      aspecto: "Comisión por reserva",
+      nosotros: "$0, nunca cobramos por reserva",
+      valores: ["2,99% + IVA + $100 por transacción en pagos online"],
+    },
+    {
+      aspecto: "Permanencia",
+      nosotros: "Ninguna: cambias o cancelas cuando quieras",
+      valores: ["No especificada en su sitio"],
+    },
+    {
+      aspecto: "Recordatorios",
+      nosotros:
+        "Por correo incluido; WhatsApp próximamente en los planes pagados",
+      valores: ["WhatsApp incluido, entre 50 y 200 al mes según el plan"],
+    },
+    {
+      aspecto: "Pago online",
+      nosotros: "Abono con Mercado Pago, próximamente",
+      valores: ["Sí, con comisión de 2,99% + IVA + $100 por transacción"],
+    },
+    {
+      aspecto: "Marketplace de clientes nuevos",
+      nosotros: "No tenemos",
+      valores: ["No lo destacan como parte de su oferta"],
+    },
+    {
+      aspecto: "Caja/POS",
+      nosotros: "No tenemos",
+      valores: ["Sí, como complemento aparte, desde $60.000 + IVA"],
+    },
+  ],
+};
 
 /** Contenido de la página "Para quién" de un rubro. No vive dentro de
  * `sitio` porque `servicios` trae `minutos` (número) y varios campos son

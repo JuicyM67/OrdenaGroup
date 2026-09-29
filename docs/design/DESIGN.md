@@ -147,6 +147,20 @@ tre rader i stället för fyra) och `--animate-shadow-pulse` (footerns 3D-kalend
 tonfyllningar (`fill-lime`/`fill-surface`/…) eftersom SVG:ns `stop-color` inte går att uttrycka
 som en Tailwind-klass — se `calendar-3d.tsx`.
 
+### Nya tokens (WP-hemsida, sitio-v3: /funcionalidades och /precios)
+
+Ingen `.dc.html`-referens (samma skäl som ovan) — ingen designyta byggde de här sidorna om,
+så mönstret återanvänder rörelsespråket från hero-bento/por-que-bento men med egna, mindre
+mockuper per funktionssektion. Nya animationer: `--animate-func-pop-1/-2/-3` (Agenda/Reservas
+manuales/Fichas-mockuperna, tre element poppar in efter varandra och tonar bort ihop, samma
+stagger-teknik som `--animate-step-fade-*`), `--animate-func-toggle-llego`/`-novino` (Hoy-
+mockupens Llegó/No vino-knappar turas om att lysa), `--animate-func-tab-1/-2/-3` (Ajustes-
+mockupens tre flikar) och `--animate-func-notif-slide` (Recordatorios/Lista de espera-
+mockupernas notis som glider in). Ingen ny färg- eller radietoken. Räknaren på /precios
+använder `accent-lime` (redan en Tailwind-genererad klass ur `--color-lime`, samma mönster som
+`accent-ink`/`accent-lime` i kryssrutorna) på en vanlig `<input type="range">` i stället för en
+ny komponent — ingen referens kräver en anpassad slider-skin.
+
 ## 5. Form och luft
 
 - Radier: se tokens (`shell` 32 → `chip` 10). Tumregel: ju större yta, desto större radie. Cirkelformade knappar för ikonknappar (48×48) och avatarer.

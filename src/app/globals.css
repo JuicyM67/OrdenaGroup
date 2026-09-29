@@ -34,5 +34,28 @@
       animation-iteration-count: 1 !important;
       scroll-behavior: auto !important;
     }
+    /* Stegmockuper (t.ex. Flash) har ett lager per tillstånd: visa bara slutläget. */
+    .animate-step-fade-1,
+    .animate-step-fade-2,
+    .animate-step-fade-3 {
+      opacity: 0 !important;
+    }
+    .animate-step-fade-4 {
+      opacity: 1 !important;
+    }
+    /* /funcionalidades: samma sak för de tre pop-in-mockuperna (Agenda, Reservas manuales,
+       Fichas de clientes) — visa alla tre stannade, i stället för att hela gruppen frusit i
+       sin "bortdolda" fas mellan looparna. */
+    .animate-func-pop-1,
+    .animate-func-pop-2,
+    .animate-func-pop-3 {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    /* Recordatorios/Lista de espera: notisen som annars glider in/ut — visa den stannad. */
+    .animate-func-notif-slide {
+      opacity: 1 !important;
+      transform: none !important;
+    }
   }
 }

@@ -13,6 +13,8 @@ const PAGINAS = [
   "/para/kinesiologia",
   "/preguntas",
   "/contacto",
+  "/horas-flash",
+  "/ventajas",
 ] as const;
 
 for (const ruta of PAGINAS) {

@@ -1,19 +1,30 @@
-// /precios (offentlig, WP-hemsida). Planer + jämförelsetabell (`SITIO_PRECIOS_TABLA`) +
-// fundador + FAQ. Text via `copy`, priser via `formatPrecioPlan` (`@/config/pricing`,
-// aldrig `plan.precioClp` — `copy.PLANES` har den inte ens, se `src/i18n/marketing.ts`).
+// /precios (offentlig, WP-hemsida, sitio-v3: "roligare"). Plan-korten i startsidans
+// färgade bento-stil (`PlanCards`, delad med /), en interaktiv räknare "kostnad per
+// anställd" (`PrecioCalculadora`), ett mörkt band "Sin comisiones por reserva" med fyra
+// chips, jämförelsetabellen i en snyggare kort-stil (Equipo-kolumnen lime-tonad, samma
+// plan som "Más elegido"), fundador-bandet och FAQ. Text via `copy`, priser via
+// `formatPrecioPlan`/`precioPlan` (`@/config/pricing`, aldrig `plan.precioClp` — `copy.PLANES`
+// har den inte ens, se `src/i18n/marketing.ts`).
+//
+// `copy.sitio.precios.extra.*` (räknare/ingaAvgifter/jamfor) är texter nya för sitio-v3:
+// om de ännu inte finns i `es-CL.marketing.ts` när det här körs (copywriter-es-cl skriver
+// samtidigt) misslyckas typecheck på just den delen — se PR-rapporten, inget påhittat i
+// stället.
 import type { Metadata } from "next";
-import { Check } from "lucide-react";
-import Link from "next/link";
+import { Sparkles } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { strokeCard } from "@/components/ui/icons";
+import { TextLink } from "@/components/ui/text-link";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
+import { PlanCards } from "@/components/marketing/plan-cards";
+import { PrecioCalculadora } from "@/components/marketing/precio-calculadora";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { brand } from "@/config/brand";
-import { formatPrecioPlan } from "@/config/pricing";
 import { copy } from "@/i18n/marketing";
 
 export const metadata: Metadata = {
@@ -27,6 +38,13 @@ const PRECIOS_FAQ = [
   copy.sitio.precios.faq.masWhatsapp,
   copy.sitio.precios.faq.permanencia,
   copy.sitio.precios.faq.fundador,
+] as const;
+
+const SIN_COMISIONES_ITEMS = [
+  copy.sitio.precios.extra.ingaAvgifter.items.a,
+  copy.sitio.precios.extra.ingaAvgifter.items.b,
+  copy.sitio.precios.extra.ingaAvgifter.items.c,
+  copy.sitio.precios.extra.ingaAvgifter.items.d,
 ] as const;
 
 export default function PreciosPage() {
@@ -45,73 +63,90 @@ export default function PreciosPage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-8">
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {copy.PLANES.map((plan) => (
-              <Card
-                key={plan.id}
-                radius="tile"
-                padding="lg"
-                className="flex flex-col gap-4"
-              >
-                <div className="flex flex-col gap-2">
-                  <h2 className="text-18 font-bold text-ink">{plan.nombre}</h2>
-                  <p className="font-display text-32 font-semibold tracking-display text-ink">
-                    {plan.id === "gratis"
-                      ? plan.nombre
-                      : formatPrecioPlan(plan.id)}
-                  </p>
-                </div>
-                <ul className="flex flex-1 flex-col gap-2">
-                  {plan.puntos.map((punto) => (
-                    <li
-                      key={punto}
-                      className="flex items-start gap-2 text-14 text-ink"
-                    >
-                      <Check
-                        aria-hidden="true"
-                        className="mt-0.5 size-4 shrink-0 text-muted"
-                        strokeWidth={2.4}
-                      />
-                      {punto}
-                    </li>
-                  ))}
-                </ul>
-                <Button asChild variant="secondary" size="lg">
-                  <Link href="/login">{plan.cta}</Link>
-                </Button>
-              </Card>
-            ))}
-          </div>
+          <PlanCards ctaHref="/login" />
           <Card
             tone="lime"
             radius="tile"
             padding="md"
-            className="mt-6 text-14 font-semibold text-ink"
+            className="mt-6 flex items-center justify-center gap-2.5 text-center text-14 font-semibold text-ink"
           >
+            <Sparkles
+              aria-hidden="true"
+              className="size-4.5 shrink-0"
+              strokeWidth={strokeCard}
+            />
             {copy.sitio.precios.fundador}
           </Card>
         </section>
 
+        {/* Räknare "kostnad per anställd" (sitio-v3): reglage 1–12, precio por profesional
+            para Equipo/Local. */}
+        <section className="mx-auto max-w-3xl px-4 pb-14 sm:px-8">
+          <PrecioCalculadora />
+        </section>
+
+        {/* Sin comisiones por reserva: banda oscura con cuatro chips (sitio-v3). */}
         <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-8">
-          <SectionHeading title={copy.sitio.precios.compararTitulo} />
+          <Card
+            tone="dark"
+            radius="hero"
+            padding="xl"
+            className="flex flex-col items-center gap-6 text-center"
+          >
+            <h2 className="max-w-xl font-display text-26 font-bold tracking-display text-on-dark sm:text-32">
+              {copy.sitio.precios.extra.ingaAvgifter.titulo}
+            </h2>
+            <div className="flex flex-wrap justify-center gap-2.5">
+              {SIN_COMISIONES_ITEMS.map((item) => (
+                <Chip key={item} tone="dark" size="md">
+                  {item}
+                </Chip>
+              ))}
+            </div>
+          </Card>
+        </section>
+
+        <section
+          id="comparar"
+          className="mx-auto max-w-6xl scroll-mt-24 px-4 pb-14 sm:px-8"
+        >
+          <SectionHeading
+            title={copy.sitio.precios.compararTitulo}
+            subtitle={copy.sitio.precios.extra.jamfor.texto}
+          />
+          <TextLink href="/contacto" className="mt-2 inline-block">
+            {copy.sitio.precios.extra.jamfor.cta}
+          </TextLink>
           <Card radius="card" padding="none" className="mt-8 overflow-x-auto">
             <table className="w-full min-w-160 border-collapse text-left text-14">
               <thead>
                 <tr className="border-b border-line">
                   <th className="px-5 py-4 font-semibold text-muted"> </th>
-                  {copy.PLANES.map((plan) => (
-                    <th
-                      key={plan.id}
-                      className="px-5 py-4 text-15 font-bold text-ink"
-                    >
-                      {plan.nombre}
-                    </th>
-                  ))}
+                  <th className="px-5 py-4 text-15 font-bold text-ink">
+                    {copy.PLANES[0]?.nombre}
+                  </th>
+                  <th className="px-5 py-4 text-15 font-bold text-ink">
+                    {copy.PLANES[1]?.nombre}
+                  </th>
+                  <th className="bg-lime/15 px-5 py-4 text-15 font-bold text-ink">
+                    <span className="flex items-center gap-2">
+                      {copy.PLANES[2]?.nombre}
+                      <Chip tone="lime" size="tag">
+                        {copy.sitio.precios.masElegido}
+                      </Chip>
+                    </span>
+                  </th>
+                  <th className="px-5 py-4 text-15 font-bold text-ink">
+                    {copy.PLANES[3]?.nombre}
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {copy.SITIO_PRECIOS_TABLA.map((fila) => (
-                  <tr key={fila.funcion} className="border-b border-line">
+                  <tr
+                    key={fila.funcion}
+                    className="border-b border-line even:bg-canvas/60"
+                  >
                     <th
                       scope="row"
                       className="px-5 py-3.5 font-semibold text-ink"
@@ -124,7 +159,7 @@ export default function PreciosPage() {
                     <td className="px-5 py-3.5 text-ink">
                       {fila.valores.emprende}
                     </td>
-                    <td className="px-5 py-3.5 text-ink">
+                    <td className="bg-lime/10 px-5 py-3.5 font-semibold text-ink">
                       {fila.valores.equipo}
                     </td>
                     <td className="px-5 py-3.5 text-ink">

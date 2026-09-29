@@ -7,6 +7,10 @@
 // `plantillasWhatsapp`). Kortet ligger ovanpå ett foto (`flash-band.tsx`), därför den
 // halvtransparenta `bg-dark-2/75` + `backdrop-blur-glass` i stället för en solid `tone="dark"`.
 // Rent dekorativ (`aria-hidden`).
+//
+// `className` (sitio-v6, /horas-flash): valfri, sammanslås via `cn()` så anroparen kan byta
+// storlek (t.ex. `h-72 max-w-lg` i heron) utan att duplicera resten av kortet. Standardanropet
+// i `flash-band.tsx` är oförändrat (ingen `className`, samma mått som förut).
 import { Bell, Check, Clock, Zap } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
@@ -77,14 +81,17 @@ function EstadoReservada() {
   );
 }
 
-export function FlashMockup() {
+export function FlashMockup({ className }: { className?: string }) {
   return (
     <Card
       tone="dark"
       radius="hero"
       padding="xl"
       aria-hidden="true"
-      className="relative h-64 w-full max-w-md overflow-hidden border border-dark-border bg-dark-2/75 backdrop-blur-glass"
+      className={cn(
+        "relative h-64 w-full max-w-md overflow-hidden border border-dark-border bg-dark-2/75 backdrop-blur-glass",
+        className,
+      )}
     >
       <span className="flex size-11 items-center justify-center rounded-icon bg-lime text-ink">
         <Zap aria-hidden="true" className="size-5.5" strokeWidth={strokeCard} />

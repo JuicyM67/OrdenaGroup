@@ -631,6 +631,99 @@
     100% { transform: scale(1); opacity: 0.55; }
     50% { transform: scale(0.85); opacity: 0.35; }
   }
+
+  /* /funcionalidades (WP-hemsida, sitio-v3): varje sektion får en egen levande mini-mockup,
+     ingen `.dc.html`-referens (sidan är inte produkt-UI). Samma teknik som ovan — färdigfasade
+     keyframes i stället för `animation-delay` (ESLint D-015). */
+
+  /* Agenda/Reservas manuales/Fichas-mockuperna: tre element poppar in efter varandra och
+     stannar kvar tills hela gruppen tonar bort tillsammans och loopen börjar om. */
+  --animate-func-pop-1: func-pop-1 6s ease-in-out infinite;
+  @keyframes func-pop-1 {
+    0%,
+    6% { opacity: 0; transform: scale(0.9); }
+    14%,
+    88% { opacity: 1; transform: scale(1); }
+    96%,
+    100% { opacity: 0; transform: scale(0.9); }
+  }
+  --animate-func-pop-2: func-pop-2 6s ease-in-out infinite;
+  @keyframes func-pop-2 {
+    0%,
+    20% { opacity: 0; transform: scale(0.9); }
+    28%,
+    88% { opacity: 1; transform: scale(1); }
+    96%,
+    100% { opacity: 0; transform: scale(0.9); }
+  }
+  --animate-func-pop-3: func-pop-3 6s ease-in-out infinite;
+  @keyframes func-pop-3 {
+    0%,
+    34% { opacity: 0; transform: scale(0.9); }
+    42%,
+    88% { opacity: 1; transform: scale(1); }
+    96%,
+    100% { opacity: 0; transform: scale(0.9); }
+  }
+
+  /* Hoy-mockupen: knapparna "Llegó"/"No vino" turas om att lysa, som om ägaren trycker
+     växelvis, i stället för `animation-delay` på en delad animation. */
+  /* Slutläget (100 %, även reducerad rörelse) matchar den statiska ursprungsdesignen:
+     Llegó lime, No vino bara kant. */
+  --animate-func-toggle-llego: func-toggle-llego 6s ease-in-out infinite;
+  @keyframes func-toggle-llego {
+    0%,
+    45% { background-color: var(--color-dark-2); color: var(--color-on-dark-soft); }
+    55%,
+    100% { background-color: var(--color-lime); color: var(--color-ink); }
+  }
+  --animate-func-toggle-novino: func-toggle-novino 6s ease-in-out infinite;
+  @keyframes func-toggle-novino {
+    0%,
+    45% { border-color: var(--color-lime); color: var(--color-lime); }
+    55%,
+    100% { border-color: var(--color-dark-border); color: var(--color-on-dark); }
+  }
+
+  /* Ajustes-mockupen: tre flikar ("Servicios"/"Profesionales"/"Horarios") turas om att
+     vara aktiva. */
+  --animate-func-tab-1: func-tab-1 9s ease-in-out infinite;
+  @keyframes func-tab-1 {
+    0%,
+    3% { background-color: var(--color-ink); color: var(--color-on-dark); }
+    30%,
+    100% { background-color: transparent; color: var(--color-muted); }
+  }
+  --animate-func-tab-2: func-tab-2 9s ease-in-out infinite;
+  @keyframes func-tab-2 {
+    0%,
+    33% { background-color: transparent; color: var(--color-muted); }
+    36%,
+    63% { background-color: var(--color-ink); color: var(--color-on-dark); }
+    66%,
+    100% { background-color: transparent; color: var(--color-muted); }
+  }
+  --animate-func-tab-3: func-tab-3 9s ease-in-out infinite;
+  @keyframes func-tab-3 {
+    0%,
+    66% { background-color: transparent; color: var(--color-muted); }
+    69%,
+    96% { background-color: var(--color-ink); color: var(--color-on-dark); }
+    99%,
+    100% { background-color: transparent; color: var(--color-muted); }
+  }
+
+  /* Recordatorios/Lista de espera-mockuperna: en notis glider in uppifrån, stannar och
+     tonar bort igen. */
+  --animate-func-notif-slide: func-notif-slide 5s ease-out infinite;
+  @keyframes func-notif-slide {
+    0%,
+    8% { opacity: 0; transform: translateY(-8px); }
+    20%,
+    80% { opacity: 1; transform: translateY(0); }
+    92%,
+    100% { opacity: 0; transform: translateY(-8px); }
+  }
 }
 
 :root {
