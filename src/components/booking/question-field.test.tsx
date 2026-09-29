@@ -30,12 +30,16 @@ const base: Omit<BookingQuestionDef, "kind" | "options"> = {
 
 describe("QuestionField", () => {
   it("short_text: renderiza un TextField con el label (marcado obligatorio)", () => {
-    render(<Harness question={{ ...base, kind: "short_text", options: null }} />);
+    render(
+      <Harness question={{ ...base, kind: "short_text", options: null }} />,
+    );
     expect(screen.getByLabelText("Hårlängd *")).toBeInTheDocument();
   });
 
   it("long_text: renderiza un textarea", () => {
-    render(<Harness question={{ ...base, kind: "long_text", options: null }} />);
+    render(
+      <Harness question={{ ...base, kind: "long_text", options: null }} />,
+    );
     const field = screen.getByLabelText("Hårlängd *");
     expect(field.tagName).toBe("TEXTAREA");
   });
@@ -50,10 +54,7 @@ describe("QuestionField", () => {
 
   it("date: renderiza un input type=date", () => {
     render(<Harness question={{ ...base, kind: "date", options: null }} />);
-    expect(screen.getByLabelText("Hårlängd *")).toHaveAttribute(
-      "type",
-      "date",
-    );
+    expect(screen.getByLabelText("Hårlängd *")).toHaveAttribute("type", "date");
   });
 
   it("yes_no: dos pills, una sola seleccionada a la vez", async () => {

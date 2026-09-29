@@ -35,8 +35,8 @@ describe("formatAnswerValue", () => {
       formatAnswerValue({ kind: "short_text", value: "Sin alergias" }),
     ).toBe("Sin alergias");
     expect(formatAnswerValue({ kind: "number", value: 3 })).toBe("3");
-    expect(
-      formatAnswerValue({ kind: "single_choice", value: "Mediano" }),
-    ).toBe("Mediano");
+    expect(formatAnswerValue({ kind: "single_choice", value: "Mediano" })).toBe(
+      "Mediano",
+    );
   });
 });

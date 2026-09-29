@@ -15,7 +15,11 @@ import { comun, formulario, reserva } from "@/i18n";
 
 import { BookingBar } from "./booking-bar";
 import { BusinessHeader } from "./business-header";
-import { ALL_CATEGORY_ID, categoryTabs, servicesForCategory } from "./categories";
+import {
+  ALL_CATEGORY_ID,
+  categoryTabs,
+  servicesForCategory,
+} from "./categories";
 import { CategoryTabs } from "./category-tabs";
 import { Confirmation } from "./confirmation";
 import { CustomerForm } from "./customer-form";

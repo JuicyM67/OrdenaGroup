@@ -174,7 +174,8 @@ export async function loadReservaPageData(
       [businessId],
     );
     for (const c of categoryRows.rows) {
-      if (usedCategoryIds.has(c.id)) categories.push({ id: c.id, name: c.name });
+      if (usedCategoryIds.has(c.id))
+        categories.push({ id: c.id, name: c.name });
     }
   }
 

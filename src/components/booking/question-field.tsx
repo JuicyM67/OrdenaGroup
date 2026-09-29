@@ -21,10 +21,7 @@ import {
 /** Det lokala, ovaliderade formulärvärdet för en fråga — innan
  * `validateAnswers` (klientsäker, se `customer-form.tsx`). */
 export type QuestionAnswerValue =
-  | string
-  | readonly string[]
-  | boolean
-  | undefined;
+  string | readonly string[] | boolean | undefined;
 
 function questionLabel(question: BookingQuestionDef): string {
   return question.required ? `${question.label} *` : question.label;
@@ -177,7 +174,9 @@ export function QuestionField({
           {options.map((opt, i) => (
             <Pill
               key={opt}
-              ref={i === 0 ? (registerRef as Ref<HTMLButtonElement>) : undefined}
+              ref={
+                i === 0 ? (registerRef as Ref<HTMLButtonElement>) : undefined
+              }
               selected={value === opt}
               onClick={() => {
                 onChange(opt);

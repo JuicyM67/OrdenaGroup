@@ -285,7 +285,10 @@ function reservaCanceladaData(
  * `src/components/booking/answer-format.ts`s `formatAnswerValue` (samma
  * logik, olika körtidskontext: workern importerar aldrig klientkomponenter,
  * se filkommentaren ovan). */
-function formatAnswerForEmail(a: { kind: QuestionKind; value: AnswerValue }): string {
+function formatAnswerForEmail(a: {
+  kind: QuestionKind;
+  value: AnswerValue;
+}): string {
   switch (a.kind) {
     case "yes_no":
       return a.value === true ? formulario.siNo.si : formulario.siNo.no;

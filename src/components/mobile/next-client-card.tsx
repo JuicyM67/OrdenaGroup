@@ -116,11 +116,7 @@ export function NextClientCard({
           })}
         </div>
         {booking.answers && booking.answers.length > 0 ? (
-          <AnswersList
-            answers={booking.answers}
-            tone="dark"
-            className="mt-3"
-          />
+          <AnswersList answers={booking.answers} tone="dark" className="mt-3" />
         ) : null}
       </div>
       <div className="grid grid-cols-2 gap-2.5">
