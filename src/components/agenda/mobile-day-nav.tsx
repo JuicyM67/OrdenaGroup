@@ -1,7 +1,4 @@
 // WP-42: dagnavigering för agendans mobila dagvy (pilar, "Hoy" och "+ Nueva reserva").
-// TODO_COPY: `calendario.diaAnterior`/`diaSiguiente` finns inte i es-CL.ts (bara
-// `semanaAnterior`/`semanaSiguiente`, som syftar på veckan) — platshållarsträngarna nedan
-// är tydligt märkta, se PR-rapporten (copywriter-es-cl äger `src/i18n/`).
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -9,9 +6,6 @@ import { IconButton } from "@/components/ui/icon-button";
 import { calendario, agenda as agendaCopy } from "@/i18n";
 
 import { strokeNuevaReserva } from "./icons";
-
-const TODO_COPY_DIA_ANTERIOR = "Día anterior";
-const TODO_COPY_DIA_SIGUIENTE = "Día siguiente";
 
 export type MobileDayNavProps = {
   title: string;
@@ -34,7 +28,7 @@ export function MobileDayNav({
         {calendario.hoy}
       </Button>
       <IconButton
-        label={TODO_COPY_DIA_ANTERIOR}
+        label={calendario.diaAnterior}
         tone="ghost"
         size={44}
         onClick={onPrevDay}
@@ -45,16 +39,12 @@ export function MobileDayNav({
         {title}
       </h1>
       <IconButton
-        label={TODO_COPY_DIA_SIGUIENTE}
+        label={calendario.diaSiguiente}
         tone="ghost"
         size={44}
         onClick={onNextDay}
       >
-        <ChevronRight
-          aria-hidden="true"
-          className="size-5"
-          strokeWidth={2.2}
-        />
+        <ChevronRight aria-hidden="true" className="size-5" strokeWidth={2.2} />
       </IconButton>
       <IconButton
         label={agendaCopy.nuevaReserva}
@@ -62,7 +52,11 @@ export function MobileDayNav({
         size={44}
         onClick={onNewBooking}
       >
-        <Plus aria-hidden="true" className="size-5" strokeWidth={strokeNuevaReserva} />
+        <Plus
+          aria-hidden="true"
+          className="size-5"
+          strokeWidth={strokeNuevaReserva}
+        />
       </IconButton>
     </div>
   );

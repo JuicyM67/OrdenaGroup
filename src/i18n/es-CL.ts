@@ -125,6 +125,8 @@ export const calendario = {
   mesSiguiente: "Mes siguiente",
   semanaAnterior: "Semana anterior",
   semanaSiguiente: "Semana siguiente",
+  diaAnterior: "Día anterior",
+  diaSiguiente: "Día siguiente",
   /** "GMT−3" en verano, "GMT−4" en invierno (Santiago no cambia el signo). */
   zonaHoraria: (p: { offset: number }): string =>
     `GMT${p.offset < 0 ? "−" : "+"}${Math.abs(p.offset)}`,
