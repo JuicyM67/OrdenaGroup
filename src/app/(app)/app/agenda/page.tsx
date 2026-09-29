@@ -11,7 +11,6 @@
 // `src/app/[slug]/actions.ts`/`submit.ts`, WP-20).
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { after } from "next/server";
 
 import { AgendaScreen } from "@/components/agenda/agenda-screen";
 import { parseLocalDate, APP_TZ, toLocalDate } from "@/lib/format/dates";
@@ -73,7 +72,7 @@ export default async function AppAgendaPage({
       input,
     );
     if (!result.ok) return { ok: false as const, error: result.error };
-    after(() => kickOutbox()); // WP-16: bekräftelse + ägarmejl direkt
+    void kickOutbox(); // WP-16: bekräftelse + ägarmejl direkt
     if (result.value.consent) {
       try {
         await saveManualConsent(
@@ -106,7 +105,7 @@ export default async function AppAgendaPage({
       input,
     );
     if (!result.ok) return { ok: false as const, error: result.error };
-    after(() => kickOutbox()); // WP-16: flyttmeddelandet direkt
+    void kickOutbox(); // WP-16: flyttmeddelandet direkt
     return { ok: true as const };
   };
 

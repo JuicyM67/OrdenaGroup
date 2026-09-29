@@ -7,7 +7,6 @@
 // Token loggas aldrig (varken här eller i `manage.ts`).
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { after } from "next/server";
 
 import { ManageScreen } from "@/components/booking/manage-screen";
 import type { ManageCancelResult } from "@/components/booking/manage-view";
@@ -48,7 +47,7 @@ export default async function ManagePage({ params }: { params: Params }) {
     if (!result.ok) return { ok: false, code: result.error };
     // WP-16: samma mönster som `[slug]/actions.ts` — bekräftelsen/avin till
     // ägaren går ut direkt efter svaret, utan att vänta på cron.
-    after(() => kickOutbox());
+    void kickOutbox();
     return { ok: true };
   }
 

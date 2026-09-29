@@ -62,3 +62,10 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-28 | Egna felmeddelanden för regelfälten i Ajustes (framförhållning, dagar framåt, avbokningsfönster, rutnät) i stället för `comun.algoSalioMal` | ui-engineer (WP-15b) | Tydligare för ägaren | 1 (copywriter) |
 | 2026-09-28 | Svenska URL-slugs för sitio-webben (`/tjanster`, `/priser`, `/for/[bransch]`, `/vanliga-fragor`, `/kontakt`) i stället för de spanska rutterna som WP-hemsida byggde | ui-engineer (WP-hemsida) | `src/app/(marketing)/**` har i dag fasta spanska segment (`/funcionalidades`, `/precios`, `/para/[industria]`, `/preguntas`, `/contacto`); SE-marknaden (Booking Buddy) behöver troligen egna slugs, vilket kräver per-marknads routing (t.ex. rewrites eller en `[locale]`-nivå) | 2 (efter sv-SE.ts) |
 | 2026-09-28 | Riktig WhatsApp-supportlänk och supportmejl per marknad i `src/config/brand.ts` (`supportWhatsapp`/`domain` är `null` för både CL och SE) | ui-engineer (WP-hemsida) | `/contacto` visar i dag inaktiverade knappar i stället för en påhittad länk — ops behöver fylla i riktiga värden | 1 (ops, före pilot) |
+
+## Från säkerhetsgranskningen av WP-16 (2026-09-29, icke-blockerande)
+- SMS-dubbletter möjliga: ClickSends `custom_string` är ingen idempotens. Spara leverantörens id före finalize eller kolla historik innan omsändning.
+- Avbokning/flytt avbryter bara köade `recordatorio`; avbryt även köade `reservaConfirmada`/`reservaMovida` för samma bokning.
+- `/r/[token]`: `loadBookingByToken` anropas två gånger (metadata + sida) – använd React `cache()`; rate limit när den finns för publika bokningen.
+- `ManageScreen` får `businessId`/`bookingId` i klientpayload – skicka bara det som visas.
+- `message_outbox`-FK mot `bookings` saknar `on delete` – behövs inför radering (WP-26).

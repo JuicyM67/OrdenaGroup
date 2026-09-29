@@ -17,9 +17,10 @@ const KICK_LIMIT = 10;
  */
 export async function kickOutbox(): Promise<void> {
   try {
-    after(() => {
-      processOutbox({ limit: KICK_LIMIT }).catch(() => undefined);
-    });
+    // Returnera löftet så att plattformen håller funktionen vid liv tills passet är klart.
+    // Anropas direkt från en action/route (inte inuti en annan `after()`: en nästlad
+    // `after()` körs aldrig).
+    after(() => processOutbox({ limit: KICK_LIMIT }).catch(() => undefined));
   } catch {
     // Utanför en request: se kommentaren ovan.
   }
