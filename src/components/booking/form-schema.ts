@@ -36,6 +36,13 @@ export const customerFormSchema = z.object({
   staffId: z.string().min(1),
   date: z.string().min(1),
   slotId: z.string().min(1).nullable(),
+  /** WP-40 (D-031): svar på tjänstens bokningsfrågor, `{ [questionId]:
+   * värde }` — redan validerade av klienten (`validateAnswers`,
+   * `customer-form.tsx`), men servern (`createCustomerBooking` →
+   * `createIn`) validerar alltid på nytt mot sin egen frågelista och litar
+   * aldrig på klienten. Formen (`unknown`) är avsiktligt lös här: det
+   * riktiga schemat byggs av `buildAnswersSchema` per tjänst. */
+  answers: z.record(z.string(), z.unknown()).optional().default({}),
 });
 
 /**

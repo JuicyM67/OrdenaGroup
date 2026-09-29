@@ -1,9 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import { comun, errores } from "@/i18n";
+import { comun, errores, formulario } from "@/i18n";
 import type { PhoneError } from "@/lib/format/phone";
+import {
+  ANSWER_LIMITS,
+  type AnswerIssue,
+  type BookingQuestionDef,
+} from "@/lib/validation/booking-questions";
 
 import {
+  answerFieldError,
+  answersToFieldErrors,
   fieldError,
   serverError,
   zodIssueToFieldError,
@@ -94,5 +101,68 @@ describe("zodIssueToFieldError", () => {
     expect(zodIssueToFieldError("unknown.thing")).toBeNull();
     expect(zodIssueToFieldError("no-dot")).toBeNull();
     expect(zodIssueToFieldError("phone.unknown_kind")).toBeNull();
+  });
+});
+
+const SHORT_TEXT_Q: BookingQuestionDef = {
+  id: "q1",
+  label: "Alergias",
+  help: null,
+  kind: "short_text",
+  options: null,
+  required: false,
+  saveToCustomer: false,
+};
+
+const LONG_TEXT_Q: BookingQuestionDef = { ...SHORT_TEXT_Q, kind: "long_text" };
+
+describe("answerFieldError", () => {
+  it("mappar varje kod till respuesta-texten", () => {
+    expect(answerFieldError(SHORT_TEXT_Q, "required")).toBe(
+      formulario.errores.respuesta.required,
+    );
+    expect(answerFieldError(SHORT_TEXT_Q, "invalid_option")).toBe(
+      formulario.errores.respuesta.invalid_option,
+    );
+    expect(answerFieldError(SHORT_TEXT_Q, "duplicate_option")).toBe(
+      formulario.errores.respuesta.duplicate_option,
+    );
+    expect(answerFieldError(SHORT_TEXT_Q, "invalid_number")).toBe(
+      formulario.errores.respuesta.invalid_number,
+    );
+    expect(answerFieldError(SHORT_TEXT_Q, "invalid_date")).toBe(
+      formulario.errores.respuesta.invalid_date,
+    );
+  });
+
+  it("too_long använder shortText/longText beroende på frågans typ", () => {
+    expect(answerFieldError(SHORT_TEXT_Q, "too_long")).toBe(
+      formulario.errores.respuesta.too_long({ max: ANSWER_LIMITS.shortText }),
+    );
+    expect(answerFieldError(LONG_TEXT_Q, "too_long")).toBe(
+      formulario.errores.respuesta.too_long({ max: ANSWER_LIMITS.longText }),
+    );
+  });
+
+  it("invalid_type/unknown_question (programmeringsfel) faller tillbaka på required", () => {
+    expect(answerFieldError(SHORT_TEXT_Q, "invalid_type")).toBe(
+      formulario.errores.respuesta.required,
+    );
+    expect(answerFieldError(SHORT_TEXT_Q, "unknown_question")).toBe(
+      formulario.errores.respuesta.required,
+    );
+  });
+});
+
+describe("answersToFieldErrors", () => {
+  it("bygger { [questionId]: text } och hoppar över okända frågor", () => {
+    const issues: AnswerIssue[] = [
+      { questionId: "q1", code: "required" },
+      { questionId: "missing", code: "required" },
+      { questionId: null, code: "invalid_type" },
+    ];
+    expect(answersToFieldErrors([SHORT_TEXT_Q], issues)).toEqual({
+      q1: formulario.errores.respuesta.required,
+    });
   });
 });

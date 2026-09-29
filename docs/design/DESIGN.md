@@ -378,6 +378,35 @@ manuella bokning) är oförändrad. **Känd brist:** `es-CL.ts`s `clienteForm.em
 ("Correo (opcional)") och `emailAyuda` är inte uppdaterade för CL:s nya obligatoriska
 fält (copywriter-es-cl äger `src/i18n/`) — flaggat i PR:en, inte löst här.
 
+### Byggt i WP-40 (kundsidan och visning av svar)
+
+Kategoriflikar på Reserva (`falt-kategorier.html`, telefonmockupen) och de dynamiska
+bokningsfrågorna i `CustomerForm` (`falt-A-bokningsformular.html`, telefonmockupen),
+plus visningen av svaren i agenda, Hoy och kundkortet. Ingen skalenlig
+mobilreferens finns för de här bitarna (mockuparna är små förhandsvisningar inuti
+ägarens inställningsskärmar) — formspråket återanvänder i stället redan godkända
+komponenter (Pill, TextField) i full storlek, se filkommentarerna i
+`category-tabs.tsx`/`question-field.tsx` för avvägningen mot mockupens mindre chips
+och `role="tablist"`.
+
+| Komponent | Fil | API |
+|---|---|---|
+| CategoryTabs | `src/components/booking/category-tabs.tsx` | `tabs` (`CategoryTab[]`, se `categories.ts`), `selectedId`, `onSelect`; samma Pill/scroll-mönster som `StaffPicker` |
+| `categories.ts` | `src/components/booking/categories.ts` | Rena funktioner: `categoryTabs` (döljer flikarna om färre än två grupper har aktiva tjänster), `servicesForCategory` |
+| QuestionField | `src/components/booking/question-field.tsx` | `question` (`BookingQuestionDef`), `value`, `onChange`, `error?`, `registerRef` — en renderare per `question_kind` (TextField/Textarea/Pill-grupper) |
+| Textarea | `src/components/ui/textarea.tsx` | Samma formspråk som TextField (`label`, `hint?`, `error?`); första användningen är `long_text`-frågor |
+| AnswersList | `src/components/booking/answers-list.tsx` | `answers` (`DisplayAnswer[]`), `tone?` (`light`/`dark`); rubrik `formulario.visualizacion.titulo` + en rad per `formulario.visualizacion.par`; delas av `EventPopover` (agenda), `NextClientCard` (Hoy) och `CustomerAnswersCard` |
+| `answer-format.ts` | `src/components/booking/answer-format.ts` | `formatAnswerValue`: ja/nej, listor (`multi_choice`) och datum (kalenderdatum utan tidszon) till text |
+| CustomerAnswersCard | `src/components/customers/customer-answers-card.tsx` | `data` (`CustomerAnswersView`): senaste värden + historik per bokning. **Förberedd, inte kopplad till någon rutt** — ingen "Clientes"-skärm finns än i kodbasen (varken i BACKLOG eller som en byggd sida); ingen referens att stämma av mot. |
+
+**Data:** `BookingPageData.categories`/`questionsByService` (frivilliga fält,
+`src/server/bookings/page-data.ts`), `AgendaBooking.answers`/`HoyBooking.answers`
+(frivilliga, batch-hämtade med `listBookingAnswersIn` i `src/server/owner/agenda.ts`/
+`hoy.ts`). Ägarens mejl "Tienes una reserva nueva" (`nuevaReservaDueno`) visar
+svaren i samma bokningskort (`DuenoReservaData.answers`, `dueno.ts`) — workern
+(`src/server/messaging/outbox/worker.ts`) läser dem vid sändning (D-029), aldrig i
+`message_outbox.payload` eller i loggar.
+
 ## 8. Rörelse
 
 - Övergångar 150–200 ms `ease-out` på färg och bakgrund. **Animera aldrig storlek eller position på klickytor** (hover gör att tryck missar).

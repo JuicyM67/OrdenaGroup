@@ -5,6 +5,11 @@
 import type { LocalDate, LocalTime } from "@/lib/format/dates";
 import type { E164 } from "@/lib/format/phone";
 import type { Clp } from "@/lib/format/clp";
+// `import type` raderas helt vid kompilering (ingen JS-emission), så den
+// här filen kan vara "use client"-säker trots att `answers.ts` har
+// `import "server-only"` som värde-import (samma mönster som
+// `booking/types.ts`, WP-40).
+import type { BookingAnswerView } from "@/server/booking-questions/answers";
 import type { Database } from "@/types/database";
 
 /** 1..6, se `--color-staff-1`…`--color-staff-6` i tokens.css. */
@@ -40,6 +45,10 @@ export type AgendaBooking = {
   readonly confirmedByCustomer: boolean;
   /** Rabatt i procent för en hora flash, t.ex. 20. */
   readonly flashPct?: number;
+  /** WP-40 (D-031): svaren på bokningsfrågorna, om det finns några
+   * (`getBookingAnswersForBookings`/`listBookingAnswersIn`). Saknas fältet
+   * (befintliga fixturer/tester) → ingen svarslista visas. */
+  readonly answers?: readonly BookingAnswerView[];
 };
 
 export type AgendaBlock = {

@@ -52,6 +52,9 @@ export async function createBooking(
     phone: parsed.data.phone,
     email: parsed.data.email || undefined,
     idempotencyKey: parsed.data.idempotencyKey,
+    // WP-40 (D-031): servern (`createIn`) validerar på nytt mot sin egen
+    // frågelista för tjänsten — klientens `answers` litas aldrig på.
+    answers: parsed.data.answers,
     now,
   });
   if (!result.ok) return { ok: false, code: result.error };

@@ -8,6 +8,7 @@ import * as Popover from "@radix-ui/react-popover";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 
+import { AnswersList } from "@/components/booking/answers-list";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
@@ -110,6 +111,10 @@ export function EventPopover({
               {model.payment}
             </div>
           </div>
+
+          {booking.answers && booking.answers.length > 0 ? (
+            <AnswersList answers={booking.answers} />
+          ) : null}
 
           <div
             className={cn(

@@ -6,6 +6,7 @@
 // avfyra två klick innan `disabled` hunnit sättas.
 import { useRef, type Ref } from "react";
 
+import { AnswersList } from "@/components/booking/answers-list";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
@@ -114,6 +115,13 @@ export function NextClientCard({
             visita: comun.visita({ n: booking.visitNumber }),
           })}
         </div>
+        {booking.answers && booking.answers.length > 0 ? (
+          <AnswersList
+            answers={booking.answers}
+            tone="dark"
+            className="mt-3"
+          />
+        ) : null}
       </div>
       <div className="grid grid-cols-2 gap-2.5">
         <Button

@@ -4,6 +4,11 @@
 // Bara råa värden här: instanter som ISO-strängar med offset, heltal CLP, `now` injiceras
 // av anroparen. UI räknar aldrig ut pengar eller lediga tider (hård regel 2) — `dayCount`
 // och `dayTotalClp` gäller hela dagen och kommer färdiga från servern.
+// `import type` raderas helt vid kompilering (ingen JS-emission), så den
+// här filen kan vara "use client"-säker trots att `answers.ts` har
+// `import "server-only"` som värde-import (samma mönster som
+// `agenda/types.ts`, WP-40).
+import type { BookingAnswerView } from "@/server/booking-questions/answers";
 import type { Database } from "@/types/database";
 
 export type BookingStatus = Database["public"]["Enums"]["booking_status"];
@@ -29,6 +34,9 @@ export type HoyBooking = {
   source: BookingSource;
   /** 1 = första besöket. Källa till `comun.visita`. */
   visitNumber: number;
+  /** WP-40 (D-031): svaren på bokningsfrågorna, om det finns några. Saknas
+   * fältet (befintliga fixturer/tester) → ingen svarslista visas. */
+  answers?: readonly BookingAnswerView[];
 };
 
 export type HoyLinks = {

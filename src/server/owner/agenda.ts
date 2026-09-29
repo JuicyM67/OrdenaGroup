@@ -20,6 +20,7 @@ import {
   type LocalTime,
 } from "@/lib/format/dates";
 import type { E164 } from "@/lib/format/phone";
+import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
@@ -131,6 +132,14 @@ export async function loadOwnerAgendaWeekIn(
     [businessId, rangeStart, rangeEnd],
   );
 
+  // WP-40 (D-031): en enda batch-fråga för veckans bokningar i stället för
+  // en fråga per bokning (samma avvägning som `loadOwnerHoyIn`).
+  const answersByBooking = await listBookingAnswersIn(
+    q,
+    businessId,
+    bookingsRes.rows.map((b) => b.id),
+  );
+
   const bookings: AgendaBooking[] = bookingsRes.rows.map((b) => {
     const priceClp = b.price_clp as Clp;
     // flashPct: procenttal räknat ur discount_clp/price_clp — ingen egen
@@ -139,6 +148,7 @@ export async function loadOwnerAgendaWeekIn(
       b.source === "flash" && priceClp > 0
         ? Math.round((b.discount_clp / priceClp) * 100)
         : undefined;
+    const answers = answersByBooking[b.id];
     return {
       id: b.id,
       staffId: b.staff_id,
@@ -156,6 +166,7 @@ export async function loadOwnerAgendaWeekIn(
       status: b.status,
       confirmedByCustomer: b.confirmed_by_customer_at != null,
       ...(flashPct !== undefined ? { flashPct } : {}),
+      ...(answers && answers.length > 0 ? { answers } : {}),
     };
   });
 

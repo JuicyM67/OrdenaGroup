@@ -14,6 +14,15 @@ export type DuenoReservaData = {
   readonly hora: string;
   /** `/app/agenda` (o la ruta que corresponda). */
   readonly agendaUrl: string;
+  /** WP-40 (D-031): respuestas de las preguntas de la reserva, ya
+   * formateadas en texto plano (`label`/`value`). Solo en
+   * `nuevaReservaDueno` — `cancelacionDueno` nunca las setea. El worker las
+   * lee al enviar (D-029): nunca viven en `message_outbox.payload` ni en
+   * los logs (Ley 21.719). */
+  readonly answers?: readonly {
+    readonly label: string;
+    readonly value: string;
+  }[];
 };
 
 function cardRows(market: Market, data: DuenoReservaData) {
@@ -22,6 +31,7 @@ function cardRows(market: Market, data: DuenoReservaData) {
     { label: campos.servicio, value: data.servicio },
     { label: campos.dia, value: data.fecha },
     { label: campos.hora, value: data.hora },
+    ...(data.answers ?? []),
   ];
 }
 
