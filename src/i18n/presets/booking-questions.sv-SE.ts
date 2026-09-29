@@ -47,7 +47,7 @@ const ALERGIAS_PRODUCTOS = {
   label: "Allergier mot produkter",
   help: "Bara om du har några. Vi använder det för att vara försiktiga med produkterna vi använder på dig.",
   required: false,
-  saveToCustomer: true,
+  saveToCustomer: false,
   enabledByDefault: false,
 } as const satisfies BookingQuestionPreset;
 

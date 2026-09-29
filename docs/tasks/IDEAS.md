@@ -76,3 +76,12 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Villkorade frågor (visa fråga B bara om svaret på A är ja).
 - Frågor i manuell bokning från agendan (WP-40 visar bara befintliga svar).
 - Statistik/sammanställning över svar.
+
+## Från säkerhetsgranskningen av WP-40 (2026-09-29, icke-blockerande)
+- WP-26: anonymisering av kund ska radera `customer_answers` och `booking_answers` för kundens bokningar; retention för svar på borttagna frågor.
+- `updateQuestion`: töm `customer_answers` även när etikett/alternativ ändras.
+- DB-`check` för längd på label/help/name och att options är strängar (skydd mot direktskrivning via PostgREST).
+- Max 5-spärren: advisory lock per företag mot samtidiga ändringar.
+- Visa varningen om känsliga uppgifter även vid enklicksaktivering av förslag (allergier).
+- COMPLIANCE.md: Resend som biträde (ägarmejl kan innehålla svar).
+- F6 (personal): bestäm om personal ska se svar som kan innehålla hälsodata.

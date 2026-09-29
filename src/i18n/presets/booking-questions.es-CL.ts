@@ -18,9 +18,9 @@
  * - "Alergias a productos" es la única excepción, y solo en los cinco
  *   rubros donde de verdad aplica (tinturas, cremas, pegamentos, esmaltes,
  *   tintas): `peluquerias`, `estetica`, `unas`, `pestanas_cejas`,
- *   `tatuajes`. Siempre opcional, siempre apagada por defecto, y siempre
- *   guardada en la ficha del cliente (así no hay que volver a preguntar en
- *   la próxima visita).
+ *   `tatuajes`. Siempre opcional, siempre apagada por defecto y NO se guarda
+ *   en la ficha del cliente por defecto (dato de salud, Ley 21.719): el dueño
+ *   puede activarlo en el editor, donde ve `avisoDatosSensibles`.
  * - Ninguna pregunta es obligatoria por defecto, salvo "Largo de pelo" en
  *   `peluquerias`: es el único ejemplo dibujado en la referencia de diseño
  *   (`.visual-diff/ref/falt-A-bokningsformular.html`, la fila "Hårlängd"),
@@ -118,7 +118,7 @@ const ALERGIAS_PRODUCTOS = {
   label: "Alergias a productos",
   help: "Solo si tienes alguna. La usamos para tener cuidado con los productos que usamos contigo.",
   required: false,
-  saveToCustomer: true,
+  saveToCustomer: false,
   enabledByDefault: false,
 } as const satisfies BookingQuestionPreset;
 
