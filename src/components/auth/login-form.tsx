@@ -12,7 +12,7 @@ import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextField } from "@/components/ui/text-field";
-import { acceso } from "@/i18n";
+import { acceso } from "@/i18n/auth";
 
 import type { RequestMagicLinkResult } from "@/app/(auth)/login/actions";
 

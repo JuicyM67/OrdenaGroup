@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/login-form";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { acceso } from "@/i18n";
+import { acceso } from "@/i18n/auth";
 
 import { requestMagicLink } from "./actions";
 
