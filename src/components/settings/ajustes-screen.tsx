@@ -10,6 +10,7 @@ import { useCallback, useState } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
+import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import { PageHeader } from "@/components/ui/page-header";
 import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { nav } from "@/i18n";
@@ -57,10 +58,13 @@ export function AjustesScreen({
   }, [loadBookingFormBundle]);
 
   return (
-    <AppShell rail={<MainNav active="ajustes" />}>
+    <AppShell
+      rail={<MainNav active="ajustes" />}
+      mobileTabBar={<OwnerMobileTabBar active="ajustes" className="lg:hidden" />}
+    >
       <PageHeader variant="desktop" title={nav.ajustes} />
 
-      <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pb-2">
+      <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-2">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
           <BusinessSection
             business={business}

@@ -47,10 +47,12 @@ function ConfirmDeleteDialog({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-20 flex items-center justify-center bg-ink/45 p-4">
+        {/* WP-42: bottenark på mobil (items-end, rundade hörn bara upptill), centrerad dialog
+            från sm och uppåt — samma mönster i manual-booking-dialog.tsx/move-dialog.tsx. */}
+        <Dialog.Overlay className="fixed inset-0 z-20 flex items-end justify-center bg-ink/45 sm:items-center sm:p-4">
           <Dialog.Content
             aria-describedby={descriptionId}
-            className="flex w-full max-w-sm flex-col gap-4 rounded-panel bg-surface p-6 shadow-popover"
+            className="flex max-h-full w-full max-w-sm flex-col gap-4 overflow-y-auto rounded-t-panel bg-surface p-6 shadow-popover sm:rounded-panel"
           >
             <div className="flex items-start justify-between">
               <Dialog.Title className="text-17 font-bold text-ink">
@@ -328,57 +330,61 @@ export function CategorySection({
                   onRename={(name) => handleRename(group.category!.id, name)}
                 />
               ) : (
-                <div className="flex items-center gap-2">
-                  <div className="flex shrink-0 flex-col gap-0.5">
-                    <IconButton
-                      label={servicios.campos.subirAria}
-                      tone="ghost"
-                      size={30}
-                      disabled={groupIndex === 0}
-                      onClick={() => void move(group.category!.id, -1)}
-                    >
-                      <ChevronUp
-                        aria-hidden="true"
-                        className="size-4"
-                        strokeWidth={2}
-                      />
-                    </IconButton>
-                    <IconButton
-                      label={servicios.campos.bajarAria}
-                      tone="ghost"
-                      size={30}
-                      disabled={groupIndex === ordered.length - 1}
-                      onClick={() => void move(group.category!.id, 1)}
-                    >
-                      <ChevronDown
-                        aria-hidden="true"
-                        className="size-4"
-                        strokeWidth={2}
-                      />
-                    </IconButton>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <div className="flex shrink-0 flex-col gap-0.5">
+                      <IconButton
+                        label={servicios.campos.subirAria}
+                        tone="ghost"
+                        size={30}
+                        disabled={groupIndex === 0}
+                        onClick={() => void move(group.category!.id, -1)}
+                      >
+                        <ChevronUp
+                          aria-hidden="true"
+                          className="size-4"
+                          strokeWidth={2}
+                        />
+                      </IconButton>
+                      <IconButton
+                        label={servicios.campos.bajarAria}
+                        tone="ghost"
+                        size={30}
+                        disabled={groupIndex === ordered.length - 1}
+                        onClick={() => void move(group.category!.id, 1)}
+                      >
+                        <ChevronDown
+                          aria-hidden="true"
+                          className="size-4"
+                          strokeWidth={2}
+                        />
+                      </IconButton>
+                    </div>
+                    <p className="min-w-0 flex-1 truncate text-15 font-bold text-ink">
+                      {group.category.name}
+                    </p>
+                    <span className="shrink-0 text-12 text-muted">
+                      {servicios.contador({ n: group.services.length })}
+                    </span>
                   </div>
-                  <p className="min-w-0 flex-1 truncate text-15 font-bold text-ink">
-                    {group.category.name}
-                  </p>
-                  <span className="shrink-0 text-12 text-muted">
-                    {servicios.contador({ n: group.services.length })}
-                  </span>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="xs"
-                    onClick={() => setRenamingId(group.category!.id)}
-                  >
-                    {formulario.categorias.ctaRenombrar}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="xs"
-                    onClick={() => setDeletingId(group.category!.id)}
-                  >
-                    {formulario.categorias.ctaEliminar}
-                  </Button>
+                  <div className="flex shrink-0 gap-2">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => setRenamingId(group.category!.id)}
+                    >
+                      {formulario.categorias.ctaRenombrar}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => setDeletingId(group.category!.id)}
+                    >
+                      {formulario.categorias.ctaEliminar}
+                    </Button>
+                  </div>
                 </div>
               )
             ) : (

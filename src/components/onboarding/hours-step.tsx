@@ -79,7 +79,10 @@ export function HoursStep({
                   aria-label={`${WEEKDAY_LONG[h.weekday - 1]}: inicio`}
                   value={h.start}
                   onChange={(e) => updateDay(i, { start: e.target.value })}
-                  className="h-11 w-full rounded-control border-2 border-transparent bg-canvas px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  // WP-42: `min-w-0 flex-1` i stället för bara `w-full` — en `<input
+                  // type="time">` har en egen intrinsic minimibredd (spinnern) som annars
+                  // vinner mot flex-krympningen och tvingar raden bredare än 360 px.
+                  className="h-11 min-w-0 flex-1 rounded-control border-2 border-transparent bg-canvas px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                 />
                 <span className="text-13 text-muted" aria-hidden="true">
                   –
@@ -89,7 +92,7 @@ export function HoursStep({
                   aria-label={`${WEEKDAY_LONG[h.weekday - 1]}: término`}
                   value={h.end}
                   onChange={(e) => updateDay(i, { end: e.target.value })}
-                  className="h-11 w-full rounded-control border-2 border-transparent bg-canvas px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  className="h-11 min-w-0 flex-1 rounded-control border-2 border-transparent bg-canvas px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                 />
               </div>
             ) : null}
