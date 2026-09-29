@@ -187,7 +187,7 @@ function ServiceForm({
             <TextField
               label={servicios.campos.priceLabel}
               inputMode="numeric"
-              placeholder="$10.000"
+              placeholder={servicios.campos.pricePlaceholder}
               value={form.priceClp}
               onChange={(e) => onChange({ ...form, priceClp: e.target.value })}
               error={errors.priceClp}

@@ -81,7 +81,32 @@ export async function loadOwnerInicioIn(
     [businessId, start, end],
   );
 
-  const today_: TodayBooking[] = bookingsRes.rows.map((b) => ({
+  // WP-fixar-sv: "Kommande bokningar" på Inicio — inte begränsat till innevarande vecka
+  // (Agendan visar bara en vecka i taget, så en bokning nästa vecka annars inte syns
+  // förrän ägaren själv bläddrar dit). Från och med `now` (inkl. resten av idag),
+  // max 10 rader.
+  const upcomingRes = await q.query<BookingRow>(
+    `select bk.id, c.name as client_name,
+            sv.name as service_name, st.name as staff_name, st.color as staff_color,
+            bk.status::text as status, bk.confirmed_by_customer_at, bk.deposit_clp,
+            extract(epoch from lower(bk.period)) * 1000 as start_ms,
+            extract(epoch from upper(bk.period)) * 1000 as end_ms
+       from public.bookings bk
+       join public.customers c
+         on c.business_id = bk.business_id and c.id = bk.customer_id
+       join public.services sv
+         on sv.business_id = bk.business_id and sv.id = bk.service_id
+       join public.staff st
+         on st.business_id = bk.business_id and st.id = bk.staff_id
+      where bk.business_id = $1
+        and bk.status not in ('cancelled', 'no_show')
+        and lower(bk.period) >= $2
+      order by lower(bk.period)
+      limit 10`,
+    [businessId, now.toISOString()],
+  );
+
+  const toRow = (b: BookingRow): TodayBooking => ({
     id: b.id,
     start: isoOf(b.start_ms),
     end: isoOf(b.end_ms),
@@ -93,7 +118,10 @@ export async function loadOwnerInicioIn(
     status: b.status,
     depositPaid: b.deposit_clp > 0,
     confirmedByCustomer: b.confirmed_by_customer_at != null,
-  }));
+  });
+
+  const today_: TodayBooking[] = bookingsRes.rows.map(toRow);
+  const upcoming: TodayBooking[] = upcomingRes.rows.map(toRow);
   const toConfirm = today_.filter(
     (b) =>
       !b.confirmedByCustomer &&
@@ -120,6 +148,7 @@ export async function loadOwnerInicioIn(
       noShowTrend: "flat",
     },
     today: today_,
+    upcoming,
     calendar: {
       month: {
         year: Number(today.slice(0, 4)),

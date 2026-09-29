@@ -29,6 +29,7 @@ import {
 import { MainNav } from "./main-nav";
 import { StatTile } from "./stat-tile";
 import type { InicioData } from "./types";
+import { UpcomingBookingsCard } from "./upcoming-bookings-card";
 
 export type InicioScreenProps = {
   data: InicioData;
@@ -129,6 +130,7 @@ export function InicioScreen({
             markedDates={data.calendar.markedDates}
           />
           <FlashCard activeFlash={data.activeFlash} href={FLASH_HREF} />
+          <UpcomingBookingsCard bookings={data.upcoming} href={AGENDA_HREF} />
           {bookingLink ? (
             <TuLinkCard
               slug={bookingLink.slug}

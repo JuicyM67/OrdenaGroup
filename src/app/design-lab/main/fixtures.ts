@@ -105,6 +105,61 @@ function buildLlenoToday(): TodayBooking[] {
   });
 }
 
+/**
+ * "Próximas reservas" (WP-fixar-sv): a propósito con filas en semanas futuras (no solo la
+ * semana de `NOW`), para mostrar que la tarjeta no depende de qué semana mira la Agenda.
+ */
+const UPCOMING: TodayBooking[] = [
+  {
+    id: "up-joaquin",
+    start: "2026-10-02T15:00:00-03:00",
+    end: "2026-10-02T15:45:00-03:00",
+    clientName: "Joaquín Rivas",
+    service: "Corte + barba",
+    staff: "Diego",
+    tint: "lilac-100",
+    status: "confirmed",
+    depositPaid: false,
+    confirmedByCustomer: true,
+  },
+  {
+    id: "up-valentina",
+    start: "2026-10-03T11:00:00-03:00",
+    end: "2026-10-03T11:30:00-03:00",
+    clientName: "Valentina Soto",
+    service: "Corte clásico",
+    staff: "Matías",
+    tint: "peach-50",
+    status: "confirmed",
+    depositPaid: true,
+    confirmedByCustomer: false,
+  },
+  {
+    id: "up-camila",
+    start: "2026-10-06T09:30:00-03:00",
+    end: "2026-10-06T10:15:00-03:00",
+    clientName: "Camila Reyes",
+    service: "Corte + barba",
+    staff: "Tomás",
+    tint: "lime-50",
+    status: "pending_payment",
+    depositPaid: false,
+    confirmedByCustomer: false,
+  },
+  {
+    id: "up-benjamin",
+    start: "2026-10-12T16:00:00-03:00",
+    end: "2026-10-12T16:30:00-03:00",
+    clientName: "Benjamín Silva",
+    service: "Corte clásico",
+    staff: "Diego",
+    tint: "sky",
+    status: "confirmed",
+    depositPaid: false,
+    confirmedByCustomer: true,
+  },
+];
+
 const ACTIVE_FLASH = {
   start: "2026-10-06T11:30:00-03:00",
   discountPct: 20,
@@ -137,6 +192,7 @@ const BASE = {
     noShowPct: 4,
     noShowTrend: "down",
   },
+  upcoming: UPCOMING,
   calendar: {
     month: { year: 2026, month: 10 },
     markedDates: [

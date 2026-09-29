@@ -477,6 +477,18 @@ export const inicio = {
       `${p.servicio} · con ${p.profesional}`,
     vacio: "No tienes reservas para hoy todavía.",
   },
+  /** WP-fixar-sv: lista compacta de las próximas reservas (no solo las de hoy), para que
+   * el dueño no se pierda una reserva de la próxima semana si está mirando la semana
+   * actual en la Agenda. Cada fila lleva a la semana de esa reserva
+   * (`/app/agenda?fecha=`). */
+  proximasReservas: {
+    titulo: "Próximas reservas",
+    verAgenda: "Ver en la agenda",
+    vacio: "No tienes próximas reservas.",
+    /** "Vie 9 oct · 15:00". */
+    fechaHora: (p: { fecha: string; hora: string }): string =>
+      `${p.fecha} · ${p.hora}`,
+  },
   flashCard: {
     titulo: "Hora flash activa",
     /** Estado sin ninguna hora flash activa (WP-11): reemplaza a la
@@ -1437,6 +1449,7 @@ export const negocio = {
     phoneLabel: "Teléfono del negocio",
     phoneAyuda:
       "Celular o fijo. Tus clientes lo ven en la confirmación y lo usan para escribirte si no pueden cambiar su hora solos.",
+    phonePlaceholder: "+56 9 1234 5678",
     addressLabel: "Dirección (opcional)",
     addressPlaceholder: "Calle y número",
   },
@@ -1550,6 +1563,7 @@ export const servicios = {
       'Por ejemplo, escribe "Sesión de kinesiología" o "Sesión (60 min)", no el diagnóstico ni el tratamiento específico.',
     durationLabel: "Duración (min)",
     priceLabel: "Precio",
+    pricePlaceholder: "$10.000",
     bufferLabel: "Tiempo extra después",
     bufferAyuda: "Para limpiar o preparar. El cliente no lo ve.",
     categoryLabel: "Categoría (opcional)",

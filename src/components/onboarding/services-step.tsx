@@ -105,7 +105,7 @@ export function ServicesStep({
               <TextField
                 label={servicios.campos.priceLabel}
                 inputMode="numeric"
-                placeholder="$10.000"
+                placeholder={servicios.campos.pricePlaceholder}
                 value={s.priceClp}
                 onChange={(e) => updateRow(i, { priceClp: e.target.value })}
                 error={errors[i]?.priceClp}
