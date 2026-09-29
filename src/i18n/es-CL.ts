@@ -176,6 +176,12 @@ export const errores = {
       empty: "Escribe tu número de teléfono.",
       invalid_chars: "Usa solo números, por ejemplo +56 9 1234 5678.",
       not_chilean: "Por ahora solo aceptamos números chilenos (+56).",
+      /** Código nuevo (WP-M2, D-025/D-026): mismo caso que `not_chilean`,
+       * nombre neutral para cuando el mercado activo determina el país
+       * válido (no siempre Chile). Mismo texto que `not_chilean` por ahora;
+       * las dos claves existen porque `not_chilean` sigue en uso mientras se
+       * migra. */
+      wrong_country: "Escribe un número de celular chileno.",
       invalid_length:
         "Un celular chileno tiene 8 dígitos después de +56 9. Revisa el número.",
       not_mobile: "Escribe un celular chileno, por ejemplo +56 9 1234 5678.",
@@ -1208,6 +1214,8 @@ export const validacion = {
     empty: "Escribe el teléfono del negocio.",
     invalid_chars: "Usa solo números, por ejemplo +56 9 1234 5678.",
     not_chilean: "Por ahora solo aceptamos números chilenos (+56).",
+    /** Ver `errores.reserva.telefono.wrong_country` (WP-M2). */
+    wrong_country: "Escribe un número de celular chileno.",
     invalid_length:
       "Ese número no tiene la cantidad de dígitos de un teléfono chileno. Revisa el número.",
     not_mobile: "Escribe un celular chileno, por ejemplo +56 9 1234 5678.",
@@ -1223,6 +1231,8 @@ export const validacion = {
     empty: "Escribe el celular del cliente.",
     invalid_chars: "Usa solo números, por ejemplo +56 9 1234 5678.",
     not_chilean: "Por ahora solo aceptamos celulares chilenos (+56).",
+    /** Ver `errores.reserva.telefono.wrong_country` (WP-M2). */
+    wrong_country: "Escribe un número de celular chileno.",
     invalid_length:
       "Un celular chileno tiene 8 dígitos después de +56 9. Revisa el número.",
     not_mobile: "Escribe un celular chileno, por ejemplo +56 9 1234 5678.",
