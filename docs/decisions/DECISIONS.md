@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-032 · 2026-09-29 · JS-budget för bokningssidan höjs till 180 kB
+**Varför:** kategorier och bokningsfrågor (WP-40) gav +3–4 kB; tidsbudgeten (tjänsten klickbar inom 3,5 s på 4G + 4x CPU) klaras fortfarande med marginal (~3,0 s). **Konsekvens:** `e2e/reserva.spec.ts` mäter ≤ 180 kB gzip. Tidsbudgeten är oförändrad. Zod får fortfarande inte hamna i klientbunten.
+
 ### D-031 · 2026-09-29 · Tjänstekategorier och bokningsfrågor
 **Varför:** fler branscher behöver egna frågor, och frisörer m.fl. vill gruppera tjänster (Dam/Herr/Övrigt). **Konsekvens:** kategorier är egna rader (`service_categories`), fritextkolumnen `services.category` migreras och tas bort. Bokningsfrågor lagras normaliserat med kopia av etikett/typ i `booking_answers`; branschförslagen finns i kod. Förslag för 8 branscher; "Allergier" bara där det berör, inga andra hälsofrågor i förslagen.
 
