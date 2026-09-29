@@ -15,12 +15,18 @@ export function precioPlan(id: PlanId, m: Market = market): number {
   return precios[m][id];
 }
 
-/** Formaterat månadspris, t.ex. "$9.990" eller "299 kr". */
-export function formatPrecioPlan(id: PlanId, m: Market = market): string {
-  const belopp = precioPlan(id, m);
+/** Formaterat belopp, t.ex. "$9.990" eller "299 kr" — samma regel som `formatPrecioPlan`
+ * men för ett godtyckligt heltal (t.ex. pris per anställd i /precios räknare, sitio-v3),
+ * i stället för att hårdkoda per-marknadsformatet på fler ställen. */
+export function formatMonto(amount: number, m: Market = market): string {
   if (m === "SE") {
-    const kr = belopp / 100;
+    const kr = amount / 100;
     return `${new Intl.NumberFormat("sv-SE", { maximumFractionDigits: 2 }).format(kr)} kr`;
   }
-  return formatClp(belopp);
+  return formatClp(amount);
+}
+
+/** Formaterat månadspris, t.ex. "$9.990" eller "299 kr". */
+export function formatPrecioPlan(id: PlanId, m: Market = market): string {
+  return formatMonto(precioPlan(id, m), m);
 }

@@ -34,5 +34,14 @@
       animation-iteration-count: 1 !important;
       scroll-behavior: auto !important;
     }
+    /* Stegmockuper (t.ex. Flash) har ett lager per tillstånd: visa bara slutläget. */
+    .animate-step-fade-1,
+    .animate-step-fade-2,
+    .animate-step-fade-3 {
+      opacity: 0 !important;
+    }
+    .animate-step-fade-4 {
+      opacity: 1 !important;
+    }
   }
 }

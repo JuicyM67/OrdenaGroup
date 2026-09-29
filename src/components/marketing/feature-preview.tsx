@@ -169,7 +169,7 @@ function AgendaPreview() {
  * los tocara con una mano desde el celular. */
 function HoyPreview() {
   return (
-    <div className="w-full max-w-80 rounded-hero bg-dark p-5 text-on-dark shadow-popover">
+    <div className="w-full max-w-80 rounded-hero bg-dark-2 p-5 text-on-dark shadow-popover">
       <div className="flex flex-col items-start gap-2">
         <span className="text-13 text-on-dark-muted">
           {copy.hoy.siguiente({ relativo: copy.hoy.relativo.enMin({ n: 20 }) })}
@@ -421,7 +421,7 @@ const REPORTES_BARS: readonly { height: number; delay: boolean }[] = [
  * cifra que rueda, con el primer punto de la sección como pie (texto real, no inventado). */
 function ReportesPreview({ seccion }: { seccion: FeaturePreviewSeccion }) {
   return (
-    <div className="w-full max-w-80 rounded-hero bg-dark p-5 text-on-dark shadow-popover">
+    <div className="w-full max-w-80 rounded-hero bg-dark-2 p-5 text-on-dark shadow-popover">
       <div aria-hidden="true" className="flex h-16 items-end gap-1.5">
         {REPORTES_BARS.map((bar, i) => (
           <span
