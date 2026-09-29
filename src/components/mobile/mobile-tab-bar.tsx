@@ -17,14 +17,22 @@ export type MobileTabBarProps = {
   items: readonly MobileTabItem[];
   /** `key` för den aktiva fliken. */
   active: string;
+  /** WP-42: `lg:hidden` från AppShell/AgendaShell (ägarskalets skärmar döljer flikraden på
+   * skrivbordet). Hoy (mobil-only route) skickar ingen. */
+  className?: string;
 };
 
-export function MobileTabBar({ items, active }: MobileTabBarProps) {
+export function MobileTabBar({ items, active, className }: MobileTabBarProps) {
   return (
     <nav
       aria-label={nav.secciones}
       data-surface="dark"
-      className="fixed inset-x-4 bottom-4 mx-auto grid h-18 max-w-112 grid-cols-4 items-center rounded-bar bg-dark px-2"
+      className={cn(
+        // WP-42: `bottom-safe-b` (i stället för `bottom-4`) håller samma 16 px-marginal och
+        // lägger till `env(safe-area-inset-bottom)` ovanpå — se DESIGN.md §5.
+        "fixed inset-x-4 bottom-safe-b mx-auto grid h-18 max-w-112 grid-cols-4 items-center rounded-bar bg-dark px-2",
+        className,
+      )}
     >
       {items.map((item) => {
         const isActive = item.key === active;
