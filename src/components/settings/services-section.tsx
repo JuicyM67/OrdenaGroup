@@ -16,12 +16,27 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { TextField } from "@/components/ui/text-field";
-import { ajustes, servicios } from "@/i18n";
+import { ajustes, formulario, servicios } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
 import { formatMoney, moneyInputValue, parseMoney } from "@/lib/format/money";
 
 import { ajustesErrorText } from "./error-text";
+import type {
+  BookingFormActions,
+  BookingFormSettings,
+} from "./booking-form-types";
+import { ServiceQuestionsTab } from "./service-questions-tab";
 import type { AjustesActions, AjustesService } from "./types";
+
+/** Delas ner till `ServiceForm` bara när tjänsten redan finns (vy B, WP-40
+ * steg 7, D-031): en ny, oskapad tjänst har inget `serviceId` att koppla
+ * frågor mot än. */
+export type ServiceQuestionsBundle = {
+  settings: BookingFormSettings;
+  businessCategory: string | null;
+  actions: BookingFormActions;
+  onReload: () => Promise<void>;
+};
 
 type RowForm = {
   name: string;
@@ -91,6 +106,8 @@ function ServiceForm({
   onChange,
   onCancel,
   onSubmit,
+  serviceId,
+  bookingForm,
 }: {
   form: RowForm;
   errors: RowErrors;
@@ -98,54 +115,122 @@ function ServiceForm({
   onChange: (form: RowForm) => void;
   onCancel: () => void;
   onSubmit: () => void;
+  /** `undefined` = tjänsten skapas nu (vy B kräver ett sparat id). */
+  serviceId?: string;
+  bookingForm?: ServiceQuestionsBundle;
 }) {
+  const [tab, setTab] = useState<"detalles" | "preguntas">("detalles");
+
   return (
     <div
       data-testid="service-editor"
       className="flex flex-col gap-3 rounded-tile bg-canvas p-4"
     >
-      <TextField
-        label={servicios.campos.nameLabel}
-        placeholder={servicios.campos.namePlaceholder}
-        hint={servicios.campos.nombreAyuda}
-        value={form.name}
-        onChange={(e) => onChange({ ...form, name: e.target.value })}
-        error={errors.name}
-        maxLength={120}
-      />
-      <div className="flex gap-3">
-        <TextField
-          label={servicios.campos.durationLabel}
-          inputMode="numeric"
-          value={form.durationMin}
-          onChange={(e) => onChange({ ...form, durationMin: e.target.value })}
-          error={errors.durationMin}
+      {serviceId && bookingForm ? (
+        <div
+          role="tablist"
+          aria-label={ajustes.secciones.servicios}
+          className="flex gap-1.5"
+        >
+          <Button
+            type="button"
+            role="tab"
+            aria-selected={tab === "detalles"}
+            variant={tab === "detalles" ? "primary" : "secondary"}
+            size="xs"
+            onClick={() => setTab("detalles")}
+          >
+            {formulario.servicioPregunta.pestanaDetalles}
+          </Button>
+          <Button
+            type="button"
+            role="tab"
+            aria-selected={tab === "preguntas"}
+            variant={tab === "preguntas" ? "primary" : "secondary"}
+            size="xs"
+            onClick={() => setTab("preguntas")}
+          >
+            {formulario.servicioPregunta.pestana}
+          </Button>
+        </div>
+      ) : null}
+
+      {tab === "preguntas" && serviceId && bookingForm ? (
+        <ServiceQuestionsTab
+          serviceId={serviceId}
+          settings={bookingForm.settings}
+          businessCategory={bookingForm.businessCategory}
+          actions={bookingForm.actions}
+          onReload={bookingForm.onReload}
         />
-        <TextField
-          label={servicios.campos.priceLabel}
-          inputMode="numeric"
-          placeholder="$10.000"
-          value={form.priceClp}
-          onChange={(e) => onChange({ ...form, priceClp: e.target.value })}
-          error={errors.priceClp}
-        />
-      </div>
-      <TextField
-        label={servicios.campos.bufferLabel}
-        hint={errors.bufferAfterMin ? undefined : servicios.campos.bufferAyuda}
-        inputMode="numeric"
-        value={form.bufferAfterMin}
-        onChange={(e) => onChange({ ...form, bufferAfterMin: e.target.value })}
-        error={errors.bufferAfterMin}
-      />
-      <div className="flex gap-3">
+      ) : (
+        <>
+          <TextField
+            label={servicios.campos.nameLabel}
+            placeholder={servicios.campos.namePlaceholder}
+            hint={servicios.campos.nombreAyuda}
+            value={form.name}
+            onChange={(e) => onChange({ ...form, name: e.target.value })}
+            error={errors.name}
+            maxLength={120}
+          />
+          <div className="flex gap-3">
+            <TextField
+              label={servicios.campos.durationLabel}
+              inputMode="numeric"
+              value={form.durationMin}
+              onChange={(e) =>
+                onChange({ ...form, durationMin: e.target.value })
+              }
+              error={errors.durationMin}
+            />
+            <TextField
+              label={servicios.campos.priceLabel}
+              inputMode="numeric"
+              placeholder="$10.000"
+              value={form.priceClp}
+              onChange={(e) => onChange({ ...form, priceClp: e.target.value })}
+              error={errors.priceClp}
+            />
+          </div>
+          <TextField
+            label={servicios.campos.bufferLabel}
+            hint={
+              errors.bufferAfterMin ? undefined : servicios.campos.bufferAyuda
+            }
+            inputMode="numeric"
+            value={form.bufferAfterMin}
+            onChange={(e) =>
+              onChange({ ...form, bufferAfterMin: e.target.value })
+            }
+            error={errors.bufferAfterMin}
+          />
+          <div className="flex gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={onCancel}
+            >
+              {ajustes.seguirEditando}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              disabled={saving}
+              onClick={onSubmit}
+            >
+              {saving ? ajustes.guardando : ajustes.guardarCambios}
+            </Button>
+          </div>
+        </>
+      )}
+
+      {tab === "preguntas" && serviceId && bookingForm ? (
         <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
-          {ajustes.seguirEditando}
+          {comun.cerrar}
         </Button>
-        <Button type="button" size="sm" disabled={saving} onClick={onSubmit}>
-          {saving ? ajustes.guardando : ajustes.guardarCambios}
-        </Button>
-      </div>
+      ) : null}
     </div>
   );
 }
@@ -153,6 +238,7 @@ function ServiceForm({
 export function ServicesSection({
   services,
   actions,
+  bookingForm,
 }: {
   services: AjustesService[];
   actions: {
@@ -160,6 +246,8 @@ export function ServicesSection({
     update: AjustesActions["updateService"];
     setActive: AjustesActions["setServiceActive"];
   };
+  /** Vy B (WP-40 steg 7): saknas den, visas ingen flik "Frågor vid bokning". */
+  bookingForm?: ServiceQuestionsBundle;
 }) {
   const [list, setList] = useState(services);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
@@ -271,6 +359,8 @@ export function ServicesSection({
               onChange={setForm}
               onCancel={cancel}
               onSubmit={() => void submit()}
+              serviceId={s.id}
+              bookingForm={bookingForm}
             />
           ) : (
             <div

@@ -20,6 +20,9 @@ export type CreateCustomerBookingInput = {
    * lyckad i stället för att försöka skapa en till (granskningsfynd, se
    * `create.ts`). Klientgenererad (`crypto.randomUUID()`, form-schema.ts). */
   idempotencyKey: string;
+  /** WP-40: svar på bokningsfrågorna, `{ [questionId]: värde }`. Valideras
+   * av servern mot tjänstens frågor (`createIn`); fel → `invalid_input`. */
+  answers?: Record<string, unknown> | undefined;
   now: Date;
   /** Installationens marknad; injiceras bara i tester. */
   market?: Market | undefined;
@@ -54,6 +57,7 @@ export async function createCustomerBooking(
         email: input.email,
       },
       idempotencyKey: input.idempotencyKey,
+      answers: input.answers ?? {},
     },
     {
       businessId: input.businessId,

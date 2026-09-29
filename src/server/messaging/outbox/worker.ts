@@ -1,7 +1,13 @@
 import "server-only";
 
+import { formulario } from "@/i18n";
 import { APP_LOCALE, APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
+import type {
+  AnswerValue,
+  QuestionKind,
+} from "@/lib/validation/booking-questions";
+import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import { pgErrorCode } from "@/server/db/errors";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail, type EmailTemplateMap } from "@/server/messaging/email";
@@ -275,7 +281,44 @@ function reservaCanceladaData(
   };
 }
 
-function duenoData(ctx: MessageContext): EmailTemplateMap["nuevaReservaDueno"] {
+/** Texten för ett svar i ägarens mejl (WP-40, D-031) — egen, liten kopia av
+ * `src/components/booking/answer-format.ts`s `formatAnswerValue` (samma
+ * logik, olika körtidskontext: workern importerar aldrig klientkomponenter,
+ * se filkommentaren ovan). */
+function formatAnswerForEmail(a: {
+  kind: QuestionKind;
+  value: AnswerValue;
+}): string {
+  switch (a.kind) {
+    case "yes_no":
+      return a.value === true ? formulario.siNo.si : formulario.siNo.no;
+    case "multi_choice":
+      return Array.isArray(a.value) ? a.value.join(", ") : String(a.value);
+    default:
+      return String(a.value);
+  }
+}
+
+/** Svaren på bokningsfrågorna, redan formaterade för `cardRows` (WP-40). Bara
+ * `nuevaReservaDueno` anropar den här — `cancelacionDueno` visar aldrig svar. */
+async function duenoAnswers(
+  businessId: string,
+  bookingId: string | null,
+): Promise<{ label: string; value: string }[]> {
+  if (!bookingId) return [];
+  const byBooking = await withServiceTx((q) =>
+    listBookingAnswersIn(q, businessId, [bookingId]),
+  );
+  return (byBooking[bookingId] ?? []).map((a) => ({
+    label: a.label,
+    value: formatAnswerForEmail(a),
+  }));
+}
+
+function duenoData(
+  ctx: MessageContext,
+  answers: readonly { label: string; value: string }[],
+): EmailTemplateMap["nuevaReservaDueno"] {
   const { fecha, hora } = fechaHora(ctx);
   return {
     negocio: ctx.negocio,
@@ -284,6 +327,7 @@ function duenoData(ctx: MessageContext): EmailTemplateMap["nuevaReservaDueno"] {
     fecha,
     hora,
     agendaUrl: agendaLink(),
+    ...(answers.length > 0 ? { answers } : {}),
   };
 }
 
@@ -411,7 +455,11 @@ async function sendOwner(
   const template = row.template as "nuevaReservaDueno" | "cancelacionDueno";
   const emails = await ownerEmailsFor(row.businessId);
   if (emails.length === 0) throw new OutboxSendError("no_owner_email");
-  const data = duenoData(ctx);
+  const answers =
+    template === "nuevaReservaDueno"
+      ? await duenoAnswers(row.businessId, row.bookingId)
+      : [];
+  const data = duenoData(ctx, answers);
   const ids: string[] = [];
   for (const [i, to] of emails.entries()) {
     const r = await sendEmail({

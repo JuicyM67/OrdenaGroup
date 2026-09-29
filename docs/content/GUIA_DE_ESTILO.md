@@ -40,7 +40,9 @@
 | Una persona que atiende | **profesional** | "empleado" (ver también la fila de arriba) |
 | La URL que le compartes al cliente (`negocio.slug`, onboarding paso 4) | **link de reservas** | "enlace" |
 | La página a la que lleva ese link (`/[slug]`, lo que el cliente ve y usa para reservar) | **página de reservas** | — (es un concepto distinto del link, no un sinónimo: el link se copia/comparte, la página se visita) |
-| Categoría del negocio (`businesses.category`) | **rubro** | "categoría" (esa palabra se reserva para `services.category`) |
+| Categoría del negocio (`businesses.category`) | **rubro** | "categoría" (esa palabra se reserva para `service_categories`, WP-40/D-031) |
+| Grupo de servicios que el dueño arma (Dam/Herr en el boceto, "Mujeres"/"Hombres" como ejemplo en `es-CL.ts`), visible como pestaña en la página de reservas | **categoría** | — (distinto del rubro del negocio, ver fila de arriba) |
+| Campo que el dueño agrega al formulario de reserva (`booking_questions`, WP-40) | **pregunta** | "campo" (se reserva para los campos fijos del formulario: nombre, celular, correo) |
 
 ## 3. Formato
 
@@ -219,6 +221,35 @@ Ningún campo de notas libres pide ni sugiere anotar datos de salud:
   2026-09-27).
 - `horarios.bloqueos.notaAyuda` (nota de un bloqueo o ausencia, por ejemplo
   una licencia médica): "Solo tu equipo la ve. No anotes datos de salud."
+
+### 9.2 Preguntas del formulario de reserva (WP-40, D-031)
+
+El dueño puede agregar sus propias preguntas al formulario de reserva
+(`booking_questions`), además de las sugerencias por rubro de
+`src/i18n/presets/booking-questions.es-CL.ts`. Misma lógica de minimización
+que las notas (§9.1), pero acá la pregunta también la ve el cliente, así que
+la regla es más estricta:
+
+- Ninguna sugerencia pregunta por salud: nada de lesiones, diagnósticos,
+  medicamentos, embarazo ni nada que lo insinúe (ni siquiera algo cercano,
+  como "¿tienes alguna lesión?"). Esto aplica incluso a rubros donde
+  parecería natural, como kinesiología: ahí las sugerencias preguntan por la
+  zona a trabajar o el objetivo de la sesión, nunca por el diagnóstico.
+- **"Alergias a productos" es la única excepción**, y solo aparece como
+  sugerencia en los cinco rubros donde de verdad se usan productos que
+  pueden causarlas (`peluquerias`, `estetica`, `unas`, `pestanas_cejas`,
+  `tatuajes`): siempre opcional, siempre apagada por defecto
+  (`enabledByDefault: false`) y siempre guardada en la ficha del cliente
+  (`saveToCustomer: true`), para no tener que volver a preguntarla.
+- `formulario.avisoDatosSensibles` (`es-CL.ts`) se muestra en la pantalla
+  donde el dueño crea una pregunta propia: "No preguntes por salud,
+  diagnósticos ni RUT. Esos datos necesitan protección especial según la Ley
+  21.719." No hay filtro automático de palabras (mismo criterio que
+  `servicios.campos.nombreAyuda`, §9): es un aviso, no un bloqueo técnico.
+- Esto es una regla de producto y de contenido de las sugerencias, no una
+  validación que pueda imponer `copywriter-es-cl` sobre lo que el dueño
+  escribe a mano: `security-reviewer` revisa el paso 3 (validación del
+  servidor) y el paso 8 (formulario y visualización) del plan de WP-40.
 
 ## 11. Landing pública (`landing`, `PLANES_LANDING`, `inicio.tuLink`)
 

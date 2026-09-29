@@ -28,11 +28,21 @@ insert into public.staff (id, business_id, name, color, sort) values
   ('b0000000-0000-0000-0000-000000000102', 'b0000000-0000-0000-0000-000000000001', 'Matías', 'staff-2', 2),
   ('b0000000-0000-0000-0000-000000000103', 'b0000000-0000-0000-0000-000000000001', 'Tomás', 'staff-3', 3);
 
+-- Tjänstekategorier (WP-40 steg 1, D-031) --------------------------------
+-- Barbería Norte är en herrfrisyr, så alla tre tjänsterna hamnar i "Herr".
+-- "Dam" och "Övrigt" skapas ändå (naturligt för en salong som kan tänkas
+-- växa), tomma till att börja med — det visar också att bokningssidans
+-- kategoriflikar döljs när färre än två kategorier har aktiva tjänster.
+insert into public.service_categories (id, business_id, name, sort) values
+  ('b0000000-0000-0000-0000-000000000901', 'b0000000-0000-0000-0000-000000000001', 'Dam', 1),
+  ('b0000000-0000-0000-0000-000000000902', 'b0000000-0000-0000-0000-000000000001', 'Herr', 2),
+  ('b0000000-0000-0000-0000-000000000903', 'b0000000-0000-0000-0000-000000000001', 'Övrigt', 3);
+
 -- Tjänster ---------------------------------------------------------------
-insert into public.services (id, business_id, name, duration_min, price_clp, buffer_after_min, sort) values
-  ('b0000000-0000-0000-0000-000000000201', 'b0000000-0000-0000-0000-000000000001', 'Corte clásico', 35, 12000, 0, 1),
-  ('b0000000-0000-0000-0000-000000000202', 'b0000000-0000-0000-0000-000000000001', 'Corte + barba', 50, 18000, 0, 2),
-  ('b0000000-0000-0000-0000-000000000203', 'b0000000-0000-0000-0000-000000000001', 'Perfilado de barba', 20, 8000, 0, 3);
+insert into public.services (id, business_id, name, duration_min, price_clp, buffer_after_min, sort, category_id) values
+  ('b0000000-0000-0000-0000-000000000201', 'b0000000-0000-0000-0000-000000000001', 'Corte clásico', 35, 12000, 0, 1, 'b0000000-0000-0000-0000-000000000902'),
+  ('b0000000-0000-0000-0000-000000000202', 'b0000000-0000-0000-0000-000000000001', 'Corte + barba', 50, 18000, 0, 2, 'b0000000-0000-0000-0000-000000000902'),
+  ('b0000000-0000-0000-0000-000000000203', 'b0000000-0000-0000-0000-000000000001', 'Perfilado de barba', 20, 8000, 0, 3, 'b0000000-0000-0000-0000-000000000902');
 
 -- Alla profesionales gör alla tjänster.
 insert into public.staff_services (business_id, staff_id, service_id)

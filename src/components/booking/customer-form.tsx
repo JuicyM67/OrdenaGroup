@@ -11,6 +11,11 @@ import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
 import { market } from "@/config/brand";
 import { comun, reserva } from "@/i18n";
+// WP-40 (D-031): `validateAnswers` är uttryckligen klientsäker (se
+// filkommentaren i `booking-questions.ts`) trots att den drar in Zod — en
+// medveten avvikelse från qa-granskningens item 6 (som gäller
+// `form-schema.ts`, servern), godkänd av planen (steg 8).
+import { validateAnswers } from "@/lib/validation/booking-questions";
 
 import {
   EMAIL_MAX,
@@ -20,10 +25,16 @@ import {
   validatePhone,
 } from "./client-validation";
 import { ConsentCheckbox } from "./consent-checkbox";
-import { fieldError, serverError, zodIssueToFieldError } from "./errors";
+import {
+  answersToFieldErrors,
+  fieldError,
+  serverError,
+  zodIssueToFieldError,
+} from "./errors";
 import type { BookingSelection } from "./flow-state";
 // Bara typer (raderas vid kompilering, drar inte in Zod — qa-granskning, item 6).
 import type { CustomerFormOutput, WaitlistFormOutput } from "./form-schema";
+import { QuestionField, type QuestionAnswerValue } from "./question-field";
 import { barPrice, summaryText } from "./summary";
 import type {
   BookingPageData,
@@ -100,6 +111,24 @@ export function CustomerForm({
   const [errors, setErrors] = useState<FieldErrors>(initialErrors ?? {});
   const [idempotencyKey] = useState(randomId);
 
+  // WP-40 (D-031): tjänstens bokningsfrågor + kundens lokala svar. Bor här
+  // (som samtyckena, inte i `BookingScreen`) — samma skäl, komponenten
+  // avmonteras och nollställs vid "Volver".
+  const questions = data.questionsByService?.[service?.id ?? ""] ?? [];
+  const [answers, setAnswers] = useState<Record<string, QuestionAnswerValue>>(
+    {},
+  );
+  const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
+  const answerRefs = useRef<Record<string, HTMLElement | null>>({});
+  function updateAnswer(questionId: string, value: QuestionAnswerValue) {
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
+  }
+  function registerAnswerRef(questionId: string) {
+    return (el: HTMLElement | null) => {
+      answerRefs.current[questionId] = el;
+    };
+  }
+
   const titleRef = useRef<HTMLHeadingElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
@@ -163,13 +192,37 @@ export function CustomerForm({
 
     if (Object.keys(next).length > 0) {
       setErrors(next);
+      setAnswerErrors({});
       focusFirstError(next);
       return;
     }
     if (!nameResult.ok || !phoneResult.ok || !emailResult.ok) return; // typvakt, kan inte hända
 
+    // WP-40: frågorna valideras bara efter att kontaktfälten är giltiga
+    // (samma tab-ordning som formuläret: namn/telefon/e-post, sedan
+    // frågorna). Servern validerar på nytt mot sin egen frågelista
+    // (`createIn`) — den här kontrollen är bara för att visa fältfelen
+    // innan anropet.
+    const rawAnswers: Record<string, unknown> = {};
+    for (const q of questions) rawAnswers[q.id] = answers[q.id];
+    const answerResult = validateAnswers(questions, rawAnswers);
+    if (!answerResult.ok) {
+      const nextAnswerErrors = answersToFieldErrors(
+        questions,
+        answerResult.error,
+      );
+      setAnswerErrors(nextAnswerErrors);
+      const firstInvalid = questions.find((q) => nextAnswerErrors[q.id]);
+      if (firstInvalid) answerRefs.current[firstInvalid.id]?.focus();
+      return;
+    }
+
     submittingRef.current = true;
     setErrors({});
+    setAnswerErrors({});
+
+    const answersPayload: Record<string, unknown> = {};
+    for (const a of answerResult.value) answersPayload[a.questionId] = a.value;
 
     const base = {
       name: nameResult.value,
@@ -181,6 +234,7 @@ export function CustomerForm({
       serviceId: selection.serviceId!,
       staffId: selection.staffId,
       date: selection.date!,
+      answers: answersPayload,
     };
     if (isWaitlist) {
       onSubmitWaitlist({
@@ -315,6 +369,26 @@ export function CustomerForm({
           hint={reserva.clienteForm.emailAyuda}
           error={errors.email}
         />
+
+        {questions.length > 0 ? (
+          <>
+            <div aria-hidden="true" className="h-px bg-line" />
+            <div className="flex flex-col gap-4">
+              {questions.map((q) => (
+                <QuestionField
+                  key={q.id}
+                  question={q}
+                  value={answers[q.id]}
+                  onChange={(value) => {
+                    updateAnswer(q.id, value);
+                  }}
+                  error={answerErrors[q.id]}
+                  registerRef={registerAnswerRef(q.id)}
+                />
+              ))}
+            </div>
+          </>
+        ) : null}
 
         <div className="flex flex-col gap-2 text-13 leading-body text-muted">
           <p>

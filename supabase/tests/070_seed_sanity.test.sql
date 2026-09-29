@@ -3,7 +3,7 @@
 -- _helpers.psql.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(9);
+select plan(11);
 
 select is(
   (select count(*) from public.businesses where slug = 'barberia-norte')::int, 1,
@@ -16,6 +16,16 @@ select is(
 select is(
   (select count(*) from public.services where business_id = 'b0000000-0000-0000-0000-000000000001')::int, 3,
   '3 tjänster'
+);
+select is(
+  (select count(*) from public.service_categories where business_id = 'b0000000-0000-0000-0000-000000000001')::int, 3,
+  '3 tjänstekategorier (Dam, Herr, Övrigt)'
+);
+select is(
+  (select count(*) from public.services s
+   join public.service_categories c on c.id = s.category_id
+   where s.business_id = 'b0000000-0000-0000-0000-000000000001' and c.name = 'Herr')::int, 3,
+  'alla 3 tjänster ligger i kategorin Herr'
 );
 select is(
   (select count(*) from public.business_hours where business_id = 'b0000000-0000-0000-0000-000000000001')::int, 6,

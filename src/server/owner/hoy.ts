@@ -12,6 +12,7 @@ import {
   APP_TZ,
   type LocalDate,
 } from "@/lib/format/dates";
+import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
@@ -102,20 +103,32 @@ export async function loadOwnerHoyIn(
     [businessId, start, end],
   );
 
-  const bookings: HoyBooking[] = bookingsRes.rows.map((b) => ({
-    id: b.id,
-    start: isoOf(b.start_ms),
-    end: isoOf(b.end_ms),
-    clientName: b.client_name ?? "",
-    service: b.service_name,
-    staffName: b.staff_name,
-    staffColor: staffColorOf(b.staff_color),
-    status: b.status,
-    confirmedByCustomer: b.confirmed_by_customer_at != null,
-    depositPaidClp: b.deposit_clp,
-    source: b.source,
-    visitNumber: b.visits_count + 1,
-  }));
+  // WP-40 (D-031): en batch-fråga för dagens bokningar (`listBookingAnswersIn`),
+  // inte en per bokning — samma avvägning som veckans agenda.
+  const answersByBooking = await listBookingAnswersIn(
+    q,
+    businessId,
+    bookingsRes.rows.map((b) => b.id),
+  );
+
+  const bookings: HoyBooking[] = bookingsRes.rows.map((b) => {
+    const answers = answersByBooking[b.id];
+    return {
+      id: b.id,
+      start: isoOf(b.start_ms),
+      end: isoOf(b.end_ms),
+      clientName: b.client_name ?? "",
+      service: b.service_name,
+      staffName: b.staff_name,
+      staffColor: staffColorOf(b.staff_color),
+      status: b.status,
+      confirmedByCustomer: b.confirmed_by_customer_at != null,
+      depositPaidClp: b.deposit_clp,
+      source: b.source,
+      visitNumber: b.visits_count + 1,
+      ...(answers && answers.length > 0 ? { answers } : {}),
+    };
+  });
   const dayTotalClp = bookingsRes.rows.reduce(
     (sum, b) => sum + (b.price_clp - b.discount_clp),
     0,

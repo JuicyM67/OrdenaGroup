@@ -100,6 +100,12 @@ const TENANT_TABLES = [
   "staff_hours",
   "time_off",
   "businesses",
+  // WP-40 (D-031)
+  "service_categories",
+  "booking_questions",
+  "booking_question_targets",
+  "booking_answers",
+  "customer_answers",
 ] as const;
 
 /** Sträng- och mallitteraler som ser ut som SQL. */

@@ -1,12 +1,18 @@
--- INV-3/INV-4: tenant-isolering för `services`.
+-- INV-3/INV-4: tenant-isolering för `services`, plus `category_id`
+-- (WP-40 steg 1, D-031: services.category (fritext) är ersatt av en FK mot
+-- service_categories).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(23);
+select plan(26);
 \ir _helpers.psql
 
 insert into public.services (id, business_id, name, duration_min, price_clp) values
   ('aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Corte clásico', 35, 12000),
   ('bbbbbbbb-2000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002', 'Corte clásico', 35, 12000);
+
+insert into public.service_categories (id, business_id, name) values
+  ('aaaaaaaa-2900-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Dama'),
+  ('bbbbbbbb-2900-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002', 'Dama');
 
 select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -106,6 +112,32 @@ select throws_ok(
   $$ insert into public.services (business_id, name, duration_min, price_clp, deposit_kind, deposit_value) values ('aaaaaaaa-0000-0000-0000-000000000001', 'X', 30, 5000, 'fixed', 5001) $$,
   '23514'
 );
+
+-- category_id: sammansatt tvärtenant-FK (D-014) — A:s tjänst kan inte peka
+-- på B:s kategori, ens med samma business_id-värde som A.
+select throws_ok(
+  $$ insert into public.services (business_id, name, duration_min, price_clp, category_id) values ('aaaaaaaa-0000-0000-0000-000000000001', 'X', 30, 5000, 'bbbbbbbb-2900-0000-0000-000000000001') $$,
+  '23503'
+);
+
+-- category_id: `on delete set null` — tar bort kategorin utan att radera
+-- tjänsten, svaret (booking_answers) hade motsvarande resonemang men här är
+-- semantiken enklare (ingen snapshot behövs, category_id är bara en pekare).
+set local role service_role;
+update public.services set category_id = 'aaaaaaaa-2900-0000-0000-000000000001'
+  where id = 'aaaaaaaa-2000-0000-0000-000000000001';
+select is(
+  (select category_id from public.services where id = 'aaaaaaaa-2000-0000-0000-000000000001')::text,
+  'aaaaaaaa-2900-0000-0000-000000000001',
+  'tjänsten har fått en kategori'
+);
+delete from public.service_categories where id = 'aaaaaaaa-2900-0000-0000-000000000001';
+select is(
+  (select category_id from public.services where id = 'aaaaaaaa-2000-0000-0000-000000000001'),
+  null,
+  'category_id sätts till null när kategorin tas bort, tjänsten finns kvar'
+);
+reset role;
 
 select finish();
 rollback;

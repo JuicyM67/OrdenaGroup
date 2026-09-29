@@ -1,6 +1,7 @@
 // /app/ajustes (WP-15b slim, F1/F2/F3): la ägaren ändra sitt företag efter onboarding.
 // Inloggning krävs redan av src/app/(app)/layout.tsx. Ägare utan företag → /app/onboarding
-// (samma mönster som /app/inicio).
+// (samma mönster som /app/inicio). WP-40 lägger till kategorier och bokningsformuläret
+// (D-031): `loadBookingFormBundleAction` läser vid sidladdning, resten är server actions.
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
@@ -20,6 +21,22 @@ import {
   updateServiceAction,
   updateStaffAction,
 } from "./actions";
+import {
+  activatePresetAction,
+  createCategoryAction,
+  createQuestionAction,
+  deleteCategoryAction,
+  deleteQuestionAction,
+  getQuestionsForServiceAction,
+  loadBookingFormBundleAction,
+  renameCategoryAction,
+  reorderCategoriesAction,
+  reorderQuestionsAction,
+  setQuestionActiveAction,
+  setQuestionTargetsAction,
+  setServiceCategoryAction,
+  updateQuestionAction,
+} from "./booking-form-actions";
 
 export const metadata: Metadata = {
   title: nav.ajustes,
@@ -27,6 +44,12 @@ export const metadata: Metadata = {
 };
 
 export const dynamic = "force-dynamic";
+
+async function loadBookingFormBundle() {
+  "use server";
+  const result = await loadBookingFormBundleAction();
+  return result.ok ? result.data : null;
+}
 
 export default async function AjustesPage() {
   const supabase = await createSupabaseServerClient();
@@ -39,6 +62,18 @@ export default async function AjustesPage() {
   if (!business) redirect("/app/onboarding");
 
   const data = await loadAjustesData(user.id, business.id);
+  const bundleResult = await loadBookingFormBundleAction();
+  const bookingForm = bundleResult.ok
+    ? bundleResult.data
+    : {
+        settings: {
+          categories: [],
+          services: [],
+          questions: [],
+          maxPerService: 5,
+        },
+        businessCategory: null,
+      };
 
   return (
     <AjustesScreen
@@ -53,6 +88,23 @@ export default async function AjustesPage() {
         setStaffActive: setStaffActiveAction,
         updateHours: updateHoursAction,
       }}
+      bookingForm={bookingForm}
+      bookingFormActions={{
+        createCategory: createCategoryAction,
+        renameCategory: renameCategoryAction,
+        deleteCategory: deleteCategoryAction,
+        reorderCategories: reorderCategoriesAction,
+        setServiceCategory: setServiceCategoryAction,
+        createQuestion: createQuestionAction,
+        activatePreset: activatePresetAction,
+        updateQuestion: updateQuestionAction,
+        setQuestionActive: setQuestionActiveAction,
+        setQuestionTargets: setQuestionTargetsAction,
+        reorderQuestions: reorderQuestionsAction,
+        deleteQuestion: deleteQuestionAction,
+        getQuestionsForService: getQuestionsForServiceAction,
+      }}
+      loadBookingFormBundle={loadBookingFormBundle}
     />
   );
 }

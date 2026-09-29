@@ -5,6 +5,7 @@ import type {
   BookingBusiness,
   BookingPageData,
   BookingService,
+  BookingServiceCategory,
   BookingStaffMember,
   DayAvailability,
   ServiceTint,
@@ -16,6 +17,8 @@ import {
   APP_TZ,
   toLocalDate,
 } from "@/lib/format/dates";
+import type { BookingQuestionDef } from "@/lib/validation/booking-questions";
+import { getQuestionsForServiceIn } from "@/server/booking-questions/catalog";
 import type { Queryable } from "@/server/db/pool";
 import {
   CUSTOMER_SLOT_LIMIT,
@@ -61,8 +64,10 @@ type ServiceRow = {
   name: string;
   duration_min: number;
   price_clp: number;
+  category_id: string | null;
 };
 type StaffRow = { id: string; name: string };
+type CategoryRow = { id: string; name: string };
 
 async function loadHours(
   q: Queryable,
@@ -140,7 +145,7 @@ export async function loadReservaPageData(
   }
 
   const serviceRows = await q.query<ServiceRow>(
-    `select id, name, duration_min, price_clp
+    `select id, name, duration_min, price_clp, category_id
        from public.services
       where business_id = $1 and active
       order by sort, name`,
@@ -152,6 +157,27 @@ export async function loadReservaPageData(
       order by sort, name`,
     [businessId],
   );
+  // WP-40 (D-031): bara kategorier som har minst en aktiv tjänst — en tom
+  // kategori vore en flik utan innehåll. `formulario.categorias.pestanaTodas`/
+  // `sinAsignar` (om det behövs) läggs till av UI:t, inte här (ren data).
+  const usedCategoryIds = new Set(
+    serviceRows.rows
+      .map((s) => s.category_id)
+      .filter((id): id is string => id !== null),
+  );
+  const categories: BookingServiceCategory[] = [];
+  if (usedCategoryIds.size > 0) {
+    const categoryRows = await q.query<CategoryRow>(
+      `select id, name from public.service_categories
+        where business_id = $1
+        order by sort, name`,
+      [businessId],
+    );
+    for (const c of categoryRows.rows) {
+      if (usedCategoryIds.has(c.id))
+        categories.push({ id: c.id, name: c.name });
+    }
+  }
 
   const services: BookingService[] = serviceRows.rows.map((s, i) => ({
     id: s.id,
@@ -159,6 +185,7 @@ export async function loadReservaPageData(
     durationMin: s.duration_min,
     priceClp: s.price_clp,
     tint: TINTS[i % TINTS.length]!,
+    categoryId: s.category_id,
   }));
   const staff: BookingStaffMember[] = staffRows.rows.map((s) => ({
     id: s.id,
@@ -166,6 +193,11 @@ export async function loadReservaPageData(
   }));
 
   const availability: Record<string, Record<string, DayAvailability[]>> = {};
+  // WP-40: kundens frågor per tjänst, redan upplösta (tjänst + kategori,
+  // klippta till max 5 — se `getQuestionsForServiceIn`). En fråga per
+  // extra fråga i stället för att läsa hela katalogen här (litet antal
+  // tjänster per företag, samma avvägning som `loadSnapshot` nedan).
+  const questionsByService: Record<string, readonly BookingQuestionDef[]> = {};
 
   if (services.length > 0) {
     const from = toLocalDate(now, APP_TZ);
@@ -174,6 +206,11 @@ export async function loadReservaPageData(
     const staffChoices = [ANY_STAFF, ...staffRows.rows.map((s) => s.id)];
 
     for (const service of serviceRows.rows) {
+      questionsByService[service.id] = await getQuestionsForServiceIn(
+        q,
+        businessId,
+        service.id,
+      );
       const loaded = await loadSnapshot(q, {
         businessId,
         serviceId: service.id,
@@ -222,5 +259,7 @@ export async function loadReservaPageData(
     services,
     staff,
     availability: availability as BookingAvailability,
+    categories,
+    questionsByService,
   };
 }

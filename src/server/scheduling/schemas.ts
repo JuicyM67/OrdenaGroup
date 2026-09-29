@@ -123,6 +123,13 @@ export const createBookingRequestSchema = z.strictObject({
   // den. Utan nyckel (ägarens manuella bokning) skrivs ingen rad i det
   // partiella unika indexet (create.ts).
   idempotencyKey: uuid.optional(),
+  // WP-40 (D-031): svar på bokningsfrågor, `{ [questionId]: värde }`. Bara
+  // formen kontrolleras här; innehållet valideras i `createIn` mot serverns
+  // egen frågelista för tjänsten (src/lib/validation/booking-questions.ts).
+  answers: z
+    .record(z.string().max(64), z.unknown())
+    .refine((o) => Object.keys(o).length <= 20)
+    .optional(),
 });
 
 /** Kundens flytt: bokningen identifieras bara med länkens token. */

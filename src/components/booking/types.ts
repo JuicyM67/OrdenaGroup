@@ -9,8 +9,10 @@
 import type { Clp } from "@/lib/format/clp";
 import type { IsoWeekday, LocalDate, LocalTime } from "@/lib/format/dates";
 // `import type` raderas helt vid kompilering (ingen JS-emission), så den här
-// filen kan vara "use client"-säker trots att @/server/bookings/types har
-// `import "server-only"` som värde-import — se qa-granskningen (item 11).
+// filen kan vara "use client"-säker trots att @/server/bookings/types och
+// @/server/booking-questions/* har `import "server-only"` som värde-import
+// — se qa-granskningen (item 11).
+import type { BookingQuestionDef } from "@/lib/validation/booking-questions";
 import type { BookingError } from "@/server/bookings/types";
 import type { Database } from "@/types/database";
 
@@ -25,6 +27,16 @@ export interface BookingService {
   readonly durationMin: number;
   readonly priceClp: Clp;
   readonly tint: ServiceTint;
+  /** `null` = utan kategori (WP-40, D-031). Frivilligt fält (befintliga
+   * fixturer/tester saknar det) — behandla en saknad nyckel som `null`. */
+  readonly categoryId?: string | null;
+}
+
+/** Tjänstekategori (WP-40, D-031): egna rader i `service_categories`, bara
+ * de som har minst en aktiv tjänst (`page-data.ts` filtrerar bort tomma). */
+export interface BookingServiceCategory {
+  readonly id: string;
+  readonly name: string;
 }
 
 export interface BookingStaffMember {
@@ -79,6 +91,16 @@ export interface BookingPageData {
   readonly services: readonly BookingService[];
   readonly staff: readonly BookingStaffMember[];
   readonly availability: BookingAvailability;
+  /** WP-40: kategorier med minst en aktiv tjänst. Frivilligt (saknas →
+   * behandlas som `[]`, flikarna döljs) så att befintliga fixturer/tester
+   * inte behöver uppdateras. */
+  readonly categories?: readonly BookingServiceCategory[];
+  /** WP-40: aktiva bokningsfrågor per tjänst (redan upplösta mot
+   * kategori-mål och klippta till max 5, se `getQuestionsForServiceIn`).
+   * Frivilligt av samma skäl som `categories`. */
+  readonly questionsByService?: Readonly<
+    Record<string, readonly BookingQuestionDef[]>
+  >;
 }
 
 /** `BookingError` (`@/server/bookings/types`, WP-10) plus `network` (klientfel,

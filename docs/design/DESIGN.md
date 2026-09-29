@@ -378,6 +378,74 @@ manuella bokning) är oförändrad. **Känd brist:** `es-CL.ts`s `clienteForm.em
 ("Correo (opcional)") och `emailAyuda` är inte uppdaterade för CL:s nya obligatoriska
 fält (copywriter-es-cl äger `src/i18n/`) — flaggat i PR:en, inte löst här.
 
+### Byggt i WP-40 (Ajustes: kategorier och bokningsformulär, D-031)
+
+Referenser: `.visual-diff/ref/falt-A-bokningsformular.html` (Ajustes → "Formulario de
+reserva"), `falt-B-per-tjanst.html` (tjänstens redigering, flik "Frågor vid bokning"),
+`falt-kategorier.html` (kategorier + "Gäller för"-panelen). Byggt i `src/components/settings/`
+och kompletterar den befintliga, oritade Ajustes-skärmen (WP-15b): sektionerna staplas som kort
+i stället för referensens skrivbordsflikar (samma avvikelse som redan fanns för Företaget/
+Tjänster/Personal/Öppettider), mobil först.
+
+**Medvetna avvikelser mot referenserna** (ingen `npm run visual` finns för Ajustes, se ovan):
+- **Ordning** av kategorier och frågor sker med upp/ner-knappar (`servicios.campos.subirAria`/
+  `bajarAria`, redan förberedda text­nycklar) i stället för drag — tillgängligt med tangentbord,
+  inget nytt drag-bibliotek.
+- **Frågetypen** väljs i en `Select` (samma fält som `falt-B` redan ritar) i stället för
+  `falt-A`:s svävande panel med sju knappar — en `<select>` räcker för sju alternativ och är mer
+  tillgänglig.
+- **Förhandsvisningen** (`question-preview.tsx`) är en egen, enkel telefonmockup — återanvänder
+  inte kundens bokningsformulär (byggs parallellt av en annan ui-engineer i `src/components/
+  booking/`). Fälten där är medvetet egna, kompakta `<input>`/`<textarea>` i stället för
+  `TextField`/`Textarea`/`Select` (de är minst 52 px höga, för stora för en 300 px telefonram).
+- **"Quitar" i vy B** tar bara bort tjänsten direkt när frågan redan har ett uttryckligt mål på
+  just den tjänsten (`applies_to = 'targets'`); gäller frågan via "alla tjänster" eller via
+  kategorin får ägaren ändra "Gäller för" i vy A i stället (`service-questions-tab.tsx`).
+- Två `TODO_COPY`-platshållare (inga nya risker, bara text): rubriken på kategorisektionen och
+  fliketiketten "Tiempo y precio" i tjänstens redigerare — ingen befintlig nyckel i
+  `formulario`/`servicios`/`ajustes` täcker dem, se koden.
+
+| Komponent | Fil | API |
+|---|---|---|
+| Switch | `src/components/ui/switch.tsx` | `checked`, `onChange`, `label` (blir aria-label), `disabled?`; 40×24, `role="switch"` |
+| Chip (ny ton) | `src/components/ui/chip.tsx` | `tone="lavender"` (`bg-lavender text-on-lilac-soft`) — "gäller för"-chippen på en fråga |
+| CategorySection | `src/components/settings/category-section.tsx` | skapa/döpa om/ta bort (Radix Dialog-bekräftelse)/ordna kategorier, gruppera tjänster, kategori-`select` per tjänst |
+| BookingFormSection | `src/components/settings/booking-form-section.tsx` | vy A: låst rad, förslagsbanner, hela frågekatalogen, förhandsvisning per vald tjänst |
+| ServiceQuestionsTab | `src/components/settings/service-questions-tab.tsx` | vy B: frågorna för en tjänst, "+ Från förslag"/"+ Egen fråga", "Quitar" |
+| AppliesToPanel | `src/components/settings/applies-to-panel.tsx` | delad "Gäller för"-panel (alla/valda, kategori- och tjänstval, sökfält, `too_many_questions`-fel) |
+| QuestionEditor | `src/components/settings/question-editor.tsx` | delat formulär för ny/redigera fråga (alla 7 typer), `footer?` (vy B:s "använd även i andra tjänster") |
+| QuestionRow, QuestionPreview, BookingSuggestionsBanner | samma mapp | frågerad, egen förhandsvisning, branschförslagsbanner |
+| `booking-form-resolve.ts`, `booking-form-industry.ts`, `booking-form-error-text.ts`, `booking-form-types.ts` | samma mapp | rena klientfunktioner/typer, dubblerade mot `src/server/booking-questions/resolve.ts` respektive `src/server/owner/booking-questions*` (server-only-filer importeras aldrig från klientkod) |
+
+### Byggt i WP-40 (kundsidan och visning av svar)
+
+Kategoriflikar på Reserva (`falt-kategorier.html`, telefonmockupen) och de dynamiska
+bokningsfrågorna i `CustomerForm` (`falt-A-bokningsformular.html`, telefonmockupen),
+plus visningen av svaren i agenda, Hoy och kundkortet. Ingen skalenlig
+mobilreferens finns för de här bitarna (mockuparna är små förhandsvisningar inuti
+ägarens inställningsskärmar) — formspråket återanvänder i stället redan godkända
+komponenter (Pill, TextField) i full storlek, se filkommentarerna i
+`category-tabs.tsx`/`question-field.tsx` för avvägningen mot mockupens mindre chips
+och `role="tablist"`.
+
+| Komponent | Fil | API |
+|---|---|---|
+| CategoryTabs | `src/components/booking/category-tabs.tsx` | `tabs` (`CategoryTab[]`, se `categories.ts`), `selectedId`, `onSelect`; samma Pill/scroll-mönster som `StaffPicker` |
+| `categories.ts` | `src/components/booking/categories.ts` | Rena funktioner: `categoryTabs` (döljer flikarna om färre än två grupper har aktiva tjänster), `servicesForCategory` |
+| QuestionField | `src/components/booking/question-field.tsx` | `question` (`BookingQuestionDef`), `value`, `onChange`, `error?`, `registerRef` — en renderare per `question_kind` (TextField/Textarea/Pill-grupper) |
+| Textarea | `src/components/ui/textarea.tsx` | Samma formspråk som TextField (`label`, `hint?`, `error?`); första användningen är `long_text`-frågor |
+| AnswersList | `src/components/booking/answers-list.tsx` | `answers` (`DisplayAnswer[]`), `tone?` (`light`/`dark`); rubrik `formulario.visualizacion.titulo` + en rad per `formulario.visualizacion.par`; delas av `EventPopover` (agenda), `NextClientCard` (Hoy) och `CustomerAnswersCard` |
+| `answer-format.ts` | `src/components/booking/answer-format.ts` | `formatAnswerValue`: ja/nej, listor (`multi_choice`) och datum (kalenderdatum utan tidszon) till text |
+| CustomerAnswersCard | `src/components/customers/customer-answers-card.tsx` | `data` (`CustomerAnswersView`): senaste värden + historik per bokning. **Förberedd, inte kopplad till någon rutt** — ingen "Clientes"-skärm finns än i kodbasen (varken i BACKLOG eller som en byggd sida); ingen referens att stämma av mot. |
+
+**Data:** `BookingPageData.categories`/`questionsByService` (frivilliga fält,
+`src/server/bookings/page-data.ts`), `AgendaBooking.answers`/`HoyBooking.answers`
+(frivilliga, batch-hämtade med `listBookingAnswersIn` i `src/server/owner/agenda.ts`/
+`hoy.ts`). Ägarens mejl "Tienes una reserva nueva" (`nuevaReservaDueno`) visar
+svaren i samma bokningskort (`DuenoReservaData.answers`, `dueno.ts`) — workern
+(`src/server/messaging/outbox/worker.ts`) läser dem vid sändning (D-029), aldrig i
+`message_outbox.payload` eller i loggar.
+
 ## 8. Rörelse
 
 - Övergångar 150–200 ms `ease-out` på färg och bakgrund. **Animera aldrig storlek eller position på klickytor** (hover gör att tryck missar).

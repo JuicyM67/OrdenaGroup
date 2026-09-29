@@ -40,10 +40,19 @@ memberships (business_id, user_id references auth.users, role enum('owner','staf
 staff (id, business_id, name, color, active, sort)
   -- color är ett TOKENNAMN ('staff-1' … 'staff-6', se src/styles/tokens.css), inte ett hex-värde.
   -- Hex-koder är en stil-fråga för UI:t, inte data. unique (business_id, id) för sammansatta FK.
-services (id, business_id, name, category, duration_min check > 0, price_clp,
+service_categories (id, business_id, name, sort, unique (business_id, id), unique (business_id, name))
+  -- WP-40 steg 1 (D-031). Ägaren skapar/sorterar/tar bort; bokningssidans
+  -- flikar döljs om färre än två kategorier har aktiva tjänster.
+services (id, business_id, name, category_id null, duration_min check > 0, price_clp,
   buffer_after_min default 0, deposit_kind enum('none','fixed','percent'), deposit_value,
   remind_after_weeks null, active, sort)
-  -- unique (business_id, id) för sammansatta FK.
+  -- unique (business_id, id) för sammansatta FK. category_id: sammansatt FK
+  -- (business_id, category_id) -> service_categories, `on delete set null
+  -- (category_id)` (kolumn-listform, inte ett bart `on delete set null` —
+  -- annars nollas hela FK-kolumnuppsättningen, inklusive business_id, se
+  -- migrationens kommentar). D-031: ersätter den tidigare fritextkolumnen
+  -- `category`, migrerad till service_categories-rader och borttagen i
+  -- samma migration (WP-40 steg 1); ingen kod i src/ läste kolumnen.
 staff_services (business_id, staff_id, service_id, primary key (staff_id, service_id))
   -- business_id (D-014, se ovan) + sammansatta FK (business_id, staff_id) -> staff, (business_id, service_id) -> services.
 business_hours (business_id, weekday 1-7 (ISO, 1 = lunes), start_time, end_time)   -- flera rader per dag tillåts, ingen överlappning samma dag (exclusion constraint)
@@ -94,6 +103,32 @@ payments (id, business_id, booking_id, kind enum('deposit','balance','full'),
   method enum('cash','card_terminal','transfer','mercadopago'),
   amount_clp, status enum('pending','approved','rejected','refunded'),
   provider_ref null, paid_at)
+
+-- Bokningsfrågor (WP-40 steg 1, D-031) --------------------------------------
+-- question_kind enum: short_text/long_text/single_choice/multi_choice/number/yes_no/date.
+booking_questions (id, business_id, label, help null, kind question_kind,
+  options jsonb null (icke-tom array, krävs för *_choice, förbjuden annars),
+  required, save_to_customer, preset_key null (kod, inte DB), applies_to enum('all','targets'),
+  active, sort, unique (business_id, id))
+booking_question_targets (id, business_id, question_id, service_id null, category_id null,
+  check exakt en av service_id/category_id satt, sammansatta FK, on delete cascade)
+  -- Ett kategori-mål gäller automatiskt nya tjänster i kategorin (upplöses
+  -- av servern vid läsning, ingen kopiering av rader).
+booking_answers (id, business_id, booking_id, question_id null, label_snapshot, kind_snapshot,
+  value jsonb)
+  -- Snapshot av etikett/typ så svaret går att läsa även om frågan ändras/tas
+  -- bort. `question_id` FK: `on delete set null (question_id)` (kolumn-
+  -- listform). Ingen `primary key (booking_id, question_id)` trots
+  -- DATA_MODEL-utkastet/planen: en PK-kolumn är implicit NOT NULL i
+  -- Postgres, vilket är oförenligt med `on delete set null`. I stället:
+  -- surrogat-`id` + partiellt unikt index `(booking_id, question_id) where
+  -- question_id is not null` (högst ett svar per levande fråga och bokning;
+  -- flera bevarade nollställda svar per bokning är tillåtna).
+customer_answers (business_id, customer_id, question_id, value jsonb, updated_at,
+  primary key (customer_id, question_id))
+  -- Senaste värde per (kund, fråga), bara frågor med save_to_customer. Ingen
+  -- snapshot: `on delete cascade` på question_id (bekvämlighetskopia, inte
+  -- historik — försvinner med frågan).
 
 -- Unika funktioner
 waitlist_entries (id, business_id, customer_id, service_id, staff_id null, date date,
@@ -160,7 +195,7 @@ grant select, insert, update, delete on public.services to authenticated;
 ```
 
 - **INV-3:** RLS på **varje** tabell, **inga** policies för `anon` (varje `create policy` anger `to authenticated` uttryckligen, så `pg_policies.roles` aldrig innehåller `anon`/`public`). `anon` saknar dessutom helt grants i `public` (försvar på djupet, D-014). Den publika bokningssidan läser via servern (Server Components/Actions med service role och explicit `business_id` från slug) och exponerar bara publika fält.
-- I WP-01 (fas 1) har rollerna `staff` och `vendor` ingen åtkomst till katalog, kunder eller bokningar — bara sin egen `memberships`-rad och företagets `businesses`-rad (FRÅGA 4). Policies för profesionalens egen agenda (F6) och säljarvyn (F18) läggs till i det WP som bygger inloggningen.
+- I WP-01 (fas 1) har rollerna `staff` och `vendor` ingen åtkomst till katalog, kunder eller bokningar — bara sin egen `memberships`-rad och företagets `businesses`-rad (FRÅGA 4). Policies för profesionalens egen agenda (F6) och säljarvyn (F18) läggs till i det WP som bygger inloggningen. `service_categories`, `booking_questions`, `booking_question_targets`, `booking_answers` och `customer_answers` (WP-40 steg 1) följer samma fas-1-gräns: bara `owner`/`admin` (via `authenticated`) och `service_role` (bokningsflödet, den publika bokningssidans läsning av frågor) — ingen `staff`-select ännu, trots att planen nämner det; läggs till tillsammans med F6.
 - `businesses` har ingen insert-policy: nya företag skapas bara via `public.create_business()` (security definer, kräver `auth.uid()`, skapar företaget och ägarens medlemskap i samma transaktion).
 - **INV-4:** en pgTAP-test per tabell bevisar att företag A inte kan läsa eller skriva B:s rader, och att en rad i A inte kan peka på personal/tjänst/kund/bokning i B (sammansatta FK, D-014).
 - Kunden (utan konto) når sin bokning bara via sin länk; servern jämför tokenens SHA-256-hash mot `bookings.manage_token_hash`.

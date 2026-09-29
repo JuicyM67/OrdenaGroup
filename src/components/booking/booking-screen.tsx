@@ -11,10 +11,16 @@ import {
   useSyncExternalStore,
 } from "react";
 
-import { comun, reserva } from "@/i18n";
+import { comun, formulario, reserva } from "@/i18n";
 
 import { BookingBar } from "./booking-bar";
 import { BusinessHeader } from "./business-header";
+import {
+  ALL_CATEGORY_ID,
+  categoryTabs,
+  servicesForCategory,
+} from "./categories";
+import { CategoryTabs } from "./category-tabs";
 import { Confirmation } from "./confirmation";
 import { CustomerForm } from "./customer-form";
 import { DayPicker } from "./day-picker";
@@ -115,6 +121,16 @@ export function BookingScreen({
   function updateContact(patch: Partial<CustomerContact>) {
     setContact((prev) => ({ ...prev, ...patch }));
   }
+
+  // WP-40 (D-031): vald kategoriflik. Ren UI-state (ingen historik/URL,
+  // samma nivå som `contact`) — filtret gäller bara steg 1, tjänstevalet
+  // (`selection.serviceId`) i flödesreducern rörs inte av bytet.
+  const [categoryId, setCategoryId] = useState<string>(ALL_CATEGORY_ID);
+  const tabs = categoryTabs(data.categories ?? [], data.services);
+  const visibleServices =
+    tabs.length > 0
+      ? servicesForCategory(data.services, categoryId)
+      : data.services;
 
   // Historik (planens steg 5): `datos` läggs som `?paso=datos` (pushState) så att
   // bakåtknappen på Android går tillbaka till valen med allt kvar. Bekräftelsen
@@ -274,17 +290,30 @@ export function BookingScreen({
             >
               {reserva.pasos.servicio}
             </h2>
+            {tabs.length > 0 ? (
+              <CategoryTabs
+                tabs={tabs}
+                selectedId={categoryId}
+                onSelect={setCategoryId}
+              />
+            ) : null}
             <div className="flex flex-col gap-2.5">
-              {data.services.map((service) => (
-                <ServiceCard
-                  key={service.id}
-                  service={service}
-                  selected={selection.serviceId === service.id}
-                  onSelect={() => {
-                    selectService(service.id);
-                  }}
-                />
-              ))}
+              {visibleServices.length === 0 ? (
+                <p className="text-14 text-muted">
+                  {formulario.categorias.vacia}
+                </p>
+              ) : (
+                visibleServices.map((service) => (
+                  <ServiceCard
+                    key={service.id}
+                    service={service}
+                    selected={selection.serviceId === service.id}
+                    onSelect={() => {
+                      selectService(service.id);
+                    }}
+                  />
+                ))
+              )}
             </div>
           </section>
 

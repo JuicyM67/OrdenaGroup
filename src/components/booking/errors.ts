@@ -2,8 +2,14 @@
  * Fältfel och serverfel → text (`errores.reserva.*`). Uttömmande via `satisfies
  * Record<...>`, se docs/tasks/plans/WP-13.md steg 5.
  */
-import { comun, errores } from "@/i18n";
+import { comun, errores, formulario } from "@/i18n";
 import type { PhoneError } from "@/lib/format/phone";
+import {
+  ANSWER_LIMITS,
+  type AnswerIssue,
+  type AnswerIssueCode,
+  type BookingQuestionDef,
+} from "@/lib/validation/booking-questions";
 
 import type { BookingServerErrorCode } from "./types";
 
@@ -90,4 +96,60 @@ export function serverError(code: string): string {
   return isKnownServerErrorCode(code)
     ? SERVER_MESSAGES[code]
     : comun.algoSalioMal;
+}
+
+/**
+ * Fältfelstexten för en dynamisk bokningsfråga (WP-40, D-031, se
+ * `formulario.errores.respuesta`). `invalid_type`/`unknown_question` är
+ * programmeringsfel — kan inte hända från det renderade formuläret
+ * (`question-field.tsx` skickar alltid rätt typ, och frågelistan kommer
+ * rakt av från `data.questionsByService`, se `customer-form.tsx`) — det
+ * finns ingen egen copy för dem, `required` är närmaste rimliga text.
+ */
+export function answerFieldError(
+  question: BookingQuestionDef,
+  code: AnswerIssueCode,
+): string {
+  const r = formulario.errores.respuesta;
+  switch (code) {
+    case "required":
+      return r.required;
+    case "invalid_option":
+      return r.invalid_option;
+    case "duplicate_option":
+      return r.duplicate_option;
+    case "too_long":
+      return r.too_long({
+        max:
+          question.kind === "long_text"
+            ? ANSWER_LIMITS.longText
+            : ANSWER_LIMITS.shortText,
+      });
+    case "invalid_number":
+      return r.invalid_number;
+    case "invalid_date":
+      return r.invalid_date;
+    case "invalid_type":
+    case "unknown_question":
+      return r.required;
+  }
+}
+
+/** `AnswerIssue[]` (från `validateAnswers`) → `{ [questionId]: text }`, ett
+ * fält per dynamisk fråga i `customer-form.tsx`. Ett svar utan `questionId`
+ * (roten inte ett objekt) kan inte hända här (indata byggs alltid som ett
+ * objekt, se `customer-form.tsx`) och hoppas över. */
+export function answersToFieldErrors(
+  questions: readonly BookingQuestionDef[],
+  issues: readonly AnswerIssue[],
+): Record<string, string> {
+  const byId = new Map(questions.map((q) => [q.id, q]));
+  const out: Record<string, string> = {};
+  for (const issue of issues) {
+    if (!issue.questionId) continue;
+    const question = byId.get(issue.questionId);
+    if (!question) continue;
+    out[issue.questionId] = answerFieldError(question, issue.code);
+  }
+  return out;
 }
