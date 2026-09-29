@@ -18,8 +18,12 @@
  *   Mercado Pago, inget RUT/CLP. Abonnemanget (planen) betalas med kort via
  *   Stripe, det nämns bara i en FAQ om fakturering.
  *   Nyckeln `abono` finns kvar där formen kräver den (samma nyckelnamn som
- *   `es-CL.ts`, av typskäl), men innehållet handlar om annat: ett digitalt
- *   stämpelkort respektive fakturering av planen.
+ *   `es-CL.ts`, av typskäl): i `SITIO_FUNCIONALIDADES` och
+ *   `landing.beneficios.items` handlar den om "Vi saknar dig"-påminnelser
+ *   (F14), inte om betalning.
+ * - Inget digitalt stämpelkort i produkten: det är en egen tjänst,
+ *   Stampello (stampello.se), som `sitio.partner.stampello` rekommenderar
+ *   i stället för att låtsas att det är en funktion härifrån.
  * - Påminnelser går via sms (ClickSend, D-028) och mejl, inte WhatsApp.
  *   Support sker via mejl (ingen chattsupport ännu).
  * - Inga ortsreferenser (Santiago/Providencia/Ñuñoa): neutralt, "svenska
@@ -33,6 +37,7 @@
 import type { MarketingCopy } from "./marketing";
 import type {
   PlanLanding,
+  SitioComparacion,
   SitioFuncionalidadSeccion,
   SitioParaIndustria,
   SitioPrecioFila,
@@ -221,12 +226,15 @@ export const landing = {
           "Om någon avbokar meddelar vi den som väntar, och tiden fylls av sig själv.",
       },
       /** Nyckeln `abono` finns av typskäl: i Sverige finns ingen
-       * handpenning i systemet (D-027). Innehållet handlar i stället om det
-       * digitala stämpelkortet, en riktig funktion i produkten. */
+       * handpenning i systemet (D-027), och det digitala stämpelkortet är
+       * numera en fristående tjänst (Stampello, se
+       * `sitio.partner.stampello`), inte en del av produkten. Innehållet
+       * handlar i stället om automatiska "Vi saknar dig"-påminnelser (F14),
+       * en riktig funktion i produkten. */
       abono: {
-        titulo: "Digitalt stämpelkort",
+        titulo: "Vi saknar dig-påminnelser",
         texto:
-          "Belöna trogna kunder med ett digitalt stämpelkort, kopplat direkt till din bokningssida.",
+          "Kunder som inte har varit hos dig på ett tag får en påminnelse automatiskt, så du slipper skriva till dem själv.",
       },
       precioUnico: {
         titulo: "Ett pris för hela ditt företag",
@@ -665,6 +673,28 @@ export const sitio = {
     masElegido: "Mest vald",
     compararTitulo: "Jämför planerna",
     fundador: landing.precios.fundador,
+    /** Samma nycklar som `es-CL.sitio.precios.extra`. */
+    extra: {
+      raknare: {
+        titulo: "Så mycket kostar det per anställd",
+        texto: (p: { n: number }): string =>
+          `Med ${p.n} ${p.n === 1 ? "anställd" : "anställda"} i teamet betalar du fortfarande samma pris för din plan.`,
+        sufijo: "anställda",
+      },
+      ingaAvgifter: {
+        titulo: "Inga överraskningar på fakturan",
+        items: {
+          a: "Inga avgifter per bokning",
+          b: "Inga startavgifter",
+          c: "Ingen bindningstid",
+          d: "Avsluta när du vill",
+        },
+      },
+      jamfor: {
+        texto: "Vill du se hur vi jämför oss med andra alternativ?",
+        cta: "Se jämförelsen",
+      },
+    },
     faq: {
       iva: {
         pregunta: "Ingår moms i priserna?",
@@ -690,6 +720,164 @@ export const sitio = {
         respuesta:
           "De första företagen som ansluter sig betalar halva priset för sin plan, för alltid.",
       },
+    },
+  },
+  /** Egen sida för Flashtider (F13 i MVP_SPEC.md). Kunderna nås via sms och
+   * mejl (D-028: ingen WhatsApp i Sverige), samma nycklar som
+   * `es-CL.sitio.flashPagina`. */
+  flashPagina: {
+    meta: {
+      titulo: (p: { nombre: string }): string => `Flashtider — ${p.nombre}`,
+      descripcion: (p: { nombre: string }): string =>
+        `Sälj dina lediga tider med rabatt innan de går förlorade, med ${p.nombre}. Du väljer rabatten och hur länge den gäller.`,
+    },
+    hero: {
+      etiqueta: "Flashtider",
+      titulo: "Sälj dina lediga tider innan de går förlorade",
+      texto:
+        "När en tid blir ledig i sista minuten erbjuder du den med rabatt till dina kunder. Den som bokar först får den.",
+      cta: SITIO_CTA,
+    },
+    comoFunciona: {
+      titulo: "Så funkar det",
+      pasos: {
+        uno: {
+          titulo: "Markera den lediga tiden",
+          texto: "Välj tiden som blev ledig och rabatten, med ett klick.",
+        },
+        dos: {
+          titulo: "Vi meddelar dina kunder",
+          texto:
+            "De får ett sms eller mejl med erbjudandet och länken för att boka direkt.",
+        },
+        tres: {
+          titulo: "Stängs så fort någon bokar",
+          texto:
+            "Den som bokar först får tiden; de andra ser att den redan är borta.",
+        },
+      },
+    },
+    beneficios: {
+      titulo: "Varför det lönar sig",
+      items: {
+        a: {
+          titulo: "Fyll tider som annars går förlorade",
+          texto:
+            "Varje ledig tid du säljer med rabatt är pengar som annars skulle bli 0 kr.",
+        },
+        b: {
+          titulo: "Du bestämmer rabatten",
+          texto:
+            "Du väljer procenten och hur länge erbjudandet gäller, tid för tid.",
+        },
+        c: {
+          titulo: "Via sms och mejl",
+          texto:
+            "Dina kunder får erbjudandet direkt i mobilen eller mejlen, utan extra app.",
+        },
+        d: {
+          titulo: "Stängs av sig själv",
+          texto:
+            "Så fort någon bokar försvinner erbjudandet för de andra. Inga dubbelbokningar.",
+        },
+      },
+    },
+    ejemplo: {
+      titulo: "Ett räkneexempel",
+      texto:
+        "En ledig timme värd 450 kr som du säljer med 20 % rabatt ger 360 kr, i stället för 0 kr.",
+    },
+    faq: {
+      titulo: "Vanliga frågor",
+      items: {
+        a: {
+          pregunta: "Hur länge gäller en flashtid?",
+          respuesta:
+            "Du bestämmer: den kan gälla några minuter eller ända fram till tiden för besöket.",
+        },
+        b: {
+          pregunta: "Får mina kunder erbjudandet via sms?",
+          respuesta:
+            "Ja, via sms och mejl. Ingen app behövs för att ta emot det.",
+        },
+        c: {
+          pregunta: "Vad händer om ingen bokar flashtiden?",
+          respuesta:
+            "Inget särskilt: tiden förblir ledig precis som innan, utan kostnad eller bindning.",
+        },
+      },
+    },
+    cta: {
+      titulo: "Redo att sälja dina lediga tider?",
+      texto: "Skapa ditt gratiskonto och aktivera din första flashtid på några minuter.",
+      boton: SITIO_CTA,
+    },
+  },
+  /** Egen sida "Varför välja oss": sex konkreta fördelar plus en ärlig
+   * jämförelse mot det andra alternativet, med källa och datum i
+   * `comparacion.nota`. Samma nycklar som `es-CL.sitio.ventajas`; detaljerna
+   * per rad ligger i `SITIO_COMPARACION`, utanför `Trad`. */
+  ventajas: {
+    meta: {
+      titulo: (p: { nombre: string }): string =>
+        `Varför välja oss — ${p.nombre}`,
+      descripcion: (p: { nombre: string }): string =>
+        `Sex konkreta fördelar med ${p.nombre}, och en ärlig jämförelse med Bokadirekt.`,
+    },
+    hero: {
+      etiqueta: "Varför välja oss",
+      titulo: "Sex skäl att välja en kalender byggd för ditt företag",
+      texto:
+        "Ingen finstilt text: här ser du vad som faktiskt ingår i din plan, och en ärlig jämförelse med det andra alternativet du förmodligen tittar på.",
+    },
+    items: {
+      a: {
+        titulo: "Ingen avgift per bokning",
+        texto:
+          "Du betalar din månadsplan och inget mer. Vi tar aldrig en procentsats för varje tid dina kunder bokar.",
+      },
+      b: {
+        titulo: "Ett pris för hela ditt företag",
+        texto:
+          "Priset stiger inte för att du lägger till fler anställda: du betalar en plan, inte en avgift per person.",
+      },
+      c: {
+        titulo: "Din egen bokningslänk",
+        texto:
+          "En sida med din logga och dina färger där kunderna bokar själva, redo att dela på Instagram.",
+      },
+      d: {
+        titulo: "Flashtider",
+        texto:
+          "Sälj dina lediga tider med rabatt innan de går förlorade, i stället för att låta dem stå tomma.",
+      },
+      e: {
+        titulo: "Automatisk väntelista",
+        texto:
+          "Om någon avbokar meddelar vi den som väntar, och tiden fylls av sig själv.",
+      },
+      f: {
+        titulo: "Support från riktiga personer",
+        texto:
+          "Vi svarar dig via mejl, på svenska, utan en automatisk kundtjänstrobot.",
+      },
+    },
+    comparacion: {
+      titulo: "Så jämför vi oss med Bokadirekt",
+      texto:
+        "Bokadirekt är förmodligen det andra alternativet du tittar på. Så här ser de två sida vid sida.",
+      /** Källa och datum för siffrorna i `SITIO_COMPARACION` (utanför
+       * `Trad`): utan detta är varje siffra om konkurrenten ett påstående
+       * utan grund. */
+      nota: "Priser enligt Bokadirekts prissida (business.bokadirekt.se/abonnemang), kontrollerade 29 september 2026.",
+      /** En ärlig mening om var konkurrenten är starkare (uttrycklig del av
+       * uppdraget, inte valfri). */
+      honestidad:
+        "Bokadirekt är starkare på att ge dig nya kunder via sin egen marknadsplats: om det är viktigt för dig just nu, är det värt att veta.",
+    },
+    cta: {
+      titulo: "Redo att testa utan bindningstid?",
+      boton: SITIO_CTA,
     },
   },
   para: {
@@ -819,6 +1007,19 @@ export const sitio = {
         "Vi guidar dig genom uppsättningen på ett video- eller telefonmöte, var i Sverige ditt företag än ligger.",
     },
   },
+  /** Rekommendation till en fristående tjänst, inte en del av produkten:
+   * det digitala stämpelkortet erbjuds av Stampello (stampello.se), ett
+   * separat bolag. Samma nycklar som `es-CL.sitio.partner.stampello`. */
+  partner: {
+    stampello: {
+      etiqueta: "Rekommenderas",
+      titulo: "Digitalt stämpelkort med Stampello",
+      texto:
+        "Belöna dina återkommande kunder med ett digitalt stämpelkort. Stampello är en fristående tjänst, gjord för företag som ditt.",
+      cta: "Upptäck Stampello",
+      url: "https://stampello.se",
+    },
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -920,13 +1121,13 @@ export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
   {
     id: "abono",
     etiqueta: SITIO_KOMMER_SNART,
-    titulo: "Digitalt stämpelkort för trogna kunder",
+    titulo: "Vi saknar dig-påminnelser till kunder som uteblivit",
     texto:
-      "Belöna kunder som kommer tillbaka med ett digitalt stämpelkort, kopplat direkt till din bokningssida.",
+      "Kunder som inte har bokat på ett tag får ett automatiskt meddelande som påminner dem om att boka igen.",
     puntos: [
-      "Du bestämmer hur många stämplar som krävs",
-      "Kunden ser sina stämplar när de bokar",
-      "Inga fysiska kort att tappa bort",
+      "Du väljer efter hur många veckor påminnelsen skickas",
+      "Skickas bara till kunder som gett sitt samtycke",
+      "Max en påminnelse per period, ingen spam",
     ],
     proximamente: true,
   },
@@ -986,10 +1187,6 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     valores: { gratis: "–", emprende: "✓", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Digitalt stämpelkort",
-    valores: { gratis: "–", emprende: "✓", equipo: "✓", local: "✓" },
-  },
-  {
     funcion: "Flashtider",
     valores: { gratis: "–", emprende: "–", equipo: "✓", local: "✓" },
   },
@@ -1011,6 +1208,60 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     },
   },
 ];
+
+// ---------------------------------------------------------------------------
+// SITIO_COMPARACION: jämförelse mot Bokadirekt (business.bokadirekt.se/
+// abonnemang, priser kontrollerade 29 september 2026, se
+// `sitio.ventajas.comparacion.nota`). Där ett fält inte går att verifiera på
+// deras prissida (t.ex. provision per bokning) står det uttryckligen, i
+// stället för att gissa en siffra.
+// ---------------------------------------------------------------------------
+
+export const SITIO_COMPARACION: SitioComparacion = {
+  competidores: ["Bokadirekt"],
+  filas: [
+    {
+      aspecto: "Pris från",
+      nosotros: "0 kr (Gratisplanen)",
+      valores: ["0 kr (Free-planen)"],
+    },
+    {
+      aspecto: "Användare som ingår i priset",
+      nosotros: "1 till 12, beroende på plan",
+      valores: ["1 användare i alla paket"],
+    },
+    {
+      aspecto: "Provision per bokning",
+      nosotros: "0 kr, alltid",
+      valores: ["Ej angivet på deras prissida"],
+    },
+    {
+      aspecto: "Bindningstid/uppsägning",
+      nosotros: "Ingen bindningstid, du avslutar när du vill",
+      valores: ["3 månaders uppsägningstid"],
+    },
+    {
+      aspecto: "Påminnelser",
+      nosotros: "Via mejl ingår; sms kommer snart på betalplanerna",
+      valores: ["Ej angivet på deras prissida"],
+    },
+    {
+      aspecto: "Onlinebetalning",
+      nosotros: "Ingen kundbetalning i systemet",
+      valores: ["Ej angivet på deras prissida"],
+    },
+    {
+      aspecto: "Marknadsplats för nya kunder",
+      nosotros: "Vi har ingen egen marknadsplats",
+      valores: ["Ja, synligheten beror på vilket paket du har"],
+    },
+    {
+      aspecto: "Kassa/POS",
+      nosotros: "Vi har ingen kassa eller POS",
+      valores: ["Ej angivet på deras prissida"],
+    },
+  ],
+};
 
 // ---------------------------------------------------------------------------
 // SITIO_PARA_INDUSTRIAS
@@ -1229,12 +1480,7 @@ export const PLANES: readonly PlanTexto[] = [
   {
     id: "emprende",
     nombre: "Starta",
-    puntos: [
-      "1 anställd",
-      "Sms-påminnelser (ca 150/månad)",
-      "Väntelista",
-      "Digitalt stämpelkort",
-    ],
+    puntos: ["1 anställd", "Sms-påminnelser (ca 150/månad)", "Väntelista"],
     cta: "Välj Starta",
   },
   {
