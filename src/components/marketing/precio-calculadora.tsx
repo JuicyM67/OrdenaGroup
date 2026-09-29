@@ -59,9 +59,7 @@ function useRollingValue(target: number, duration = 350): number {
 export function PrecioCalculadora() {
   const [n, setN] = useState(3);
   const planId = n <= EQUIPO_MAX_PROFESIONALES ? "equipo" : "local";
-  const porEmpleado = useRollingValue(
-    Math.round(precioPlan(planId) / n),
-  );
+  const porEmpleado = useRollingValue(Math.round(precioPlan(planId) / n));
 
   return (
     <div className="flex flex-col gap-5 rounded-tile bg-surface p-6 sm:p-8">

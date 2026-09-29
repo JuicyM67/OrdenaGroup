@@ -142,9 +142,7 @@ function AgendaPreview() {
     <div className="grid w-full max-w-96 grid-cols-3 gap-3 rounded-tile bg-surface p-4 shadow-popover">
       {AGENDA_COLUMNS.map((column, i) => (
         <div key={column.day} className="flex flex-col gap-2">
-          <span className="text-13 font-semibold text-muted">
-            {column.day}
-          </span>
+          <span className="text-13 font-semibold text-muted">{column.day}</span>
           <div
             className={cn(
               "flex flex-col rounded-event px-2.25 py-1.75 text-ink",
@@ -264,9 +262,7 @@ function AjustesPreview({ seccion }: { seccion: FeaturePreviewSeccion }) {
         ))}
       </div>
       <div className="mt-3 flex items-center justify-between rounded-control bg-canvas px-3.5 py-3">
-        <span className="truncate text-14 font-bold text-ink">
-          {DEMO.kort}
-        </span>
+        <span className="truncate text-14 font-bold text-ink">{DEMO.kort}</span>
         <span className="shrink-0 text-13 text-muted">
           {formatDuration(35)} · {DEMO.pris}
         </span>
@@ -371,18 +367,10 @@ function FichasClientesPreview() {
   return (
     <div className="w-full max-w-80 rounded-tile bg-surface p-4.5 shadow-popover">
       <div className="flex items-center gap-3">
-        <Avatar
-          initials={initialsOf(DEMO.kund)}
-          size={40}
-          tone="lilac-100"
-        />
+        <Avatar initials={initialsOf(DEMO.kund)} size={40} tone="lilac-100" />
         <div className="min-w-0">
-          <div className="truncate text-15 font-bold text-ink">
-            {DEMO.kund}
-          </div>
-          <div className="truncate text-12 text-muted">
-            {DEMO.tjanster[0]}
-          </div>
+          <div className="truncate text-15 font-bold text-ink">{DEMO.kund}</div>
+          <div className="truncate text-12 text-muted">{DEMO.tjanster[0]}</div>
         </div>
       </div>
       <div className="mt-3 flex flex-col gap-1.5">
@@ -450,21 +438,19 @@ function ReportesPreview({ seccion }: { seccion: FeaturePreviewSeccion }) {
   );
 }
 
-const PREVIEWS: Record<
-  string,
-  (seccion: FeaturePreviewSeccion) => ReactNode
-> = {
-  "link-reservas": () => <LinkPreview />,
-  agenda: () => <AgendaPreview />,
-  hoy: () => <HoyPreview />,
-  "reservas-manuales": () => <ReservasManualesPreview />,
-  ajustes: (seccion) => <AjustesPreview seccion={seccion} />,
-  recordatorios: () => <RecordatoriosPreview />,
-  "lista-espera": () => <ListaEsperaPreview />,
-  abono: () => <AbonoPreview />,
-  "fichas-clientes": () => <FichasClientesPreview />,
-  reportes: (seccion) => <ReportesPreview seccion={seccion} />,
-};
+const PREVIEWS: Record<string, (seccion: FeaturePreviewSeccion) => ReactNode> =
+  {
+    "link-reservas": () => <LinkPreview />,
+    agenda: () => <AgendaPreview />,
+    hoy: () => <HoyPreview />,
+    "reservas-manuales": () => <ReservasManualesPreview />,
+    ajustes: (seccion) => <AjustesPreview seccion={seccion} />,
+    recordatorios: () => <RecordatoriosPreview />,
+    "lista-espera": () => <ListaEsperaPreview />,
+    abono: () => <AbonoPreview />,
+    "fichas-clientes": () => <FichasClientesPreview />,
+    reportes: (seccion) => <ReportesPreview seccion={seccion} />,
+  };
 
 /** Un mockup por `seccion.id`. Si el id no tiene mockup (o desaparece de
  * `SITIO_FUNCIONALIDADES`, p. ej. `abono` en SE), no renderiza nada — la sección se queda

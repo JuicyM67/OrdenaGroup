@@ -78,8 +78,10 @@ const SECTION_STYLE: Record<
   "fichas-clientes": { tone: "surface" },
   reportes: { tone: "dark" },
 };
-const DEFAULT_STYLE: { tone: NonNullable<CardProps["tone"]>; extraClass?: string } =
-  { tone: "surface" };
+const DEFAULT_STYLE: {
+  tone: NonNullable<CardProps["tone"]>;
+  extraClass?: string;
+} = { tone: "surface" };
 
 export default function FuncionalidadesPage() {
   return (
@@ -119,7 +121,7 @@ export default function FuncionalidadesPage() {
                   // stretch (standard) som bas krymper båda kolumnerna till kortets bredd, och
                   // `lg:items-center` behåller den lodräta centreringen mellan text/mockup i
                   // skrivbordsraden.
-                  "flex scroll-mt-24 min-w-0 flex-col gap-8 lg:flex-row lg:items-center",
+                  "flex min-w-0 scroll-mt-24 flex-col gap-8 lg:flex-row lg:items-center",
                   style.extraClass,
                 )}
               >

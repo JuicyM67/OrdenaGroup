@@ -76,7 +76,9 @@ export function PlanCards({ ctaHref }: { ctaHref: string }) {
                     aria-hidden="true"
                     className={cn(
                       "mt-0.5 size-4 shrink-0",
-                      style.tone === "dark" ? "text-on-dark-muted" : "text-muted",
+                      style.tone === "dark"
+                        ? "text-on-dark-muted"
+                        : "text-muted",
                     )}
                     strokeWidth={2.4}
                   />

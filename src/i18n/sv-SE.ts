@@ -809,7 +809,8 @@ export const sitio = {
     },
     cta: {
       titulo: "Redo att sälja dina lediga tider?",
-      texto: "Skapa ditt gratiskonto och aktivera din första flashtid på några minuter.",
+      texto:
+        "Skapa ditt gratiskonto och aktivera din första flashtid på några minuter.",
       boton: SITIO_CTA,
     },
   },

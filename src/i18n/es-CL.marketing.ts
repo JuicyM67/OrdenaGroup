@@ -772,8 +772,7 @@ export const sitio = {
         },
         b: {
           titulo: "Tú decides el descuento",
-          texto:
-            "Eliges el porcentaje y cuánto dura la oferta, hora por hora.",
+          texto: "Eliges el porcentaje y cuánto dura la oferta, hora por hora.",
         },
         c: {
           titulo: "Por correo, con WhatsApp en camino",

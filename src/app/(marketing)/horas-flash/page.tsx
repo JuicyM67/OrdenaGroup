@@ -5,7 +5,16 @@
 // en vez de inventar un formato nuevo. Misma URL para ambos mercados por ahora (el encargo:
 // "Flashtider en SE"), texto vía `copy.sitio.flashPagina` (D-025/D-026, `@/i18n/marketing`).
 import type { Metadata } from "next";
-import { Bell, Check, Clock, Lock, Mail, SlidersHorizontal, TrendingUp, Zap } from "lucide-react";
+import {
+  Bell,
+  Check,
+  Clock,
+  Lock,
+  Mail,
+  SlidersHorizontal,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -96,7 +105,7 @@ export default function HorasFlashPage() {
                 <span
                   aria-hidden="true"
                   className={cn(
-                    "flex size-12 items-center justify-center rounded-icon bg-lime text-ink animate-float",
+                    "flex size-12 animate-float items-center justify-center rounded-icon bg-lime text-ink",
                     PASO_DELAY[i],
                   )}
                 >
