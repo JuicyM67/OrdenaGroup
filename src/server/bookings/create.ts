@@ -1,6 +1,9 @@
 import "server-only";
 
 import type { E164 } from "@/lib/format/phone";
+import { validateAnswers } from "@/lib/validation/booking-questions";
+import { saveBookingAnswersIn } from "@/server/booking-questions/answers";
+import { getQuestionsForServiceIn } from "@/server/booking-questions/catalog";
 import {
   isIdempotencyKeyViolation,
   isNoOverlapViolation,
@@ -100,6 +103,10 @@ export type CreateInput = {
   /** WP-20 (granskningsfynd): ett omförsök med samma nyckel returnerar den
    * befintliga bokningen i stället för att försöka skapa en till. */
   idempotencyKey?: string | undefined;
+  /** WP-40 (D-031): `{ [questionId]: värde }`. Kund: valideras alltid (tomt
+   * = inga svar, obligatoriska frågor krävs). Ägare: bara om satt (manuell
+   * bokning frågar inte). Fel → `invalid_input`, inget sparas. */
+  answers?: Record<string, unknown> | undefined;
 };
 
 type IdempotencyRow = {
@@ -185,6 +192,19 @@ export async function createIn(
   }
   const { snapshot, priceClp } = loaded.value;
 
+  // WP-40: svaren valideras mot serverns frågelista för tjänsten (klientens
+  // lista litas aldrig på) — okänd fråga, fråga från ett annat företag eller
+  // en annan tjänst avvisas. Skrivs efter insert, i samma transaktion.
+  const mustAnswer =
+    input.actor.kind === "customer" || input.answers !== undefined;
+  const questions = mustAnswer
+    ? await getQuestionsForServiceIn(q, input.businessId, input.serviceId)
+    : [];
+  const validated = mustAnswer
+    ? validateAnswers(questions, input.answers)
+    : { ok: true as const, value: [] };
+  if (!validated.ok) return err("invalid_input");
+
   const check = checkStart(
     {
       snapshot,
@@ -207,6 +227,7 @@ export async function createIn(
   const periodEnd = start + snapshot.service.durationMin * MIN;
   const blockedEnd = periodEnd + snapshot.service.bufferAfterMin * MIN;
 
+  let booked: { id: string; staffId: string } | undefined;
   for (const staffId of check.value) {
     try {
       const id = await savepoint(q, async () => {
@@ -234,20 +255,8 @@ export async function createIn(
         );
         return r.rows[0]!.id;
       });
-      return ok({
-        id,
-        businessId: input.businessId,
-        staffId,
-        serviceId: input.serviceId,
-        customerId,
-        start: new Date(start).toISOString(),
-        end: new Date(periodEnd).toISOString(),
-        priceClp,
-        discountClp: 0,
-        depositClp: 0,
-        status: "confirmed",
-        manageToken: token,
-      });
+      booked = { id, staffId };
+      break;
     } catch (e) {
       // Nyckelkrock (sällsynt här — den vanliga vägen fångas redan av
       // kontrollen ovan, före låsningen): en konkurrerande omförsök hann
@@ -268,6 +277,34 @@ export async function createIn(
       // bero på en konkurrerande omförsök med samma nyckel (samma kandidat,
       // samma tid) — sista kontrollen nedan täcker det fallet.
     }
+  }
+  if (booked) {
+    // Samma transaktion som bokningen: ett fel här kastas och rullar tillbaka
+    // även bokningen. Ingen svarsrad skrivs för en bokning som aldrig blev
+    // av (23P01 ovan) eller för ett omförsök (returnerat före insert).
+    if (validated.value.length > 0) {
+      await saveBookingAnswersIn(q, {
+        businessId: input.businessId,
+        bookingId: booked.id,
+        customerId,
+        questions,
+        answers: validated.value,
+      });
+    }
+    return ok({
+      id: booked.id,
+      businessId: input.businessId,
+      staffId: booked.staffId,
+      serviceId: input.serviceId,
+      customerId,
+      start: new Date(start).toISOString(),
+      end: new Date(periodEnd).toISOString(),
+      priceClp,
+      discountClp: 0,
+      depositClp: 0,
+      status: "confirmed",
+      manageToken: token,
+    });
   }
   // Sista skyddsnätet (granskningsfynd): alla kandidater gav `no_overlap`
   // mot en konkurrerande omförsök som committade EFTER kontrollen ovan men
