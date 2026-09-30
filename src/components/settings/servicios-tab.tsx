@@ -7,7 +7,10 @@
 // `formulario-tab.tsx`, tiene el suyo).
 import { useCallback, useState } from "react";
 
-import type { BookingFormActions, BookingFormBundle } from "./booking-form-types";
+import type {
+  BookingFormActions,
+  BookingFormBundle,
+} from "./booking-form-types";
 import { CategorySection } from "./category-section";
 import { ServicesSection } from "./services-section";
 import type { AjustesActions, AjustesService } from "./types";

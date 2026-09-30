@@ -48,7 +48,12 @@ export default async function AjustesFormularioPage() {
   const bookingForm: BookingFormBundle = bundleResult.ok
     ? bundleResult.data
     : {
-        settings: { categories: [], services: [], questions: [], maxPerService: 5 },
+        settings: {
+          categories: [],
+          services: [],
+          questions: [],
+          maxPerService: 5,
+        },
         businessCategory: null,
       };
 

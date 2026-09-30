@@ -126,7 +126,11 @@ export function buildAjustesTabs(access: AjustesTabAccess): AjustesTabItem[] {
         href: ajustesTabHref(key),
         label: AJUSTES_TAB_LABEL[key],
         icon: (
-          <Icon aria-hidden="true" className="size-4.5" strokeWidth={strokeNav} />
+          <Icon
+            aria-hidden="true"
+            className="size-4.5"
+            strokeWidth={strokeNav}
+          />
         ),
       };
     },

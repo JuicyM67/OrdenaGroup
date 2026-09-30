@@ -6,7 +6,10 @@
 import { useCallback, useState } from "react";
 
 import { BookingFormSection } from "./booking-form-section";
-import type { BookingFormActions, BookingFormBundle } from "./booking-form-types";
+import type {
+  BookingFormActions,
+  BookingFormBundle,
+} from "./booking-form-types";
 
 export function FormularioTab({
   bookingForm: initialBookingForm,

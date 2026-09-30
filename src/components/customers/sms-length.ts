@@ -40,7 +40,8 @@ export function clientSmsLengthInfo(text: string): ClientSmsLengthInfo {
     const septets = gsm7Septets(text);
     return {
       encoding: "gsm7",
-      segments: septets <= 160 ? (septets === 0 ? 0 : 1) : Math.ceil(septets / 153),
+      segments:
+        septets <= 160 ? (septets === 0 ? 0 : 1) : Math.ceil(septets / 153),
     };
   }
   const units = text.length;

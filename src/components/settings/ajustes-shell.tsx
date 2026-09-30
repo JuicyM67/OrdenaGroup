@@ -54,8 +54,10 @@ function TabLink({
       prefetch={false}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2 whitespace-nowrap rounded-control text-13 font-semibold transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
-        active ? "bg-ink font-bold text-on-dark" : "text-muted hover:bg-surface",
+        "flex items-center gap-2 rounded-control text-13 font-semibold whitespace-nowrap transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
+        active
+          ? "bg-ink font-bold text-on-dark"
+          : "text-muted hover:bg-surface",
         className,
       )}
     >

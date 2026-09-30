@@ -2218,7 +2218,8 @@ export const clientes = {
         forbidden: "No tienes permiso para enviar mensajes a este cliente.",
         no_phone: "Este cliente no tiene un celular válido.",
         too_long: "El mensaje no puede tener más de 320 caracteres.",
-        rate_limited: "Enviaste muchos mensajes. Espera un momento y prueba de nuevo.",
+        rate_limited:
+          "Enviaste muchos mensajes. Espera un momento y prueba de nuevo.",
         generico: "No pudimos enviar el mensaje. Inténtalo de nuevo.",
       },
     },

@@ -47,8 +47,7 @@ export type SendCustomerMessageError =
   | "rate_limited";
 
 export type SendCustomerMessageResult =
-  | { ok: true }
-  | { ok: false; error: SendCustomerMessageError };
+  { ok: true } | { ok: false; error: SendCustomerMessageError };
 
 /** Mismo tope que el textarea del diálogo (`message-dialog.tsx`). */
 export const MAX_MESSAGE_LENGTH = 320;

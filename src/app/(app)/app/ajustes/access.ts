@@ -18,7 +18,10 @@ import {
   getCurrentMember,
   type CurrentMember,
 } from "@/server/onboarding/owner-business";
-import { listPendingRequests, type PendingRequestItem } from "@/server/owner/requests";
+import {
+  listPendingRequests,
+  type PendingRequestItem,
+} from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
 
 import {

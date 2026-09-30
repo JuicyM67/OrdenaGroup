@@ -1674,10 +1674,12 @@ export const clientes: Widen<typeof Es.clientes> = {
       enviado: "Meddelandet skickades.",
       error: {
         vacio: "Skriv ett meddelande.",
-        forbidden: "Du har inte behörighet att skicka meddelanden till den här kunden.",
+        forbidden:
+          "Du har inte behörighet att skicka meddelanden till den här kunden.",
         no_phone: "Den här kunden saknar ett giltigt mobilnummer.",
         too_long: "Meddelandet får inte vara längre än 320 tecken.",
-        rate_limited: "Du har skickat många meddelanden. Vänta en stund och försök igen.",
+        rate_limited:
+          "Du har skickat många meddelanden. Vänta en stund och försök igen.",
         generico: "Vi kunde inte skicka meddelandet. Försök igen.",
       },
     },
