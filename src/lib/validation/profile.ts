@@ -35,7 +35,9 @@ export const IMAGE_EXTENSION: Readonly<Record<ImageContentType, string>> = {
 /** Galleriet (business_images), omslag och logga räknas inte. */
 export const GALLERY_MAX = 12;
 
-export const IMAGE_KINDS = ["cover", "logo", "gallery"] as const;
+/** WP-44: `"staff"` = personalens profilbild (`staff.photo_url`, samma
+ * bucket/gränser, kräver `staffId`). */
+export const IMAGE_KINDS = ["cover", "logo", "gallery", "staff"] as const;
 export type ImageKind = (typeof IMAGE_KINDS)[number];
 
 export const ABOUT_MAX = 1500;
@@ -52,6 +54,10 @@ export const imageUploadInputSchema = z.object({
     .int({ error: "profile.image_size_invalid" })
     .min(1, { error: "profile.image_size_invalid" })
     .max(IMAGE_MAX_BYTES, { error: "profile.image_too_large" }),
+  /** WP-44: bara `kind: "staff"` — vilken personal fotot gäller. Formatet
+   * (giltig UUID) kontrolleras i `profile.ts`, inte här (samma mönster som
+   * `path` i `confirmImageUpload`). */
+  staffId: z.string().optional(),
 });
 export type ImageUploadInput = z.infer<typeof imageUploadInputSchema>;
 

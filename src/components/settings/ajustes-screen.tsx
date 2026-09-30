@@ -110,11 +110,15 @@ export function AjustesScreen({
           <StaffSection
             staff={data.staff}
             services={data.services}
+            photos={profile.staffPhotos}
             actions={{
               create: actions.createStaff,
               update: actions.updateStaff,
               setActive: actions.setStaffActive,
               updateTitle: profileActions.updateStaffTitle,
+              createImageUpload: profileActions.createImageUpload,
+              confirmImageUpload: profileActions.confirmImageUpload,
+              deleteImage: profileActions.deleteImage,
             }}
           />
 

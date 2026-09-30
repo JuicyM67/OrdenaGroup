@@ -1264,6 +1264,7 @@ export const profesionales: Widen<typeof Es.profesionales> = {
     tituloLabel: "Roll eller specialitet (valfritt)",
     tituloPlaceholder: "T.ex: Färgspecialist",
     tituloAyuda: "Visas på din bokningssida.",
+    fotoLabel: "Profilbild (valfritt)",
     colorLabel: "Färg",
     serviciosLabel: "Tjänster hen utför",
     horarioLabel: "Öppettider",

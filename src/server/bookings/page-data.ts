@@ -88,7 +88,12 @@ type ServiceRow = {
   category_id: string | null;
   description: string | null;
 };
-type StaffRow = { id: string; name: string; title: string | null };
+type StaffRow = {
+  id: string;
+  name: string;
+  title: string | null;
+  photo_url: string | null;
+};
 type CategoryRow = { id: string; name: string };
 
 type LoadedHours = {
@@ -252,7 +257,7 @@ export async function loadReservaPageData(
     [businessId],
   );
   const staffRows = await q.query<StaffRow>(
-    `select id, name, title from public.staff
+    `select id, name, title, photo_url from public.staff
       where business_id = $1 and active
       order by sort, name`,
     [businessId],
@@ -292,6 +297,12 @@ export async function loadReservaPageData(
     id: s.id,
     name: s.name,
     title: s.title,
+    // WP-44: bara bilder i vår bucket och företagets egen mapp (samma regel
+    // som cover_url/logo_url ovan).
+    photoUrl:
+      s.photo_url && mediaPathFromUrl(s.photo_url, businessId)
+        ? s.photo_url
+        : null,
   }));
   let nextFree: { start: number; serviceId: string } | null = null;
 

@@ -834,6 +834,7 @@ export type Database = {
           created_at: string;
           id: string;
           name: string;
+          photo_url: string | null;
           sort: number;
           title: string | null;
           updated_at: string;
@@ -845,6 +846,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           name: string;
+          photo_url?: string | null;
           sort?: number;
           title?: string | null;
           updated_at?: string;
@@ -856,6 +858,7 @@ export type Database = {
           created_at?: string;
           id?: string;
           name?: string;
+          photo_url?: string | null;
           sort?: number;
           title?: string | null;
           updated_at?: string;

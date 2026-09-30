@@ -57,7 +57,11 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 
 | ID | Titel | Agent | Beror på | F# | Status |
 |---|---|---|---|---|---|
-| WP-40 | Tjänstekategorier + frågor vid bokning (branschförslag, 7 typer, per tjänst/kategori, max 5, svar i agenda/Hoy/mejl/kundkort) | db-engineer + scheduling-engineer + copywriter-es-cl + integrations-engineer + ui-engineer | WP-15, WP-20, WP-21 | F1, F5, F6 | ◐ (plan klar, se docs/tasks/plans/WP-40-falt-kategorier.md; 2 FRÅGA öppna) |
+| WP-40 | Tjänstekategorier + frågor vid bokning (branschförslag, 7 typer, per tjänst/kategori, max 5, svar i agenda/Hoy/mejl/kundkort) | db-engineer + scheduling-engineer + copywriter-es-cl + integrations-engineer + ui-engineer | WP-15, WP-20, WP-21 | F1, F5, F6 | ☑ |
+| WP-41 | Bokningssidan som företagsprofil (omslag, logga, om oss, galleri, beskrivningar) | db-engineer + ui-engineer | WP-40 | F1 | ☑ |
+| WP-42 | Mobilanpassad ägarapp (flikrad, dagvy i agenda, ajustes) | ui-engineer | – | – | ☑ |
+| WP-43 | Marknadssajtens toppmeny enligt Nav A | ui-engineer | – | – | ☑ |
+| WP-44 | Personalens profilbild (alla planer) | db-engineer + ui-engineer | WP-41 | F1 | ☑ |
 
 ## Parallellisering — förslag
 - **Dag 1:** WP-00 (en agent). Samtidigt: WP-03 (copywriter).

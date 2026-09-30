@@ -234,7 +234,7 @@ WeekGrid, EventBlock …) byggs i WP-11–14/WP-30 och listas där när de är k
 | Chip | `src/components/ui/chip.tsx` | `tone` (…/peach-50, WP-11), `size` (md/sm/xs/tag/trend/badge, WP-11), `weight` (default/bold, WP-11, läggs efter `size` så `cn()` låter `font-bold` vinna), inget eget utsnitt (se steg 7) |
 | Pill | `src/components/ui/pill.tsx` | `selected`, `aria-pressed` |
 | Card | `src/components/ui/card.tsx` | `as`, `tone`, `radius`, `padding`; mörka toner sätter `data-surface="dark"` |
-| Avatar | `src/components/ui/avatar.tsx` | `initials`, `shape`, `size`, `tone` |
+| Avatar | `src/components/ui/avatar.tsx` | `initials`, `shape`, `size`, `tone`, `photoUrl?` (WP-44: foto i stället för initialer, redan filtrerat server-side), `alt?` |
 | LogoMark | `src/components/ui/logo-mark.tsx` | `label`, `size`, `decorative?` (för när en omgivande länk redan har namnet) |
 | SegmentedControl | `src/components/ui/segmented-control.tsx` | Radix ToggleGroup `type="single"`, `value`/`onValueChange` (kan aldrig bli tomt); R10: `role="radio"`/`aria-checked`, inte `aria-pressed` |
 | NavRail (+Logo/Link/Action/Divider/Spacer) | `src/components/ui/nav-rail.tsx` | `variant` (bare/panel) via Context, `data-surface="dark"` på `<nav>` |
