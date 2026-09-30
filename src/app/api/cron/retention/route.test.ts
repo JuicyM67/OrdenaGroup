@@ -71,6 +71,7 @@ describe("POST /api/cron/retention", () => {
     expect(body).toEqual({
       anonymizedCustomers: 0,
       purgedOutbox: 0,
+      purgedConsentEvents: 0,
       purgedBusinesses: 0,
       skippedBusinesses: 0,
     });
