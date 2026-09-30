@@ -5,10 +5,25 @@ import { brand, type Market } from "@/config/brand";
 import { emailColors as c } from "./colors";
 
 /**
- * Byggstenar för HTML-mejl: tabellbaserad layout, inline-CSS, max 600 px,
- * mörk-läge-vänlig via `<style>`-overrides (kräver klassnamn, inte bara
- * inline — inline vinner annars alltid). Inga externa bilder: loggan är
- * text/HTML (D-026, se `BrandLogo`-mönstret i src/components/marketing/).
+ * Byggstenar för HTML-mejl: tabellbaserad layout, inline-CSS, max 600 px.
+ * Inga externa bilder: loggan är text/HTML (D-026, se `BrandLogo`-mönstret
+ * i src/components/marketing/).
+ *
+ * Mörkt läge (WP-49): vi kör `color-scheme: light only` (meta +
+ * `supported-color-schemes` + CSS), dvs mejlen ber uttryckligen klienten
+ * att INTE auto-invertera färger. Anledningen är en bugg vi såg i Apple
+ * Mail/iOS: med `content="light dark"` + en ofullständig
+ * `@media (prefers-color-scheme: dark)`-overlay (bara vissa element hade
+ * `class="text-ink"`/`.text-muted`) körde klienten sin egen
+ * "smart invert"-heuristik ovanpå — resultatet var att ordmärket, koden och
+ * knappen blev mörk text på mörk botten (osynligt) och knappen fick en
+ * konstig ikon. Lösningen: `light only` stänger av den automatiska
+ * processen helt, och varje färg nedan (knapp, kod, logga, kort) är satt
+ * som explicit hex på VARJE tabellcell (både `style` och `bgcolor`, för
+ * klienter som stryker `<style>`), aldrig beroende av en klass som kan
+ * vara ofullständig. Vill vi senare stödja ett riktigt (frivilligt) mörkt
+ * tema får det göras element för element, med samma bulletproof-princip —
+ * hellre inget mörkt läge alls än ett halvfärdigt.
  *
  * Ingen JSX: e-postklienter tolererar bara ett litet HTML-delmängd, och de
  * här funktionerna körs lika gärna i en cron-worker som i en route handler
@@ -26,28 +41,40 @@ export function escapeHtml(input: string): string {
 }
 
 export function paragraph(text: string): string {
-  return `<p style="margin:0 0 16px;font-family:${FONT_SANS};font-size:15px;line-height:1.5;color:${c.ink};" class="text-ink">${escapeHtml(
+  return `<p style="margin:0 0 16px;font-family:${FONT_SANS};font-size:15px;line-height:1.5;color:${c.ink};">${escapeHtml(
     text,
   )}</p>`;
 }
 
 /** Liten, dämpad text (13px) — vencer-/ignorar-raderna i åtkomstmejlen. */
 export function caption(text: string): string {
-  return `<p style="margin:0 0 4px;font-family:${FONT_SANS};font-size:13px;line-height:1.5;color:${c.muted};" class="text-muted">${escapeHtml(
+  return `<p style="margin:0 0 4px;font-family:${FONT_SANS};font-size:13px;line-height:1.5;color:${c.muted};">${escapeHtml(
     text,
   )}</p>`;
 }
 
-/** Koden i klartext (`{{ .Token }}`/6 siffror), framhävd, bredvid en
- * etikett som redan är översatt (`ns.codigo`). */
+/** Koden i klartext (`{{ .Token }}`/6 siffror), i en egen ljus ruta med
+ * mörk text (D-030/WP-49): bakgrund och textfärg är explicita, inte klass-
+ * styrda — den ska synas oavsett vad klienten gör med mörkt läge, precis
+ * som `button(..., "lime")`. `label` är redan översatt (`ns.codigo`). */
 export function codeLine(label: string, code: string): string {
-  return `<p style="margin:0 0 8px;font-family:${FONT_SANS};font-size:13px;color:${c.muted};" class="text-muted">${escapeHtml(
-    label,
-  )} <strong style="color:${c.ink};letter-spacing:2px;">${escapeHtml(code)}</strong></p>`;
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;">
+      <tr>
+        <td style="padding:0 0 6px;font-family:${FONT_SANS};font-size:13px;color:${c.muted};">${escapeHtml(
+          label,
+        )}</td>
+      </tr>
+      <tr>
+        <td align="center" bgcolor="${c.canvas}" style="background-color:${c.canvas};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;font-family:${FONT_SANS};font-size:20px;font-weight:700;letter-spacing:4px;color:${c.ink};text-align:center;">${escapeHtml(
+          code,
+        )}</td>
+      </tr>
+    </table>`;
 }
 
 export function heading(text: string): string {
-  return `<p style="margin:0 0 16px;font-family:${FONT_DISPLAY};font-weight:700;font-size:22px;color:${c.ink};" class="text-ink">${escapeHtml(
+  return `<p style="margin:0 0 16px;font-family:${FONT_DISPLAY};font-weight:700;font-size:22px;color:${c.ink};">${escapeHtml(
     text,
   )}</p>`;
 }
@@ -71,27 +98,37 @@ const FONT_SANS =
   "'Plus Jakarta Sans','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 /** Ordmärket, samma innehåll som `BrandLogo` (CL: limecirkel + namn, SE:
- * "Booking" + limebricka "Buddy") men som tabellbaserad HTML utan bilder. */
+ * "Booking" + limebricka "Buddy") men som tabellbaserad HTML utan bilder.
+ * Text på en explicit ljus botten (`bgcolor` + `background-color` på
+ * cellen, inte bara på `<body>`) — det var just den okantade "Booking"-
+ * texten (ingen egen bakgrund, ingen klass) som blev osynlig i mörkt läge
+ * innan WP-49, se filkommentaren ovan. */
 function wordmarkHtml(market: Market): string {
   if (market === "SE") {
     const words = brand.name.split(" ");
     const first = words[0] ?? brand.name;
     const rest = words.slice(1).join(" ");
-    return `<span style="font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.ink};">${escapeHtml(
-      first,
-    )}</span>${
-      rest
-        ? ` <span style="font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.onLimeSoft};background-color:${c.lime};border-radius:8px;padding:2px 8px;">${escapeHtml(
-            rest,
-          )}</span>`
-        : ""
-    }`;
+    return `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.canvas}">
+      <tr>
+        <td bgcolor="${c.canvas}" style="background-color:${c.canvas};padding:4px 6px 4px 0;font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.ink};">${escapeHtml(
+          first,
+        )}</td>${
+          rest
+            ? `
+        <td bgcolor="${c.lime}" style="background-color:${c.lime};font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.onLimeSoft};border-radius:8px;padding:2px 8px;">${escapeHtml(
+          rest,
+        )}</td>`
+            : ""
+        }
+      </tr>
+    </table>`;
   }
   return `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.canvas}">
       <tr>
-        <td style="width:32px;height:32px;border-radius:16px;background-color:${c.lime};text-align:center;vertical-align:middle;font-family:${FONT_DISPLAY};font-weight:700;font-size:14px;line-height:32px;color:${c.onLimeSoft};" align="center">●</td>
-        <td style="padding-left:10px;font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.ink};" class="text-ink">${escapeHtml(
+        <td bgcolor="${c.lime}" style="width:32px;height:32px;border-radius:16px;background-color:${c.lime};text-align:center;vertical-align:middle;font-family:${FONT_DISPLAY};font-weight:700;font-size:14px;line-height:32px;color:${c.onLimeSoft};" align="center">●</td>
+        <td bgcolor="${c.canvas}" style="background-color:${c.canvas};padding-left:10px;font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.ink};">${escapeHtml(
           brand.name,
         )}</td>
       </tr>
@@ -100,6 +137,12 @@ function wordmarkHtml(market: Market): string {
 
 export type ButtonVariant = "ink" | "lime";
 
+/** Bulletproof-knapp (tabellcell med `bgcolor` + `background-color`, ingen
+ * bild, ingen ikon): bakgrund och text är fasta hex, aldrig klass-styrda,
+ * så den håller sig läsbar oavsett vad klienten gör med mörkt läge (se
+ * filkommentaren ovan). `border:none` på länken tar bort ev.
+ * standardram/fokusruta som vissa klienter annars ritar som en liten
+ * "ikon"-ruta efter texten. */
 export function button(
   href: string,
   label: string,
@@ -112,7 +155,7 @@ export function button(
       <tr>
         <td style="border-radius:16px;background-color:${bg};" bgcolor="${bg}">
           <a href="${escapeHtml(href)}" target="_blank" rel="noopener"
-            style="display:inline-block;padding:13px 24px;font-family:${FONT_SANS};font-weight:700;font-size:15px;color:${fg};text-decoration:none;border-radius:16px;">
+            style="display:inline-block;padding:13px 24px;font-family:${FONT_SANS};font-weight:700;font-size:15px;line-height:1;color:${fg};background-color:${bg};text-decoration:none;border:none;border-radius:16px;">
             ${escapeHtml(label)}
           </a>
         </td>
@@ -161,7 +204,7 @@ export function stepList(items: readonly string[]): string {
         <td style="padding:0 10px 10px 0;vertical-align:top;width:8px;">
           <div style="width:8px;height:8px;margin-top:7px;border-radius:4px;background-color:${c.lime};"></div>
         </td>
-        <td style="padding:0 0 10px;font-family:${FONT_SANS};font-size:14px;line-height:1.5;color:${c.ink};" class="text-ink">${escapeHtml(
+        <td style="padding:0 0 10px;font-family:${FONT_SANS};font-size:14px;line-height:1.5;color:${c.ink};">${escapeHtml(
           item,
         )}</td>
       </tr>`,
@@ -186,48 +229,43 @@ export function renderLayout(input: EmailLayoutInput): {
   text: string;
 } {
   const html = `<!DOCTYPE html>
-<html lang="${input.market === "SE" ? "sv-SE" : "es-CL"}">
+<html lang="${input.market === "SE" ? "sv-SE" : "es-CL"}" style="color-scheme:light only;supported-color-schemes:light only;">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="color-scheme" content="light dark" />
-    <meta name="supported-color-schemes" content="light dark" />
+    <meta name="color-scheme" content="light only" />
+    <meta name="supported-color-schemes" content="light only" />
     <title></title>
     <style>
+      :root { color-scheme: light only; supported-color-schemes: light only; }
       body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
       table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
       img { -ms-interpolation-mode: bicubic; border: 0; line-height: 100%; outline: none; text-decoration: none; }
       body { margin: 0; padding: 0; width: 100% !important; background-color: ${c.canvas}; }
-      @media (prefers-color-scheme: dark) {
-        .bg-canvas { background-color: ${c.dark} !important; }
-        .bg-surface { background-color: ${c.dark} !important; border-color: ${c.darkLine} !important; }
-        .text-ink { color: ${c.onDark} !important; }
-        .text-muted { color: ${c.onDarkMuted} !important; }
-      }
       @media only screen and (max-width: 620px) {
         .container { width: 100% !important; }
         .px { padding-left: 20px !important; padding-right: 20px !important; }
       }
     </style>
   </head>
-  <body class="bg-canvas" style="margin:0;padding:0;background-color:${c.canvas};" bgcolor="${c.canvas}">
+  <body style="margin:0;padding:0;background-color:${c.canvas};color-scheme:light only;" bgcolor="${c.canvas}">
     <div style="display:none;max-height:0;overflow:hidden;opacity:0;mso-hide:all;">${escapeHtml(
       input.preheader,
     )}</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="bg-canvas" style="background-color:${c.canvas};">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${c.canvas};" bgcolor="${c.canvas}">
       <tr>
-        <td align="center" style="padding:32px 16px;">
-          <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="container" style="width:600px;max-width:600px;">
+        <td align="center" style="padding:32px 16px;background-color:${c.canvas};" bgcolor="${c.canvas}">
+          <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="container" style="width:600px;max-width:600px;background-color:${c.canvas};" bgcolor="${c.canvas}">
             <tr>
-              <td class="px" style="padding:0 8px 24px;">${wordmarkHtml(input.market)}</td>
+              <td class="px" style="padding:0 8px 24px;background-color:${c.canvas};" bgcolor="${c.canvas}">${wordmarkHtml(input.market)}</td>
             </tr>
             <tr>
-              <td class="bg-surface px" style="background-color:${c.surface};border-radius:24px;padding:32px;" bgcolor="${c.surface}">
+              <td class="px" style="background-color:${c.surface};border-radius:24px;padding:32px;" bgcolor="${c.surface}">
                 ${input.bodyHtml}
               </td>
             </tr>
             <tr>
-              <td class="px" style="padding:24px 8px 0;">${input.footerHtml}</td>
+              <td class="px" style="padding:24px 8px 0;background-color:${c.canvas};" bgcolor="${c.canvas}">${input.footerHtml}</td>
             </tr>
           </table>
         </td>
@@ -244,7 +282,7 @@ export function footerHtml(lines: readonly string[]): string {
   return lines
     .map(
       (l) =>
-        `<p style="margin:0 0 4px;font-family:${FONT_SANS};font-size:12px;line-height:1.5;color:${c.muted};" class="text-muted">${escapeHtml(
+        `<p style="margin:0 0 4px;font-family:${FONT_SANS};font-size:12px;line-height:1.5;color:${c.muted};">${escapeHtml(
           l,
         )}</p>`,
     )
