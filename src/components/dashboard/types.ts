@@ -14,6 +14,25 @@ export type { PendingRequestItem };
 
 export type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
+/** Speglar `MemberView` (`src/server/owner/member.ts`), duplicerad — en
+ * "use client"-fil (`inicio-screen.tsx`) importerar aldrig något, inte ens
+ * bara typer, under `@/server/*` (samma regel som `AgendaMemberView`/
+ * `HoyMemberView` i agenda/types.ts, mobile/types.ts, och `TeamPerms` i
+ * settings/team-section.tsx). WP-24 (D-034): döljer Caja i navigeringen. */
+export type InicioMemberView = {
+  role: "owner" | "staff" | "vendor" | "admin" | null;
+  staffId: string | null;
+  perms: {
+    can_manage_own_bookings: boolean;
+    can_manage_all_bookings: boolean;
+    can_cancel_bookings: boolean;
+    can_edit_catalog: boolean;
+    can_manage_team: boolean;
+    can_view_reports: boolean;
+    can_edit_settings: boolean;
+  };
+};
+
 export type TodayBooking = {
   id: string;
   /** ISO 8601 med offset, t.ex. "2026-10-02T15:00:00-03:00". */
@@ -89,4 +108,8 @@ export type InicioData = {
     service: string;
     staff: string;
   } | null;
+  /** WP-24 (D-034): döljer Caja i navigeringen (`MainNav`/`OwnerMobileTabBar`) för
+   * medlemmar utan `can_view_reports`. `loadOwnerInicio` sätter alltid fältet
+   * (`memberView`), design lab-fixturer kan utelämna det (nav:en visar då Caja). */
+  member?: InicioMemberView;
 };

@@ -1,6 +1,7 @@
 // Rena funktioner för Hoy (Hoy.dc.html), se docs/tasks/plans/WP-14.md §4 steg 1. Ingen dold
 // klocka: `now` tas alltid emot som parameter. Formatering bara via `src/lib/format/`, text
 // bara via `@/i18n`.
+import { PAGADA_LABEL } from "@/components/caja/types";
 import { estados, hoy } from "@/i18n";
 import {
   formatDate,
@@ -122,12 +123,13 @@ export function nextChip(b: HoyBooking): NextChip {
 }
 
 export type RowTag = {
-  tone: "lime" | "peach" | "peach-50" | "pending";
+  tone: "lime" | "peach" | "peach-50" | "pending" | "success";
   label: string;
 };
 
 /** Högst en tagg. WP-45 (D-033): "Por confirmar" (en väntande förfrågan) går
- * före allt annat — annars Flash > Desde lista > Abono, som förut (FRÅGA 6). */
+ * före allt annat — annars Flash > Desde lista > Abono > Pagada (WP-24,
+ * lägst prioritet: en betald "flash"-bokning visar ändå "Flash" här). */
 export function rowTag(b: HoyBooking): RowTag | undefined {
   if (b.status === "requested") {
     return { tone: "pending", label: estados.porConfirmar };
@@ -136,5 +138,6 @@ export function rowTag(b: HoyBooking): RowTag | undefined {
   if (b.source === "waitlist")
     return { tone: "peach", label: estados.desdeLista };
   if (b.depositPaidClp > 0) return { tone: "peach-50", label: estados.abono };
+  if (b.paymentId) return { tone: "success", label: PAGADA_LABEL };
   return undefined;
 }

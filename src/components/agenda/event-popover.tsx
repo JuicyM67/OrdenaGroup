@@ -9,15 +9,25 @@ import { X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { AnswersList } from "@/components/booking/answers-list";
+import { MarkPaidDialog } from "@/components/caja/mark-paid-dialog";
+import {
+  PAGADA_LABEL,
+  type ManualPaymentMethod,
+  type MarkBookingPaidInput,
+  type MarkBookingPaidResult,
+  type UndoPaymentInput,
+  type UndoPaymentResult,
+} from "@/components/caja/types";
 import type { NotificationBellResult } from "@/components/shared/notification-bell";
 import { RechazarDialog } from "@/components/shared/rechazar-dialog";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconButton } from "@/components/ui/icon-button";
 import { roleIcons, strokeCard } from "@/components/ui/icons";
 import type { TimeZone } from "@/lib/format/dates";
-import { agenda, solicitudes } from "@/i18n";
+import { agenda, caja, comun, solicitudes } from "@/i18n";
 
 import { popoverModel } from "./agenda-view";
 import {
@@ -59,6 +69,13 @@ export type EventPopoverProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-24 (F10): "Marcar pagada"/"Anular pago" (D-034: egen/alla bokningar
+   * eller kassan, `can_view_reports`). `undefined` döljer knapparna — samma
+   * mönster som `onMover`. */
+  onMarkPaid?: (input: MarkBookingPaidInput) => Promise<MarkBookingPaidResult>;
+  onUndoPayment?: (input: UndoPaymentInput) => Promise<UndoPaymentResult>;
+  /** Metoderna "Marcar pagada" ska erbjuda (`MANUAL_METHODS`). `[]` i design lab. */
+  manualMethods?: readonly ManualPaymentMethod[];
   trigger: ReactNode;
 };
 
@@ -75,10 +92,16 @@ export function EventPopover({
   onAnonymizeCustomer,
   onConfirmRequest,
   onDeclineRequest,
+  onMarkPaid,
+  onUndoPayment,
+  manualMethods = [],
   trigger,
 }: EventPopoverProps) {
   const [confirming, setConfirming] = useState(false);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [markPaidOpen, setMarkPaidOpen] = useState(false);
+  const [undoOpen, setUndoOpen] = useState(false);
+  const [undoError, setUndoError] = useState<string | null>(null);
   const isPending = booking.status === "requested";
   const model = popoverModel(booking, staffName, tz);
   const customerId = booking.customerId;
@@ -148,6 +171,11 @@ export function EventPopover({
             {model.statusChip ? (
               <Chip size="sm" tone={model.statusChip.tone}>
                 {model.statusChip.label}
+              </Chip>
+            ) : null}
+            {booking.paymentId ? (
+              <Chip size="sm" tone="success">
+                {PAGADA_LABEL}
               </Chip>
             ) : null}
           </div>
@@ -253,6 +281,30 @@ export function EventPopover({
             })()
           )}
 
+          {!booking.paymentId && onMarkPaid ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setMarkPaidOpen(true)}
+            >
+              {caja.marcarPagada.cta}
+            </Button>
+          ) : null}
+          {booking.paymentId && onUndoPayment ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setUndoError(null);
+                setUndoOpen(true);
+              }}
+            >
+              {caja.anular.cta}
+            </Button>
+          ) : null}
+
           {customerId && onExportCustomer && onAnonymizeCustomer ? (
             <CustomerPrivacyActions
               customerId={customerId}
@@ -276,6 +328,60 @@ export function EventPopover({
             if (result.ok) {
               setDeclineDialogOpen(false);
               onOpenChange(false);
+            }
+          }}
+        />
+      ) : null}
+
+      {onMarkPaid ? (
+        <MarkPaidDialog
+          open={markPaidOpen}
+          onOpenChange={setMarkPaidOpen}
+          bookingId={booking.id}
+          dueMinor={Math.max(
+            0,
+            booking.priceClp -
+              (booking.discountClp ?? 0) -
+              (booking.depositPaidClp ?? 0),
+          )}
+          methods={manualMethods}
+          onSubmit={onMarkPaid}
+          onPaid={() => setMarkPaidOpen(false)}
+        />
+      ) : null}
+      {onUndoPayment ? (
+        <ConfirmDialog
+          open={undoOpen}
+          onOpenChange={(next) => {
+            if (!next) setUndoError(null);
+            setUndoOpen(next);
+          }}
+          title={caja.anular.tituloConfirmacion}
+          body={
+            <>
+              {caja.anular.cuerpoConfirmacion}
+              {undoError ? (
+                <span role="alert" className="mt-2 block text-ink">
+                  {undoError}
+                </span>
+              ) : null}
+            </>
+          }
+          confirmLabel={caja.anular.cta}
+          cancelLabel={comun.volver}
+          onConfirm={async () => {
+            if (!booking.paymentId) return;
+            const result = await onUndoPayment({
+              paymentId: booking.paymentId,
+            });
+            if (result.ok) {
+              setUndoOpen(false);
+            } else {
+              setUndoError(
+                result.code === "same_day_required"
+                  ? caja.errores.same_day_required
+                  : comun.algoSalioMal,
+              );
             }
           }}
         />

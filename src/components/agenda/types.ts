@@ -49,6 +49,15 @@ export type AgendaBooking = {
   readonly confirmedByCustomer: boolean;
   /** Rabatt i procent för en hora flash, t.ex. 20. */
   readonly flashPct?: number;
+  /** WP-24 (F10): rabatt i heltal CLP — "Marcar pagada" förifyller beloppet
+   * med `priceClp - discountClp - (depositPaidClp ?? 0)`. `paymentId`: id:t
+   * på bokningens senaste `approved`-betalning av kind `full`/`balance`
+   * (`payments`), `null`/saknas = obetald — styr "Pagada"-chippen, om
+   * "Marcar pagada" visas, och `paymentId` till "Anular pago". Valfria (som
+   * `flashPct`/`answers`): saknas i design lab/äldre tester, som då varken
+   * visar knappen eller chippen. */
+  readonly discountClp?: Clp;
+  readonly paymentId?: string | null;
   /** WP-40 (D-031): svaren på bokningsfrågorna, om det finns några
    * (`getBookingAnswersForBookings`/`listBookingAnswersIn`). Saknas fältet
    * (befintliga fixturer/tester) → ingen svarslista visas. */

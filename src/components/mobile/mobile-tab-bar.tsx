@@ -22,6 +22,18 @@ export type MobileTabBarProps = {
   className?: string;
 };
 
+// WP-24: antal flikar varierar nu per skärm (Hoy/Agenda/Clientes/Caja = 4, den delade
+// `OwnerMobileTabBar` upp till 6 med Inicio/Ajustes också) — en uppslagstabell med
+// bokstavliga Tailwind-klasser (inte `grid-cols-${n}`) så Tailwinds JIT hittar dem.
+const GRID_COLS: Record<number, string> = {
+  1: "grid-cols-1",
+  2: "grid-cols-2",
+  3: "grid-cols-3",
+  4: "grid-cols-4",
+  5: "grid-cols-5",
+  6: "grid-cols-6",
+};
+
 export function MobileTabBar({ items, active, className }: MobileTabBarProps) {
   return (
     <nav
@@ -30,7 +42,8 @@ export function MobileTabBar({ items, active, className }: MobileTabBarProps) {
       className={cn(
         // WP-42: `bottom-safe-b` (i stället för `bottom-4`) håller samma 16 px-marginal och
         // lägger till `env(safe-area-inset-bottom)` ovanpå — se DESIGN.md §5.
-        "fixed inset-x-4 bottom-safe-b mx-auto grid h-18 max-w-112 grid-cols-4 items-center rounded-bar bg-dark px-2",
+        "fixed inset-x-4 bottom-safe-b mx-auto grid h-18 max-w-112 items-center rounded-bar bg-dark px-2",
+        GRID_COLS[items.length] ?? "grid-cols-4",
         className,
       )}
     >

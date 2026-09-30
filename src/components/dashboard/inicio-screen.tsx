@@ -131,8 +131,20 @@ export function InicioScreen({
 
   return (
     <AppShell
-      rail={<MainNav active="inicio" onLogout={onLogout} />}
-      mobileTabBar={<OwnerMobileTabBar active="inicio" className="lg:hidden" />}
+      rail={
+        <MainNav
+          active="inicio"
+          onLogout={onLogout}
+          canViewReports={data.member?.perms.can_view_reports}
+        />
+      }
+      mobileTabBar={
+        <OwnerMobileTabBar
+          active="inicio"
+          className="lg:hidden"
+          canViewReports={data.member?.perms.can_view_reports}
+        />
+      }
       onLogout={onLogout}
       className={shellClassName}
     >

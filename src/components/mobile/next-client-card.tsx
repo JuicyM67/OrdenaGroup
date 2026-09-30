@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
-import { comun, hoy } from "@/i18n";
+import { PAGADA_LABEL } from "@/components/caja/types";
+import { caja, comun, hoy } from "@/i18n";
 import { formatTime, APP_TZ } from "@/lib/format/dates";
 
 import { nextChip, parseInstantOrThrow, relative } from "./hoy-view";
@@ -33,6 +34,11 @@ export type NextClientCardProps = {
    * `can_manage_own_bookings` + egen `staffId`). */
   onArrived?: () => void;
   onNoShow?: () => void;
+  /** WP-24 (F10): öppnar "Marcar pagada" (dialog i `hoy-screen.tsx`).
+   * `undefined` döljer knappen — den inloggade saknar rätt att hantera
+   * betalningen (samma regel som `canPay`, `src/server/payments/mark-paid.ts`)
+   * eller bokningen är redan betald (`booking.paymentId`). */
+  onMarkPaid?: () => void;
   /** Inaktiverar knapparna under den korta optimistiska uppdateringen (FRÅGA 1). */
   disabled?: boolean;
   /** Text när `booking` saknas. Standard: `hoy.sinProximaReserva`. Stängd dag: skickar
@@ -46,6 +52,7 @@ export function NextClientCard({
   now,
   onArrived,
   onNoShow,
+  onMarkPaid,
   disabled = false,
   emptyMessage,
   ref,
@@ -98,13 +105,20 @@ export function NextClientCard({
       ref={ref}
       className={cn("flex flex-col gap-4", FOCUS_RING)}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <span className="text-13 text-on-dark-muted">
           {hoy.siguiente({ relativo: relative(now, start) })}
         </span>
-        <Chip size="sm" weight="bold" tone={chip.tone}>
-          {chip.label}
-        </Chip>
+        <div className="flex flex-wrap justify-end gap-1.5">
+          {booking.paymentId ? (
+            <Chip size="sm" weight="bold" tone="success">
+              {PAGADA_LABEL}
+            </Chip>
+          ) : null}
+          <Chip size="sm" weight="bold" tone={chip.tone}>
+            {chip.label}
+          </Chip>
+        </div>
       </div>
       <div>
         <div className="font-display text-44 leading-none font-semibold tracking-display">
@@ -145,6 +159,11 @@ export function NextClientCard({
             </Button>
           ) : null}
         </div>
+      ) : null}
+      {onMarkPaid ? (
+        <Button variant="outline-dark" size="lg" onClick={onMarkPaid}>
+          {caja.marcarPagada.cta}
+        </Button>
       ) : null}
     </Card>
   );

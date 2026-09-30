@@ -18,7 +18,9 @@ import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import { loadOwnerHoy } from "@/server/owner/hoy";
 import { confirmRequest, declineRequest } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
+import { MANUAL_METHODS } from "@/server/payments/mark-paid";
 
+import { markPaidAction } from "../caja/actions";
 import {
   confirmMyPhotoUploadAction,
   createMyPhotoUploadAction,
@@ -87,6 +89,8 @@ export default async function HoyPage() {
       onLogout={logout}
       onConfirmRequest={onConfirmRequest}
       onDeclineRequest={onDeclineRequest}
+      onMarkPaid={markPaidAction}
+      manualMethods={MANUAL_METHODS}
       myProfile={myProfile ?? undefined}
       myProfileActions={
         myProfile

@@ -18,7 +18,7 @@ import { TextField } from "@/components/ui/text-field";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
 import { agenda, clientes, comun, reserva } from "@/i18n";
 import type { LocalDate, LocalTime } from "@/lib/format/dates";
-import type { E164 } from "@/lib/format/phone";
+import { formatPhone, isE164, type E164 } from "@/lib/format/phone";
 
 import {
   EMAIL_MAX,
@@ -58,6 +58,11 @@ export type ManualBookingDialogProps = {
   staff: readonly AgendaStaff[];
   businessName: string;
   defaultDate: LocalDate;
+  /** WP-24: förifyller namn/celular/correo (kundkortets "Nueva reserva",
+   * `/app/agenda?cliente=…`) — samma dedup-motor (telefonen) hittar då
+   * samma kund i stället för att skapa en ny. `undefined`/tomma fält = som
+   * förut (tomt formulär). */
+  initialCustomer?: { name: string; phone: string; email: string };
   onSubmit: (
     input: ManualBookingSubmit,
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
@@ -82,6 +87,7 @@ export function ManualBookingDialog({
   staff,
   businessName,
   defaultDate,
+  initialCustomer,
   onSubmit,
 }: ManualBookingDialogProps) {
   const descriptionId = useId();
@@ -95,9 +101,13 @@ export function ManualBookingDialog({
   const [staffId, setStaffId] = useState(ANY_STAFF);
   const [date, setDate] = useState<string>(defaultDate);
   const [time, setTime] = useState("");
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
+  const [name, setName] = useState(initialCustomer?.name ?? "");
+  const [phone, setPhone] = useState(
+    initialCustomer?.phone && isE164(initialCustomer.phone)
+      ? formatPhone(initialCustomer.phone)
+      : (initialCustomer?.phone ?? ""),
+  );
+  const [email, setEmail] = useState(initialCustomer?.email ?? "");
   const [notes, setNotes] = useState("");
   const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -109,9 +119,13 @@ export function ManualBookingDialog({
     setStaffId(ANY_STAFF);
     setDate(defaultDate);
     setTime("");
-    setName("");
-    setPhone("");
-    setEmail("");
+    setName(initialCustomer?.name ?? "");
+    setPhone(
+      initialCustomer?.phone && isE164(initialCustomer.phone)
+        ? formatPhone(initialCustomer.phone)
+        : (initialCustomer?.phone ?? ""),
+    );
+    setEmail(initialCustomer?.email ?? "");
     setNotes("");
     setConsent(false);
     setErrors({});
