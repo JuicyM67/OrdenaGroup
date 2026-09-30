@@ -38,7 +38,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-23 | Väntelista end-to-end (sequential + broadcast) | scheduling-engineer + integrations-engineer | WP-10, WP-16 | F8 | ☐ |
 | WP-24 | Kassa: markera betald, summeringar | ui-engineer + db-engineer | WP-21 | F10 | ☐ |
 | WP-25 | Handpenning via Mercado Pago (OAuth, preferens, webhook, utgång) | integrations-engineer | WP-20 | F11 | ◐ |
-| WP-26 | Dataskydd: samtyckeslogg, export/anonymisering, lagringsjobb, policysidor (text från jurist) | db-engineer + security-reviewer | WP-20 | F12 | ☐ |
+| WP-26 | Dataskydd: samtyckeslogg, export/anonymisering, lagringsjobb, policysidor (text från jurist) | db-engineer + security-reviewer | WP-20 | F12 | ◐ (plan klar, CL + SE, se docs/tasks/plans/WP-26.md; tar över "radering av konto" från WP-15) |
 | WP-27 | **Säkerhetsgranskning före pilot** | security-reviewer | WP-20 till WP-26 | – | ☐ |
 
 ## Våg D — fas 2
