@@ -6,6 +6,8 @@
 // tjänst) ägs av `booking-screen.tsx` och kommer in som props, så
 // komponenten här kan återanvändas oförändrad om profilen någon gång
 // server-renderas separat (planens JS-budgetnot, se booking-screen.tsx).
+import type { ReactNode } from "react";
+
 import { Button } from "@/components/ui/button";
 import { perfil } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
@@ -35,6 +37,9 @@ const MOBILE_TABS: readonly { id: MobileTab; label: string }[] = [
   { id: "info", label: perfil.publico.tabs.info },
 ];
 
+/** Serverrenderade ikonknappar (chips-raden och Kontakt-kortet). */
+export type ProfileSocialSlots = { chips: ReactNode; contact: ReactNode };
+
 export function ProfileBrowse({
   data,
   profile,
@@ -45,7 +50,9 @@ export function ProfileBrowse({
   onBookService,
   mobileTab,
   onSelectMobileTab,
+  social,
 }: {
+  social?: ProfileSocialSlots;
   data: BookingPageData;
   profile: BookingProfile;
   tabs: readonly CategoryTab[];
@@ -60,7 +67,12 @@ export function ProfileBrowse({
 
   return (
     <div className="flex flex-1 flex-col">
-      <ProfileHeader business={business} profile={profile} now={data.now} />
+      <ProfileHeader
+        business={business}
+        profile={profile}
+        now={data.now}
+        social={social?.chips}
+      />
 
       {/* Dator */}
       <div className="hidden px-30 pt-20 pb-20 lg:block">
@@ -69,7 +81,7 @@ export function ProfileBrowse({
             <ProfileChipsDesktop
               profile={profile}
               now={data.now}
-              businessName={business.name}
+              social={social?.chips}
             />
             <h2 className="font-display text-28 font-bold text-ink">
               {perfil.publico.secciones.reservarHora}
@@ -125,10 +137,12 @@ export function ProfileBrowse({
             <MapCard address={profile.address} />
             <ContactCard
               phone={profile.phone}
-              instagramUrl={profile.instagramUrl}
-              tiktokUrl={profile.tiktokUrl}
-              facebookUrl={profile.facebookUrl}
-              businessName={business.name}
+              hasSocial={Boolean(
+                profile.instagramUrl ||
+                profile.tiktokUrl ||
+                profile.facebookUrl,
+              )}
+              social={social?.contact}
             />
           </aside>
         </div>
@@ -197,10 +211,12 @@ export function ProfileBrowse({
               <MapCard address={profile.address} />
               <ContactCard
                 phone={profile.phone}
-                instagramUrl={profile.instagramUrl}
-                tiktokUrl={profile.tiktokUrl}
-                facebookUrl={profile.facebookUrl}
-                businessName={business.name}
+                hasSocial={Boolean(
+                  profile.instagramUrl ||
+                  profile.tiktokUrl ||
+                  profile.facebookUrl,
+                )}
+                social={social?.contact}
               />
             </div>
           ) : null}

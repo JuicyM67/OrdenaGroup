@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 // ProfileHeader — omslag + logga/initialer + namn + bransch/adress + chips
 // (`ProfilDesktop.dc.html` rad 21–30, `ProfilMobil.dc.html` rad 20–26). En enda
 // komponent för båda bredderna (Tailwind `lg:`, se booking-screen.tsx): mobil
@@ -10,7 +11,6 @@
 import { Chip } from "@/components/ui/chip";
 import { initialsOf } from "@/lib/format/initials";
 
-import { SocialLinks } from "./social-icons";
 import {
   businessCategoryLabel,
   nextAvailableChipLabel,
@@ -22,10 +22,12 @@ export function ProfileHeader({
   business,
   profile,
   now,
+  social,
 }: {
   business: BookingBusiness;
   profile: BookingProfile;
   now: IsoInstant;
+  social?: ReactNode;
 }) {
   const initials = initialsOf(business.name);
   const proximaHora = nextAvailableChipLabel(now, profile.nextAvailable);
@@ -87,15 +89,7 @@ export function ProfileHeader({
             {proximaHora}
           </Chip>
         ) : null}
-        <SocialLinks
-          instagramUrl={profile.instagramUrl}
-          tiktokUrl={profile.tiktokUrl}
-          facebookUrl={profile.facebookUrl}
-          businessName={business.name}
-          tone="surface"
-          size={36}
-          className="ml-auto"
-        />
+        {social}
       </div>
     </div>
   );
@@ -141,11 +135,11 @@ function ProfileLogo({
 export function ProfileChipsDesktop({
   profile,
   now,
-  businessName,
+  social,
 }: {
   profile: BookingProfile;
   now: IsoInstant;
-  businessName: string;
+  social?: ReactNode;
 }) {
   const proximaHora = nextAvailableChipLabel(now, profile.nextAvailable);
   return (
@@ -158,15 +152,7 @@ export function ProfileChipsDesktop({
           {proximaHora}
         </Chip>
       ) : null}
-      <SocialLinks
-        instagramUrl={profile.instagramUrl}
-        tiktokUrl={profile.tiktokUrl}
-        facebookUrl={profile.facebookUrl}
-        businessName={businessName}
-        tone="surface"
-        size={36}
-        className="ml-auto"
-      />
+      {social}
     </div>
   );
 }

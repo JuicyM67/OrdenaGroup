@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 // Sidopanelens kort (dator: `ProfilDesktop.dc.html` rad 49–65) och mobilens
 // flik "Info" (`ProfilMobil.dc.html` rad 34–37) delar samma fyra kort:
 // "Más rápido" (mörk), "Horario", "Cómo llegar" och "Contacto". Ingen
@@ -15,7 +16,6 @@ import {
   mapsUrl,
   mustParseInstant,
 } from "./profile-view";
-import { SocialLinks } from "./social-icons";
 import type { BookingProfile, BookingService, IsoInstant } from "./types";
 
 // Rena externa länkar (Google Maps) — `<a>` rakt av, inte `TextLink`
@@ -116,18 +116,14 @@ export function MapCard({ address }: { address: string | null }) {
 
 export function ContactCard({
   phone,
-  instagramUrl,
-  tiktokUrl,
-  facebookUrl,
-  businessName,
+  hasSocial,
+  social,
 }: {
   phone: string | null;
-  instagramUrl: string | null;
-  tiktokUrl: string | null;
-  facebookUrl: string | null;
-  businessName: string;
+  hasSocial: boolean;
+  social?: ReactNode;
 }) {
-  if (!phone && !instagramUrl && !tiktokUrl && !facebookUrl) return null;
+  if (!phone && !hasSocial) return null;
   return (
     <Card radius="tile" padding="lg" className="flex flex-col gap-2.5">
       <p className="text-15 font-bold text-ink">
@@ -136,14 +132,7 @@ export function ContactCard({
       {phone ? (
         <span className="text-14 text-ink">{formatPhone(phone as E164)}</span>
       ) : null}
-      <SocialLinks
-        instagramUrl={instagramUrl}
-        tiktokUrl={tiktokUrl}
-        facebookUrl={facebookUrl}
-        businessName={businessName}
-        tone="canvas"
-        size={44}
-      />
+      {social}
     </Card>
   );
 }
