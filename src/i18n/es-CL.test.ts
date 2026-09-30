@@ -171,6 +171,10 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   pct: 20,
   link: "https://ejemplo.cl/r/abc123",
   codigo: "482913",
+  /** Agregados por copywriter-es-cl junto con `errores.permiso` y
+   * `email.invitacionEquipo` (WP-46, D-034). */
+  accion: "cancelar esta reserva",
+  invitadoPor: "Diego",
 };
 
 function invocarGenerico(fn: unknown): unknown {

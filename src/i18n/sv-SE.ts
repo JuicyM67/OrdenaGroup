@@ -100,6 +100,7 @@ export const estados = {
 
 export const hoy = {
   titulo: "Idag",
+  filtroEquipo: { misReservas: "Mina bokningar", todoElEquipo: "Hela teamet" },
   proximaReserva: "Nästa bokning",
   siguiente: (p: { relativo: string }): string => `Nästa · ${p.relativo}`,
   relativo: {

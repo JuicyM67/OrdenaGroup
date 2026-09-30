@@ -228,6 +228,20 @@ export const errores = {
     business_unavailable: "No se pueden crear ni mover reservas por ahora.",
     network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
   },
+  /** WP-46 (D-034): cuando el servidor o la base de datos rechazan una
+   * acción porque las siete banderas de `memberships` no la permiten (una
+   * cuenta de personal, nunca el dueño). `accion` describe en minúscula lo
+   * que se intentó hacer, para armar una sola frase ("No tienes permiso
+   * para cancelar esta reserva."); `redirigido` es el aviso cuando además se
+   * saca a la persona de una pantalla a la que no puede entrar (Ajustes →
+   * Equipo, Caja, etc.), de vuelta a `/app/agenda`. */
+  permiso: {
+    generico: "No tienes permiso para hacer esto.",
+    accion: (p: { accion: string }): string =>
+      `No tienes permiso para ${p.accion}.`,
+    redirigido:
+      "No tienes permiso para ver esa página. Te llevamos a tu agenda.",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -599,9 +613,20 @@ const NOTAS_AYUDA =
  * GUIA §4, "mismo vocabulario" para el mismo botón. */
 const AGREGAR_PROFESIONAL = "Agregar profesional";
 
+/** Filtro de Agenda (`agenda.filtroEquipo`) y de Hoy (`hoy.filtroEquipo`),
+ * WP-46 (D-034): alterna entre ver solo las reservas propias o las de todo
+ * el equipo. Solo tiene sentido para una cuenta `staff`: el dueño siempre ve
+ * todo el equipo. Una sola definición para que el texto no se desalinee
+ * entre las dos pantallas (GUIA §4). */
+const FILTRO_EQUIPO = {
+  misReservas: "Mis reservas",
+  todoElEquipo: "Todo el equipo",
+} as const;
+
 export const agenda = {
   /** aria-label de `<section aria-label="Calendario mensual">` (aside). */
   calendarioMensualAria: "Calendario mensual",
+  filtroEquipo: FILTRO_EQUIPO,
   panel: {
     profesionales: "Profesionales",
     reservasCount: (p: { n: number }): string =>
@@ -732,6 +757,7 @@ export const agenda = {
 
 export const hoy = {
   titulo: "Hoy",
+  filtroEquipo: FILTRO_EQUIPO,
   proximaReserva: "Próxima reserva",
   /** "Siguiente · {relativo}". `relativo` se arma con `hoy.relativo.*` a
    * partir del número de minutos/horas que calcula WP-04/scheduling: acá
@@ -1437,6 +1463,25 @@ export const email = {
       condiciones: string;
     }): string =>
       `Pagaste ${p.monto} de abono. El resto (${p.saldo}) lo pagas en el local. ${p.condiciones}`,
+  },
+  /** Al profesional invitado (WP-46, D-034): único canal de invitación en
+   * v1 (el plan de WP-46 descarta SMS/WhatsApp para esto). Mismas piezas que
+   * `nuevaReservaDueno`/`cancelacionDueno` (asunto, preheader, titulo,
+   * texto, cta), más `expira` e `ignorar` con el mismo criterio que
+   * `email.acceso` (WP-03b paso 2). Mandato de Meta: nombre de la plantilla
+   * `invitacionEquipo` (plan de WP-46, paso 4). `invitadoPor` es el nombre
+   * del dueño que envía la invitación. */
+  invitacionEquipo: {
+    asunto: (p: { negocio: string }): string =>
+      `Te invitaron a la cuenta de ${p.negocio}`,
+    preheader: (p: { invitadoPor: string; negocio: string }): string =>
+      `${p.invitadoPor} te invitó a entrar a la cuenta de ${p.negocio}.`,
+    titulo: "Te invitaron a una cuenta",
+    texto: (p: { invitadoPor: string; negocio: string }): string =>
+      `${p.invitadoPor} te invitó a entrar a la cuenta de ${p.negocio} y ver la agenda.`,
+    cta: "Aceptar invitación",
+    expira: "Este link vence en 7 días.",
+    ignorar: "Si no esperabas esta invitación, puedes ignorar este correo.",
   },
 } as const satisfies Trad;
 
@@ -2758,5 +2803,173 @@ export const solicitudes = {
   toast: {
     confirmada: "Solicitud confirmada.",
     rechazada: "Solicitud rechazada.",
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// equipo: WP-46 (D-034) — Ajustes → Equipo. Cuentas de personal, separadas
+// de las fichas de `profesionales` (una ficha puede no tener cuenta nunca, y
+// una cuenta siempre está ligada a una ficha). Solo el dueño ve esta
+// pantalla y puede invitar o cambiar permisos (FRÅGA 2 del plan: "no,
+// bara ägaren").
+//
+// Las siete claves de `permisos` son el nombre de la columna de
+// `memberships` sin el prefijo `can_` (`can_manage_own_bookings` →
+// `manage_own_bookings`), mismo criterio que `errores.reserva`/
+// `errores.agenda` con los códigos de `BookingError` (GUIA §8): así
+// `satisfies Record<Bandera, {...}>` funciona del lado de quien defina el
+// tipo de las siete banderas (db-engineer, `src/server/db/permissions.ts`)
+// sin tener que traducir nombres.
+// ---------------------------------------------------------------------------
+
+export const equipo = {
+  ctaInvitar: "Invitar a la cuenta",
+  invitarDialog: {
+    titulo: "Invitar a la cuenta",
+    emailLabel: "Correo",
+    emailPlaceholder: "nombre@ejemplo.cl",
+    profesionalLabel: "Profesional",
+    profesionalAyuda: "La cuenta queda ligada a este profesional de tu equipo.",
+    permisosTitulo: "Qué puede hacer",
+    ctaEnviar: "Enviar invitación",
+    errores: {
+      emailInvalido: "Revisa el correo.",
+      profesionalRequerido: "Elige a qué profesional se liga esta cuenta.",
+      /** Índice único parcial `(business_id, staff_id)` (plan, paso 1): una
+       * ficha de personal solo puede tener una cuenta. */
+      profesionalYaTieneCuenta:
+        "Este profesional ya tiene una cuenta. Solo puede tener una.",
+      emailYaEsMiembro: "Ese correo ya tiene acceso a esta cuenta.",
+      /** "Ägarens svar" 1: una cuenta por negocio en v1. */
+      emailOtroNegocio:
+        "Ese correo ya pertenece a otro negocio. Por ahora no puede tener dos.",
+    },
+  },
+  /** Nombre corto y ayuda de cada una de las siete banderas, en el mismo
+   * orden que el paso 1 del plan. */
+  permisos: {
+    manage_own_bookings: {
+      nombre: "Sus propias reservas",
+      ayuda:
+        "Puede crear, mover y marcar Llegó o No vino solo en las reservas que le corresponden a él o ella.",
+    },
+    manage_all_bookings: {
+      nombre: "Todas las reservas",
+      ayuda:
+        "Puede crear, mover y marcar Llegó o No vino en las reservas de cualquier profesional.",
+    },
+    cancel_bookings: {
+      nombre: "Cancelar o rechazar reservas",
+      ayuda:
+        "Puede cancelar una reserva confirmada o rechazar una solicitud pendiente.",
+    },
+    edit_catalog: {
+      nombre: "Servicios y precios",
+      ayuda: "Puede crear y editar servicios, precios y categorías.",
+    },
+    manage_team: {
+      nombre: "Personal y horarios",
+      ayuda:
+        "Puede agregar profesionales y cambiar sus horarios. No incluye invitar cuentas ni cambiar permisos: eso lo hace solo el dueño.",
+    },
+    view_reports: {
+      nombre: "Estadísticas y caja",
+      ayuda:
+        "Puede ver los ingresos, las estadísticas del negocio y el historial de caja.",
+    },
+    edit_settings: {
+      nombre: "Ajustes y perfil",
+      ayuda:
+        "Puede cambiar el horario de atención, las reglas de reserva y el perfil del negocio.",
+    },
+  },
+  invitaciones: {
+    titulo: "Invitaciones pendientes",
+    enviada: (p: { fecha: string }): string => `Enviada el ${p.fecha}`,
+    ctaReenviar: "Reenviar",
+    ctaRevocar: "Revocar",
+    confirmarRevocar: {
+      titulo: "¿Revocar esta invitación?",
+      cuerpo: "La persona ya no podrá aceptarla.",
+      ctaSi: "Sí, revocar",
+      ctaNo: "No, mantener",
+    },
+    toast: {
+      reenviada: "Invitación reenviada.",
+      revocada: "Invitación revocada.",
+    },
+  },
+  miembros: {
+    titulo: "Miembros",
+    rol: {
+      owner: "Dueño",
+      staff: "Personal",
+    },
+    ctaEditarPermisos: "Editar permisos",
+    ctaQuitarAcceso: "Quitar acceso",
+    confirmarQuitar: {
+      titulo: "¿Quitar el acceso a esta cuenta?",
+      /** Aclara que la ficha de personal (`staff`) se mantiene, solo se
+       * quita el acceso a la cuenta (plan, paso 6: "personalraden finns
+       * kvar"). */
+      cuerpo:
+        "Ya no podrá entrar a tu cuenta. Su ficha de profesional se mantiene en tu equipo.",
+      ctaSi: "Sí, quitar acceso",
+      ctaNo: "No, mantener",
+    },
+    toast: {
+      permisosGuardados: "Permisos guardados.",
+      accesoQuitado: "Acceso quitado.",
+    },
+  },
+  /** Estado vacío de toda la pantalla (todavía nadie invitado ni miembro,
+   * aparte del dueño). */
+  vacio: "Todavía no invitaste a nadie a tu cuenta.",
+  /** "Ägarens svar" 4: las cuentas de personal siguen la cantidad de
+   * profesionales de cada plan (D-009); el plan de un solo profesional no
+   * puede invitar. */
+  limiteDelPlan: {
+    titulo: "Tu plan no incluye cuentas de personal",
+    texto:
+      "Tu plan actual permite un solo profesional. Cambia de plan para invitar a tu equipo.",
+    cta: "Cambiar de plan",
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// invitacion: WP-46 (D-034) — /app/invitacion/[token], la pantalla donde el
+// profesional invitado acepta. Sin `.dc.html` de referencia (mismo criterio
+// que WP-03b, R1 de su plan): pantalla nueva, no hay prueba de paridad de
+// diseño para ella.
+// ---------------------------------------------------------------------------
+
+export const invitacion = {
+  titulo: (p: { negocio: string }): string =>
+    `Únete a la cuenta de ${p.negocio}`,
+  texto: (p: { negocio: string }): string =>
+    `Acepta la invitación para entrar y ver la agenda de ${p.negocio}.`,
+  ctaAceptar: "Aceptar invitación",
+  errores: {
+    /** El token no corresponde a ninguna invitación (mismo criterio que
+     * `gestion.linkInvalido`, para un link de gestión). */
+    noEncontrada: "No encontramos esta invitación.",
+    expirada:
+      "Esta invitación ya venció. Pídele al dueño que te envíe una nueva.",
+    revocada:
+      "Esta invitación fue revocada. Pídele al dueño que te envíe una nueva si corresponde.",
+    yaUsada: "Esta invitación ya fue usada.",
+    /** La persona ya inició sesión, pero con un correo distinto del que
+     * invitó el dueño: se muestra a qué dirección le corresponde la
+     * invitación (plan, paso 5: "Entra con esa cuenta o pide una invitación
+     * nueva"), nunca se liga la cuenta equivocada. */
+    otroCorreo: (p: { email: string }): string =>
+      `Esta invitación es para ${p.email}. Entra con esa cuenta o pide una invitación nueva.`,
+    /** "Ägarens svar" 1: una cuenta por negocio en v1. */
+    correoOtroNegocio:
+      "Ese correo ya pertenece a otro negocio. Por ahora solo puedes tener una cuenta.",
+    /** El negocio bajó de plan después de invitar, o ya llegó al tope de
+     * profesionales de su plan (D-009). */
+    limiteDelPlan:
+      "El plan de este negocio no permite más cuentas de personal por ahora.",
   },
 } as const satisfies Trad;
