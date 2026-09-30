@@ -64,7 +64,9 @@ describe("hasPerm", () => {
   });
 
   it("staff utan flaggan -> false, med flaggan -> true", () => {
-    const staff = member({ perms: { ...member().perms, can_edit_catalog: true } });
+    const staff = member({
+      perms: { ...member().perms, can_edit_catalog: true },
+    });
     expect(hasPerm(staff, "can_edit_catalog")).toBe(true);
     expect(hasPerm(staff, "can_manage_team")).toBe(false);
   });

@@ -529,7 +529,9 @@ export function AgendaScreen({
         end: toInstant(b.end),
         kind: b.kind,
       }));
-    const merged = mergeCommonBlocks(dayBlocksRaw, [...effectiveVisibleStaffIds]);
+    const merged = mergeCommonBlocks(dayBlocksRaw, [
+      ...effectiveVisibleStaffIds,
+    ]);
 
     const laneOf = new Map(
       layoutLanes([
@@ -869,7 +871,9 @@ export function AgendaScreen({
               </Pill>
             </div>
           ) : null}
-          {data.staff.length > 1 && vista !== "mes" && teamFilter !== "propias" ? (
+          {data.staff.length > 1 &&
+          vista !== "mes" &&
+          teamFilter !== "propias" ? (
             <StaffSwitcher
               staff={data.staff}
               selectedId={highlightedStaffId}
@@ -930,7 +934,8 @@ export function AgendaScreen({
           // kan personalen bara skapa reservas åt sig själv — samma regel som
           // `bookings`-RLS (`write bookings`, `staff_id = member_staff_id`).
           staff={
-            !hasAgendaPerm(member, "can_manage_all_bookings") && ownStaffId != null
+            !hasAgendaPerm(member, "can_manage_all_bookings") &&
+            ownStaffId != null
               ? data.staff.filter((s) => s.id === ownStaffId)
               : data.staff
           }

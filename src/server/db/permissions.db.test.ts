@@ -51,7 +51,9 @@ describe("loadMember", () => {
   });
 
   it("owner: role='owner', staffId null, perms oväsentliga (has_perm kortsluter ändå)", async () => {
-    const m = await withServiceTx((q) => loadMember(q, biz.ownerUserId, biz.id));
+    const m = await withServiceTx((q) =>
+      loadMember(q, biz.ownerUserId, biz.id),
+    );
     expect(m).not.toBeNull();
     expect(m?.role).toBe("owner");
     expect(m?.staffId).toBeNull();
@@ -74,7 +76,9 @@ describe("loadMember", () => {
   it("fel företag -> null (tenant-isolering, precis som private.is_member)", async () => {
     const other = await createTestBusiness();
     try {
-      const m = await withServiceTx((q) => loadMember(q, staffUserId, other.id));
+      const m = await withServiceTx((q) =>
+        loadMember(q, staffUserId, other.id),
+      );
       expect(m).toBeNull();
     } finally {
       await dropTestBusiness(other);

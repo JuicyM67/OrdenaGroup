@@ -17,10 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { comun, invitacion } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import {
-  acceptInvitation,
-  loadInvitationPreview,
-} from "@/server/team/accept";
+import { acceptInvitation, loadInvitationPreview } from "@/server/team/accept";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },

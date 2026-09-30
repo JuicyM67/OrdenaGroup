@@ -34,7 +34,12 @@ export type PageStepProps = {
   onSkip: () => void;
 };
 
-export function PageStep({ phone, actions, onContinue, onSkip }: PageStepProps) {
+export function PageStep({
+  phone,
+  actions,
+  onContinue,
+  onSkip,
+}: PageStepProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [address, setAddress] = useState("");

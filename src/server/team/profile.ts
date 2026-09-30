@@ -37,7 +37,10 @@ import { pgErrorCode } from "@/server/db/errors";
 import { loadMember } from "@/server/db/permissions";
 import { getStorageAdminClient, type Queryable } from "@/server/db/pool";
 import { withOwnerTx, withServiceTx } from "@/server/db/tx";
-import { mediaStorageFrom, ownerMediaStorage } from "@/server/owner/media-storage";
+import {
+  mediaStorageFrom,
+  ownerMediaStorage,
+} from "@/server/owner/media-storage";
 
 export type MyProfileResult = { ok: true } | { ok: false; code: string };
 export type MyPhotoUploadTicket =
@@ -117,7 +120,10 @@ export async function updateOwnTitle(
 ): Promise<MyProfileResult> {
   const parsed = staffTitleSchema.safeParse(rawTitle);
   if (!parsed.success) {
-    return { ok: false, code: parsed.error.issues[0]?.message ?? "staff.title_too_long" };
+    return {
+      ok: false,
+      code: parsed.error.issues[0]?.message ?? "staff.title_too_long",
+    };
   }
   try {
     return await withOwnerTx(userId, async (q) => {

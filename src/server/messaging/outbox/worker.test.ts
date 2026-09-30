@@ -76,9 +76,9 @@ class FakeDb {
       return { rows, rowCount: rows.length };
     }
     if (/from public\.member_invitations mi/.test(text)) {
-      const rows = (
-        this.invitationContextRow ? [this.invitationContextRow] : []
-      ) as unknown as R[];
+      const rows = (this.invitationContextRow
+        ? [this.invitationContextRow]
+        : []) as unknown as R[];
       return { rows, rowCount: rows.length };
     }
     // Finalize-uppdateringarna (sent/queued/dead/cancelled): inget att läsa.
@@ -376,9 +376,7 @@ describe("processOutbox: claim → skicka → avsluta", () => {
 describe("processOutbox: invitee (WP-46, D-034)", () => {
   const INVITATION = "i0000000-0000-4000-8000-000000000001";
 
-  function inviteeClaimRow(
-    overrides: Partial<RawClaimRow> = {},
-  ): RawClaimRow {
+  function inviteeClaimRow(overrides: Partial<RawClaimRow> = {}): RawClaimRow {
     return claimRow({
       booking_id: null,
       recipient_kind: "invitee",
@@ -428,7 +426,9 @@ describe("processOutbox: invitee (WP-46, D-034)", () => {
       }),
     );
     // D-029: payload (token/invitationId/invitadoPor) tömd efter sändning.
-    const sent = db.updatesMatching(/status = 'sent'.*payload = '\{\}'::jsonb/s);
+    const sent = db.updatesMatching(
+      /status = 'sent'.*payload = '\{\}'::jsonb/s,
+    );
     expect(sent).toHaveLength(1);
   });
 

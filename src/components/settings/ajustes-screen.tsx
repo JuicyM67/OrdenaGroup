@@ -250,7 +250,11 @@ export function AjustesScreen({
               existir hoy, pero el ancla del menú sigue apuntando aquí). */}
           {isOwner && team && teamActions && onReloadTeam ? (
             <div id={perms.can_manage_team ? undefined : "equipo"}>
-              <TeamSection data={team} actions={teamActions} onReload={onReloadTeam} />
+              <TeamSection
+                data={team}
+                actions={teamActions}
+                onReload={onReloadTeam}
+              />
             </div>
           ) : null}
 

@@ -12,7 +12,11 @@ import {
 } from "@/server/db/testing";
 import type { Perm } from "@/server/db/permissions";
 
-import { createInvitation, resendInvitation, revokeInvitation } from "./invitations";
+import {
+  createInvitation,
+  resendInvitation,
+  revokeInvitation,
+} from "./invitations";
 
 /**
  * WP-46 steg 4 (integrations-engineer): `createInvitation`/
@@ -55,9 +59,10 @@ beforeAll(async () => {
   // nedan lämnar avsiktligt flera inbjudningar väntande samtidigt (en per
   // personalrad, se kommentaren ovan) — `free` (gräns 1, bara ägarens egen
   // plats) skulle blockera redan den FÖRSTA inbjudan.
-  await adminQuery(`update public.businesses set plan = 'local' where id = $1`, [
-    biz.id,
-  ]);
+  await adminQuery(
+    `update public.businesses set plan = 'local' where id = $1`,
+    [biz.id],
+  );
   // Ett konto som är `staff` i `biz` (inte `owner`) — för "icke-ägare"-testet.
   staffUserId = await createTestUser();
   await adminQuery(

@@ -117,7 +117,8 @@ export default async function AjustesPage() {
   const owner = ownerNameParts(user.email);
   const data = await loadAjustesData(user.id, business.id);
   const profile = await loadProfileSettings(user.id, business.id);
-  const team = view.role === "owner" ? await loadTeamForPage(user.id, business.id) : null;
+  const team =
+    view.role === "owner" ? await loadTeamForPage(user.id, business.id) : null;
   const myProfile = await loadMyProfileAction();
   const bundleResult = await loadBookingFormBundleAction();
   const bookingForm = bundleResult.ok

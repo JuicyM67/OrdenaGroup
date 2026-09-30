@@ -80,7 +80,9 @@ function socialUrl(
   kind: keyof typeof SOCIAL_BASE_URL,
   handle: string | null,
 ): string | null {
-  return handle ? `${SOCIAL_BASE_URL[kind]}${encodeURIComponent(handle)}` : null;
+  return handle
+    ? `${SOCIAL_BASE_URL[kind]}${encodeURIComponent(handle)}`
+    : null;
 }
 
 type BusinessRow = {

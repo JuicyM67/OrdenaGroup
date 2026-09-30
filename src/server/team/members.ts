@@ -142,7 +142,11 @@ export async function loadTeamData(
       const membership = membershipByStaff.get(s.id);
       const invitation = invitationByStaff.get(s.id);
       const account: TeamAccount = membership
-        ? { status: "active", userId: membership.user_id, perms: toPerms(membership) }
+        ? {
+            status: "active",
+            userId: membership.user_id,
+            perms: toPerms(membership),
+          }
         : invitation
           ? {
               status: "pending",
@@ -186,7 +190,10 @@ export async function updateMembershipPerms(
 ): Promise<MutationResult> {
   const parsed = invitationFlagsSchema.safeParse(rawPerms);
   if (!parsed.success) {
-    return { ok: false, code: parsed.error.issues[0]?.message ?? "invalid_input" };
+    return {
+      ok: false,
+      code: parsed.error.issues[0]?.message ?? "invalid_input",
+    };
   }
   const perms = parsed.data;
   return withServiceTx(async (q) => {

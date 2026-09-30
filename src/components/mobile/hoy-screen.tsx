@@ -123,8 +123,7 @@ export function HoyScreen({
   const member = data.member;
   const ownStaffId = member?.staffId ?? null;
   const canFilterTeam =
-    ownStaffId != null &&
-    new Set(data.bookings.map((b) => b.staffId)).size > 1;
+    ownStaffId != null && new Set(data.bookings.map((b) => b.staffId)).size > 1;
   const [teamFilter, setTeamFilter] = useState<"propias" | "equipo">("equipo");
   const visibleBookings =
     teamFilter === "propias" && ownStaffId != null

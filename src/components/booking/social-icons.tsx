@@ -36,12 +36,7 @@ export function InstagramGlyph(props: GlyphProps) {
 
 export function TiktokGlyph(props: GlyphProps) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-      {...props}
-    >
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
       <path d="M16.6 2.5c.4 2.3 1.9 3.9 4.2 4.2v3.1c-1.5 0-3-.4-4.2-1.3v6.3a5.9 5.9 0 1 1-5.9-5.9c.3 0 .6 0 .9.1v3.2a2.7 2.7 0 1 0 1.9 2.6V2.5h3.1Z" />
     </svg>
   );
@@ -49,12 +44,7 @@ export function TiktokGlyph(props: GlyphProps) {
 
 export function FacebookGlyph(props: GlyphProps) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden="true"
-      {...props}
-    >
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
       <path d="M13.5 21v-7.6h2.6l.4-3h-3V8.4c0-.9.3-1.5 1.6-1.5h1.6V4.2C15.9 4.1 14.9 4 13.8 4c-2.3 0-3.9 1.4-3.9 4v2.4H7.3v3H10V21h3.5Z" />
     </svg>
   );

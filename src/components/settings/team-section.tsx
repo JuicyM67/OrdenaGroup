@@ -51,7 +51,10 @@ type PendingStaff = TeamStaffMember & {
 };
 
 /** Samma ordning som planens steg 1 och `equipo.permisos` (es-CL.ts). */
-const PERM_ROWS: { perm: keyof TeamPerms; key: keyof typeof equipo.permisos }[] = [
+const PERM_ROWS: {
+  perm: keyof TeamPerms;
+  key: keyof typeof equipo.permisos;
+}[] = [
   { perm: "can_manage_own_bookings", key: "manage_own_bookings" },
   { perm: "can_manage_all_bookings", key: "manage_all_bookings" },
   { perm: "can_cancel_bookings", key: "cancel_bookings" },
@@ -233,7 +236,9 @@ function InviteDialog({
             <Select
               label={equipo.invitarDialog.profesionalLabel}
               hint={
-                errors.staffId ? undefined : equipo.invitarDialog.profesionalAyuda
+                errors.staffId
+                  ? undefined
+                  : equipo.invitarDialog.profesionalAyuda
               }
               error={errors.staffId}
               value={staffId}
@@ -251,7 +256,11 @@ function InviteDialog({
               <span className="text-15 font-bold text-ink">
                 {equipo.invitarDialog.permisosTitulo}
               </span>
-              <PermSwitches value={flags} onChange={setFlags} disabled={saving} />
+              <PermSwitches
+                value={flags}
+                onChange={setFlags}
+                disabled={saving}
+              />
             </div>
 
             {errors.general ? (
@@ -309,7 +318,9 @@ function PendingInvitations({
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-15 font-bold text-ink">{equipo.invitaciones.titulo}</h3>
+      <h3 className="text-15 font-bold text-ink">
+        {equipo.invitaciones.titulo}
+      </h3>
       {toast ? (
         <p role="status" className="text-13 text-ink">
           {toast}
@@ -479,7 +490,10 @@ function EditPermsDialog({
                   setSaving(true);
                   setError(undefined);
                   try {
-                    const result = await onUpdatePerms(member.account.userId, next);
+                    const result = await onUpdatePerms(
+                      member.account.userId,
+                      next,
+                    );
                     if (result.ok) {
                       onOpenChange(false);
                       onSaved();
@@ -644,7 +658,9 @@ export function TeamSection({
 
       {data.planLimitReached ? (
         <div className="flex flex-col gap-1 rounded-tile bg-canvas p-4">
-          <p className="text-14 font-bold text-ink">{equipo.limiteDelPlan.titulo}</p>
+          <p className="text-14 font-bold text-ink">
+            {equipo.limiteDelPlan.titulo}
+          </p>
           <p className="text-13 text-muted">{equipo.limiteDelPlan.texto}</p>
         </div>
       ) : null}

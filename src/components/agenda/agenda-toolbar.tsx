@@ -55,7 +55,12 @@ export function AgendaToolbar({
       </IconButton>
       <div className="grow" />
       {onNewBooking ? (
-        <Button type="button" variant="primary" size="lg" onClick={onNewBooking}>
+        <Button
+          type="button"
+          variant="primary"
+          size="lg"
+          onClick={onNewBooking}
+        >
           <Plus
             aria-hidden="true"
             className="size-4"
