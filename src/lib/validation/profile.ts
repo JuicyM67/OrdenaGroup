@@ -74,29 +74,52 @@ function optionalText(max: number, tooLong: string) {
  * Instagram: ägaren klistrar ofta in "@handle" eller hela länken. Sparas som
  * bara handtaget (DB-regeln: 1–30 tecken, bokstäver/siffror/punkt/understreck).
  */
-export const instagramInputSchema = z
-  .string({ error: "profile.instagram_invalid" })
-  .trim()
-  .transform((s) =>
-    s
-      .replace(/^https?:\/\/(www\.)?instagram\.com\//i, "")
-      .replace(/^@/, "")
-      .replace(/[/?#].*$/, ""),
-  )
-  .check((ctx) => {
-    if (ctx.value !== "" && !/^[A-Za-z0-9._]{1,30}$/.test(ctx.value)) {
-      ctx.issues.push({
-        code: "custom",
-        message: "profile.instagram_invalid",
-        input: ctx.value,
-      });
-    }
-  })
-  .transform((s) => (s.length === 0 ? null : s));
+/** Handtag för sociala medier (WP-51): "@handle" eller hela länken → bara
+ * handtaget, samma DB-regel som Instagram (1–30 tecken). */
+function socialHandleSchema(domain: RegExp, code: string) {
+  return z
+    .string({ error: code })
+    .trim()
+    .transform((s) =>
+      s
+        .replace(domain, "")
+        .replace(/^@/, "")
+        .replace(/[/?#].*$/, ""),
+    )
+    .check((ctx) => {
+      if (ctx.value !== "" && !/^[A-Za-z0-9._]{1,30}$/.test(ctx.value)) {
+        ctx.issues.push({ code: "custom", message: code, input: ctx.value });
+      }
+    })
+    .transform((s) => (s.length === 0 ? null : s));
+}
+
+export const instagramInputSchema = socialHandleSchema(
+  /^https?:\/\/(www\.)?instagram\.com\//i,
+  "profile.instagram_invalid",
+);
+const tiktokInputSchema = socialHandleSchema(
+  /^https?:\/\/(www\.)?tiktok\.com\//i,
+  "profile.tiktok_invalid",
+);
+const facebookInputSchema = socialHandleSchema(
+  /^https?:\/\/(www\.|m\.)?facebook\.com\//i,
+  "profile.facebook_invalid",
+);
 
 export const businessProfileInputSchema = z.object({
   about: optionalText(ABOUT_MAX, "profile.about_too_long"),
   instagram: instagramInputSchema,
+  tiktok: z
+    .string()
+    .optional()
+    .transform((v) => v ?? "")
+    .pipe(tiktokInputSchema),
+  facebook: z
+    .string()
+    .optional()
+    .transform((v) => v ?? "")
+    .pipe(facebookInputSchema),
   address: optionalText(200, "business.address_too_long"),
   /** Tom = inget telefonnummer på profilen. */
   phone: z

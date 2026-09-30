@@ -61,6 +61,8 @@ export type ImageUploadTicket = {
 export type ProfileSettings = {
   about: string;
   instagram: string;
+  tiktok: string;
+  facebook: string;
   address: string;
   phone: string;
   coverUrl: string | null;
@@ -135,12 +137,14 @@ export function loadProfileSettings(
     const b = await q.query<{
       about: string | null;
       instagram: string | null;
+      tiktok: string | null;
+      facebook: string | null;
       address: string | null;
       phone: string | null;
       cover_url: string | null;
       logo_url: string | null;
     }>(
-      `select about, instagram, address, phone, cover_url, logo_url
+      `select about, instagram, tiktok, facebook, address, phone, cover_url, logo_url
          from public.businesses where id = $1`,
       [businessId],
     );
@@ -170,6 +174,8 @@ export function loadProfileSettings(
     return {
       about: row.about ?? "",
       instagram: row.instagram ?? "",
+      tiktok: row.tiktok ?? "",
+      facebook: row.facebook ?? "",
       address: row.address ?? "",
       phone: row.phone ?? "",
       coverUrl: row.cover_url,
@@ -200,9 +206,18 @@ export async function updateBusinessProfile(
       await requireMemberPerm(q, userId, businessId, "can_edit_settings");
       const r = await q.query(
         `update public.businesses
-            set about = $1, instagram = $2, address = $3, phone = $4
+            set about = $1, instagram = $2, address = $3, phone = $4,
+                tiktok = $6, facebook = $7
           where id = $5`,
-        [input.about, input.instagram, input.address, input.phone, businessId],
+        [
+          input.about,
+          input.instagram,
+          input.address,
+          input.phone,
+          businessId,
+          input.tiktok,
+          input.facebook,
+        ],
       );
       return r.rowCount ? { ok: true } : { ok: false, code: "unauthorized" };
     });

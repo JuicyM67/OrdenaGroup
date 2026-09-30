@@ -84,13 +84,7 @@ export async function deletePageImageAction(
  * manda vacío, el negocio es nuevo, y `phone` se repite tal cual vino del
  * paso 1, para no borrarlo: `updateBusinessProfile` siempre escribe las
  * cuatro columnas juntas, ver `src/server/owner/profile.ts`).
- *
- * CONOCIDO (flaggat, inte löst här — utanför WP-51:s scope): el esquema del
- * servidor (`businessProfileInputSchema`, `src/lib/validation/profile.ts`)
- * todavía no acepta `tiktok`/`facebook` aunque las columnas ya existen
- * (`20260930170100_business_social_links_and_staff_self_profile.sql`) — esos
- * dos campos se envían igual (Zod los descarta en silencio, no falla) para
- * que el formulario quede listo en cuanto alguien actualice ese esquema. */
+ */
 export async function updatePageProfileAction(
   input: unknown,
 ): Promise<ProfileResult> {
