@@ -16,6 +16,8 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 
+import { anonymizeCustomer } from "@/server/privacy/customer";
+
 import { confirmBooking, declineBooking, expireRequests } from "./confirm";
 import { cancelBooking, createBooking } from "./__fixtures__/flat";
 
@@ -50,13 +52,14 @@ let phoneSeq = 0;
 async function book(
   time: string,
   actor: typeof customer | ReturnType<typeof owner> = customer,
+  date: string = TUE,
 ) {
   phoneSeq++;
   const r = await createBooking({
     businessId: biz.id,
     serviceId: biz.services.corte!,
     staffId: biz.staff.diego!,
-    start: iso(at(TUE, time)),
+    start: iso(at(date, time)),
     customer: { phone: `+5691234${String(5000 + phoneSeq)}`, name: "Cliente" },
     source: actor.kind === "owner" ? "manual" : "web",
     actor,
@@ -211,16 +214,21 @@ describe("confirmBooking / declineBooking", () => {
 
 describe("expireRequests", () => {
   /** Rå förfrågan: `created_at` och start styrs exakt. */
-  async function request(startMs: number, createdAtMs: number) {
-    const id = await insertTestBooking(biz, {
+  async function request(
+    startMs: number,
+    createdAtMs: number,
+    b: TestBusiness = biz,
+    staffKey = "diego",
+  ) {
+    const id = await insertTestBooking(b, {
       start: startMs,
       durationMin: 30,
-      staffKey: "diego",
+      staffKey,
       serviceKey: "corte",
     });
     await adminQuery(
       "update public.bookings set status = 'requested', created_at = $3 where business_id = $1 and id = $2",
-      [biz.id, id, new Date(createdAtMs)],
+      [b.id, id, new Date(createdAtMs)],
     );
     return id;
   }
@@ -274,5 +282,106 @@ describe("expireRequests", () => {
     ids.add(confirmed);
     expect(mine(await expireRequests(new Date(start)))).toEqual([]);
     expect((await row(confirmed)).status).toBe("confirmed");
+  });
+
+  it("två företag: varje träff bär rätt businessId, beskedet köas i samma transaktion, andra företagets bekräftade orörda", async () => {
+    for (const b of [biz, other]) {
+      await adminQuery(
+        "update public.customers set email = 'kund@example.com' where business_id = $1 and id = $2",
+        [b.id, b.customerId],
+      );
+    }
+    const created = at("2026-11-04", "09:00");
+    const a = await request(at("2026-11-13", "11:00"), created);
+    const o = await request(at("2026-11-13", "11:00"), created, other, "ana");
+    const oConfirmed = await insertTestBooking(other, {
+      start: at("2026-11-13", "12:00"),
+      durationMin: 30,
+      staffKey: "ana",
+    });
+    await adminQuery(
+      "update public.bookings set created_at = $3 where business_id = $1 and id = $2",
+      [other.id, oConfirmed, new Date(created)],
+    );
+    ids.add(a).add(o).add(oConfirmed);
+
+    const expired = (await expireRequests(new Date(created + 24 * H))).filter(
+      (x) => ids.has(x.bookingId),
+    );
+    expect(expired.map((x) => [x.bookingId, x.businessId]).sort()).toEqual(
+      [
+        [a, biz.id],
+        [o, other.id],
+      ].sort(),
+    );
+    const st = await adminQuery<{ id: string; status: string }>(
+      "select id, status::text as status from public.bookings where business_id = $1 and id = any($2::uuid[])",
+      [other.id, [o, oConfirmed]],
+    );
+    expect(Object.fromEntries(st.rows.map((r) => [r.id, r.status]))).toEqual({
+      [o]: "cancelled",
+      [oConfirmed]: "confirmed",
+    });
+    for (const [b, id] of [
+      [biz, a],
+      [other, o],
+    ] as const) {
+      const m = await adminQuery<{ template: string }>(
+        "select template from public.message_outbox where business_id = $1 and booking_id = $2",
+        [b.id, id],
+      );
+      expect(m.rows.map((r) => r.template)).toContain("solicitudVencida");
+    }
+  });
+});
+
+describe("säkerhetsgranskning WP-45", () => {
+  it("confirmIn vägrar när kunden är anonymiserad (invalid_status, förblir requested)", async () => {
+    const b = await book("10:15", customer, "2026-10-07");
+    await adminQuery(
+      "update public.customers set anonymized_at = now() where business_id = $1 and id = $2",
+      [biz.id, b.customerId],
+    );
+    expect(await confirmBooking({ bookingId: b.id }, ctx())).toEqual({
+      ok: false,
+      error: "invalid_status",
+    });
+    expect((await row(b.id)).status).toBe("requested");
+  });
+
+  it("anonymizeCustomer avbokar kundens requested utan utskick", async () => {
+    const b = await book("12:45", customer, "2026-10-07");
+    const r = await anonymizeCustomer(biz.ownerUserId, biz.id, b.customerId);
+    expect(r).toEqual({ ok: true });
+    expect((await row(b.id)).status).toBe("cancelled");
+    const m = await adminQuery<{ status: string }>(
+      "select status from public.message_outbox where business_id = $1 and booking_id = $2 and status in ('queued', 'failed', 'sending')",
+      [biz.id, b.id],
+    );
+    expect(m.rows).toEqual([]);
+  });
+
+  it("ägarens avbokning av en requested blir ett nekande (declined, solicitudRechazada, inte reservaCancelada)", async () => {
+    const b = await book("15:45", customer, "2026-10-07");
+    await adminQuery(
+      "update public.customers set email = 'kund2@example.com' where business_id = $1 and id = $2",
+      [biz.id, b.customerId],
+    );
+    const r = await cancelBooking({
+      businessId: biz.id,
+      bookingId: b.id,
+      reason: "No hay hora",
+      actor: owner(),
+      now: NOW,
+    });
+    expect(r.ok).toBe(true);
+    expect((await row(b.id)).cancel_reason).toBe("declined");
+    const m = await adminQuery<{ template: string }>(
+      "select template from public.message_outbox where business_id = $1 and booking_id = $2",
+      [biz.id, b.id],
+    );
+    const templates = m.rows.map((x) => x.template);
+    expect(templates).toContain("solicitudRechazada");
+    expect(templates).not.toContain("reservaCancelada");
   });
 });

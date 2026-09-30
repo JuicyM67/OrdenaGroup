@@ -29,17 +29,15 @@ import {
   parseInstant,
   toLocalDate,
 } from "@/lib/format/dates";
+import type { PendingRequestItem } from "@/lib/validation/requests";
 
 import { RechazarDialog } from "./rechazar-dialog";
 import { useCompactViewport } from "./use-compact-viewport";
 
-export type PendingRequestItem = {
-  readonly id: string;
-  readonly clientName: string;
-  readonly service: string;
-  /** ISO 8601 con offset. */
-  readonly start: string;
-};
+// Tipo compartido con el servidor (`listPendingRequests`), definido en
+// `src/lib/validation/requests.ts`; se re-exporta aquí para los importadores
+// existentes.
+export type { PendingRequestItem };
 
 export type NotificationBellResult = { ok: boolean };
 

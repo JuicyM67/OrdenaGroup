@@ -2,6 +2,7 @@ import "server-only";
 
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
+import { enqueueBookingEventIn } from "@/server/messaging/outbox";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { runAs } from "@/server/scheduling/run";
 import {
@@ -58,7 +59,8 @@ function ownerOnly(ctx: EngineContext): asserts ctx is EngineContext & {
  * Bekräftar en förfrågan: `requested → confirmed`. Idempotent (redan
  * bekräftad → ok, `changed: false`, ingen ny händelse). Nekad, avbokad
  * eller utgången (efter deadline, även om svepet inte hunnit köra) →
- * `invalid_status`. Roterar kundens token (som flytten, D-029): `confirmed`
+ * `invalid_status`; likaså om kunden har anonymiserats (Ley 21.719: ingen
+ * bekräftelse till en raderad kund). Roterar kundens token (som flytten, D-029): `confirmed`
  * bär den nya, länken i "solicitud recibida" slutar gälla. Därför kan
  * kunden inte avboka med den gamla länken samtidigt som ägaren bekräftar —
  * exakt en av dem lyckas.
@@ -161,6 +163,10 @@ export async function confirmIn(
       where business_id = $1 and id = $2 and status = 'requested'
         and least(created_at + $5 * interval '1 hour',
                   lower(period) - $6 * interval '1 hour') > $4::timestamptz
+        and not exists (
+          select 1 from public.customers c
+           where c.business_id = $1 and c.id = bookings.customer_id
+             and c.anonymized_at is not null)
       returning id`,
     [
       input.businessId,
@@ -216,30 +222,37 @@ export type ExpiredRequest = {
   freed: Freed;
 };
 
-/** Högst så många per körning (cron var 5:e min, D-030); resten nästa gång. */
-const EXPIRE_BATCH = 500;
+/** Högst så många per körning (cron var 5:e min, D-030); resten nästa gång.
+ * Varje träff köar 1–2 utkorgsrader i samma transaktion, så batchen hålls
+ * liten nog att rymmas i `statement_timeout`. */
+const EXPIRE_BATCH = 100;
 
 /**
  * Svepet (WP-45 steg 6), anropas från `/api/cron/outbox` med `systemClock()`.
  * Varje `requested` vars deadline (`requestDeadline`: 24 h efter
  * `created_at`, dock senast 2 h före start) är ≤ `now` blir `cancelled`
- * med `cancel_reason = 'expired'`, `cancelled_at = now`, och köar
- * `declined` med `reason: "expired"` efter commit. Idempotent och säker att
+ * med `cancel_reason = 'expired'`, `cancelled_at = now`, och
+ * `declined` (`reason: "expired"`, → `solicitudVencida`) köas i SAMMA
+ * transaktion (säkerhetsgranskning WP-45): antingen går förfrågan ut OCH
+ * beskedet ligger i utkorgen, eller ingetdera — en timeout mitt i kan inte
+ * tappa ett besked. Kastar vid DB-fel (anroparen fångar). Idempotent och säker att
  * köra parallellt (`for update skip locked`, villkorad på `requested`); en
  * rad som ägaren bekräftar i samma stund hoppas över och bekräftelsen
  * nekas själv efter deadline (`confirmIn`).
  */
 export async function expireRequests(now: Date): Promise<ExpiredRequest[]> {
-  const expired = await withServiceTx((q) => expireRequestsIn(q, now));
-  for (const e of expired) {
-    await emitBookingEvent({
-      type: "declined",
-      bookingId: e.bookingId,
-      businessId: e.businessId,
-      reason: "expired",
-    });
-  }
-  return expired;
+  return withServiceTx(async (q) => {
+    const expired = await expireRequestsIn(q, now);
+    for (const e of expired) {
+      await enqueueBookingEventIn(q, {
+        type: "declined",
+        bookingId: e.bookingId,
+        businessId: e.businessId,
+        reason: "expired",
+      });
+    }
+    return expired;
+  });
 }
 
 /**

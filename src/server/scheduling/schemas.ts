@@ -8,6 +8,7 @@ import {
   instantSchema,
   localDateSchema,
 } from "@/lib/format/schemas";
+import { DECLINE_REASON_MAX } from "@/lib/validation/requests";
 
 /**
  * Indatakontraktet för motorn har två delar (säkerhetsgranskning WP-10):
@@ -163,7 +164,7 @@ export const ownerCancelRequestSchema = z.strictObject({
  * DB-kolumn som inte redan finns, outbox-payloaden rensas efter sändning). */
 export const ownerDecisionRequestSchema = z.strictObject({
   bookingId: uuid,
-  reason: z.string().trim().max(300).optional(),
+  reason: z.string().trim().max(DECLINE_REASON_MAX).optional(),
 });
 
 export type AvailableDaysRequest = z.input<typeof availableDaysRequestSchema>;

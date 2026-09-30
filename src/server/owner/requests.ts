@@ -15,7 +15,7 @@ import "server-only";
  */
 import { revalidatePath } from "next/cache";
 
-import type { PendingRequestItem } from "@/components/shared/notification-bell";
+import type { PendingRequestItem } from "@/lib/validation/requests";
 import { confirmBooking, declineBooking } from "@/server/bookings/confirm";
 import type { BookingError } from "@/server/bookings/types";
 import type { Queryable } from "@/server/db/pool";

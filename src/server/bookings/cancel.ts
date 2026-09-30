@@ -1,5 +1,6 @@
 import "server-only";
 
+import { DECLINE_REASON_MAX } from "@/lib/validation/requests";
 import type { Queryable } from "@/server/db/pool";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { runAs } from "@/server/scheduling/run";
@@ -53,18 +54,33 @@ export async function cancelBooking(
     reason = p.data.reason;
   }
   const input = { ...c, ref, reason };
-  const result = await runAs(c.actor, (q) => cancelIn(q, input));
+  const result = await runAs(c.actor, (q) => cancelDetailedIn(q, input));
+  if (!result.ok) return result;
+  const { bookingId, freed, declined } = result.value;
   // WP-16: efter commit (enqueueBookingEvent kastar aldrig). En redan
-  // avbokad bokning (`freed === null`) köar inget nytt.
-  if (result.ok && result.value.freed !== null) {
-    await emitBookingEvent({
-      type: "cancelled",
-      bookingId: result.value.bookingId,
-      businessId: c.businessId,
-      by: c.actor.kind,
-    });
+  // avbokad bokning (`freed === null`) köar inget nytt. WP-45: ägarens
+  // avbokning av en förfrågan är ett nekande → `declined`
+  // (`solicitudRechazada`, motivet som `message`), aldrig "reserva cancelada".
+  if (freed !== null) {
+    if (declined) {
+      const message = reason?.slice(0, DECLINE_REASON_MAX);
+      await emitBookingEvent({
+        type: "declined",
+        bookingId,
+        businessId: c.businessId,
+        reason: "declined",
+        ...(message ? { message } : {}),
+      });
+    } else {
+      await emitBookingEvent({
+        type: "cancelled",
+        bookingId,
+        businessId: c.businessId,
+        by: c.actor.kind,
+      });
+    }
   }
-  return result;
+  return ok({ bookingId, freed });
 }
 
 export type CancelInput = {
@@ -80,19 +96,45 @@ export async function cancelIn(
   q: Queryable,
   input: CancelInput,
 ): Promise<CancelResult> {
+  const r = await cancelDetailedIn(q, input);
+  return r.ok ? ok({ bookingId: r.value.bookingId, freed: r.value.freed }) : r;
+}
+
+/**
+ * Som `cancelIn`, plus `declined`: ägaren avbokade en `requested` — det
+ * sparas som ett nekande (`cancel_reason = 'declined'`, samma som
+ * `declineIn`; ägarens fritext sparas inte utan följer bara händelsen).
+ */
+async function cancelDetailedIn(
+  q: Queryable,
+  input: CancelInput,
+): Promise<
+  Result<
+    { bookingId: string; freed: Freed | null; declined: boolean },
+    BookingError
+  >
+> {
   const b = await lockBooking(q, input.businessId, input.ref);
   if (!b) return err("not_found");
-  if (b.status === "cancelled") return ok({ bookingId: b.id, freed: null });
+  if (b.status === "cancelled") {
+    return ok({ bookingId: b.id, freed: null, declined: false });
+  }
   if (!CHANGEABLE.includes(b.status)) return err("invalid_status");
   if (input.actor.kind === "customer" && !insideCancelWindow(b, input.now)) {
     return err("outside_cancel_window");
   }
+  const declined = input.actor.kind === "owner" && b.status === "requested";
   await q.query(
     `update public.bookings
         set status = 'cancelled', cancelled_at = $3, cancel_reason = $4,
             pending_expires_at = null
       where business_id = $1 and id = $2`,
-    [input.businessId, b.id, input.now, input.reason ?? null],
+    [
+      input.businessId,
+      b.id,
+      input.now,
+      declined ? "declined" : (input.reason ?? null),
+    ],
   );
   return ok({
     bookingId: b.id,
@@ -100,5 +142,6 @@ export async function cancelIn(
       staffId: b.staffId,
       blocked: { start: b.start, end: b.blockedEnd },
     },
+    declined,
   });
 }

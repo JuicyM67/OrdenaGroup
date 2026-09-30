@@ -257,6 +257,7 @@ export async function exportCustomer(
  * `booking_answers` för kundens bokningar, avbryter köade outbox-rader och
  * tömmer deras payload, rensar `manage_token_hash` på kundens bokningar och
  * kopplar loss `consent_events` (behålls utan koppling till kunden, D-033).
+ * Väntande förfrågningar (`requested`, WP-45) avbokas utan utskick.
  * Bokningar och belopp (payments) behålls oförändrade — Caja ska kunna visa
  * historik utan persondata.
  */
@@ -318,6 +319,18 @@ export async function anonymizeCustomer(
           and bk.business_id = $1
           and bk.customer_id = $2
           and mo.status in ('queued', 'failed')`,
+      [businessId, customerId],
+    );
+
+    // WP-45 (säkerhetsgranskning): väntande förfrågningar avbokas tyst —
+    // ingen händelse och inget utskick (utkorgen är redan avbruten ovan och
+    // kunden finns inte kvar att meddela). Tiden blir ledig direkt, och
+    // varken svepet (`expireRequests`) eller `confirmIn` kan senare skicka
+    // något till den raderade kunden. `cancel_reason` nollas nedan (B1).
+    await q.query(
+      `update public.bookings
+          set status = 'cancelled', cancelled_at = now()
+        where business_id = $1 and customer_id = $2 and status = 'requested'`,
       [businessId, customerId],
     );
 

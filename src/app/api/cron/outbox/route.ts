@@ -7,13 +7,18 @@
 //
 // WP-45 steg 6: samma pass låter obesvarade förfrågningar (`requested`) gå
 // ut FÖRE utkorgen töms, så att `solicitudVencida` (som `expireRequests`
-// själv köar efter commit, se `src/server/bookings/confirm.ts`) hinner med
-// i samma körning i stället för att vänta till nästa.
+// köar i samma transaktion som statusändringen, se
+// `src/server/bookings/confirm.ts`) hinner med
+// i samma körning i stället för att vänta till nästa. Ett fel i svepet
+// (t.ex. statement timeout) får aldrig stoppa utkorgen: det loggas med bara
+// SQLSTATE och passet fortsätter med `processOutbox` (säkerhetsgranskning
+// WP-45).
 import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse, type NextRequest } from "next/server";
 
 import { expireRequests } from "@/server/bookings/confirm";
+import { pgErrorCode } from "@/server/db/errors";
 import { processOutbox } from "@/server/messaging/outbox";
 import { systemClock } from "@/server/scheduling/clock";
 
@@ -49,11 +54,19 @@ async function handle(request: NextRequest): Promise<NextResponse> {
   if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const expired = await expireRequests(systemClock());
+  let expired = 0;
+  try {
+    expired = (await expireRequests(systemClock())).length;
+  } catch (e) {
+    // Bara SQLSTATE (aldrig pg:s `detail`/`message`, som kan bära värden).
+    console.error("outbox: expireRequests misslyckades", {
+      code: pgErrorCode(e) ?? "unknown",
+    });
+  }
   const result = await processOutbox({ limit: CRON_LIMIT });
   // Bara räknare (regel hård 8: ingen persondata i loggar).
-  console.log("outbox: pass klart", { expired: expired.length, ...result });
-  return NextResponse.json({ ...result, expired: expired.length });
+  console.log("outbox: pass klart", { expired, ...result });
+  return NextResponse.json({ ...result, expired });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

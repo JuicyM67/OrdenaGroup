@@ -648,6 +648,12 @@ async function finalizeFailed(
   return decision.status;
 }
 
+/** Mallar som bara är meningsfulla medan bokningen är `requested`. */
+const REQUEST_ONLY_TEMPLATES: ReadonlySet<string> = new Set([
+  "solicitudRecibida",
+  "nuevaSolicitud",
+]);
+
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
@@ -658,6 +664,17 @@ async function processRow(
     // En påminnelse för en bokning som inte längre är confirmed skickas
     // aldrig (t.ex. avbokad/flyttad utan att den här raden hunnit avbrytas).
     if (row.template === "recordatorio" && ctx.bookingStatus !== "confirmed") {
+      await finalizeCancelled(row);
+      return "cancelled";
+    }
+    // WP-45 (säkerhetsgranskning): "solicitud recibida"/"nueva solicitud"
+    // gäller bara så länge bokningen fortfarande är en förfrågan — hann den
+    // bekräftas, nekas, gå ut eller avbokas innan raden skickades är
+    // beskedet inaktuellt (och kundens token i payloaden är redan roterad).
+    if (
+      REQUEST_ONLY_TEMPLATES.has(row.template) &&
+      ctx.bookingStatus !== "requested"
+    ) {
       await finalizeCancelled(row);
       return "cancelled";
     }

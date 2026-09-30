@@ -93,6 +93,30 @@ describe("POST /api/cron/outbox", () => {
   });
 });
 
+describe("expireRequests kastar", () => {
+  it("processOutbox körs ändå; loggen bär bara SQLSTATE", async () => {
+    const secret = "leaky detail: +56912345678";
+    expireRequestsMock.mockImplementationOnce(async () => {
+      calls.push("expireRequests");
+      throw Object.assign(new Error(secret), { code: "57014", detail: secret });
+    });
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      const res = await POST(req({ authorization: "Bearer s3cret-value" }));
+      expect(res.status).toBe(200);
+      expect(calls).toEqual(["expireRequests", "processOutbox"]);
+      expect(((await res.json()) as { expired: number }).expired).toBe(0);
+      expect(spy).toHaveBeenCalledExactlyOnceWith(
+        "outbox: expireRequests misslyckades",
+        { code: "57014" },
+      );
+      expect(JSON.stringify(spy.mock.calls)).not.toContain("+569");
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
 describe("GET /api/cron/outbox", () => {
   it("samma auth som POST: 401 utan header, 200 med rätt", async () => {
     expect((await GET(req())).status).toBe(401);
