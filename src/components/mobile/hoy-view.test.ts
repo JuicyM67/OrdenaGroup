@@ -18,6 +18,7 @@ function booking(overrides: Partial<HoyBooking>): HoyBooking {
     end: "2026-10-02T15:30:00-03:00",
     clientName: "Joaquín Rivas",
     service: "Corte + barba",
+    staffId: "staff-1",
     staffName: "Diego",
     staffColor: 1,
     status: "confirmed",

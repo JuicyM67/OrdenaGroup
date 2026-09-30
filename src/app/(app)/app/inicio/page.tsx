@@ -18,6 +18,14 @@ import { moveOwnerBooking } from "@/server/owner/manual-booking";
 import { confirmRequest, declineRequest } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
 
+import {
+  confirmMyPhotoUploadAction,
+  createMyPhotoUploadAction,
+  deleteMyPhotoAction,
+  loadMyProfileAction,
+  updateMyTitleAction,
+} from "../my-profile-actions";
+
 export const metadata: Metadata = {
   title: inicio.titulo,
   robots: { index: false, follow: false },
@@ -40,6 +48,7 @@ export default async function InicioPage() {
   const today = toLocalDate(now, APP_TZ);
   const owner = ownerNameParts(user.email);
   const data = await loadOwnerInicio(user.id, business.id, today, now, owner);
+  const myProfile = await loadMyProfileAction();
 
   const onArrival = async (bookingId: string, status: ArrivalStatus) => {
     "use server";
@@ -90,6 +99,17 @@ export default async function InicioPage() {
       onLogout={logout}
       onConfirmRequest={onConfirmRequest}
       onDeclineRequest={onDeclineRequest}
+      myProfile={myProfile ?? undefined}
+      myProfileActions={
+        myProfile
+          ? {
+              updateTitle: updateMyTitleAction,
+              createPhotoUpload: createMyPhotoUploadAction,
+              confirmPhotoUpload: confirmMyPhotoUploadAction,
+              deletePhoto: deleteMyPhotoAction,
+            }
+          : undefined
+      }
     />
   );
 }

@@ -28,6 +28,9 @@ export type HoyBooking = {
   end: string;
   clientName: string;
   service: string;
+  /** WP-46: profesionalens personalrad-id — filtret "Mis reservas"/"Todo el
+   * equipo" och behörigheten för Llegó/No vino (`NextClientCard`). */
+  staffId: string;
   staffName: string;
   staffColor: StaffColor;
   status: BookingStatus;
@@ -54,10 +57,30 @@ export type HoyLinks = {
   };
 };
 
+/** WP-46: speglar `Perm`/`MemberView` (`src/server/db/permissions.ts`,
+ * `src/server/owner/member.ts`), duplicerat — samma motiv som resten av filen. */
+export type HoyPerm =
+  | "can_manage_own_bookings"
+  | "can_manage_all_bookings"
+  | "can_cancel_bookings"
+  | "can_edit_catalog"
+  | "can_manage_team"
+  | "can_view_reports"
+  | "can_edit_settings";
+
+export type HoyMemberView = {
+  role: "owner" | "staff" | "vendor" | "admin" | null;
+  staffId: string | null;
+  perms: Record<HoyPerm, boolean>;
+};
+
 export type HoyData = {
   /** Instant, ISO 8601 med offset. Aldrig `new Date()` i komponenten. */
   now: string;
   owner: { name: string };
+  /** WP-46: filtret "Mis reservas"/"Todo el equipo" och Llegó/No vino på
+   * `NextClientCard`. Saknas (design lab/äldre sidor) → allt visas som förut. */
+  member?: HoyMemberView;
   /** Sant ersätter både nästa-kund-kortet och listan med "Hoy no atiendes." */
   closedToday: boolean;
   bookings: HoyBooking[];

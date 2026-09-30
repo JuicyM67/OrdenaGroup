@@ -21,7 +21,12 @@ import {
   type NotificationBellResult,
 } from "@/components/shared/notification-bell";
 import { UserMenu } from "@/components/shared/user-menu";
+import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
 import { PageHeader } from "@/components/ui/page-header";
+import { Pill } from "@/components/ui/pill";
 import { agenda, errores, hoy } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 
@@ -34,7 +39,25 @@ import {
 } from "./hoy-view";
 import { NextClientCard } from "./next-client-card";
 import { RestOfDay } from "./rest-of-day";
-import type { HoyBooking, HoyData } from "./types";
+import type { HoyBooking, HoyData, HoyMemberView, HoyPerm } from "./types";
+
+/** WP-46: samma regel som `hasPerm` (`src/server/db/permissions.ts`), men
+ * för UI:t. `member === undefined` (design lab/äldre sidor) beter sig som
+ * förut: allt visas, ingen filtrering. */
+function hasHoyPerm(
+  member: HoyMemberView | undefined,
+  perm: HoyPerm,
+  staffId?: string,
+): boolean {
+  if (!member) return true;
+  if (member.role === "owner") return true;
+  if (member.role !== "staff") return false;
+  if (!member.perms[perm]) return false;
+  if (staffId !== undefined) {
+    return member.staffId !== null && member.staffId === staffId;
+  }
+  return true;
+}
 
 export type HoyScreenProps = {
   data: HoyData;
@@ -53,6 +76,10 @@ export type HoyScreenProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-46: "Min profil" i kontomenyn. `undefined` döljer menyposten (ägare
+   * utan egen personalrad, design lab). */
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
 };
 
 /** Hur länge Llegó/No vino-knapparna är inaktiva efter ett tryck (optimistisk uppdatering). */
@@ -65,6 +92,8 @@ export function HoyScreen({
   onLogout,
   onConfirmRequest,
   onDeclineRequest,
+  myProfile,
+  myProfileActions,
 }: HoyScreenProps) {
   const router = useRouter();
   // `data` byts bara genom en ny instans av skärmen (anroparen sätter `key`, t.ex. per
@@ -87,8 +116,29 @@ export function HoyScreen({
   // `number` (inte `NodeJS.Timeout`): det här körs bara i webbläsaren, via window.setTimeout.
   const pendingTimeoutRef = useRef<number | null>(null);
 
-  const next = data.closedToday ? undefined : nextBooking(bookings, now);
-  const rest = data.closedToday ? [] : restOfDay(bookings, now, next);
+  // WP-46: filtret "Mis reservas"/"Todo el equipo" (agenda.filtroEquipo,
+  // samma texter som Agenda). Standard "todo el equipo" (uppdraget,
+  // 2026-09-30). Syns bara när kontot har en egen personalrad och det finns
+  // mer än en profesional att filtrera bort.
+  const member = data.member;
+  const ownStaffId = member?.staffId ?? null;
+  const canFilterTeam =
+    ownStaffId != null &&
+    new Set(data.bookings.map((b) => b.staffId)).size > 1;
+  const [teamFilter, setTeamFilter] = useState<"propias" | "equipo">("equipo");
+  const visibleBookings =
+    teamFilter === "propias" && ownStaffId != null
+      ? bookings.filter((b) => b.staffId === ownStaffId)
+      : bookings;
+
+  const next = data.closedToday ? undefined : nextBooking(visibleBookings, now);
+  const rest = data.closedToday ? [] : restOfDay(visibleBookings, now, next);
+  // WP-46: samma regel som `bookings`-RLS — Llegó/No vino kräver
+  // `can_manage_all_bookings`, eller `can_manage_own_bookings` + egen bokning.
+  const canActOnNext =
+    next != null &&
+    (hasHoyPerm(member, "can_manage_all_bookings") ||
+      hasHoyPerm(member, "can_manage_own_bookings", next.staffId));
 
   useEffect(() => {
     if (isFirstNext.current) {
@@ -169,6 +219,8 @@ export function HoyScreen({
                 variant="avatar"
                 publicPageHref={publicPageHref ?? "/"}
                 onLogout={onLogout}
+                myProfile={myProfile}
+                myProfileActions={myProfileActions}
               />
             </>
           }
@@ -180,17 +232,40 @@ export function HoyScreen({
           </p>
         ) : null}
 
+        {canFilterTeam ? (
+          <div className="flex gap-2">
+            <Pill
+              selected={teamFilter === "equipo"}
+              onClick={() => setTeamFilter("equipo")}
+            >
+              {agenda.filtroEquipo.todoElEquipo}
+            </Pill>
+            <Pill
+              selected={teamFilter === "propias"}
+              onClick={() => setTeamFilter("propias")}
+            >
+              {agenda.filtroEquipo.misReservas}
+            </Pill>
+          </div>
+        ) : null}
+
         <NextClientCard
           ref={nextCardRef}
           booking={next}
           now={now}
           disabled={pendingId !== null}
           emptyMessage={data.closedToday ? hoy.restoDia.diaCerrado : undefined}
-          onArrived={() =>
-            next && markStatus(next.id, "completed", agenda.toast.llego)
+          onArrived={
+            canActOnNext
+              ? () =>
+                  next && markStatus(next.id, "completed", agenda.toast.llego)
+              : undefined
           }
-          onNoShow={() =>
-            next && markStatus(next.id, "no_show", agenda.toast.noVino)
+          onNoShow={
+            canActOnNext
+              ? () =>
+                  next && markStatus(next.id, "no_show", agenda.toast.noVino)
+              : undefined
           }
         />
 

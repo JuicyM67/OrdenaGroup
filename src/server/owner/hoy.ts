@@ -40,6 +40,7 @@ type BookingRow = {
   client_name: string | null;
   visits_count: number;
   service_name: string;
+  staff_id: string;
   staff_name: string;
   staff_color: string;
   status: BookingStatus;
@@ -101,7 +102,7 @@ export async function loadOwnerHoyIn(
   const { start, end } = localDayRange(today, APP_TZ);
   const bookingsRes = await q.query<BookingRow>(
     `select bk.id, c.name as client_name, c.visits_count,
-            sv.name as service_name, st.name as staff_name, st.color as staff_color,
+            sv.name as service_name, st.id as staff_id, st.name as staff_name, st.color as staff_color,
             bk.status::text as status, bk.confirmed_by_customer_at,
             bk.price_clp, bk.discount_clp, bk.deposit_clp, bk.source::text as source,
             extract(epoch from lower(bk.period)) * 1000 as start_ms,
@@ -136,6 +137,7 @@ export async function loadOwnerHoyIn(
       end: isoOf(b.end_ms),
       clientName: b.client_name ?? "",
       service: b.service_name,
+      staffId: b.staff_id,
       staffName: b.staff_name,
       staffColor: staffColorOf(b.staff_color),
       status: b.status,

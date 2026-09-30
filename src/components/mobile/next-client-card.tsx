@@ -28,8 +28,11 @@ export type NextClientCardProps = {
   /** `undefined` visar tillståndet "sin-proxima" (eller "cerrado" via `emptyMessage`). */
   booking: HoyBooking | undefined;
   now: Date;
-  onArrived: () => void;
-  onNoShow: () => void;
+  /** WP-46: `undefined` döljer Llegó/No vino — den inloggade saknar rätt att
+   * hantera just den här bokningen (`can_manage_all_bookings`, eller
+   * `can_manage_own_bookings` + egen `staffId`). */
+  onArrived?: () => void;
+  onNoShow?: () => void;
   /** Inaktiverar knapparna under den korta optimistiska uppdateringen (FRÅGA 1). */
   disabled?: boolean;
   /** Text när `booking` saknas. Standard: `hoy.sinProximaReserva`. Stängd dag: skickar
@@ -75,13 +78,13 @@ export function NextClientCard({
   function handleArrived() {
     if (disabled || handledIdRef.current === bookingId) return;
     handledIdRef.current = bookingId;
-    onArrived();
+    onArrived?.();
   }
 
   function handleNoShow() {
     if (disabled || handledIdRef.current === bookingId) return;
     handledIdRef.current = bookingId;
-    onNoShow();
+    onNoShow?.();
   }
 
   return (
@@ -119,24 +122,30 @@ export function NextClientCard({
           <AnswersList answers={booking.answers} tone="dark" className="mt-3" />
         ) : null}
       </div>
-      <div className="grid grid-cols-2 gap-2.5">
-        <Button
-          variant="accent"
-          size="xl"
-          disabled={disabled}
-          onClick={handleArrived}
-        >
-          {hoy.acciones.llego}
-        </Button>
-        <Button
-          variant="outline-dark"
-          size="xl"
-          disabled={disabled}
-          onClick={handleNoShow}
-        >
-          {hoy.acciones.noVino}
-        </Button>
-      </div>
+      {onArrived || onNoShow ? (
+        <div className="grid grid-cols-2 gap-2.5">
+          {onArrived ? (
+            <Button
+              variant="accent"
+              size="xl"
+              disabled={disabled}
+              onClick={handleArrived}
+            >
+              {hoy.acciones.llego}
+            </Button>
+          ) : null}
+          {onNoShow ? (
+            <Button
+              variant="outline-dark"
+              size="xl"
+              disabled={disabled}
+              onClick={handleNoShow}
+            >
+              {hoy.acciones.noVino}
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
     </Card>
   );
 }

@@ -36,9 +36,13 @@ export type EventPopoverProps = {
   tz: TimeZone;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onLlego: () => void;
-  onNoVino: () => void;
-  /** `undefined` döljer knappen (WP-21: Mover finns bara i design lab). */
+  /** WP-46: `undefined` döljer knappen — den inloggade saknar rätt
+   * behörighet för just den här bokningen (`can_manage_all_bookings`, eller
+   * `can_manage_own_bookings` + egen `staffId`). */
+  onLlego?: () => void;
+  onNoVino?: () => void;
+  /** `undefined` döljer knappen (WP-21: Mover finns bara i design lab; WP-46:
+   * döljs även när den inloggade saknar rätt att flytta just den bokningen). */
   onMover?: () => void;
   /** WP-26 steg 7 (F12): "Exportar datos"/"Anonimizar cliente". `undefined`
    * (design lab) eller en bokning utan `customerId` döljer hela raden —
@@ -199,39 +203,54 @@ export function EventPopover({
               </Button>
             </div>
           ) : (
-            <div
-              className={cn(
-                "mt-0.5 grid gap-2",
-                onMover ? "grid-cols-3" : "grid-cols-2",
-              )}
-            >
-              <Button
-                type="button"
-                variant="primary"
-                size="sm"
-                onClick={onLlego}
-              >
-                {agenda.popover.acciones.llego}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={onNoVino}
-              >
-                {agenda.popover.acciones.noVino}
-              </Button>
-              {onMover ? (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={onMover}
+            (() => {
+              const count =
+                (onLlego ? 1 : 0) + (onNoVino ? 1 : 0) + (onMover ? 1 : 0);
+              if (count === 0) return null;
+              return (
+                <div
+                  className={cn(
+                    "mt-0.5 grid gap-2",
+                    count === 3
+                      ? "grid-cols-3"
+                      : count === 2
+                        ? "grid-cols-2"
+                        : "grid-cols-1",
+                  )}
                 >
-                  {agenda.popover.acciones.mover}
-                </Button>
-              ) : null}
-            </div>
+                  {onLlego ? (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={onLlego}
+                    >
+                      {agenda.popover.acciones.llego}
+                    </Button>
+                  ) : null}
+                  {onNoVino ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={onNoVino}
+                    >
+                      {agenda.popover.acciones.noVino}
+                    </Button>
+                  ) : null}
+                  {onMover ? (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={onMover}
+                    >
+                      {agenda.popover.acciones.mover}
+                    </Button>
+                  ) : null}
+                </div>
+              );
+            })()
           )}
 
           {customerId && onExportCustomer && onAnonymizeCustomer ? (

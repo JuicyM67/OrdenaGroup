@@ -12,7 +12,10 @@ export type AgendaToolbarProps = {
   onToday: () => void;
   onPrevWeek: () => void;
   onNextWeek: () => void;
-  onNewBooking: () => void;
+  /** WP-46: `undefined` döljer knappen — den inloggade saknar rätt att skapa
+   * nya bokningar (varken `can_manage_own_bookings` eller
+   * `can_manage_all_bookings`). */
+  onNewBooking?: () => void;
   /** WP-50: månadsvyn byter pilarna mot `calendario.mesAnterior`/`mesSiguiente` — standard
    * (vecko-/dagvyn) oförändrad. */
   prevLabel?: string;
@@ -51,14 +54,16 @@ export function AgendaToolbar({
         />
       </IconButton>
       <div className="grow" />
-      <Button type="button" variant="primary" size="lg" onClick={onNewBooking}>
-        <Plus
-          aria-hidden="true"
-          className="size-4"
-          strokeWidth={strokeNuevaReserva}
-        />
-        {agendaCopy.nuevaReserva}
-      </Button>
+      {onNewBooking ? (
+        <Button type="button" variant="primary" size="lg" onClick={onNewBooking}>
+          <Plus
+            aria-hidden="true"
+            className="size-4"
+            strokeWidth={strokeNuevaReserva}
+          />
+          {agendaCopy.nuevaReserva}
+        </Button>
+      ) : null}
     </div>
   );
 }

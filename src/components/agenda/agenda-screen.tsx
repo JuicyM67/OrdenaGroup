@@ -19,8 +19,10 @@ import type {
   NotificationBellResult,
   PendingRequestItem,
 } from "@/components/shared/notification-bell";
+import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import type { YearMonth } from "@/components/ui/mini-calendar/grid";
+import { Pill } from "@/components/ui/pill";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   addLocalDays,
@@ -87,6 +89,8 @@ import { TimeGrid, type TimeGridColumn } from "./time-grid";
 import type {
   AgendaBooking,
   AgendaData,
+  AgendaMemberView,
+  AgendaPerm,
   MonthDayCounts,
   StaffColor,
   StaffId,
@@ -180,6 +184,25 @@ function nextMonth(m: YearMonth): YearMonth {
     : { year: m.year, month: m.month + 1 };
 }
 
+/** WP-46: samma regel som `hasPerm` (`src/server/db/permissions.ts`), men
+ * för UI:t — döljer knappar som servern ändå skulle neka. `member ===
+ * undefined` (design lab/äldre sidor utan behörighetsdata) beter sig som
+ * förut: allt visas, ingen filtrering. */
+function hasAgendaPerm(
+  member: AgendaMemberView | undefined,
+  perm: AgendaPerm,
+  staffId?: StaffId,
+): boolean {
+  if (!member) return true;
+  if (member.role === "owner") return true;
+  if (member.role !== "staff") return false;
+  if (!member.perms[perm]) return false;
+  if (staffId !== undefined) {
+    return member.staffId !== null && member.staffId === staffId;
+  }
+  return true;
+}
+
 export function AgendaScreen({
   data,
   initialVista,
@@ -214,6 +237,25 @@ export function AgendaScreen({
   const [visibleStaffIds, setVisibleStaffIds] = useState<ReadonlySet<StaffId>>(
     () => new Set(data.staff.map((s) => s.id)),
   );
+  // WP-46: filtret "Mis reservas"/"Todo el equipo" (agenda.filtroEquipo).
+  // Standard "todo el equipo" (Ägarens svar/uppdraget, 2026-09-30 — ersätter
+  // planens ursprungliga "förvalt Mis reservas"). Syns bara när kontot har
+  // en egen personalrad (`member.staffId`, personal — och ägaren om hen
+  // också skulle ha en). Ovanpå `visibleStaffIds` (ändrar inte de befintliga
+  // kryssrutorna i StaffFilter), se `effectiveVisibleStaffIds` nedan.
+  const [teamFilter, setTeamFilter] = useState<"propias" | "equipo">("equipo");
+  const member = data.member;
+  const ownStaffId = member?.staffId ?? null;
+  const canFilterTeam = ownStaffId != null && data.staff.length > 1;
+  // WP-46: "Nueva reserva" kräver minst en av de två flaggorna (en profesional
+  // utan någon av dem ser bara kalendern, kan inte skapa nya bokningar alls).
+  const canCreateBooking =
+    hasAgendaPerm(member, "can_manage_own_bookings") ||
+    hasAgendaPerm(member, "can_manage_all_bookings");
+  const effectiveVisibleStaffIds: ReadonlySet<StaffId> =
+    teamFilter === "propias" && ownStaffId != null
+      ? new Set([ownStaffId])
+      : visibleStaffIds;
   const [highlightedStaffId, setHighlightedStaffId] = useState<StaffId | null>(
     data.staff[0]?.id ?? null,
   );
@@ -298,7 +340,9 @@ export function AgendaScreen({
     [week, data.business.hours],
   );
 
-  const visibleStaff = data.staff.filter((s) => visibleStaffIds.has(s.id));
+  const visibleStaff = data.staff.filter((s) =>
+    effectiveVisibleStaffIds.has(s.id),
+  );
   const staffById = new Map(data.staff.map((s) => [s.id, s]));
 
   // WP-50: månadsvyns antal per dag. `onLoadMonthCounts` (server action) hämtar en hel
@@ -370,6 +414,12 @@ export function AgendaScreen({
     if (booking.id !== selectedBookingId || surface !== selectionSurface)
       return trigger;
     const staffName = staffById.get(booking.staffId)?.name ?? "";
+    // WP-46: samma regel som `bookings`-RLS/`bookings_guard_status` — Llegó/
+    // No vino/Mover kräver `can_manage_all_bookings`, eller
+    // `can_manage_own_bookings` + att bokningen är den inloggades egen.
+    const canActOnBooking =
+      hasAgendaPerm(member, "can_manage_all_bookings") ||
+      hasAgendaPerm(member, "can_manage_own_bookings", booking.staffId);
     return (
       <EventPopover
         key={`popover-${booking.id}`}
@@ -378,23 +428,34 @@ export function AgendaScreen({
         tz={tz}
         open={popoverOpen}
         onOpenChange={setPopoverOpen}
-        onLlego={() => {
-          setArrivalOverrides((prev) => ({
-            ...prev,
-            [booking.id]: "completed",
-          }));
-          void Promise.resolve(onArrival?.(booking.id, "completed")).catch(
-            () => undefined,
-          );
-        }}
-        onNoVino={() => {
-          setArrivalOverrides((prev) => ({ ...prev, [booking.id]: "no_show" }));
-          void Promise.resolve(onArrival?.(booking.id, "no_show")).catch(
-            () => undefined,
-          );
-        }}
+        onLlego={
+          canActOnBooking
+            ? () => {
+                setArrivalOverrides((prev) => ({
+                  ...prev,
+                  [booking.id]: "completed",
+                }));
+                void Promise.resolve(
+                  onArrival?.(booking.id, "completed"),
+                ).catch(() => undefined);
+              }
+            : undefined
+        }
+        onNoVino={
+          canActOnBooking
+            ? () => {
+                setArrivalOverrides((prev) => ({
+                  ...prev,
+                  [booking.id]: "no_show",
+                }));
+                void Promise.resolve(onArrival?.(booking.id, "no_show")).catch(
+                  () => undefined,
+                );
+              }
+            : undefined
+        }
         onMover={
-          showMover
+          showMover && canActOnBooking
             ? () => {
                 setPopoverOpen(false);
                 if (onMoveBooking) setMovingBooking(booking);
@@ -412,7 +473,7 @@ export function AgendaScreen({
             : undefined
         }
         onConfirmRequest={
-          onConfirmRequest
+          onConfirmRequest && canActOnBooking
             ? async (bookingId) => {
                 const result = await onConfirmRequest(bookingId);
                 if (result.ok) router.refresh();
@@ -421,7 +482,7 @@ export function AgendaScreen({
             : undefined
         }
         onDeclineRequest={
-          onDeclineRequest
+          onDeclineRequest && canActOnBooking
             ? async (bookingId, reason) => {
                 const result = await onDeclineRequest(bookingId, reason);
                 if (result.ok) router.refresh();
@@ -453,12 +514,14 @@ export function AgendaScreen({
   const weekColumns: TimeGridColumn[] = week.map((date) => {
     const dayBookings = data.bookings.filter(
       (b) =>
-        localDateOf(b.start, tz) === date && visibleStaffIds.has(b.staffId),
+        localDateOf(b.start, tz) === date &&
+        effectiveVisibleStaffIds.has(b.staffId),
     );
     const dayBlocksRaw = data.blocks
       .filter(
         (b) =>
-          localDateOf(b.start, tz) === date && visibleStaffIds.has(b.staffId),
+          localDateOf(b.start, tz) === date &&
+          effectiveVisibleStaffIds.has(b.staffId),
       )
       .map((b) => ({
         staffId: b.staffId,
@@ -466,7 +529,7 @@ export function AgendaScreen({
         end: toInstant(b.end),
         kind: b.kind,
       }));
-    const merged = mergeCommonBlocks(dayBlocksRaw, [...visibleStaffIds]);
+    const merged = mergeCommonBlocks(dayBlocksRaw, [...effectiveVisibleStaffIds]);
 
     const laneOf = new Map(
       layoutLanes([
@@ -589,7 +652,7 @@ export function AgendaScreen({
               goTo("dia", focus);
             }}
             onNewBooking={
-              onCreateManualBooking
+              onCreateManualBooking && canCreateBooking
                 ? () => setManualDialogOpen(true)
                 : undefined
             }
@@ -607,22 +670,40 @@ export function AgendaScreen({
               onPrevMonth={() => setBrowsedMonth(prevMonth)}
               onNextMonth={() => setBrowsedMonth(nextMonth)}
             />
-            <StaffFilter
-              staff={data.staff}
-              visibleStaffIds={visibleStaffIds}
-              counts={data.weekCounts}
-              onToggle={(id) =>
-                setVisibleStaffIds((prev) => {
-                  if (prev.has(id)) {
-                    if (prev.size <= 1) return prev;
-                    const next = new Set(prev);
-                    next.delete(id);
-                    return next;
-                  }
-                  return new Set(prev).add(id);
-                })
-              }
-            />
+            {canFilterTeam ? (
+              <Card radius="tile" padding="md" className="flex gap-2">
+                <Pill
+                  selected={teamFilter === "equipo"}
+                  onClick={() => setTeamFilter("equipo")}
+                >
+                  {agenda.filtroEquipo.todoElEquipo}
+                </Pill>
+                <Pill
+                  selected={teamFilter === "propias"}
+                  onClick={() => setTeamFilter("propias")}
+                >
+                  {agenda.filtroEquipo.misReservas}
+                </Pill>
+              </Card>
+            ) : null}
+            {teamFilter === "propias" ? null : (
+              <StaffFilter
+                staff={data.staff}
+                visibleStaffIds={visibleStaffIds}
+                counts={data.weekCounts}
+                onToggle={(id) =>
+                  setVisibleStaffIds((prev) => {
+                    if (prev.has(id)) {
+                      if (prev.size <= 1) return prev;
+                      const next = new Set(prev);
+                      next.delete(id);
+                      return next;
+                    }
+                    return new Set(prev).add(id);
+                  })
+                }
+              />
+            )}
             <LegendCard />
             <WaitlistSummary waitlist={data.waitlist} />
           </>
@@ -649,9 +730,11 @@ export function AgendaScreen({
               if (vista === "mes") setBrowsedMonth(nextMonth);
               else goTo(vista, addLocalDays(focus, 7));
             }}
-            onNewBooking={() => {
-              if (onCreateManualBooking) setManualDialogOpen(true);
-            }}
+            onNewBooking={
+              onCreateManualBooking && canCreateBooking
+                ? () => setManualDialogOpen(true)
+                : undefined
+            }
           />
           <div className="mt-3 flex justify-end">
             <SegmentedControl
@@ -764,11 +847,29 @@ export function AgendaScreen({
               if (vista === "mes") setBrowsedMonth(nextMonth);
               else goTo("dia", addLocalDays(focus, 1));
             }}
-            onNewBooking={() => {
-              if (onCreateManualBooking) setManualDialogOpen(true);
-            }}
+            onNewBooking={
+              onCreateManualBooking && canCreateBooking
+                ? () => setManualDialogOpen(true)
+                : undefined
+            }
           />
-          {data.staff.length > 1 && vista !== "mes" ? (
+          {canFilterTeam && vista !== "mes" ? (
+            <div className="flex gap-2">
+              <Pill
+                selected={teamFilter === "equipo"}
+                onClick={() => setTeamFilter("equipo")}
+              >
+                {agenda.filtroEquipo.todoElEquipo}
+              </Pill>
+              <Pill
+                selected={teamFilter === "propias"}
+                onClick={() => setTeamFilter("propias")}
+              >
+                {agenda.filtroEquipo.misReservas}
+              </Pill>
+            </div>
+          ) : null}
+          {data.staff.length > 1 && vista !== "mes" && teamFilter !== "propias" ? (
             <StaffSwitcher
               staff={data.staff}
               selectedId={highlightedStaffId}
@@ -799,10 +900,14 @@ export function AgendaScreen({
                   today={today}
                   now={now}
                   gridRange={gridRange}
-                  visibleStaff={data.staff.filter(
-                    (s) => s.id === highlightedStaffId,
+                  visibleStaff={data.staff.filter((s) =>
+                    teamFilter === "propias" && ownStaffId != null
+                      ? s.id === ownStaffId
+                      : s.id === highlightedStaffId,
                   )}
-                  highlightedStaffId={highlightedStaffId}
+                  highlightedStaffId={
+                    teamFilter === "propias" ? ownStaffId : highlightedStaffId
+                  }
                   selectedBookingId={selectedBookingId}
                   renderTrigger={(b, t) =>
                     renderPopoverIfSelected(b, t, "mobile")
@@ -821,7 +926,14 @@ export function AgendaScreen({
           open={manualDialogOpen}
           onOpenChange={setManualDialogOpen}
           services={catalog}
-          staff={data.staff}
+          // WP-46: sin `can_manage_all_bookings` (bara `can_manage_own_bookings`)
+          // kan personalen bara skapa reservas åt sig själv — samma regel som
+          // `bookings`-RLS (`write bookings`, `staff_id = member_staff_id`).
+          staff={
+            !hasAgendaPerm(member, "can_manage_all_bookings") && ownStaffId != null
+              ? data.staff.filter((s) => s.id === ownStaffId)
+              : data.staff
+          }
           businessName={businessName}
           defaultDate={focus}
           onSubmit={async (input) => {

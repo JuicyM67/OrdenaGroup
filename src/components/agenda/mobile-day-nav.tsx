@@ -16,7 +16,8 @@ export type MobileDayNavProps = {
   onToday: () => void;
   onPrevDay: () => void;
   onNextDay: () => void;
-  onNewBooking: () => void;
+  /** WP-46: `undefined` döljer knappen (samma motiv som `AgendaToolbar`). */
+  onNewBooking?: () => void;
   prevLabel?: string;
   nextLabel?: string;
 };
@@ -44,18 +45,20 @@ export function MobileDayNav({
       <IconButton label={nextLabel} tone="ghost" size={44} onClick={onNextDay}>
         <ChevronRight aria-hidden="true" className="size-5" strokeWidth={2.2} />
       </IconButton>
-      <IconButton
-        label={agendaCopy.nuevaReserva}
-        tone="ink"
-        size={44}
-        onClick={onNewBooking}
-      >
-        <Plus
-          aria-hidden="true"
-          className="size-5"
-          strokeWidth={strokeNuevaReserva}
-        />
-      </IconButton>
+      {onNewBooking ? (
+        <IconButton
+          label={agendaCopy.nuevaReserva}
+          tone="ink"
+          size={44}
+          onClick={onNewBooking}
+        >
+          <Plus
+            aria-hidden="true"
+            className="size-5"
+            strokeWidth={strokeNuevaReserva}
+          />
+        </IconButton>
+      ) : null}
     </div>
   );
 }
