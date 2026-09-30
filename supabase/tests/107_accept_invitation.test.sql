@@ -7,6 +7,13 @@ create extension if not exists pgtap with schema extensions;
 select plan(11);
 \ir _helpers.psql
 
+-- D-037: personalgräns per plan (free/emprende 1, equipo 3, local 10,
+-- totalt inklusive ägaren). _helpers.psql:s A är 'free' (default) — bara
+-- ägarens egen plats. Den här filen testar accept_invitation, inte gränsen
+-- i sig (se 108_plan_staff_limits.test.sql), och skapar flera samtidiga
+-- inbjudningar — höj planen så att de får plats.
+update public.businesses set plan = 'local' where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+
 insert into public.staff (id, business_id, name, color) values
   ('aaaaaaaa-1000-0000-0000-000000000011', 'aaaaaaaa-0000-0000-0000-000000000001', 'Happy', 'staff-1'),
   ('aaaaaaaa-1000-0000-0000-000000000012', 'aaaaaaaa-0000-0000-0000-000000000001', 'WrongEmail', 'staff-2'),

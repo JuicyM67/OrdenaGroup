@@ -6,6 +6,16 @@ create extension if not exists pgtap with schema extensions;
 select plan(23);
 \ir _helpers.psql
 
+-- D-037: personalgräns per plan (free/emprende 1, equipo 3, local 10,
+-- totalt inklusive ägaren). _helpers.psql:s A/B är 'free' (default) —
+-- bara ägarens egen plats, alltså redan vid gränsen. Den här filen testar
+-- RLS/tenant-isolering för `member_invitations`, inte gränsen i sig (se
+-- 108_plan_staff_limits.test.sql för det) — höj planen så att flera
+-- samtidiga inbjudningar är möjliga.
+update public.businesses set plan = 'local' where id in (
+  'aaaaaaaa-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002'
+);
+
 insert into public.staff (id, business_id, name, color) values
   ('aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Staff A', 'staff-1'),
   ('aaaaaaaa-1000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', 'Staff A2', 'staff-2'),

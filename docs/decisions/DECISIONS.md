@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-037 · 2026-09-30 · Personalgräns per plan (WP-46)
+Antal konton per företag, ägaren inräknad: `free` 1, `emprende` 1, `equipo` 3, `local` 10. **Varför:** D-009 (platt pris per företag) säger bara att kostnaden inte styrs av antalet användare — den sätter ingen gräns. Ägaren har nu bestämt siffrorna: personalkonton (WP-46) hör till `equipo`/`local`; `free`/`emprende` har bara plats för ägaren själv och kan inte bjuda in någon. **Konsekvens:** `private.plan_staff_limit(business_plan)` (tidigare en no-op-hook, `supabase/migrations/20260930160000_plan_staff_limits.sql`) returnerar nu de här siffrorna. `private.staff_seat_count` räknar `memberships` med `role in ('owner','staff')` plus väntande, icke-utgångna/återkallade/accepterade `member_invitations` — triggern `member_invitations_guard_limit` och `accept_invitation` nekar nya/accepterade inbjudningar vid gränsen (42501).
+
 ### D-036 · 2026-09-30 · Bokningar från bokningssidan är förfrågningar (WP-45)
 Kundens bokning skapas som `requested` och blockerar tiden tills företaget bekräftar eller nekar, eller tills den löper ut: 24 h efter förfrågan, senast 2 h före start. "Bekräfta automatiskt" (Ajustes, av som standard) ger `confirmed` direkt. Kunden får "förfrågan mottagen" via e-post; bekräftelse (SE e-post+SMS, CL e-post) och 24 h-påminnelse går först efter bekräftelse; nekad/utgången → e-post (+SMS i SE) med länk att boka nytt och valfritt motiv. Notiser härleds ur väntande bokningar (ingen tabell i v1). Handpenning: företaget bekräftar först, sedan betalningslänk (byggs i WP-25). Ersätter planens förslag "D-033".
 
