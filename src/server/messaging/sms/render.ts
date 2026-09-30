@@ -13,6 +13,8 @@ export type SmsTemplateMap = {
     fecha: string;
     hora: string;
     link: string;
+    /** WP-54: "$16.200 (-$1.800)" (ASCII "-", GSM-7) när medlemsrabatt finns. */
+    precioSocio?: string;
   };
   readonly recordatorio: {
     negocio: string;

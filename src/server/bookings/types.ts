@@ -34,7 +34,13 @@ export type CreatedBooking = {
   end: string;
   /** Räknat på servern från services.price_clp. */
   priceClp: Clp;
-  discountClp: 0;
+  /** WP-54: medlemsrabatten (0 = ingen). Satt av servern, aldrig klienten.
+   * Pris att betala = `priceClp - discountClp`. */
+  discountClp: Clp;
+  /** WP-54: finns bara när `discountClp` kommer från medlemskap i just det
+   * här anropet (inte vid ett idempotent omförsök). `null` = företaget har
+   * ingen förmånstext (visa då bara rabatten). */
+  memberBenefitText?: string | null;
   depositClp: 0;
   /** WP-45: kund via bokningssidan → `requested` om inte företaget har
    * `auto_confirm_bookings`; ägarens (manuella) bokningar alltid `confirmed`. */

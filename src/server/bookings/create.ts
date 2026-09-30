@@ -29,6 +29,7 @@ import type { Actor, StaffChoice } from "@/server/scheduling/types";
 import { actorMember, canManageStaffBookings } from "./authz";
 import { findOrCreateCustomer } from "./customers";
 import { emitBookingEvent } from "./events";
+import { memberDiscountIn } from "./member";
 import { createManageToken } from "./token";
 import type { BookingError, CreatedBooking } from "./types";
 
@@ -61,7 +62,13 @@ function sourceFor(
  * `requested` om inte företaget har `auto_confirm_bookings`; ägarens
  * (manuella) och väntelistans bokningar är alltid `confirmed`. En förfrågan
  * blockerar tiden precis som en bekräftad (`no_overlap`).
- * `deposit_clp = 0`, `discount_clp = 0` (WP-25/30).
+ * `deposit_clp = 0` (WP-25/30).
+ *
+ * WP-54: `discount_clp` = medlemsrabatten (`./member.ts`) om kunden
+ * (business_id + telefon) är medlem och företaget har `member_discount_pct`,
+ * annars 0. Gäller alla källor (web, manuell, väntelista). Inga andra
+ * rabatter sätts vid skapandet; skulle det komma fler tas den största
+ * (`Math.max`), de kombineras aldrig.
  */
 export async function createBooking(
   request: CreateBookingRequest,
@@ -125,6 +132,7 @@ type IdempotencyRow = {
   s: number;
   pe: number;
   price_clp: number;
+  discount_clp: number;
 };
 
 /**
@@ -139,7 +147,7 @@ async function findByIdempotencyKey(
   idempotencyKey: string,
 ): Promise<CreatedBooking | undefined> {
   const r = await q.query<IdempotencyRow>(
-    `select id, staff_id, service_id, customer_id, price_clp,
+    `select id, staff_id, service_id, customer_id, price_clp, discount_clp,
             status::text as status,
             extract(epoch from lower(period))::float8 * 1000 as s,
             extract(epoch from upper(period))::float8 * 1000 as pe
@@ -158,7 +166,7 @@ async function findByIdempotencyKey(
     start: new Date(Math.round(x.s)).toISOString(),
     end: new Date(Math.round(x.pe)).toISOString(),
     priceClp: x.price_clp,
-    discountClp: 0,
+    discountClp: x.discount_clp,
     depositClp: 0,
     status: x.status,
     manageToken: "",
@@ -248,6 +256,15 @@ export async function createIn(
     input.businessId,
     input.customer,
   );
+  // WP-54: servern avgör medlemsrabatten (aldrig klienten). Ingen annan
+  // rabatt sätts här — största vinner om fler tillkommer, aldrig summan.
+  const memberDiscount = await memberDiscountIn(
+    q,
+    input.businessId,
+    customerId,
+    priceClp,
+  );
+  const discountClp = Math.max(0, memberDiscount?.discountMinor ?? 0);
   const { token, hash } = createManageToken();
   const periodEnd = start + snapshot.service.durationMin * MIN;
   const blockedEnd = periodEnd + snapshot.service.bufferAfterMin * MIN;
@@ -263,7 +280,7 @@ export async function createIn(
               manage_token_hash, notes, idempotency_key, created_at)
            values ($1, $2, $3, $4, $5::tstzrange, $6::tstzrange,
                    $12::public.booking_status, $7::public.booking_source,
-                   $8, 0, 0, $9, $10, $11, $13)
+                   $8, $14, 0, $9, $10, $11, $13)
            returning id`,
           [
             input.businessId,
@@ -280,6 +297,7 @@ export async function createIn(
             status,
             // WP-45: förfrågans 24 h räknas från den injicerade klockan.
             input.now,
+            discountClp,
           ],
         );
         return r.rows[0]!.id;
@@ -329,7 +347,10 @@ export async function createIn(
       start: new Date(start).toISOString(),
       end: new Date(periodEnd).toISOString(),
       priceClp,
-      discountClp: 0,
+      discountClp,
+      ...(memberDiscount
+        ? { memberBenefitText: memberDiscount.benefitText }
+        : {}),
       depositClp: 0,
       status,
       manageToken: token,

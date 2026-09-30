@@ -25,6 +25,10 @@ import {
 } from "./templates/booking";
 import { bienvenidaEmail, type BienvenidaData } from "./templates/bienvenida";
 import {
+  bienvenidaMiembroEmail,
+  type BienvenidaMiembroData,
+} from "./templates/bienvenida-miembro";
+import {
   cancelacionDuenoEmail,
   nuevaReservaDuenoEmail,
   nuevaSolicitudEmail,
@@ -67,6 +71,8 @@ export type EmailTemplateMap = {
   readonly solicitudVencida: SolicitudVencidaData;
   /** WP-46 (D-034): invitación de personal, único canal en v1. */
   readonly invitacionEquipo: InvitacionEquipoData;
+  /** WP-54: al cliente, cuando pasa a ser socio (transaccional). */
+  readonly bienvenidaMiembro: BienvenidaMiembroData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -94,6 +100,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   // Acceso a la cuenta, no una reserva (D-026/INTEGRATIONS.md §4): mismo
   // remitente que `magicLink`/`bienvenida` (`EMAIL_FROM_ACCOUNT`).
   invitacionEquipo: "account",
+  bienvenidaMiembro: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -114,6 +121,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "solicitudRechazada",
   "solicitudVencida",
   "invitacionEquipo",
+  "bienvenidaMiembro",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -158,6 +166,8 @@ export function renderEmail<T extends EmailTemplateName>(
       return solicitudVencidaEmail(market, data as SolicitudVencidaData);
     case "invitacionEquipo":
       return invitacionEquipoEmail(market, data as InvitacionEquipoData);
+    case "bienvenidaMiembro":
+      return bienvenidaMiembroEmail(market, data as BienvenidaMiembroData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

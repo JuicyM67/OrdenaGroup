@@ -1183,6 +1183,25 @@ export const email: Widen<typeof Es.email> = {
     ignorar:
       "Om du inte väntade dig den här inbjudan kan du bortse från mejlet.",
   },
+  miembro: {
+    precioLabel: "Medlemspris",
+    precio: (p: { precio: string; descuento: string }): string =>
+      `${p.precio} (−${p.descuento})`,
+  },
+  bienvenidaMiembro: {
+    asunto: (p: { negocio: string }): string =>
+      `Nu är du medlem hos ${p.negocio}`,
+    preheader: (p: { beneficio: string }): string =>
+      `Din förmån: ${p.beneficio}.`,
+    titulo: "Välkommen som medlem!",
+    texto: (p: { cliente: string; negocio: string }): string =>
+      `Hej ${p.cliente}! Från och med i dag är du medlem hos ${p.negocio}.`,
+    beneficio: (p: { beneficio: string }): string =>
+      `Din förmån: ${p.beneficio}. Den gäller när du bokar med samma telefonnummer.`,
+    beneficioPct: (p: { pct: number }): string =>
+      `${p.pct} % rabatt på dina bokningar`,
+    cta: "Boka tid",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1889,8 +1908,9 @@ export const sms: Widen<typeof Es.sms> = {
     fecha: string;
     hora: string;
     link: string;
+    precioSocio?: string;
   }): string =>
-    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}. Detaljer: ${p.link}`,
+    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}.${p.precioSocio ? ` Medlemspris: ${p.precioSocio}.` : ""} Detaljer: ${p.link}`,
   recordatorio: (p: {
     negocio: string;
     fecha: string;

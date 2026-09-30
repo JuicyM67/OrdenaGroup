@@ -18,7 +18,11 @@ import {
   customerFormSchemaFor,
   waitlistFormSchema,
 } from "@/components/booking/form-schema";
-import type { BookingActionResult } from "@/components/booking/types";
+import type {
+  BookingActionErr,
+  BookingActionOk,
+  BookingActionResult,
+} from "@/components/booking/types";
 import { market } from "@/config/brand";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import {
@@ -39,10 +43,21 @@ import { systemClock } from "@/server/scheduling/clock";
 const BOOKING_IP_WINDOW_SECONDS = 10 * 60;
 const BOOKING_IP_MAX = 10;
 
+/** WP-54: lyckat svar med medlemspriset (bara när servern gav rabatt).
+ * `memberDiscountMinor` = avdraget i minor units (pris att betala =
+ * tjänstens pris − rabatten); `memberBenefitText` = företagets förmånstext
+ * eller `null`. Aldrig något från klienten. */
+export type CreateBookingActionResult =
+  | (BookingActionOk & {
+      readonly memberDiscountMinor?: number;
+      readonly memberBenefitText?: string | null;
+    })
+  | BookingActionErr;
+
 export async function createBooking(
   slug: string,
   input: unknown,
-): Promise<BookingActionResult> {
+): Promise<CreateBookingActionResult> {
   const parsed = customerFormSchemaFor(market).safeParse(input);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
   // slotId är instanten direkt (page-data.ts sätter BookingSlot.id = start):
@@ -105,6 +120,17 @@ export async function createBooking(
     );
   }
 
+  // Medlemsrabatten är den enda rabatten som sätts vid skapandet (create.ts),
+  // så `discountClp > 0` = medlemspris (även vid ett idempotent omförsök,
+  // då förmånstexten inte läses om → `null`).
+  const { discountClp, memberBenefitText } = result.value;
+  if (discountClp > 0) {
+    return {
+      ok: true,
+      memberDiscountMinor: discountClp,
+      memberBenefitText: memberBenefitText ?? null,
+    };
+  }
   return { ok: true };
 }
 

@@ -1495,6 +1495,31 @@ export const email = {
     expira: "Este link vence en 7 días.",
     ignorar: "Si no esperabas esta invitación, puedes ignorar este correo.",
   },
+  /** WP-54: precio con descuento de socio, en la tarjeta de la reserva
+   * (`reservaConfirmada`/`solicitudRecibida`) en vez de la fila "Precio".
+   * `descuento` ya viene formateado, sin signo. */
+  miembro: {
+    precioLabel: "Precio socio",
+    precio: (p: { precio: string; descuento: string }): string =>
+      `${p.precio} (−${p.descuento})`,
+  },
+  /** WP-54: al cliente, cuando el negocio lo marca como socio y toca
+   * "Avisar al cliente". Transaccional (no requiere consentimiento de
+   * marketing). `beneficio` = texto del negocio o `beneficioPct`. */
+  bienvenidaMiembro: {
+    asunto: (p: { negocio: string }): string =>
+      `Ahora eres socio de ${p.negocio}`,
+    preheader: (p: { beneficio: string }): string =>
+      `Tu beneficio: ${p.beneficio}.`,
+    titulo: "¡Ya eres socio!",
+    texto: (p: { cliente: string; negocio: string }): string =>
+      `Hola ${p.cliente}: desde hoy eres socio de ${p.negocio}.`,
+    beneficio: (p: { beneficio: string }): string =>
+      `Tu beneficio: ${p.beneficio}. Se aplica cuando reservas con tu mismo número de teléfono.`,
+    beneficioPct: (p: { pct: number }): string =>
+      `${p.pct} % de descuento en tus reservas`,
+    cta: "Reservar hora",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -2501,8 +2526,10 @@ export const sms = {
     fecha: string;
     hora: string;
     link: string;
+    /** WP-54: "$16.200 (-$1.800)" — con "-" ASCII (GSM-7), no "−". */
+    precioSocio?: string;
   }): string =>
-    `Tu hora en ${p.negocio} quedó confirmada: ${p.fecha} a las ${p.hora}. Detalle: ${p.link}`,
+    `Tu hora en ${p.negocio} quedó confirmada: ${p.fecha} a las ${p.hora}.${p.precioSocio ? ` Precio socio: ${p.precioSocio}.` : ""} Detalle: ${p.link}`,
   /** Recordatorio del día anterior (mismo momento que la plantilla de
    * WhatsApp `recordatorio_24h`). */
   recordatorio: (p: {
