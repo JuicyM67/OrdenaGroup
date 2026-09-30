@@ -103,7 +103,7 @@ async function countAt(
     `select count(*)::int as n from public.bookings
       where business_id = $1 and staff_id = $2
         and blocked && tstzrange($3::timestamptz, $3::timestamptz + interval '1 hour')
-        and status = 'confirmed'`,
+        and status in ('requested', 'confirmed')`,
     [b.id, b.staff[staffKey], iso(start)],
   );
   return r.rows[0]!.n;

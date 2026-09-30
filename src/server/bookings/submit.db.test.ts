@@ -69,13 +69,13 @@ describe("createCustomerBooking + saveBookingConsent", () => {
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    expect(result.value.status).toBe("confirmed");
+    expect(result.value.status).toBe("requested");
 
     const booking = await adminQuery<{ status: string; customer_id: string }>(
       "select status, customer_id from public.bookings where id = $1",
       [result.value.id],
     );
-    expect(booking.rows[0]!.status).toBe("confirmed");
+    expect(booking.rows[0]!.status).toBe("requested");
 
     await saveBookingConsent({
       businessId: biz.id,

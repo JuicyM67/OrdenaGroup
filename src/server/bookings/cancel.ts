@@ -1,7 +1,6 @@
 import "server-only";
 
 import type { Queryable } from "@/server/db/pool";
-import { enqueueBookingEvent } from "@/server/messaging/outbox";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { runAs } from "@/server/scheduling/run";
 import {
@@ -14,6 +13,7 @@ import {
 } from "@/server/scheduling/schemas";
 import type { Actor } from "@/server/scheduling/types";
 
+import { emitBookingEvent } from "./events";
 import {
   CHANGEABLE,
   insideCancelWindow,
@@ -57,7 +57,7 @@ export async function cancelBooking(
   // WP-16: efter commit (enqueueBookingEvent kastar aldrig). En redan
   // avbokad bokning (`freed === null`) köar inget nytt.
   if (result.ok && result.value.freed !== null) {
-    await enqueueBookingEvent({
+    await emitBookingEvent({
       type: "cancelled",
       bookingId: result.value.bookingId,
       businessId: c.businessId,

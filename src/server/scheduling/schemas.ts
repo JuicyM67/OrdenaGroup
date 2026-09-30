@@ -156,6 +156,11 @@ export const ownerCancelRequestSchema = z.strictObject({
   reason: z.string().trim().max(500).optional(),
 });
 
+/** WP-45: ägaren bekräftar eller nekar en förfrågan (bara ägaren, med id). */
+export const ownerDecisionRequestSchema = z.strictObject({
+  bookingId: uuid,
+});
+
 export type AvailableDaysRequest = z.input<typeof availableDaysRequestSchema>;
 export type AvailableSlotsRequest = z.input<typeof availableSlotsRequestSchema>;
 export type CreateBookingRequest = z.input<typeof createBookingRequestSchema>;
@@ -165,3 +170,4 @@ export type MoveBookingRequest =
 export type CancelBookingRequest =
   | z.input<typeof customerCancelRequestSchema>
   | z.input<typeof ownerCancelRequestSchema>;
+export type DecisionRequest = z.input<typeof ownerDecisionRequestSchema>;

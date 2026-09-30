@@ -12,7 +12,6 @@ import { lockStaffForBooking } from "@/server/db/locks";
 import type { Queryable } from "@/server/db/pool";
 import { toTstzrange } from "@/server/db/tstzrange";
 import { savepoint } from "@/server/db/tx";
-import { enqueueBookingEvent } from "@/server/messaging/outbox";
 import { staffOffersService } from "@/server/scheduling/availability";
 import { checkStart } from "@/server/scheduling/core/validate";
 import { loadSnapshot } from "@/server/scheduling/load";
@@ -28,6 +27,7 @@ import {
 import type { Actor, StaffChoice } from "@/server/scheduling/types";
 
 import { findOrCreateCustomer } from "./customers";
+import { emitBookingEvent } from "./events";
 import { createManageToken } from "./token";
 import type { BookingError, CreatedBooking } from "./types";
 
@@ -56,7 +56,11 @@ function sourceFor(
  * "any"-kandidat eller `slot_taken`). 40P01/40001 kör om hela transaktionen
  * en gång och ger sedan `slot_taken`.
  *
- * WP-10: alltid `confirmed`, `deposit_clp = 0`, `discount_clp = 0` (WP-25/30).
+ * WP-45 (D-033): kundens bokning från bokningssidan (`source = 'web'`) blir
+ * `requested` om inte företaget har `auto_confirm_bookings`; ägarens
+ * (manuella) och väntelistans bokningar är alltid `confirmed`. En förfrågan
+ * blockerar tiden precis som en bekräftad (`no_overlap`).
+ * `deposit_clp = 0`, `discount_clp = 0` (WP-25/30).
  */
 export async function createBooking(
   request: CreateBookingRequest,
@@ -79,12 +83,13 @@ export async function createBooking(
   // samma idempotensnyckel ger den befintliga bokningen utan token
   // (`manageToken === ""`) och köar inget nytt — första försöket gjorde det.
   if (result.ok && result.value.manageToken !== "") {
-    await enqueueBookingEvent({
+    await emitBookingEvent({
       type: "created",
       bookingId: result.value.id,
       businessId: result.value.businessId,
       token: result.value.manageToken,
       by: input.actor.kind,
+      status: result.value.status,
     });
   }
   return result;
@@ -114,6 +119,7 @@ type IdempotencyRow = {
   staff_id: string;
   service_id: string;
   customer_id: string;
+  status: CreatedBooking["status"];
   s: number;
   pe: number;
   price_clp: number;
@@ -132,6 +138,7 @@ async function findByIdempotencyKey(
 ): Promise<CreatedBooking | undefined> {
   const r = await q.query<IdempotencyRow>(
     `select id, staff_id, service_id, customer_id, price_clp,
+            status::text as status,
             extract(epoch from lower(period))::float8 * 1000 as s,
             extract(epoch from upper(period))::float8 * 1000 as pe
        from public.bookings
@@ -151,7 +158,7 @@ async function findByIdempotencyKey(
     priceClp: x.price_clp,
     discountClp: 0,
     depositClp: 0,
-    status: "confirmed",
+    status: x.status,
     manageToken: "",
   };
 }
@@ -190,7 +197,11 @@ export async function createIn(
   if (!staffOffersService(loaded.value, input.staffId)) {
     return err("service_not_offered");
   }
-  const { snapshot, priceClp } = loaded.value;
+  const { snapshot, priceClp, autoConfirm } = loaded.value;
+  const status: CreatedBooking["status"] =
+    input.source === "web" && input.actor.kind === "customer" && !autoConfirm
+      ? "requested"
+      : "confirmed";
 
   // WP-40: svaren valideras mot serverns frågelista för tjänsten (klientens
   // lista litas aldrig på) — okänd fråga, fråga från ett annat företag eller
@@ -235,9 +246,10 @@ export async function createIn(
           `insert into public.bookings
              (business_id, staff_id, service_id, customer_id, period, blocked,
               status, source, price_clp, discount_clp, deposit_clp,
-              manage_token_hash, notes, idempotency_key)
+              manage_token_hash, notes, idempotency_key, created_at)
            values ($1, $2, $3, $4, $5::tstzrange, $6::tstzrange,
-                   'confirmed', $7::public.booking_source, $8, 0, 0, $9, $10, $11)
+                   $12::public.booking_status, $7::public.booking_source,
+                   $8, 0, 0, $9, $10, $11, $13)
            returning id`,
           [
             input.businessId,
@@ -251,6 +263,9 @@ export async function createIn(
             hash,
             input.notes ?? null,
             input.idempotencyKey ?? null,
+            status,
+            // WP-45: förfrågans 24 h räknas från den injicerade klockan.
+            input.now,
           ],
         );
         return r.rows[0]!.id;
@@ -302,7 +317,7 @@ export async function createIn(
       priceClp,
       discountClp: 0,
       depositClp: 0,
-      status: "confirmed",
+      status,
       manageToken: token,
     });
   }

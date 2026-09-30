@@ -126,7 +126,7 @@ function rangeIso(text: string): string {
 }
 
 describe("createBooking lyckas", () => {
-  it("period 35 min, blocked 35 + 10, confirmed, pris från tjänsten, hash av token", async () => {
+  it("period 35 min, blocked 35 + 10, requested (kund, WP-45), pris från tjänsten, hash av token", async () => {
     const r = await createBooking(base(biz));
     if (!r.ok) throw new Error(r.error);
     const b = r.value;
@@ -139,7 +139,7 @@ describe("createBooking lyckas", () => {
       priceClp: 12000,
       discountClp: 0,
       depositClp: 0,
-      status: "confirmed",
+      status: "requested",
     });
     const row = await bookingRow(b.id);
     expect(rangeIso(row.period)).toBe(
@@ -149,7 +149,7 @@ describe("createBooking lyckas", () => {
       range("2026-10-06T14:00:00Z", "2026-10-06T14:45:00Z"),
     );
     expect(row).toMatchObject({
-      status: "confirmed",
+      status: "requested",
       source: "web",
       price_clp: 12000,
       discount_clp: 0,

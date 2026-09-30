@@ -20,6 +20,7 @@ vi.mock("@/server/scheduling/run", () => ({ runAs }));
 const { createBooking } = await import("./create");
 const { moveBooking } = await import("./move");
 const { cancelBooking } = await import("./cancel");
+const { emitBookingEvent } = await import("./events");
 
 const BIZ = "b0000000-0000-4000-8000-000000000001";
 const BOOKING = "b0000000-0000-4000-8000-0000000000aa";
@@ -203,5 +204,40 @@ describe("cancelBooking → cancelled", () => {
       { businessId: BIZ, actor: customer, now: NOW },
     );
     expect(enqueueBookingEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("emitBookingEvent (WP-45, tills utkorgen breddats i steg 3)", () => {
+  const base = { bookingId: BOOKING, businessId: BIZ, token: TOKEN };
+
+  it("förfrågan (created/moved med requested) och declined köar inget", async () => {
+    await emitBookingEvent({
+      ...base,
+      type: "created",
+      by: "customer",
+      status: "requested",
+    });
+    await emitBookingEvent({
+      ...base,
+      type: "moved",
+      by: "customer",
+      status: "requested",
+    });
+    await emitBookingEvent({
+      type: "declined",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      reason: "expired",
+    });
+    expect(enqueueBookingEvent).not.toHaveBeenCalled();
+  });
+
+  it("confirmed → bekräftelse + påminnelse som created av ägaren", async () => {
+    await emitBookingEvent({ ...base, type: "confirmed", by: "owner" });
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith({
+      ...base,
+      type: "created",
+      by: "owner",
+    });
   });
 });

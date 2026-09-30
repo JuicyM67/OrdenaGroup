@@ -70,7 +70,7 @@ describe("loadBookingByToken", () => {
       businessId: biz.id,
       bookingId: x.id,
       start: iso(at(TUE, "10:00")),
-      status: "confirmed",
+      status: "requested",
       canCancel: true,
     });
     // Inga kunduppgifter i resultatet.

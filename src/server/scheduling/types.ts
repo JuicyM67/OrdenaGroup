@@ -55,10 +55,16 @@ export type HoursRow = {
 };
 
 export type BookingStatus =
-  "pending_payment" | "confirmed" | "completed" | "no_show" | "cancelled";
+  | "requested"
+  | "pending_payment"
+  | "confirmed"
+  | "completed"
+  | "no_show"
+  | "cancelled";
 
-/** Samma som villkoret i no_overlap (WP-01). */
+/** Samma som villkoret i no_overlap (WP-01, WP-45: en förfrågan blockerar). */
 export const BLOCKING_STATUSES: readonly BookingStatus[] = [
+  "requested",
   "pending_payment",
   "confirmed",
   "completed",
