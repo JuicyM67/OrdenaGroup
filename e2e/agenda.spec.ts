@@ -252,9 +252,14 @@ test.describe("Agenda — tangentbord", () => {
 
   test("piltangenter i SegmentedControl når Mes (WP-50)", async ({ page }) => {
     await page.goto("/design-lab/agenda");
-    await page.getByRole("radio", { name: "Semana" }).focus();
-    await page.keyboard.press("ArrowLeft");
-    await expect(page.getByRole("radio", { name: "Mes" })).toBeFocused();
+    // Långsam CI: vänta tills Radix hydrerat innan piltangenten (annars tappas den).
+    await expect(async () => {
+      await page.getByRole("radio", { name: "Semana" }).focus();
+      await page.keyboard.press("ArrowLeft");
+      await expect(page.getByRole("radio", { name: "Mes" })).toBeFocused({
+        timeout: 1000,
+      });
+    }).toPass({ timeout: 10_000 });
   });
 });
 
