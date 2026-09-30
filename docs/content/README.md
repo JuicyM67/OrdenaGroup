@@ -14,7 +14,16 @@ formulario de reserva se escriben en **WP-40** (D-031): `formulario` en
 (`/[slug]`) y Ajustes → "Perfil" (portada, logo, galería, sobre nosotros,
 Instagram) se escriben en **WP-41**: `perfil` en `es-CL.ts`, más los campos
 nuevos de descripción de servicio (`servicios.campos.descripcion*`) y de rol
-de profesional (`profesionales.campos.titulo*`).
+de profesional (`profesionales.campos.titulo*`). La confirmación/rechazo de
+reservas (`requested`, D-033) se escribe en **WP-45**: `solicitudes` en
+`es-CL.ts` (campana de notificaciones, diálogo de rechazo, feedback), más
+textos nuevos repartidos en `estados.porConfirmar`, `reserva.
+confirmacionSolicitud`, `reserva.bookingBar.ctaSolicitudEnviada`, `reserva.
+antesDeConfirmar.{ctaEnviarSolicitud,avisoWhatsappSolicitud}`, `gestion.
+pendienteAviso`, `inicio.solicitudes`, `ajustes.reglas.
+confirmarAutomatico{,Ayuda}`, `email.{nuevaSolicitud,solicitudRecibida,
+solicitudRechazada,solicitudVencida}` y `sms.{solicitudRechazada,
+solicitudVencida}`.
 
 ## Dónde está cada cosa
 
@@ -47,14 +56,14 @@ solo recibe esos nombres ya formateados como parámetros de tipo `string`.
    parámetros con nombre (ver `docs/content/GUIA_DE_ESTILO.md` §4).
 4. Ponlo bajo el área que corresponda (`comun`, `nav`, `estados`, `errores`,
    `calendario`, `reserva`, `gestion`, `inicio`, `agenda`, `hoy`,
-   `plantillasWhatsapp`, `whatsappSesion`, `email`, y desde WP-03b
+   `plantillasWhatsapp`, `whatsappSesion`, `email`, `sms`, y desde WP-03b
    `validacion`, `acceso`, `onboarding`, `negocio`, `servicios`,
    `profesionales`, `horarios`, `clientes`, `caja`, `ajustes`, `abono`,
-   desde WP-40 `formulario`, y desde WP-41 `perfil`) — nunca sueltos en la
-   raíz del archivo. Las áreas de WP-03b, WP-40 y WP-41 se agregan siempre
-   **al final** del archivo (ver R7 del plan de WP-03b): es la única forma
-   ya acordada de evitar conflictos con otros paquetes que también tocan
-   `es-CL.ts`. Excepción:
+   desde WP-40 `formulario`, desde WP-41 `perfil`, y desde WP-45
+   `solicitudes`) — nunca sueltos en la raíz del archivo. Las áreas de
+   WP-03b, WP-40, WP-41 y WP-45 se agregan siempre **al final** del archivo
+   (ver R7 del plan de WP-03b): es la única forma ya acordada de evitar
+   conflictos con otros paquetes que también tocan `es-CL.ts`. Excepción:
    `CAJA_METODOS_MANUALES` es una lista de códigos (`payment_method` sin
    `mercadopago`, D-022), no texto de producto, así que se exporta suelta
    junto a `caja` en vez de vivir dentro de un objeto `Trad` (que no admite

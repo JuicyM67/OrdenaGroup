@@ -100,6 +100,7 @@ export const estados: Widen<typeof Es.estados> = {
   confirmada: "Bekräftad",
   abonoPagado: "Förskott betalt",
   sinConfirmar: "Obekräftad",
+  porConfirmar: "Väntar på bekräftelse",
   confirmo: "Bekräftade",
   confirmoPorWhatsapp: "Bekräftade via sms",
   llego: "Kom",
@@ -255,6 +256,7 @@ export const reserva: Widen<typeof Es.reserva> = {
   bookingBar: {
     ctaReservar: "Boka",
     ctaReservado: "Bokat!",
+    ctaSolicitudEnviada: "Förfrågan skickad!",
   },
   clienteForm: {
     titulo: "Dina uppgifter",
@@ -271,7 +273,10 @@ export const reserva: Widen<typeof Es.reserva> = {
       `Du kan avboka eller ändra tiden fram till ${p.horas} h innan, utan kostnad.`,
     avisoWhatsapp: (p: { negocio: string }): string =>
       `Vi skickar bekräftelsen och en påminnelse om din tid hos ${p.negocio} via sms till det här numret.`,
+    avisoWhatsappSolicitud: (p: { negocio: string }): string =>
+      `Om din tid blir väntande mejlar vi dig; när ${p.negocio} bekräftar den får du bekräftelsen och påminnelsen via sms.`,
     ctaConfirmar: "Bekräfta bokning",
+    ctaEnviarSolicitud: "Skicka förfrågan",
   },
   consentimientos: {
     version: "2026-10-v1",
@@ -290,6 +295,13 @@ export const reserva: Widen<typeof Es.reserva> = {
     resumenTitulo: "Sammanfattning av din bokning",
     avisoWhatsapp: "Vi har skickat bekräftelsen via sms.",
     verMiReserva: "Se min bokning",
+  },
+  confirmacionSolicitud: {
+    titulo: "Förfrågan skickad!",
+    resumenTitulo: "Sammanfattning av din förfrågan",
+    aviso: (p: { negocio: string }): string =>
+      `Vi mejlar dig när ${p.negocio} bekräftar din tid.`,
+    verMiSolicitud: "Se min förfrågan",
   },
   vacios: {
     eligeServicio: "Välj en tjänst för att se lediga tider.",
@@ -318,6 +330,8 @@ export const gestion: Widen<typeof Es.gestion> = {
   },
   ctaCambiarHora: "Ändra tid",
   ctaCancelarReserva: "Avboka tiden",
+  pendienteAviso:
+    "Företaget har inte bekräftat den här tiden än. Vi meddelar dig så fort de gör det.",
   confirmarCancelacion: {
     titulo: "Avboka tiden?",
     cuerpo: "Vi meddelar företaget och släpper tiden till någon annan.",
@@ -405,6 +419,9 @@ export const inicio: Widen<typeof Es.inicio> = {
     vacio: "Du har inga kommande bokningar.",
     fechaHora: (p: { fecha: string; hora: string }): string =>
       `${p.fecha} · ${p.hora}`,
+  },
+  solicitudes: {
+    titulo: "Förfrågningar att bekräfta",
   },
   flashCard: {
     titulo: "Aktiv flashtid",
@@ -1009,6 +1026,65 @@ export const email: Widen<typeof Es.email> = {
       `${p.cliente} avbokade sin tid för ${p.servicio} den ${p.fecha} kl. ${p.hora}. Tiden är nu ledig i din kalender.`,
     cta: "Se min kalender",
   },
+  nuevaSolicitud: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `Förfrågan från ${p.cliente} den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} kl. ${p.hora}. Bekräfta eller neka den.`,
+    titulo: "Du har en förfrågan att bekräfta",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} skickade en förfrågan om ${p.servicio} för ${p.fecha} kl. ${p.hora}. Bekräfta eller neka den innan den hinner gå ut.`,
+    cta: "Se förfrågan",
+  },
+  solicitudRecibida: {
+    asunto: (p: { negocio: string }): string =>
+      `Vi tog emot din förfrågan hos ${p.negocio}`,
+    preheader: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `${p.servicio} den ${p.fecha} kl. ${p.hora}.`,
+    titulo: "Vi tog emot din förfrågan",
+    texto: (p: {
+      negocio: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `Din förfrågan om ${p.servicio} hos ${p.negocio} för ${p.fecha} kl. ${p.hora} väntar på bekräftelse. Vi mejlar dig så fort ${p.negocio} bekräftar den.`,
+    cta: "Se min förfrågan",
+  },
+  solicitudRechazada: {
+    asunto: (p: { negocio: string }): string =>
+      `Din förfrågan hos ${p.negocio} kunde inte bekräftas`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Tiden den ${p.fecha} kl. ${p.hora} blev inte bekräftad.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      linkNuevaReserva: string;
+      motivo?: string;
+    }): string =>
+      `Hej ${p.cliente},\n\n${p.negocio} kunde inte bekräfta din förfrågan om tiden den ${p.fecha} kl. ${p.hora}.${p.motivo ? ` Anledning: ${p.motivo}.` : ""}\n\nDu kan boka en ny tid när du vill: ${p.linkNuevaReserva}`,
+  },
+  solicitudVencida: {
+    asunto: (p: { negocio: string }): string =>
+      `Din förfrågan hos ${p.negocio} hann gå ut`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Tiden den ${p.fecha} kl. ${p.hora} är inte längre ledig.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      linkNuevaReserva: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nDin förfrågan hos ${p.negocio} om tiden den ${p.fecha} kl. ${p.hora} hann gå ut innan vi bekräftade den.\n\nDu kan boka en ny tid när du vill: ${p.linkNuevaReserva}`,
+  },
   listaEsperaCupo: {
     asunto: (p: { negocio: string }): string =>
       `En tid hos ${p.negocio} blev ledig`,
@@ -1390,6 +1466,9 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     cancelWindowAyuda:
       "Det här antalet visas för kunden innan bekräftelse och i sms-bekräftelsen.",
     slotIntervalLabel: "Hur ofta tider erbjuds",
+    confirmarAutomatico: "Bekräfta bokningar automatiskt",
+    confirmarAutomaticoAyuda:
+      "Om du stänger av den här väntar varje bokning från din sida tills du bekräftar eller nekar den. Under tiden är tiden blockerad så att ingen annan kan ta den.",
   },
   waitlistMode: {
     sequential: "En i taget, i ordning",
@@ -1702,6 +1781,20 @@ export const sms: Widen<typeof Es.sms> = {
     link: string;
   }): string =>
     `Din tid hos ${p.negocio} den ${p.fecha} kl. ${p.hora} avbokades. Boka ny tid: ${p.link}`,
+  solicitudRechazada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din förfrågan hos ${p.negocio} för ${p.fecha} kl. ${p.hora} kunde inte bekräftas. Boka en ny tid: ${p.link}`,
+  solicitudVencida: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din förfrågan hos ${p.negocio} för ${p.fecha} kl. ${p.hora} hann gå ut. Boka en ny tid: ${p.link}`,
   listaEsperaCupo: (p: {
     negocio: string;
     servicio: string;
@@ -1955,6 +2048,39 @@ export const perfil: Widen<typeof Es.perfil> = {
 };
 
 // ---------------------------------------------------------------------------
+// solicitudes: WP-45 (D-033), samma nycklar som Es.solicitudes.
+// ---------------------------------------------------------------------------
+
+export const solicitudes: Widen<typeof Es.solicitudes> = {
+  campana: {
+    titulo: inicio.solicitudes.titulo,
+    vacio: "Du har inga väntande förfrågningar.",
+  },
+  fila: (p: {
+    cliente: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+  }): string => `${p.cliente} · ${p.servicio} · ${p.fecha}, ${p.hora}`,
+  acciones: {
+    confirmar: "Bekräfta",
+    rechazar: "Neka",
+  },
+  rechazarDialog: {
+    titulo: "Neka den här förfrågan?",
+    cuerpo: "Kunden meddelas och kan boka en ny tid.",
+    motivoLabel: "Anledning (valfritt)",
+    motivoPlaceholder: "Till exempel: vi har ingen tid den dagen.",
+    ctaSi: "Ja, neka",
+    ctaNo: "Nej, behåll",
+  },
+  toast: {
+    confirmada: "Förfrågan bekräftad.",
+    rechazada: "Förfrågan nekad.",
+  },
+};
+
+// ---------------------------------------------------------------------------
 // Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
@@ -1988,5 +2114,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   abono,
   formulario,
   perfil,
+  solicitudes,
 };
 void _check;

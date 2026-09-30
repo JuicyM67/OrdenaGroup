@@ -196,6 +196,8 @@ describe("sv-SE.app: sms ryms i 160 tecken", () => {
     ["recordatorioHoy", SvApp.sms.recordatorioHoy({ ...EXEMPEL_SMS })],
     ["reservaMovida", SvApp.sms.reservaMovida({ ...EXEMPEL_SMS })],
     ["reservaCancelada", SvApp.sms.reservaCancelada({ ...EXEMPEL_SMS })],
+    ["solicitudRechazada", SvApp.sms.solicitudRechazada({ ...EXEMPEL_SMS })],
+    ["solicitudVencida", SvApp.sms.solicitudVencida({ ...EXEMPEL_SMS })],
     ["listaEsperaCupo", SvApp.sms.listaEsperaCupo({ ...EXEMPEL_SMS })],
     ["horaFlash", SvApp.sms.horaFlash({ ...EXEMPEL_SMS })],
     ["nuevaReservaDueno", SvApp.sms.nuevaReservaDueno({ ...EXEMPEL_SMS })],
