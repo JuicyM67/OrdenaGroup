@@ -6,7 +6,6 @@ import type { Metadata } from "next";
 
 import { logout } from "@/app/auth/actions";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
-import { AjustesTabRefresh } from "@/components/settings/ajustes-tab-refresh";
 import { BookingRulesSection } from "@/components/settings/booking-rules-section";
 import { nav } from "@/i18n";
 import { loadAjustesBusiness } from "@/server/owner/ajustes";
@@ -46,15 +45,10 @@ export default async function AjustesReglasPage() {
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >
-      <AjustesTabRefresh>
-        {(refresh) => (
-          <BookingRulesSection
-            business={business}
-            onSaved={refresh}
-            action={updateBusinessSettingsAction}
-          />
-        )}
-      </AjustesTabRefresh>
+      <BookingRulesSection
+        business={business}
+        action={updateBusinessSettingsAction}
+      />
     </AjustesShell>
   );
 }

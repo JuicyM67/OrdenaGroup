@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 // Sección "Tu negocio" (WP-15b slim → WP-55: separada de "Reglas de reserva", ver
 // `booking-rules-section.tsx`, ahora cada una en su propia pestaña de Ajustes). Mismos
 // campos y mismas reglas de slug que onboarding (business-step.tsx), reutilizando sus
@@ -47,9 +49,11 @@ export function BusinessSection({
   action,
 }: {
   business: AjustesBusiness;
-  onSaved: (business: AjustesBusiness) => void;
+  /** Utan onSaved laddas sidan om (flikarna i WP-55 är egna rutter). */
+  onSaved?: (business: AjustesBusiness) => void;
   action: AjustesActions["updateBusinessSettings"];
 }) {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(() => toFormState(business));
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
@@ -95,7 +99,7 @@ export function BusinessSection({
       });
       if (result.ok) {
         setStatus("saved");
-        onSaved({
+        (onSaved ?? (() => router.refresh()))({
           ...business,
           name: form.name,
           slug: form.slug.trim().toLowerCase(),

@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 // Sección "Reglas de reserva" (WP-55: separada de `business-section.tsx`, propia pestaña
 // de Ajustes). Mismo `action` (`updateBusinessSettings`, escribe la fila entera de
 // `businesses`) — los campos de "Tu negocio" viajan sin cambios desde `business`.
@@ -40,9 +42,11 @@ export function BookingRulesSection({
   action,
 }: {
   business: AjustesBusiness;
-  onSaved: (business: AjustesBusiness) => void;
+  /** Utan onSaved laddas sidan om (flikarna i WP-55 är egna rutter). */
+  onSaved?: (business: AjustesBusiness) => void;
   action: AjustesActions["updateBusinessSettings"];
 }) {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(() => toFormState(business));
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
     "idle",
@@ -75,7 +79,7 @@ export function BookingRulesSection({
       });
       if (result.ok) {
         setStatus("saved");
-        onSaved({
+        (onSaved ?? (() => router.refresh()))({
           ...business,
           minNoticeMinutes: Number(form.minNoticeMinutes),
           maxDaysAhead: Number(form.maxDaysAhead),
