@@ -188,6 +188,52 @@ async function ownerEmailsFor(businessId: string): Promise<string[]> {
 }
 
 // ---------------------------------------------------------------------------
+// Inbjudan (WP-46, D-034): `recipient_kind = 'invitee'`. Adressen/företagets
+// namn slås upp via `payload.invitationId` (ingen adress i utkorgen) — samma
+// D-029-mönster som `loadContext`/`ownerEmailsFor` ovan, men mot
+// `member_invitations` i stället för `bookings`. `invitadoPor` (den
+// agerande ägarens visningsnamn) kommer INTE härifrån: den skrevs redan in i
+// `payload` av `src/server/team/invitations.ts` (servern kan inte läsa
+// `auth.users` direkt, se den filens kommentar).
+// ---------------------------------------------------------------------------
+
+type InvitationContext = {
+  email: string;
+  negocio: string;
+  /** Varken accepterad, återkallad eller utgången — annars skickas mejlet
+   * aldrig (samma idé som `REQUEST_ONLY_TEMPLATES` nedan för bokningar). */
+  isPending: boolean;
+};
+
+type RawInvitationContextRow = {
+  email: string;
+  negocio: string;
+  is_pending: boolean;
+};
+
+async function loadInvitationContext(
+  businessId: string,
+  invitationId: string,
+): Promise<InvitationContext | undefined> {
+  return withServiceTx(async (q) => {
+    const r = await q.query<RawInvitationContextRow>(
+      `select mi.email,
+              b.name as negocio,
+              (mi.accepted_at is null and mi.revoked_at is null
+                and mi.expires_at > now()) as is_pending
+         from public.member_invitations mi
+         join public.businesses b on b.id = mi.business_id
+        where mi.business_id = $1 and mi.id = $2`,
+      [businessId, invitationId],
+    );
+    const row = r.rows[0];
+    return row
+      ? { email: row.email, negocio: row.negocio, isPending: row.is_pending }
+      : undefined;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Länkar och mallars data
 // ---------------------------------------------------------------------------
 
@@ -200,6 +246,11 @@ function appUrl(): string {
 
 function manageLink(token: string): string {
   return `${appUrl()}/r/${token}`;
+}
+
+/** `${APP_URL}/app/invitacion/${token}` (WP-46 plan, paso 4). */
+function invitationAcceptLink(token: string): string {
+  return `${appUrl()}/app/invitacion/${token}`;
 }
 
 function bookAgainLink(slug: string): string {
@@ -564,6 +615,34 @@ async function sendOwner(
   return ids.join(",");
 }
 
+/** Al personal invitado (WP-46, D-034): único canal e-post en v1 (sin sms,
+ * igual que el plan §4 descarta WhatsApp/SMS acá). `invitadoPor` viene del
+ * `payload` (escrito por `src/server/team/invitations.ts` al encolar, ver
+ * el comentario en ese archivo) — nunca de una consulta a `auth.users`. */
+async function sendInvitee(
+  ctx: InvitationContext,
+  row: ClaimedRow,
+): Promise<string> {
+  if (row.template !== "invitacionEquipo") {
+    throw new OutboxSendError("unknown_template");
+  }
+  const token = typeof row.payload.token === "string" ? row.payload.token : "";
+  const invitadoPor =
+    typeof row.payload.invitadoPor === "string" ? row.payload.invitadoPor : "";
+  if (!token) throw new OutboxSendError("invalid_payload");
+  const r = await sendEmail({
+    to: ctx.email,
+    template: "invitacionEquipo",
+    data: {
+      negocio: ctx.negocio,
+      invitadoPor,
+      acceptUrl: invitationAcceptLink(token),
+    },
+    idempotencyKey: row.dedupeKey,
+  });
+  return r.id;
+}
+
 async function sendRow(ctx: MessageContext, row: ClaimedRow): Promise<string> {
   if (row.recipientKind === "owner") return sendOwner(ctx, row);
   const token = typeof row.payload.token === "string" ? row.payload.token : "";
@@ -654,10 +733,38 @@ const REQUEST_ONLY_TEMPLATES: ReadonlySet<string> = new Set([
   "nuevaSolicitud",
 ]);
 
+async function processInviteeRow(
+  row: ClaimedRow,
+): Promise<"sent" | "queued" | "dead" | "cancelled"> {
+  const invitationId =
+    typeof row.payload.invitationId === "string"
+      ? row.payload.invitationId
+      : "";
+  if (!invitationId) throw new OutboxSendError("invalid_payload");
+  const ctx = await loadInvitationContext(row.businessId, invitationId);
+  if (!ctx) throw new OutboxSendError("no_invitation");
+  // Inbjudan hann accepteras, återkallas eller gå ut innan raden skickades
+  // (samma idé som REQUEST_ONLY_TEMPLATES nedan för bokningar) — beskedet
+  // är inaktuellt, och (vid accept/revoke) länken/token:en i payloaden är
+  // inte längre giltig.
+  if (!ctx.isPending) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const providerId = await sendInvitee(ctx, row);
+  await finalizeSent(row, providerId);
+  return "sent";
+}
+
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
   try {
+    // `await` explícito (no solo `return processInviteeRow(row)`): un
+    // `return <promise>` dentro de un `try` NO deja que el `catch` de abajo
+    // atrape un rechazo posterior — hay que esperarlo acá para que
+    // `finalizeFailed` siga cubriendo los errores de la rama invitee.
+    if (row.recipientKind === "invitee") return await processInviteeRow(row);
     if (!row.bookingId) throw new OutboxSendError("no_booking_id");
     const ctx = await loadContext(row.businessId, row.bookingId);
     if (!ctx) throw new OutboxSendError("no_booking");
