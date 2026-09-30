@@ -1,5 +1,7 @@
 import "server-only";
 
+import { negocio } from "@/i18n";
+
 import type {
   BookingAvailability,
   BookingBusiness,
@@ -66,15 +68,39 @@ const NEXT_FREE_DAYS = 14;
  * per tjänstens sorteringsordning. */
 const TINTS: readonly ServiceTint[] = ["lilac", "peach", "lime"];
 
+/** WP-51: länken byggs på servern utifrån handtaget (aldrig i klienten, se
+ * `social-icons.tsx`s filkommentar). Samma handtagsregler som `instagram`
+ * (1–30 tecken, `businesses_instagram_format`/`_tiktok_format`/
+ * `_facebook_format`). */
+const SOCIAL_BASE_URL = {
+  instagram: "https://www.instagram.com/",
+  tiktok: "https://www.tiktok.com/@",
+  facebook: "https://www.facebook.com/",
+} as const;
+
+function socialUrl(
+  kind: keyof typeof SOCIAL_BASE_URL,
+  handle: string | null,
+): string | null {
+  return handle
+    ? `${SOCIAL_BASE_URL[kind]}${encodeURIComponent(handle)}`
+    : null;
+}
+
 type BusinessRow = {
   name: string;
   comuna: string;
+  /** WP-51: rubro ("barberia" …), visas i profilhuvudet. */
+  category: string | null;
   status: string;
   cancel_window_hours: number;
   about: string | null;
   cover_url: string | null;
   logo_url: string | null;
   instagram: string | null;
+  /** WP-51: samma regler som instagram (handtag utan "@"). */
+  tiktok: string | null;
+  facebook: string | null;
   address: string | null;
   phone: string | null;
   /** WP-45 (D-033): av → CTA:n/bekräftelsen visar "Enviar solicitud" i
@@ -200,8 +226,8 @@ export async function loadReservaPageData(
   const { businessId, slug, now } = params;
 
   const bizRes = await q.query<BusinessRow>(
-    `select name, comuna, status::text as status, cancel_window_hours,
-            about, cover_url, logo_url, instagram, address, phone,
+    `select name, comuna, category, status::text as status, cancel_window_hours,
+            about, cover_url, logo_url, instagram, tiktok, facebook, address, phone,
             auto_confirm_bookings
        from public.businesses where id = $1`,
     [businessId],
@@ -225,6 +251,11 @@ export async function loadReservaPageData(
         ? biz.logo_url
         : null,
     instagram: biz.instagram,
+    tiktok: biz.tiktok,
+    facebook: biz.facebook,
+    instagramUrl: socialUrl("instagram", biz.instagram),
+    tiktokUrl: socialUrl("tiktok", biz.tiktok),
+    facebookUrl: socialUrl("facebook", biz.facebook),
     address: biz.address,
     phone: biz.phone,
     gallery,
@@ -236,6 +267,12 @@ export async function loadReservaPageData(
     slug,
     name: biz.name,
     comuna: biz.comuna,
+    // Etiketten slås upp här (servern) så att rubrik-listan inte hamnar i
+    // klientbunten (D-032).
+    category: biz.category
+      ? ((negocio.rubros as Record<string, string | undefined>)[biz.category] ??
+        null)
+      : null,
     // D-011: bara Santiago-marknaden i v1, ingen egen kolumn för staden.
     city: "Santiago",
     ...hours.summary,

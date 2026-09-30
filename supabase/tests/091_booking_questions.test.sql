@@ -2,7 +2,7 @@
 -- plus typ-specifika constraints (options krävs/förbjuds beroende på `kind`).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(22);
 \ir _helpers.psql
 
 insert into public.booking_questions (id, business_id, label, kind, required, applies_to) values
@@ -52,11 +52,18 @@ select throws_ok($$ insert into public.booking_questions (business_id, label, ki
 select throws_ok($$ update public.booking_questions set label = 'x' where id = 'aaaaaaaa-2800-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.booking_questions where id = 'aaaaaaaa-2800-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA/nomember ser noll rader (WP-01 fas 1, se
--- 20260927100200_catalog_and_hours.sql: ingen åtkomst till katalogen ännu).
+-- 6. staffA ser noll frågor (kräver can_edit_catalog, WP-46 uppföljning 2,
+-- default false — booking_questions fick ingen bred SELECT-policy som
+-- staff/services, bara write-policyns flagga). staffA kan därför inte
+-- heller SKRIVA en fråga (samma gränstest som pgTAP-uppdraget bad om).
+-- vendorA/nomember oförändrade.
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.booking_questions)::int, 0, 'staffA ser noll frågor');
+select is((select count(*) from public.booking_questions)::int, 0, 'staffA ser noll frågor (ingen can_edit_catalog)');
+select throws_ok(
+  $$ insert into public.booking_questions (business_id, label, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', 'Otra', 'short_text') $$,
+  '42501'
+);
 
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);
 select is((select count(*) from public.booking_questions)::int, 0, 'vendorA ser noll frågor');

@@ -55,10 +55,11 @@ set local role anon;
 select throws_ok($$ select count(*) from public.booking_answers $$, '42501');
 select throws_ok($$ delete from public.booking_answers where id = 'aaaaaaaa-2600-0000-0000-000000000001' $$, '42501');
 
--- 4. staffA/vendorA/nomember ser noll rader.
+-- 4. staffA ser nu A:s svar (WP-46 steg 2: läsning för owner+staff).
+-- vendorA/nomember oförändrade (0).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.booking_answers)::int, 0, 'staffA ser noll svar');
+select is((select count(*) from public.booking_answers)::int, 1, 'staffA ser A:s svar (bara läsning)');
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);
 select is((select count(*) from public.booking_answers)::int, 0, 'vendorA ser noll svar');
 select set_config('request.jwt.claims', json_build_object('sub', '55555555-5555-5555-5555-555555555555', 'role', 'authenticated')::text, true);

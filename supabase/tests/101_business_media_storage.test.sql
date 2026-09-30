@@ -103,14 +103,17 @@ with deleted as (
 )
 select is((select count(*) from deleted)::int, 0, 'anon kan inte radera ett objekt (0 rader)');
 
--- 8. staffA/vendorA/nomember ser noll objekt och kan inte skriva (samma
--- fas 1-gräns som business_images: bara owner/admin).
+-- 8. staffA ser noll objekt (SELECT kräver can_edit_settings, WP-46
+-- uppföljning 2), men KAN ladda upp i sitt eget företags mapp (INSERT är
+-- bredare: alla medlemmar, owner+staff, så att personal kan ladda upp sitt
+-- eget foto — se 20260930170100_business_social_links_and_staff_self_profile.sql).
+-- vendorA/nomember oförändrade: ser inget och kan inte skriva.
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from storage.objects where bucket_id = 'business-media')::int, 0, 'staffA ser noll objekt');
-select throws_ok(
+select is((select count(*) from storage.objects where bucket_id = 'business-media')::int, 0, 'staffA ser noll objekt (ingen can_edit_settings)');
+select lives_ok(
   $$ insert into storage.objects (bucket_id, name) values ('business-media', 'aaaaaaaa-0000-0000-0000-000000000001/staff.jpg') $$,
-  '42501'
+  'staffA kan ladda upp i sitt eget företags mapp'
 );
 
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);

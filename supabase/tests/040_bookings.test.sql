@@ -70,10 +70,13 @@ select throws_ok(
 select throws_ok($$ update public.bookings set notes = 'x' where id = 'aaaaaaaa-4000-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.bookings where id = 'aaaaaaaa-4000-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA ser noll rader.
+-- 6. staffA ser nu "hela kalendern" (WP-46 steg 2: SELECT för owner+staff),
+-- men kan fortfarande inte skriva (staffA saknar staff_id/flaggor som
+-- matchar bookings — se 106_booking_permissions.test.sql för den detaljerade
+-- can_manage_own/all/can_cancel-matrisen). vendorA oförändrad (0).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.bookings)::int, 0, 'staffA ser noll bokningar');
+select is((select count(*) from public.bookings)::int, 1, 'staffA ser A:s bokning (bara läsning)');
 select throws_ok(
   $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp)
      values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',

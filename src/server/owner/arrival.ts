@@ -1,10 +1,14 @@
 import "server-only";
 
+import { requireBookingPerm } from "@/server/bookings/authz";
+import { pgErrorCode } from "@/server/db/errors";
+import { loadMember, PermissionDeniedError } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
 export type ArrivalStatus = "completed" | "no_show";
-export type ArrivalError = "not_found" | "invalid_status";
+/** `forbidden` (WP-46): medlemmen får inte röra bokningen. */
+export type ArrivalError = "not_found" | "invalid_status" | "forbidden";
 export type ArrivalResult = { ok: true } | { ok: false; error: ArrivalError };
 
 /** Bara dessa statusar kan bli Llegó/No vino (samma som `CHANGEABLE` i
@@ -26,9 +30,29 @@ export async function markArrival(
   bookingId: string,
   status: ArrivalStatus,
 ): Promise<ArrivalResult> {
-  return withOwnerTx(userId, (q) =>
-    markArrivalIn(q, businessId, bookingId, status),
-  );
+  try {
+    return await withOwnerTx(userId, async (q) => {
+      // WP-46: samma regel som att flytta (egen/alla). Kundens räknare
+      // (`customers`) kräver dessutom `can_manage_all_bookings` i RLS — en
+      // 42501 därifrån blir `forbidden` nedan och rullar tillbaka allt.
+      const r = await q.query<{ staff_id: string }>(
+        `select staff_id from public.bookings where business_id = $1 and id = $2`,
+        [businessId, bookingId],
+      );
+      const row = r.rows[0];
+      if (!row) return { ok: false, error: "not_found" } as const;
+      requireBookingPerm(await loadMember(q, userId, businessId), {
+        kind: "manage",
+        staffId: row.staff_id,
+      });
+      return markArrivalIn(q, businessId, bookingId, status);
+    });
+  } catch (e) {
+    if (e instanceof PermissionDeniedError || pgErrorCode(e) === "42501") {
+      return { ok: false, error: "forbidden" };
+    }
+    throw e;
+  }
 }
 
 type Row = { customer_id: string; status: string };

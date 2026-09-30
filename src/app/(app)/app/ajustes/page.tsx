@@ -9,11 +9,12 @@ import { logout } from "@/app/auth/actions";
 import { AjustesScreen } from "@/components/settings/ajustes-screen";
 import { nav } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { loadAjustesData } from "@/server/owner/ajustes";
 import { loadProfileSettings } from "@/server/owner/profile";
 import { listPendingRequests } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
+import { loadTeamData } from "@/server/team/members";
 
 import {
   confirmRequestAction,
@@ -27,6 +28,21 @@ import {
   updateServiceAction,
   updateStaffAction,
 } from "./actions";
+import {
+  inviteStaffAction,
+  loadTeamDataAction,
+  removeMemberAccessAction,
+  resendInvitationAction,
+  revokeInvitationAction,
+  updateMemberPermsAction,
+} from "./team-actions";
+import {
+  confirmMyPhotoUploadAction,
+  createMyPhotoUploadAction,
+  deleteMyPhotoAction,
+  loadMyProfileAction,
+  updateMyTitleAction,
+} from "../my-profile-actions";
 import {
   activatePresetAction,
   createCategoryAction,
@@ -71,6 +87,11 @@ async function loadBookingFormBundle() {
   return result.ok ? result.data : null;
 }
 
+async function loadTeamForPage(userId: string, businessId: string) {
+  "use server";
+  return loadTeamData(userId, businessId);
+}
+
 export default async function AjustesPage() {
   const supabase = await createSupabaseServerClient();
   const {
@@ -78,12 +99,27 @@ export default async function AjustesPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const business = await getOwnerBusiness(user.id);
-  if (!business) redirect("/app/onboarding");
+  const current = await getCurrentMember(user.id);
+  if (!current) redirect("/app/onboarding");
+  const { business, view } = current;
+
+  // WP-46: Ajustes är i praktiken bara konfiguration — en personal utan
+  // NÅGON av de flaggorna (och som inte är ägare) har ingenting att göra här
+  // (errores.permiso.redirigido, samma mönster som resten av appens
+  // "sidor utan behörighet → /app/agenda").
+  const hasAnyAjustesAccess =
+    view.role === "owner" ||
+    view.perms.can_edit_settings ||
+    view.perms.can_edit_catalog ||
+    view.perms.can_manage_team;
+  if (!hasAnyAjustesAccess) redirect("/app/agenda");
 
   const owner = ownerNameParts(user.email);
   const data = await loadAjustesData(user.id, business.id);
   const profile = await loadProfileSettings(user.id, business.id);
+  const team =
+    view.role === "owner" ? await loadTeamForPage(user.id, business.id) : null;
+  const myProfile = await loadMyProfileAction();
   const bundleResult = await loadBookingFormBundleAction();
   const bookingForm = bundleResult.ok
     ? bundleResult.data
@@ -107,6 +143,12 @@ export default async function AjustesPage() {
     business.id,
     new Date(),
   );
+
+  const onReloadTeam = async () => {
+    "use server";
+    const result = await loadTeamDataAction();
+    return result.ok ? result.data : null;
+  };
 
   return (
     <AjustesScreen
@@ -158,6 +200,30 @@ export default async function AjustesPage() {
       pendingRequests={pendingRequests}
       onConfirmRequest={confirmRequestAction}
       onDeclineRequest={declineRequestAction}
+      team={team}
+      teamActions={
+        view.role === "owner"
+          ? {
+              onInvite: inviteStaffAction,
+              onResend: resendInvitationAction,
+              onRevoke: revokeInvitationAction,
+              onUpdatePerms: updateMemberPermsAction,
+              onRemoveAccess: removeMemberAccessAction,
+            }
+          : undefined
+      }
+      onReloadTeam={view.role === "owner" ? onReloadTeam : undefined}
+      myProfile={myProfile ?? undefined}
+      myProfileActions={
+        myProfile
+          ? {
+              updateTitle: updateMyTitleAction,
+              createPhotoUpload: createMyPhotoUploadAction,
+              confirmPhotoUpload: confirmMyPhotoUploadAction,
+              deletePhoto: deleteMyPhotoAction,
+            }
+          : undefined
+      }
     />
   );
 }

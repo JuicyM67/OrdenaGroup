@@ -43,7 +43,7 @@ export function DoneStep({ slug, businessName, hasServices }: DoneStepProps) {
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
         <p className="text-13 font-semibold text-muted">
-          {onboarding.paso({ n: 4, total: 4 })}
+          {onboarding.paso({ n: 5, total: 5 })}
         </p>
         <h1 className="text-22 font-bold tracking-title text-ink">
           {onboarding.listo.titulo}

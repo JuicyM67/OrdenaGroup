@@ -5,7 +5,7 @@
 -- "inte tillämpligt" (en business kan inte peka på en annan business).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(49);
+select plan(52);
 \ir _helpers.psql
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
@@ -142,6 +142,31 @@ with updated as (
   returning 1
 )
 select is((select count(*) from updated)::int, 0, 'staffA kan inte uppdatera businesses (0 rader)');
+
+-- WP-46 uppföljning 2: en staff-medlem MED can_edit_settings kan uppdatera
+-- tillåtna kolumner (samma RLS-nivå som ägaren nu, has_perm i stället för
+-- is_member(owner,admin)) — men deletion_requested_at har ALDRIG haft en
+-- grant till authenticated (bara service_role, B2/S2), så kolumngranten
+-- stoppar även den här medlemmen, oavsett RLS-predikat.
+reset role;
+insert into auth.users (id, email, role, aud) values
+  ('66666666-1111-1111-1111-111111111111', 'settings-staff@example.com', 'authenticated', 'authenticated');
+insert into public.memberships (business_id, user_id, role, can_edit_settings) values
+  ('aaaaaaaa-0000-0000-0000-000000000001', '66666666-1111-1111-1111-111111111111', 'staff', true);
+select set_config('request.jwt.claims', json_build_object('sub', '66666666-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select lives_ok(
+  $$ update public.businesses set name = 'Negocio A (ajustado por staff)' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  'staff med can_edit_settings kan ändra name (tillåten kolumn)'
+);
+select throws_ok(
+  $$ update public.businesses set deletion_requested_at = now() where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '42501'
+);
+select throws_ok(
+  $$ update public.businesses set plan = 'equipo' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '42501'
+);
 
 -- 7. Användare utan medlemskap ser noll rader.
 select set_config('request.jwt.claims', json_build_object('sub', '55555555-5555-5555-5555-555555555555', 'role', 'authenticated')::text, true);

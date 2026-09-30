@@ -13,20 +13,35 @@
 // D-019) — el resto del formulario son server actions normales.
 import { useId, useRef, useState } from "react";
 
+import {
+  FacebookGlyph,
+  InstagramGlyph,
+  SocialHandleField,
+  TiktokGlyph,
+} from "@/components/booking/social-icons";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextField } from "@/components/ui/text-field";
 import { Textarea } from "@/components/ui/textarea";
-import { ajustes, negocio, perfil } from "@/i18n";
+import { ajustes, negocio, perfil, redesSociales } from "@/i18n";
 import { ABOUT_MAX, IMAGE_CONTENT_TYPES } from "@/lib/validation/profile";
 
 import { ajustesErrorText } from "./error-text";
-import type { ProfileActions, ProfileSettingsData } from "./profile-types";
+import type {
+  ProfileActions,
+  ProfileSettingsData,
+  SingleImageFieldActions,
+} from "./profile-types";
 import { uploadImage } from "./upload-image";
 
 type FormState = {
   about: string;
   instagram: string;
+  /** WP-51: ver el comentario en `ProfileSettingsData` (columnas ya
+   * existen, el esquema del servidor todavía no — se guarda tal cual en
+   * cuanto se actualice, ver `updatePageProfileAction`). */
+  tiktok: string;
+  facebook: string;
   address: string;
   phone: string;
 };
@@ -35,12 +50,17 @@ function toFormState(p: ProfileSettingsData): FormState {
   return {
     about: p.about,
     instagram: p.instagram,
+    tiktok: p.tiktok ?? "",
+    facebook: p.facebook ?? "",
     address: p.address,
     phone: p.phone,
   };
 }
 
-function SingleImageField({
+/** Reutilizado en el paso "Tu página" del onboarding (WP-51,
+ * `src/components/onboarding/page-step.tsx`) — misma subida de
+ * omslag/logo que acá, ver `upload-image.ts`. */
+export function SingleImageField({
   label,
   help,
   url,
@@ -52,7 +72,7 @@ function SingleImageField({
   help: string;
   url: string | null;
   kind: "cover" | "logo";
-  actions: ProfileActions;
+  actions: SingleImageFieldActions;
   onChange: (url: string | null) => void;
 }) {
   const inputId = useId();
@@ -357,13 +377,37 @@ export function ProfileSection({
             </span>
           </div>
 
-          <TextField
+          <SocialHandleField
+            icon={InstagramGlyph}
             label={perfil.ajustes.campos.instagramLabel}
-            placeholder={perfil.ajustes.campos.instagramPlaceholder}
+            // `instagramPlaceholder` ("@tunegocio") ya incluye el "@" del
+            // texto original — el prefijo visual de abajo lo dibuja aparte,
+            // así que se quita acá para no repetirlo.
+            placeholder={perfil.ajustes.campos.instagramPlaceholder.replace(
+              /^@/,
+              "",
+            )}
             hint={perfil.ajustes.campos.instagramAyuda}
             value={form.instagram}
             onChange={(e) => set("instagram", e.target.value)}
-            maxLength={30}
+          />
+
+          <SocialHandleField
+            icon={TiktokGlyph}
+            label={redesSociales.campos.tiktokLabel}
+            placeholder={redesSociales.campos.tiktokPlaceholder}
+            hint={redesSociales.campos.tiktokAyuda}
+            value={form.tiktok}
+            onChange={(e) => set("tiktok", e.target.value)}
+          />
+
+          <SocialHandleField
+            icon={FacebookGlyph}
+            label={redesSociales.campos.facebookLabel}
+            placeholder={redesSociales.campos.facebookPlaceholder}
+            hint={redesSociales.campos.facebookAyuda}
+            value={form.facebook}
+            onChange={(e) => set("facebook", e.target.value)}
           />
 
           <TextField

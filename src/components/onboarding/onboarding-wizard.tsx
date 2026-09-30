@@ -13,10 +13,12 @@ import { BusinessStep } from "./business-step";
 import { DoneStep } from "./done-step";
 import { onboardingErrorText } from "./error-text";
 import { HoursStep } from "./hours-step";
+import { PageStep } from "./page-step";
 import { ServicesStep } from "./services-step";
 import { StaffStep } from "./staff-step";
 import type {
   OnboardingSubmitResult,
+  PageStepActions,
   StepId,
   WizardData,
   WizardHours,
@@ -47,9 +49,14 @@ function initialData(): WizardData {
 
 export type OnboardingWizardProps = {
   onSubmit: (input: unknown) => Promise<OnboardingSubmitResult>;
+  /** WP-51: paso "Tu página", mostrado después de crear el negocio. */
+  pageActions: PageStepActions;
 };
 
-export function OnboardingWizard({ onSubmit }: OnboardingWizardProps) {
+export function OnboardingWizard({
+  onSubmit,
+  pageActions,
+}: OnboardingWizardProps) {
   const [step, setStep] = useState<StepId>("business");
   const [data, setData] = useState<WizardData>(initialData);
   // WP-26 paso 6: casilla obligatoria de términos + encargo (regla dura 7,
@@ -87,7 +94,10 @@ export function OnboardingWizard({ onSubmit }: OnboardingWizardProps) {
       });
       if (r.ok) {
         setResult(r);
-        setStep("done");
+        // WP-51: el negocio ya existe acá — el paso "Tu página" (edita ese
+        // negocio real vía `pageActions`) va antes de "Tu link", no "done"
+        // directamente.
+        setStep("pagina");
       } else {
         setSubmitError(onboardingErrorText(r.code));
       }
@@ -96,6 +106,17 @@ export function OnboardingWizard({ onSubmit }: OnboardingWizardProps) {
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (step === "pagina" && result?.ok) {
+    return (
+      <PageStep
+        phone={data.business.phone}
+        actions={pageActions}
+        onContinue={() => setStep("done")}
+        onSkip={() => setStep("done")}
+      />
+    );
   }
 
   if (step === "done" && result?.ok) {
@@ -156,7 +177,7 @@ export function OnboardingWizard({ onSubmit }: OnboardingWizardProps) {
 
       {submitting ? (
         <p role="status" className="text-13 text-muted">
-          {onboarding.paso({ n: 4, total: 4 })}
+          {onboarding.paso({ n: 4, total: 5 })}
         </p>
       ) : null}
     </div>

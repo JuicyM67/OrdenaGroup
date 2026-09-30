@@ -412,7 +412,8 @@ describe("ägarens CRUD", () => {
     expect(
       await setServiceCategory(owner(), fresh.id, fresh.services.barba!, dam),
     ).toEqual({ ok: false, code: "invalid_target" });
-    // En annan ägare kan inte ändra företagets tjänst.
+    // En annan ägare kan inte ändra företagets tjänst (WP-46: inte medlem →
+    // `unauthorized` före varje skrivning, som i ajustes.ts).
     expect(
       await setServiceCategory(
         other.ownerUserId,
@@ -420,7 +421,7 @@ describe("ägarens CRUD", () => {
         fresh.services.corte!,
         null,
       ),
-    ).toEqual({ ok: false, code: "not_found" });
+    ).toEqual({ ok: false, code: "unauthorized" });
   });
 
   it("frågor: skapa, mål i annat företag avvisas, max 5 ger too_many_questions", async () => {
@@ -542,10 +543,10 @@ describe("ägarens CRUD", () => {
         label: "Hack",
         kind: "short_text",
       }),
-    ).toEqual({ ok: false, code: "not_found" });
+    ).toEqual({ ok: false, code: "unauthorized" });
     expect(await deleteQuestion(other.ownerUserId, fresh.id, q.id)).toEqual({
       ok: false,
-      code: "not_found",
+      code: "unauthorized",
     });
     expect(
       await updateQuestion(owner(), fresh.id, q.id, {

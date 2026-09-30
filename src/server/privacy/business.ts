@@ -4,7 +4,7 @@ import type { Queryable } from "@/server/db/pool";
 import { getStorageAdminClient } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 
-import { isOwner, isOwnerOrAdmin } from "./authz";
+import { ownerDenial } from "./authz";
 import type { MutationResult } from "./types";
 
 /**
@@ -27,9 +27,9 @@ import type { MutationResult } from "./types";
  *
  * Säkerhetsgranskning WP-26 (punkt 2): `exportBusiness`,
  * `requestBusinessDeletion` och `cancelBusinessDeletion` är beslut på
- * ägarnivå — bara rollen `owner` (`isOwner`), INTE `admin` (företagsnivå-
- * rollen, se DATA_MODEL.md). `getBusinessDeletionStatus` (bara läsning) och
- * kundexport/-anonymisering (`customer.ts`) förblir `owner`-ELLER-`admin`.
+ * ägarnivå — bara rollen `owner` (`ownerDenial`/`isOwner`). WP-46 (D-034):
+ * även `getBusinessDeletionStatus` och kundexport/-anonymisering
+ * (`customer.ts`) är bara ägarens; personal/admin får `forbidden`.
  */
 
 // ---------------------------------------------------------------------------
@@ -132,9 +132,8 @@ export async function exportBusiness(
   businessId: string,
 ): Promise<ExportBusinessResult> {
   return withServiceTx(async (q) => {
-    if (!(await isOwner(q, userId, businessId))) {
-      return { ok: false, code: "unauthorized" };
-    }
+    const denied = await ownerDenial(q, userId, businessId);
+    if (denied) return { ok: false, code: denied };
 
     const businessRes = await q.query<{
       id: string;
@@ -380,16 +379,15 @@ export type DeletionStatusResult =
   | { ok: false; code: string };
 
 /** Läser bara `deletion_requested_at` (Ajustes: "Privacidad y datos", WP-26
- * steg 7) — ingen egen mutation, `owner`-ELLER-`admin` (bara läsning, till
- * skillnad från request/cancel/export nedan). */
+ * steg 7) — ingen egen mutation. WP-46: bara ägaren (sektionen syns bara
+ * för henne). */
 export async function getBusinessDeletionStatus(
   userId: string,
   businessId: string,
 ): Promise<DeletionStatusResult> {
   return withServiceTx(async (q) => {
-    if (!(await isOwnerOrAdmin(q, userId, businessId))) {
-      return { ok: false, code: "unauthorized" };
-    }
+    const denied = await ownerDenial(q, userId, businessId);
+    if (denied) return { ok: false, code: denied };
     const r = await q.query<{ deletion_requested_at: string | null }>(
       `select deletion_requested_at from public.businesses where id = $1`,
       [businessId],
@@ -413,9 +411,8 @@ export async function requestBusinessDeletion(
   businessId: string,
 ): Promise<MutationResult> {
   return withServiceTx(async (q) => {
-    if (!(await isOwner(q, userId, businessId))) {
-      return { ok: false, code: "unauthorized" };
-    }
+    const denied = await ownerDenial(q, userId, businessId);
+    if (denied) return { ok: false, code: denied };
     const r = await q.query(
       `update public.businesses
           set status_before_deletion_request = status,
@@ -443,9 +440,8 @@ export async function cancelBusinessDeletion(
   businessId: string,
 ): Promise<MutationResult> {
   return withServiceTx(async (q) => {
-    if (!(await isOwner(q, userId, businessId))) {
-      return { ok: false, code: "unauthorized" };
-    }
+    const denied = await ownerDenial(q, userId, businessId);
+    if (denied) return { ok: false, code: denied };
     const r = await q.query(
       `update public.businesses
           set status = coalesce(status_before_deletion_request, 'active'),

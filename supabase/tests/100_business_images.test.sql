@@ -51,8 +51,9 @@ select throws_ok($$ insert into public.business_images (business_id, path) value
 select throws_ok($$ update public.business_images set sort = 2 where id = 'aaaaaaaa-4100-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.business_images where id = 'aaaaaaaa-4100-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA/nomember ser noll rader och kan inte skriva (WP-01 fas 1,
--- staff/vendor har ännu ingen åtkomst till katalogen/profilen).
+-- 6. staffA/vendorA/nomember ser noll rader och kan inte skriva. staffA:
+-- kräver can_edit_settings (WP-46 uppföljning 2), default false. vendor har
+-- fortfarande ingen åtkomst alls (WP-01 fas 1).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select count(*) from public.business_images)::int, 0, 'staffA ser noll bilder');

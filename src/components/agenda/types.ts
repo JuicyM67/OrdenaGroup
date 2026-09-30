@@ -75,6 +75,24 @@ export type AgendaWaitlist = {
   readonly day: LocalDate;
 } | null;
 
+/** WP-46: speglar `Perm`/`MemberView` (`src/server/db/permissions.ts`,
+ * `src/server/owner/member.ts`), duplicerat — samma motiv som resten av
+ * filen (en klientmodell importerar aldrig värden från `src/server/`). */
+export type AgendaPerm =
+  | "can_manage_own_bookings"
+  | "can_manage_all_bookings"
+  | "can_cancel_bookings"
+  | "can_edit_catalog"
+  | "can_manage_team"
+  | "can_view_reports"
+  | "can_edit_settings";
+
+export type AgendaMemberView = {
+  role: "owner" | "staff" | "vendor" | "admin" | null;
+  staffId: StaffId | null;
+  perms: Record<AgendaPerm, boolean>;
+};
+
 export type AgendaData = {
   /** ISO 8601 med offset. Injiceras alltid — komponenten anropar aldrig `new Date()`. */
   readonly now: string;
@@ -87,6 +105,11 @@ export type AgendaData = {
   readonly weekCounts: Record<StaffId, number>;
   /** Reservas per profesional för en given dag (dagvyns kolumnhuvud). */
   readonly dayCounts?: Record<LocalDate, Record<StaffId, number>>;
+  /** WP-46: den inloggades roll/behörigheter — filtret "Mis reservas"/"Todo
+   * el equipo" och vilka knappar (Mover/Llegó/No vino) som visas per bokning.
+   * Saknas i design lab/äldre testfixturer → alla knappar visas som förut
+   * (samma "ingen filtrering" som `hasPerm(undefined, …)` på servern). */
+  readonly member?: AgendaMemberView;
 };
 
 /** WP-50: reservas per profesional för varje dag i en månad (månadsvyn), samma

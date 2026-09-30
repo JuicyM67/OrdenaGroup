@@ -20,6 +20,10 @@ import {
 } from "@/components/shared/notification-bell";
 import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { UserMenu } from "@/components/shared/user-menu";
+import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
 import { nav } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 
@@ -36,7 +40,13 @@ import { ProfileSection } from "./profile-section";
 import type { ProfileActions, ProfileSettingsData } from "./profile-types";
 import { ServicesSection } from "./services-section";
 import { StaffSection } from "./staff-section";
-import type { AjustesActions, AjustesBusiness, AjustesData } from "./types";
+import { TeamSection, type TeamActions } from "./team-section";
+import type {
+  AjustesActions,
+  AjustesBusiness,
+  AjustesData,
+  TeamData,
+} from "./types";
 
 export type AjustesScreenProps = {
   data: AjustesData;
@@ -61,6 +71,16 @@ export type AjustesScreenProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-46: Ajustes → Equipo (åtkomst till kontot). `null`/`undefined` döljer
+   * sektionen helt — bara ägaren ser den (`data.member.role === "owner"`,
+   * samma villkor som `src/server/team/members.ts` kräver på servern). */
+  team?: TeamData | null;
+  teamActions?: TeamActions;
+  onReloadTeam?: () => Promise<TeamData | null>;
+  /** WP-46: "Min profil" i kontomenyn. `undefined` döljer menyposten (ägare
+   * utan egen personalrad, design lab). */
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
 };
 
 export function AjustesScreen({
@@ -78,11 +98,18 @@ export function AjustesScreen({
   pendingRequests,
   onConfirmRequest,
   onDeclineRequest,
+  team,
+  teamActions,
+  onReloadTeam,
+  myProfile,
+  myProfileActions,
 }: AjustesScreenProps) {
   const router = useRouter();
   const [business, setBusiness] = useState<AjustesBusiness>(data.business);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
   const publicPageHref = `/${business.slug}`;
+  const { perms, role } = data.member;
+  const isOwner = role === "owner";
 
   const reload = useCallback(async () => {
     const next = await loadBookingFormBundle();
@@ -128,6 +155,8 @@ export function AjustesScreen({
                 variant="pill"
                 publicPageHref={publicPageHref}
                 onLogout={onLogout}
+                myProfile={myProfile}
+                myProfileActions={myProfileActions}
               />
             </span>
             <span className="contents lg:hidden">
@@ -137,6 +166,8 @@ export function AjustesScreen({
                 variant="avatar"
                 publicPageHref={publicPageHref}
                 onLogout={onLogout}
+                myProfile={myProfile}
+                myProfileActions={myProfileActions}
               />
             </span>
           </>
@@ -145,71 +176,99 @@ export function AjustesScreen({
 
       <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-2">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
-          <BusinessSection
-            business={business}
-            onSaved={setBusiness}
-            action={actions.updateBusinessSettings}
-          />
+          {perms.can_edit_settings ? (
+            <BusinessSection
+              business={business}
+              onSaved={setBusiness}
+              action={actions.updateBusinessSettings}
+            />
+          ) : null}
 
           <TuLinkCard slug={business.slug} businessName={business.name} />
 
-          <div id="perfil">
-            <ProfileSection data={profile} actions={profileActions} />
-          </div>
+          {perms.can_edit_settings ? (
+            <div id="perfil">
+              <ProfileSection data={profile} actions={profileActions} />
+            </div>
+          ) : null}
 
-          <ServicesSection
-            services={data.services}
-            actions={{
-              create: actions.createService,
-              update: actions.updateService,
-              setActive: actions.setServiceActive,
-            }}
-            bookingForm={{
-              settings: bookingForm.settings,
-              businessCategory: bookingForm.businessCategory,
-              actions: bookingFormActions,
-              onReload: reload,
-            }}
-          />
+          {perms.can_edit_catalog ? (
+            <>
+              <ServicesSection
+                services={data.services}
+                actions={{
+                  create: actions.createService,
+                  update: actions.updateService,
+                  setActive: actions.setServiceActive,
+                }}
+                bookingForm={{
+                  settings: bookingForm.settings,
+                  businessCategory: bookingForm.businessCategory,
+                  actions: bookingFormActions,
+                  onReload: reload,
+                }}
+              />
 
-          <CategorySection
-            categories={bookingForm.settings.categories}
-            services={bookingForm.settings.services}
-            actions={bookingFormActions}
-            onReload={reload}
-          />
+              <CategorySection
+                categories={bookingForm.settings.categories}
+                services={bookingForm.settings.services}
+                actions={bookingFormActions}
+                onReload={reload}
+              />
 
-          <BookingFormSection
-            settings={bookingForm.settings}
-            businessCategory={bookingForm.businessCategory}
-            actions={bookingFormActions}
-            onReload={reload}
-          />
+              <BookingFormSection
+                settings={bookingForm.settings}
+                businessCategory={bookingForm.businessCategory}
+                actions={bookingFormActions}
+                onReload={reload}
+              />
+            </>
+          ) : null}
 
-          <div id="equipo">
-            <StaffSection
-              staff={data.staff}
-              services={data.services}
-              photos={profile.staffPhotos}
-              actions={{
-                create: actions.createStaff,
-                update: actions.updateStaff,
-                setActive: actions.setStaffActive,
-                updateTitle: profileActions.updateStaffTitle,
-                createImageUpload: profileActions.createImageUpload,
-                confirmImageUpload: profileActions.confirmImageUpload,
-                deleteImage: profileActions.deleteImage,
-              }}
+          {perms.can_manage_team ? (
+            <div id="equipo">
+              <StaffSection
+                staff={data.staff}
+                services={data.services}
+                photos={profile.staffPhotos}
+                actions={{
+                  create: actions.createStaff,
+                  update: actions.updateStaff,
+                  setActive: actions.setStaffActive,
+                  updateTitle: profileActions.updateStaffTitle,
+                  createImageUpload: profileActions.createImageUpload,
+                  confirmImageUpload: profileActions.confirmImageUpload,
+                  deleteImage: profileActions.deleteImage,
+                }}
+              />
+            </div>
+          ) : null}
+
+          {/* WP-46: acceso a la cuenta (invitar/permisos) — solo el dueño,
+              siempre bajo el mismo id="equipo" aunque StaffSection esté oculta
+              (una cuenta con can_manage_team pero sin ser dueña no debería
+              existir hoy, pero el ancla del menú sigue apuntando aquí). */}
+          {isOwner && team && teamActions && onReloadTeam ? (
+            <div id={perms.can_manage_team ? undefined : "equipo"}>
+              <TeamSection
+                data={team}
+                actions={teamActions}
+                onReload={onReloadTeam}
+              />
+            </div>
+          ) : null}
+
+          {perms.can_edit_settings ? (
+            <HoursSection hours={data.hours} action={actions.updateHours} />
+          ) : null}
+
+          {isOwner ? (
+            <PrivacySection
+              slug={business.slug}
+              deletionRequestedAt={deletionRequestedAt}
+              actions={privacyActions}
             />
-          </div>
-
-          <HoursSection hours={data.hours} action={actions.updateHours} />
-
-          <PrivacySection
-            slug={business.slug}
-            deletionRequestedAt={deletionRequestedAt}
-            actions={privacyActions}
-          />
+          ) : null}
         </div>
       </div>
     </AppShell>

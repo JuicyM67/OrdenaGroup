@@ -7,6 +7,12 @@ export type ProfileImage = { id: string; url: string };
 export type ProfileSettingsData = {
   about: string;
   instagram: string;
+  /** WP-51: samma regler som instagram. Frivilliga (`ProfileSettings`,
+   * servertypen, saknar dem ännu tills `src/server/owner/profile.ts`
+   * uppdateras — se `updatePageProfileAction`s kommentar) — behandla en
+   * saknad nyckel som tom sträng. */
+  tiktok?: string;
+  facebook?: string;
   address: string;
   phone: string;
   coverUrl: string | null;
@@ -33,6 +39,21 @@ export type DeleteImageTarget =
   | { kind: "cover" }
   | { kind: "logo" }
   | { kind: "staff"; staffId: string };
+
+/** WP-51: subconjunto que necesita `SingleImageField` (`profile-section.tsx`,
+ * reutilizado en el paso "Tu página" del onboarding) — así ese paso no
+ * necesita implementar `updateStaffTitle`/`reorderImages`, que no usa.
+ * `deleteImage` se declara con el `target` angosto (solo portada/logo, no
+ * todo `DeleteImageTarget`) a propósito: así una función MÁS amplia como
+ * `ProfileActions["deleteImage"]` sigue siendo asignable acá (contravarianza
+ * de parámetros), tanto desde Ajustes como desde el onboarding. */
+export type SingleImageFieldActions = {
+  createImageUpload: (input: unknown) => Promise<ImageUploadTicket>;
+  confirmImageUpload: (input: unknown) => Promise<ConfirmImageResult>;
+  deleteImage: (
+    target: { kind: "cover" } | { kind: "logo" },
+  ) => Promise<ProfileMutationResult>;
+};
 
 export type ProfileActions = {
   updateBusinessProfile: (input: unknown) => Promise<ProfileMutationResult>;

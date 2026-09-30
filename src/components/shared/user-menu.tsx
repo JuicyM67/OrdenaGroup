@@ -15,13 +15,22 @@ import {
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
+import { useState } from "react";
 
-import { nav, onboarding, perfil } from "@/i18n";
+import { nav, onboarding, perfil, equipo } from "@/i18n";
 
 import { Avatar, type AvatarProps } from "../ui/avatar";
 import { strokeCard } from "../ui/icons";
-import { Menu, MenuFormItem, MenuLinkItem } from "../ui/menu";
+import { Menu, MenuButtonItem, MenuFormItem, MenuLinkItem } from "../ui/menu";
 import { UserPill } from "../ui/user-pill";
+import {
+  MyProfileDialog,
+  type MyProfileActions,
+  type MyProfileData,
+} from "./my-profile-dialog";
+
+/** TODO_COPY (copywriter-es-cl): ingen sträng ännu för menyposten — samma
+ * platshållare som `my-profile-dialog.tsx`, nämnt i rapporten. */
 
 const ICON_CLASS = "size-4 shrink-0 text-muted";
 
@@ -35,6 +44,11 @@ export type UserMenuProps = {
   publicPageHref: string;
   /** `logout` (server action), bunden av anroparens `page.tsx`. `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
+  /** WP-46: "Min profil" (egen bild/titel) — bara inloggade med en egen
+   * personalrad (`member.staffId != null`, i praktiken personal). `undefined`
+   * döljer menyposten (ägare utan egen personalrad, design lab). */
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
   className?: string;
 };
 
@@ -45,8 +59,11 @@ export function UserMenu({
   variant,
   publicPageHref,
   onLogout,
+  myProfile,
+  myProfileActions,
   className,
 }: UserMenuProps) {
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const trigger =
     variant === "pill" ? (
       <UserPill
@@ -66,39 +83,60 @@ export function UserMenu({
     );
 
   return (
-    <Menu trigger={trigger} label={nav.menuUsuario({ nombre: name })}>
-      <MenuLinkItem href="/app/ajustes#perfil" prefetch={false}>
-        <UserRound
-          aria-hidden="true"
-          className={ICON_CLASS}
-          strokeWidth={strokeCard}
+    <>
+      <Menu trigger={trigger} label={nav.menuUsuario({ nombre: name })}>
+        {myProfile && myProfileActions ? (
+          <MenuButtonItem onClick={() => setProfileDialogOpen(true)}>
+            <UserRound
+              aria-hidden="true"
+              className={ICON_CLASS}
+              strokeWidth={strokeCard}
+            />
+            {equipo.miPerfil}
+          </MenuButtonItem>
+        ) : (
+          <MenuLinkItem href="/app/ajustes#perfil" prefetch={false}>
+            <UserRound
+              aria-hidden="true"
+              className={ICON_CLASS}
+              strokeWidth={strokeCard}
+            />
+            {perfil.ajustes.titulo}
+          </MenuLinkItem>
+        )}
+        <MenuLinkItem href="/app/ajustes" prefetch={false}>
+          <SlidersHorizontal
+            aria-hidden="true"
+            className={ICON_CLASS}
+            strokeWidth={strokeCard}
+          />
+          {nav.ajustes}
+        </MenuLinkItem>
+        <MenuLinkItem href={publicPageHref} target="_blank" rel="noreferrer">
+          <ExternalLink
+            aria-hidden="true"
+            className={ICON_CLASS}
+            strokeWidth={strokeCard}
+          />
+          {onboarding.listo.ctaVerPagina}
+        </MenuLinkItem>
+        <MenuFormItem action={onLogout ?? (() => {})}>
+          <LogOut
+            aria-hidden="true"
+            className={ICON_CLASS}
+            strokeWidth={strokeCard}
+          />
+          {nav.cerrarSesion}
+        </MenuFormItem>
+      </Menu>
+      {myProfile && myProfileActions ? (
+        <MyProfileDialog
+          open={profileDialogOpen}
+          onOpenChange={setProfileDialogOpen}
+          profile={myProfile}
+          actions={myProfileActions}
         />
-        {perfil.ajustes.titulo}
-      </MenuLinkItem>
-      <MenuLinkItem href="/app/ajustes" prefetch={false}>
-        <SlidersHorizontal
-          aria-hidden="true"
-          className={ICON_CLASS}
-          strokeWidth={strokeCard}
-        />
-        {nav.ajustes}
-      </MenuLinkItem>
-      <MenuLinkItem href={publicPageHref} target="_blank" rel="noreferrer">
-        <ExternalLink
-          aria-hidden="true"
-          className={ICON_CLASS}
-          strokeWidth={strokeCard}
-        />
-        {onboarding.listo.ctaVerPagina}
-      </MenuLinkItem>
-      <MenuFormItem action={onLogout ?? (() => {})}>
-        <LogOut
-          aria-hidden="true"
-          className={ICON_CLASS}
-          strokeWidth={strokeCard}
-        />
-        {nav.cerrarSesion}
-      </MenuFormItem>
-    </Menu>
+      ) : null}
+    </>
   );
 }

@@ -5,6 +5,8 @@
 // befintliga nyckel, se rapporten).
 import {
   comun,
+  equipo,
+  errores,
   horarios,
   negocio,
   perfil,
@@ -62,6 +64,8 @@ const KNOWN: Record<string, string> = {
   "staff.title_too_long": comun.algoSalioMal,
   "profile.about_too_long": comun.algoSalioMal,
   "profile.instagram_invalid": comun.algoSalioMal,
+  "profile.tiktok_invalid": comun.algoSalioMal,
+  "profile.facebook_invalid": comun.algoSalioMal,
   "profile.image_kind_invalid": comun.algoSalioMal,
   "profile.image_type_invalid": perfil.ajustes.errores.tipoInvalido,
   "profile.image_size_invalid": perfil.ajustes.errores.demasiadoGrande,
@@ -74,6 +78,18 @@ const KNOWN: Record<string, string> = {
   invalid_input: comun.algoSalioMal,
   unauthorized: comun.algoSalioMal,
   unknown: comun.algoSalioMal,
+  // WP-46 steg 6: Ajustes → Equipo (invitar/reenviar/revocar/editar permisos).
+  forbidden: errores.permiso.generico,
+  "invitation.email_invalid": equipo.invitarDialog.errores.emailInvalido,
+  "invitation.name_invalid_type": comun.algoSalioMal,
+  "invitation.name_empty": comun.algoSalioMal,
+  "invitation.name_too_long": comun.algoSalioMal,
+  staff_not_found: equipo.invitarDialog.errores.profesionalRequerido,
+  invitation_pending: equipo.invitarDialog.errores.profesionalYaTieneCuenta,
+  plan_limit_reached: equipo.limiteDelPlan.texto,
+  not_found: comun.algoSalioMal,
+  already_accepted: comun.algoSalioMal,
+  already_revoked: comun.algoSalioMal,
 };
 
 /** En okänd kod ger `comun.algoSalioMal` i stället för att krascha UI:t. */

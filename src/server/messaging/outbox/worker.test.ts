@@ -16,11 +16,17 @@ type RawClaimRow = {
   business_id: string;
   booking_id: string | null;
   channel: "email" | "sms";
-  recipient_kind: "customer" | "owner";
+  recipient_kind: "customer" | "owner" | "invitee";
   template: string;
   payload: Record<string, unknown>;
   attempts: number;
   dedupe_key: string;
+};
+
+type RawInvitationContextRow = {
+  email: string;
+  negocio: string;
+  is_pending: boolean;
 };
 
 type RawContextRow = {
@@ -44,6 +50,7 @@ class FakeDb {
   claimRows: RawClaimRow[] = [];
   contextRow: RawContextRow | undefined;
   ownerEmails: string[] = [];
+  invitationContextRow: RawInvitationContextRow | undefined;
 
   async query<R extends object = Row>(
     text: string,
@@ -66,6 +73,12 @@ class FakeDb {
       const rows = this.ownerEmails.map((email) => ({
         email,
       })) as unknown as R[];
+      return { rows, rowCount: rows.length };
+    }
+    if (/from public\.member_invitations mi/.test(text)) {
+      const rows = (this.invitationContextRow
+        ? [this.invitationContextRow]
+        : []) as unknown as R[];
       return { rows, rowCount: rows.length };
     }
     // Finalize-uppdateringarna (sent/queued/dead/cancelled): inget att läsa.
@@ -357,5 +370,95 @@ describe("processOutbox: claim → skicka → avsluta", () => {
     const claim = db.calls.find((c) => /with next as/.test(c.text));
     expect(claim?.text).toContain("booking_id = $2");
     expect(claim?.values).toEqual([10, BOOKING]);
+  });
+});
+
+describe("processOutbox: invitee (WP-46, D-034)", () => {
+  const INVITATION = "i0000000-0000-4000-8000-000000000001";
+
+  function inviteeClaimRow(overrides: Partial<RawClaimRow> = {}): RawClaimRow {
+    return claimRow({
+      booking_id: null,
+      recipient_kind: "invitee",
+      template: "invitacionEquipo",
+      payload: {
+        invitationId: INVITATION,
+        token: "T".repeat(43),
+        invitadoPor: "María Dueña",
+      },
+      dedupe_key: "invitacionEquipo:email:invitee:i0:hash1",
+      ...overrides,
+    });
+  }
+
+  function invitationContextRow(
+    overrides: Partial<RawInvitationContextRow> = {},
+  ): RawInvitationContextRow {
+    return {
+      email: "nuevo@example.com",
+      negocio: "Barbería Norte",
+      is_pending: true,
+      ...overrides,
+    };
+  }
+
+  it("lyckad inbjudan: adressen/negocio slås upp vía invitationId (nunca en el payload), acceptUrl construido con el token, payload vaciado", async () => {
+    db.claimRows = [inviteeClaimRow()];
+    db.invitationContextRow = invitationContextRow();
+    const result = await processOutbox({ limit: 25 });
+    expect(result).toEqual({
+      claimed: 1,
+      sent: 1,
+      cancelled: 0,
+      queued: 0,
+      dead: 0,
+    });
+    expect(sendEmailMock).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        to: "nuevo@example.com",
+        template: "invitacionEquipo",
+        data: {
+          negocio: "Barbería Norte",
+          invitadoPor: "María Dueña",
+          acceptUrl: `http://127.0.0.1:3000/app/invitacion/${"T".repeat(43)}`,
+        },
+        idempotencyKey: "invitacionEquipo:email:invitee:i0:hash1",
+      }),
+    );
+    // D-029: payload (token/invitationId/invitadoPor) tömd efter sändning.
+    const sent = db.updatesMatching(
+      /status = 'sent'.*payload = '\{\}'::jsonb/s,
+    );
+    expect(sent).toHaveLength(1);
+  });
+
+  it("inbjudan redan accepterad/återkallad/utgången innan sändning: cancelled, aldrig skickad", async () => {
+    db.claimRows = [inviteeClaimRow()];
+    db.invitationContextRow = invitationContextRow({ is_pending: false });
+    const result = await processOutbox({ limit: 25 });
+    expect(result).toEqual({
+      claimed: 1,
+      sent: 0,
+      cancelled: 1,
+      queued: 0,
+      dead: 0,
+    });
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(db.updatesMatching(/status = 'cancelled'/)).toHaveLength(1);
+  });
+
+  it("inbjudan borttagen/okänd: fel (ingen krasch), backoff som vanligt", async () => {
+    db.claimRows = [inviteeClaimRow()];
+    db.invitationContextRow = undefined;
+    const result = await processOutbox({ limit: 25 });
+    expect(result.queued).toBe(1);
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    const failed = db.updatesMatching(/status = 'queued'/);
+    expect(failed[0]!.values).toEqual([
+      inviteeClaimRow().id,
+      BIZ,
+      "no_invitation",
+      1,
+    ]);
   });
 });

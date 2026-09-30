@@ -86,6 +86,8 @@ describe("businessProfileInputSchema (WP-41)", () => {
     expect(r).toEqual({
       about: null,
       instagram: null,
+      tiktok: null,
+      facebook: null,
       address: null,
       phone: null,
     });

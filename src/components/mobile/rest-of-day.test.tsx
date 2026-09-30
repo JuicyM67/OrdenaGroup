@@ -11,6 +11,7 @@ const rows: HoyBooking[] = [
     end: "2026-10-02T16:15:00-03:00",
     clientName: "Valentina Soto",
     service: "Corte clásico",
+    staffId: "staff-1",
     staffName: "Matías",
     staffColor: 2,
     status: "confirmed",

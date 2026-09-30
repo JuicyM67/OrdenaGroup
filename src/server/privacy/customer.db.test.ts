@@ -281,7 +281,7 @@ describe("anonymizeCustomer (WP-26 steg 2, D-033)", () => {
 });
 
 describe("Säkerhetsgranskning WP-26 (punkt 11): staff-medlem i samma företag", () => {
-  it("en staff-medlem får unauthorized på export och anonymisering av en kund", async () => {
+  it("en staff-medlem får forbidden (WP-46) på export och anonymisering av en kund", async () => {
     const staffUserId = await createTestUser();
     await adminQuery(
       `insert into public.memberships (business_id, user_id, role) values ($1, $2, 'staff')`,
@@ -295,11 +295,11 @@ describe("Säkerhetsgranskning WP-26 (punkt 11): staff-medlem i samma företag",
       const customerId = c.rows[0]!.id;
       expect(await exportCustomer(staffUserId, biz.id, customerId)).toEqual({
         ok: false,
-        code: "unauthorized",
+        code: "forbidden",
       });
       expect(await anonymizeCustomer(staffUserId, biz.id, customerId)).toEqual({
         ok: false,
-        code: "unauthorized",
+        code: "forbidden",
       });
       const untouched = await adminQuery<{ name: string | null }>(
         `select name from public.customers where id = $1`,

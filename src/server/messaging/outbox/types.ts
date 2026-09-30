@@ -7,7 +7,11 @@ import "server-only";
  * importera de genererade databastyperna för något så litet.
  */
 export type OutboxChannel = "email" | "sms";
-export type OutboxRecipientKind = "customer" | "owner";
+/** `invitee` (WP-46, D-034): `member_invitations` — se
+ * `src/server/team/invitations.ts` (köar) och `./worker.ts`s
+ * `sendInvitee`/`loadInvitationContext` (skickar, slår upp adressen via
+ * `payload.invitationId`, aldrig en adress i kön själv). */
+export type OutboxRecipientKind = "customer" | "owner" | "invitee";
 
 /**
  * KONTRAKT mot `src/server/bookings/` (scheduling-engineer): håll exakt.

@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 // ProfileHeader — omslag + logga/initialer + namn + bransch/adress + chips
 // (`ProfilDesktop.dc.html` rad 21–30, `ProfilMobil.dc.html` rad 20–26). En enda
 // komponent för båda bredderna (Tailwind `lg:`, se booking-screen.tsx): mobil
@@ -10,21 +11,30 @@
 import { Chip } from "@/components/ui/chip";
 import { initialsOf } from "@/lib/format/initials";
 
-import { nextAvailableChipLabel, openChipLabel } from "./profile-view";
+import {
+  businessCategoryLabel,
+  nextAvailableChipLabel,
+  openChipLabel,
+} from "./profile-view";
 import type { BookingBusiness, BookingProfile, IsoInstant } from "./types";
 
 export function ProfileHeader({
   business,
   profile,
   now,
+  social,
 }: {
   business: BookingBusiness;
   profile: BookingProfile;
   now: IsoInstant;
+  social?: ReactNode;
 }) {
   const initials = initialsOf(business.name);
   const proximaHora = nextAvailableChipLabel(now, profile.nextAvailable);
-  const location = [business.comuna, profile.address]
+  // WP-51: "Barbería · Providencia" (bransch · comuna), no comuna + dirección
+  // completa (esa combinación repetía la comuna dos veces — ver el reporte).
+  // Misma forma que la referencia ("Frisör · Götgatan 12").
+  const location = [businessCategoryLabel(business.category), business.comuna]
     .filter(Boolean)
     .join(" · ");
 
@@ -70,7 +80,7 @@ export function ProfileHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 px-4 pt-3.5 lg:hidden">
+      <div className="flex flex-wrap items-center gap-1.5 px-4 pt-3.5 lg:hidden">
         <Chip tone="success" size="sm">
           {openChipLabel(profile.openNow)}
         </Chip>
@@ -79,6 +89,7 @@ export function ProfileHeader({
             {proximaHora}
           </Chip>
         ) : null}
+        {social}
       </div>
     </div>
   );
@@ -124,13 +135,15 @@ function ProfileLogo({
 export function ProfileChipsDesktop({
   profile,
   now,
+  social,
 }: {
   profile: BookingProfile;
   now: IsoInstant;
+  social?: ReactNode;
 }) {
   const proximaHora = nextAvailableChipLabel(now, profile.nextAvailable);
   return (
-    <div className="hidden gap-2 lg:flex">
+    <div className="hidden items-center gap-2 lg:flex">
       <Chip tone="success" size="sm">
         {openChipLabel(profile.openNow)}
       </Chip>
@@ -139,6 +152,7 @@ export function ProfileChipsDesktop({
           {proximaHora}
         </Chip>
       ) : null}
+      {social}
     </div>
   );
 }

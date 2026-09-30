@@ -10,7 +10,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { onboarding } from "@/i18n";
 
-import { submitOnboarding } from "./actions";
+import {
+  confirmPageImageUploadAction,
+  createPageImageUploadAction,
+  deletePageImageAction,
+  submitOnboarding,
+  updatePageProfileAction,
+} from "./actions";
 
 export const metadata: Metadata = {
   title: onboarding.pasos.link,
@@ -33,7 +39,15 @@ export default async function OnboardingPage() {
     <main className="min-h-dvh bg-canvas px-4 py-8">
       <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
         <SessionBar email={user.email ?? ""} />
-        <OnboardingWizard onSubmit={submitOnboarding} />
+        <OnboardingWizard
+          onSubmit={submitOnboarding}
+          pageActions={{
+            createImageUpload: createPageImageUploadAction,
+            confirmImageUpload: confirmPageImageUploadAction,
+            deleteImage: deletePageImageAction,
+            updateProfile: updatePageProfileAction,
+          }}
+        />
       </div>
     </main>
   );

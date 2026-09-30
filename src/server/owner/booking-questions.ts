@@ -19,6 +19,8 @@ import * as presetsSv from "@/i18n/presets/booking-questions.sv-SE";
 import { pgErrorCode } from "@/server/db/errors";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
+
+import { authzCode, requireMemberPerm } from "./member";
 import {
   loadQuestionCatalogIn,
   QUESTION_COLUMNS,
@@ -63,6 +65,7 @@ export type BookingFormErrorCode =
   | "invalid_input"
   | "not_found"
   | "unauthorized"
+  | "forbidden"
   | "too_many_questions"
   | "invalid_target"
   | "preset_not_found"
@@ -104,6 +107,8 @@ function pgConstraint(e: unknown): string | undefined {
 
 /** Bara SQLSTATE/constraint, aldrig `detail` (errors.ts). */
 function mapDbError(e: unknown): BookingFormErrorCode {
+  const authz = authzCode(e);
+  if (authz) return authz;
   const code = pgErrorCode(e);
   const constraint = pgConstraint(e);
   if (code === "42501") return "unauthorized";
@@ -125,13 +130,20 @@ class Abort extends Error {
   }
 }
 
-async function ownerMutation<T extends { ok: true }>(
+/**
+ * WP-46: kategorier och bokningsfrågor hör till katalogen
+ * (`can_edit_catalog`, planens flaggtext "tjänster, priser, kategorier,
+ * frågor"). Kontrollen görs i transaktionen före `fn`.
+ */
+async function catalogMutation<T extends { ok: true }>(
   userId: string,
+  businessId: string,
   fn: (q: Queryable) => Promise<T | BookingFormFailure>,
 ): Promise<T | BookingFormFailure> {
   if (!UUID.test(userId)) return fail("unauthorized");
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_catalog");
       const r = await fn(q);
       if (!r.ok) throw new Abort(r);
       return r;
@@ -308,7 +320,7 @@ export async function createCategory(
 ): Promise<BookingFormCreateResult> {
   const p = categoryNameInputSchema.safeParse(rawInput);
   if (!p.success) return fail(firstCode(p.error));
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const sort = await nextSort(q, "service_categories", businessId);
     const r = await q.query<{ id: string }>(
       `insert into public.service_categories (business_id, name, sort)
@@ -329,7 +341,7 @@ export async function renameCategory(
   const p = categoryNameInputSchema.safeParse(rawInput);
   if (!p.success) return fail(firstCode(p.error));
   if (!UUID.test(categoryId)) return fail("not_found");
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const r = await q.query(
       `update public.service_categories set name = $3
         where business_id = $1 and id = $2`,
@@ -346,7 +358,7 @@ export async function deleteCategory(
   categoryId: string,
 ): Promise<BookingFormResult> {
   if (!UUID.test(categoryId)) return fail("not_found");
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const r = await q.query(
       `delete from public.service_categories where business_id = $1 and id = $2`,
       [businessId, categoryId],
@@ -363,7 +375,7 @@ export async function reorderCategories(
 ): Promise<BookingFormResult> {
   const p = reorderInputSchema.safeParse(orderedIds);
   if (!p.success) return fail(firstCode(p.error));
-  return ownerMutation(userId, (q) =>
+  return catalogMutation(userId, businessId, (q) =>
     reorder(q, "service_categories", businessId, p.data),
   );
 }
@@ -379,7 +391,7 @@ export async function setServiceCategory(
   if (categoryId !== null && !UUID.test(categoryId)) {
     return fail("invalid_target");
   }
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const r = await q.query(
       `update public.services set category_id = $3
         where business_id = $1 and id = $2`,
@@ -470,7 +482,7 @@ export async function createQuestion(
   const p = createQuestionInputSchema.safeParse(rawInput);
   if (!p.success) return fail(firstCode(p.error));
   const input = p.data;
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const id = await insertQuestion(
       q,
       businessId,
@@ -533,7 +545,7 @@ export async function activatePreset(
   // Förslagen är kod; ett ogiltigt förslag är ett programmeringsfel.
   if (!fields.success) return fail("preset_not_found");
   const targets = p.data.targets;
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const existing = await q.query<{ id: string }>(
       `select id from public.booking_questions
         where business_id = $1 and preset_key = $2
@@ -577,7 +589,7 @@ export async function updateQuestion(
   if (!p.success) return fail(firstCode(p.error));
   if (!UUID.test(questionId)) return fail("not_found");
   const f = p.data;
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const before = await q.query<{ kind: string }>(
       `select kind from public.booking_questions
         where business_id = $1 and id = $2 for update`,
@@ -618,7 +630,7 @@ export async function setQuestionActive(
   active: boolean,
 ): Promise<BookingFormResult> {
   if (!UUID.test(questionId)) return fail("not_found");
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const r = await q.query(
       `update public.booking_questions set active = $3
         where business_id = $1 and id = $2`,
@@ -640,7 +652,7 @@ export async function setQuestionTargets(
   const p = targetsInputSchema.safeParse(rawTargets);
   if (!p.success) return fail(firstCode(p.error));
   if (!UUID.test(questionId)) return fail("not_found");
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const exists = await q.query<QuestionRow>(
       `select ${QUESTION_COLUMNS} from public.booking_questions
         where business_id = $1 and id = $2 for update`,
@@ -661,7 +673,7 @@ export async function reorderQuestions(
 ): Promise<BookingFormResult> {
   const p = reorderInputSchema.safeParse(orderedIds);
   if (!p.success) return fail(firstCode(p.error));
-  return ownerMutation(userId, (q) =>
+  return catalogMutation(userId, businessId, (q) =>
     reorder(q, "booking_questions", businessId, p.data),
   );
 }
@@ -673,7 +685,7 @@ export async function deleteQuestion(
   questionId: string,
 ): Promise<BookingFormResult> {
   if (!UUID.test(questionId)) return fail("not_found");
-  return ownerMutation(userId, async (q) => {
+  return catalogMutation(userId, businessId, async (q) => {
     const r = await q.query(
       `delete from public.booking_questions where business_id = $1 and id = $2`,
       [businessId, questionId],

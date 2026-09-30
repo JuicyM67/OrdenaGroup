@@ -17,7 +17,11 @@ export type BookingError =
   | "slot_taken" // 23P01 från no_overlap, eller alla "any"-kandidater tagna
   | "not_found" // bokningen finns inte i företaget, eller fel token (move/cancel)
   | "invalid_status" // move/cancel på annat än requested/confirmed/pending_payment; confirm/decline på annat än requested (WP-45)
-  | "outside_cancel_window"; // kund senare än cancel_window_hours före start
+  | "outside_cancel_window" // kund senare än cancel_window_hours före start
+  | "forbidden"; // WP-46: medlemmen saknar behörighet (flaggorna i memberships)
+
+/** Kundens flöden (token/bokningssidan) returnerar aldrig `forbidden`. */
+export type CustomerBookingError = Exclude<BookingError, "forbidden">;
 
 export type CreatedBooking = {
   id: string;

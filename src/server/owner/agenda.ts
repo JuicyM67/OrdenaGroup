@@ -25,8 +25,10 @@ import {
 import type { E164 } from "@/lib/format/phone";
 import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import type { Queryable } from "@/server/db/pool";
+import { loadMember } from "@/server/db/permissions";
 import { withOwnerTx } from "@/server/db/tx";
 
+import { memberView, type MemberView } from "./member";
 import { isoOf, staffColorOf } from "./shared";
 
 /**
@@ -41,10 +43,14 @@ export async function loadOwnerAgendaWeek(
   businessId: string,
   focus: LocalDate,
   now: Date,
-): Promise<AgendaData> {
-  return withOwnerTx(userId, (q) =>
-    loadOwnerAgendaWeekIn(q, businessId, focus, now),
-  );
+): Promise<AgendaData & { member: MemberView }> {
+  return withOwnerTx(userId, async (q) => {
+    // WP-46: hela kalendern för alla medlemmar (RLS "read calendar"); UI:t
+    // använder `member` för "Mis reservas" och för att dölja knappar.
+    const member = await loadMember(q, userId, businessId);
+    const data = await loadOwnerAgendaWeekIn(q, businessId, focus, now);
+    return { ...data, member: memberView(member) };
+  });
 }
 
 type StaffRow = { id: string; name: string; color: string };

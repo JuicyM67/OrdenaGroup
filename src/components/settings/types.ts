@@ -44,7 +44,27 @@ export type AjustesHour = {
   end: string;
 };
 
+/** WP-46: speglar `Perm`/`MemberView` (`src/server/db/permissions.ts`,
+ * `src/server/owner/member.ts`) — duplicerade, samma motiv som ovan. */
+export type AjustesPerm =
+  | "can_manage_own_bookings"
+  | "can_manage_all_bookings"
+  | "can_cancel_bookings"
+  | "can_edit_catalog"
+  | "can_manage_team"
+  | "can_view_reports"
+  | "can_edit_settings";
+
+export type AjustesMember = {
+  role: "owner" | "staff" | "vendor" | "admin" | null;
+  staffId: string | null;
+  perms: Record<AjustesPerm, boolean>;
+};
+
 export type AjustesData = {
+  /** WP-46: den inloggades roll och effektiva behörigheter — döljer
+   * sektioner den inloggade inte får ändra. */
+  member: AjustesMember;
   business: AjustesBusiness;
   services: AjustesService[];
   staff: AjustesStaffMember[];
@@ -65,3 +85,37 @@ export type AjustesActions = {
   setStaffActive: (id: string, active: boolean) => Promise<MutationResult>;
   updateHours: (input: unknown) => Promise<MutationResult>;
 };
+
+// ---------------------------------------------------------------------------
+// WP-46: Ajustes → Equipo (åtkomst till kontot). Speglar
+// `src/server/team/members.ts`/`src/server/team/invitations.ts` — samma
+// duplicerings-motiv som resten av filen.
+// ---------------------------------------------------------------------------
+
+export type TeamPermRecord = Record<AjustesPerm, boolean>;
+
+export type TeamAccount =
+  | { status: "none" }
+  | {
+      status: "pending";
+      invitationId: string;
+      email: string;
+      sentAt: string;
+      expiresAt: string;
+    }
+  | { status: "active"; userId: string; perms: TeamPermRecord };
+
+export type TeamStaffMember = {
+  staffId: string;
+  name: string;
+  active: boolean;
+  account: TeamAccount;
+};
+
+export type TeamData = {
+  staff: TeamStaffMember[];
+  planLimitReached: boolean;
+};
+
+export type TeamInviteResult =
+  { ok: true; invitationId: string } | { ok: false; code: string };

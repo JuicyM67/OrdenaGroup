@@ -15,9 +15,11 @@ import {
   APP_TZ,
   type LocalDate,
 } from "@/lib/format/dates";
+import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
+import { memberView, type MemberView } from "./member";
 import { listPendingRequestsIn } from "./requests";
 import { isoOf } from "./shared";
 
@@ -184,20 +186,36 @@ export async function loadOwnerInicio(
   today: LocalDate,
   now: Date,
   owner: { name: string; firstName: string },
-): Promise<InicioData> {
-  return withOwnerTx(userId, (q) =>
-    loadOwnerInicioIn(q, businessId, today, now, owner),
-  );
+): Promise<InicioData & { member: MemberView }> {
+  return withOwnerTx(userId, async (q) => {
+    const member = await loadMember(q, userId, businessId);
+    const data = await loadOwnerInicioIn(
+      q,
+      businessId,
+      today,
+      now,
+      owner,
+      member,
+    );
+    return { ...data, member: memberView(member) };
+  });
 }
 
-/** Inre steg (för tester): kör i anroparens transaktion. */
+/** Inre steg (för tester): kör i anroparens transaktion. `member`
+ * utelämnad = ingen behörighetsfiltrering (tester). WP-46: statistiken
+ * (intäkter och inasistencias) kräver `can_view_reports` — annars nollor,
+ * aldrig en fråga mot siffrorna; förfrågningarna filtreras till dem
+ * medlemmen får hantera. */
 export async function loadOwnerInicioIn(
   q: Queryable,
   businessId: string,
   today: LocalDate,
   now: Date,
   owner: { name: string; firstName: string },
+  member?: Member | null,
 ): Promise<InicioData> {
+  const showReports =
+    member === undefined || hasPerm(member, "can_view_reports");
   const bizRes = await q.query<BusinessRow>(
     `select name, comuna from public.businesses where id = $1`,
     [businessId],
@@ -277,14 +295,19 @@ export async function loadOwnerInicioIn(
   // faktiskt saknar backend: väntelista/hora flash/te echamos de menos). Sekventiellt (inte
   // `Promise.all`): samma `q` (en transaktion) som resten av filen, samma mönster som
   // `bookingsRes`/`upcomingRes` ovan.
-  const { revenueWeekClp, revenueSeries } = await loadWeekRevenue(
+  const { revenueWeekClp, revenueSeries } = showReports
+    ? await loadWeekRevenue(q, businessId, today)
+    : { revenueWeekClp: 0, revenueSeries: [0, 0, 0, 0, 0, 0, 0] };
+  const { noShowPct, noShowTrend } = showReports
+    ? await loadNoShowStats(q, businessId, now)
+    : { noShowPct: 0, noShowTrend: "flat" as const };
+  const markedDates = await loadMarkedDates(q, businessId, today);
+  const pendingRequests = await listPendingRequestsIn(
     q,
     businessId,
-    today,
+    now,
+    member,
   );
-  const { noShowPct, noShowTrend } = await loadNoShowStats(q, businessId, now);
-  const markedDates = await loadMarkedDates(q, businessId, today);
-  const pendingRequests = await listPendingRequestsIn(q, businessId, now);
 
   return {
     now: now.toISOString(),

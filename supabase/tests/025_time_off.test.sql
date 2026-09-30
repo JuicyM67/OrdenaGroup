@@ -54,10 +54,12 @@ select throws_ok($$ insert into public.time_off (business_id, staff_id, period, 
 select throws_ok($$ update public.time_off set note = 'x' where id = 'aaaaaaaa-2500-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.time_off where id = 'aaaaaaaa-2500-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA ser noll rader.
+-- 6. staffA ser nu A:s frånvaro (WP-46 uppföljning 2: SELECT för
+-- owner+staff — ägarens krav, hela kalendern inkl. blockeringar), men kan
+-- fortfarande inte skriva (ingen can_manage_team). vendorA oförändrad (0).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.time_off)::int, 0, 'staffA ser noll frånvaro');
+select is((select count(*) from public.time_off)::int, 1, 'staffA ser A:s frånvaro (bara läsning)');
 select throws_ok(
   $$ insert into public.time_off (business_id, staff_id, period, kind) values ('aaaaaaaa-0000-0000-0000-000000000001', null, tstzrange('2026-10-10 13:30+00', '2026-10-10 14:30+00', '[)'), 'lunch') $$,
   '42501'

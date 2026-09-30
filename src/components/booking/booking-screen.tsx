@@ -32,7 +32,11 @@ import {
   type BookingFlowState,
 } from "./flow-state";
 import type { CustomerFormOutput, WaitlistFormOutput } from "./form-schema";
-import { type MobileTab, ProfileBrowse } from "./profile-browse";
+import {
+  type MobileTab,
+  ProfileBrowse,
+  type ProfileSocialSlots,
+} from "./profile-browse";
 import { ServiceCard } from "./service-card";
 import { StaffPicker } from "./staff-picker";
 import { barPrice, findDay, summaryText } from "./summary";
@@ -75,6 +79,8 @@ function getServerOnlineSnapshot(): boolean {
 
 export interface BookingScreenProps {
   data: BookingPageData;
+  /** WP-51: sociala ikonknappar renderade av servern (ingen klient-JS, D-032). */
+  social?: ProfileSocialSlots;
   submitBooking: (input: CustomerFormOutput) => Promise<BookingActionResult>;
   joinWaitlist: (input: WaitlistFormOutput) => Promise<BookingActionResult>;
   /** Bara till design lab (`?estado=`): förvalt tillstånd i stället för det tomma. */
@@ -100,6 +106,7 @@ export function BookingScreen({
   loadingHorarios,
   initialFormErrors,
   forceOffline,
+  social,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
@@ -318,6 +325,7 @@ export function BookingScreen({
             onBookService={bookService}
             mobileTab={mobileTab}
             onSelectMobileTab={setMobileTab}
+            social={social}
           />
         ) : (
           <>

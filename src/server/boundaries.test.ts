@@ -16,6 +16,10 @@ import { describe, expect, it } from "vitest";
  *   id (ARCHITECTURE princip 3, INV-4, säkerhet R6). Testkod (testing.ts,
  *   __fixtures__/) körs som postgres och undantas.
  * - Bara testkod importerar @/server/db/testing (säkerhet R5).
+ * - WP-46: varje exporterad mutation i owner/ och privacy/ anropar en
+ *   behörighetskontroll (`requirePerm` eller `isOwner`, direkt eller via en
+ *   vakt som själv bevisligen gör det); bokningsmotorns ägarvägar
+ *   (create/move/cancel/confirm) kontrollerar medlemmen i transaktionen.
  */
 const serverDir = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.resolve(serverDir, "..");
@@ -422,6 +426,161 @@ describe("src/server gränser", () => {
       for (const spec of importSpecifiers(read(f))) {
         if (importsFixture(f, spec)) offenders.push(`${rel(f)}: ${spec}`);
       }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// WP-46: behörighet i varje mutation
+// ---------------------------------------------------------------------------
+
+/** Exporterade funktioner med sin kropp (till nästa `}` i kolumn 0). */
+function exportedFunctions(code: string): { name: string; body: string }[] {
+  const c = stripComments(code);
+  const out: { name: string; body: string }[] = [];
+  const re = /^export\s+(?:async\s+)?function\s+(\w+)\s*[<(]/gm;
+  for (const m of c.matchAll(re)) {
+    const start = m.index ?? 0;
+    const end = c.indexOf("\n}", start);
+    out.push({
+      name: m[1]!,
+      body: c.slice(start, end === -1 ? undefined : end),
+    });
+  }
+  return out;
+}
+
+/** Namn som betyder "ändrar något" (läsare och inre `*In`-steg undantas). */
+const MUTATION_NAME =
+  /^(create|update|set|delete|rename|reorder|replace|activate|confirm|decline|mark|move|save|cancel|request|export|anonymize|invite|revoke|remove|accept)[A-Z]/;
+
+/**
+ * Vakterna. `requirePerm`/`isOwner` är grundkontrollerna
+ * (`db/permissions.ts`, `privacy/authz.ts`); de övriga är tunna omslag som
+ * testet nedan bevisar anropar en grundkontroll. Motorns publika
+ * funktioner (`createBooking` …) räknas som vakter eftersom motorn själv
+ * kontrollerar medlemmen (se testet för bokningsmotorn).
+ */
+const BASE_GUARDS = ["requirePerm", "isOwner"] as const;
+const WRAPPER_GUARDS: Record<string, string> = {
+  requireMemberPerm: "server/owner/member.ts",
+  requireOwnerMember: "server/owner/member.ts",
+  catalogMutation: "server/owner/booking-questions.ts",
+  requireBookingPerm: "server/bookings/authz.ts",
+  ownerDenial: "server/privacy/authz.ts",
+};
+const ENGINE_GUARDS = [
+  "createBooking",
+  "moveBooking",
+  "cancelBooking",
+  "confirmBooking",
+  "declineBooking",
+] as const;
+const ALL_GUARDS = [
+  ...BASE_GUARDS,
+  ...Object.keys(WRAPPER_GUARDS),
+  ...ENGINE_GUARDS,
+];
+
+/** Mutationer som medvetet saknar inloggad användare (cron, service role). */
+const NO_USER_MUTATIONS = new Set(["server/privacy/business.ts#purgeBusiness"]);
+
+function calls(body: string, fn: string): boolean {
+  return new RegExp(`\\b${fn}\\s*[<(]`).test(body);
+}
+
+function unguardedMutations(file: string, code: string): string[] {
+  return exportedFunctions(code)
+    .filter((f) => MUTATION_NAME.test(f.name) && !/In$/.test(f.name))
+    .filter((f) => !NO_USER_MUTATIONS.has(`${file}#${f.name}`))
+    .filter((f) => !ALL_GUARDS.some((g) => calls(f.body, g)))
+    .map((f) => `${file}: ${f.name}`);
+}
+
+describe("WP-46: behörighetsdetektorerna själva", () => {
+  it("en mutation utan vakt fångas, med vakt godtas, läsare ignoreras", () => {
+    const code = [
+      "export async function updateThing(q) {",
+      "  await q.query(`update x`);",
+      "}",
+      "export async function setOther(q) {",
+      '  requirePerm(m, "can_edit_catalog");',
+      "}",
+      "export async function loadThing(q) {",
+      "  return 1;",
+      "}",
+      "export async function updateThingIn(q) {",
+      "  return 1;",
+      "}",
+    ].join("\n");
+    expect(unguardedMutations("x.ts", code)).toEqual(["x.ts: updateThing"]);
+  });
+});
+
+describe("WP-46: behörighet i varje mutation", () => {
+  const scoped = serverSources.filter((f) =>
+    /^server\/(owner|privacy)\//.test(rel(f)),
+  );
+
+  it("hittar owner/ och privacy/", () => {
+    expect(scoped.map(rel)).toContain("server/owner/ajustes.ts");
+    expect(scoped.map(rel)).toContain("server/privacy/customer.ts");
+  });
+
+  it("varje exporterad mutation i owner/ och privacy/ anropar requirePerm eller isOwner (direkt eller via en vakt)", () => {
+    const offenders = scoped.flatMap((f) =>
+      unguardedMutations(rel(f), read(f)),
+    );
+    expect(offenders).toEqual([]);
+  });
+
+  it("varje omslagsvakt anropar själv requirePerm eller isOwner", () => {
+    const offenders: string[] = [];
+    for (const [guard, file] of Object.entries(WRAPPER_GUARDS)) {
+      const code = stripComments(read(path.join(srcDir, file)));
+      const start = code.search(
+        new RegExp(`\\b(?:async\\s+)?function\\s+${guard}\\s*[<(]`),
+      );
+      if (start === -1) {
+        offenders.push(`${file}: ${guard} saknas`);
+        continue;
+      }
+      const end = code.indexOf("\n}", start);
+      const body = code.slice(start, end === -1 ? undefined : end);
+      if (
+        ![...BASE_GUARDS, ...Object.keys(WRAPPER_GUARDS)]
+          .filter((g) => g !== guard)
+          .some((g) => calls(body, g))
+      ) {
+        offenders.push(`${file}: ${guard}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  it("bokningsmotorns ägarvägar (create/move/cancel/confirm) läser medlemmen och mappar 42501 till forbidden", () => {
+    const offenders: string[] = [];
+    for (const name of ["create", "move", "cancel", "confirm"]) {
+      const file = `server/bookings/${name}.ts`;
+      const code = stripComments(read(path.join(srcDir, file)));
+      if (!calls(code, "actorMember")) offenders.push(`${file}: actorMember`);
+      if (
+        !["requireBookingPerm", "bookingPermOk", "canManageStaffBookings"].some(
+          (g) => calls(code, g),
+        )
+      ) {
+        offenders.push(`${file}: ingen bokningsvakt`);
+      }
+      if (!/\bonForbidden\s*:/.test(code)) {
+        offenders.push(`${file}: onForbidden`);
+      }
+    }
+    const authz = stripComments(
+      read(path.join(srcDir, "server/bookings/authz.ts")),
+    );
+    if (!calls(authz, "requirePerm") || !calls(authz, "hasPerm")) {
+      offenders.push("server/bookings/authz.ts: requirePerm/hasPerm");
     }
     expect(offenders).toEqual([]);
   });

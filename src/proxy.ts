@@ -33,7 +33,14 @@ export async function proxy(request: NextRequest) {
 
   const { response, userId } = await refreshSupabaseSession(request);
 
-  if (pathname.startsWith("/app") && userId === null) {
+  // WP-46: /app/invitacion/[token] måste kunna visas för en UTLOGGAD person
+  // (den inbjudna, innan hen begärt sin magiska länk) — sidan hanterar själv
+  // inloggat/utloggat läge (`src/app/(app)/app/invitacion/[token]/page.tsx`),
+  // ingen sessionsdata läcker härifrån (bara en generell status/negocio-namn,
+  // läst med service role, inte bunden till den besökandes identitet).
+  const isInvitationPage = pathname.startsWith("/app/invitacion/");
+
+  if (pathname.startsWith("/app") && userId === null && !isInvitationPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";

@@ -7,7 +7,7 @@ import { recordConsent } from "@/server/privacy/consent";
 import { err, type Result } from "@/server/scheduling/result";
 
 import { createBooking } from "./create";
-import type { BookingError, CreatedBooking } from "./types";
+import type { CreatedBooking, CustomerBookingError } from "./types";
 
 export type CreateCustomerBookingInput = {
   businessId: string;
@@ -81,7 +81,7 @@ async function futureBookingsForPhone(
  */
 export async function createCustomerBooking(
   input: CreateCustomerBookingInput,
-): Promise<Result<CreatedBooking, BookingError | "rate_limited">> {
+): Promise<Result<CreatedBooking, CustomerBookingError | "rate_limited">> {
   const m = input.market ?? installationMarket;
   if (customerEmailRequired(m) && !input.email?.trim()) {
     return err("invalid_input");
@@ -95,7 +95,7 @@ export async function createCustomerBooking(
   if (futureCount >= MAX_FUTURE_BOOKINGS_PER_PHONE) {
     return err("rate_limited");
   }
-  return createBooking(
+  const r = await createBooking(
     {
       serviceId: input.serviceId,
       staffId: input.staffId,
@@ -114,6 +114,9 @@ export async function createCustomerBooking(
       now: input.now,
     },
   );
+  // `forbidden` gäller bara medlemsaktören (WP-46) och kan inte uppstå här.
+  if (!r.ok && r.error === "forbidden") return err("invalid_input");
+  return r as Result<CreatedBooking, CustomerBookingError>;
 }
 
 export type SaveBookingConsentInput = {

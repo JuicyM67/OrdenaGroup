@@ -13,9 +13,11 @@ import {
   type LocalDate,
 } from "@/lib/format/dates";
 import { listBookingAnswersIn } from "@/server/booking-questions/answers";
+import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
+import { memberView, type MemberView } from "./member";
 import { listPendingRequestsIn } from "./requests";
 import { isoOf, staffColorOf } from "./shared";
 
@@ -38,6 +40,7 @@ type BookingRow = {
   client_name: string | null;
   visits_count: number;
   service_name: string;
+  staff_id: string;
   staff_name: string;
   staff_color: string;
   status: BookingStatus;
@@ -60,20 +63,34 @@ export async function loadOwnerHoy(
   today: LocalDate,
   now: Date,
   ownerName: string,
-): Promise<HoyData> {
-  return withOwnerTx(userId, (q) =>
-    loadOwnerHoyIn(q, businessId, today, now, ownerName),
-  );
+): Promise<HoyData & { member: MemberView }> {
+  return withOwnerTx(userId, async (q) => {
+    const member = await loadMember(q, userId, businessId);
+    const data = await loadOwnerHoyIn(
+      q,
+      businessId,
+      today,
+      now,
+      ownerName,
+      member,
+    );
+    return { ...data, member: memberView(member) };
+  });
 }
 
-/** Inre steg (för tester): kör i anroparens transaktion. */
+/** Inre steg (för tester): kör i anroparens transaktion. `member`
+ * utelämnad = ingen behörighetsfiltrering (tester). WP-46: dagens summa
+ * (`dayTotalClp`) kräver `can_view_reports`, förfrågningarna filtreras
+ * till dem medlemmen får hantera. */
 export async function loadOwnerHoyIn(
   q: Queryable,
   businessId: string,
   today: LocalDate,
   now: Date,
   ownerName: string,
+  member?: Member | null,
 ): Promise<HoyData> {
+  const showMoney = member === undefined || hasPerm(member, "can_view_reports");
   const closedRes = await q.query<{ one: number }>(
     `select 1 as one from public.business_hours
       where business_id = $1 and weekday = $2
@@ -85,7 +102,7 @@ export async function loadOwnerHoyIn(
   const { start, end } = localDayRange(today, APP_TZ);
   const bookingsRes = await q.query<BookingRow>(
     `select bk.id, c.name as client_name, c.visits_count,
-            sv.name as service_name, st.name as staff_name, st.color as staff_color,
+            sv.name as service_name, st.id as staff_id, st.name as staff_name, st.color as staff_color,
             bk.status::text as status, bk.confirmed_by_customer_at,
             bk.price_clp, bk.discount_clp, bk.deposit_clp, bk.source::text as source,
             extract(epoch from lower(bk.period)) * 1000 as start_ms,
@@ -120,6 +137,7 @@ export async function loadOwnerHoyIn(
       end: isoOf(b.end_ms),
       clientName: b.client_name ?? "",
       service: b.service_name,
+      staffId: b.staff_id,
       staffName: b.staff_name,
       staffColor: staffColorOf(b.staff_color),
       status: b.status,
@@ -135,7 +153,12 @@ export async function loadOwnerHoyIn(
     0,
   );
 
-  const pendingRequests = await listPendingRequestsIn(q, businessId, now);
+  const pendingRequests = await listPendingRequestsIn(
+    q,
+    businessId,
+    now,
+    member,
+  );
 
   return {
     now: now.toISOString(),
@@ -143,7 +166,7 @@ export async function loadOwnerHoyIn(
     closedToday,
     bookings: closedToday ? [] : bookings,
     dayCount: closedToday ? 0 : bookings.length,
-    dayTotalClp: closedToday ? 0 : dayTotalClp,
+    dayTotalClp: closedToday || !showMoney ? 0 : dayTotalClp,
     waitlistCount: 0,
     pendingRequests,
     links: LINKS,

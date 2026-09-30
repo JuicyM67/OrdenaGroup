@@ -26,6 +26,7 @@ import {
 } from "@/server/scheduling/schemas";
 import type { Actor, StaffChoice } from "@/server/scheduling/types";
 
+import { actorMember, canManageStaffBookings } from "./authz";
 import { findOrCreateCustomer } from "./customers";
 import { emitBookingEvent } from "./events";
 import { createManageToken } from "./token";
@@ -78,6 +79,7 @@ export async function createBooking(
   };
   const result = await runAs(input.actor, (q) => createIn(q, input), {
     onConflict: err("slot_taken"),
+    onForbidden: err("forbidden"),
   });
   // WP-16: efter commit (enqueueBookingEvent kastar aldrig). Ett omförsök med
   // samma idempotensnyckel ger den befintliga bokningen utan token
@@ -227,7 +229,19 @@ export async function createIn(
   );
   if (!check.ok) return check;
 
-  await lockStaffForBooking(q, input.businessId, check.value);
+  // WP-46: en medlem (ägare/personal) får bara boka på profesionales hen
+  // får hantera (`./authz.ts`); "Cualquiera" filtreras till dem. OBS: att
+  // skapa/återanvända kundraden kräver dessutom `can_manage_all_bookings`
+  // i RLS (policyn "manage customers insert") — en 42501 därifrån blir
+  // `forbidden` via `runAs({ onForbidden })`.
+  const member = await actorMember(q, input.actor, input.businessId);
+  const candidates =
+    member === undefined
+      ? check.value
+      : check.value.filter((id) => canManageStaffBookings(member, id));
+  if (candidates.length === 0) return err("forbidden");
+
+  await lockStaffForBooking(q, input.businessId, candidates);
 
   const customerId = await findOrCreateCustomer(
     q,
@@ -239,7 +253,7 @@ export async function createIn(
   const blockedEnd = periodEnd + snapshot.service.bufferAfterMin * MIN;
 
   let booked: { id: string; staffId: string } | undefined;
-  for (const staffId of check.value) {
+  for (const staffId of candidates) {
     try {
       const id = await savepoint(q, async () => {
         const r = await q.query<{ id: string }>(

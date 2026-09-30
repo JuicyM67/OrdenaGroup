@@ -20,6 +20,10 @@ import {
 } from "@/components/shared/notification-bell";
 import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { UserMenu } from "@/components/shared/user-menu";
+import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
 import { inicio } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import {
@@ -86,6 +90,10 @@ export type InicioScreenProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-46: "Min profil" i kontomenyn. `undefined` döljer menyposten (ägare
+   * utan egen personalrad, design lab). */
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
 };
 
 const AGENDA_HREF = "/app/agenda";
@@ -99,6 +107,8 @@ export function InicioScreen({
   onLogout,
   onConfirmRequest,
   onDeclineRequest,
+  myProfile,
+  myProfileActions,
 }: InicioScreenProps) {
   const router = useRouter();
   const now = mustParseInstant(data.now, "InicioScreen");
@@ -161,6 +171,8 @@ export function InicioScreen({
                 variant="pill"
                 publicPageHref={publicPageHref}
                 onLogout={onLogout}
+                myProfile={myProfile}
+                myProfileActions={myProfileActions}
               />
             </span>
             <span className="contents lg:hidden">
@@ -170,6 +182,8 @@ export function InicioScreen({
                 variant="avatar"
                 publicPageHref={publicPageHref}
                 onLogout={onLogout}
+                myProfile={myProfile}
+                myProfileActions={myProfileActions}
               />
             </span>
           </>

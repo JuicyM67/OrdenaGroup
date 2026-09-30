@@ -14,6 +14,7 @@ import {
 } from "@/server/scheduling/schemas";
 import type { Actor } from "@/server/scheduling/types";
 
+import { actorMember, bookingPermOk, visibleButLocked } from "./authz";
 import { emitBookingEvent } from "./events";
 import {
   CHANGEABLE,
@@ -54,7 +55,9 @@ export async function cancelBooking(
     reason = p.data.reason;
   }
   const input = { ...c, ref, reason };
-  const result = await runAs(c.actor, (q) => cancelDetailedIn(q, input));
+  const result = await runAs(c.actor, (q) => cancelDetailedIn(q, input), {
+    onForbidden: err("forbidden"),
+  });
   if (!result.ok) return result;
   const { bookingId, freed, declined } = result.value;
   // WP-16: efter commit (enqueueBookingEvent kastar aldrig). En redan
@@ -114,8 +117,25 @@ async function cancelDetailedIn(
     BookingError
   >
 > {
+  const member = await actorMember(q, input.actor, input.businessId);
   const b = await lockBooking(q, input.businessId, input.ref);
-  if (!b) return err("not_found");
+  if (!b) {
+    return member !== undefined &&
+      "bookingId" in input.ref &&
+      (await visibleButLocked(q, input.businessId, input.ref.bookingId))
+      ? err("forbidden")
+      : err("not_found");
+  }
+  // WP-46: även "redan avbokad" kräver att medlemmen får röra bokningen.
+  if (
+    !bookingPermOk(member, {
+      kind: "cancel",
+      staffId: b.staffId,
+      status: b.status === "cancelled" ? "requested" : b.status,
+    })
+  ) {
+    return err("forbidden");
+  }
   if (b.status === "cancelled") {
     return ok({ bookingId: b.id, freed: null, declined: false });
   }

@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookingScreen } from "@/components/booking/booking-screen";
+import { SocialLinks } from "@/components/booking/social-icons";
 import type {
   CustomerFormOutput,
   WaitlistFormOutput,
@@ -73,8 +74,38 @@ export default async function ReservaPage({ params }: { params: Params }) {
     return joinWaitlist(slug, input);
   }
 
+  // WP-51/D-032: ikonerna renderas här på servern och skickas in som färdigt
+  // innehåll, så de kostar ingen JS i bokningsflödets klientbunt.
+  const p = data.profile;
+  const social = p
+    ? {
+        chips: (
+          <SocialLinks
+            instagramUrl={p.instagramUrl}
+            tiktokUrl={p.tiktokUrl}
+            facebookUrl={p.facebookUrl}
+            businessName={data.business.name}
+            tone="surface"
+            size={36}
+            className="ml-auto"
+          />
+        ),
+        contact: (
+          <SocialLinks
+            instagramUrl={p.instagramUrl}
+            tiktokUrl={p.tiktokUrl}
+            facebookUrl={p.facebookUrl}
+            businessName={data.business.name}
+            tone="canvas"
+            size={44}
+          />
+        ),
+      }
+    : undefined;
+
   return (
     <BookingScreen
+      social={social}
       data={data}
       submitBooking={submitBooking}
       joinWaitlist={submitWaitlist}

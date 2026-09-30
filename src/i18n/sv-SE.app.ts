@@ -190,6 +190,13 @@ export const errores: Widen<typeof Es.errores> = {
     network:
       "Vi kunde inte ansluta. Kontrollera din uppkoppling och försök igen.",
   },
+  permiso: {
+    generico: "Du har inte behörighet att göra det här.",
+    accion: (p: { accion: string }): string =>
+      `Du har inte behörighet att ${p.accion}.`,
+    redirigido:
+      "Du har inte behörighet att se den sidan. Vi tar dig till din kalender.",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -460,8 +467,14 @@ const AGREGA_EQUIPO_VACIO_SV =
 
 const AGREGAR_PROFESIONAL_SV = "Lägg till medarbetare";
 
+const FILTRO_EQUIPO_SV = {
+  misReservas: "Mina bokningar",
+  todoElEquipo: "Hela teamet",
+} as const;
+
 export const agenda: Widen<typeof Es.agenda> = {
   calendarioMensualAria: "Månadskalender",
+  filtroEquipo: FILTRO_EQUIPO_SV,
   panel: {
     profesionales: "Medarbetare",
     reservasCount: (p: { n: number }): string =>
@@ -572,6 +585,7 @@ export const agenda: Widen<typeof Es.agenda> = {
 
 export const hoy: Widen<typeof Es.hoy> = {
   titulo: "Idag",
+  filtroEquipo: FILTRO_EQUIPO_SV,
   proximaReserva: "Nästa bokning",
   siguiente: (p: { relativo: string }): string => `Nästa · ${p.relativo}`,
   relativo: {
@@ -1141,6 +1155,19 @@ export const email: Widen<typeof Es.email> = {
     }): string =>
       `Du betalade ${p.monto} i förskott. Resten (${p.saldo}) betalar du på plats. ${p.condiciones}`,
   },
+  invitacionEquipo: {
+    asunto: (p: { negocio: string }): string =>
+      `Du har blivit inbjuden till ${p.negocio}`,
+    preheader: (p: { invitadoPor: string; negocio: string }): string =>
+      `${p.invitadoPor} bjöd in dig till ${p.negocio}.`,
+    titulo: "Du har blivit inbjuden",
+    texto: (p: { invitadoPor: string; negocio: string }): string =>
+      `${p.invitadoPor} bjöd in dig att logga in hos ${p.negocio} och se kalendern.`,
+    cta: "Acceptera inbjudan",
+    expira: "Länken gäller i 7 dagar.",
+    ignorar:
+      "Om du inte väntade dig den här inbjudan kan du bortse från mejlet.",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1262,13 +1289,14 @@ export const negocio: Widen<typeof Es.negocio> = {
 // ---------------------------------------------------------------------------
 
 export const onboarding: Widen<typeof Es.onboarding> = {
-  bienvenida: "Ställ in din kalender i 4 steg, det tar mindre än 10 minuter.",
+  bienvenida: "Ställ in din kalender i 5 steg, det tar mindre än 10 minuter.",
   paso: (p: { n: number; total: number }): string =>
     `Steg ${p.n} av ${p.total}`,
   pasos: {
     servicios: "Tjänster",
     equipo: "Personal",
     horario: "Öppettider",
+    pagina: "Din sida",
     link: "Din länk",
   },
   ctaContinuar: "Fortsätt",
@@ -1279,6 +1307,8 @@ export const onboarding: Widen<typeof Es.onboarding> = {
     servicios: "Lägg till det du erbjuder: namn, tid och pris.",
     equipo: AGREGA_EQUIPO_VACIO_SV,
     horario: "Berätta när du har öppet varje dag.",
+    pagina:
+      "Lägg till foton och kontaktuppgifter så att kunderna hittar dig. Allt är valfritt.",
     link: "Nu har du din bokningssida klar.",
   },
   listo: {
@@ -2081,6 +2111,154 @@ export const solicitudes: Widen<typeof Es.solicitudes> = {
 };
 
 // ---------------------------------------------------------------------------
+// equipo: WP-46, samma nycklar som Es.equipo (personalkonton, Inställningar
+// → Team).
+// ---------------------------------------------------------------------------
+
+export const equipo: Widen<typeof Es.equipo> = {
+  miPerfil: "Min profil",
+  ctaInvitar: "Bjud in till kontot",
+  invitarDialog: {
+    titulo: "Bjud in till kontot",
+    emailLabel: "E-post",
+    emailPlaceholder: "namn@exempel.se",
+    profesionalLabel: "Medarbetare",
+    profesionalAyuda: "Kontot kopplas till den här medarbetaren i ditt team.",
+    permisosTitulo: "Vad personen får göra",
+    ctaEnviar: "Skicka inbjudan",
+    errores: {
+      emailInvalido: "Kontrollera e-postadressen.",
+      profesionalRequerido: "Välj vilken medarbetare kontot ska kopplas till.",
+      profesionalYaTieneCuenta:
+        "Den här medarbetaren har redan ett konto. Bara ett konto per medarbetare.",
+      emailYaEsMiembro: "Den e-postadressen har redan åtkomst till kontot.",
+      emailOtroNegocio:
+        "Den e-postadressen hör redan till ett annat företag. Den kan inte ha två just nu.",
+    },
+  },
+  permisos: {
+    manage_own_bookings: {
+      nombre: "Sina egna bokningar",
+      ayuda:
+        "Kan skapa, flytta och markera Kom eller Kom inte, bara på de bokningar som är hens egna.",
+    },
+    manage_all_bookings: {
+      nombre: "Alla bokningar",
+      ayuda:
+        "Kan skapa, flytta och markera Kom eller Kom inte på alla medarbetares bokningar.",
+    },
+    cancel_bookings: {
+      nombre: "Avboka eller neka bokningar",
+      ayuda:
+        "Kan avboka en bekräftad bokning eller neka en väntande förfrågan.",
+    },
+    edit_catalog: {
+      nombre: "Tjänster och priser",
+      ayuda: "Kan skapa och redigera tjänster, priser och kategorier.",
+    },
+    manage_team: {
+      nombre: "Personal och scheman",
+      ayuda:
+        "Kan lägga till medarbetare och ändra deras scheman. Gäller inte att bjuda in konton eller ändra behörigheter: det gör bara ägaren.",
+    },
+    view_reports: {
+      nombre: "Statistik och kassa",
+      ayuda: "Kan se intäkter, företagets statistik och kassahistorik.",
+    },
+    edit_settings: {
+      nombre: "Inställningar och profil",
+      ayuda: "Kan ändra öppettider, bokningsregler och företagets profil.",
+    },
+  },
+  invitaciones: {
+    titulo: "Väntande inbjudningar",
+    enviada: (p: { fecha: string }): string => `Skickad ${p.fecha}`,
+    ctaReenviar: "Skicka igen",
+    ctaRevocar: "Återkalla",
+    confirmarRevocar: {
+      titulo: "Återkalla den här inbjudan?",
+      cuerpo: "Personen kan inte längre acceptera den.",
+      ctaSi: "Ja, återkalla",
+      ctaNo: "Nej, behåll",
+    },
+    toast: {
+      reenviada: "Inbjudan skickad igen.",
+      revocada: "Inbjudan återkallad.",
+    },
+  },
+  miembros: {
+    titulo: "Medlemmar",
+    rol: {
+      owner: "Ägare",
+      staff: "Personal",
+    },
+    ctaEditarPermisos: "Ändra behörigheter",
+    ctaQuitarAcceso: "Ta bort åtkomst",
+    confirmarQuitar: {
+      titulo: "Ta bort åtkomsten till det här kontot?",
+      cuerpo:
+        "Personen kan inte längre logga in på ditt konto. Medarbetarens rad finns kvar i ditt team.",
+      ctaSi: "Ja, ta bort åtkomst",
+      ctaNo: "Nej, behåll",
+    },
+    toast: {
+      permisosGuardados: "Behörigheter sparade.",
+      accesoQuitado: "Åtkomst borttagen.",
+    },
+  },
+  vacio: "Du har inte bjudit in någon till kontot än.",
+  limiteDelPlan: {
+    titulo: "Din plan inkluderar inte personalkonton",
+    texto:
+      "Din nuvarande plan tillåter bara en medarbetare. Byt plan för att bjuda in ditt team.",
+    cta: "Byt plan",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// invitacion: WP-46, samma nycklar som Es.invitacion
+// (/app/invitacion/[token]).
+// ---------------------------------------------------------------------------
+
+export const invitacion: Widen<typeof Es.invitacion> = {
+  titulo: (p: { negocio: string }): string => `Gå med i ${p.negocio}`,
+  texto: (p: { negocio: string }): string =>
+    `Acceptera inbjudan för att logga in och se ${p.negocio}s hela kalender.`,
+  ctaAceptar: "Acceptera inbjudan",
+  errores: {
+    noEncontrada: "Vi hittade inte den här inbjudan.",
+    expirada: "Den här inbjudan har gått ut. Be ägaren skicka en ny.",
+    revocada:
+      "Den här inbjudan har återkallats. Be ägaren skicka en ny om det stämmer.",
+    yaUsada: "Den här inbjudan är redan använd.",
+    otroCorreo: (p: { email: string }): string =>
+      `Den här inbjudan gäller ${p.email}. Logga in med det kontot eller be om en ny inbjudan.`,
+    correoOtroNegocio:
+      "Den e-postadressen hör redan till ett annat företag. Just nu kan den bara ha ett konto.",
+    limiteDelPlan:
+      "Det här företagets plan tillåter inte fler personalkonton just nu.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// redesSociales: WP-51 — TikTok och Facebook, se es-CL.ts för motivering av
+// det egna blocket (i stället för att bygga ut `perfil`/`negocio`).
+// ---------------------------------------------------------------------------
+
+export const redesSociales: Widen<typeof Es.redesSociales> = {
+  campos: {
+    tiktokLabel: "TikTok",
+    tiktokPlaceholder: "dittforetag",
+    tiktokAyuda: "Bara ditt användarnamn, utan hela länken.",
+    facebookLabel: "Facebook",
+    facebookPlaceholder: "dittforetag",
+    facebookAyuda: "Bara ditt användarnamn, utan hela länken.",
+  },
+  tiktokAria: (p: { negocio: string }): string => `TikTok för ${p.negocio}`,
+  facebookAria: (p: { negocio: string }): string => `Facebook för ${p.negocio}`,
+};
+
+// ---------------------------------------------------------------------------
 // Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
@@ -2115,5 +2293,8 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   formulario,
   perfil,
   solicitudes,
+  equipo,
+  invitacion,
+  redesSociales,
 };
 void _check;

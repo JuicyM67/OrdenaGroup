@@ -54,10 +54,12 @@ select throws_ok($$ insert into public.staff_hours (business_id, staff_id, weekd
 select throws_ok($$ update public.staff_hours set end_time = '18:00' where id = 'aaaaaaaa-2400-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.staff_hours where id = 'aaaaaaaa-2400-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA ser noll rader.
+-- 6. staffA ser nu A:s personaltider (WP-46 uppföljning 2: SELECT för
+-- owner+staff — ägarens krav, hela kalendern inkl. scheman), men kan
+-- fortfarande inte skriva (ingen can_manage_team). vendorA oförändrad (0).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.staff_hours)::int, 0, 'staffA ser noll personaltider');
+select is((select count(*) from public.staff_hours)::int, 1, 'staffA ser A:s personaltider (bara läsning)');
 select throws_ok(
   $$ insert into public.staff_hours (business_id, staff_id, weekday, start_time, end_time) values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 5, '10:00', '19:00') $$,
   '42501'
