@@ -125,8 +125,8 @@ select is(
     where n.nspname = 'public'
       and has_function_privilege('authenticated', p.oid, 'execute')
   ),
-  array['accept_invitation', 'create_business'],
-  'authenticated får bara köra accept_invitation()/create_business() bland public-funktioner'
+  array['accept_business_invitation', 'accept_invitation', 'create_business'],
+  'authenticated får bara köra accept_business_invitation()/accept_invitation()/create_business() bland public-funktioner'
 );
 
 select finish();

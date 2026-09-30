@@ -36,6 +36,10 @@ import {
   type InvitacionEquipoData,
 } from "./templates/invitacion-equipo";
 import {
+  invitacionNegocioEmail,
+  type InvitacionNegocioData,
+} from "./templates/invitacion";
+import {
   listaEsperaCupoEmail,
   type ListaEsperaCupoData,
 } from "./templates/lista-espera";
@@ -46,6 +50,8 @@ export type EmailTemplateMap = {
   readonly magicLink: AccesoEmailData;
   readonly confirmation: AccesoEmailData;
   readonly bienvenida: BienvenidaData;
+  /** F19/WP-36: invitación a crear un negocio desde `/admin`. */
+  readonly invitacionNegocio: InvitacionNegocioData;
   readonly reservaConfirmada: ReservaConfirmadaData;
   readonly recordatorio: RecordatorioData;
   readonly reservaMovida: ReservaMovidaData;
@@ -72,6 +78,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   magicLink: "account",
   confirmation: "account",
   bienvenida: "account",
+  invitacionNegocio: "account",
   reservaConfirmada: "booking",
   recordatorio: "booking",
   reservaMovida: "booking",
@@ -93,6 +100,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "magicLink",
   "confirmation",
   "bienvenida",
+  "invitacionNegocio",
   "reservaConfirmada",
   "recordatorio",
   "reservaMovida",
@@ -122,6 +130,8 @@ export function renderEmail<T extends EmailTemplateName>(
       return confirmationEmail(market, data as AccesoEmailData);
     case "bienvenida":
       return bienvenidaEmail(market, data as BienvenidaData);
+    case "invitacionNegocio":
+      return invitacionNegocioEmail(market, data as InvitacionNegocioData);
     case "reservaConfirmada":
       return reservaConfirmadaEmail(market, data as ReservaConfirmadaData);
     case "recordatorio":

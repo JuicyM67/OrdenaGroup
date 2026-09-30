@@ -11,6 +11,15 @@
 // snävt (bara de rutter som behöver det), inte alla rutter (D-019/§"Delade mappar").
 // `/login` och `/auth/*` matchas också, så att en redan inloggad ägare som öppnar `/login`
 // kan skickas vidare av sidan själv (page.tsx), med färska cookies.
+//
+// F19/WP-36: `/app/bienvenida/[token]` är PUBLIK (utanför `(app)`-layoutens
+// inloggningskrav, se src/app/app/bienvenida/[token]/page.tsx) — en person
+// utan session ska kunna öppna den och be om sin inloggningslänk, så den
+// undantas uttryckligen från "/app/*"-redirecten nedan. `/admin/*` matchas
+// bara för att förnya sessionscookien (samma som `/app`); ingen redirect
+// här — varje admin-sida gör sin egen `requireAdminPage()`-kontroll
+// (404/redirect till /admin/mfa), som inte får avslöja att ytan finns för
+// icke-admins (ett proxy-redirect till /login skulle göra det).
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isDesignLabEnabled } from "@/app/design-lab/gate";
@@ -35,12 +44,22 @@ export async function proxy(request: NextRequest) {
 
   // WP-46: /app/invitacion/[token] måste kunna visas för en UTLOGGAD person
   // (den inbjudna, innan hen begärt sin magiska länk) — sidan hanterar själv
-  // inloggat/utloggat läge (`src/app/(app)/app/invitacion/[token]/page.tsx`),
+  // inloggat/utloggat läge (`src/app/(app-public)/app/invitacion/[token]/page.tsx`),
   // ingen sessionsdata läcker härifrån (bara en generell status/negocio-namn,
   // läst med service role, inte bunden till den besökandes identitet).
   const isInvitationPage = pathname.startsWith("/app/invitacion/");
 
-  if (pathname.startsWith("/app") && userId === null && !isInvitationPage) {
+  // F19/WP-36: samma undantag för /app/bienvenida/[token] (en ANNAN
+  // inbjudan, att skapa ett nytt företag — se src/app/app/bienvenida/
+  // [token]/page.tsx).
+  const isPublicInviteRoute = pathname.startsWith("/app/bienvenida/");
+
+  if (
+    pathname.startsWith("/app") &&
+    userId === null &&
+    !isInvitationPage &&
+    !isPublicInviteRoute
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
@@ -51,5 +70,11 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/design-lab/:path*", "/app/:path*", "/login", "/auth/:path*"],
+  matcher: [
+    "/design-lab/:path*",
+    "/app/:path*",
+    "/admin/:path*",
+    "/login",
+    "/auth/:path*",
+  ],
 };

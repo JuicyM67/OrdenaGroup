@@ -26,7 +26,10 @@
  * parameter i båda filerna (copywriter-es-cl, samma form överallt i appen),
  * så den behöver ingen egen lösning här.
  */
-import { acceso as accesoSv } from "./sv-SE.auth";
+import {
+  acceso as accesoSv,
+  invitacionNegocio as invitacionNegocioSv,
+} from "./sv-SE.auth";
 
 import type * as Es from "./es-CL";
 
@@ -1010,6 +1013,17 @@ export const email: Widen<typeof Es.email> = {
     },
     cta: "Gå till min kalender",
   },
+  /** Inbjudan att skapa ett företag, skickad av en plattformsadmin
+   * (F19/WP-36, `/admin` → "Nytt företag"). Länken går till
+   * `/app/bienvenida/[token]`. */
+  invitacionNegocio: {
+    asunto: (p: { marca: string }): string => `Du är inbjuden till ${p.marca}`,
+    preheader: "Acceptera inbjudan och skapa din kalender på några minuter.",
+    titulo: "Du har en inbjudan",
+    texto: (p: { negocio: string }): string =>
+      `Du är inbjuden att skapa kalendern för ${p.negocio}. Klicka på knappen för att acceptera och komma igång.`,
+    cta: "Acceptera inbjudan",
+  },
   nuevaReservaDueno: {
     asunto: (p: { cliente: string; fecha: string }): string =>
       `Ny bokning från ${p.cliente} den ${p.fecha}`,
@@ -1241,6 +1255,10 @@ export const validacion: Widen<typeof Es.validacion> = {
 // ---------------------------------------------------------------------------
 
 export const acceso: Widen<typeof Es.acceso> = accesoSv;
+
+// F19/WP-36: identisk med sv-SE.auth.ts (samma marknad använder samma text).
+export const invitacionNegocio: Widen<typeof Es.invitacionNegocio> =
+  invitacionNegocioSv;
 
 // ---------------------------------------------------------------------------
 // negocio
@@ -2280,6 +2298,7 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   sms,
   validacion,
   acceso,
+  invitacionNegocio,
   negocio,
   onboarding,
   servicios,

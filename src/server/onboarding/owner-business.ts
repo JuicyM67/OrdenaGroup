@@ -18,7 +18,16 @@ import { loadMember, type Member } from "@/server/db/permissions";
 import { withOwnerTx } from "@/server/db/tx";
 import { memberView, type MemberView } from "@/server/owner/member";
 
-export type OwnerBusiness = { id: string; slug: string; name: string };
+export type OwnerBusiness = {
+  id: string;
+  slug: string;
+  name: string;
+  /** F19/WP-36: vacío cuando el negocio nació de una invitación de admin
+   * (`accept_business_invitation`) y el dueño todavía no completó el
+   * onboarding — ver `isOnboardingDraft`. */
+  comuna: string;
+  category: string;
+};
 
 export type CurrentMember = {
   business: OwnerBusiness;
@@ -31,8 +40,14 @@ export async function getCurrentMember(
   userId: string,
 ): Promise<CurrentMember | null> {
   return withOwnerTx(userId, async (q) => {
-    const r = await q.query<{ id: string; slug: string; name: string }>(
-      `select b.id, b.slug, b.name
+    const r = await q.query<{
+      id: string;
+      slug: string;
+      name: string;
+      comuna: string;
+      category: string;
+    }>(
+      `select b.id, b.slug, b.name, b.comuna, b.category
          from public.memberships m
          join public.businesses b on b.id = m.business_id
         where m.user_id = $1
@@ -45,7 +60,13 @@ export async function getCurrentMember(
     const member = await loadMember(q, userId, row.id);
     if (!member) return null;
     return {
-      business: { id: row.id, slug: row.slug, name: row.name },
+      business: {
+        id: row.id,
+        slug: row.slug,
+        name: row.name,
+        comuna: row.comuna,
+        category: row.category,
+      },
       member,
       view: memberView(member),
     };
@@ -58,4 +79,12 @@ export async function getOwnerBusiness(
 ): Promise<OwnerBusiness | null> {
   const current = await getCurrentMember(userId);
   return current ? current.business : null;
+}
+
+/** F19/WP-36: un negocio creado por `accept_business_invitation` tiene
+ * `comuna`/`category` en blanco a propósito (ver el comentario de esa
+ * función en la migración) — el dueño todavía tiene que completar el
+ * onboarding contra ESE negocio, no crear uno nuevo. */
+export function isOnboardingDraft(business: OwnerBusiness): boolean {
+  return business.comuna === "" && business.category === "";
 }

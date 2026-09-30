@@ -1280,6 +1280,17 @@ export const email = {
     },
     cta: "Ir a mi agenda",
   },
+  /** Invitación a crear un negocio, enviada por un admin de la plataforma
+   * (F19/WP-36, `/admin` → "Nuevo negocio"). El link lleva a
+   * `/app/bienvenida/[token]`. */
+  invitacionNegocio: {
+    asunto: (p: { marca: string }): string => `Te invitamos a ${p.marca}`,
+    preheader: "Acepta la invitación y arma tu agenda en minutos.",
+    titulo: "Tienes una invitación",
+    texto: (p: { negocio: string }): string =>
+      `Te invitamos a crear la agenda de ${p.negocio}. Haz clic en el botón para aceptarla y empezar.`,
+    cta: "Aceptar invitación",
+  },
   /** Al dueño, cuando un cliente reserva por su cuenta desde `/[slug]`. */
   nuevaReservaDueno: {
     asunto: (p: { cliente: string; fecha: string }): string =>
@@ -1623,6 +1634,27 @@ export const acceso = {
     network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
   },
   sesionCerrada: "Cerraste tu sesión.",
+} as const satisfies Trad;
+
+/** `/app/bienvenida/[token]` (F19/WP-36): página pública donde alguien
+ * invitado por un admin de la plataforma acepta la invitación y entra a su
+ * cuenta nueva. Misma familia que `acceso` (reexportada vía `src/i18n/
+ * auth.ts`, no `@/i18n`, para no engordar el bundle de `/login`). */
+export const invitacionNegocio = {
+  titulo: "Completa tu registro",
+  cargando: "Confirmando tu invitación…",
+  continuarCta: "Continuar con mi correo",
+  enviando: "Enviando…",
+  enviado: (p: { email: string }): string =>
+    `Te enviamos un link a ${p.email}. Ábrelo para continuar.`,
+  errores: {
+    not_found: "No encontramos esa invitación.",
+    accepted: "Esa invitación ya se usó.",
+    expired: "Esa invitación venció. Pide una nueva.",
+    email_mismatch:
+      "Esa invitación es para otra cuenta. Entra con el correo al que la enviamos.",
+    network: "No pudimos conectar. Intenta de nuevo.",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------

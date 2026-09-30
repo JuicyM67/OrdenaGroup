@@ -2,7 +2,10 @@
  * Svenska texter för inloggningen (marknad SE, D-026). Samma form som `acceso` och
  * `comun.algoSalioMal` i `es-CL.ts`; valet per marknad görs i `auth.ts`.
  */
-import type { acceso as AccesoEs } from "./es-CL";
+import type {
+  acceso as AccesoEs,
+  invitacionNegocio as InvitacionEs,
+} from "./es-CL";
 
 type Widen<T> = T extends string
   ? string
@@ -51,3 +54,23 @@ export const acceso: AccesoCopy = {
 };
 
 export const algoSalioMal = "Något gick fel. Försök igen.";
+
+type InvitacionCopy = Widen<typeof InvitacionEs>;
+
+/** `/app/bienvenida/[token]` (F19/WP-36), se `es-CL.ts`. */
+export const invitacionNegocio: InvitacionCopy = {
+  titulo: "Slutför din registrering",
+  cargando: "Bekräftar din inbjudan…",
+  continuarCta: "Fortsätt med min e-post",
+  enviando: "Skickar…",
+  enviado: (p: { email: string }): string =>
+    `Vi har skickat en länk till ${p.email}. Öppna den för att fortsätta.`,
+  errores: {
+    not_found: "Vi hittade inte den inbjudan.",
+    accepted: "Den inbjudan är redan använd.",
+    expired: "Den inbjudan har gått ut. Be om en ny.",
+    email_mismatch:
+      "Den inbjudan gäller ett annat konto. Logga in med e-postadressen den skickades till.",
+    network: "Vi kunde inte ansluta. Försök igen.",
+  },
+};
