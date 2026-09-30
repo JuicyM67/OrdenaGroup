@@ -38,7 +38,7 @@ jobs:
       # WP-15: e2e loggar in på riktigt (magisk länk via lokal Mailpit), så
       # en lokal Supabase-stack körs i runnern. Inget moln, inga hemligheter:
       # URL och nyckel är containerns lokala standardvärden.
-      - run: npx supabase start -x realtime,storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - run: npx supabase start -x realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Exportera lokala Supabase-värden
         run: |
           npx supabase status -o env > /tmp/sb.env
