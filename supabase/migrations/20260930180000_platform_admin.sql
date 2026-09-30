@@ -226,7 +226,9 @@ set search_path = ''
 as $$
 declare
   v_user uuid := (select auth.uid());
-  v_email text := lower(coalesce((select auth.email()), ''));
+  -- Läses via auth.uid() mot auth.users (security definer): serverns withOwnerTx
+  -- sätter bara sub/role i JWT-claims, så auth.email() vore alltid tom.
+  v_email text := lower(coalesce((select u.email from auth.users u where u.id = auth.uid()), ''));
   v_hash bytea;
   v_inv private.business_invitations%rowtype;
   v_business_id uuid;
@@ -310,7 +312,7 @@ $$;
 comment on function public.accept_business_invitation(text) is
   'Acepta una business_invitations pendiente: crea el negocio (plan de la '
   'invitación, comuna/category en blanco como placeholder) y hace owner a '
-  'auth.uid(). Exige auth.email() = email de la invitación. SECURITY '
+  'auth.uid(). Exige que el email de auth.users (auth.uid()) = email de la invitación. SECURITY '
   'DEFINER (mismo motivo que create_business()).';
 
 revoke all on function public.accept_business_invitation(text) from public;

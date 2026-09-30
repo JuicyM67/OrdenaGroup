@@ -137,14 +137,16 @@ export async function completeOnboarding(
       const draftRes = await q.query<{ id: string }>(
         `select b.id from public.memberships m
            join public.businesses b on b.id = m.business_id
-          where b.comuna = '' and b.category = ''
+          where m.user_id = $1 and m.role = 'owner'
+            and b.comuna = '' and b.category = ''
           limit 1`,
+        [userId],
       );
       const draftId = draftRes.rows[0]?.id;
 
       let businessId: string;
       if (draftId) {
-        await q.query(
+        const upd = await q.query(
           `update public.businesses
               set name = $2, slug = $3, comuna = $4, category = $5, phone = $6
             where id = $1`,
@@ -157,6 +159,7 @@ export async function completeOnboarding(
             input.business.phone,
           ],
         );
+        if (upd.rowCount !== 1) throw new Error("draft_update_failed");
         businessId = draftId;
       } else {
         // Tidszonen kommer från installationens marknadskonfig (D-025), inte
