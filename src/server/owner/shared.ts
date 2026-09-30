@@ -72,7 +72,5 @@ export async function listPaidBookingIds(
       order by booking_id, paid_at desc nulls last, created_at desc`,
     [businessId, bookingIds],
   );
-  return new Map(
-    r.rows.map((row) => [row.booking_id, { paymentId: row.id }]),
-  );
+  return new Map(r.rows.map((row) => [row.booking_id, { paymentId: row.id }]));
 }

@@ -154,7 +154,9 @@ export function CajaScreen({
 
   async function handleUndo() {
     if (!undoTarget) return;
-    const result = await actions.undoPayment({ paymentId: undoTarget.paymentId });
+    const result = await actions.undoPayment({
+      paymentId: undoTarget.paymentId,
+    });
     if (result.ok) {
       setUndoTarget(null);
       setUndoError(null);
@@ -170,7 +172,11 @@ export function CajaScreen({
   return (
     <AppShell
       rail={
-        <MainNav active="caja" onLogout={onLogout} canViewReports={canViewReports} />
+        <MainNav
+          active="caja"
+          onLogout={onLogout}
+          canViewReports={canViewReports}
+        />
       }
       mobileTabBar={
         <OwnerMobileTabBar
@@ -183,11 +189,7 @@ export function CajaScreen({
     >
       <PageHeader variant="desktop" title={caja.tabs.caja} />
 
-      <div
-        role="tablist"
-        aria-label={caja.tabs.caja}
-        className="flex gap-1.5"
-      >
+      <div role="tablist" aria-label={caja.tabs.caja} className="flex gap-1.5">
         <Button
           type="button"
           role="tab"
@@ -242,7 +244,12 @@ export function CajaScreen({
                   onChange={setRangeTo}
                   className="w-44"
                 />
-                <Button type="button" variant="secondary" size="lg" onClick={handleApplyRange}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="lg"
+                  onClick={handleApplyRange}
+                >
                   {caja.rangoPersonalizado.ctaAplicar}
                 </Button>
               </div>
@@ -269,33 +276,67 @@ export function CajaScreen({
           ) : (
             <>
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-                <SummaryTile label={caja.resumen.cobrado} value={formatMoney(cajaData.summary.revenueMinor)} />
-                <SummaryTile label={caja.resumen.porCobrar} value={formatMoney(cajaData.summary.expectedMinor)} />
-                <SummaryTile label={caja.resumen.reservasCount({ n: cajaData.summary.bookings })} value={String(cajaData.summary.bookings)} />
-                <SummaryTile label={caja.resumen.inasistenciasCount({ n: cajaData.summary.noShows })} value={String(cajaData.summary.noShows)} />
-                <SummaryTile label={caja.resumen.ticketPromedio} value={formatMoney(cajaData.summary.averageMinor)} />
+                <SummaryTile
+                  label={caja.resumen.cobrado}
+                  value={formatMoney(cajaData.summary.revenueMinor)}
+                />
+                <SummaryTile
+                  label={caja.resumen.porCobrar}
+                  value={formatMoney(cajaData.summary.expectedMinor)}
+                />
+                <SummaryTile
+                  label={caja.resumen.reservasCount({
+                    n: cajaData.summary.bookings,
+                  })}
+                  value={String(cajaData.summary.bookings)}
+                />
+                <SummaryTile
+                  label={caja.resumen.inasistenciasCount({
+                    n: cajaData.summary.noShows,
+                  })}
+                  value={String(cajaData.summary.noShows)}
+                />
+                <SummaryTile
+                  label={caja.resumen.ticketPromedio}
+                  value={formatMoney(cajaData.summary.averageMinor)}
+                />
               </div>
               <p className="text-12 text-muted">{caja.resumen.explicacion}</p>
 
               <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                <Card radius="tile" padding="lg" className="flex flex-col gap-3">
+                <Card
+                  radius="tile"
+                  padding="lg"
+                  className="flex flex-col gap-3"
+                >
                   <ChartCardTitle title={caja.distribucion.porMetodo} />
                   <ShareBarList
                     rows={toShareBarRows(
-                      cajaData.byMethod.map((r) => ({ ...r, label: methodLabel(r.key) })),
+                      cajaData.byMethod.map((r) => ({
+                        ...r,
+                        label: methodLabel(r.key),
+                      })),
                       formatMoney,
                     )}
                     emptyLabel={caja.vacioPeriodo}
                   />
                 </Card>
-                <Card radius="tile" padding="lg" className="flex flex-col gap-3">
+                <Card
+                  radius="tile"
+                  padding="lg"
+                  className="flex flex-col gap-3"
+                >
                   <ChartCardTitle title={caja.distribucion.porProfesional} />
                   <ShareBarList
                     rows={toShareBarRows(cajaData.byStaff, formatMoney)}
                     emptyLabel={caja.vacioPeriodo}
                   />
                 </Card>
-                <Card radius="tile" padding="lg" className="flex flex-col gap-3">
+                <Card
+                  radius="tile"
+                  padding="lg"
+                  className="flex flex-col gap-3"
+                >
                   <ChartCardTitle title={caja.distribucion.porServicio} />
                   <ShareBarList
                     rows={toShareBarRows(cajaData.byService, formatMoney)}
@@ -307,7 +348,9 @@ export function CajaScreen({
               <Card radius="tile" padding="lg" className="flex flex-col gap-3">
                 <ChartCardTitle title={caja.porCobrarLista.titulo} />
                 {cajaData.porCobrar.length === 0 ? (
-                  <p className="text-13 text-muted">{caja.porCobrarLista.vacio}</p>
+                  <p className="text-13 text-muted">
+                    {caja.porCobrarLista.vacio}
+                  </p>
                 ) : (
                   <ul className="flex flex-col">
                     {cajaData.porCobrar.map((r) => (
@@ -320,7 +363,8 @@ export function CajaScreen({
                             {r.customerName ?? "—"}
                           </span>
                           <span className="text-13 text-muted">
-                            {r.serviceName} · {r.staffName} · {rowDateTime(r.start)}
+                            {r.serviceName} · {r.staffName} ·{" "}
+                            {rowDateTime(r.start)}
                           </span>
                         </div>
                         <div className="flex shrink-0 items-center gap-3">
@@ -437,7 +481,11 @@ export function CajaScreen({
 
 function SummaryTile({ label, value }: { label: string; value: string }) {
   return (
-    <Card radius="card" padding="none" className="flex h-24 flex-col justify-between px-4 py-3.5">
+    <Card
+      radius="card"
+      padding="none"
+      className="flex h-24 flex-col justify-between px-4 py-3.5"
+    >
       <span className="font-display text-22 font-semibold tracking-display whitespace-nowrap">
         {value}
       </span>
@@ -501,7 +549,10 @@ function InformesTab({
     trailing: `${formatDuration(s.bookedMinutes)} / ${formatDuration(s.availableMinutes)}`,
     pct:
       s.availableMinutes > 0
-        ? Math.min(100, Math.round((s.bookedMinutes / s.availableMinutes) * 100))
+        ? Math.min(
+            100,
+            Math.round((s.bookedMinutes / s.availableMinutes) * 100),
+          )
         : 0,
   }));
 

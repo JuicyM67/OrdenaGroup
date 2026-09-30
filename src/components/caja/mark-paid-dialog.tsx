@@ -137,7 +137,10 @@ export function MarkPaidDialog({
                 </IconButton>
               </Dialog.Close>
             </div>
-            <Dialog.Description id={descriptionId} className="text-13 text-muted">
+            <Dialog.Description
+              id={descriptionId}
+              className="text-13 text-muted"
+            >
               {caja.marcarPagada.aPagar({ total: formatMoney(dueMinor) })}
             </Dialog.Description>
 

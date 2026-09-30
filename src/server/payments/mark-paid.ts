@@ -29,7 +29,8 @@ import { loadBusinessTz } from "./business-tz";
  *   som betalningen gjordes. Rader raderas aldrig (kassahistorik).
  */
 
-export type ManualPaymentMethod = "cash" | "card_terminal" | "transfer" | "swish";
+export type ManualPaymentMethod =
+  "cash" | "card_terminal" | "transfer" | "swish";
 
 export type MarkBookingPaidInput = {
   bookingId: string;
@@ -48,20 +49,15 @@ export type MarkBookingPaidError =
   | "unexpected";
 
 export type MarkBookingPaidResult =
-  | { ok: true; paymentId: string }
-  | { ok: false; code: MarkBookingPaidError };
+  { ok: true; paymentId: string } | { ok: false; code: MarkBookingPaidError };
 
 export type UndoPaymentInput = { paymentId: string };
 
 export type UndoPaymentError =
-  | "forbidden"
-  | "not_found"
-  | "same_day_required"
-  | "unexpected";
+  "forbidden" | "not_found" | "same_day_required" | "unexpected";
 
 export type UndoPaymentResult =
-  | { ok: true }
-  | { ok: false; code: UndoPaymentError };
+  { ok: true } | { ok: false; code: UndoPaymentError };
 
 /** Metoderna som får väljas manuellt på den här installationen. */
 export const MANUAL_METHODS: readonly ManualPaymentMethod[] =

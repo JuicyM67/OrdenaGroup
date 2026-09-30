@@ -109,7 +109,11 @@ export type InformesData = {
     bookedMinutes: number;
     availableMinutes: number;
   }[];
-  newVsReturning: { weekStart: LocalDate; nuevos: number; recurrentes: number }[];
+  newVsReturning: {
+    weekStart: LocalDate;
+    nuevos: number;
+    recurrentes: number;
+  }[];
   noShowTrend: { weekStart: LocalDate; pct: number }[];
 };
 
@@ -453,7 +457,9 @@ async function occupancy(
     list.push(h);
     staffHours.set(r.staff_id, list);
   }
-  const bookedBy = new Map(booked.rows.map((r) => [r.staff_id, num(r.minutes)]));
+  const bookedBy = new Map(
+    booked.rows.map((r) => [r.staff_id, num(r.minutes)]),
+  );
   const dates = eachLocalDate(from, today);
 
   return staff.rows.map((st) => {
@@ -463,7 +469,9 @@ async function occupancy(
     for (const d of dates) {
       if (!businessHours.some((h) => h.weekday === isoWeekdayOf(d))) continue;
       const biz = hoursToIntervals(businessHours, d, tz);
-      working.push(...(own ? intersect(biz, hoursToIntervals(own, d, tz)) : biz));
+      working.push(
+        ...(own ? intersect(biz, hoursToIntervals(own, d, tz)) : biz),
+      );
     }
     const cuts = off.rows
       .filter((t) => t.staff_id === null || t.staff_id === st.id)
@@ -495,10 +503,16 @@ async function loadInformesIn(
        from public.report_weekly($1, $2)`,
     [businessId, WEEKS],
   );
-  const revBy = new Map(rev.rows.map((r) => [r.week_start, num(r.revenue_clp)]));
+  const revBy = new Map(
+    rev.rows.map((r) => [r.week_start, num(r.revenue_clp)]),
+  );
 
   // Ny = kundens första bokning någonsin ligger i veckan; annars återkommande.
-  const nvr = await q.query<{ wk: string; nuevos: string; recurrentes: string }>(
+  const nvr = await q.query<{
+    wk: string;
+    nuevos: string;
+    recurrentes: string;
+  }>(
     `with appts as (
        select bk.customer_id, lower(bk.period) as s
          from public.bookings bk
@@ -540,7 +554,10 @@ async function loadInformesIn(
   const nsBy = new Map(ns.rows.map((r) => [r.wk, r.pct]));
 
   return {
-    weekly: weeks.map((w) => ({ weekStart: w, revenueMinor: revBy.get(w) ?? 0 })),
+    weekly: weeks.map((w) => ({
+      weekStart: w,
+      revenueMinor: revBy.get(w) ?? 0,
+    })),
     occupancyByStaff: await occupancy(q, businessId, now, tz),
     newVsReturning: weeks.map((w) => {
       const r = nvrBy.get(w);

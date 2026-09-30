@@ -87,26 +87,23 @@ export function MainNav({
     <NavRail variant="bare" aria-label={nav.principal}>
       <NavRailLogo href="/app/inicio" label={nav.volverAlInicio} />
       {ITEMS.filter(
-        ({ key }) =>
-          VISIBLE_KEYS.includes(key) && (key !== "caja" || showCaja),
-      ).map(
-        ({ key, label, icon: Icon }) => (
-          <NavRailLink
-            key={key}
-            href={hrefs[key]}
-            label={label}
-            active={active === key}
-            prefetch={false}
-            icon={
-              <Icon
-                aria-hidden="true"
-                className="size-5.5"
-                strokeWidth={strokeNav}
-              />
-            }
-          />
-        ),
-      )}
+        ({ key }) => VISIBLE_KEYS.includes(key) && (key !== "caja" || showCaja),
+      ).map(({ key, label, icon: Icon }) => (
+        <NavRailLink
+          key={key}
+          href={hrefs[key]}
+          label={label}
+          active={active === key}
+          prefetch={false}
+          icon={
+            <Icon
+              aria-hidden="true"
+              className="size-5.5"
+              strokeWidth={strokeNav}
+            />
+          }
+        />
+      ))}
       <NavRailSpacer />
       <NavRailFormAction
         action={onLogout ?? (() => {})}

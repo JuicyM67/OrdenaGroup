@@ -10,7 +10,10 @@ import { logout } from "@/app/auth/actions";
 import { CustomerDetailScreen } from "@/components/customers/customer-detail-screen";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
-import { getCustomerDetail, updateCustomerNotes } from "@/server/owner/clientes";
+import {
+  getCustomerDetail,
+  updateCustomerNotes,
+} from "@/server/owner/clientes";
 import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
 
 export const metadata: Metadata = {
@@ -52,7 +55,12 @@ export default async function ClienteDetallePage({
 
   const onUpdateNotes = async (notes: string) => {
     "use server";
-    return updateCustomerNotes(user.id, current.business.id, parsedId.data, notes);
+    return updateCustomerNotes(
+      user.id,
+      current.business.id,
+      parsedId.data,
+      notes,
+    );
   };
 
   const onExportCustomer = async (customerId: string) => {

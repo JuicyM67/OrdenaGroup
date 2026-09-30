@@ -176,10 +176,7 @@ export function StackedWeekBars({
           {primaryLabel}
         </span>
         <span className="flex items-center gap-1.5">
-          <span
-            aria-hidden="true"
-            className="size-2.5 rounded-full bg-lilac"
-          />
+          <span aria-hidden="true" className="size-2.5 rounded-full bg-lilac" />
           {secondaryLabel}
         </span>
       </div>

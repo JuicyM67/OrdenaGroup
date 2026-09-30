@@ -105,7 +105,13 @@ export function CustomersScreen({
 
   return (
     <AppShell
-      rail={<MainNav active="clientes" onLogout={onLogout} canViewReports={canViewReports} />}
+      rail={
+        <MainNav
+          active="clientes"
+          onLogout={onLogout}
+          canViewReports={canViewReports}
+        />
+      }
       mobileTabBar={
         <OwnerMobileTabBar
           active="clientes"
@@ -147,7 +153,9 @@ export function CustomersScreen({
             <option value="ultimaVisita">
               {clientes.lista.ordenar.ultimaVisita}
             </option>
-            <option value="masVisitas">{clientes.lista.ordenar.masVisitas}</option>
+            <option value="masVisitas">
+              {clientes.lista.ordenar.masVisitas}
+            </option>
             <option value="nombre">{clientes.lista.ordenar.nombre}</option>
           </Select>
         </div>

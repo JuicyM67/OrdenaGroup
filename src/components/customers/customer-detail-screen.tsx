@@ -27,7 +27,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Textarea } from "@/components/ui/textarea";
 import { marketConfig } from "@/config/market";
 import { ajustes, clientes, comun, estados } from "@/i18n";
-import { APP_TZ, formatDate, formatTimeRange, parseInstant } from "@/lib/format/dates";
+import {
+  APP_TZ,
+  formatDate,
+  formatTimeRange,
+  parseInstant,
+} from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { formatPhone, isE164 } from "@/lib/format/phone";
 import { ArrowLeft, Mail, MessageCircle, Phone } from "lucide-react";
@@ -78,8 +83,8 @@ function BookingRow({ booking }: { booking: CustomerBookingRow }) {
       <div className="flex min-w-0 flex-col gap-0.5">
         <span className="text-14 font-bold text-ink">{booking.service}</span>
         <span className="text-13 text-muted">
-          {dateLabel(booking.start)} · {timeRangeLabel(booking.start, booking.end)} ·{" "}
-          {booking.staffName}
+          {dateLabel(booking.start)} ·{" "}
+          {timeRangeLabel(booking.start, booking.end)} · {booking.staffName}
         </span>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1">
@@ -110,7 +115,8 @@ export function CustomerDetailScreen({
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
 
-  const phone = customer.phone && isE164(customer.phone) ? customer.phone : null;
+  const phone =
+    customer.phone && isE164(customer.phone) ? customer.phone : null;
   const isCl = marketConfig.phoneCountry === "CL";
   const hasAnswers =
     customer.answers.latest.length > 0 || customer.answers.history.length > 0;
@@ -159,7 +165,11 @@ export function CustomerDetailScreen({
           <span className="flex items-center gap-3">
             <IconButton label={comun.volver} tone="ghost" size={36} asChild>
               <Link href="/app/clientes">
-                <ArrowLeft aria-hidden="true" className="size-4.5" strokeWidth={strokeArrow} />
+                <ArrowLeft
+                  aria-hidden="true"
+                  className="size-4.5"
+                  strokeWidth={strokeArrow}
+                />
               </Link>
             </IconButton>
             {customer.name}
@@ -182,7 +192,11 @@ export function CustomerDetailScreen({
           <>
             <Button asChild variant="secondary" size="sm">
               <a href={`tel:${phone}`}>
-                <Phone aria-hidden="true" className="size-4" strokeWidth={strokeArrow} />
+                <Phone
+                  aria-hidden="true"
+                  className="size-4"
+                  strokeWidth={strokeArrow}
+                />
                 {clientes.ficha.ctaLlamar}
               </a>
             </Button>
@@ -210,7 +224,11 @@ export function CustomerDetailScreen({
         {customer.email ? (
           <Button asChild variant="secondary" size="sm">
             <a href={`mailto:${customer.email}`}>
-              <Mail aria-hidden="true" className="size-4" strokeWidth={strokeArrow} />
+              <Mail
+                aria-hidden="true"
+                className="size-4"
+                strokeWidth={strokeArrow}
+              />
               {clientes.ficha.ctaEmail}
             </a>
           </Button>
@@ -279,7 +297,11 @@ export function CustomerDetailScreen({
         </Card>
 
         {customer.stats ? (
-          <Card radius="tile" padding="lg" className="flex flex-col gap-3 lg:col-span-2">
+          <Card
+            radius="tile"
+            padding="lg"
+            className="flex flex-col gap-3 lg:col-span-2"
+          >
             <h2 className="text-15 font-bold text-ink">
               {clientes.ficha.estadisticasTitulo}
             </h2>
@@ -342,7 +364,9 @@ export function CustomerDetailScreen({
             {clientes.ficha.historialTitulo}
           </h2>
           {customer.history.length === 0 ? (
-            <p className="text-13 text-muted">{clientes.ficha.historialVacio}</p>
+            <p className="text-13 text-muted">
+              {clientes.ficha.historialVacio}
+            </p>
           ) : (
             <ul>
               {customer.history.map((b) => (
@@ -367,7 +391,11 @@ export function CustomerDetailScreen({
           )}
         </section>
 
-        <Card radius="tile" padding="lg" className="flex flex-col gap-3 lg:col-span-2">
+        <Card
+          radius="tile"
+          padding="lg"
+          className="flex flex-col gap-3 lg:col-span-2"
+        >
           <Textarea
             label={clientes.notas.label}
             hint={clientes.notas.ayuda}

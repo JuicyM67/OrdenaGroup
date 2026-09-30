@@ -13,9 +13,7 @@ import "server-only";
  * (`visits_count`/`no_show_count`/`last_visit_at` på `customers` underhålls
  * inte av någon trigger ännu, se `supabase/migrations/…customers_indexes_and_report_functions.sql`).
  */
-import type {
-  CustomerAnswersView,
-} from "@/server/booking-questions/answers";
+import type { CustomerAnswersView } from "@/server/booking-questions/answers";
 import { getCustomerAnswersIn } from "@/server/booking-questions/answers";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
@@ -30,10 +28,7 @@ import { memberView, requireMemberPerm, type MemberView } from "./member";
 
 export type CustomerListSort = "ultimaVisita" | "masVisitas" | "nombre";
 export type CustomerListFilter =
-  | "todos"
-  | "habituales"
-  | "inactivos"
-  | "conInasistencias";
+  "todos" | "habituales" | "inactivos" | "conInasistencias";
 
 /** Samma trösklar som texterna i `clientes.lista.filtroHabitualesAyuda`/
  * `filtroInactivosAyuda` (es-CL.ts). En enda definition, så siffran aldrig
@@ -346,7 +341,8 @@ export async function getCustomerDetailIn(
     ),
   ]);
 
-  const showReports = member === undefined || hasPerm(member, "can_view_reports");
+  const showReports =
+    member === undefined || hasPerm(member, "can_view_reports");
   const canEditNotes =
     member === undefined ||
     member?.role === "owner" ||
@@ -354,7 +350,9 @@ export async function getCustomerDetailIn(
   const isOwner = member === undefined || member?.role === "owner";
 
   const [stats, answers] = await Promise.all([
-    showReports ? loadCustomerStats(q, businessId, customerId) : Promise.resolve(null),
+    showReports
+      ? loadCustomerStats(q, businessId, customerId)
+      : Promise.resolve(null),
     getCustomerAnswersIn(q, businessId, customerId),
   ]);
 
@@ -366,7 +364,10 @@ export async function getCustomerDetailIn(
     notes: c.notes,
     createdAt: c.created_at,
     consentTerms: { at: c.consent_terms_at, channel: c.consent_channel },
-    consentMarketing: { at: c.consent_marketing_at, channel: c.consent_channel },
+    consentMarketing: {
+      at: c.consent_marketing_at,
+      channel: c.consent_channel,
+    },
     stats,
     upcoming: upcomingRes.rows.map(toBookingRow),
     history: historyRes.rows.map(toBookingRow),
@@ -394,7 +395,10 @@ export async function getCustomerDetail(
 
 export type UpdateNotesResult =
   | { ok: true }
-  | { ok: false; code: "unauthorized" | "forbidden" | "not_found" | "too_long" };
+  | {
+      ok: false;
+      code: "unauthorized" | "forbidden" | "not_found" | "too_long";
+    };
 
 /** `customers.notes` ≤ 1000 tecken (samma gräns som DB-checken,
  * `customers_notes_length_and_guard.sql`). Tom sträng sparas som `null`. */

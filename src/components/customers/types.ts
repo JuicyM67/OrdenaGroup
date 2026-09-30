@@ -20,10 +20,7 @@ export type ConsentChannel = "web" | "whatsapp" | "manual";
 
 export type CustomerListSort = "ultimaVisita" | "masVisitas" | "nombre";
 export type CustomerListFilter =
-  | "todos"
-  | "habituales"
-  | "inactivos"
-  | "conInasistencias";
+  "todos" | "habituales" | "inactivos" | "conInasistencias";
 
 export type CustomerListItem = {
   id: string;
@@ -124,4 +121,7 @@ export type CustomerDetail = {
 
 export type UpdateNotesResult =
   | { ok: true }
-  | { ok: false; code: "unauthorized" | "forbidden" | "not_found" | "too_long" };
+  | {
+      ok: false;
+      code: "unauthorized" | "forbidden" | "not_found" | "too_long";
+    };

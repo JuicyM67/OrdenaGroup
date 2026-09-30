@@ -7,7 +7,13 @@
 // och Caja (samma D-034-spärr på Caja som main-nav.tsx) läggs till strax ovanför Ajustes —
 // referensen (Agenda.dc.html) saknar dem helt i den här panelen (bara logga/+ny/personal),
 // men utan en egen väg dit skulle de vara onåbara från Agenda-skärmen på skrivbordet.
-import { BarChart3, LogOut, Plus, SlidersHorizontal, Users } from "lucide-react";
+import {
+  BarChart3,
+  LogOut,
+  Plus,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 
 import {

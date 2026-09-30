@@ -20,12 +20,7 @@ import { nav } from "@/i18n";
 import { MobileTabBar, type MobileTabItem } from "./mobile-tab-bar";
 
 export type OwnerMobileTab =
-  | "inicio"
-  | "agenda"
-  | "hoy"
-  | "clientes"
-  | "caja"
-  | "ajustes";
+  "inicio" | "agenda" | "hoy" | "clientes" | "caja" | "ajustes";
 
 const ICON_SIZE = "size-5.5";
 
