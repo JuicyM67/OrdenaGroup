@@ -161,8 +161,10 @@ export async function confirmIn(
     `update public.bookings
         set status = 'confirmed', manage_token_hash = $3
       where business_id = $1 and id = $2 and status = 'requested'
-        and least(created_at + $5 * interval '1 hour',
-                  lower(period) - $6 * interval '1 hour') > $4::timestamptz
+        and (case when lower(period) - $6 * interval '1 hour' > created_at
+                  then least(created_at + $5 * interval '1 hour',
+                             lower(period) - $6 * interval '1 hour')
+                  else lower(period) end) > $4::timestamptz
         and not exists (
           select 1 from public.customers c
            where c.business_id = $1 and c.id = bookings.customer_id
@@ -273,7 +275,9 @@ export async function expireRequestsIn(
           select id from public.bookings
            where status = 'requested'
              and (created_at <= $1::timestamptz - $2 * interval '1 hour'
-                  or lower(period) <= $1::timestamptz + $3 * interval '1 hour')
+                  or (lower(period) - $3 * interval '1 hour' > created_at
+                      and lower(period) <= $1::timestamptz + $3 * interval '1 hour')
+                  or lower(period) <= $1::timestamptz)
            order by created_at
            limit $4
            for update skip locked)

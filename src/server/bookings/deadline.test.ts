@@ -41,3 +41,15 @@ describe("requestDeadline (WP-45: 24 h efter förfrågan, senast 2 h före start
     expect(d).toBe(at("2026-09-05", "22:00"));
   });
 });
+
+describe("sen förfrågan (start < 2 h efter created_at)", () => {
+  it("gäller fram till starttiden", () => {
+    const created = Date.UTC(2026, 9, 1, 12, 0);
+    const start = created + 60 * 60 * 1000;
+    expect(requestDeadline(created, start)).toBe(start);
+    expect(isRequestExpired(created, start, new Date(created + 1000))).toBe(
+      false,
+    );
+    expect(isRequestExpired(created, start, new Date(start))).toBe(true);
+  });
+});
