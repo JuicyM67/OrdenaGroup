@@ -14,6 +14,13 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
+import type {
+  ManualPaymentMethod,
+  MarkBookingPaidInput,
+  MarkBookingPaidResult,
+  UndoPaymentInput,
+  UndoPaymentResult,
+} from "@/components/caja/types";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import type {
   NotificationBellResult,
@@ -166,6 +173,16 @@ export type AgendaScreenProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-24: kundkortets "Nueva reserva" (`/app/agenda?cliente=…`) — öppnar
+   * "Nueva reserva" direkt, förifylld med den befintliga kundens kontakt. */
+  initialManualCustomer?: { name: string; phone: string; email: string };
+  /** WP-24 (F10): "Marcar pagada"/"Anular pago" i popovern (server actions,
+   * `markPaidAction`/`undoPaymentAction`). `undefined` döljer knapparna
+   * (design lab). */
+  onMarkPaid?: (input: MarkBookingPaidInput) => Promise<MarkBookingPaidResult>;
+  onUndoPayment?: (input: UndoPaymentInput) => Promise<UndoPaymentResult>;
+  /** Metoderna "Marcar pagada" ska erbjuda (`MANUAL_METHODS`). `[]` i design lab. */
+  manualMethods?: readonly ManualPaymentMethod[];
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -223,6 +240,10 @@ export function AgendaScreen({
   pendingRequests,
   onConfirmRequest,
   onDeclineRequest,
+  initialManualCustomer,
+  onMarkPaid,
+  onUndoPayment,
+  manualMethods = [],
 }: AgendaScreenProps) {
   const router = useRouter();
   const tz = data.timezone as TimeZone;
@@ -268,7 +289,9 @@ export function AgendaScreen({
   const [arrivalOverrides, setArrivalOverrides] = useState<
     Record<string, "completed" | "no_show">
   >({});
-  const [manualDialogOpen, setManualDialogOpen] = useState(false);
+  const [manualDialogOpen, setManualDialogOpen] = useState(
+    () => initialManualCustomer != null,
+  );
   const [movingBooking, setMovingBooking] = useState<AgendaBooking | null>(
     null,
   );
@@ -420,6 +443,10 @@ export function AgendaScreen({
     const canActOnBooking =
       hasAgendaPerm(member, "can_manage_all_bookings") ||
       hasAgendaPerm(member, "can_manage_own_bookings", booking.staffId);
+    // WP-24 (F10): samma regel som `canPay` (src/server/payments/mark-paid.ts)
+    // — egen/alla bokningar ELLER kassan (`can_view_reports`).
+    const canPayBooking =
+      canActOnBooking || hasAgendaPerm(member, "can_view_reports");
     return (
       <EventPopover
         key={`popover-${booking.id}`}
@@ -490,6 +517,25 @@ export function AgendaScreen({
               }
             : undefined
         }
+        onMarkPaid={
+          onMarkPaid && canPayBooking
+            ? async (input) => {
+                const result = await onMarkPaid(input);
+                if (result.ok) router.refresh();
+                return result;
+              }
+            : undefined
+        }
+        onUndoPayment={
+          onUndoPayment && canPayBooking
+            ? async (input) => {
+                const result = await onUndoPayment(input);
+                if (result.ok) router.refresh();
+                return result;
+              }
+            : undefined
+        }
+        manualMethods={manualMethods}
         trigger={trigger}
       />
     );
@@ -634,7 +680,15 @@ export function AgendaScreen({
       <AgendaShell
         className={className}
         mobileTabBar={
-          <OwnerMobileTabBar active="agenda" className="lg:hidden" />
+          <OwnerMobileTabBar
+            active="agenda"
+            className="lg:hidden"
+            canViewReports={
+              member === undefined
+                ? undefined
+                : hasAgendaPerm(member, "can_view_reports")
+            }
+          />
         }
         onLogout={onLogout}
         pendingRequests={pendingRequests}
@@ -659,6 +713,11 @@ export function AgendaScreen({
                 : undefined
             }
             onLogout={onLogout}
+            canViewReports={
+              member === undefined
+                ? undefined
+                : hasAgendaPerm(member, "can_view_reports")
+            }
           />
         }
         aside={
@@ -941,6 +1000,7 @@ export function AgendaScreen({
           }
           businessName={businessName}
           defaultDate={focus}
+          initialCustomer={initialManualCustomer}
           onSubmit={async (input) => {
             const result = await onCreateManualBooking(input);
             if (result.ok) router.refresh();

@@ -29,7 +29,7 @@ import { loadMember } from "@/server/db/permissions";
 import { withOwnerTx } from "@/server/db/tx";
 
 import { memberView, type MemberView } from "./member";
-import { isoOf, staffColorOf } from "./shared";
+import { isoOf, listPaidBookingIds, staffColorOf } from "./shared";
 
 /**
  * Agendans data för en vecka (WP-21). Laddar företagets personal, öppettider,
@@ -149,6 +149,12 @@ export async function loadOwnerAgendaWeekIn(
     businessId,
     bookingsRes.rows.map((b) => b.id),
   );
+  // WP-24 (F10): samma batch-avvägning för "Pagada".
+  const paidIds = await listPaidBookingIds(
+    q,
+    businessId,
+    bookingsRes.rows.map((b) => b.id),
+  );
 
   const bookings: AgendaBooking[] = bookingsRes.rows.map((b) => {
     const priceClp = b.price_clp as Clp;
@@ -172,7 +178,9 @@ export async function loadOwnerAgendaWeekIn(
       visitNumber: b.visits_count + 1,
       service: b.service_name,
       priceClp,
+      discountClp: b.discount_clp as Clp,
       depositPaidClp: b.deposit_clp > 0 ? (b.deposit_clp as Clp) : null,
+      paymentId: paidIds.get(b.id)?.paymentId ?? null,
       source: b.source,
       status: b.status,
       confirmedByCustomer: b.confirmed_by_customer_at != null,

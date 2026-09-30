@@ -88,6 +88,7 @@ export const nav = {
 export const estados = {
   confirmada: "Confirmada",
   abonoPagado: "Abono pagado",
+  pagada: "Pagada",
   sinConfirmar: "Sin confirmar",
   /** WP-45 (D-033): chip de una reserva `requested`, cuando el negocio
    * todavía no la confirma ni la rechaza. Distinto de `sinConfirmar` (ahí
@@ -2050,14 +2051,42 @@ export const ajustes = {
 // ---------------------------------------------------------------------------
 
 export const clientes = {
+  /** Rubro de `/app/clientes` (WP-24), mismo patrón que `inicio.titulo`/
+   * `hoy.titulo`: encabezado visible de la pantalla completa. */
+  titulo: "Clientes",
   lista: {
     buscarPlaceholder: "Buscar por nombre o celular",
     columnaUltimaVisita: "Última visita",
     columnaVisitas: "Visitas",
     columnaInasistencias: "Inasistencias",
+    /** Encabezado del selector de orden (WP-24, plan §Clientes). */
+    ordenarPor: "Ordenar por",
+    ordenar: {
+      ultimaVisita: "Última visita",
+      masVisitas: "Más visitas",
+      nombre: "Nombre",
+    },
+    /** Chips de filtro (WP-24): los umbrales exactos van en las claves
+     * `*Ayuda` de abajo, no acá, para no tener el número escrito en dos
+     * lugares si alguien solo traduce el chip. */
+    filtros: {
+      todos: "Todos",
+      habituales: "Habituales",
+      inactivos: "Inactivos",
+      conInasistencias: "Con inasistencias",
+    },
+    /** Texto de apoyo (bajo el chip o en su `aria-label`) con el criterio
+     * exacto de cada filtro (plan de WP-24: "stamkunder ≥ 3 besök",
+     * "inaktiva > 90 dagar"). */
+    filtroHabitualesAyuda: "3 o más visitas",
+    filtroInactivosAyuda: "Sin venir hace más de 90 días",
     vacio: "Todavía no tienes clientes.",
     sinResultados: (p: { busqueda: string }): string =>
       `No encontramos clientes para "${p.busqueda}".`,
+    /** Distinto de `sinResultados` (búsqueda sin coincidencias): acá la
+     * lista está vacía porque el filtro elegido no tiene a nadie, no porque
+     * se haya buscado algo. */
+    sinResultadosFiltro: "No tienes clientes que cumplan este filtro.",
   },
   ficha: {
     clienteDesde: (p: { fecha: string }): string => `Cliente desde ${p.fecha}`,
@@ -2065,11 +2094,36 @@ export const clientes = {
       `${p.n} ${p.n === 1 ? "visita" : "visitas"}`,
     inasistencias: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "inasistencia" : "inasistencias"}`,
+    /** Títulos de sección de la ficha (WP-24, plan §Clientes): contacto,
+     * consentimientos y estadísticas. El contacto en sí (celular, correo)
+     * reutiliza `editar.phoneLabel`/`editar.emailLabel`; los consentimientos
+     * reutilizan `consentimientos.*` de más abajo. */
+    contactoTitulo: "Contacto",
+    consentimientosTitulo: "Consentimientos",
+    estadisticasTitulo: "Estadísticas",
+    /** Monto total pagado por el cliente (pagos `approved`, todo el
+     * historial): el monto ya formateado lo entrega `src/lib/format/`, acá
+     * solo vive la etiqueta de la tarjeta (mismo patrón que
+     * `caja.resumen.cobrado`). */
+    totalGastado: "Total gastado",
+    promedioPorVisita: "Promedio por visita",
     historialTitulo: "Historial",
+    /** Vacíos de cada lista de la ficha: distintos porque una es el
+     * historial (reservas pasadas) y la otra son las próximas. */
+    historialVacio: "Este cliente todavía no tiene reservas.",
     proximasTitulo: "Próximas reservas",
+    proximasVacio: "No tiene próximas reservas.",
+    /** Respuestas guardadas a las preguntas de reserva (`booking_questions`,
+     * D-031) que este cliente ya contestó alguna vez. */
+    respuestasTitulo: "Respuestas a las preguntas de reserva",
+    respuestasVacio: "Este cliente no respondió ninguna pregunta.",
     ctaNuevaReserva: "Nueva reserva",
     ctaLlamar: "Llamar",
     ctaWhatsapp: "Escribir por WhatsApp",
+    /** WP-24: enlaces de contacto alternativos, junto a `ctaLlamar`/
+     * `ctaWhatsapp` (plan: "ring/SMS/mejl-länkar"). */
+    ctaSms: "Enviar SMS",
+    ctaEmail: "Enviar correo",
     ctaVerFicha: "Ver ficha",
   },
   notas: {
@@ -2078,6 +2132,8 @@ export const clientes = {
      * a `agenda` (revisión de seguridad, 2026-09-27: menciona el derecho
      * del cliente a pedir copia de sus datos). */
     ayuda: NOTAS_AYUDA,
+    /** `customers.notes` tiene tope de 1000 caracteres (plan de WP-24). */
+    errorLargo: "Las notas no pueden tener más de 1.000 caracteres.",
   },
   editar: {
     tituloNuevo: "Nuevo cliente",
@@ -2140,6 +2196,9 @@ export const clientes = {
   privacidad: {
     ctaExportar: "Exportar datos",
     ctaAnonimizar: "Anonimizar cliente",
+    /** Confirmación corta (WP-24) al terminar de descargar el export,
+     * mismo patrón que `agenda.toast.*`. */
+    exportadoOk: "Descargamos los datos del cliente.",
     confirmarTitulo: "¿Anonimizar este cliente?",
     confirmarCuerpo:
       "Se eliminan su nombre, celular, correo y notas. Sus reservas y pagos se mantienen, sin esos datos. No se puede deshacer.",
@@ -2165,36 +2224,80 @@ export const CAJA_METODOS_MANUALES = [
 ] as const;
 
 export const caja = {
-  /** SegmentedControl ≤ 7 caracteres (§5 del plan). */
+  /** Pestañas de `/app/caja` (WP-24): la caja del período elegido y los
+   * informes con series más largas (§Caja e informes del plan). */
+  tabs: {
+    caja: "Caja",
+    informes: "Informes",
+  },
+  /** SegmentedControl ≤ 7 caracteres (§5 del plan). `rango` agrega el
+   * cuarto período de WP-24 (intervalo con fecha a elección, además de
+   * hoy/semana/mes). */
   periodos: {
     hoy: "Hoy",
     semana: "Semana",
     mes: "Mes",
+    rango: "Rango",
   },
   /** Mismo patrón que `agenda.semana` para la semana. */
   periodo: (p: { desde: string; hasta: string }): string =>
     `Del ${p.desde} al ${p.hasta}`,
+  /** Selector de fechas cuando `periodos.rango` está activo (WP-24). */
+  rangoPersonalizado: {
+    desdeLabel: "Desde",
+    hastaLabel: "Hasta",
+    ctaAplicar: "Aplicar",
+    error: "La fecha de inicio debe ser antes que la fecha de término.",
+  },
   resumen: {
     cobrado: "Cobrado",
     porCobrar: "Por cobrar",
     abonosMercadopago: "Abonos por Mercado Pago",
     reservasCount: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "reserva" : "reservas"}`,
+    /** WP-24: nuevos indicadores de la caja, mismo patrón que
+     * `reservasCount` (un conteo flexionado). */
+    inasistenciasCount: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "inasistencia" : "inasistencias"}`,
+    ticketPromedio: "Ticket promedio",
     /** Explica qué cuenta como "cobrado" (F10: "las sumas cuadran con las
      * reservas"): pagos `approved` con `paid_at` dentro del período en
      * America/Santiago, menos los `refunded`. */
     explicacion:
       "Suma los pagos aprobados dentro del período (hora de Santiago), menos los devueltos.",
   },
-  /** `payment_method` (DB enum): las cuatro etiquetas, para mostrar cómo
-   * quedó pagada una reserva (incluida una ya pagada por Mercado Pago). El
+  /** Títulos de las tres distribuciones de la caja (WP-24, plan §Caja):
+   * por método de pago, por profesional y por servicio. Las etiquetas de
+   * cada método siguen viviendo en `metodo`. */
+  distribucion: {
+    porMetodo: "Por método de pago",
+    porProfesional: "Por profesional",
+    porServicio: "Por servicio",
+  },
+  /** Lista de reservas terminadas y todavía sin pago (WP-24: "att ta betalt
+   * för"). */
+  porCobrarLista: {
+    titulo: "Reservas por cobrar",
+    vacio: "No tienes reservas terminadas sin cobrar.",
+  },
+  /** Lista de pagos registrados el día de hoy (WP-24). */
+  pagosDeHoy: {
+    titulo: "Pagos de hoy",
+    vacio: "Todavía no registras pagos hoy.",
+  },
+  /** `payment_method` (DB enum): las etiquetas, para mostrar cómo quedó
+   * pagada una reserva (incluida una ya pagada por Mercado Pago). El
    * selector de "Marcar como pagada" solo debe ofrecer
-   * `CAJA_METODOS_MANUALES` (sin `mercadopago`, D-022). */
+   * `CAJA_METODOS_MANUALES` (sin `mercadopago`, D-022). `swish` se agrega
+   * para el mercado SE (WP-24, plan §Caja: nuevo valor del enum); en CL
+   * nunca se ofrece como opción, pero la etiqueta existe porque el enum es
+   * el mismo para las dos marcas. */
   metodo: {
     cash: "Efectivo",
     card_terminal: "Débito o crédito",
     transfer: "Transferencia",
     mercadopago: "Mercado Pago",
+    swish: "Swish",
   },
   /** `payment_kind` (DB enum). */
   tipo: {
@@ -2218,6 +2321,12 @@ export const caja = {
     aPagar: (p: { total: string; desglose?: string }): string =>
       p.desglose ? `${p.total} (${p.desglose})` : p.total,
     metodoLabel: "Método de pago",
+    /** Monto editable, prellenado con `aPagar` (plan de WP-24). */
+    montoLabel: "Monto",
+    /** La propina es opcional y no entra a las sumas de la caja (plan de
+     * WP-24: "ingår inte"). */
+    propinaLabel: "Propina (opcional)",
+    propinaAyuda: "La propina no se incluye en las sumas de la caja.",
     cta: "Marcar como pagada",
     confirmacion: (p: { metodo: string }): string => `Pagada con ${p.metodo}.`,
   },
@@ -2233,9 +2342,40 @@ export const caja = {
   errores: {
     already_paid:
       "Esta reserva ya se marcó como pagada. Recarga para ver el estado.",
+    /** WP-24: la reserva se canceló entre que se abrió el popover y se
+     * intentó cobrar. */
+    booking_cancelled: "Esta reserva está cancelada, no se puede cobrar.",
+    /** Monto inválido en "Marcar como pagada" (0, negativo o con
+     * decimales: pengar = heltal CLP, regla dura 5). */
+    invalid_amount: "Ese monto no es válido.",
+    /** "Ångra betalning inom samma dag" del plan de WP-24: anular un pago
+     * solo funciona el mismo día en que se registró. */
+    same_day_required: "Solo puedes anular un pago del mismo día.",
   },
   vacioPeriodo: "No hay pagos en este período.",
   vacioDia: "No tienes reservas este día.",
+  /** Pestaña "Informes" (WP-24, plan §Caja e informes): cuatro gráficos
+   * simples con tokens, sin dependencia nueva. */
+  informes: {
+    ingresosPorSemana: {
+      titulo: "Ingresos por semana",
+      subtitulo: "Últimas 12 semanas",
+    },
+    ocupacionPorProfesional: {
+      titulo: "Ocupación por profesional",
+    },
+    nuevosVsRecurrentes: {
+      titulo: "Clientes nuevos y recurrentes",
+      nuevos: "Nuevos",
+      recurrentes: "Recurrentes",
+    },
+    tendenciaInasistencias: {
+      titulo: "Tendencia de inasistencias",
+    },
+    /** Un solo vacío para los cuatro gráficos: todos dependen de la misma
+     * falta de historial (negocio recién creado). */
+    vacio: "Todavía no hay suficientes datos para mostrar esta estadística.",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------

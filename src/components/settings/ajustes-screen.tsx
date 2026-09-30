@@ -118,9 +118,19 @@ export function AjustesScreen({
 
   return (
     <AppShell
-      rail={<MainNav active="ajustes" onLogout={onLogout} />}
+      rail={
+        <MainNav
+          active="ajustes"
+          onLogout={onLogout}
+          canViewReports={perms.can_view_reports}
+        />
+      }
       mobileTabBar={
-        <OwnerMobileTabBar active="ajustes" className="lg:hidden" />
+        <OwnerMobileTabBar
+          active="ajustes"
+          className="lg:hidden"
+          canViewReports={perms.can_view_reports}
+        />
       }
       onLogout={onLogout}
       pendingRequests={pendingRequests}

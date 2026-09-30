@@ -19,7 +19,7 @@ import { withOwnerTx } from "@/server/db/tx";
 
 import { memberView, type MemberView } from "./member";
 import { listPendingRequestsIn } from "./requests";
-import { isoOf, staffColorOf } from "./shared";
+import { isoOf, listPaidBookingIds, staffColorOf } from "./shared";
 
 /** Samma statiska länkar som `/design-lab/hoy/fixtures.ts` (rutterna finns
  * inte än — Caja/väntelista/hora flash är utanför WP-21). */
@@ -128,6 +128,12 @@ export async function loadOwnerHoyIn(
     businessId,
     bookingsRes.rows.map((b) => b.id),
   );
+  // WP-24 (F10): samma batch-avvägning för "Pagada".
+  const paidIds = await listPaidBookingIds(
+    q,
+    businessId,
+    bookingsRes.rows.map((b) => b.id),
+  );
 
   const bookings: HoyBooking[] = bookingsRes.rows.map((b) => {
     const answers = answersByBooking[b.id];
@@ -142,7 +148,10 @@ export async function loadOwnerHoyIn(
       staffColor: staffColorOf(b.staff_color),
       status: b.status,
       confirmedByCustomer: b.confirmed_by_customer_at != null,
+      priceClp: b.price_clp,
+      discountClp: b.discount_clp,
       depositPaidClp: b.deposit_clp,
+      paymentId: paidIds.get(b.id)?.paymentId ?? null,
       source: b.source,
       visitNumber: b.visits_count + 1,
       ...(answers && answers.length > 0 ? { answers } : {}),

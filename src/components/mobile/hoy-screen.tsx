@@ -5,14 +5,14 @@
 // `onArrival` sparar samma ändring mot servern (server action bunden i page.tsx) — `undefined`
 // i design lab, bara den lokala statusen ändras.
 //
-// WP-47: den egna flikraden (Hoy/Agenda/Clientes/Caja, två av dem 404:ade) byts mot
-// `OwnerMobileTabBar` (Inicio/Agenda/Hoy/Ajustes, samma som resten av ägarappen). Avataren
-// öppnar samma kontomeny som Inicio/Ajustes (`UserMenu`, "Cerrar sesión" inkluderad) — Hoy
-// hade ingen utloggningsväg alls tidigare, men får den via avataren, inte en extra mörk
-// topprad (`OwnerMobileTopBar`, se motiveringen vid render nedan). `QuickActions` (Crear
-// hora flash/Lista de espera/Cobrar) döljs: ingen av de tre rutterna finns än — WP-xx: visas
-// när funktionen finns. Ett fel vid Llegó/No vino visas nu i stället för att sväljas tyst
-// (`role="alert"`, återanvänder `errores.agenda.network`).
+// WP-47: den egna flikraden byts mot `OwnerMobileTabBar` (samma som resten av ägarappen).
+// Avataren öppnar samma kontomeny som Inicio/Ajustes (`UserMenu`, "Cerrar sesión"
+// inkluderad) — Hoy hade ingen utloggningsväg alls tidigare, men får den via avataren, inte
+// en extra mörk topprad (`OwnerMobileTopBar`, se motiveringen vid render nedan). WP-24:
+// `OwnerMobileTabBar` har nu Clientes och Caja igen (Caja gömd utan `can_view_reports`).
+// `QuickActions` (Crear hora flash/Lista de espera/Cobrar) döljs fortfarande: ingen av de
+// tre rutterna finns än — WP-xx: visas när funktionen finns. Ett fel vid Llegó/No vino
+// visas nu i stället för att sväljas tyst (`role="alert"`, återanvänder `errores.agenda.network`).
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -25,6 +25,12 @@ import type {
   MyProfileActions,
   MyProfileData,
 } from "@/components/shared/my-profile-dialog";
+import { MarkPaidDialog } from "@/components/caja/mark-paid-dialog";
+import type {
+  ManualPaymentMethod,
+  MarkBookingPaidInput,
+  MarkBookingPaidResult,
+} from "@/components/caja/types";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pill } from "@/components/ui/pill";
 import { agenda, errores, hoy } from "@/i18n";
@@ -80,6 +86,12 @@ export type HoyScreenProps = {
    * utan egen personalrad, design lab). */
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-24 (F10): "Marcar pagada" på nästa kund (server action,
+   * `markPaidAction`). `undefined` döljer knappen (design lab). */
+  onMarkPaid?: (input: MarkBookingPaidInput) => Promise<MarkBookingPaidResult>;
+  /** Metoderna "Marcar pagada" ska erbjuda (`MANUAL_METHODS`, CL utan
+   * `swish`). `[]` i design lab. */
+  manualMethods?: readonly ManualPaymentMethod[];
 };
 
 /** Hur länge Llegó/No vino-knapparna är inaktiva efter ett tryck (optimistisk uppdatering). */
@@ -94,8 +106,14 @@ export function HoyScreen({
   onDeclineRequest,
   myProfile,
   myProfileActions,
+  onMarkPaid,
+  manualMethods = [],
 }: HoyScreenProps) {
   const router = useRouter();
+  // WP-24 (F10): "Marcar pagada" på nästa kund. `null` = dialogen stängd.
+  const [markPaidBooking, setMarkPaidBooking] = useState<HoyBooking | null>(
+    null,
+  );
   // `data` byts bara genom en ny instans av skärmen (anroparen sätter `key`, t.ex. per
   // `?estado=` i design lab) — annars skulle den lokala Llegó/No vino-statusen tappas varje
   // gång servern skickar samma dag på nytt.
@@ -138,6 +156,13 @@ export function HoyScreen({
     next != null &&
     (hasHoyPerm(member, "can_manage_all_bookings") ||
       hasHoyPerm(member, "can_manage_own_bookings", next.staffId));
+  // WP-24 (F10): samma regel som `canPay` (src/server/payments/mark-paid.ts)
+  // — egen/alla bokningar ELLER kassan (`can_view_reports`).
+  const canMarkNextPaid =
+    next != null &&
+    onMarkPaid != null &&
+    next.paymentId == null &&
+    (canActOnNext || hasHoyPerm(member, "can_view_reports"));
 
   useEffect(() => {
     if (isFirstNext.current) {
@@ -266,6 +291,9 @@ export function HoyScreen({
                   next && markStatus(next.id, "no_show", agenda.toast.noVino)
               : undefined
           }
+          onMarkPaid={
+            canMarkNextPaid ? () => setMarkPaidBooking(next ?? null) : undefined
+          }
         />
 
         {/* WP-47: QuickActions (Crear hora flash/Lista de espera/Cobrar) döljs — ingen av
@@ -279,13 +307,42 @@ export function HoyScreen({
         />
       </div>
 
-      <OwnerMobileTabBar active="hoy" />
+      <OwnerMobileTabBar
+        active="hoy"
+        canViewReports={
+          member === undefined
+            ? undefined
+            : hasHoyPerm(member, "can_view_reports")
+        }
+      />
 
       <div role="status" className="sr-only">
         {announcement ? (
           <span key={announcement.id}>{announcement.text}</span>
         ) : null}
       </div>
+
+      {markPaidBooking && onMarkPaid ? (
+        <MarkPaidDialog
+          open={markPaidBooking != null}
+          onOpenChange={(open) => {
+            if (!open) setMarkPaidBooking(null);
+          }}
+          bookingId={markPaidBooking.id}
+          dueMinor={Math.max(
+            0,
+            (markPaidBooking.priceClp ?? 0) -
+              (markPaidBooking.discountClp ?? 0) -
+              markPaidBooking.depositPaidClp,
+          )}
+          methods={manualMethods}
+          onSubmit={onMarkPaid}
+          onPaid={() => {
+            setMarkPaidBooking(null);
+            router.refresh();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

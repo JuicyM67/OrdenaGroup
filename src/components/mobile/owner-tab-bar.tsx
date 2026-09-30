@@ -1,21 +1,30 @@
-// WP-42: mobilnav delad av ägarens app-skal-skärmar (Inicio, Agenda, Ajustes) som INTE är
-// Hoy — Hoy har sin egen flikrad (hoy-screen.tsx, WP-14, fyra andra mål). Bara de fyra
-// rutter som faktiskt finns byggda (`docs/tasks/BACKLOG.md`): Inicio/Agenda/Hoy/Ajustes —
-// Clientes/Horas flash/Caja finns bara i skrivbordets MainNav (WP-11) och länkar dit 404:ar
-// fortfarande (WP-42-planen listar bara dessa fyra). Ikonen för "Hoy" är `Clock` (DESIGN.md
-// §6, "Tid") i stället för `LayoutGrid` (redan Inicios ikon här) — Hoys egen flikrad
-// återanvänder `LayoutGrid` för "hoy" men den bar har inget "Inicio"-mål att krocka med.
-import { Calendar, Clock, LayoutGrid, SlidersHorizontal } from "lucide-react";
+// WP-42: mobilnav delad av ägarens app-skal-skärmar (Inicio, Agenda, Hoy, Ajustes). Ikonen
+// för "Hoy" är `Clock` (DESIGN.md §6, "Tid") i stället för `LayoutGrid` (redan Inicios ikon
+// här).
+//
+// WP-24: Clientes och Caja (D-034) återinförs — `canViewReports` döljer Caja för medlemmar
+// utan `can_view_reports` (`undefined`/design lab visar den, samma "ingen inskränkning utan
+// data"-mönster som `main-nav.tsx`). Sex mål i stället för fyra: `MobileTabBar` räknar
+// kolumner från `items.length`.
+import {
+  BarChart3,
+  Calendar,
+  Clock,
+  LayoutGrid,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 
 import { nav } from "@/i18n";
 
 import { MobileTabBar, type MobileTabItem } from "./mobile-tab-bar";
 
-export type OwnerMobileTab = "inicio" | "agenda" | "hoy" | "ajustes";
+export type OwnerMobileTab =
+  "inicio" | "agenda" | "hoy" | "clientes" | "caja" | "ajustes";
 
 const ICON_SIZE = "size-5.5";
 
-const ITEMS: readonly MobileTabItem[] = [
+const BASE_ITEMS: readonly MobileTabItem[] = [
   {
     key: "inicio",
     href: "/app/inicio",
@@ -39,6 +48,20 @@ const ITEMS: readonly MobileTabItem[] = [
     icon: <Clock aria-hidden="true" className={ICON_SIZE} strokeWidth={1.9} />,
   },
   {
+    key: "clientes",
+    href: "/app/clientes",
+    label: nav.clientes,
+    icon: <Users aria-hidden="true" className={ICON_SIZE} strokeWidth={1.9} />,
+  },
+  {
+    key: "caja",
+    href: "/app/caja",
+    label: nav.caja,
+    icon: (
+      <BarChart3 aria-hidden="true" className={ICON_SIZE} strokeWidth={1.9} />
+    ),
+  },
+  {
     key: "ajustes",
     href: "/app/ajustes",
     label: nav.ajustes,
@@ -55,13 +78,19 @@ const ITEMS: readonly MobileTabItem[] = [
 export type OwnerMobileTabBarProps = {
   active: OwnerMobileTab;
   className?: string;
+  /** WP-24 (D-034): döljer Caja när medlemmen saknar `can_view_reports`. `undefined`
+   * (design lab/ingen medlemsdata) visar den. */
+  canViewReports?: boolean;
 };
 
-/** `MobileTabBar` (DESIGN.md §7) med ägarskalets fyra mål. Anropas av AppShell/AgendaShell
+/** `MobileTabBar` (DESIGN.md §7) med ägarskalets mål. Anropas av AppShell/AgendaShell
  * på < lg, `lg:hidden` sätts av anroparen (samma mönster som `rail`/`aside`). */
 export function OwnerMobileTabBar({
   active,
   className,
+  canViewReports,
 }: OwnerMobileTabBarProps) {
-  return <MobileTabBar items={ITEMS} active={active} className={className} />;
+  const showCaja = canViewReports ?? true;
+  const items = BASE_ITEMS.filter((i) => i.key !== "caja" || showCaja);
+  return <MobileTabBar items={items} active={active} className={className} />;
 }

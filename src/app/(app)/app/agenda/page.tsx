@@ -36,7 +36,11 @@ import {
   declineRequest,
   listPendingRequests,
 } from "@/server/owner/requests";
+import { getCustomerContact } from "@/server/owner/clientes";
+import { MANUAL_METHODS } from "@/server/payments/mark-paid";
 import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
+
+import { markPaidAction, undoPaymentAction } from "../caja/actions";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -56,7 +60,7 @@ export const dynamic = "force-dynamic";
 export default async function AppAgendaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ vista?: string; fecha?: string }>;
+  searchParams: Promise<{ vista?: string; fecha?: string; cliente?: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -67,16 +71,23 @@ export default async function AppAgendaPage({
   const business = await getOwnerBusiness(user.id);
   if (!business) redirect("/app/onboarding");
 
-  const { vista, fecha } = await searchParams;
+  const { vista, fecha, cliente } = await searchParams;
   const parsedFecha = fecha ? parseLocalDate(fecha) : null;
   const now = new Date();
   const focus = parsedFecha?.ok ? parsedFecha.value : toLocalDate(now, APP_TZ);
+  // WP-24: kundkortets "Nueva reserva" (`/app/clientes/[id]`) länkar hit med
+  // `?cliente=<id>` — öppnar "Nueva reserva" direkt, förifylld.
+  const parsedCliente = cliente ? customerIdSchema.safeParse(cliente) : null;
 
-  const [data, catalog, pendingRequests] = await Promise.all([
-    loadOwnerAgendaWeek(user.id, business.id, focus, now),
-    loadOwnerBookableCatalog(user.id, business.id),
-    listPendingRequests(user.id, business.id, now),
-  ]);
+  const [data, catalog, pendingRequests, initialManualCustomer] =
+    await Promise.all([
+      loadOwnerAgendaWeek(user.id, business.id, focus, now),
+      loadOwnerBookableCatalog(user.id, business.id),
+      listPendingRequests(user.id, business.id, now),
+      parsedCliente?.success
+        ? getCustomerContact(user.id, business.id, parsedCliente.data)
+        : Promise.resolve(null),
+    ]);
 
   const onArrival = async (bookingId: string, status: ArrivalStatus) => {
     "use server";
@@ -196,6 +207,10 @@ export default async function AppAgendaPage({
       pendingRequests={pendingRequests}
       onConfirmRequest={onConfirmRequest}
       onDeclineRequest={onDeclineRequest}
+      initialManualCustomer={initialManualCustomer ?? undefined}
+      onMarkPaid={markPaidAction}
+      onUndoPayment={undoPaymentAction}
+      manualMethods={MANUAL_METHODS}
     />
   );
 }

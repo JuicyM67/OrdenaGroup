@@ -102,6 +102,7 @@ export const nav: Widen<typeof Es.nav> = {
 export const estados: Widen<typeof Es.estados> = {
   confirmada: "Bekräftad",
   abonoPagado: "Förskott betalt",
+  pagada: "Betald",
   sinConfirmar: "Obekräftad",
   porConfirmar: "Väntar på bekräftelse",
   confirmo: "Bekräftade",
@@ -1567,30 +1568,58 @@ export const ajustes: Widen<typeof Es.ajustes> = {
 // ---------------------------------------------------------------------------
 
 export const clientes: Widen<typeof Es.clientes> = {
+  titulo: "Kunder",
   lista: {
     buscarPlaceholder: "Sök på namn eller mobilnummer",
     columnaUltimaVisita: "Senaste besök",
     columnaVisitas: "Besök",
     columnaInasistencias: "Uteblivna besök",
+    ordenarPor: "Sortera efter",
+    ordenar: {
+      ultimaVisita: "Senaste besök",
+      masVisitas: "Flest besök",
+      nombre: "Namn",
+    },
+    filtros: {
+      todos: "Alla",
+      habituales: "Stamkunder",
+      inactivos: "Inaktiva",
+      conInasistencias: "Med uteblivna besök",
+    },
+    filtroHabitualesAyuda: "3 besök eller fler",
+    filtroInactivosAyuda: "Inte varit här på mer än 90 dagar",
     vacio: "Du har inga kunder än.",
     sinResultados: (p: { busqueda: string }): string =>
       `Vi hittade inga kunder för "${p.busqueda}".`,
+    sinResultadosFiltro: "Du har inga kunder som matchar det här filtret.",
   },
   ficha: {
     clienteDesde: (p: { fecha: string }): string => `Kund sedan ${p.fecha}`,
     visitas: (p: { n: number }): string => `${p.n} besök`,
     inasistencias: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "uteblivet besök" : "uteblivna besök"}`,
+    contactoTitulo: "Kontakt",
+    consentimientosTitulo: "Samtycken",
+    estadisticasTitulo: "Statistik",
+    totalGastado: "Totalt spenderat",
+    promedioPorVisita: "Snitt per besök",
     historialTitulo: "Historik",
+    historialVacio: "Den här kunden har inga bokningar än.",
     proximasTitulo: "Kommande bokningar",
+    proximasVacio: "Inga kommande bokningar.",
+    respuestasTitulo: "Svar på bokningsfrågor",
+    respuestasVacio: "Den här kunden har inte svarat på några frågor.",
     ctaNuevaReserva: "Ny bokning",
     ctaLlamar: "Ring",
     ctaWhatsapp: "Skicka sms",
+    ctaSms: "Skicka sms",
+    ctaEmail: "Skicka e-post",
     ctaVerFicha: "Se kundkort",
   },
   notas: {
     label: "Anteckningar",
     ayuda: NOTAS_AYUDA_SV,
+    errorLargo: "Anteckningarna får inte vara längre än 1000 tecken.",
   },
   editar: {
     tituloNuevo: "Ny kund",
@@ -1631,6 +1660,7 @@ export const clientes: Widen<typeof Es.clientes> = {
   privacidad: {
     ctaExportar: "Exportera data",
     ctaAnonimizar: "Anonymisera kund",
+    exportadoOk: "Vi laddade ner kundens uppgifter.",
     confirmarTitulo: "Anonymisera den här kunden?",
     confirmarCuerpo:
       "Namn, mobilnummer, e-post och anteckningar tas bort. Bokningar och betalningar behålls, utan de uppgifterna. Går inte att ångra.",
@@ -1649,30 +1679,63 @@ export const CAJA_METODOS_MANUALES = [
   "cash",
   "card_terminal",
   "transfer",
+  "swish",
 ] as const;
 
 export const caja: Widen<typeof Es.caja> = {
+  tabs: {
+    caja: "Kassa",
+    informes: "Rapporter",
+  },
   periodos: {
     hoy: "Idag",
     semana: "Vecka",
     mes: "Månad",
+    rango: "Eget",
   },
   periodo: (p: { desde: string; hasta: string }): string =>
     `Från ${p.desde} till ${p.hasta}`,
+  rangoPersonalizado: {
+    desdeLabel: "Från",
+    hastaLabel: "Till",
+    ctaAplicar: "Tillämpa",
+    error: "Startdatumet måste vara före slutdatumet.",
+  },
   resumen: {
     cobrado: "Inkommet",
     porCobrar: "Ej betalt",
     abonosMercadopago: "Förskott online",
     reservasCount: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "bokning" : "bokningar"}`,
+    inasistenciasCount: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "uteblivet besök" : "uteblivna besök"}`,
+    ticketPromedio: "Snittpris",
     explicacion:
       "Summerar godkända betalningar inom perioden, minus återbetalningar.",
   },
+  distribucion: {
+    porMetodo: "Per betalsätt",
+    porProfesional: "Per medarbetare",
+    porServicio: "Per tjänst",
+  },
+  porCobrarLista: {
+    titulo: "Att ta betalt för",
+    vacio: "Du har inga avslutade bokningar som väntar på betalning.",
+  },
+  pagosDeHoy: {
+    titulo: "Dagens betalningar",
+    vacio: "Du har inga registrerade betalningar idag.",
+  },
+  /** Fjärde metoden (`swish`) mappas till "Swish" i kassans knappar (planen
+   * för WP-24: kontant, kort, Swish, faktura/övrigt). `transfer` byter
+   * etikett från "Överföring" till "Faktura eller övrigt" för att täcka
+   * samma fjärde knapp. */
   metodo: {
     cash: "Kontant",
     card_terminal: "Kort",
-    transfer: "Överföring",
+    transfer: "Faktura eller övrigt",
     mercadopago: "Automatisk betalning",
+    swish: "Swish",
   },
   tipo: {
     deposit: "Förskott",
@@ -1690,6 +1753,9 @@ export const caja: Widen<typeof Es.caja> = {
     aPagar: (p: { total: string; desglose?: string }): string =>
       p.desglose ? `${p.total} (${p.desglose})` : p.total,
     metodoLabel: "Betalsätt",
+    montoLabel: "Belopp",
+    propinaLabel: "Dricks (valfritt)",
+    propinaAyuda: "Dricksen räknas inte med i kassans summor.",
     cta: "Markera som betald",
     confirmacion: (p: { metodo: string }): string => `Betald med ${p.metodo}.`,
   },
@@ -1702,9 +1768,32 @@ export const caja: Widen<typeof Es.caja> = {
   errores: {
     already_paid:
       "Den här bokningen är redan markerad som betald. Ladda om för att se statusen.",
+    booking_cancelled:
+      "Den här bokningen är avbokad, går inte att ta betalt för den.",
+    invalid_amount: "Det beloppet är inte giltigt.",
+    same_day_required:
+      "Du kan bara ogiltigförklara en betalning samma dag som den registrerades.",
   },
   vacioPeriodo: "Inga betalningar under den här perioden.",
   vacioDia: "Du har inga bokningar den här dagen.",
+  informes: {
+    ingresosPorSemana: {
+      titulo: "Intäkter per vecka",
+      subtitulo: "Senaste 12 veckorna",
+    },
+    ocupacionPorProfesional: {
+      titulo: "Beläggning per medarbetare",
+    },
+    nuevosVsRecurrentes: {
+      titulo: "Nya och återkommande kunder",
+      nuevos: "Nya",
+      recurrentes: "Återkommande",
+    },
+    tendenciaInasistencias: {
+      titulo: "Trend för uteblivna besök",
+    },
+    vacio: "Det finns inte tillräckligt med data för den här statistiken än.",
+  },
 };
 
 // ---------------------------------------------------------------------------

@@ -1,9 +1,12 @@
 // Se DESIGN.md §7 "NavRail" och docs/tasks/plans/WP-11.md §4 steg 3. `NavRail
-// variant="bare"` med logga, tre huvudlänkar och "Cerrar sesión" sist.
+// variant="bare"` med logga, fem huvudlänkar och "Cerrar sesión" sist.
 //
-// WP-47: Clientes/Horas flash/Caja döljs (ingen route/backend finns, ledde till 404) —
-// WP-xx: visas när funktionen finns, se `DEFAULT_MAIN_NAV_HREFS`/`MainNavKey` (behåller
-// namnen som referens, tas bort helt när sidorna byggs). Loggan länkar till /app/inicio
+// WP-47: Clientes/Horas flash/Caja döljdes (ingen route/backend fanns, ledde till 404) —
+// WP-24 återinför Clientes och Caja (sidorna finns nu); Horas flash är fortfarande dold
+// (fas 2 saknar route). `canViewReports` (WP-24, D-034): Caja kräver `can_view_reports`
+// (eller ägare) — annars skulle länken leda till en redirect till /app/agenda. `undefined`
+// (design lab, ingen medlemsdata) visar Caja, samma "ingen inskränkning utan data"-mönster
+// som `showReports` i `src/server/owner/inicio.ts`. Loggan länkar till /app/inicio
 // (tidigare dekorativ utan href) och "Cerrar sesión" är en riktig `<form action={onLogout}>`
 // (WP-15, `src/app/auth/actions.ts`), inte längre en platshållarlänk. `onLogout` tas emot
 // som prop (inte importerad direkt): `logout()` importerar `server-only` transitivt
@@ -14,10 +17,12 @@
 // att indexera `roleIcons` med en variabel nyckel, eftersom `noUncheckedIndexedAccess`
 // annars gör resultatet `LucideIcon | undefined`.
 import {
+  BarChart3,
   Calendar,
   LayoutGrid,
   LogOut,
   SlidersHorizontal,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -43,18 +48,30 @@ export const DEFAULT_MAIN_NAV_HREFS: Record<MainNavKey, string> = {
   ajustes: "/app/ajustes",
 };
 
-/** WP-47: bara rutter som faktiskt finns (Clientes/Horas flash/Caja saknar backend). */
-const VISIBLE_KEYS: readonly MainNavKey[] = ["inicio", "agenda", "ajustes"];
+/** WP-24: Horas flash saknar fortfarande route/backend (fas 2, döljs). Clientes och Caja
+ * har egna sidor — Caja filtreras dessutom av `canViewReports` (se nedan). */
+const VISIBLE_KEYS: readonly MainNavKey[] = [
+  "inicio",
+  "agenda",
+  "clientes",
+  "caja",
+  "ajustes",
+];
 
 const ITEMS: { key: MainNavKey; label: string; icon: LucideIcon }[] = [
   { key: "inicio", label: nav.inicio, icon: LayoutGrid },
   { key: "agenda", label: nav.agenda, icon: Calendar },
+  { key: "clientes", label: nav.clientes, icon: Users },
+  { key: "caja", label: nav.caja, icon: BarChart3 },
   { key: "ajustes", label: nav.ajustes, icon: SlidersHorizontal },
 ];
 
 export type MainNavProps = {
   active: MainNavKey;
   hrefs?: Record<MainNavKey, string>;
+  /** WP-24 (D-034): döljer länken till Caja när medlemmen saknar `can_view_reports`.
+   * `undefined` (design lab/ingen medlemsdata) visar den. */
+  canViewReports?: boolean;
   /** `logout` (server action), bunden av anroparens `page.tsx`. `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
 };
@@ -62,29 +79,31 @@ export type MainNavProps = {
 export function MainNav({
   active,
   hrefs = DEFAULT_MAIN_NAV_HREFS,
+  canViewReports,
   onLogout,
 }: MainNavProps) {
+  const showCaja = canViewReports ?? true;
   return (
     <NavRail variant="bare" aria-label={nav.principal}>
       <NavRailLogo href="/app/inicio" label={nav.volverAlInicio} />
-      {ITEMS.filter(({ key }) => VISIBLE_KEYS.includes(key)).map(
-        ({ key, label, icon: Icon }) => (
-          <NavRailLink
-            key={key}
-            href={hrefs[key]}
-            label={label}
-            active={active === key}
-            prefetch={false}
-            icon={
-              <Icon
-                aria-hidden="true"
-                className="size-5.5"
-                strokeWidth={strokeNav}
-              />
-            }
-          />
-        ),
-      )}
+      {ITEMS.filter(
+        ({ key }) => VISIBLE_KEYS.includes(key) && (key !== "caja" || showCaja),
+      ).map(({ key, label, icon: Icon }) => (
+        <NavRailLink
+          key={key}
+          href={hrefs[key]}
+          label={label}
+          active={active === key}
+          prefetch={false}
+          icon={
+            <Icon
+              aria-hidden="true"
+              className="size-5.5"
+              strokeWidth={strokeNav}
+            />
+          }
+        />
+      ))}
       <NavRailSpacer />
       <NavRailFormAction
         action={onLogout ?? (() => {})}

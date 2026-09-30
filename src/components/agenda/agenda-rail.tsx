@@ -3,8 +3,17 @@
 // WP-47: "+ Nueva reserva" öppnar den riktiga dialogen (`onNewBooking`, samma som
 // toolbar/MobileDayNav i agenda-screen.tsx) i stället för att vara ett no-op. "+ Agregar
 // profesional" länkar till /app/ajustes#equipo (personalsektionen finns redan där). Ajustes
-// och "Cerrar sesión" läggs till längst ned, samma mönster som main-nav.tsx.
-import { LogOut, Plus, SlidersHorizontal } from "lucide-react";
+// och "Cerrar sesión" läggs till längst ned, samma mönster som main-nav.tsx. WP-24: Clientes
+// och Caja (samma D-034-spärr på Caja som main-nav.tsx) läggs till strax ovanför Ajustes —
+// referensen (Agenda.dc.html) saknar dem helt i den här panelen (bara logga/+ny/personal),
+// men utan en egen väg dit skulle de vara onåbara från Agenda-skärmen på skrivbordet.
+import {
+  BarChart3,
+  LogOut,
+  Plus,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -33,6 +42,9 @@ export type AgendaRailProps = {
   onNewBooking?: () => void;
   /** WP-47: `logout` (server action). `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
+  /** WP-24 (D-034): döljer länken till Caja när medlemmen saknar `can_view_reports`.
+   * `undefined` (design lab/ingen medlemsdata) visar den. */
+  canViewReports?: boolean;
 };
 
 export function AgendaRail({
@@ -41,7 +53,9 @@ export function AgendaRail({
   onSelectStaff,
   onNewBooking,
   onLogout,
+  canViewReports,
 }: AgendaRailProps) {
+  const showCaja = canViewReports ?? true;
   return (
     <NavRail variant="panel" aria-label={nav.principal}>
       <NavRailLogo href="/app/inicio" label={nav.volverAlInicio} />
@@ -75,6 +89,32 @@ export function AgendaRail({
         </Link>
       </NavRailAction>
       <NavRailSpacer />
+      <NavRailLink
+        href="/app/clientes"
+        label={nav.clientes}
+        prefetch={false}
+        icon={
+          <Users
+            aria-hidden="true"
+            className="size-5.5"
+            strokeWidth={strokeNav}
+          />
+        }
+      />
+      {showCaja ? (
+        <NavRailLink
+          href="/app/caja"
+          label={nav.caja}
+          prefetch={false}
+          icon={
+            <BarChart3
+              aria-hidden="true"
+              className="size-5.5"
+              strokeWidth={strokeNav}
+            />
+          }
+        />
+      ) : null}
       <NavRailLink
         href="/app/ajustes"
         label={nav.ajustes}

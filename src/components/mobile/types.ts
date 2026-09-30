@@ -37,6 +37,16 @@ export type HoyBooking = {
   confirmedByCustomer: boolean;
   /** Heltal CLP, 0 om inget abono är betalt. */
   depositPaidClp: number;
+  /** WP-24 (F10): tjänstens pris och rabatt, heltal CLP — "Marcar pagada"
+   * förifyller beloppet med `priceClp - discountClp - depositPaidClp`.
+   * `paymentId`: id:t på bokningens senaste `approved`-betalning av kind
+   * `full`/`balance`, `null`/saknas = obetald — styr "Pagada"-taggen, om
+   * "Marcar pagada" visas, och `paymentId` till "Anular pago". Alla tre är
+   * valfria (som `answers`): saknas i design lab-fixturer/äldre tester, som
+   * då varken visar knappen eller taggen. */
+  priceClp?: number;
+  discountClp?: number;
+  paymentId?: string | null;
   source: BookingSource;
   /** 1 = första besöket. Källa till `comun.visita`. */
   visitNumber: number;
