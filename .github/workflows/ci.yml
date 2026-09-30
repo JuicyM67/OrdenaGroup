@@ -38,7 +38,7 @@ jobs:
       # WP-15: e2e loggar in på riktigt (magisk länk via lokal Mailpit), så
       # en lokal Supabase-stack körs i runnern. Inget moln, inga hemligheter:
       # URL och nyckel är containerns lokala standardvärden.
-      - run: npx supabase start -x realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - run: npx supabase start -x realtime,storage-api,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - name: Exportera lokala Supabase-värden
         run: |
           npx supabase status -o env > /tmp/sb.env
@@ -87,7 +87,17 @@ jobs:
       # agentkommandon, inte GitHub Actions-runnern. Ingen fjärrdatabas,
       # ingen `--linked`, inget moln: allt körs i en lokal container i
       # runnern.
-      - run: npx supabase db start
+      # WP-26: purgeBusiness testas mot riktiga Storage-API:t, så db-jobbet
+      # behöver API-gatewayen + storage-api (inte bara databasen).
+      - run: npx supabase start -x realtime,imgproxy,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - name: Exportera lokala Supabase-värden
+        run: |
+          npx supabase status -o env > /tmp/sb.env
+          . /tmp/sb.env
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "SUPABASE_SERVICE_ROLE_KEY=${SECRET_KEY:-$SERVICE_ROLE_KEY}"
+          } >> "$GITHUB_ENV"
       - run: npx supabase test db
 
       # WP-10: Vitest-integrationstester mot samma lokala container, bl.a.
