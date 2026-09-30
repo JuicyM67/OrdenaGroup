@@ -80,7 +80,7 @@ export function HoursStep({
         {value.map((h, i) => (
           <div
             key={h.weekday}
-            className="flex flex-col gap-2 rounded-tile bg-surface p-4"
+            className="flex flex-col gap-2 rounded-tile bg-surface p-4 fields-on-surface"
           >
             <div className="flex items-center justify-between gap-3">
               <span className="text-15 font-semibold text-ink">

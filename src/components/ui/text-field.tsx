@@ -72,7 +72,7 @@ export function TextField({
         aria-required={required}
         required={required}
         className={cn(
-          "h-13 w-full scroll-mb-28 rounded-control border-2 border-transparent bg-surface px-4 text-15 font-medium text-ink transition-colors duration-150 ease-out placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
+          "h-13 w-full scroll-mb-28 rounded-control border-2 border-transparent bg-field px-4 text-15 font-medium text-ink transition-colors duration-150 ease-out placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
           error && "border-alert",
           inputClassName,
         )}

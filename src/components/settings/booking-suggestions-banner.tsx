@@ -84,7 +84,7 @@ export function BookingSuggestionsBanner({
       </div>
 
       {open ? (
-        <div className="flex flex-col gap-2 rounded-tile bg-surface p-3">
+        <div className="flex flex-col gap-2 rounded-tile bg-surface p-3 fields-on-surface">
           {presets.map((preset) => {
             const existing = questions.find((q) => q.presetKey === preset.key);
             const active = existing?.active ?? false;

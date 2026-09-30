@@ -50,7 +50,7 @@ export function Select({
         aria-required={required}
         required={required}
         className={cn(
-          "h-13 w-full rounded-control border-2 border-transparent bg-surface px-4 text-15 font-medium text-ink transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
+          "h-13 w-full rounded-control border-2 border-transparent bg-field px-4 text-15 font-medium text-ink transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
           error && "border-alert",
         )}
         {...props}

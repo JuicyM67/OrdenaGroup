@@ -238,7 +238,7 @@ export function BookingFormSection({
               aria-label={ajustes.secciones.servicios}
               value={previewServiceId ?? ""}
               onChange={(e) => setPreviewServiceId(e.target.value || null)}
-              className="h-11 w-full rounded-control border-2 border-transparent bg-surface px-3.5 text-13 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              className="h-11 w-full rounded-control border-2 border-transparent bg-field px-3.5 text-13 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               {activeServices.map((s) => (
                 <option key={s.id} value={s.id}>

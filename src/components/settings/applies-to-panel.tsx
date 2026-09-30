@@ -156,7 +156,7 @@ export function AppliesToPanel({
     <section
       aria-label={formulario.aplicaA.titulo}
       className={cn(
-        "flex flex-col gap-3 rounded-card bg-surface p-4.5 shadow-popover",
+        "flex flex-col gap-3 rounded-card bg-surface p-4.5 shadow-popover fields-on-surface",
         className,
       )}
     >
