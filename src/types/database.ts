@@ -1201,6 +1201,42 @@ export type Database = {
         };
         Returns: string;
       };
+      customer_stats: {
+        Args: { b: string; customer: string };
+        Returns: {
+          average_price_clp: number;
+          last_visit_at: string;
+          no_show_count: number;
+          total_revenue_clp: number;
+          visits_count: number;
+        }[];
+      };
+      report_breakdown: {
+        Args: { b: string; dim: string; from: string; to: string };
+        Returns: {
+          amount_clp: number;
+          bookings_count: number;
+          key: string;
+          label: string;
+        }[];
+      };
+      report_summary: {
+        Args: { b: string; from: string; to: string };
+        Returns: {
+          average_price_clp: number;
+          bookings_count: number;
+          expected_clp: number;
+          no_show_count: number;
+          revenue_clp: number;
+        }[];
+      };
+      report_weekly: {
+        Args: { b: string; weeks: number };
+        Returns: {
+          revenue_clp: number;
+          week_start: string;
+        }[];
+      };
     };
     Enums: {
       booking_question_applies_to: "all" | "targets";
@@ -1225,7 +1261,8 @@ export type Database = {
         "queued" | "sending" | "sent" | "failed" | "dead" | "cancelled";
       message_recipient_kind: "customer" | "owner" | "invitee";
       payment_kind: "deposit" | "balance" | "full";
-      payment_method: "cash" | "card_terminal" | "transfer" | "mercadopago";
+      payment_method:
+        "cash" | "card_terminal" | "transfer" | "swish" | "mercadopago";
       payment_status: "pending" | "approved" | "rejected" | "refunded";
       question_kind:
         | "short_text"
@@ -1393,7 +1430,13 @@ export const Constants = {
       ],
       message_recipient_kind: ["customer", "owner", "invitee"],
       payment_kind: ["deposit", "balance", "full"],
-      payment_method: ["cash", "card_terminal", "transfer", "mercadopago"],
+      payment_method: [
+        "cash",
+        "card_terminal",
+        "transfer",
+        "swish",
+        "mercadopago",
+      ],
       payment_status: ["pending", "approved", "rejected", "refunded"],
       question_kind: [
         "short_text",

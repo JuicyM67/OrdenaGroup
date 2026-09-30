@@ -1,0 +1,16 @@
+-- WP-24 · Caja (db-engineer) · Nytt betalmetodsvärde 'swish' (SE)
+-- F#: F10. Plan: docs/tasks/plans/WP-24-clientes-caja.md, "Caja e informes":
+-- "metod (SE: kontant, kort, Swish, faktura/övrigt — mappas på befintlig
+-- enum: cash, card_terminal, transfer; lägg till swish i enumet för SE)".
+--
+-- `alter type ... add value` kan inte köras i samma transaktion som den
+-- körs i (Postgres-begränsning) — samma mönster som
+-- 20260930140000_booking_status_requested.sql och
+-- 20260930150200_message_recipient_kind_invitee.sql: en egen migrationsfil,
+-- bara den här satsen. RLS-policyerna som accepterar det nya värdet ligger i
+-- nästa migration (20260930200200).
+--
+-- Placeras efter 'transfer', före 'mercadopago': svensk kassa (D-025/D-026,
+-- två installationer, en kodbas) visar kontant/kort/Swish/faktura-övrigt i
+-- den ordningen; 'mercadopago' är Chile-specifikt och förblir sist.
+alter type public.payment_method add value 'swish' after 'transfer';
