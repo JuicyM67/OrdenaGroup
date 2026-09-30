@@ -45,16 +45,19 @@ function authorized(request: NextRequest): boolean {
 async function runRetention(): Promise<{
   anonymizedCustomers: number;
   purgedOutbox: number;
+  purgedConsentEvents: number;
 }> {
   return withServiceTx(async (q) => {
     const r = await q.query<{
       anonymized_customers: number;
       purged_outbox: number;
+      purged_consent_events: number;
     }>(`select * from private.run_retention()`);
     const row = r.rows[0];
     return {
       anonymizedCustomers: row?.anonymized_customers ?? 0,
       purgedOutbox: row?.purged_outbox ?? 0,
+      purgedConsentEvents: row?.purged_consent_events ?? 0,
     };
   });
 }
