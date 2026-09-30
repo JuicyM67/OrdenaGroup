@@ -128,6 +128,7 @@ describe("estructura", () => {
  * (eso ya lo hacen las pruebas de "flexión" y "paridad de diseño"). */
 const MUESTRA_GENERICA: Record<string, unknown> = {
   n: 3,
+  descuento: "$1.800",
   h: 1,
   m: 30,
   offset: -3,
