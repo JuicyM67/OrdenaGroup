@@ -3,15 +3,30 @@
 // src/app/(app)/layout.tsx.
 //
 // WP-46: om personen nyss bad om en magisk länk från /app/invitacion/[token]
-// (utloggad), skickas hen hit av `/auth/confirm` som vanligt — den rutten
-// stödjer medvetet ingen `?next=` (öppen omdirigering). En cookie
-// (`pending_invitation`, satt av invitationssidans egen server action, bara
-// ett redan formatvaliderat token) tar över härifrån i stället.
+// (utloggad, en inbjudan till ett BEFINTLIGT företags team), skickas hen hit
+// av `/auth/confirm` som vanligt — den rutten stödjer medvetet ingen `?next=`
+// (öppen omdirigering). En cookie (`pending_invitation`, satt av
+// invitationssidans egen server action, bara ett redan formatvaliderat
+// token) tar över härifrån i stället.
+//
+// F19/WP-36: samma mönster för en ANNAN inbjudan — en cookie satt av
+// `/app/bienvenida/[token]/actions.ts` (innan inloggning) talar om att den
+// precis inloggade personen ska acceptera en admin-inbjudan att skapa ett
+// NYTT företag. `/auth/confirm` skickar i båda fallen alltid hit, aldrig
+// till en fri `next`-parameter, så det här är enda stället någon av de två
+// kedjorna kan fortsätta från.
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import {
+  getOwnerBusiness,
+  isOnboardingDraft,
+} from "@/server/onboarding/owner-business";
+import {
+  acceptInvitation,
+  INVITE_COOKIE_NAME,
+} from "@/server/onboarding/invitation";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +40,7 @@ export default async function AppIndexPage() {
   if (!user) redirect("/login");
 
   const store = await cookies();
+
   const pending = store.get("pending_invitation")?.value;
   if (pending && TOKEN_RE.test(pending)) {
     // `cookies().delete()` kastar i en ren Server Component (bara Server
@@ -40,6 +56,17 @@ export default async function AppIndexPage() {
     redirect(`/app/invitacion/${pending}`);
   }
 
+  const inviteToken = store.get(INVITE_COOKIE_NAME)?.value;
+  if (inviteToken) {
+    const result = await acceptInvitation(user.id, inviteToken);
+    // Server Component: kan inte radera cookien (bara en Server Action eller
+    // Route Handler kan det). Ligger kvar tills den går ut av sig själv (20
+    // min) — ett omförsök inom fönstret ger bara "used_or_expired"
+    // (idempotent) och fortsätter till det vanliga flödet nedan.
+    if (result.ok) redirect("/app/onboarding");
+  }
+
   const business = await getOwnerBusiness(user.id);
-  redirect(business ? "/app/inicio" : "/app/onboarding");
+  if (!business || isOnboardingDraft(business)) redirect("/app/onboarding");
+  redirect("/app/inicio");
 }

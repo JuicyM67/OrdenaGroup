@@ -7,7 +7,10 @@ import { redirect } from "next/navigation";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { SessionBar } from "@/components/onboarding/session-bar";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import {
+  getOwnerBusiness,
+  isOnboardingDraft,
+} from "@/server/onboarding/owner-business";
 import { onboarding } from "@/i18n";
 
 import {
@@ -32,8 +35,11 @@ export default async function OnboardingPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
+  // F19/WP-36: un negocio creado por una invitación de admin (`comuna`/
+  // `category` en blanco) todavía necesita pasar por acá — solo un negocio
+  // YA completo manda a /app/inicio.
   const business = await getOwnerBusiness(user.id);
-  if (business) redirect("/app/inicio");
+  if (business && !isOnboardingDraft(business)) redirect("/app/inicio");
 
   return (
     <main className="min-h-dvh bg-canvas px-4 py-8">

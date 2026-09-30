@@ -42,6 +42,10 @@ export function emailFixtures(market: Market): {
       negocio: b.negocio,
       agendaUrl: "https://app.example.com/app",
     },
+    invitacionNegocio: {
+      negocio: b.negocio,
+      aceptarUrl: "https://app.example.com/app/bienvenida/abc123",
+    },
     reservaConfirmada: {
       cliente: b.cliente,
       negocio: b.negocio,

@@ -126,21 +126,55 @@ export async function completeOnboarding(
 
   try {
     return await withOwnerTx(userId, async (q) => {
-      // Tidszonen kommer från installationens marknadskonfig (D-025), inte
-      // från klienten: `create_business()` tar emot den som en sjätte,
-      // servergivna parameter (20260929100000_businesses_timezone_markets.sql).
-      const businessRow = await q.query<{ id: string }>(
-        "select public.create_business($1, $2, $3, $4, $5, $6) as id",
-        [
-          input.business.name,
-          input.business.slug,
-          input.business.comuna,
-          input.business.category,
-          input.business.phone,
-          marketConfig.timeZone,
-        ],
+      // F19/WP-36: si la persona ya tiene un negocio creado por
+      // `accept_business_invitation` (comuna/category en blanco a
+      // propósito, ver esa función), el onboarding completa ESE negocio
+      // con un UPDATE en vez de crear uno nuevo con `create_business()`
+      // (RLS "owners update" ya lo permite — accept_business_invitation
+      // hizo dueño a esta cuenta). `getOwnerBusiness`/`isOnboardingDraft`
+      // (page.tsx) ya filtran para que solo se llegue acá con como mucho un
+      // negocio en blanco.
+      const draftRes = await q.query<{ id: string }>(
+        `select b.id from public.memberships m
+           join public.businesses b on b.id = m.business_id
+          where b.comuna = '' and b.category = ''
+          limit 1`,
       );
-      const businessId = businessRow.rows[0]!.id;
+      const draftId = draftRes.rows[0]?.id;
+
+      let businessId: string;
+      if (draftId) {
+        await q.query(
+          `update public.businesses
+              set name = $2, slug = $3, comuna = $4, category = $5, phone = $6
+            where id = $1`,
+          [
+            draftId,
+            input.business.name,
+            input.business.slug,
+            input.business.comuna,
+            input.business.category,
+            input.business.phone,
+          ],
+        );
+        businessId = draftId;
+      } else {
+        // Tidszonen kommer från installationens marknadskonfig (D-025), inte
+        // från klienten: `create_business()` tar emot den som en sjätte,
+        // servergivna parameter (20260929100000_businesses_timezone_markets.sql).
+        const businessRow = await q.query<{ id: string }>(
+          "select public.create_business($1, $2, $3, $4, $5, $6) as id",
+          [
+            input.business.name,
+            input.business.slug,
+            input.business.comuna,
+            input.business.category,
+            input.business.phone,
+            marketConfig.timeZone,
+          ],
+        );
+        businessId = businessRow.rows[0]!.id;
+      }
 
       await insertBusinessHours(q, businessId, input.hours);
       const serviceIds = await insertServices(q, businessId, input.services);
