@@ -126,6 +126,8 @@ export type AgendaScreenProps = {
    * `undefined` i design lab — hela raden döljs då (`event-popover.tsx`). */
   onExportCustomer?: (customerId: string) => Promise<CustomerExportResult>;
   onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
+  /** WP-47: `logout` (server action). `undefined` i design lab. */
+  onLogout?: () => void | Promise<void>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -159,6 +161,7 @@ export function AgendaScreen({
   onMoveBooking,
   onExportCustomer,
   onAnonymizeCustomer,
+  onLogout,
 }: AgendaScreenProps) {
   const router = useRouter();
   const tz = data.timezone as TimeZone;
@@ -468,6 +471,7 @@ export function AgendaScreen({
         mobileTabBar={
           <OwnerMobileTabBar active="agenda" className="lg:hidden" />
         }
+        onLogout={onLogout}
         rail={
           <AgendaRail
             staff={data.staff}
@@ -481,6 +485,10 @@ export function AgendaScreen({
               );
               goTo("dia", focus);
             }}
+            onNewBooking={
+              onCreateManualBooking ? () => setManualDialogOpen(true) : undefined
+            }
+            onLogout={onLogout}
           />
         }
         aside={

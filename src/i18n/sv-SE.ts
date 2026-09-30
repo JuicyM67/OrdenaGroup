@@ -66,6 +66,7 @@ export const nav = {
   notificacionesNuevas: (p: { n: number }): string =>
     `${p.n} ${p.n === 1 ? "ny avisering" : "nya aviseringar"}`,
   masOpciones: "Fler alternativ",
+  menuUsuario: (p: { nombre: string }): string => `Meny för ${p.nombre}`,
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------

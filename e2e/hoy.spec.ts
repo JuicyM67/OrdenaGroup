@@ -89,15 +89,13 @@ test.describe("Hoy — Llegó/No vino bryts inte till flera rader", () => {
 // hör till `npm run visual`, inte till WP-21 (se CLAUDE.md "inga pixeltester").
 
 test.describe("Hoy — klickytor ≥ 44×44", () => {
-  test("flikar, snabbåtgärder, Llegó/No vino och notisknappen", async ({
-    page,
-  }) => {
+  test("flikar, Llegó/No vino och notisknappen", async ({ page }) => {
     await page.goto("/design-lab/hoy");
-    for (const name of ["Hoy", "Agenda", "Clientes", "Caja"]) {
+    // WP-47: den gamla flikraden (Hoy/Agenda/Clientes/Caja, Clientes/Caja 404:ade) byttes
+    // mot OwnerMobileTabBar (Inicio/Agenda/Hoy/Ajustes) — och QuickActions (Crear hora
+    // flash/Lista de espera/Cobrar, ingen av rutterna finns) döljs helt.
+    for (const name of ["Inicio", "Agenda", "Hoy", "Ajustes"]) {
       await expectMinTapTarget(page.getByRole("link", { name, exact: true }));
-    }
-    for (const name of ["Crear hora flash", "Lista de espera · 3", "Cobrar"]) {
-      await expectMinTapTarget(page.getByRole("link", { name }));
     }
     for (const name of ["Llegó", "No vino"]) {
       await expectMinTapTarget(page.getByRole("button", { name }));
@@ -160,7 +158,7 @@ test.describe("Hoy — tangentbord", () => {
     "tangentbordsnavigation, inte pekskärm",
   );
 
-  test("header → Llegó → No vino → snabbåtgärder → flikar, fokusring lime på mörk yta", async ({
+  test("header → Llegó → No vino → flikar, fokusring lime på mörk yta", async ({
     page,
   }) => {
     await page.goto("/design-lab/hoy");
@@ -169,7 +167,9 @@ test.describe("Hoy — tangentbord", () => {
     await tabUntilFocused(page, notif);
 
     const llego = page.getByRole("button", { name: "Llegó" });
-    await tabUntilFocused(page, llego, 5);
+    // WP-47: en extra tabbstopp jämfört med tidigare (avataren är nu en riktig knapp med
+    // kontomenyn — inte längre en `aria-hidden`-span).
+    await tabUntilFocused(page, llego, 6);
     const styles = await llego.evaluate((el) => {
       const s = getComputedStyle(el);
       return { color: s.outlineColor, width: s.outlineWidth };
@@ -180,11 +180,10 @@ test.describe("Hoy — tangentbord", () => {
     const noVino = page.getByRole("button", { name: "No vino" });
     await tabUntilFocused(page, noVino, 5);
 
-    const flash = page.getByRole("link", { name: "Crear hora flash" });
-    await tabUntilFocused(page, flash, 5);
-
-    const hoyTab = page.getByRole("link", { name: "Hoy", exact: true });
-    await tabUntilFocused(page, hoyTab, 20);
+    // WP-47: QuickActions (Crear hora flash m.fl.) döljs — nästa tabbstopp efter No vino är
+    // flikraden (OwnerMobileTabBar, Inicio/Agenda/Hoy/Ajustes).
+    const inicioTab = page.getByRole("link", { name: "Inicio", exact: true });
+    await tabUntilFocused(page, inicioTab, 10);
   });
 });
 

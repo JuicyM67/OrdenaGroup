@@ -13,7 +13,9 @@ import { MainNav } from "@/components/dashboard/main-nav";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import { PageHeader } from "@/components/ui/page-header";
 import { TuLinkCard } from "@/components/shared/tu-link-card";
+import { UserMenu } from "@/components/shared/user-menu";
 import { nav } from "@/i18n";
+import { initialsOf } from "@/lib/format/initials";
 
 import type {
   BookingFormActions,
@@ -42,6 +44,10 @@ export type AjustesScreenProps = {
   /** WP-26 steg 7: "Privacidad y datos" (F12). */
   deletionRequestedAt: string | null;
   privacyActions: PrivacyActions;
+  /** WP-47: namnet till profilmenyn (UserMenu), samma `ownerNameParts` som Inicio/Hoy. */
+  owner: { name: string };
+  /** WP-47: `logout` (server action). `undefined` i design lab. */
+  onLogout?: () => void | Promise<void>;
 };
 
 export function AjustesScreen({
@@ -54,9 +60,12 @@ export function AjustesScreen({
   profileActions,
   deletionRequestedAt,
   privacyActions,
+  owner,
+  onLogout,
 }: AjustesScreenProps) {
   const [business, setBusiness] = useState<AjustesBusiness>(data.business);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
+  const publicPageHref = `/${business.slug}`;
 
   const reload = useCallback(async () => {
     const next = await loadBookingFormBundle();
@@ -65,12 +74,38 @@ export function AjustesScreen({
 
   return (
     <AppShell
-      rail={<MainNav active="ajustes" />}
+      rail={<MainNav active="ajustes" onLogout={onLogout} />}
       mobileTabBar={
         <OwnerMobileTabBar active="ajustes" className="lg:hidden" />
       }
+      onLogout={onLogout}
     >
-      <PageHeader variant="desktop" title={nav.ajustes} />
+      <PageHeader
+        variant="desktop"
+        title={nav.ajustes}
+        actions={
+          <>
+            <span className="hidden lg:contents">
+              <UserMenu
+                name={owner.name}
+                initials={initialsOf(owner.name)}
+                variant="pill"
+                publicPageHref={publicPageHref}
+                onLogout={onLogout}
+              />
+            </span>
+            <span className="contents lg:hidden">
+              <UserMenu
+                name={owner.name}
+                initials={initialsOf(owner.name)}
+                variant="avatar"
+                publicPageHref={publicPageHref}
+                onLogout={onLogout}
+              />
+            </span>
+          </>
+        }
+      />
 
       <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-2">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
@@ -82,7 +117,9 @@ export function AjustesScreen({
 
           <TuLinkCard slug={business.slug} businessName={business.name} />
 
-          <ProfileSection data={profile} actions={profileActions} />
+          <div id="perfil">
+            <ProfileSection data={profile} actions={profileActions} />
+          </div>
 
           <ServicesSection
             services={data.services}
@@ -113,20 +150,22 @@ export function AjustesScreen({
             onReload={reload}
           />
 
-          <StaffSection
-            staff={data.staff}
-            services={data.services}
-            photos={profile.staffPhotos}
-            actions={{
-              create: actions.createStaff,
-              update: actions.updateStaff,
-              setActive: actions.setStaffActive,
-              updateTitle: profileActions.updateStaffTitle,
-              createImageUpload: profileActions.createImageUpload,
-              confirmImageUpload: profileActions.confirmImageUpload,
-              deleteImage: profileActions.deleteImage,
-            }}
-          />
+          <div id="equipo">
+            <StaffSection
+              staff={data.staff}
+              services={data.services}
+              photos={profile.staffPhotos}
+              actions={{
+                create: actions.createStaff,
+                update: actions.updateStaff,
+                setActive: actions.setStaffActive,
+                updateTitle: profileActions.updateStaffTitle,
+                createImageUpload: profileActions.createImageUpload,
+                confirmImageUpload: profileActions.confirmImageUpload,
+                deleteImage: profileActions.deleteImage,
+              }}
+            />
+          </div>
 
           <HoursSection hours={data.hours} action={actions.updateHours} />
 

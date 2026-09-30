@@ -4,11 +4,13 @@ import { describe, expect, it } from "vitest";
 import { MainNav } from "./main-nav";
 
 describe("MainNav", () => {
-  it("bara Inicio har aria-current=page, y hay 7 enlaces con nombre accesible", () => {
+  it("bara Inicio har aria-current=page; 4 enlaces (logo + 3 rutas) con nombre accesible", () => {
     render(<MainNav active="inicio" />);
 
+    // WP-47: Clientes/Horas flash/Caja se ocultan (sin backend) — logo (/app/inicio),
+    // Inicio, Agenda, Ajustes.
     const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(7);
+    expect(links).toHaveLength(4);
     for (const link of links) {
       expect(link).toHaveAccessibleName();
     }
@@ -27,5 +29,15 @@ describe("MainNav", () => {
       .filter((l) => l.getAttribute("aria-current") === "page");
     expect(current).toHaveLength(1);
     expect(current[0]).toHaveAccessibleName("Agenda");
+  });
+
+  it('"Cerrar sesión" es un botón de formulario (WP-47), no un link', () => {
+    render(<MainNav active="inicio" />);
+    expect(
+      screen.getByRole("button", { name: "Cerrar sesión" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Cerrar sesión" }),
+    ).not.toBeInTheDocument();
   });
 });

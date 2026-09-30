@@ -2,13 +2,15 @@
 
 // Sección "Horario" (WP-15b slim): misma forma que onboarding (hours-step.tsx) — un solo
 // intervalo por día, Abierto/Cerrado con un Pill — pero como una sección permanente con su
-// propio "Guardar cambios" en vez de Volver/Continuar.
+// propio "Guardar cambios" en vez de Volver/Continuar. `Time24Input` (WP-47, tillägg B) i
+// stället för `<input type="time">` — 24-timmarsformat oavsett webbläsarens språk.
 import { useState } from "react";
 
 import { validateTimeRange } from "@/components/onboarding/client-validation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
+import { Time24Input } from "@/components/ui/time24-input";
 import { ajustes, horarios } from "@/i18n";
 import { WEEKDAY_LONG } from "@/lib/format/calendar";
 
@@ -97,21 +99,18 @@ export function HoursSection({
             </div>
             {h.open ? (
               <div className="flex items-center gap-3">
-                <input
-                  type="time"
+                <Time24Input
                   aria-label={`${WEEKDAY_LONG[h.weekday - 1]}: inicio`}
                   value={h.start}
                   onChange={(e) => updateDay(i, { start: e.target.value })}
-                  // WP-42: `min-w-0 flex-1` i stället för bara `w-full` — en `<input
-                  // type="time">` har en egen intrinsic minimibredd (spinnern) som annars
-                  // vinner mot flex-krympningen och tvingar raden bredare än 360 px.
+                  // WP-42: `min-w-0 flex-1` i stället för bara `w-full` — annars kan raden
+                  // tvingas bredare än 360 px.
                   className="h-11 min-w-0 flex-1 rounded-control border-2 border-transparent bg-surface px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                 />
                 <span className="text-13 text-muted" aria-hidden="true">
                   –
                 </span>
-                <input
-                  type="time"
+                <Time24Input
                   aria-label={`${WEEKDAY_LONG[h.weekday - 1]}: término`}
                   value={h.end}
                   onChange={(e) => updateDay(i, { end: e.target.value })}

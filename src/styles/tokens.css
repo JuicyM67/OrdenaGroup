@@ -805,3 +805,11 @@
 @utility bottom-safe-b {
   bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
 }
+
+/* WP-47 (tillägg D): namngiven variant för Radix `data-state="closed"` (bottenark-dialoger,
+   manual-booking-dialog.tsx/move-dialog.tsx som glider ner vid stängning) — samma motiv som
+   `toggle-on` i globals.css: `data-[state=closed]:…` matchar annars felaktigt lint-regeln
+   för godtyckliga Tailwind-värden (D-015, no-restricted-syntax). Läggs i tokens.css (inte
+   globals.css, utanför den här WP:ns filgräns) — bör flyttas bredvid `toggle-on` om/när
+   globals.css ändå redigeras. */
+@custom-variant sheet-closed (&[data-state="closed"]);

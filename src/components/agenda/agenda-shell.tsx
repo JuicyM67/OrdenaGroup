@@ -17,6 +17,8 @@ export type AgendaShellProps = {
   /** `<OwnerMobileTabBar active="agenda" className="lg:hidden" />`. Valfri: design lab
    * skickar ingen. */
   mobileTabBar?: ReactNode;
+  /** WP-47: `logout` (server action), vidarebefordras till `OwnerMobileTopBar`. */
+  onLogout?: () => void | Promise<void>;
   className?: string;
 };
 
@@ -25,6 +27,7 @@ export function AgendaShell({
   aside,
   children,
   mobileTabBar,
+  onLogout,
   className,
 }: AgendaShellProps) {
   return (
@@ -35,7 +38,7 @@ export function AgendaShell({
       )}
     >
       <div className="hidden lg:contents">{rail}</div>
-      <OwnerMobileTopBar />
+      <OwnerMobileTopBar onLogout={onLogout} />
       <div className="hidden lg:flex lg:w-75 lg:shrink-0 lg:flex-col lg:gap-3">
         {aside}
       </div>

@@ -22,6 +22,8 @@ export type AppShellProps = {
   /** `<OwnerMobileTabBar active="…" />` — döljs automatiskt på skrivbordet av anroparen
    * (samma mönster som `rail`). Valfri: design lab skickar ingen. */
   mobileTabBar?: ReactNode;
+  /** WP-47: `logout` (server action), vidarebefordras till `OwnerMobileTopBar`. */
+  onLogout?: () => void | Promise<void>;
   className?: string;
 };
 
@@ -29,6 +31,7 @@ export function AppShell({
   rail,
   children,
   mobileTabBar,
+  onLogout,
   className,
 }: AppShellProps) {
   return (
@@ -39,7 +42,7 @@ export function AppShell({
       )}
     >
       <div className="hidden lg:contents">{rail}</div>
-      <OwnerMobileTopBar />
+      <OwnerMobileTopBar onLogout={onLogout} />
       <main className="flex flex-1 flex-col gap-6 px-5 py-5 pb-28 lg:overflow-hidden lg:rounded-shell lg:bg-canvas lg:px-8 lg:py-7 lg:pb-7">
         {children}
       </main>

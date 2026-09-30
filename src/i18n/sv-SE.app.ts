@@ -89,6 +89,7 @@ export const nav: Widen<typeof Es.nav> = {
   notificacionesNuevas: (p: { n: number }): string =>
     `${p.n} ${p.n === 1 ? "ny avisering" : "nya aviseringar"}`,
   masOpciones: "Fler alternativ",
+  menuUsuario: (p: { nombre: string }): string => `Meny för ${p.nombre}`,
 };
 
 // ---------------------------------------------------------------------------
@@ -396,6 +397,7 @@ export const inicio: Widen<typeof Es.inicio> = {
     fila: (p: { servicio: string; profesional: string }): string =>
       `${p.servicio} · med ${p.profesional}`,
     vacio: "Du har inga bokningar idag än.",
+    verEnAgenda: "Visa i kalendern",
   },
   proximasReservas: {
     titulo: "Kommande bokningar",
@@ -425,6 +427,7 @@ export const inicio: Widen<typeof Es.inicio> = {
     mensajeWhatsapp: (p: { negocio: string; url: string }): string =>
       `Hej, du kan boka tid hos ${p.negocio} här: ${p.url}`,
     abrir: "Se min bokningssida",
+    errorCopiar: "Vi kunde inte kopiera länken. Kopiera den manuellt.",
   },
 };
 

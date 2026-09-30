@@ -91,7 +91,12 @@ test.describe("tidszon (America/Santiago oavsett webbläsarens tidszon)", () => 
   }
 });
 
-test("tangentbord: nav → header → VER DETALLE → Enviar recordatorio → Ver agenda → radernas knappar → kalender → Compartir", async ({
+// WP-47: "Buscar" (sök saknar backend), "VER DETALLE" (`#detalle-semana`, ingen sektion med
+// det id:t) och "Enviar recordatorio"/"Compartir hora flash" (winback/horas flash saknar
+// backend) döljs — WP-xx: visas när funktionen finns. Kontomenyn (UserMenu, "…" i
+// PageHeader) är ny men testas inte här (Radix Popover, inget tabbstopp-beteende att
+// regressionstesta ovanpå det som redan täcks av menu.tsx/user-menu.tsx-komponenterna).
+test("tangentbord: nav → header → Ver agenda → radernas knappar → kalender", async ({
   page,
 }) => {
   await page.goto("/design-lab/main");
@@ -100,19 +105,13 @@ test("tangentbord: nav → header → VER DETALLE → Enviar recordatorio → Ve
     page,
     page.getByRole("link", { name: "Inicio", exact: true }),
   );
-  await tabUntilFocused(page, page.getByRole("button", { name: "Buscar" }));
+  // Fixture-läget (referencia) har notifications.count: 1 → aria-labelns singularform.
+  await tabUntilFocused(
+    page,
+    page.getByRole("button", { name: "1 notificación nueva" }),
+  );
 
-  const verDetalle = page.getByRole("link", { name: "VER DETALLE" });
-  await tabUntilFocused(page, verDetalle);
-  await assertVisibleFocusRing(verDetalle);
-
-  const enviarRecordatorio = page.getByRole("button", {
-    name: "Enviar recordatorio",
-  });
-  await tabUntilFocused(page, enviarRecordatorio);
-  await assertVisibleFocusRing(enviarRecordatorio);
-
-  const verAgenda = page.getByRole("link", { name: "Ver agenda" });
+  const verAgenda = page.getByRole("link", { name: "Ver agenda" }).first();
   await tabUntilFocused(page, verAgenda);
   await assertVisibleFocusRing(verAgenda);
 
@@ -133,14 +132,9 @@ test("tangentbord: nav → header → VER DETALLE → Enviar recordatorio → Ve
     page,
     page.getByRole("button", { name: "Mes anterior" }),
   );
-  await tabUntilFocused(
-    page,
-    page.getByRole("button", { name: "Viernes 2 de octubre" }),
-  );
-
-  const compartir = page.getByRole("link", { name: "Compartir hora flash" });
-  await tabUntilFocused(page, compartir);
-  await assertVisibleFocusRing(compartir);
+  const today = page.getByRole("button", { name: "Viernes 2 de octubre" });
+  await tabUntilFocused(page, today);
+  await assertVisibleFocusRing(today);
 });
 
 // "1280×800 en /app/inicio: sin scroll horizontal y el hero no se recorta": flyttad till
@@ -194,9 +188,10 @@ test("?estado=sin-flash: visar inicio.flashCard.vacio i stället för datum/tid/
     page.getByText("No tienes ninguna hora flash activa todavía."),
   ).toBeVisible();
   await expect(page.getByText(/−\d+%/)).toHaveCount(0);
+  // WP-47: länken ("Crear hora flash") döljs — /app/flash saknar backend.
   await expect(
     page.getByRole("link", { name: "Crear hora flash" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
 });
 
 test.describe("axe (wcag2a, wcag2aa, wcag21aa)", () => {

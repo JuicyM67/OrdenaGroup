@@ -5,12 +5,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { logout } from "@/app/auth/actions";
 import { AjustesScreen } from "@/components/settings/ajustes-screen";
 import { nav } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { loadAjustesData } from "@/server/owner/ajustes";
 import { loadProfileSettings } from "@/server/owner/profile";
+import { ownerNameParts } from "@/server/owner/shared";
 
 import {
   createServiceAction,
@@ -76,6 +78,7 @@ export default async function AjustesPage() {
   const business = await getOwnerBusiness(user.id);
   if (!business) redirect("/app/onboarding");
 
+  const owner = ownerNameParts(user.email);
   const data = await loadAjustesData(user.id, business.id);
   const profile = await loadProfileSettings(user.id, business.id);
   const bundleResult = await loadBookingFormBundleAction();
@@ -142,6 +145,8 @@ export default async function AjustesPage() {
         requestDeletion: requestBusinessDeletionAction,
         cancelDeletion: cancelBusinessDeletionAction,
       }}
+      owner={owner}
+      onLogout={logout}
     />
   );
 }

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Select } from "@/components/ui/select";
 import { TextField } from "@/components/ui/text-field";
+import { useSheetDrag } from "@/components/ui/use-sheet-drag";
 import { agenda, clientes, comun, reserva } from "@/i18n";
 import type { LocalDate, LocalTime } from "@/lib/format/dates";
 import type { E164 } from "@/lib/format/phone";
@@ -83,6 +84,12 @@ export function ManualBookingDialog({
   onSubmit,
 }: ManualBookingDialogProps) {
   const descriptionId = useId();
+  // WP-47 (tillägg D): dra-för-att-stänga på mobil (bottenark). Destrukturerad direkt (inte
+  // `sheetDrag.panelRef`/`sheetDrag.handleProps` i JSX) — `react-hooks/refs` känner bara
+  // igen det förstnämnda mönstret som en "riktig" ref-användning utanför render.
+  const { panelRef, handleProps: dragHandleProps } = useSheetDrag(() =>
+    onOpenChange(false),
+  );
   const [serviceId, setServiceId] = useState("");
   const [staffId, setStaffId] = useState(ANY_STAFF);
   const [date, setDate] = useState<string>(defaultDate);
@@ -184,12 +191,24 @@ export function ManualBookingDialog({
     >
       <Dialog.Portal>
         {/* WP-42: bottenark på mobil (items-end, rundade hörn bara upptill), centrerad dialog
-            från sm och uppåt. */}
+            från sm och uppåt. WP-47: `bg-canvas` (inte `bg-surface`) — fälten (TextField/
+            Select) är `bg-surface` (vitt), och utan kontrast mot en likadan panelbakgrund
+            syntes kanterna inte alls (granskningsfynd). Glider ner vid stängning
+            (`sheet-closed:translate-y-full`, Radix Presence väntar på att CSS-
+            transitionen är klar innan den avmonterar) och kan dras ner för att stängas
+            (`useSheetDrag`, handtaget nedan) — handtaget är `sm:hidden`, från `sm` och
+            uppåt är arket centrerat, inte ett bottenark. */}
         <Dialog.Overlay className="fixed inset-0 z-20 flex items-end justify-center bg-ink/45 sm:items-center sm:p-4">
           <Dialog.Content
+            ref={panelRef}
             aria-describedby={descriptionId}
-            className="flex max-h-full w-full max-w-md flex-col gap-4 overflow-y-auto rounded-t-panel bg-surface p-6 shadow-popover sm:rounded-panel"
+            className="flex max-h-full w-full max-w-md translate-y-0 flex-col gap-4 overflow-y-auto rounded-t-panel bg-canvas p-6 shadow-popover transition-transform duration-200 ease-out sheet-closed:translate-y-full sm:rounded-panel"
           >
+            <div
+              aria-hidden="true"
+              className="-mt-2 mb-1 h-1.5 w-10 shrink-0 touch-none self-center rounded-full bg-line-strong sm:hidden"
+              {...dragHandleProps}
+            />
             <div className="flex items-start justify-between">
               <Dialog.Title className="text-17 font-bold">
                 {agenda.manual.tituloNueva}

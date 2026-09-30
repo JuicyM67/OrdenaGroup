@@ -1,14 +1,20 @@
 // WP-21: riktig data (D-020s grind och fixtures flyttade till /design-lab/main, se
 // docs/decisions/DECISIONS.md D-024). Ägare utan företag → /app/onboarding.
+//
+// WP-47: Llegó/No vino/Mover (samma server actions som Agenda) och utloggning kopplas här
+// och skickas ner som props (closures), samma mönster som /app/agenda/page.tsx.
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { logout } from "@/app/auth/actions";
 import { InicioScreen } from "@/components/dashboard/inicio-screen";
 import { inicio } from "@/i18n";
 import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import { loadOwnerInicio } from "@/server/owner/inicio";
+import { moveOwnerBooking } from "@/server/owner/manual-booking";
 import { ownerNameParts } from "@/server/owner/shared";
 
 export const metadata: Metadata = {
@@ -34,10 +40,30 @@ export default async function InicioPage() {
   const owner = ownerNameParts(user.email);
   const data = await loadOwnerInicio(user.id, business.id, today, now, owner);
 
+  const onArrival = async (bookingId: string, status: ArrivalStatus) => {
+    "use server";
+    await markArrival(user.id, business.id, bookingId, status);
+  };
+
+  const onMoveBooking = async (input: unknown) => {
+    "use server";
+    const result = await moveOwnerBooking(
+      user.id,
+      business.id,
+      new Date(),
+      input,
+    );
+    if (!result.ok) return { ok: false as const, error: result.error };
+    return { ok: true as const };
+  };
+
   return (
     <InicioScreen
       data={data}
       bookingLink={{ slug: business.slug, businessName: business.name }}
+      onArrival={onArrival}
+      onMoveBooking={onMoveBooking}
+      onLogout={logout}
     />
   );
 }

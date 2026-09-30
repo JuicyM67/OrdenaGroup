@@ -1,12 +1,13 @@
 // Se DESIGN.md §7 "HeroSummary"/"FeatureCard" och docs/tasks/plans/WP-11.md §4 steg 4.
 // Beloppet/timmarna är redan lime-markerade i copy-strängen via `splitHighlight` — ingen
 // egen mallsträng byggs här (hård regel "UI räknar aldrig ut pengar").
-import { ArrowUpRight, List, MessageSquare, Zap } from "lucide-react";
-import Link from "next/link";
+//
+// WP-47: "Ver detalle" (länkade till `#detalle-semana`, ingen sektion med det id:t finns)
+// och "Enviar recordatorio" (`onEnviarRecordatorio`, winback/D-005 saknar backend) döljs
+// tills funktionerna finns — WP-xx: visas när funktionen finns.
+import { List, MessageSquare, Zap } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { strokeArrow, strokeCard } from "@/components/ui/icons";
-import { IconButton } from "@/components/ui/icon-button";
+import { strokeCard } from "@/components/ui/icons";
 import { Card } from "@/components/ui/card";
 import { inicio } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
@@ -22,16 +23,12 @@ export type HeroSummaryProps = {
   ownerFirstName: string;
   week: InicioData["week"];
   features: InicioData["features"];
-  detailHref: string;
-  onEnviarRecordatorio?: () => void;
 };
 
 export function HeroSummary({
   ownerFirstName,
   week,
   features,
-  detailHref,
-  onEnviarRecordatorio,
 }: HeroSummaryProps) {
   const variant = heroVariant(week);
   const horasText = inicio.hero.horas({ n: week.recoveredHours });
@@ -76,16 +73,7 @@ export function HeroSummary({
             {after}
           </p>
         </div>
-        <Button asChild variant="inverse" size="md" className="self-start">
-          <Link href={detailHref} prefetch={false}>
-            {inicio.hero.verDetalle}
-            <ArrowUpRight
-              aria-hidden="true"
-              className="size-4"
-              strokeWidth={strokeArrow}
-            />
-          </Link>
-        </Button>
+        {/* WP-47: "Ver detalle" döljs — WP-xx: visas när funktionen finns. */}
       </div>
 
       <div className="flex flex-col gap-3 lg:shrink-0 lg:flex-row lg:gap-4">
@@ -119,25 +107,8 @@ export function HeroSummary({
           meta={inicio.features.teEchamosDeMenos.resumen({
             n: features.winback.count,
           })}
-          action={
-            <IconButton
-              label={inicio.features.teEchamosDeMenos.enviarRecordatorio}
-              tone="ink"
-              size={34}
-              onClick={onEnviarRecordatorio}
-              // Knappen ligger i ett lime FeatureCard, men FeatureCard i sig sitter inuti
-              // hero-kortets `data-surface="dark"` (card.tsx): utan denna override läcker
-              // `on-dark:focus-visible:outline-lime` (icon-button.tsx) igenom och ger lime
-              // fokusring på lime bakgrund (osynlig, QA).
-              className="on-dark:focus-visible:outline-ink"
-            >
-              <ArrowUpRight
-                aria-hidden="true"
-                className="size-3.75"
-                strokeWidth={2.4}
-              />
-            </IconButton>
-          }
+          // WP-47: "Enviar recordatorio" döljs (winback/D-005 saknar backend) —
+          // WP-xx: visas när funktionen finns.
         />
       </div>
     </Card>
