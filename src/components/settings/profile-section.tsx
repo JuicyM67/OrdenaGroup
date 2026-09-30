@@ -3,7 +3,7 @@
 // Sección "Perfil" (WP-41 steg 4): lo que ve el cliente en `/{slug}` — sobre
 // nosotros, Instagram, dirección, teléfono, portada/logo y galería. Sin
 // referencia *.dc.html para Ajustes (mismo caso que las demás secciones,
-// ver `ajustes-screen.tsx`): un solo `Card` por bloque, mismo formspråk.
+// ver `ajustes-shell.tsx`): un solo `Card` por bloque, mismo formspråk.
 //
 // Subida de imágenes (plan WP-41, paso 2): `createImageUpload` firma una URL
 // de Storage, el cliente sube el archivo directo con

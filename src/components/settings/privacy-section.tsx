@@ -1,8 +1,9 @@
 "use client";
 
-// Sección "Privacidad y datos" (WP-26 steg 7, F12): exportera företagets data (JSON-
-// nedladdning) och radera kontot med 30 dagars ångerfrist. Samma "ett Card per block"-
-// formspråk som resten av Ajustes (ingen egen referens, se `ajustes-screen.tsx`).
+// Sección "Privacidad y datos" (WP-26 steg 7, F12; WP-55: egen flik, `/app/ajustes/
+// privacidad`): exportera företagets data (JSON-nedladdning) och radera kontot med 30
+// dagars ångerfrist. Samma "ett Card per block"-formspråk som resten av Ajustes (ingen
+// egen referens, se `ajustes-shell.tsx`).
 // `ConfirmDialog` (src/components/ui/confirm-dialog.tsx) delas med kundens anonymisering
 // (agenda-popovern).
 import { useState } from "react";

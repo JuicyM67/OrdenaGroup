@@ -1,97 +1,15 @@
-// /app/ajustes (WP-15b slim, F1/F2/F3): la ägaren ändra sitt företag efter onboarding.
-// Inloggning krävs redan av src/app/(app)/layout.tsx. Ägare utan företag → /app/onboarding
-// (samma mönster som /app/inicio). WP-40 lägger till kategorier och bokningsformuläret
-// (D-031): `loadBookingFormBundleAction` läser vid sidladdning, resten är server actions.
-import type { Metadata } from "next";
+// /app/ajustes (WP-55): pekar om till den första flik den inloggade får se
+// (`/app/ajustes/negocio`, `/perfil`, … — se `access.ts`/`ajustes-tabs.tsx`). Ajustes var
+// tidigare en enda lång skärm med alla sektioner staplade som kort (WP-15b); ägarens
+// feedback 2026-09-30 ("extremt lång — bättre att separera i flikar") delade upp den i nio
+// egna rutter under den här mappen.
 import { redirect } from "next/navigation";
 
-import { logout } from "@/app/auth/actions";
-import { AjustesScreen } from "@/components/settings/ajustes-screen";
-import { nav } from "@/i18n";
+import { firstAjustesTabHref } from "@/components/settings/ajustes-tabs";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
-import { loadAjustesData } from "@/server/owner/ajustes";
-import { loadProfileSettings } from "@/server/owner/profile";
-import { listPendingRequests } from "@/server/owner/requests";
-import { ownerNameParts } from "@/server/owner/shared";
-import { loadTeamData } from "@/server/team/members";
-
-import {
-  confirmRequestAction,
-  createServiceAction,
-  createStaffAction,
-  declineRequestAction,
-  setServiceActiveAction,
-  setStaffActiveAction,
-  updateBusinessSettingsAction,
-  updateHoursAction,
-  updateMemberSettingsAction,
-  updateServiceAction,
-  updateStaffAction,
-} from "./actions";
-import {
-  inviteStaffAction,
-  loadTeamDataAction,
-  removeMemberAccessAction,
-  resendInvitationAction,
-  revokeInvitationAction,
-  updateMemberPermsAction,
-} from "./team-actions";
-import {
-  confirmMyPhotoUploadAction,
-  createMyPhotoUploadAction,
-  deleteMyPhotoAction,
-  loadMyProfileAction,
-  updateMyTitleAction,
-} from "../my-profile-actions";
-import {
-  activatePresetAction,
-  createCategoryAction,
-  createQuestionAction,
-  deleteCategoryAction,
-  deleteQuestionAction,
-  getQuestionsForServiceAction,
-  loadBookingFormBundleAction,
-  renameCategoryAction,
-  reorderCategoriesAction,
-  reorderQuestionsAction,
-  setQuestionActiveAction,
-  setQuestionTargetsAction,
-  setServiceCategoryAction,
-  updateQuestionAction,
-} from "./booking-form-actions";
-import {
-  confirmImageUploadAction,
-  createImageUploadAction,
-  deleteImageAction,
-  reorderImagesAction,
-  updateBusinessProfileAction,
-  updateStaffTitleAction,
-} from "./profile-actions";
-import {
-  cancelBusinessDeletionAction,
-  exportBusinessAction,
-  loadPrivacyStatusAction,
-  requestBusinessDeletionAction,
-} from "./privacy-actions";
-
-export const metadata: Metadata = {
-  title: nav.ajustes,
-  robots: { index: false, follow: false },
-};
 
 export const dynamic = "force-dynamic";
-
-async function loadBookingFormBundle() {
-  "use server";
-  const result = await loadBookingFormBundleAction();
-  return result.ok ? result.data : null;
-}
-
-async function loadTeamForPage(userId: string, businessId: string) {
-  "use server";
-  return loadTeamData(userId, businessId);
-}
 
 export default async function AjustesPage() {
   const supabase = await createSupabaseServerClient();
@@ -102,130 +20,7 @@ export default async function AjustesPage() {
 
   const current = await getCurrentMember(user.id);
   if (!current) redirect("/app/onboarding");
-  const { business, view } = current;
 
-  // WP-46: Ajustes är i praktiken bara konfiguration — en personal utan
-  // NÅGON av de flaggorna (och som inte är ägare) har ingenting att göra här
-  // (errores.permiso.redirigido, samma mönster som resten av appens
-  // "sidor utan behörighet → /app/agenda").
-  const hasAnyAjustesAccess =
-    view.role === "owner" ||
-    view.perms.can_edit_settings ||
-    view.perms.can_edit_catalog ||
-    view.perms.can_manage_team;
-  if (!hasAnyAjustesAccess) redirect("/app/agenda");
-
-  const owner = ownerNameParts(user.email);
-  const data = await loadAjustesData(user.id, business.id);
-  const profile = await loadProfileSettings(user.id, business.id);
-  const team =
-    view.role === "owner" ? await loadTeamForPage(user.id, business.id) : null;
-  const myProfile = await loadMyProfileAction();
-  const bundleResult = await loadBookingFormBundleAction();
-  const bookingForm = bundleResult.ok
-    ? bundleResult.data
-    : {
-        settings: {
-          categories: [],
-          services: [],
-          questions: [],
-          maxPerService: 5,
-        },
-        businessCategory: null,
-      };
-  // WP-26 steg 7: "Privacidad y datos" — `null` (ingen begärd radering) om
-  // statusen inte kunde läsas, hellre än att krascha sidan.
-  const privacyStatus = await loadPrivacyStatusAction();
-  const deletionRequestedAt = privacyStatus.ok
-    ? privacyStatus.deletionRequestedAt
-    : null;
-  const pendingRequests = await listPendingRequests(
-    user.id,
-    business.id,
-    new Date(),
-  );
-
-  const onReloadTeam = async () => {
-    "use server";
-    const result = await loadTeamDataAction();
-    return result.ok ? result.data : null;
-  };
-
-  return (
-    <AjustesScreen
-      data={data}
-      actions={{
-        updateBusinessSettings: updateBusinessSettingsAction,
-        createService: createServiceAction,
-        updateService: updateServiceAction,
-        setServiceActive: setServiceActiveAction,
-        createStaff: createStaffAction,
-        updateStaff: updateStaffAction,
-        setStaffActive: setStaffActiveAction,
-        updateHours: updateHoursAction,
-        updateMemberSettings: updateMemberSettingsAction,
-      }}
-      bookingForm={bookingForm}
-      bookingFormActions={{
-        createCategory: createCategoryAction,
-        renameCategory: renameCategoryAction,
-        deleteCategory: deleteCategoryAction,
-        reorderCategories: reorderCategoriesAction,
-        setServiceCategory: setServiceCategoryAction,
-        createQuestion: createQuestionAction,
-        activatePreset: activatePresetAction,
-        updateQuestion: updateQuestionAction,
-        setQuestionActive: setQuestionActiveAction,
-        setQuestionTargets: setQuestionTargetsAction,
-        reorderQuestions: reorderQuestionsAction,
-        deleteQuestion: deleteQuestionAction,
-        getQuestionsForService: getQuestionsForServiceAction,
-      }}
-      loadBookingFormBundle={loadBookingFormBundle}
-      profile={profile}
-      profileActions={{
-        updateBusinessProfile: updateBusinessProfileAction,
-        updateStaffTitle: updateStaffTitleAction,
-        createImageUpload: createImageUploadAction,
-        confirmImageUpload: confirmImageUploadAction,
-        deleteImage: deleteImageAction,
-        reorderImages: reorderImagesAction,
-      }}
-      deletionRequestedAt={deletionRequestedAt}
-      privacyActions={{
-        exportBusiness: exportBusinessAction,
-        requestDeletion: requestBusinessDeletionAction,
-        cancelDeletion: cancelBusinessDeletionAction,
-      }}
-      owner={owner}
-      onLogout={logout}
-      pendingRequests={pendingRequests}
-      onConfirmRequest={confirmRequestAction}
-      onDeclineRequest={declineRequestAction}
-      team={team}
-      teamActions={
-        view.role === "owner"
-          ? {
-              onInvite: inviteStaffAction,
-              onResend: resendInvitationAction,
-              onRevoke: revokeInvitationAction,
-              onUpdatePerms: updateMemberPermsAction,
-              onRemoveAccess: removeMemberAccessAction,
-            }
-          : undefined
-      }
-      onReloadTeam={view.role === "owner" ? onReloadTeam : undefined}
-      myProfile={myProfile ?? undefined}
-      myProfileActions={
-        myProfile
-          ? {
-              updateTitle: updateMyTitleAction,
-              createPhotoUpload: createMyPhotoUploadAction,
-              confirmPhotoUpload: confirmMyPhotoUploadAction,
-              deletePhoto: deleteMyPhotoAction,
-            }
-          : undefined
-      }
-    />
-  );
+  const href = firstAjustesTabHref(current.view);
+  redirect(href ?? "/app/agenda");
 }

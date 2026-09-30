@@ -1519,16 +1519,18 @@ export const horarios: Widen<typeof Es.horarios> = {
 
 export const ajustes: Widen<typeof Es.ajustes> = {
   secciones: {
-    negocio: "Ditt företag",
+    // WP-55: flikarna i /app/ajustes (ägarens feedback 2026-09-30) — korta nog för en
+    // vänsterkolumn med ikon + namn, samma sträng som respektive sektions egen rubrik.
+    negocio: "Företag",
     link: "Din bokningslänk",
     reglas: "Bokningsregler",
     servicios: "Tjänster",
-    equipo: "Personal",
+    equipo: "Team",
     horario: "Öppettider",
     mercadopago: "Betalningar",
     cuenta: "Konto",
     formularioReserva: "Bokningsformulär",
-    privacidad: "Integritet och data",
+    privacidad: "Integritet",
     socios: "Medlemmar",
   },
   socios: {

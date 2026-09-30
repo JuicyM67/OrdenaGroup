@@ -95,7 +95,7 @@ export function UserMenu({
             {equipo.miPerfil}
           </MenuButtonItem>
         ) : (
-          <MenuLinkItem href="/app/ajustes#perfil" prefetch={false}>
+          <MenuLinkItem href="/app/ajustes/perfil" prefetch={false}>
             <UserRound
               aria-hidden="true"
               className={ICON_CLASS}

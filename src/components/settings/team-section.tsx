@@ -1,12 +1,13 @@
 "use client";
 
-// Ajustes → Equipo: åtkomst till kontot (WP-46 steg 6, D-034). Bjud in en
-// personalrad utan konto, hantera väntande inbjudningar (skicka igen/
-// återkalla) och redigera/ta bort åtkomst för befintliga medlemmar. Bara
-// ägaren ser den här sektionen (`AjustesScreen` renderar den bara när
-// `data.member.role === "owner"`, samma villkor som servern kräver i
-// `src/server/team/members.ts`) — renderas direkt under `StaffSection` i
-// samma `id="equipo"`-yta (ingen egen "Equipo"-rubrik, StaffSections räcker).
+// Ajustes → Equipo: åtkomst till kontot (WP-46 steg 6, D-034; WP-55: egen flik,
+// `/app/ajustes/equipo`, tillsammans med `StaffSection`). Bjud in en personalrad utan
+// konto, hantera väntande inbjudningar (skicka igen/återkalla) och redigera/ta bort
+// åtkomst för befintliga medlemmar. Bara ägaren ser den här sektionen
+// (`src/app/(app)/app/ajustes/equipo/page.tsx` renderar den bara när
+// `view.role === "owner"`, samma villkor som servern kräver i
+// `src/server/team/members.ts`) — renderas direkt under `StaffSection`, ingen egen
+// "Equipo"-rubrik, StaffSections räcker.
 import { useId, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
