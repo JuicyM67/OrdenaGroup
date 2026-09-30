@@ -358,6 +358,7 @@ export type Database = {
           about: string | null;
           accent_color: string | null;
           address: string | null;
+          auto_confirm_bookings: boolean;
           cancel_window_hours: number;
           category: string;
           comuna: string;
@@ -386,6 +387,7 @@ export type Database = {
           about?: string | null;
           accent_color?: string | null;
           address?: string | null;
+          auto_confirm_bookings?: boolean;
           cancel_window_hours?: number;
           category: string;
           comuna: string;
@@ -414,6 +416,7 @@ export type Database = {
           about?: string | null;
           accent_color?: string | null;
           address?: string | null;
+          auto_confirm_bookings?: boolean;
           cancel_window_hours?: number;
           category?: string;
           comuna?: string;
@@ -1093,7 +1096,12 @@ export type Database = {
       booking_question_applies_to: "all" | "targets";
       booking_source: "web" | "manual" | "waitlist" | "flash";
       booking_status:
-        "pending_payment" | "confirmed" | "completed" | "no_show" | "cancelled";
+        | "requested"
+        | "pending_payment"
+        | "confirmed"
+        | "completed"
+        | "no_show"
+        | "cancelled";
       business_plan: "free" | "emprende" | "equipo" | "local";
       business_status: "active" | "frozen";
       consent_channel: "web" | "whatsapp" | "manual";
@@ -1249,6 +1257,7 @@ export const Constants = {
       booking_question_applies_to: ["all", "targets"],
       booking_source: ["web", "manual", "waitlist", "flash"],
       booking_status: [
+        "requested",
         "pending_payment",
         "confirmed",
         "completed",

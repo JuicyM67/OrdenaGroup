@@ -1,0 +1,14 @@
+-- WP-45 · Steg 1 (db-engineer) · Nytt statusvärde 'requested'
+-- F#: F4/F5/F6/F7 (bokningsförfrågningar och bekräftelse).
+-- Plan: docs/tasks/plans/WP-45.md, steg 1.
+--
+-- `alter type ... add value` kan inte användas i samma transaktion som den
+-- körs i (Postgres-begränsning), därför en egen migrationsfil som bara gör
+-- det här — nästa migration (20260930140100) återskapar `no_overlap` och
+-- lägger till kolumnen/index som behöver kunna referera till 'requested'.
+--
+-- Placeras FÖRE 'pending_payment' i enumets ordning: en förfrågan är det
+-- tidigaste steget innan företaget bekräftar (och en eventuell handpenning
+-- tas ut, se Ägarens svar punkt 3 i planen — handpenning hoppar aldrig över
+-- bekräftelsen, den kommer EFTER den).
+alter type public.booking_status add value 'requested' before 'pending_payment';
