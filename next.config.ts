@@ -24,7 +24,9 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: "/:path*",
+        // Bara sidor/API, inte /_next/static: headers på varje JS-chunk räknas
+        // annars in i JS-budgeten (D-032, encodedDataLength) utan att skydda något.
+        source: "/((?!_next/static|_next/image|favicon.ico).*)",
         headers: [
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
           { key: "X-Frame-Options", value: "DENY" },
