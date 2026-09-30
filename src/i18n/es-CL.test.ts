@@ -129,6 +129,7 @@ describe("estructura", () => {
 const MUESTRA_GENERICA: Record<string, unknown> = {
   n: 3,
   descuento: "$1.800",
+  beneficio: "10 % de descuento",
   h: 1,
   m: 30,
   offset: -3,
