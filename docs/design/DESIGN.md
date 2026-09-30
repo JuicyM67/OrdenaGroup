@@ -526,3 +526,5 @@ klassgrupper som `text-13` (font-size) och `text-ink` (text-color), annars skull
 `tailwind-merge` tro att de tillhör samma grupp och ta bort den ena (se WP-02 R3). Nya tokens i
 `tokens.css` som ska kunna kombineras (nya textstorlekar, färger, radier, tracking, leading)
 måste läggas till i motsvarande lista i `cn.ts` i samma PR.
+
+> WP-47: `@custom-variant sheet-closed` (tokens.css) styr bottenarkets utglidning; `use-sheet-drag.ts` ger dra-ner-för-att-stänga. Nya baskomponenter: `Menu`, `Tooltip`, `Time24Input`.
