@@ -1,5 +1,7 @@
 import "server-only";
 
+import { negocio } from "@/i18n";
+
 import type {
   BookingAvailability,
   BookingBusiness,
@@ -265,7 +267,12 @@ export async function loadReservaPageData(
     slug,
     name: biz.name,
     comuna: biz.comuna,
-    category: biz.category,
+    // Etiketten slås upp här (servern) så att rubrik-listan inte hamnar i
+    // klientbunten (D-032).
+    category: biz.category
+      ? ((negocio.rubros as Record<string, string | undefined>)[biz.category] ??
+        null)
+      : null,
     // D-011: bara Santiago-marknaden i v1, ingen egen kolumn för staden.
     city: "Santiago",
     ...hours.summary,

@@ -4,7 +4,7 @@
  * UI räknar aldrig ut tillgänglighet eller pris (hård regel 2): allt här
  * bara formaterar text ur redan färdig data (`BookingProfile`).
  */
-import { calendario, horarios, negocio, perfil } from "@/i18n";
+import { calendario, horarios, perfil } from "@/i18n";
 import {
   APP_TZ,
   formatLocalDate,
@@ -143,9 +143,8 @@ export function mapsUrl(address: string): string {
 export function businessCategoryLabel(
   category: BookingBusiness["category"],
 ): string | null {
-  if (!category) return null;
-  const rubros = negocio.rubros as Record<string, string | undefined>;
-  return rubros[category] ?? null;
+  // `category` är redan etiketten (page-data.ts slår upp den på servern).
+  return category || null;
 }
 
 /** Avatartonerna för Personal-korten (design: lilac/peach/sky), cyklade per index —
