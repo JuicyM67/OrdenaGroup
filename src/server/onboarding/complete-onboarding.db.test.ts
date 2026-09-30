@@ -144,7 +144,10 @@ describe("completeOnboarding (integration, lokal Supabase)", () => {
     const { acceptedTerms: _omit, ...withoutTerms } = validInput(slug);
     void _omit;
 
-    for (const input of [withoutTerms, { ...withoutTerms, acceptedTerms: false }]) {
+    for (const input of [
+      withoutTerms,
+      { ...withoutTerms, acceptedTerms: false },
+    ]) {
       expect(await completeOnboarding(userId, input)).toEqual({
         ok: false,
         code: "terms.not_accepted",

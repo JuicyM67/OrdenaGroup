@@ -125,8 +125,7 @@ export type BusinessExportData = {
 };
 
 export type ExportBusinessResult =
-  | { ok: true; data: BusinessExportData }
-  | { ok: false; code: string };
+  { ok: true; data: BusinessExportData } | { ok: false; code: string };
 
 export async function exportBusiness(
   userId: string,
@@ -426,9 +425,10 @@ export async function requestBusinessDeletion(
       [businessId],
     );
     if (r.rowCount) return { ok: true };
-    const exists = await q.query(`select 1 from public.businesses where id = $1`, [
-      businessId,
-    ]);
+    const exists = await q.query(
+      `select 1 from public.businesses where id = $1`,
+      [businessId],
+    );
     return exists.rows.length
       ? { ok: false, code: "already_requested" }
       : { ok: false, code: "not_found" };
@@ -492,7 +492,8 @@ async function checkPurgeEligible(
   );
   const business = r.rows[0];
   if (!business) return { ok: false, code: "not_found" };
-  if (!business.deletion_requested_at) return { ok: false, code: "not_requested" };
+  if (!business.deletion_requested_at)
+    return { ok: false, code: "not_requested" };
   if (!business.overdue) return { ok: false, code: "too_early" };
   return { ok: true };
 }
@@ -512,7 +513,9 @@ async function purgeBusinessMedia(businessId: string): Promise<void> {
   const bucket = getStorageAdminClient().storage.from("business-media");
   const { data, error } = await bucket.list(businessId, { limit: 1000 });
   if (error) {
-    throw new Error(`purgeBusiness: kunde inte lista storage (${error.message})`);
+    throw new Error(
+      `purgeBusiness: kunde inte lista storage (${error.message})`,
+    );
   }
   if (!data || data.length === 0) return;
   const paths = data.map((file) => `${businessId}/${file.name}`);
@@ -546,7 +549,9 @@ async function purgeBusinessMedia(businessId: string): Promise<void> {
  * bokning raderas.
  */
 export async function purgeBusiness(businessId: string): Promise<PurgeResult> {
-  const eligible = await withServiceTx((q) => checkPurgeEligible(q, businessId, false));
+  const eligible = await withServiceTx((q) =>
+    checkPurgeEligible(q, businessId, false),
+  );
   if (!eligible.ok) return eligible;
 
   await purgeBusinessMedia(businessId);
@@ -563,7 +568,9 @@ export async function purgeBusiness(businessId: string): Promise<PurgeResult> {
 
     // Kaskaderar payments/message_outbox/booking_answers (D-014, se
     // 20260930080200_business_deletion_lifecycle.sql).
-    await q.query(`delete from public.bookings where business_id = $1`, [businessId]);
+    await q.query(`delete from public.bookings where business_id = $1`, [
+      businessId,
+    ]);
 
     // Kaskaderar allt annat: staff, services, service_categories,
     // staff_services, business_hours, staff_hours, time_off, customers,

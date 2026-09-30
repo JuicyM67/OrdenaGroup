@@ -11,8 +11,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { clientes } from "@/i18n";
 
 export type CustomerExportResult =
-  | { ok: true; data: unknown }
-  | { ok: false; code: string };
+  { ok: true; data: unknown } | { ok: false; code: string };
 export type CustomerMutationResult = { ok: true } | { ok: false; code: string };
 
 function downloadJson(filename: string, data: unknown) {

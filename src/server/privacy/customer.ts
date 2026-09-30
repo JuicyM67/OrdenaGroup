@@ -89,8 +89,7 @@ type CustomerRow = {
 };
 
 export type ExportResult =
-  | { ok: true; data: CustomerExportData }
-  | { ok: false; code: string };
+  { ok: true; data: CustomerExportData } | { ok: false; code: string };
 
 export async function exportCustomer(
   userId: string,

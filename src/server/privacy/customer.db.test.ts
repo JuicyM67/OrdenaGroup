@@ -231,7 +231,11 @@ describe("anonymizeCustomer (WP-26 steg 2, D-033)", () => {
       `insert into public.customers (business_id, phone_e164, name) values ($1, '+56911110005', 'Cliente Propio') returning id`,
       [biz.id],
     );
-    const result = await anonymizeCustomer(biz.ownerUserId, biz.id, c.rows[0]!.id);
+    const result = await anonymizeCustomer(
+      biz.ownerUserId,
+      biz.id,
+      c.rows[0]!.id,
+    );
     expect(result).toEqual({ ok: true });
 
     const untouched = await adminQuery<{ name: string }>(
@@ -247,7 +251,11 @@ describe("anonymizeCustomer (WP-26 steg 2, D-033)", () => {
       [biz.id],
     );
     const customerId = c.rows[0]!.id;
-    const result = await anonymizeCustomer(other.ownerUserId, biz.id, customerId);
+    const result = await anonymizeCustomer(
+      other.ownerUserId,
+      biz.id,
+      customerId,
+    );
     expect(result).toEqual({ ok: false, code: "unauthorized" });
 
     const untouched = await adminQuery<{ name: string | null }>(
@@ -263,7 +271,11 @@ describe("anonymizeCustomer (WP-26 steg 2, D-033)", () => {
        values ($1, null, null, now()) returning id`,
       [biz.id],
     );
-    const result = await anonymizeCustomer(biz.ownerUserId, biz.id, c.rows[0]!.id);
+    const result = await anonymizeCustomer(
+      biz.ownerUserId,
+      biz.id,
+      c.rows[0]!.id,
+    );
     expect(result).toEqual({ ok: false, code: "not_found" });
   });
 });

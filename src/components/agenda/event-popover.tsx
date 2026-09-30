@@ -42,9 +42,7 @@ export type EventPopoverProps = {
    * (design lab) eller en bokning utan `customerId` döljer hela raden —
    * se `customer-privacy-actions.tsx`. */
   onExportCustomer?: (customerId: string) => Promise<CustomerExportResult>;
-  onAnonymizeCustomer?: (
-    customerId: string,
-  ) => Promise<CustomerMutationResult>;
+  onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
   trigger: ReactNode;
 };
 

@@ -362,12 +362,16 @@ describe("src/server gränser", () => {
   });
 
   it(`${RETENTION_SWEEP_EXCEPTION}: den enda frågan utan business_id är svepet över businesses.deletion_requested_at`, () => {
-    const f = productionSources.find((x) => rel(x) === RETENTION_SWEEP_EXCEPTION);
+    const f = productionSources.find(
+      (x) => rel(x) === RETENTION_SWEEP_EXCEPTION,
+    );
     expect(f).toBeDefined();
     const offenders = sqlOffenders(read(f!));
     // Undantaget finns (annars behövs det inte) och är bara svepfrågan.
     expect(offenders).toHaveLength(1);
-    expect(offenders[0]).toMatch(/from public\.businesses where deletion_requested_at/i);
+    expect(offenders[0]).toMatch(
+      /from public\.businesses where deletion_requested_at/i,
+    );
   });
 
   it(`${TOKEN_LOOKUP_EXCEPTION}: de enda frågorna utan business_id-filter slår upp på bara manage_token_hash (D-029)`, () => {

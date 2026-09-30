@@ -135,7 +135,9 @@ export function PrivacySection({
           className="flex flex-col gap-2 rounded-card bg-peach p-4"
         >
           <p className="text-14 font-semibold text-ink">
-            {ajustes.privacidad.solicitadaAviso({ fecha: purgeDateLabel ?? "" })}
+            {ajustes.privacidad.solicitadaAviso({
+              fecha: purgeDateLabel ?? "",
+            })}
           </p>
           <Button
             type="button"
@@ -152,7 +154,9 @@ export function PrivacySection({
           <p className="text-14 font-semibold text-ink">
             {ajustes.privacidad.eliminarTitulo}
           </p>
-          <p className="text-13 text-muted">{ajustes.privacidad.eliminarAyuda}</p>
+          <p className="text-13 text-muted">
+            {ajustes.privacidad.eliminarAyuda}
+          </p>
           <Button
             type="button"
             variant="secondary"

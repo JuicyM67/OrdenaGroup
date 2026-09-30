@@ -1405,7 +1405,8 @@ export const ajustes: Widen<typeof Es.ajustes> = {
       "Ladda ner en fil med information om ditt företag, dina kunder och dina bokningar.",
     exportarCta: "Exportera data",
     eliminarTitulo: "Radera ditt konto",
-    eliminarAyuda: "Vi rekommenderar att du exporterar dina data innan du raderar kontot.",
+    eliminarAyuda:
+      "Vi rekommenderar att du exporterar dina data innan du raderar kontot.",
     eliminarCta: "Radera konto",
     eliminarDialogTitulo: "Radera ditt konto?",
     eliminarDialogCuerpo: (p: { n: number }): string =>

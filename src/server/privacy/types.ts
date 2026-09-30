@@ -7,6 +7,7 @@ import "server-only";
 export type MutationResult = { ok: true } | { ok: false; code: string };
 
 export type ConsentSubject = "customer" | "owner";
-export type ConsentKind = "terms" | "marketing" | "waitlist" | "owner_terms" | "dpa";
+export type ConsentKind =
+  "terms" | "marketing" | "waitlist" | "owner_terms" | "dpa";
 /** Samma betydelse som `customers.consent_channel` (D-019). */
 export type ConsentChannel = "web" | "whatsapp" | "manual";

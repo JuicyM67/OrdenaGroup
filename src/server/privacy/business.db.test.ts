@@ -30,7 +30,10 @@ const BUCKET = "business-media";
  * inte ett SQL-insert/delete mot `storage.objects` — det är precis det som
  * `purgeBusiness` numera också gör, så testet bevisar det faktiska beteendet.
  */
-async function uploadTestImage(businessId: string, filename: string): Promise<void> {
+async function uploadTestImage(
+  businessId: string,
+  filename: string,
+): Promise<void> {
   const { error } = await getStorageAdminClient()
     .storage.from(BUCKET)
     .upload(`${businessId}/${filename}`, Buffer.from("fake-image-bytes"), {
@@ -150,7 +153,9 @@ describe("exportBusiness (WP-26 steg 3)", () => {
       expect(r.data.payments[0]?.amountClp).toBe(12000);
       expect(r.data.bookingAnswers).toHaveLength(1);
       expect(r.data.customerAnswers).toHaveLength(1);
-      expect(r.data.images.map((i) => i.path)).toEqual([`${t.id}/galeria-1.jpg`]);
+      expect(r.data.images.map((i) => i.path)).toEqual([
+        `${t.id}/galeria-1.jpg`,
+      ]);
     } finally {
       await dropTestBusiness(t);
     }
@@ -179,9 +184,10 @@ describe("requestBusinessDeletion / cancelBusinessDeletion (30 dagars ångerfris
       const afterRequest = await adminQuery<{
         status: string;
         deletion_requested_at: string | null;
-      }>(`select status, deletion_requested_at from public.businesses where id = $1`, [
-        t.id,
-      ]);
+      }>(
+        `select status, deletion_requested_at from public.businesses where id = $1`,
+        [t.id],
+      );
       expect(afterRequest.rows[0]?.status).toBe("frozen");
       expect(afterRequest.rows[0]?.deletion_requested_at).not.toBeNull();
 
@@ -195,9 +201,10 @@ describe("requestBusinessDeletion / cancelBusinessDeletion (30 dagars ångerfris
       const afterCancel = await adminQuery<{
         status: string;
         deletion_requested_at: string | null;
-      }>(`select status, deletion_requested_at from public.businesses where id = $1`, [
-        t.id,
-      ]);
+      }>(
+        `select status, deletion_requested_at from public.businesses where id = $1`,
+        [t.id],
+      );
       expect(afterCancel.rows[0]?.status).toBe("active");
       expect(afterCancel.rows[0]?.deletion_requested_at).toBeNull();
 
@@ -213,9 +220,10 @@ describe("requestBusinessDeletion / cancelBusinessDeletion (30 dagars ångerfris
     try {
       // Företaget var redan frozen av en annan anledning (t.ex. en framtida
       // billing-frysning, WP-34) INNAN ägaren begärde radering.
-      await adminQuery(`update public.businesses set status = 'frozen' where id = $1`, [
-        t.id,
-      ]);
+      await adminQuery(
+        `update public.businesses set status = 'frozen' where id = $1`,
+        [t.id],
+      );
 
       await requestBusinessDeletion(t.ownerUserId, t.id);
       const afterRequest = await adminQuery<{
@@ -226,7 +234,9 @@ describe("requestBusinessDeletion / cancelBusinessDeletion (30 dagars ångerfris
         [t.id],
       );
       expect(afterRequest.rows[0]?.status).toBe("frozen");
-      expect(afterRequest.rows[0]?.status_before_deletion_request).toBe("frozen");
+      expect(afterRequest.rows[0]?.status_before_deletion_request).toBe(
+        "frozen",
+      );
 
       await cancelBusinessDeletion(t.ownerUserId, t.id);
       const afterCancel = await adminQuery<{
@@ -285,7 +295,10 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
         code: "not_requested",
       });
       await requestBusinessDeletion(t.ownerUserId, t.id);
-      expect(await purgeBusiness(t.id)).toEqual({ ok: false, code: "too_early" });
+      expect(await purgeBusiness(t.id)).toEqual({
+        ok: false,
+        code: "too_early",
+      });
       expect(
         await purgeBusiness("00000000-0000-0000-0000-000000000000"),
       ).toEqual({ ok: false, code: "not_found" });
@@ -339,9 +352,10 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
       );
       expect(businessRow.rowCount).toBe(0);
 
-      const staffRow = await adminQuery(`select 1 from public.staff where id = $1`, [
-        staffId,
-      ]);
+      const staffRow = await adminQuery(
+        `select 1 from public.staff where id = $1`,
+        [staffId],
+      );
       expect(staffRow.rowCount).toBe(0);
       const serviceRow = await adminQuery(
         `select 1 from public.services where id = $1`,
@@ -368,9 +382,10 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
       expect(await listBusinessMedia(t.id)).toEqual([]);
 
       // Ägarens auth-konto: raderat (ingen annan medlemskap).
-      const ownerRow = await adminQuery(`select 1 from auth.users where id = $1`, [
-        t.ownerUserId,
-      ]);
+      const ownerRow = await adminQuery(
+        `select 1 from auth.users where id = $1`,
+        [t.ownerUserId],
+      );
       expect(ownerRow.rowCount).toBe(0);
 
       // Ett annat företag är helt orört, inklusive dess storage-objekt.
@@ -403,7 +418,10 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
       expect(await purgeBusiness(t.id)).toEqual({ ok: true });
       // Företaget är redan borta → not_found, men Storage-anropet (om det
       // ändå råkade köras igen manuellt) skulle vara ett no-op.
-      expect(await purgeBusiness(t.id)).toEqual({ ok: false, code: "not_found" });
+      expect(await purgeBusiness(t.id)).toEqual({
+        ok: false,
+        code: "not_found",
+      });
       expect(await listBusinessMedia(t.id)).toEqual([]);
     } finally {
       await dropTestBusiness(t);
@@ -430,12 +448,15 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
       );
       expect(await purgeBusiness(t.id)).toEqual({ ok: true });
 
-      const ownerRow = await adminQuery(`select 1 from auth.users where id = $1`, [
-        t.ownerUserId,
-      ]);
+      const ownerRow = await adminQuery(
+        `select 1 from auth.users where id = $1`,
+        [t.ownerUserId],
+      );
       expect(ownerRow.rowCount).toBe(1);
     } finally {
-      await adminQuery(`delete from public.businesses where id = $1`, [secondBizId]);
+      await adminQuery(`delete from public.businesses where id = $1`, [
+        secondBizId,
+      ]);
       await dropTestUser(t.ownerUserId);
     }
   });

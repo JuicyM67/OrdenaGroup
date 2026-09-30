@@ -125,9 +125,7 @@ export type AgendaScreenProps = {
   /** WP-26 steg 7 (F12): "Exportar datos"/"Anonimizar cliente" i popovern.
    * `undefined` i design lab — hela raden döljs då (`event-popover.tsx`). */
   onExportCustomer?: (customerId: string) => Promise<CustomerExportResult>;
-  onAnonymizeCustomer?: (
-    customerId: string,
-  ) => Promise<CustomerMutationResult>;
+  onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
