@@ -2188,6 +2188,40 @@ export const clientes = {
     /** `queued: false` — `dedupe_key` ya tenía un envío para este
      * membresía (mismo `member_since`). */
     notificarYaEnviado: "Ya le avisamos de su beneficio de socio.",
+    /** WP-55: diálogo "Enviar mensaje" (botón único, junto a `ctaWhatsapp`/
+     * `ctaSms` de arriba — ese botón ahora abre este diálogo en vez de un
+     * enlace directo). CL: `wa.me` del lado del cliente (WhatsApp Cloud API
+     * todavía no existe, D-006/D-007 — TODO: reemplazar por un envío real
+     * cuando exista esa integración). SE: `sendCustomerMessage`, SMS por
+     * ClickSend (D-028). */
+    mensaje: {
+      titulo: "Enviar mensaje",
+      paraLabel: "Para",
+      textoLabel: "Mensaje",
+      textoPlaceholder: "Escribe tu mensaje…",
+      contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+      /** Solo SE: cuántos SMS ocupa el texto (ClickSend cobra por
+       * segmento). CL no lo muestra (WhatsApp no tiene ese límite). */
+      segmentosSms: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "SMS" : "SMS (varios mensajes)"}`,
+      /** Solo CL: aclara que el envío sale del WhatsApp del propio negocio
+       * (número compartido de la plataforma, D-007), no de la plataforma. */
+      notaWhatsapp:
+        "Se abrirá WhatsApp con el mensaje listo. Confírmalo ahí para enviarlo desde el WhatsApp de tu negocio.",
+      /** GUIA §5: nunca "Cancelar" a secas. */
+      ctaCancelar: "Volver",
+      ctaEnviar: "Enviar",
+      enviando: "Enviando…",
+      enviado: "Mensaje enviado.",
+      error: {
+        vacio: "Escribe un mensaje.",
+        forbidden: "No tienes permiso para enviar mensajes a este cliente.",
+        no_phone: "Este cliente no tiene un celular válido.",
+        too_long: "El mensaje no puede tener más de 320 caracteres.",
+        rate_limited: "Enviaste muchos mensajes. Espera un momento y prueba de nuevo.",
+        generico: "No pudimos enviar el mensaje. Inténtalo de nuevo.",
+      },
+    },
   },
   notas: {
     label: "Notas",
@@ -2648,6 +2682,13 @@ export const sms = {
    * de `email.acceso`. */
   codigoAcceso: (p: { codigo: string }): string =>
     `Tu código para entrar es ${p.codigo}. No lo compartas con nadie.`,
+  /** WP-55: mensaje libre desde la ficha del cliente (`/app/clientes/[id]`,
+   * `sendCustomerMessage`). `texto` es lo que escribió el dueño/staff (hasta
+   * 320 caracteres); `negocio` va siempre como prefijo, como remitente,
+   * porque el SMS no tiene un nombre de remitente visible como WhatsApp. Sin
+   * `pie` (no es marketing, no está en `SMS_MARKETING_TEMPLATES`). */
+  mensajeLibre: (p: { negocio: string; texto: string }): string =>
+    `${p.negocio}: ${p.texto}`,
   /** Línea de baja: ver la nota del bloque de arriba sobre cuándo se usa. */
   pie: "Responde STOP para no recibir más.",
 } as const satisfies Trad;

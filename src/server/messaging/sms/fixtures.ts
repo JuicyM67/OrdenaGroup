@@ -64,5 +64,12 @@ export function smsFixtures(market: Market): {
       hora: b.hora,
     },
     codigoAcceso: { codigo: "482913" },
+    mensajeLibre: {
+      negocio: b.negocio,
+      texto:
+        market === "SE"
+          ? "Vi har öppet imorgon också!"
+          : "¡Mañana también abrimos!",
+    },
   };
 }

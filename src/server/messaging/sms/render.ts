@@ -72,6 +72,10 @@ export type SmsTemplateMap = {
     hora: string;
   };
   readonly codigoAcceso: { codigo: string };
+  /** WP-55: mensaje libre desde la ficha del cliente (`message_outbox`,
+   * `recipient_kind = 'customer'`, sin `booking_id`) — ver `worker.ts`
+   * `loadFreeMessageContext`/`processFreeMessageRow`. */
+  readonly mensajeLibre: { negocio: string; texto: string };
 };
 
 export type SmsTemplateName = keyof SmsTemplateMap;
@@ -88,6 +92,7 @@ export const SMS_TEMPLATE_NAMES: readonly SmsTemplateName[] = [
   "horaFlash",
   "nuevaReservaDueno",
   "codigoAcceso",
+  "mensajeLibre",
 ];
 
 /** `hora_flash` (marketing, INTEGRATIONS.md §1): mallarna som kräver

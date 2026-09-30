@@ -146,3 +146,14 @@ export type SetMemberResult =
 export type NotifyMemberResult =
   | { ok: true; queued: boolean }
   | { ok: false; code: "forbidden" | "not_member" | "no_email" };
+
+/** WP-55: "Enviar mensaje" (`message-dialog.tsx`). Speglar
+ * `SendCustomerMessageResult`/`SendCustomerMessageError`
+ * (`src/server/messaging/outbox/customer-message.ts`) — bara SE (CL skickar
+ * via `wa.me`, klientsidan, utan servern, se `message-dialog.tsx`). */
+export type SendMessageResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code: "forbidden" | "no_phone" | "empty" | "too_long" | "rate_limited";
+    };
