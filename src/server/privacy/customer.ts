@@ -40,6 +40,9 @@ export type CustomerExportData = {
     periodStart: string;
     periodEnd: string;
     priceClp: number;
+    /** Säkerhetsgranskning WP-26 (punkt B1): fritext, kan innehålla persondata. */
+    notes: string | null;
+    cancelReason: string | null;
     createdAt: string;
   }>;
   bookingAnswers: Array<{
@@ -117,11 +120,13 @@ export async function exportCustomer(
       period_start: string;
       period_end: string;
       price_clp: number;
+      notes: string | null;
+      cancel_reason: string | null;
       created_at: string;
     }>(
       `select id, staff_id, service_id, status,
               lower(period) as period_start, upper(period) as period_end,
-              price_clp, created_at
+              price_clp, notes, cancel_reason, created_at
          from public.bookings
         where business_id = $1 and customer_id = $2
         order by created_at`,
@@ -207,6 +212,8 @@ export async function exportCustomer(
           periodStart: b.period_start,
           periodEnd: b.period_end,
           priceClp: b.price_clp,
+          notes: b.notes,
+          cancelReason: b.cancel_reason,
           createdAt: b.created_at,
         })),
         bookingAnswers: answersRes.rows.map((a) => ({
@@ -311,13 +318,15 @@ export async function anonymizeCustomer(
           and mo.booking_id = bk.id
           and bk.business_id = $1
           and bk.customer_id = $2
-          and mo.status = 'queued'`,
+          and mo.status in ('queued', 'failed')`,
       [businessId, customerId],
     );
 
+    // Säkerhetsgranskning WP-26 (punkt B1): notes/cancel_reason är fritext
+    // som kan innehålla persondata (se DATA_MODEL.md, bookings).
     await q.query(
       `update public.bookings
-          set manage_token_hash = null
+          set manage_token_hash = null, notes = null, cancel_reason = null
         where business_id = $1 and customer_id = $2`,
       [businessId, customerId],
     );

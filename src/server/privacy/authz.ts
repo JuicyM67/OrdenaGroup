@@ -21,3 +21,24 @@ export async function isOwnerOrAdmin(
   );
   return r.rows.length > 0;
 }
+
+/**
+ * Säkerhetsgranskning WP-26 (punkt 2): kontoradering (begär/ångra) och
+ * företagets export är beslut på ägarnivå — `admin` (företagsnivå-rollen,
+ * se DATA_MODEL.md) får INTE begära/ångra radering av hela kontot eller
+ * exportera hela företagets data. `admin` behåller export/anonymisering av
+ * enskilda kunder (`isOwnerOrAdmin`, `customer.ts`), som är en dagligare
+ * uppgift.
+ */
+export async function isOwner(
+  q: Queryable,
+  userId: string,
+  businessId: string,
+): Promise<boolean> {
+  const r = await q.query(
+    `select 1 from public.memberships
+      where business_id = $1 and user_id = $2 and role = 'owner'`,
+    [businessId, userId],
+  );
+  return r.rows.length > 0;
+}

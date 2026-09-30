@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import pg from "pg";
 
 /**
@@ -107,4 +108,40 @@ export async function closePool(): Promise<void> {
   const p = pool;
   pool = undefined;
   if (p) await p.end();
+}
+
+let storageAdmin: SupabaseClient | undefined;
+
+/**
+ * Storage-adminklient (säkerhetsgranskning WP-26, punkt B2): `purgeBusiness`
+ * (src/server/privacy/business.ts) måste radera business-media/<bid>/ via
+ * den RIKTIGA Storage-API:n (`list()` + `remove()`), inte ett SQL-delete mot
+ * `storage.objects` — ett sådant delete kringgår bara statement-triggern
+ * `storage.protect_delete()` (se supabase/tests/101_business_media_storage.
+ * test.sql) och tar bort METADATARADEN, men i en molnbackend (S3) lämnar det
+ * själva filen kvar. `remove()` kräver service role-nyckeln.
+ *
+ * `SUPABASE_SERVICE_ROLE_KEY` läses bara HÄR (samma gränstest som
+ * `DATABASE_URL`, se filkommentaren ovan) — ingen sessionsklient
+ * (`@supabase/ssr`, som bara hanterar auth, WP-15): det här är en
+ * fristående admin-klient utan cookie/session, byggd en gång per process.
+ */
+export function getStorageAdminClient(): SupabaseClient {
+  if (storageAdmin) return storageAdmin;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY saknas (bara servern, se .env.example)",
+    );
+  }
+  storageAdmin = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  return storageAdmin;
+}
+
+/** För tester: tvingar en ny klient nästa gång (t.ex. efter att ha bytt env). */
+export function resetStorageAdminClient(): void {
+  storageAdmin = undefined;
 }

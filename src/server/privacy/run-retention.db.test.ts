@@ -49,13 +49,25 @@ describe("private.run_retention(): anonymisering vid 24 månader", () => {
       `insert into public.customers (business_id, phone_e164, name) values ($1, '+56922220003', 'Cliente Bk 25m') returning id`,
       [biz.id],
     );
-    await insertTestBooking(biz, {
+    const staleBookingId = await insertTestBooking(biz, {
       start: Date.now() - 25 * MONTH_MS,
       durationMin: 35,
       status: "completed",
       staffKey: "diego",
       customerId: staleBooking.rows[0]!.id,
     });
+    // Säkerhetsgranskning WP-26 (punkt B1/8): notes/cancel_reason nollas, och
+    // en 'failed' outbox-rad (samma statuslista som enqueue.ts) avbryts.
+    await adminQuery(
+      `update public.bookings set notes = 'Alérgico', cancel_reason = 'No llegó' where id = $1`,
+      [staleBookingId],
+    );
+    const staleFailedOutbox = await adminQuery<{ id: string }>(
+      `insert into public.message_outbox
+         (business_id, booking_id, channel, recipient_kind, template, category, status, attempts, dedupe_key)
+       values ($1, $2, 'email', 'customer', 'recordatorio', 'utility', 'failed', 3, $3) returning id`,
+      [biz.id, staleBookingId, `retention-anon-failed:${staleBookingId}`],
+    );
 
     // Gammal OCH en ny bokning — ska INTE anonymiseras.
     const active = await adminQuery<{ id: string }>(
@@ -93,11 +105,26 @@ describe("private.run_retention(): anonymisering vid 24 månader", () => {
     expect(byId.get(recent23.rows[0]!.id)).toBeNull();
     expect(byId.get(staleBooking.rows[0]!.id)).not.toBeNull();
     expect(byId.get(active.rows[0]!.id)).toBeNull();
+
+    const bookingRow = await adminQuery<{
+      notes: string | null;
+      cancel_reason: string | null;
+    }>(`select notes, cancel_reason from public.bookings where id = $1`, [
+      staleBookingId,
+    ]);
+    expect(bookingRow.rows[0]?.notes).toBeNull();
+    expect(bookingRow.rows[0]?.cancel_reason).toBeNull();
+
+    const outboxRow = await adminQuery<{ status: string }>(
+      `select status from public.message_outbox where id = $1`,
+      [staleFailedOutbox.rows[0]!.id],
+    );
+    expect(outboxRow.rows[0]?.status).toBe("cancelled");
   });
 });
 
 describe("private.run_retention(): utkorgsrader äldre än 90 dagar", () => {
-  it("raderar sent/dead/cancelled äldre än 90 dagar, men inte nyare eller köade rader", async () => {
+  it("raderar sent/dead/cancelled/failed äldre än 90 dagar, men inte nyare eller köade rader", async () => {
     const bookingId = await insertTestBooking(biz, {
       start: Date.now() + 2 * 60 * 60_000,
       durationMin: 35,
@@ -108,6 +135,14 @@ describe("private.run_retention(): utkorgsrader äldre än 90 dagar", () => {
          (business_id, booking_id, channel, recipient_kind, template, category, status, sent_at, dedupe_key)
        values ($1, $2, 'email', 'customer', 'x', 'utility', 'sent', now(), $3) returning id`,
       [biz.id, bookingId, `retention-old:${bookingId}`],
+    );
+    // Säkerhetsgranskning WP-26 (punkt 8): 'failed' ska nu räknas in i
+    // 90-dagarsstädningen, precis som sent/dead/cancelled.
+    const oldFailed = await adminQuery<{ id: string }>(
+      `insert into public.message_outbox
+         (business_id, booking_id, channel, recipient_kind, template, category, status, attempts, dedupe_key)
+       values ($1, $2, 'email', 'customer', 'x', 'utility', 'failed', 5, $3) returning id`,
+      [biz.id, bookingId, `retention-old-failed:${bookingId}`],
     );
     const recentSent = await adminQuery<{ id: string }>(
       `insert into public.message_outbox
@@ -122,14 +157,15 @@ describe("private.run_retention(): utkorgsrader äldre än 90 dagar", () => {
       [biz.id, bookingId, `retention-queued:${bookingId}`],
     );
 
-    // Backdaterar `updated_at` på den gamla raden. Triggern `set_updated_at`
+    // Backdaterar `updated_at` på de gamla raderna. Triggern `set_updated_at`
     // skriver annars över varje UPDATE med `now()` — måste stängas av tillfälligt.
     await adminQuery(
       `alter table public.message_outbox disable trigger set_updated_at`,
     );
     await adminQuery(
-      `update public.message_outbox set updated_at = now() - interval '91 days' where id = $1`,
-      [oldSent.rows[0]!.id],
+      `update public.message_outbox set updated_at = now() - interval '91 days'
+        where id = any($1::uuid[])`,
+      [[oldSent.rows[0]!.id, oldFailed.rows[0]!.id]],
     );
     await adminQuery(
       `alter table public.message_outbox enable trigger set_updated_at`,
@@ -139,10 +175,18 @@ describe("private.run_retention(): utkorgsrader äldre än 90 dagar", () => {
 
     const rows = await adminQuery<{ id: string }>(
       `select id from public.message_outbox where id = any($1::uuid[])`,
-      [[oldSent.rows[0]!.id, recentSent.rows[0]!.id, stillQueued.rows[0]!.id]],
+      [
+        [
+          oldSent.rows[0]!.id,
+          oldFailed.rows[0]!.id,
+          recentSent.rows[0]!.id,
+          stillQueued.rows[0]!.id,
+        ],
+      ],
     );
     const remaining = new Set(rows.rows.map((r) => r.id));
     expect(remaining.has(oldSent.rows[0]!.id)).toBe(false);
+    expect(remaining.has(oldFailed.rows[0]!.id)).toBe(false);
     expect(remaining.has(recentSent.rows[0]!.id)).toBe(true);
     expect(remaining.has(stillQueued.rows[0]!.id)).toBe(true);
   });

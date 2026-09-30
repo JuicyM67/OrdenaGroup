@@ -83,6 +83,11 @@ select is(
 
 -- Cascade: frågan tas bort → den sparade kopian försvinner med den (ingen
 -- snapshot här, till skillnad från booking_answers).
+-- Säkerhetsgranskning WP-26 (punkt 6): service_role har inte längre DELETE på
+-- booking_questions (ingen produktionskod raderar den så, se
+-- 20260930110000_revoke_unused_service_role_delete.sql) — som postgres i
+-- stället (bypassar RLS/grants precis som service_role gjorde).
+reset role;
 delete from public.booking_questions where id = 'aaaaaaaa-2800-0000-0000-000000000001';
 select is(
   (select count(*) from public.customer_answers where customer_id = 'aaaaaaaa-3000-0000-0000-000000000001')::int,

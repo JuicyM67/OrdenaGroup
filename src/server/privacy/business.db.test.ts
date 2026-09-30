@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { closePool } from "@/server/db/pool";
+import { closePool, getStorageAdminClient } from "@/server/db/pool";
 import {
   adminQuery,
   assertLocalDatabase,
   createTestBusiness,
-  createTestClient,
+  createTestUser,
   dropTestBusiness,
   dropTestUser,
   insertTestBooking,
@@ -22,24 +22,52 @@ import {
 let biz: TestBusiness;
 let other: TestBusiness;
 
+const BUCKET = "business-media";
+
 /**
- * `storage.protect_delete()` (statement-nivå-trigger) blockerar ALLA
- * raderingar av `storage.objects` utan `storage.allow_delete_query = 'true'`
- * satt på SAMMA session (samma mönster som
- * supabase/tests/101_business_media_storage.test.sql) — `adminQuery` kan inte
- * garantera samma pool-anslutning mellan två anrop, så en egen klient krävs.
+ * Säkerhetsgranskning WP-26 (punkt B2): fixturer och verifikation via den
+ * RIKTIGA Storage-API:n (`getStorageAdminClient()`, src/server/db/pool.ts),
+ * inte ett SQL-insert/delete mot `storage.objects` — det är precis det som
+ * `purgeBusiness` numera också gör, så testet bevisar det faktiska beteendet.
  */
-async function deleteStorageObjectsUnderPrefix(prefix: string): Promise<void> {
-  const client = await createTestClient();
-  try {
-    await client.query(`set storage.allow_delete_query = 'true'`);
-    await client.query(
-      `delete from storage.objects where bucket_id = 'business-media' and name like $1`,
-      [`${prefix}/%`],
-    );
-  } finally {
-    await client.end();
-  }
+async function uploadTestImage(businessId: string, filename: string): Promise<void> {
+  const { error } = await getStorageAdminClient()
+    .storage.from(BUCKET)
+    .upload(`${businessId}/${filename}`, Buffer.from("fake-image-bytes"), {
+      contentType: "image/jpeg",
+      upsert: true,
+    });
+  if (error) throw new Error(`uploadTestImage: ${error.message}`);
+}
+
+async function listBusinessMedia(businessId: string): Promise<string[]> {
+  const { data, error } = await getStorageAdminClient()
+    .storage.from(BUCKET)
+    .list(businessId, { limit: 1000 });
+  if (error) throw new Error(`listBusinessMedia: ${error.message}`);
+  return (data ?? []).map((f) => f.name);
+}
+
+/** Ny medlem i `businessId` med en given roll (WP-26 säkerhetsgranskning
+ * punkt 2: `admin` är företagsnivå-rollen, inte plattformsadmin). */
+async function addMember(
+  businessId: string,
+  role: "admin" | "staff",
+): Promise<string> {
+  const userId = await createTestUser();
+  await adminQuery(
+    `insert into public.memberships (business_id, user_id, role) values ($1, $2, $3)`,
+    [businessId, userId, role],
+  );
+  return userId;
+}
+
+async function removeMember(businessId: string, userId: string): Promise<void> {
+  await adminQuery(
+    `delete from public.memberships where business_id = $1 and user_id = $2`,
+    [businessId, userId],
+  );
+  await dropTestUser(userId);
 }
 
 beforeAll(async () => {
@@ -75,6 +103,69 @@ describe("exportBusiness (WP-26 steg 3)", () => {
   it("en ägare i ett annat företag får unauthorized", async () => {
     const r = await exportBusiness(other.ownerUserId, biz.id);
     expect(r).toEqual({ ok: false, code: "unauthorized" });
+  });
+
+  it("innehåller payments, öppettider, svar och bild-URL:er (punkt 7)", async () => {
+    const t = await createTestBusiness();
+    try {
+      const bookingId = await insertTestBooking(t, {
+        start: Date.now() + 60 * 60_000,
+        durationMin: 35,
+      });
+      await adminQuery(
+        `insert into public.payments (business_id, booking_id, kind, method, amount_clp, status, paid_at)
+         values ($1, $2, 'full', 'cash', 12000, 'approved', now())`,
+        [t.id, bookingId],
+      );
+      const q = await adminQuery<{ id: string }>(
+        `insert into public.booking_questions (business_id, label, kind, applies_to, save_to_customer)
+         values ($1, 'Alergias', 'short_text', 'all', true) returning id`,
+        [t.id],
+      );
+      await adminQuery(
+        `insert into public.booking_answers (business_id, booking_id, question_id, label_snapshot, kind_snapshot, value)
+         values ($1, $2, $3, 'Alergias', 'short_text', '"ninguna"'::jsonb)`,
+        [t.id, bookingId, q.rows[0]!.id],
+      );
+      await adminQuery(
+        `insert into public.customer_answers (business_id, customer_id, question_id, value)
+         values ($1, $2, $3, '"ninguna"'::jsonb)`,
+        [t.id, t.customerId, q.rows[0]!.id],
+      );
+      await adminQuery(
+        `update public.businesses set logo_url = 'https://x.test/logo.jpg' where id = $1`,
+        [t.id],
+      );
+      await adminQuery(
+        `insert into public.business_images (business_id, path, sort) values ($1, $2, 1)`,
+        [t.id, `${t.id}/galeria-1.jpg`],
+      );
+
+      const r = await exportBusiness(t.ownerUserId, t.id);
+      expect(r.ok).toBe(true);
+      if (!r.ok) return;
+      expect(r.data.business.logoUrl).toBe("https://x.test/logo.jpg");
+      expect(r.data.businessHours.length).toBeGreaterThan(0);
+      expect(r.data.payments).toHaveLength(1);
+      expect(r.data.payments[0]?.amountClp).toBe(12000);
+      expect(r.data.bookingAnswers).toHaveLength(1);
+      expect(r.data.customerAnswers).toHaveLength(1);
+      expect(r.data.images.map((i) => i.path)).toEqual([`${t.id}/galeria-1.jpg`]);
+    } finally {
+      await dropTestBusiness(t);
+    }
+  });
+
+  it("admin (företagsnivå-rollen) får unauthorized — bara owner", async () => {
+    const adminUserId = await addMember(biz.id, "admin");
+    try {
+      expect(await exportBusiness(adminUserId, biz.id)).toEqual({
+        ok: false,
+        code: "unauthorized",
+      });
+    } finally {
+      await removeMember(biz.id, adminUserId);
+    }
   });
 });
 
@@ -117,6 +208,42 @@ describe("requestBusinessDeletion / cancelBusinessDeletion (30 dagars ångerfris
     }
   });
 
+  it("säkerhetsgranskning punkt 1: ångrad radering återställer det TIDIGARE status-värdet, häver inte en annan frysning", async () => {
+    const t = await createTestBusiness();
+    try {
+      // Företaget var redan frozen av en annan anledning (t.ex. en framtida
+      // billing-frysning, WP-34) INNAN ägaren begärde radering.
+      await adminQuery(`update public.businesses set status = 'frozen' where id = $1`, [
+        t.id,
+      ]);
+
+      await requestBusinessDeletion(t.ownerUserId, t.id);
+      const afterRequest = await adminQuery<{
+        status: string;
+        status_before_deletion_request: string | null;
+      }>(
+        `select status, status_before_deletion_request from public.businesses where id = $1`,
+        [t.id],
+      );
+      expect(afterRequest.rows[0]?.status).toBe("frozen");
+      expect(afterRequest.rows[0]?.status_before_deletion_request).toBe("frozen");
+
+      await cancelBusinessDeletion(t.ownerUserId, t.id);
+      const afterCancel = await adminQuery<{
+        status: string;
+        status_before_deletion_request: string | null;
+      }>(
+        `select status, status_before_deletion_request from public.businesses where id = $1`,
+        [t.id],
+      );
+      // Fortfarande 'frozen' — INTE flippat till 'active'.
+      expect(afterCancel.rows[0]?.status).toBe("frozen");
+      expect(afterCancel.rows[0]?.status_before_deletion_request).toBeNull();
+    } finally {
+      await dropTestBusiness(t);
+    }
+  });
+
   it("en ägare i ett annat företag får unauthorized", async () => {
     const r = await requestBusinessDeletion(other.ownerUserId, biz.id);
     expect(r).toEqual({ ok: false, code: "unauthorized" });
@@ -125,6 +252,27 @@ describe("requestBusinessDeletion / cancelBusinessDeletion (30 dagars ångerfris
       [biz.id],
     );
     expect(row.rows[0]?.status).toBe("active");
+  });
+
+  it("admin (företagsnivå-rollen) får unauthorized på request och cancel — bara owner", async () => {
+    const adminUserId = await addMember(biz.id, "admin");
+    try {
+      expect(await requestBusinessDeletion(adminUserId, biz.id)).toEqual({
+        ok: false,
+        code: "unauthorized",
+      });
+      expect(await cancelBusinessDeletion(adminUserId, biz.id)).toEqual({
+        ok: false,
+        code: "unauthorized",
+      });
+      const row = await adminQuery<{ status: string }>(
+        `select status from public.businesses where id = $1`,
+        [biz.id],
+      );
+      expect(row.rows[0]?.status).toBe("active");
+    } finally {
+      await removeMember(biz.id, adminUserId);
+    }
   });
 });
 
@@ -146,7 +294,7 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
     }
   });
 
-  it("raderar företaget och tömmer storage-mappen, lämnar andra företag orörda", async () => {
+  it("raderar företaget och tömmer storage-mappen (via Storage-API:n), lämnar andra företag orörda", async () => {
     const t = await createTestBusiness();
     const untouched = await createTestBusiness();
     try {
@@ -172,14 +320,8 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
          values ($1, $2, 'customer', 'terms', 'v1', 'web', true)`,
         [t.id, t.customerId],
       );
-      await adminQuery(
-        `insert into storage.objects (bucket_id, name) values ('business-media', $1)`,
-        [`${t.id}/portada.jpg`],
-      );
-      await adminQuery(
-        `insert into storage.objects (bucket_id, name) values ('business-media', $1)`,
-        [`${untouched.id}/portada.jpg`],
-      );
+      await uploadTestImage(t.id, "portada.jpg");
+      await uploadTestImage(untouched.id, "portada.jpg");
 
       await requestBusinessDeletion(t.ownerUserId, t.id);
       // Backdaterar fristen (30 dagar) — testet väntar inte i verkligheten.
@@ -222,11 +364,8 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
       );
       expect(outboxRow.rowCount).toBe(0);
 
-      const storageRows = await adminQuery(
-        `select name from storage.objects where bucket_id = 'business-media' and name like $1`,
-        [`${t.id}/%`],
-      );
-      expect(storageRows.rowCount).toBe(0);
+      // Storage: tömd, verifierat via list() (Storage-API:n), inte SQL.
+      expect(await listBusinessMedia(t.id)).toEqual([]);
 
       // Ägarens auth-konto: raderat (ingen annan medlemskap).
       const ownerRow = await adminQuery(`select 1 from auth.users where id = $1`, [
@@ -240,18 +379,34 @@ describe("purgeBusiness (WP-26 steg 3, oåterkallelig)", () => {
         [untouched.id],
       );
       expect(otherStillThere.rowCount).toBe(1);
-      const otherStorage = await adminQuery(
-        `select 1 from storage.objects where bucket_id = 'business-media' and name = $1`,
-        [`${untouched.id}/portada.jpg`],
-      );
-      expect(otherStorage.rowCount).toBe(1);
+      expect(await listBusinessMedia(untouched.id)).toEqual(["portada.jpg"]);
     } finally {
       await dropTestBusiness(t);
       await dropTestBusiness(untouched);
-      // t.id:s objekt är redan borta (det är precis det som testas ovan) —
-      // städar ändå båda prefixen, städningen är idempotent.
-      await deleteStorageObjectsUnderPrefix(t.id);
-      await deleteStorageObjectsUnderPrefix(untouched.id);
+      // t.id:s mapp är redan tom (det är precis det som testas ovan) —
+      // remove() på en redan tömd/obefintlig sökväg är ett no-op.
+      await getStorageAdminClient()
+        .storage.from(BUCKET)
+        .remove([`${t.id}/portada.jpg`, `${untouched.id}/portada.jpg`]);
+    }
+  });
+
+  it("är idempotent mot storage-mappen: en omkörning efter att mappen redan tömts gör ingenting mer", async () => {
+    const t = await createTestBusiness();
+    try {
+      await uploadTestImage(t.id, "portada.jpg");
+      await requestBusinessDeletion(t.ownerUserId, t.id);
+      await adminQuery(
+        `update public.businesses set deletion_requested_at = now() - interval '31 days' where id = $1`,
+        [t.id],
+      );
+      expect(await purgeBusiness(t.id)).toEqual({ ok: true });
+      // Företaget är redan borta → not_found, men Storage-anropet (om det
+      // ändå råkade köras igen manuellt) skulle vara ett no-op.
+      expect(await purgeBusiness(t.id)).toEqual({ ok: false, code: "not_found" });
+      expect(await listBusinessMedia(t.id)).toEqual([]);
+    } finally {
+      await dropTestBusiness(t);
     }
   });
 

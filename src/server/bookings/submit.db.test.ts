@@ -87,7 +87,9 @@ describe("createCustomerBooking + saveBookingConsent", () => {
     const consent = await consentRow(result.value.customerId);
     expect(consent.consent_terms_at).not.toBeNull();
     expect(consent.consent_marketing_at).not.toBeNull();
-    expect(consent.consent_version).toBe("2026-10-v1");
+    // Säkerhetsgranskning WP-26 (punkt 10): customers.consent_version är
+    // alltid LEGAL_VERSION (serverns), aldrig input.consentVersion (klientens).
+    expect(consent.consent_version).toBe(LEGAL_VERSION);
     expect(consent.consent_channel).toBe("web");
   });
 
@@ -116,7 +118,7 @@ describe("createCustomerBooking + saveBookingConsent", () => {
     const consent = await consentRow(result.value.customerId);
     expect(consent.consent_terms_at).not.toBeNull();
     expect(consent.consent_marketing_at).toBeNull();
-    expect(consent.consent_version).toBe("2026-10-v1");
+    expect(consent.consent_version).toBe(LEGAL_VERSION);
     expect(consent.consent_channel).toBe("web");
   });
 

@@ -100,6 +100,13 @@ export type SaveBookingConsentInput = {
  * (via `idempotencyKey`) ändå bara försöker spara samtycket på nytt, inte
  * skapa en andra bokning. Motorns egen transaktion (bokning + kund) är
  * alltid atomisk.
+ *
+ * Säkerhetsgranskning WP-26 (punkt 10): `customers.consent_version` sätts
+ * till `LEGAL_VERSION` (serverns egen konstant), aldrig till
+ * `input.consentVersion` — annars kunde en klient skriva ett godtyckligt
+ * versionsvärde in i cachen (fältet finns kvar i indatatypen bara för att
+ * inte bryta anroparen, `src/app/[slug]/actions.ts`, som ligger utanför den
+ * här WP:ns mapp-ägarskap; värdet läses inte längre).
  */
 export async function saveBookingConsent(
   input: SaveBookingConsentInput,
@@ -126,7 +133,7 @@ export async function saveBookingConsent(
         input.customerId,
         nowIso,
         input.marketing ? nowIso : null,
-        input.consentVersion,
+        LEGAL_VERSION,
       ],
     );
 

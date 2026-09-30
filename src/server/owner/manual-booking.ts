@@ -14,7 +14,6 @@ import "server-only";
  */
 import { z } from "zod";
 
-import { clientes } from "@/i18n";
 import { LEGAL_VERSION } from "@/i18n/legal/types";
 import { APP_TZ, fromLocal } from "@/lib/format/dates";
 import {
@@ -175,6 +174,12 @@ export async function createManualBooking(
  * Updaten körs som `authenticated` (RLS + triggern gäller); först därefter
  * byts rollen till `service_role` för insert i loggen, som `authenticated`
  * saknar grant för (D-019). `business_id` är då redan verifierad av RLS.
+ *
+ * Säkerhetsgranskning WP-26 (punkt 10): `customers.consent_version` sätts
+ * till `LEGAL_VERSION` (serverns konstant), inte till
+ * `clientes.consentimientoManual.version` (copywriterns UI-textversion) —
+ * kolumnen ska jämföras mot samma versionsschema som `consent_events.version`
+ * och `saveBookingConsent`, inte mot en textversion.
  */
 export async function saveManualConsent(
   userId: string,
@@ -187,12 +192,7 @@ export async function saveManualConsent(
       `update public.customers
           set consent_terms_at = $3, consent_version = $4, consent_channel = 'manual'
         where business_id = $1 and id = $2`,
-      [
-        businessId,
-        customerId,
-        now.toISOString(),
-        clientes.consentimientoManual.version,
-      ],
+      [businessId, customerId, now.toISOString(), LEGAL_VERSION],
     );
     if (r.rowCount !== 1) return;
     await q.query("set local role service_role");

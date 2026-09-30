@@ -2,7 +2,7 @@
 -- delete-grant (kassahistorik försvinner aldrig, se DATA_MODEL/CLAUDE.md).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(31);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -143,6 +143,15 @@ select lives_ok(
 select lives_ok(
   $$ update public.payments set status = 'refunded' where id = 'aaaaaaaa-5000-0000-0000-000000000099' $$,
   'service_role kan ändra en mercadopago-rad'
+);
+-- Säkerhetsgranskning WP-26 (punkt 6): `service_role` fick historiskt DELETE
+-- via den lokala plattformens defaultprivilegier (samma gotcha som
+-- D-014-korrigendumet, se DATA_MODEL.md) — INTE ett medvetet grant, trots att
+-- migrationen bara skrev `select, insert, update`. Explicit revoke i
+-- 20260930110000_revoke_unused_service_role_delete.sql.
+select throws_ok(
+  $$ delete from public.payments where id = 'aaaaaaaa-5000-0000-0000-000000000099' $$,
+  '42501'
 );
 reset role;
 

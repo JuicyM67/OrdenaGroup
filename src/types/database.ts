@@ -375,6 +375,8 @@ export type Database = {
           slot_interval_minutes: number;
           slug: string;
           status: Database["public"]["Enums"]["business_status"];
+          status_before_deletion_request:
+            Database["public"]["Enums"]["business_status"] | null;
           timezone: string;
           trial_ends_at: string | null;
           updated_at: string;
@@ -401,6 +403,8 @@ export type Database = {
           slot_interval_minutes?: number;
           slug: string;
           status?: Database["public"]["Enums"]["business_status"];
+          status_before_deletion_request?:
+            Database["public"]["Enums"]["business_status"] | null;
           timezone?: string;
           trial_ends_at?: string | null;
           updated_at?: string;
@@ -427,6 +431,8 @@ export type Database = {
           slot_interval_minutes?: number;
           slug?: string;
           status?: Database["public"]["Enums"]["business_status"];
+          status_before_deletion_request?:
+            Database["public"]["Enums"]["business_status"] | null;
           timezone?: string;
           trial_ends_at?: string | null;
           updated_at?: string;

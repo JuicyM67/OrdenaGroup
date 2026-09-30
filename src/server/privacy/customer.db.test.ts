@@ -5,7 +5,9 @@ import {
   adminQuery,
   assertLocalDatabase,
   createTestBusiness,
+  createTestUser,
   dropTestBusiness,
+  dropTestUser,
   insertTestBooking,
   type TestBusiness,
 } from "@/server/db/testing";
@@ -50,6 +52,10 @@ describe("exportCustomer (WP-26 steg 2)", () => {
       staffKey: "diego",
       customerId,
     });
+    await adminQuery(
+      `update public.bookings set notes = 'Alérgico al níquel' where id = $1`,
+      [bookingId],
+    );
     await insertConsentEvent(biz.id, customerId);
 
     const r = await exportCustomer(biz.ownerUserId, biz.id, customerId);
@@ -57,6 +63,8 @@ describe("exportCustomer (WP-26 steg 2)", () => {
     if (!r.ok) return;
     expect(r.data.customer.phoneE164).toBe(phone);
     expect(r.data.bookings.map((b) => b.id)).toEqual([bookingId]);
+    // Säkerhetsgranskning WP-26 (punkt B1): notes/cancel_reason ingår i exporten.
+    expect(r.data.bookings[0]?.notes).toBe("Alérgico al níquel");
     expect(r.data.consentEvents).toHaveLength(1);
     expect(r.data.consentEvents[0]?.kind).toBe("terms");
   });
@@ -96,7 +104,11 @@ describe("anonymizeCustomer (WP-26 steg 2, D-033)", () => {
       customerId,
     });
     await adminQuery(
-      `update public.bookings set manage_token_hash = decode(repeat('ab', 32), 'hex') where id = $1`,
+      `update public.bookings
+          set manage_token_hash = decode(repeat('ab', 32), 'hex'),
+              notes = 'Prefiere corte a máquina, alérgico a la lavanda',
+              cancel_reason = 'Canceló por enfermedad'
+        where id = $1`,
       [bookingId],
     );
 
@@ -122,6 +134,15 @@ describe("anonymizeCustomer (WP-26 steg 2, D-033)", () => {
          (business_id, booking_id, channel, recipient_kind, template, payload, category, status, dedupe_key)
        values ($1, $2, 'email', 'customer', 'reservaConfirmada', jsonb_build_object('token', 'secreto'), 'utility', 'queued', $3)`,
       [biz.id, bookingId, `anon-test:${bookingId}`],
+    );
+    // Säkerhetsgranskning WP-26 (punkt 8): samma statuslista som
+    // cancelPendingReminders (enqueue.ts) — 'failed' ska avbrytas också, inte
+    // bara 'queued'.
+    await adminQuery(
+      `insert into public.message_outbox
+         (business_id, booking_id, channel, recipient_kind, template, payload, category, status, attempts, dedupe_key)
+       values ($1, $2, 'email', 'customer', 'recordatorio', jsonb_build_object('token', 'secreto2'), 'utility', 'failed', 3, $3)`,
+      [biz.id, bookingId, `anon-test-failed:${bookingId}`],
     );
 
     const consentId = await insertConsentEvent(biz.id, customerId);
@@ -162,17 +183,28 @@ describe("anonymizeCustomer (WP-26 steg 2, D-033)", () => {
     expect(bookingAnswers.rowCount).toBe(0);
 
     const outbox = await adminQuery<{ status: string; payload: unknown }>(
-      `select status, payload from public.message_outbox where booking_id = $1`,
+      `select status, payload from public.message_outbox where booking_id = $1 order by template`,
       [bookingId],
     );
-    expect(outbox.rows[0]?.status).toBe("cancelled");
-    expect(outbox.rows[0]?.payload).toEqual({});
+    expect(outbox.rows).toHaveLength(2);
+    for (const row of outbox.rows) {
+      expect(row.status).toBe("cancelled");
+      expect(row.payload).toEqual({});
+    }
 
-    const tokenRow = await adminQuery<{ manage_token_hash: unknown }>(
-      `select manage_token_hash from public.bookings where id = $1`,
+    const tokenRow = await adminQuery<{
+      manage_token_hash: unknown;
+      notes: string | null;
+      cancel_reason: string | null;
+    }>(
+      `select manage_token_hash, notes, cancel_reason from public.bookings where id = $1`,
       [bookingId],
     );
     expect(tokenRow.rows[0]?.manage_token_hash).toBeNull();
+    // Säkerhetsgranskning WP-26 (punkt B1): fritext på bokningen, kan
+    // innehålla persondata.
+    expect(tokenRow.rows[0]?.notes).toBeNull();
+    expect(tokenRow.rows[0]?.cancel_reason).toBeNull();
 
     const consent = await adminQuery<{ customer_id: string | null }>(
       `select customer_id from public.consent_events where id = $1`,
@@ -233,5 +265,41 @@ describe("anonymizeCustomer (WP-26 steg 2, D-033)", () => {
     );
     const result = await anonymizeCustomer(biz.ownerUserId, biz.id, c.rows[0]!.id);
     expect(result).toEqual({ ok: false, code: "not_found" });
+  });
+});
+
+describe("Säkerhetsgranskning WP-26 (punkt 11): staff-medlem i samma företag", () => {
+  it("en staff-medlem får unauthorized på export och anonymisering av en kund", async () => {
+    const staffUserId = await createTestUser();
+    await adminQuery(
+      `insert into public.memberships (business_id, user_id, role) values ($1, $2, 'staff')`,
+      [biz.id, staffUserId],
+    );
+    try {
+      const c = await adminQuery<{ id: string }>(
+        `insert into public.customers (business_id, phone_e164, name) values ($1, '+56911110007', 'Cliente Staff Test') returning id`,
+        [biz.id],
+      );
+      const customerId = c.rows[0]!.id;
+      expect(await exportCustomer(staffUserId, biz.id, customerId)).toEqual({
+        ok: false,
+        code: "unauthorized",
+      });
+      expect(await anonymizeCustomer(staffUserId, biz.id, customerId)).toEqual({
+        ok: false,
+        code: "unauthorized",
+      });
+      const untouched = await adminQuery<{ name: string | null }>(
+        `select name from public.customers where id = $1`,
+        [customerId],
+      );
+      expect(untouched.rows[0]?.name).toBe("Cliente Staff Test");
+    } finally {
+      await adminQuery(
+        `delete from public.memberships where business_id = $1 and user_id = $2`,
+        [biz.id, staffUserId],
+      );
+      await dropTestUser(staffUserId);
+    }
   });
 });
