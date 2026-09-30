@@ -363,6 +363,7 @@ export type Database = {
           comuna: string;
           cover_url: string | null;
           created_at: string;
+          deletion_requested_at: string | null;
           id: string;
           instagram: string | null;
           logo_url: string | null;
@@ -388,6 +389,7 @@ export type Database = {
           comuna: string;
           cover_url?: string | null;
           created_at?: string;
+          deletion_requested_at?: string | null;
           id?: string;
           instagram?: string | null;
           logo_url?: string | null;
@@ -413,6 +415,7 @@ export type Database = {
           comuna?: string;
           cover_url?: string | null;
           created_at?: string;
+          deletion_requested_at?: string | null;
           id?: string;
           instagram?: string | null;
           logo_url?: string | null;
@@ -430,6 +433,57 @@ export type Database = {
           waitlist_mode?: Database["public"]["Enums"]["waitlist_mode"];
         };
         Relationships: [];
+      };
+      consent_events: {
+        Row: {
+          business_id: string;
+          channel: Database["public"]["Enums"]["consent_channel"];
+          created_at: string;
+          customer_id: string | null;
+          granted: boolean;
+          id: string;
+          kind: Database["public"]["Enums"]["consent_kind"];
+          subject: Database["public"]["Enums"]["consent_subject"];
+          version: string;
+        };
+        Insert: {
+          business_id: string;
+          channel: Database["public"]["Enums"]["consent_channel"];
+          created_at?: string;
+          customer_id?: string | null;
+          granted: boolean;
+          id?: string;
+          kind: Database["public"]["Enums"]["consent_kind"];
+          subject: Database["public"]["Enums"]["consent_subject"];
+          version: string;
+        };
+        Update: {
+          business_id?: string;
+          channel?: Database["public"]["Enums"]["consent_channel"];
+          created_at?: string;
+          customer_id?: string | null;
+          granted?: boolean;
+          id?: string;
+          kind?: Database["public"]["Enums"]["consent_kind"];
+          subject?: Database["public"]["Enums"]["consent_subject"];
+          version?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "consent_events_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "consent_events_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       customer_answers: {
         Row: {
@@ -1037,6 +1091,8 @@ export type Database = {
       business_plan: "free" | "emprende" | "equipo" | "local";
       business_status: "active" | "frozen";
       consent_channel: "web" | "whatsapp" | "manual";
+      consent_kind: "terms" | "marketing" | "waitlist" | "owner_terms" | "dpa";
+      consent_subject: "customer" | "owner";
       deposit_kind: "none" | "fixed" | "percent";
       member_role: "owner" | "staff" | "vendor" | "admin";
       message_category: "utility" | "marketing" | "service";
@@ -1196,6 +1252,8 @@ export const Constants = {
       business_plan: ["free", "emprende", "equipo", "local"],
       business_status: ["active", "frozen"],
       consent_channel: ["web", "whatsapp", "manual"],
+      consent_kind: ["terms", "marketing", "waitlist", "owner_terms", "dpa"],
+      consent_subject: ["customer", "owner"],
       deposit_kind: ["none", "fixed", "percent"],
       member_role: ["owner", "staff", "vendor", "admin"],
       message_category: ["utility", "marketing", "service"],

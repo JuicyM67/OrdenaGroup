@@ -108,6 +108,8 @@ const TENANT_TABLES = [
   "customer_answers",
   // WP-41
   "business_images",
+  // WP-26
+  "consent_events",
 ] as const;
 
 /** Sträng- och mallitteraler som ser ut som SQL. */
