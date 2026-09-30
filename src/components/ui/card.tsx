@@ -8,7 +8,7 @@ import { cn } from "./cn";
 const card = cva("", {
   variants: {
     tone: {
-      surface: "bg-surface text-ink",
+      surface: "bg-surface text-ink fields-on-surface",
       dark: "bg-dark text-on-dark",
       "dark-2": "bg-dark-2 text-on-dark",
       lilac: "bg-lilac text-ink",

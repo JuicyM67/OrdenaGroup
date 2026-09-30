@@ -813,3 +813,12 @@
    globals.css, utanför den här WP:ns filgräns) — bör flyttas bredvid `toggle-on` om/när
    globals.css ändå redigeras. */
 @custom-variant sheet-closed (&[data-state="closed"]);
+
+/* Formulärfält: vita på grå yta, grå på vita kort (annars osynliga, ägarens test
+   2026-09-30). Card tone="surface" sätter --field-bg via `fields-on-surface`. */
+@utility bg-field {
+  background-color: var(--field-bg, var(--color-surface));
+}
+@utility fields-on-surface {
+  --field-bg: var(--color-canvas);
+}

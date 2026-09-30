@@ -83,7 +83,7 @@ export function StaffStep({
         {value.map((s, i) => (
           <div
             key={i}
-            className="flex flex-col gap-3 rounded-tile bg-surface p-4"
+            className="flex flex-col gap-3 rounded-tile bg-surface p-4 fields-on-surface"
           >
             <TextField
               label={profesionales.campos.nameLabel}

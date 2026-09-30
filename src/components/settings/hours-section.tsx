@@ -105,7 +105,7 @@ export function HoursSection({
                   onChange={(e) => updateDay(i, { start: e.target.value })}
                   // WP-42: `min-w-0 flex-1` i stället för bara `w-full` — annars kan raden
                   // tvingas bredare än 360 px.
-                  className="h-11 min-w-0 flex-1 rounded-control border-2 border-transparent bg-surface px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  className="h-11 min-w-0 flex-1 rounded-control border-2 border-transparent bg-field px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                 />
                 <span className="text-13 text-muted" aria-hidden="true">
                   –
@@ -114,7 +114,7 @@ export function HoursSection({
                   aria-label={`${WEEKDAY_LONG[h.weekday - 1]}: término`}
                   value={h.end}
                   onChange={(e) => updateDay(i, { end: e.target.value })}
-                  className="h-11 min-w-0 flex-1 rounded-control border-2 border-transparent bg-surface px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                  className="h-11 min-w-0 flex-1 rounded-control border-2 border-transparent bg-field px-3 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                 />
               </div>
             ) : null}

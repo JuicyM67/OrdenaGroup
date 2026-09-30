@@ -337,7 +337,7 @@ export function ManualBookingDialog({
                   }}
                   maxLength={500}
                   rows={3}
-                  className="w-full resize-none rounded-control border-2 border-transparent bg-surface px-4 py-3 text-15 font-medium text-ink transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none"
+                  className="w-full resize-none rounded-control border-2 border-transparent bg-field px-4 py-3 text-15 font-medium text-ink transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none"
                 />
                 <span className="text-13 text-muted">
                   {agenda.manual.notasAyuda}

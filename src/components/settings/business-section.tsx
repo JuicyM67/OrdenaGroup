@@ -242,7 +242,7 @@ export function BusinessSection({
             id="slot-interval"
             value={form.slotIntervalMinutes}
             onChange={(e) => set("slotIntervalMinutes", e.target.value)}
-            className="h-13 w-full rounded-control border-2 border-transparent bg-surface px-4 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            className="h-13 w-full rounded-control border-2 border-transparent bg-field px-4 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
             {SLOT_INTERVALS.map((n) => (
               <option key={n} value={n}>
