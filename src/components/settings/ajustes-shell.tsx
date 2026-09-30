@@ -207,7 +207,7 @@ export function AjustesShell({
           ))}
         </nav>
 
-        <div className="flex w-full max-w-4xl flex-col gap-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pb-2">
+        <div className="flex w-full max-w-4xl flex-col gap-6 lg:min-h-0 lg:flex-1 lg:self-stretch lg:overflow-y-auto lg:pb-2">
           {children}
         </div>
       </div>
