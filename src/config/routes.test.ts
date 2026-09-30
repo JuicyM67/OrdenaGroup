@@ -108,3 +108,11 @@ describe("routes.ts", () => {
     }
   });
 });
+
+describe("PRIVACY_HREF i bokningsformuläret (literal för JS-budget)", () => {
+  it("matchar hrefLegal", async () => {
+    const { PRIVACY_HREF } = await import("@/components/booking/customer-form");
+    const { hrefLegal } = await import("./routes");
+    expect(PRIVACY_HREF).toBe(hrefLegal("privacidad"));
+  });
+});

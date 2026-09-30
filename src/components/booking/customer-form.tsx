@@ -10,7 +10,6 @@ import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
 import { market } from "@/config/brand";
-import { hrefLegal } from "@/config/routes";
 import { comun, reserva } from "@/i18n";
 // WP-40 (D-031): `validateAnswers` är uttryckligen klientsäker (se
 // filkommentaren i `booking-questions.ts`) trots att den drar in Zod — en
@@ -52,8 +51,10 @@ interface FieldErrors {
 }
 
 // WP-26 steg 6: länk till integritetspolicyn från samtyckesrutan, öppnas i ny flik.
-// `hrefLegal` är en ren funktion (ingen legal-text importeras i klientbundeln, R JS-budget).
-const PRIVACY_HREF = hrefLegal("privacidad");
+// Skriven som literal i stället för `hrefLegal` (src/config/routes.ts): route-tabellen
+// kostar ~kB i klientbundeln (D-032, 180 kB). `routes.test.ts` håller den i synk.
+export const PRIVACY_HREF =
+  market === "SE" ? "/legal/integritet" : "/legal/privacidad";
 
 /** Uuid via `crypto.getRandomValues` (qa-granskning, item 10): aldrig en
  * konstant — en delad idempotencyKey mellan olika kunder/enheter skulle låta
