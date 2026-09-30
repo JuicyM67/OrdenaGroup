@@ -374,6 +374,7 @@ export type Database = {
           name: string;
           phone: string | null;
           plan: Database["public"]["Enums"]["business_plan"];
+          plan_override_until: string | null;
           slot_interval_minutes: number;
           slug: string;
           status: Database["public"]["Enums"]["business_status"];
@@ -405,6 +406,7 @@ export type Database = {
           name: string;
           phone?: string | null;
           plan?: Database["public"]["Enums"]["business_plan"];
+          plan_override_until?: string | null;
           slot_interval_minutes?: number;
           slug: string;
           status?: Database["public"]["Enums"]["business_status"];
@@ -436,6 +438,7 @@ export type Database = {
           name?: string;
           phone?: string | null;
           plan?: Database["public"]["Enums"]["business_plan"];
+          plan_override_until?: string | null;
           slot_interval_minutes?: number;
           slug?: string;
           status?: Database["public"]["Enums"]["business_status"];
@@ -1185,6 +1188,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_business_invitation: { Args: { token: string }; Returns: string };
       accept_invitation: { Args: { token: string }; Returns: string };
       create_business: {
         Args: {
