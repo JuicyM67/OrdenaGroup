@@ -91,7 +91,7 @@ select throws_ok(
 );
 
 -- WP-46 uppföljning 2: en profesional utan can_manage_team kan ändra
--- SIN EGEN photo_url/title (`private.staff_guard_self_update`), men inte
+-- SIN EGEN title (photo_url bara via servern) (`private.staff_guard_self_update`), men inte
 -- name (kolumnspärr via triggern, inte RLS) och inte en kollegas rad alls
 -- (RLS `using` filtrerar bort den, 0 rader — ingen exception).
 insert into public.staff (id, business_id, name, color) values
@@ -103,9 +103,11 @@ insert into public.memberships (business_id, user_id, role, staff_id) values
 
 select set_config('request.jwt.claims', json_build_object('sub', '66666666-2222-2222-2222-222222222222', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select lives_ok(
+select throws_ok(
   $$ update public.staff set photo_url = 'https://example.com/foto.jpg' where id = 'aaaaaaaa-1000-0000-0000-000000000001' $$,
-  'en profesional kan sätta sin EGEN photo_url utan can_manage_team'
+  '42501',
+  null,
+  'photo_url sätts bara via servern, inte direkt (säkerhetsgranskning WP-46)'
 );
 select lives_ok(
   $$ update public.staff set title = 'Barbero senior' where id = 'aaaaaaaa-1000-0000-0000-000000000001' $$,

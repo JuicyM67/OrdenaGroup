@@ -166,6 +166,33 @@ function isOwnUploadPath(path: string, businessId: string): boolean {
   return re.test(path) && path.startsWith(`${businessId}/`);
 }
 
+/**
+ * Säkerhetsgranskning WP-46: admin-klienten får bara radera ett objekt som
+ * ingen annan del av företaget refererar (logga, omslag, galleri, en kollegas
+ * foto) — annars kunde personal peka sitt foto mot företagets bilder och
+ * sedan "ta bort" dem.
+ */
+async function referencedElsewhere(
+  q: Queryable,
+  path: string,
+  businessId: string,
+  staffId: string,
+): Promise<boolean> {
+  const url = publicMediaUrl(path);
+  const r = await q.query<{ n: number }>(
+    `select (
+       (select count(*) from public.businesses
+         where id = $1 and (logo_url = $2 or cover_url = $2))
+     + (select count(*) from public.business_images
+         where business_id = $1 and path = $3)
+     + (select count(*) from public.staff
+         where business_id = $1 and id <> $4 and photo_url = $2)
+     )::int as n`,
+    [businessId, url, path, staffId],
+  );
+  return (r.rows[0]?.n ?? 0) > 0;
+}
+
 export async function confirmOwnPhotoUpload(
   userId: string,
   businessId: string,
@@ -190,14 +217,17 @@ export async function confirmOwnPhotoUpload(
       // Samma kontroll som owner/profile.ts confirmImageUpload, men här (i
       // stället för via RLS) eftersom personal saknar SELECT på
       // storage.objects.
+      // Bara ett objekt som användaren själv laddade upp (inte t.ex. logga
+      // eller en kollegas foto) — annars raderas det vid nästa byte.
       const obj = await q.query<{ size: string | null; mime: string | null }>(
         `select metadata->>'size' as size, metadata->>'mimetype' as mime
            from storage.objects
-          where bucket_id = 'business-media' and name = $1`,
-        [path],
+          where bucket_id = 'business-media' and name = $1
+            and (owner_id = $2 or owner::text = $2)`,
+        [path, userId],
       );
       const o = obj.rows[0];
-      if (!o) {
+      if (!o || (await referencedElsewhere(q, path, businessId, staffId))) {
         return { ok: false, code: "profile.upload_missing", discard: false };
       }
       const size = Number(o.size);
@@ -220,10 +250,14 @@ export async function confirmOwnPhotoUpload(
         `update public.staff set photo_url = $1 where id = $2 and business_id = $3`,
         [url, staffId, businessId],
       );
+      const old = mediaPathFromUrl(prev.rows[0]!.url, businessId);
       return {
         ok: true,
         url,
-        replaced: mediaPathFromUrl(prev.rows[0]!.url, businessId),
+        replaced:
+          old && !(await referencedElsewhere(q, old, businessId, staffId))
+            ? old
+            : null,
       };
     });
   } catch (e) {
@@ -263,7 +297,10 @@ export async function deleteOwnPhoto(
         `update public.staff set photo_url = null where id = $1 and business_id = $2`,
         [staffId, businessId],
       );
-      return mediaPathFromUrl(prev.rows[0]!.url, businessId);
+      const old = mediaPathFromUrl(prev.rows[0]!.url, businessId);
+      return old && !(await referencedElsewhere(q, old, businessId, staffId))
+        ? old
+        : null;
     });
   } catch (e) {
     return { ok: false, code: mapDbError(e) };

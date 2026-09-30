@@ -56,12 +56,12 @@ begin
 
   -- Ingen can_manage_team: raden kan bara vara den egna (RLS `using`/`with
   -- check` ovan garanterar redan det för en `authenticated`-träff), och
-  -- bara photo_url/title får ändras.
-  if new.business_id is distinct from old.business_id
-     or new.name is distinct from old.name
-     or new.color is distinct from old.color
-     or new.active is distinct from old.active
-     or new.sort is distinct from old.sort
+  -- bara title får ändras direkt (vitlista). photo_url sätts bara via
+  -- servern (service role, src/server/team/profile.ts), som kontrollerar att
+  -- objektet är användarens eget — säkerhetsgranskning WP-46: annars kunde
+  -- personal peka sitt foto mot företagets logga och sedan radera den.
+  if (to_jsonb(new) - 'title' - 'updated_at')
+     is distinct from (to_jsonb(old) - 'title' - 'updated_at')
   then
     raise exception 'Solo puedes cambiar tu foto y tu cargo' using errcode = '42501';
   end if;
