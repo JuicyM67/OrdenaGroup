@@ -2,6 +2,9 @@
 // tonad yta. Se DESIGN.md §7 "PageHeader"/"AgendaRow".
 // WP-41: tone="peach" tillagd (Profil, Personal-korten) — redan en token (`--color-peach`),
 // bara en ny variant i den här cva:n, ingen ny färg.
+// WP-44: frivilligt `photoUrl` — samma mönster som `ProfileLogo` i profile-header.tsx
+// (`<img>` normal, inte next/image, `object-cover` över hela ytan). Saknas `photoUrl`
+// visas initialerna, precis som innan WP-44.
 import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "./cn";
@@ -46,6 +49,11 @@ const avatar = cva(
 export type AvatarProps = VariantProps<typeof avatar> & {
   /** Initialer, t.ex. "CR". Läses upp av skärmläsare om `aria-hidden` inte sätts av föräldern. */
   initials: string;
+  /** WP-44: foto om det finns (redan filtrerat till vår bucket, se `mediaPathFromUrl`).
+   * `null`/saknas = visa initialerna. */
+  photoUrl?: string | null;
+  /** Alt-text för fotot, t.ex. personens namn. Ignoreras om `photoUrl` saknas. */
+  alt?: string;
   className?: string;
 };
 
@@ -54,11 +62,29 @@ export function Avatar({
   shape,
   size,
   tone,
+  photoUrl,
+  alt,
   className,
 }: AvatarProps) {
   return (
-    <span className={cn(avatar({ shape, size, tone }), className)}>
-      {initials}
+    <span
+      className={cn(
+        "relative overflow-hidden",
+        avatar({ shape, size, tone }),
+        className,
+      )}
+    >
+      {photoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- samma skäl som ProfileLogo (profile-header.tsx): JS-budgeten.
+        <img
+          src={photoUrl}
+          alt={alt ?? ""}
+          loading="lazy"
+          className="absolute inset-0 size-full object-cover"
+        />
+      ) : (
+        initials
+      )}
     </span>
   );
 }

@@ -3,24 +3,138 @@
 // Sección "Equipo" (WP-15b slim, ver plan): lista, agregar, editar (nombre y qué servicios
 // hace) y activar/desactivar. Sin eliminar ni color (fuera del alcance, ver la plan). Un
 // solo formulario abierto a la vez.
-import { useState } from "react";
+import { useId, useRef, useState } from "react";
 import { comun } from "@/i18n";
 
 import { validateRequired } from "@/components/onboarding/client-validation";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { Pill } from "@/components/ui/pill";
 import { TextField } from "@/components/ui/text-field";
-import { ajustes, profesionales } from "@/i18n";
-import { STAFF_TITLE_MAX } from "@/lib/validation/profile";
+import { ajustes, perfil, profesionales } from "@/i18n";
+import { initialsOf } from "@/lib/format/initials";
+import { IMAGE_CONTENT_TYPES, STAFF_TITLE_MAX } from "@/lib/validation/profile";
 
 import { ajustesErrorText } from "./error-text";
+import type { ProfileActions } from "./profile-types";
+import { uploadImage } from "./upload-image";
 import type {
   AjustesActions,
   AjustesService,
   AjustesStaffMember,
 } from "./types";
+
+/** WP-44: foto, gratis i alla planer. Samma uppladdningsflöde som
+ * omslag/logo (profile-section.tsx → ./upload-image.ts), bara `kind: "staff"`
+ * och `staffId` i stället för `kind: "cover" | "logo"`. */
+type StaffPhotoActions = Pick<
+  ProfileActions,
+  "createImageUpload" | "confirmImageUpload" | "deleteImage"
+>;
+
+function StaffPhotoField({
+  staffId,
+  name,
+  url,
+  actions,
+  onChange,
+}: {
+  staffId: string;
+  name: string;
+  url: string | null;
+  actions: StaffPhotoActions;
+  onChange: (url: string | null) => void;
+}) {
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  async function handleFile(file: File) {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await uploadImage(file, { kind: "staff", staffId }, actions);
+      if ("code" in result) {
+        setError(ajustesErrorText(result.code));
+      } else {
+        onChange(result.url);
+      }
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  async function handleRemove() {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await actions.deleteImage({ kind: "staff", staffId });
+      if (result.ok) onChange(null);
+      else setError(ajustesErrorText(result.code));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex shrink-0 items-center gap-3">
+      <Avatar
+        initials={initialsOf(name)}
+        photoUrl={url}
+        alt={name}
+        size={46}
+        tone="peach"
+      />
+      <div className="flex flex-col gap-1">
+        <label htmlFor={inputId} className="sr-only">
+          {profesionales.campos.fotoLabel}
+        </label>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            disabled={busy}
+            onClick={() => inputRef.current?.click()}
+          >
+            {url ? perfil.ajustes.botones.cambiar : perfil.ajustes.botones.subir}
+          </Button>
+          {url ? (
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              disabled={busy}
+              onClick={() => void handleRemove()}
+            >
+              {perfil.ajustes.botones.eliminar}
+            </Button>
+          ) : null}
+        </div>
+        {error ? (
+          <span role="alert" className="text-13 text-ink">
+            {error}
+          </span>
+        ) : null}
+      </div>
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="file"
+        accept={IMAGE_CONTENT_TYPES.join(",")}
+        className="sr-only"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleFile(file);
+        }}
+      />
+    </div>
+  );
+}
 
 type RowForm = { name: string; title: string; serviceIds: string[] };
 type RowErrors = { name?: string; title?: string };
@@ -109,10 +223,13 @@ const EMPTY_FORM: RowForm = { name: "", title: "", serviceIds: [] };
 export function StaffSection({
   staff,
   services,
+  photos,
   actions,
 }: {
   staff: AjustesStaffMember[];
   services: AjustesService[];
+  /** WP-44: `staffId` → foto-URL, bara de som har ett (`ProfileSettings.staffPhotos`). */
+  photos: Record<string, string>;
   actions: {
     create: AjustesActions["createStaff"];
     update: AjustesActions["updateStaff"];
@@ -123,9 +240,12 @@ export function StaffSection({
       id: string,
       title: string,
     ) => Promise<{ ok: true } | { ok: false; code: string }>;
-  };
+  } & StaffPhotoActions;
 }) {
   const [list, setList] = useState(staff);
+  const [photoUrls, setPhotoUrls] = useState<Record<string, string | null>>(
+    photos,
+  );
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
   const [form, setForm] = useState<RowForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<RowErrors>({});
@@ -257,19 +377,30 @@ export function StaffSection({
                 !s.active && "opacity-50",
               )}
             >
-              <div className="min-w-0">
-                <p className="text-15 font-bold text-ink">{s.name}</p>
-                {s.title ? (
-                  <p className="text-13 text-muted">{s.title}</p>
-                ) : null}
-                {s.serviceIds.length > 0 ? (
-                  <p className="text-13 text-muted">
-                    {services
-                      .filter((svc) => s.serviceIds.includes(svc.id))
-                      .map((svc) => svc.name)
-                      .join(", ")}
-                  </p>
-                ) : null}
+              <div className="flex min-w-0 items-center gap-3">
+                <StaffPhotoField
+                  staffId={s.id}
+                  name={s.name}
+                  url={photoUrls[s.id] ?? null}
+                  actions={actions}
+                  onChange={(url) =>
+                    setPhotoUrls((prev) => ({ ...prev, [s.id]: url }))
+                  }
+                />
+                <div className="min-w-0">
+                  <p className="text-15 font-bold text-ink">{s.name}</p>
+                  {s.title ? (
+                    <p className="text-13 text-muted">{s.title}</p>
+                  ) : null}
+                  {s.serviceIds.length > 0 ? (
+                    <p className="text-13 text-muted">
+                      {services
+                        .filter((svc) => s.serviceIds.includes(svc.id))
+                        .map((svc) => svc.name)
+                        .join(", ")}
+                    </p>
+                  ) : null}
+                </div>
               </div>
               <div className="flex shrink-0 gap-2">
                 <Button

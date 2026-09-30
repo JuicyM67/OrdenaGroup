@@ -63,6 +63,8 @@ export type ProfileSettings = {
   coverUrl: string | null;
   logoUrl: string | null;
   gallery: { id: string; url: string }[];
+  /** WP-44: personalens foton, `staffId` → publik URL (bara de som har ett). */
+  staffPhotos: Record<string, string>;
 };
 
 async function defaultStorage(): Promise<MediaStorage> {
@@ -93,7 +95,9 @@ function mapDbError(e: unknown): string {
   if (
     code === "23514" &&
     (constraint === "businesses_cover_url_format" ||
-      constraint === "businesses_logo_url_format")
+      constraint === "businesses_logo_url_format" ||
+      // WP-44: samma regel för staff.photo_url.
+      constraint === "staff_photo_url_format")
   ) {
     return "profile.image_url_invalid";
   }
@@ -146,6 +150,13 @@ export function loadProfileSettings(
         order by sort, created_at`,
       [businessId],
     );
+    // WP-44: redan sparade som fullständiga publika URL:er (samma kolumnform
+    // som cover_url/logo_url), ingen `publicMediaUrl`-omvandling här.
+    const staffPhotos = await q.query<{ id: string; photo_url: string }>(
+      `select id, photo_url from public.staff
+        where business_id = $1 and photo_url is not null`,
+      [businessId],
+    );
     return {
       about: row.about ?? "",
       instagram: row.instagram ?? "",
@@ -157,6 +168,9 @@ export function loadProfileSettings(
         id: i.id,
         url: publicMediaUrl(i.path),
       })),
+      staffPhotos: Object.fromEntries(
+        staffPhotos.rows.map((s) => [s.id, s.photo_url]),
+      ),
     };
   });
 }
@@ -213,6 +227,15 @@ export async function updateStaffTitle(
 // Bilder
 // ---------------------------------------------------------------------------
 
+const UUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+const UUID_ONLY_RE = new RegExp(`^${UUID_RE}$`);
+
+/** WP-44: `staffId` kommer in som `unknown` (klientinput), samma slappa
+ * kontroll som `imageUploadInputSchema.staffId` lämnar kvar till servern. */
+function isValidUuid(v: unknown): v is string {
+  return typeof v === "string" && UUID_ONLY_RE.test(v);
+}
+
 export async function createImageUpload(
   userId: string,
   businessId: string,
@@ -221,7 +244,10 @@ export async function createImageUpload(
 ): Promise<ImageUploadTicket | { ok: false; code: string }> {
   const parsed = imageUploadInputSchema.safeParse(rawInput);
   if (!parsed.success) return { ok: false, code: firstIssue(parsed.error) };
-  const { kind, contentType } = parsed.data;
+  const { kind, contentType, staffId } = parsed.data;
+  if (kind === "staff" && !isValidUuid(staffId)) {
+    return { ok: false, code: "invalid_input" };
+  }
 
   const check = await withOwnerTx(userId, async (q) => {
     if (!(await isOwner(q, businessId))) return "unauthorized";
@@ -230,6 +256,15 @@ export async function createImageUpload(
       (await galleryCount(q, businessId)) >= GALLERY_MAX
     ) {
       return "profile.gallery_full";
+    }
+    if (kind === "staff") {
+      // Personen måste tillhöra det här företaget (annars kunde en ägare
+      // signera en uppladdning "åt" en annan ägares anställd).
+      const belongs = await q.query(
+        `select 1 from public.staff where id = $1 and business_id = $2`,
+        [staffId, businessId],
+      );
+      if (!belongs.rowCount) return "invalid_input";
     }
     return null;
   });
@@ -242,8 +277,6 @@ export async function createImageUpload(
   if (!signed.ok) return { ok: false, code: "profile.upload_failed" };
   return { ok: true, path, signedUrl: signed.signedUrl, token: signed.token };
 }
-
-const UUID_RE = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 /** Bara sökvägar som `createImageUpload` kan ha skapat för det här företaget. */
 function isOwnUploadPath(path: string, businessId: string): boolean {
@@ -259,7 +292,9 @@ export async function confirmImageUpload(
 ): Promise<
   { ok: true; url: string; imageId?: string } | { ok: false; code: string }
 > {
-  const input = rawInput as { kind?: unknown; path?: unknown } | null;
+  const input = rawInput as
+    | { kind?: unknown; path?: unknown; staffId?: unknown }
+    | null;
   const kindParsed = imageUploadInputSchema.shape.kind.safeParse(input?.kind);
   if (!kindParsed.success)
     return { ok: false, code: "profile.image_kind_invalid" };
@@ -268,6 +303,10 @@ export async function confirmImageUpload(
   if (!isOwnUploadPath(path, businessId)) {
     return { ok: false, code: "invalid_input" };
   }
+  if (kind === "staff" && !isValidUuid(input?.staffId)) {
+    return { ok: false, code: "invalid_input" };
+  }
+  const staffId = kind === "staff" ? (input!.staffId as string) : undefined;
   const url = publicMediaUrl(path);
 
   let result:
@@ -317,6 +356,25 @@ export async function confirmImageUpload(
         return { ok: true, url, imageId: ins.rows[0]!.id, replaced: null };
       }
 
+      if (kind === "staff") {
+        const prev = await q.query<{ url: string | null }>(
+          `select photo_url as url from public.staff
+            where id = $1 and business_id = $2 for update`,
+          [staffId, businessId],
+        );
+        if (!prev.rowCount)
+          return { ok: false, code: "invalid_input", discard: true };
+        await q.query(`update public.staff set photo_url = $1 where id = $2`, [
+          url,
+          staffId,
+        ]);
+        return {
+          ok: true,
+          url,
+          replaced: mediaPathFromUrl(prev.rows[0]!.url, businessId),
+        };
+      }
+
       const column = kind === "cover" ? "cover_url" : "logo_url";
       const prev = await q.query<{ url: string | null }>(
         `select ${column} as url from public.businesses where id = $1 for update`,
@@ -351,7 +409,11 @@ export async function confirmImageUpload(
 }
 
 export type DeleteImageTarget =
-  { kind: "gallery"; id: string } | { kind: "cover" } | { kind: "logo" };
+  | { kind: "gallery"; id: string }
+  | { kind: "cover" }
+  | { kind: "logo" }
+  /** WP-44: personalens foto. */
+  | { kind: "staff"; staffId: string };
 
 export async function deleteImage(
   userId: string,
@@ -359,6 +421,9 @@ export async function deleteImage(
   target: DeleteImageTarget,
   storage?: MediaStorage,
 ): Promise<ProfileResult> {
+  if (target.kind === "staff" && !isValidUuid(target.staffId)) {
+    return { ok: false, code: "invalid_input" };
+  }
   let removed: string | null;
   try {
     const r = await withOwnerTx(userId, async (q) => {
@@ -370,6 +435,21 @@ export async function deleteImage(
         );
         const row = del.rows[0];
         return row ? { ok: true as const, path: row.path } : null;
+      }
+      if (target.kind === "staff") {
+        const prev = await q.query<{ url: string | null }>(
+          `select photo_url as url from public.staff
+            where id = $1 and business_id = $2 for update`,
+          [target.staffId, businessId],
+        );
+        if (!prev.rowCount) return null;
+        await q.query(`update public.staff set photo_url = null where id = $1`, [
+          target.staffId,
+        ]);
+        return {
+          ok: true as const,
+          path: mediaPathFromUrl(prev.rows[0]!.url, businessId),
+        };
       }
       const column = target.kind === "cover" ? "cover_url" : "logo_url";
       const prev = await q.query<{ url: string | null }>(

@@ -47,6 +47,9 @@ export interface BookingStaffMember {
   readonly name: string;
   /** WP-41: roll ("Estilista senior"). Frivilligt, `null` = ingen roll. */
   readonly title?: string | null;
+  /** WP-44: profilbild, redan filtrerad till vår bucket/företagets mapp
+   * (`page-data.ts`). Frivilligt, `null`/saknas = initialer. */
+  readonly photoUrl?: string | null;
 }
 
 /** `"any"` = "Cualquiera" (R8 av WP-02), annars `BookingStaffMember["id"]`. */

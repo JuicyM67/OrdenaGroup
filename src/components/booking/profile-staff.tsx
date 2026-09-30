@@ -22,6 +22,8 @@ export function ProfileStaff({
         >
           <Avatar
             initials={initialsOf(member.name)}
+            photoUrl={member.photoUrl}
+            alt={member.name}
             size={46}
             tone={staffTone(i)}
           />

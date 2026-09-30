@@ -12,6 +12,8 @@ export type ProfileSettingsData = {
   coverUrl: string | null;
   logoUrl: string | null;
   gallery: ProfileImage[];
+  /** WP-44: personalens foton, `staffId` → publik URL (bara de som har ett). */
+  staffPhotos: Record<string, string>;
 };
 
 export type ProfileMutationResult = { ok: true } | { ok: false; code: string };
@@ -23,10 +25,14 @@ export type ImageUploadTicket =
 export type ConfirmImageResult =
   { ok: true; url: string; imageId?: string } | { ok: false; code: string };
 
-export type ImageKind = "cover" | "logo" | "gallery";
+/** WP-44: `"staff"` = personalens profilbild. */
+export type ImageKind = "cover" | "logo" | "gallery" | "staff";
 
 export type DeleteImageTarget =
-  { kind: "gallery"; id: string } | { kind: "cover" } | { kind: "logo" };
+  | { kind: "gallery"; id: string }
+  | { kind: "cover" }
+  | { kind: "logo" }
+  | { kind: "staff"; staffId: string };
 
 export type ProfileActions = {
   updateBusinessProfile: (input: unknown) => Promise<ProfileMutationResult>;

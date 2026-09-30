@@ -18,21 +18,11 @@ import { Card } from "@/components/ui/card";
 import { TextField } from "@/components/ui/text-field";
 import { Textarea } from "@/components/ui/textarea";
 import { ajustes, negocio, perfil } from "@/i18n";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import {
-  ABOUT_MAX,
-  IMAGE_CONTENT_TYPES,
-  IMAGE_MAX_BYTES,
-  MEDIA_BUCKET,
-  type ImageContentType,
-} from "@/lib/validation/profile";
+import { ABOUT_MAX, IMAGE_CONTENT_TYPES } from "@/lib/validation/profile";
 
 import { ajustesErrorText } from "./error-text";
-import type {
-  ImageKind,
-  ProfileActions,
-  ProfileSettingsData,
-} from "./profile-types";
+import type { ProfileActions, ProfileSettingsData } from "./profile-types";
+import { uploadImage } from "./upload-image";
 
 type FormState = {
   about: string;
@@ -48,42 +38,6 @@ function toFormState(p: ProfileSettingsData): FormState {
     address: p.address,
     phone: p.phone,
   };
-}
-
-function isImageContentType(t: string): t is ImageContentType {
-  return (IMAGE_CONTENT_TYPES as readonly string[]).includes(t);
-}
-
-/** Sube un archivo ya validado y devuelve la URL pública final, o `null`. */
-async function uploadImage(
-  file: File,
-  kind: ImageKind,
-  actions: Pick<ProfileActions, "createImageUpload" | "confirmImageUpload">,
-): Promise<{ url: string; imageId?: string } | { code: string }> {
-  if (!isImageContentType(file.type)) {
-    return { code: "profile.image_type_invalid" };
-  }
-  if (file.size > IMAGE_MAX_BYTES) return { code: "profile.image_too_large" };
-
-  const ticket = await actions.createImageUpload({
-    kind,
-    contentType: file.type,
-    size: file.size,
-  });
-  if (!ticket.ok) return { code: ticket.code };
-
-  const supabase = createSupabaseBrowserClient();
-  const { error } = await supabase.storage
-    .from(MEDIA_BUCKET)
-    .uploadToSignedUrl(ticket.path, ticket.token, file);
-  if (error) return { code: "profile.upload_failed" };
-
-  const confirmed = await actions.confirmImageUpload({
-    kind,
-    path: ticket.path,
-  });
-  if (!confirmed.ok) return { code: confirmed.code };
-  return { url: confirmed.url, imageId: confirmed.imageId };
 }
 
 function SingleImageField({
@@ -110,7 +64,7 @@ function SingleImageField({
     setBusy(true);
     setError(undefined);
     try {
-      const result = await uploadImage(file, kind, actions);
+      const result = await uploadImage(file, { kind }, actions);
       if ("code" in result) {
         setError(ajustesErrorText(result.code));
       } else {
@@ -213,7 +167,7 @@ function GalleryField({
         setError(ajustesErrorText("profile.gallery_full"));
         break;
       }
-      const result = await uploadImage(file, "gallery", actions);
+      const result = await uploadImage(file, { kind: "gallery" }, actions);
       if ("code" in result) {
         setError(ajustesErrorText(result.code));
         break;

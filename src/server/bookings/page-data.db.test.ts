@@ -219,6 +219,24 @@ describe("loadReservaPageData · profil (WP-41)", () => {
     }
   });
 
+  it("staff.photoUrl: bara vår bucket/företagets mapp visas, annars null (WP-44)", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://proj.supabase.co");
+    const b = await createTestBusiness();
+    try {
+      await adminQuery(
+        `update public.staff set photo_url = 'https://evil.example.com/x.jpg' where id = $1`,
+        [b.staff.diego],
+      );
+      const data = await load(b);
+      expect(
+        data!.staff.find((s) => s.id === b.staff.diego)!.photoUrl,
+      ).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+      await dropTestBusiness(b);
+    }
+  });
+
   it("öppet nu: stängt före öppning, öppet till 19:00, stängning för hela företaget räknas", async () => {
     // Torsdag 2026-10-01, mån–lör 10:00–19:00, min_notice 60.
     expect((await load(biz))!.profile!.openNow).toEqual({ open: false });

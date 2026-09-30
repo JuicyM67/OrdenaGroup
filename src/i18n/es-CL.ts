@@ -1613,6 +1613,9 @@ export const profesionales = {
     tituloLabel: "Rol o especialidad (opcional)",
     tituloPlaceholder: "Ej: Colorista",
     tituloAyuda: "Se muestra en tu página de reservas.",
+    /** WP-44: etiqueta accesible (sr-only) del selector de foto de personal,
+     * gratis en todos los planes. */
+    fotoLabel: "Foto de perfil (opcional)",
     colorLabel: "Color",
     serviciosLabel: "Servicios que hace",
     horarioLabel: "Horario",
