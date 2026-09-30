@@ -402,9 +402,13 @@ export function CustomerForm({
             })}
           </p>
           <p>
-            {reserva.antesDeConfirmar.avisoWhatsapp({
-              negocio: data.business.name,
-            })}
+            {data.business.autoConfirmBookings
+              ? reserva.antesDeConfirmar.avisoWhatsapp({
+                  negocio: data.business.name,
+                })
+              : reserva.antesDeConfirmar.avisoWhatsappSolicitud({
+                  negocio: data.business.name,
+                })}
           </p>
         </div>
 

@@ -110,7 +110,9 @@ export const baseFixture = {
   dayCount: 6,
   dayTotalClp: 84_000,
   waitlistCount: 3,
-  unreadNotifications: 1,
+  // WP-45 (D-033): tom som standard — klockan döljs helt utan `onConfirmRequest`/
+  // `onDeclineRequest` (page.tsx skickar dem bara för `?estado=solicitudes`).
+  pendingRequests: [],
   links: LINKS,
 } satisfies HoyData;
 
@@ -250,6 +252,19 @@ export function buildFixture(estado: string | undefined): HoyData {
         bookings: manyBookings(),
         dayCount: 12,
         dayTotalClp: 168_000,
+      };
+    case "solicitudes":
+      // WP-45 (D-033): för skärmdump (FRÅGA 5) — inte en del av `npm run visual hoy`.
+      return {
+        ...baseFixture,
+        pendingRequests: [
+          {
+            id: "req-camila",
+            clientName: "Camila Reyes",
+            service: "Corte + barba",
+            start: "2026-10-03T11:00:00-03:00",
+          },
+        ],
       };
     default:
       return baseFixture;

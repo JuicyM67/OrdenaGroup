@@ -8,6 +8,10 @@
 import type { ReactNode } from "react";
 
 import { OwnerMobileTopBar } from "@/components/mobile/owner-top-bar";
+import type {
+  NotificationBellResult,
+  PendingRequestItem,
+} from "@/components/shared/notification-bell";
 import { cn } from "@/components/ui/cn";
 
 export type AgendaShellProps = {
@@ -19,6 +23,11 @@ export type AgendaShellProps = {
   mobileTabBar?: ReactNode;
   /** WP-47: `logout` (server action), vidarebefordras till `OwnerMobileTopBar`. */
   onLogout?: () => void | Promise<void>;
+  /** WP-45: klockan i `OwnerMobileTopBar` (mobil, < lg). `undefined` döljer
+   * den (design lab). */
+  pendingRequests?: readonly PendingRequestItem[];
+  onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
   className?: string;
 };
 
@@ -28,6 +37,9 @@ export function AgendaShell({
   children,
   mobileTabBar,
   onLogout,
+  pendingRequests,
+  onConfirmRequest,
+  onDeclineRequest,
   className,
 }: AgendaShellProps) {
   return (
@@ -38,7 +50,12 @@ export function AgendaShell({
       )}
     >
       <div className="hidden lg:contents">{rail}</div>
-      <OwnerMobileTopBar onLogout={onLogout} />
+      <OwnerMobileTopBar
+        onLogout={onLogout}
+        pendingRequests={pendingRequests}
+        onConfirmRequest={onConfirmRequest}
+        onDeclineRequest={onDeclineRequest}
+      />
       <div className="hidden lg:flex lg:w-75 lg:shrink-0 lg:flex-col lg:gap-3">
         {aside}
       </div>

@@ -117,6 +117,7 @@ export function DayGrid({
           variant={variant}
           staffColor={staff.color}
           selected={booking.id === selectedBookingId}
+          pending={booking.status === "requested"}
           title={booking.clientName}
           meta={meta}
           showAvatar={false}

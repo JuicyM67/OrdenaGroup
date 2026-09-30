@@ -191,6 +191,7 @@ export const barberiaNorte: BookingPageData = {
     close: t("19:00"),
     cancelWindowHours: 4,
     status: "active",
+    autoConfirmBookings: true,
   },
   services,
   staff,
@@ -210,6 +211,7 @@ export const estudioSur: BookingPageData = {
     close: t("18:00"),
     cancelWindowHours: 2,
     status: "active",
+    autoConfirmBookings: true,
   },
   services: [
     {
@@ -248,6 +250,7 @@ export const barberiaPausada: BookingPageData = {
     close: t("19:00"),
     cancelWindowHours: 4,
     status: "frozen",
+    autoConfirmBookings: true,
   },
   services: [],
   staff: [],
@@ -268,6 +271,7 @@ export const sinServicios: BookingPageData = {
     close: t("19:00"),
     cancelWindowHours: 4,
     status: "active",
+    autoConfirmBookings: true,
   },
   services: [],
   staff: [],
@@ -289,6 +293,7 @@ export const vaciosDemo: BookingPageData = {
     close: t("19:00"),
     cancelWindowHours: 4,
     status: "active",
+    autoConfirmBookings: true,
   },
   services: [
     {

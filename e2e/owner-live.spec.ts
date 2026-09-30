@@ -17,7 +17,7 @@
 import { expect, test } from "@playwright/test";
 import pg from "pg";
 
-import { agenda, comun, reserva } from "../src/i18n";
+import { agenda, comun, inicio, reserva, solicitudes } from "../src/i18n";
 import { waitForConfirmLink } from "./helpers/mailpit";
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -243,16 +243,42 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
       name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
     })
     .check();
+  // WP-45 (D-033): `barberia-norte` tiene `auto_confirm_bookings` apagado
+  // (estándar, incluso para negocios existentes — Ägarens svar 4): la
+  // reserva nace `requested`, la CTA/pantalla son las variantes de
+  // solicitud.
   await page
-    .getByRole("button", { name: reserva.antesDeConfirmar.ctaConfirmar })
+    .getByRole("button", {
+      name: reserva.antesDeConfirmar.ctaEnviarSolicitud,
+    })
     .click();
   await expect(
-    page.getByRole("heading", { name: reserva.confirmacion.titulo }),
+    page.getByRole("heading", { name: reserva.confirmacionSolicitud.titulo }),
   ).toBeVisible();
+  expect(await bookingStatusFor(newCustomer)).toBe("requested");
 
   const bookedDate = await bookedLocalDateFor(newCustomer);
   await page.goto(`/app/agenda?vista=dia&fecha=${bookedDate}`);
   await expect(page.getByText(newCustomer)).toBeVisible();
+
+  // --- WP-45: la campana en Inicio — el dueño confirma la solicitud. Se
+  // acota al popover (`aria-label`, notification-bell.tsx): "Att bekräfta"
+  // (pending-requests-card.tsx) muestra la MISMA fila más abajo en la
+  // misma página, y un locator sin acotar sería ambiguo (strict mode). ---
+  await page.goto("/app/inicio");
+  await page.getByRole("button", { name: /notificaci/i }).click();
+  const bellPopover = page.locator(
+    `[aria-label="${inicio.solicitudes.titulo}"]`,
+  );
+  await expect(bellPopover).toBeVisible();
+  await bellPopover
+    .getByText(new RegExp(newCustomer))
+    .locator("..")
+    .getByRole("button", { name: solicitudes.acciones.confirmar })
+    .click();
+  await expect(async () => {
+    expect(await bookingStatusFor(newCustomer)).toBe("confirmed");
+  }).toPass();
 
   // --- WP-21b: reserva manual desde Agenda ("Nueva reserva") ---
   await page.goto(`/app/agenda?vista=dia&fecha=${today}`);

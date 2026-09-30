@@ -14,6 +14,10 @@
 import type { ReactNode } from "react";
 
 import { OwnerMobileTopBar } from "@/components/mobile/owner-top-bar";
+import type {
+  NotificationBellResult,
+  PendingRequestItem,
+} from "@/components/shared/notification-bell";
 import { cn } from "@/components/ui/cn";
 
 export type AppShellProps = {
@@ -24,6 +28,11 @@ export type AppShellProps = {
   mobileTabBar?: ReactNode;
   /** WP-47: `logout` (server action), vidarebefordras till `OwnerMobileTopBar`. */
   onLogout?: () => void | Promise<void>;
+  /** WP-45: klockan i `OwnerMobileTopBar` (mobil, < lg). `undefined` döljer
+   * den (design lab). */
+  pendingRequests?: readonly PendingRequestItem[];
+  onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
   className?: string;
 };
 
@@ -32,6 +41,9 @@ export function AppShell({
   children,
   mobileTabBar,
   onLogout,
+  pendingRequests,
+  onConfirmRequest,
+  onDeclineRequest,
   className,
 }: AppShellProps) {
   return (
@@ -42,7 +54,12 @@ export function AppShell({
       )}
     >
       <div className="hidden lg:contents">{rail}</div>
-      <OwnerMobileTopBar onLogout={onLogout} />
+      <OwnerMobileTopBar
+        onLogout={onLogout}
+        pendingRequests={pendingRequests}
+        onConfirmRequest={onConfirmRequest}
+        onDeclineRequest={onDeclineRequest}
+      />
       <main className="flex flex-1 flex-col gap-6 px-5 py-5 pb-28 lg:overflow-hidden lg:rounded-shell lg:bg-canvas lg:px-8 lg:py-7 lg:pb-7">
         {children}
       </main>

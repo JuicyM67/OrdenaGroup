@@ -61,15 +61,24 @@ test.describe("Reserva (riktig data) — /barberia-norte", () => {
         name: new RegExp(reserva.consentimientos.terminos.slice(0, 20)),
       })
       .check();
+    // WP-45 (D-033): `barberia-norte` (seed) har `auto_confirm_bookings`
+    // av (standard, även för befintliga företag — Ägarens svar 4), så
+    // bokningen blir en förfrågan: knappen och bekräftelseskärmen är
+    // varianterna "Enviar solicitud"/"¡Solicitud enviada!", inte
+    // "Confirmar reserva"/"¡Listo, tu hora quedó reservada!".
     await page
-      .getByRole("button", { name: reserva.antesDeConfirmar.ctaConfirmar })
+      .getByRole("button", {
+        name: reserva.antesDeConfirmar.ctaEnviarSolicitud,
+      })
       .click();
 
     // Bekräftelsen nås bara efter att `createBooking` (motorn) faktiskt
     // skrev en rad i `bookings` — se `src/server/bookings/submit.db.test.ts`
     // för att den skrivningen (plus samtycket på kundraden) verkligen sker.
     await expect(
-      page.getByRole("heading", { name: reserva.confirmacion.titulo }),
+      page.getByRole("heading", {
+        name: reserva.confirmacionSolicitud.titulo,
+      }),
     ).toBeVisible();
   });
 

@@ -16,6 +16,7 @@ import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
+import { listPendingRequestsIn } from "./requests";
 import { isoOf, staffColorOf } from "./shared";
 
 /** Samma statiska länkar som `/design-lab/hoy/fixtures.ts` (rutterna finns
@@ -134,6 +135,8 @@ export async function loadOwnerHoyIn(
     0,
   );
 
+  const pendingRequests = await listPendingRequestsIn(q, businessId, now);
+
   return {
     now: now.toISOString(),
     owner: { name: ownerName },
@@ -142,7 +145,7 @@ export async function loadOwnerHoyIn(
     dayCount: closedToday ? 0 : bookings.length,
     dayTotalClp: closedToday ? 0 : dayTotalClp,
     waitlistCount: 0,
-    unreadNotifications: 0,
+    pendingRequests,
     links: LINKS,
   };
 }

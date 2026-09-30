@@ -8,15 +8,16 @@
 // WP-47: "use client" (tidigare en ren servrad komposition) — Llegó/No vino/Mover från
 // "…"-menyn (agenda-row.tsx) och profilmenyn (UserMenu) behöver lokalt tillstånd/
 // `useRouter`, samma mönster som agenda-screen.tsx.
-import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { MoveDialog } from "@/components/agenda/move-dialog";
 import type { AgendaActionResult } from "@/components/agenda/agenda-screen";
-import { IconButton } from "@/components/ui/icon-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { Tooltip } from "@/components/ui/tooltip";
+import {
+  NotificationBell,
+  type NotificationBellResult,
+} from "@/components/shared/notification-bell";
 import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { UserMenu } from "@/components/shared/user-menu";
 import { inicio } from "@/i18n";
@@ -41,11 +42,11 @@ import { HeroSummary } from "./hero-summary";
 import {
   mustParseInstant,
   noShowTrendLabel,
-  notificationsLabel,
   todayLabel,
   upcomingToday,
 } from "./inicio-view";
 import { MainNav } from "./main-nav";
+import { PendingRequestsCard } from "./pending-requests-card";
 import { StatTile } from "./stat-tile";
 import type { InicioData, TodayBooking } from "./types";
 import { UpcomingBookingsCard } from "./upcoming-bookings-card";
@@ -78,6 +79,10 @@ export type InicioScreenProps = {
   }) => Promise<AgendaActionResult>;
   /** WP-47: `logout` (server action). `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
+  /** WP-45 (D-033): klockan (topprad) + listan "Att bekräfta" (överst i
+   * spalten). `undefined` i design lab — döljer båda. */
+  onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
 };
 
 const AGENDA_HREF = "/app/agenda";
@@ -89,10 +94,11 @@ export function InicioScreen({
   onArrival,
   onMoveBooking,
   onLogout,
+  onConfirmRequest,
+  onDeclineRequest,
 }: InicioScreenProps) {
   const router = useRouter();
   const now = mustParseInstant(data.now, "InicioScreen");
-  const notificationsCount = data.notifications.count;
   const publicPageHref = bookingLink ? `/${bookingLink.slug}` : "/";
 
   // WP-47: Llegó/No vino från "…"-menyn (agenda-row.tsx) tar bort raden optimistiskt ur
@@ -129,18 +135,22 @@ export function InicioScreen({
           <>
             {/* WP-47: sökikonen döljs tills sök finns (WP-xx: visas när funktionen finns) —
                 ledde till en 404, ingen route lyssnar på sökningar än. */}
-            <Tooltip
-              label={notificationsLabel(notificationsCount)}
-              side="bottom"
-            >
-              <IconButton
-                label={notificationsLabel(notificationsCount)}
-                tone="surface"
-                badge={notificationsCount > 0}
-              >
-                <Bell aria-hidden="true" className="size-5" strokeWidth={1.9} />
-              </IconButton>
-            </Tooltip>
+            {onConfirmRequest && onDeclineRequest ? (
+              <NotificationBell
+                requests={data.notifications.items}
+                onConfirm={async (bookingId) => {
+                  const result = await onConfirmRequest(bookingId);
+                  if (result.ok) router.refresh();
+                  return result;
+                }}
+                onDecline={async (bookingId) => {
+                  const result = await onDeclineRequest(bookingId);
+                  if (result.ok) router.refresh();
+                  return result;
+                }}
+                withTooltip
+              />
+            ) : null}
             <span className="hidden lg:contents">
               <UserMenu
                 name={data.owner.name}
@@ -168,6 +178,22 @@ export function InicioScreen({
         week={data.week}
         features={data.features}
       />
+
+      {onConfirmRequest && onDeclineRequest ? (
+        <PendingRequestsCard
+          requests={data.notifications.items}
+          onConfirm={async (bookingId) => {
+            const result = await onConfirmRequest(bookingId);
+            if (result.ok) router.refresh();
+            return result;
+          }}
+          onDecline={async (bookingId) => {
+            const result = await onDeclineRequest(bookingId);
+            if (result.ok) router.refresh();
+            return result;
+          }}
+        />
+      ) : null}
 
       <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:flex-row">
         <div className="flex flex-col gap-5 lg:min-h-0 lg:min-w-0 lg:flex-1">

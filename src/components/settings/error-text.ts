@@ -42,6 +42,8 @@ const KNOWN: Record<string, string> = {
   "business.max_days_ahead_invalid": comun.algoSalioMal,
   "business.cancel_window_invalid": comun.algoSalioMal,
   "business.slot_interval_invalid": comun.algoSalioMal,
+  // WP-45 (D-033): typfel bara (växel), ingen egen copy — samma mönster.
+  "business.auto_confirm_invalid": comun.algoSalioMal,
   "services.name_empty": servicios.errores.nombreVacio,
   "services.duration_invalid": servicios.errores.duracionInvalida,
   "services.buffer_invalid": servicios.errores.bufferInvalido,

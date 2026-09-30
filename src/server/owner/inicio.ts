@@ -18,6 +18,7 @@ import {
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
+import { listPendingRequestsIn } from "./requests";
 import { isoOf } from "./shared";
 
 type BusinessRow = { name: string; comuna: string };
@@ -283,12 +284,13 @@ export async function loadOwnerInicioIn(
   );
   const { noShowPct, noShowTrend } = await loadNoShowStats(q, businessId, now);
   const markedDates = await loadMarkedDates(q, businessId, today);
+  const pendingRequests = await listPendingRequestsIn(q, businessId, now);
 
   return {
     now: now.toISOString(),
     business: { name: biz.name, comuna: biz.comuna },
     owner,
-    notifications: { count: 0 },
+    notifications: { items: pendingRequests },
     week: { recoveredHours: 0, recoveredClp: 0 },
     features: {
       waitlist: { count: 0, day: today, progress: 0 },

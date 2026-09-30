@@ -16,6 +16,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import { loadOwnerHoy } from "@/server/owner/hoy";
+import { confirmRequest, declineRequest } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
 
 export const metadata: Metadata = {
@@ -46,12 +47,26 @@ export default async function HoyPage() {
     await markArrival(user.id, business.id, bookingId, status);
   };
 
+  const onConfirmRequest = async (bookingId: string) => {
+    "use server";
+    const result = await confirmRequest(user.id, business.id, new Date(), bookingId);
+    return { ok: result.ok };
+  };
+
+  const onDeclineRequest = async (bookingId: string) => {
+    "use server";
+    const result = await declineRequest(user.id, business.id, new Date(), bookingId);
+    return { ok: result.ok };
+  };
+
   return (
     <HoyScreen
       data={data}
       onArrival={onArrival}
       publicPageHref={`/${business.slug}`}
       onLogout={logout}
+      onConfirmRequest={onConfirmRequest}
+      onDeclineRequest={onDeclineRequest}
     />
   );
 }

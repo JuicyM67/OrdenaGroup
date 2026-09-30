@@ -77,6 +77,10 @@ type BusinessRow = {
   instagram: string | null;
   address: string | null;
   phone: string | null;
+  /** WP-45 (D-033): av → CTA:n/bekräftelsen visar "Enviar solicitud" i
+   * stället för "Confirmar reserva" (ui-engineer, se createBooking i
+   * src/app/[slug]/actions.ts för själva statusen). */
+  auto_confirm_bookings: boolean;
 };
 
 type HoursRow = { weekday: number; start_time: string; end_time: string };
@@ -197,7 +201,8 @@ export async function loadReservaPageData(
 
   const bizRes = await q.query<BusinessRow>(
     `select name, comuna, status::text as status, cancel_window_hours,
-            about, cover_url, logo_url, instagram, address, phone
+            about, cover_url, logo_url, instagram, address, phone,
+            auto_confirm_bookings
        from public.businesses where id = $1`,
     [businessId],
   );
@@ -236,6 +241,7 @@ export async function loadReservaPageData(
     ...hours.summary,
     cancelWindowHours: biz.cancel_window_hours,
     status: biz.status as BookingBusiness["status"],
+    autoConfirmBookings: biz.auto_confirm_bookings,
   };
 
   if (business.status !== "active") {

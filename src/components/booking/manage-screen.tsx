@@ -7,8 +7,9 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
 import { TextLink } from "@/components/ui/text-link";
-import { comun, gestion } from "@/i18n";
+import { comun, estados, gestion } from "@/i18n";
 
 import { CancelDialog } from "./cancel-dialog";
 import {
@@ -76,6 +77,15 @@ export function ManageScreen({
           {fields.precio}
         </div>
       </Card>
+
+      {booking.status === "requested" ? (
+        <div className="flex flex-col gap-2">
+          <Chip tone="pending" size="sm" className="self-start">
+            {estados.porConfirmar}
+          </Chip>
+          <p className="text-13 text-muted">{gestion.pendienteAviso}</p>
+        </div>
+      ) : null}
 
       {state === "cancelled" ? (
         <div className="flex flex-col gap-3">

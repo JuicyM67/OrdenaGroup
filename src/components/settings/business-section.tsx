@@ -13,6 +13,7 @@ import {
 } from "@/components/onboarding/client-validation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { TextField } from "@/components/ui/text-field";
 import { ajustes, negocio } from "@/i18n";
 
@@ -31,6 +32,7 @@ type FormState = {
   maxDaysAhead: string;
   cancelWindowHours: string;
   slotIntervalMinutes: string;
+  autoConfirmBookings: boolean;
 };
 
 function toFormState(b: AjustesBusiness): FormState {
@@ -44,6 +46,7 @@ function toFormState(b: AjustesBusiness): FormState {
     maxDaysAhead: String(b.maxDaysAhead),
     cancelWindowHours: String(b.cancelWindowHours),
     slotIntervalMinutes: String(b.slotIntervalMinutes),
+    autoConfirmBookings: b.autoConfirmBookings,
   };
 }
 
@@ -97,6 +100,7 @@ export function BusinessSection({
         maxDaysAhead: Number(form.maxDaysAhead),
         cancelWindowHours: Number(form.cancelWindowHours),
         slotIntervalMinutes: Number(form.slotIntervalMinutes),
+        autoConfirmBookings: form.autoConfirmBookings,
       });
       if (result.ok) {
         setStatus("saved");
@@ -110,6 +114,7 @@ export function BusinessSection({
           maxDaysAhead: Number(form.maxDaysAhead),
           cancelWindowHours: Number(form.cancelWindowHours),
           slotIntervalMinutes: Number(form.slotIntervalMinutes),
+          autoConfirmBookings: form.autoConfirmBookings,
         });
       } else {
         setStatus("error");
@@ -245,6 +250,22 @@ export function BusinessSection({
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="flex items-center gap-3 border-t border-line-strong pt-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-14 font-semibold text-ink">
+              {ajustes.reglas.confirmarAutomatico}
+            </p>
+            <p className="mt-0.5 text-12 text-muted">
+              {ajustes.reglas.confirmarAutomaticoAyuda}
+            </p>
+          </div>
+          <Switch
+            checked={form.autoConfirmBookings}
+            onChange={(checked) => set("autoConfirmBookings", checked)}
+            label={ajustes.reglas.confirmarAutomatico}
+          />
         </div>
       </Card>
 

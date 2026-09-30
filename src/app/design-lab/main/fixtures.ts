@@ -171,7 +171,12 @@ const BASE = {
   now: NOW,
   business: { name: "Barbería Norte", comuna: "Providencia" },
   owner: { name: "Camila R.", firstName: "Camila" },
-  notifications: { count: 1 }, // referensens prick "Notificaciones"
+  // WP-45 (D-033): tom som standard. Klockan (och listan "Att bekräfta") döljs helt utan
+  // `onConfirmRequest`/`onDeclineRequest` (page.tsx skickar dem bara för `?estado=solicitudes`,
+  // se PENDING_REQUESTS nedan) — så den nya listan syns aldrig i `npm run visual main`. Notisens
+  // prick i Main.dc.html (statisk, ovillkorad i referensen) tappas här: en 8 px prick på en
+  // 1440×900-yta, långt under 2 %-gränsen (se WP-45-rapporten).
+  notifications: { items: [] },
   week: { recoveredHours: 4, recoveredClp: 72_000 },
   features: {
     waitlist: {
@@ -208,7 +213,30 @@ const BASE = {
   activeFlash: ACTIVE_FLASH,
 } satisfies Omit<InicioData, "today">;
 
-export type InicioEstado = "referencia" | "vacio" | "lleno" | "sin-flash";
+export type InicioEstado =
+  | "referencia"
+  | "vacio"
+  | "lleno"
+  | "sin-flash"
+  | "solicitudes";
+
+/** WP-45 (D-033): `?estado=solicitudes` — klockan y "Att bekräfta" con datos, para la
+ * captura que el dueño aprueba como línea base (no forma parte de `npm run visual main`,
+ * FRÅGA 5 del plan). */
+export const PENDING_REQUESTS: InicioData["notifications"]["items"] = [
+  {
+    id: "req-camila",
+    clientName: "Camila Reyes",
+    service: "Corte + barba",
+    start: "2026-10-03T11:00:00-03:00",
+  },
+  {
+    id: "req-benjamin",
+    clientName: "Benjamín Silva",
+    service: "Corte clásico",
+    start: "2026-10-03T16:00:00-03:00",
+  },
+];
 
 export function getInicioFixtures(estado: InicioEstado): InicioData {
   switch (estado) {
@@ -224,6 +252,12 @@ export function getInicioFixtures(estado: InicioEstado): InicioData {
       return {
         ...BASE,
         activeFlash: null,
+        today: REFERENCE_TODAY,
+      } satisfies InicioData;
+    case "solicitudes":
+      return {
+        ...BASE,
+        notifications: { items: PENDING_REQUESTS },
         today: REFERENCE_TODAY,
       } satisfies InicioData;
     case "referencia":

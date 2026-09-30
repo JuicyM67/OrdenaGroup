@@ -9,13 +9,15 @@ import { X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { AnswersList } from "@/components/booking/answers-list";
+import type { NotificationBellResult } from "@/components/shared/notification-bell";
+import { RechazarDialog } from "@/components/shared/rechazar-dialog";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/icon-button";
 import { roleIcons, strokeCard } from "@/components/ui/icons";
 import type { TimeZone } from "@/lib/format/dates";
-import { agenda } from "@/i18n";
+import { agenda, solicitudes } from "@/i18n";
 
 import { popoverModel } from "./agenda-view";
 import {
@@ -43,6 +45,11 @@ export type EventPopoverProps = {
    * se `customer-privacy-actions.tsx`. */
   onExportCustomer?: (customerId: string) => Promise<CustomerExportResult>;
   onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
+  /** WP-45 (D-033): Confirmar/Rechazar en stället för Llegó/No vino/Mover när
+   * `booking.status === "requested"`. `undefined` döljer knapparna helt (t.ex.
+   * design lab) — samma mönster som `onMover`. */
+  onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
   trigger: ReactNode;
 };
 
@@ -57,8 +64,13 @@ export function EventPopover({
   onMover,
   onExportCustomer,
   onAnonymizeCustomer,
+  onConfirmRequest,
+  onDeclineRequest,
   trigger,
 }: EventPopoverProps) {
+  const [confirming, setConfirming] = useState(false);
+  const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const isPending = booking.status === "requested";
   const model = popoverModel(booking, staffName, tz);
   const customerId = booking.customerId;
   // WP-42: `side="left" alignOffset={-49}` (desktopens Agenda.dc.html-placering, 1440 px
@@ -154,34 +166,63 @@ export function EventPopover({
             <AnswersList answers={booking.answers} />
           ) : null}
 
-          <div
-            className={cn(
-              "mt-0.5 grid gap-2",
-              onMover ? "grid-cols-3" : "grid-cols-2",
-            )}
-          >
-            <Button type="button" variant="primary" size="sm" onClick={onLlego}>
-              {agenda.popover.acciones.llego}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={onNoVino}
-            >
-              {agenda.popover.acciones.noVino}
-            </Button>
-            {onMover ? (
+          {isPending && onConfirmRequest && onDeclineRequest ? (
+            <div className="mt-0.5 grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={confirming}
+                onClick={() => {
+                  setConfirming(true);
+                  onConfirmRequest(booking.id)
+                    .then((result) => {
+                      if (result.ok) onOpenChange(false);
+                    })
+                    .finally(() => setConfirming(false));
+                }}
+              >
+                {solicitudes.acciones.confirmar}
+              </Button>
               <Button
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={onMover}
+                onClick={() => setDeclineDialogOpen(true)}
               >
-                {agenda.popover.acciones.mover}
+                {solicitudes.acciones.rechazar}
               </Button>
-            ) : null}
-          </div>
+            </div>
+          ) : (
+            <div
+              className={cn(
+                "mt-0.5 grid gap-2",
+                onMover ? "grid-cols-3" : "grid-cols-2",
+              )}
+            >
+              <Button type="button" variant="primary" size="sm" onClick={onLlego}>
+                {agenda.popover.acciones.llego}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={onNoVino}
+              >
+                {agenda.popover.acciones.noVino}
+              </Button>
+              {onMover ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={onMover}
+                >
+                  {agenda.popover.acciones.mover}
+                </Button>
+              ) : null}
+            </div>
+          )}
 
           {customerId && onExportCustomer && onAnonymizeCustomer ? (
             <CustomerPrivacyActions
@@ -193,6 +234,20 @@ export function EventPopover({
           ) : null}
         </Popover.Content>
       </Popover.Portal>
+
+      {onDeclineRequest ? (
+        <RechazarDialog
+          open={declineDialogOpen}
+          onOpenChange={setDeclineDialogOpen}
+          onConfirm={async () => {
+            const result = await onDeclineRequest(booking.id);
+            if (result.ok) {
+              setDeclineDialogOpen(false);
+              onOpenChange(false);
+            }
+          }}
+        />
+      ) : null}
     </Popover.Root>
   );
 }

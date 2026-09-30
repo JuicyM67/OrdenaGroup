@@ -83,6 +83,10 @@ export interface BookingBusiness {
   readonly close: LocalTime;
   readonly cancelWindowHours: number;
   readonly status: BusinessStatus;
+  /** WP-45 (D-033): av → CTA/bekräftelsen visar varianten "Enviar
+   * solicitud" (`reserva.antesDeConfirmar.ctaEnviarSolicitud`,
+   * `reserva.confirmacionSolicitud`). */
+  readonly autoConfirmBookings: boolean;
 }
 
 /** WP-41: en rad i `business_hours` (väggtid, `end` får vara "24:00"). */

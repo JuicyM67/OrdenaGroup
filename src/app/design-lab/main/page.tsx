@@ -5,7 +5,21 @@ import { InicioScreen } from "@/components/dashboard/inicio-screen";
 
 import { getInicioFixtures, type InicioEstado } from "./fixtures";
 
-const ESTADOS: readonly InicioEstado[] = ["vacio", "lleno", "sin-flash"];
+const ESTADOS: readonly InicioEstado[] = [
+  "vacio",
+  "lleno",
+  "sin-flash",
+  "solicitudes",
+];
+
+// WP-45 (D-033): demo för `?estado=solicitudes` (skärmdump till Ägarens svar #5) — ingen
+// server bakom design lab, "Confirmar"/"Rechazar" svarar alltid ok utan att ändra fixturen.
+// `"use server"` krävs (inte bara en vanlig async-funktion): sidan är en server-komponent,
+// och `InicioScreen` (klient) tar bara emot riktiga server actions som props.
+async function demoOk() {
+  "use server";
+  return { ok: true };
+}
 
 function parseEstado(value: string | string[] | undefined): InicioEstado {
   const s = Array.isArray(value) ? value[0] : value;
@@ -19,12 +33,19 @@ export default async function InicioDesignLabPage({
 }: {
   searchParams: Promise<{ estado?: string | string[] }>;
 }) {
-  const { estado } = await searchParams;
-  const data = getInicioFixtures(parseEstado(estado));
+  const { estado: rawEstado } = await searchParams;
+  const estado = parseEstado(rawEstado);
+  const data = getInicioFixtures(estado);
+  const showRequests = estado === "solicitudes";
 
   return (
     <div className="relative h-225 w-360 overflow-hidden">
-      <InicioScreen data={data} shellClassName="h-225" />
+      <InicioScreen
+        data={data}
+        shellClassName="h-225"
+        onConfirmRequest={showRequests ? demoOk : undefined}
+        onDeclineRequest={showRequests ? demoOk : undefined}
+      />
     </div>
   );
 }

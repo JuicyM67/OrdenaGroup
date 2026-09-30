@@ -31,6 +31,11 @@ import {
   moveOwnerBooking,
   saveManualConsent,
 } from "@/server/owner/manual-booking";
+import {
+  confirmRequest,
+  declineRequest,
+  listPendingRequests,
+} from "@/server/owner/requests";
 import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
 
 export const metadata: Metadata = {
@@ -67,9 +72,10 @@ export default async function AppAgendaPage({
   const now = new Date();
   const focus = parsedFecha?.ok ? parsedFecha.value : toLocalDate(now, APP_TZ);
 
-  const [data, catalog] = await Promise.all([
+  const [data, catalog, pendingRequests] = await Promise.all([
     loadOwnerAgendaWeek(user.id, business.id, focus, now),
     loadOwnerBookableCatalog(user.id, business.id),
+    listPendingRequests(user.id, business.id, now),
   ]);
 
   const onArrival = async (bookingId: string, status: ArrivalStatus) => {
@@ -147,6 +153,18 @@ export default async function AppAgendaPage({
     return anonymizeCustomer(user.id, business.id, parsed.data);
   };
 
+  const onConfirmRequest = async (bookingId: string) => {
+    "use server";
+    const result = await confirmRequest(user.id, business.id, new Date(), bookingId);
+    return { ok: result.ok };
+  };
+
+  const onDeclineRequest = async (bookingId: string) => {
+    "use server";
+    const result = await declineRequest(user.id, business.id, new Date(), bookingId);
+    return { ok: result.ok };
+  };
+
   return (
     <AgendaScreen
       data={data}
@@ -164,6 +182,9 @@ export default async function AppAgendaPage({
       onAnonymizeCustomer={onAnonymizeCustomer}
       onLogout={logout}
       onLoadMonthCounts={onLoadMonthCounts}
+      pendingRequests={pendingRequests}
+      onConfirmRequest={onConfirmRequest}
+      onDeclineRequest={onDeclineRequest}
     />
   );
 }

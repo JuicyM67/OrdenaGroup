@@ -28,6 +28,12 @@ export function Confirmation({
     titleRef.current?.focus();
   }, []);
 
+  // WP-45 (D-033): "Solicitud enviada" (`reserva.confirmacionSolicitud`) i
+  // stället för "Reserva confirmada" när negocio tiene apagada la
+  // confirmación automática — bokningen är `requested`, inte `confirmed`
+  // (`src/app/[slug]/actions.ts`).
+  const isRequest = !data.business.autoConfirmBookings;
+
   return (
     <div className="flex flex-col gap-6">
       <div
@@ -41,12 +47,16 @@ export function Confirmation({
         tabIndex={-1}
         className="font-display text-24 font-semibold tracking-title text-ink outline-none"
       >
-        {reserva.confirmacion.titulo}
+        {isRequest
+          ? reserva.confirmacionSolicitud.titulo
+          : reserva.confirmacion.titulo}
       </h1>
 
       <section className="flex flex-col gap-2">
         <h2 className="text-16 leading-event font-bold text-ink">
-          {reserva.confirmacion.resumenTitulo}
+          {isRequest
+            ? reserva.confirmacionSolicitud.resumenTitulo
+            : reserva.confirmacion.resumenTitulo}
         </h2>
         <Card radius="tile" padding="lg">
           <div className="text-15 font-bold text-ink">
@@ -56,7 +66,9 @@ export function Confirmation({
       </section>
 
       <p className="text-14 leading-body text-muted">
-        {reserva.confirmacion.avisoWhatsapp}
+        {isRequest
+          ? reserva.confirmacionSolicitud.aviso({ negocio: data.business.name })
+          : reserva.confirmacion.avisoWhatsapp}
       </p>
       <p className="text-13 leading-body text-muted">
         {reserva.antesDeConfirmar.politicaCancelacion({

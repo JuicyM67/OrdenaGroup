@@ -46,6 +46,7 @@ function makeData(days: DayAvailability[]): BookingPageData {
       close: "19:00" as never,
       cancelWindowHours: 4,
       status: "active",
+      autoConfirmBookings: true,
     },
     services: [
       {

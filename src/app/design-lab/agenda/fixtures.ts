@@ -415,3 +415,25 @@ export const agendaFixtureBlockedStaff: AgendaData = {
     },
   ],
 };
+
+/** `?estado=solicitudes` (WP-45, D-033): en förfrågan (`status: "requested"`) — streckad
+ * kant + chip "Por confirmar" (event-block.tsx), Confirmar/Rechazar i popovern
+ * (event-popover.tsx). Bara för skärmdump (FRÅGA 5), inte en del av `npm run visual
+ * agenda` (Agenda.png saknar den här bokningen helt). */
+export const agendaFixtureRequested: AgendaData = {
+  ...agendaFixture,
+  bookings: [
+    ...agendaFixture.bookings,
+    booking({
+      id: "bk-vie-solicitud",
+      staffId: DIEGO,
+      date: "2026-10-02",
+      start: "12:30",
+      end: "13:05",
+      clientName: "Camila Reyes",
+      service: "Corte + barba",
+      priceClp: CORTE_BARBA,
+      status: "requested",
+    }),
+  ],
+};

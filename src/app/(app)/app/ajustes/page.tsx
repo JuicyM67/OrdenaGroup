@@ -12,11 +12,14 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { loadAjustesData } from "@/server/owner/ajustes";
 import { loadProfileSettings } from "@/server/owner/profile";
+import { listPendingRequests } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
 
 import {
+  confirmRequestAction,
   createServiceAction,
   createStaffAction,
+  declineRequestAction,
   setServiceActiveAction,
   setStaffActiveAction,
   updateBusinessSettingsAction,
@@ -99,6 +102,11 @@ export default async function AjustesPage() {
   const deletionRequestedAt = privacyStatus.ok
     ? privacyStatus.deletionRequestedAt
     : null;
+  const pendingRequests = await listPendingRequests(
+    user.id,
+    business.id,
+    new Date(),
+  );
 
   return (
     <AjustesScreen
@@ -147,6 +155,9 @@ export default async function AjustesPage() {
       }}
       owner={owner}
       onLogout={logout}
+      pendingRequests={pendingRequests}
+      onConfirmRequest={confirmRequestAction}
+      onDeclineRequest={declineRequestAction}
     />
   );
 }
