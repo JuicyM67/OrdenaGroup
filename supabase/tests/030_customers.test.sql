@@ -1,7 +1,7 @@
 -- INV-3/INV-4: tenant-isolering för `customers`, plus dataskyddsregler (Ley 21.719).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(45);
+select plan(47);
 \ir _helpers.psql
 
 insert into public.customers (id, business_id, phone_e164, name) values
@@ -86,6 +86,20 @@ select is((select count(*) from public.customers)::int, 0, 'vendorA ser noll kun
 select throws_ok(
   $$ insert into public.customers (business_id, phone_e164, name) values ('aaaaaaaa-0000-0000-0000-000000000001', '+56900007778', 'Otro') $$,
   '42501'
+);
+
+-- WP-54: is_member/member_since kräver can_manage_all_bookings eller ägare
+-- (samma D-034-nivå som notes, private.customers_guard_notes utökad i
+-- 20260930210100) — staffA har bara can_manage_own_bookings som standard.
+select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
+select throws_ok(
+  $$ update public.customers set is_member = true where id = 'aaaaaaaa-3000-0000-0000-000000000001' $$,
+  '42501'
+);
+select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+select lives_ok(
+  $$ update public.customers set is_member = true, member_since = now() where id = 'aaaaaaaa-3000-0000-0000-000000000001' $$,
+  'ownerA puede hacer socio a un cliente (is_member/member_since)'
 );
 
 -- 7. Utan medlemskap: noll rader.

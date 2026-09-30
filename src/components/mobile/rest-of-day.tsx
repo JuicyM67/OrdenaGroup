@@ -2,11 +2,11 @@
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { Chip } from "@/components/ui/chip";
-import { hoy } from "@/i18n";
+import { estados, hoy } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import { formatTime, APP_TZ } from "@/lib/format/dates";
 
-import { parseInstantOrThrow, rowTag } from "./hoy-view";
+import { isMemberBooking, parseInstantOrThrow, rowTag } from "./hoy-view";
 import type { HoyBooking, StaffColor } from "./types";
 
 const staffBarTone: Record<StaffColor, string> = {
@@ -86,11 +86,18 @@ export function RestOfDay({
                     })}
                   </span>
                 </span>
-                {tag ? (
-                  <Chip size="xs" tone={tag.tone}>
-                    {tag.label}
-                  </Chip>
-                ) : null}
+                <span className="flex shrink-0 items-center gap-1">
+                  {isMemberBooking(b) ? (
+                    <Chip size="xs" tone="lavender">
+                      {estados.socio}
+                    </Chip>
+                  ) : null}
+                  {tag ? (
+                    <Chip size="xs" tone={tag.tone}>
+                      {tag.label}
+                    </Chip>
+                  ) : null}
+                </span>
               </li>
             );
           })}

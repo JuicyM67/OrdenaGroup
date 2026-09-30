@@ -24,6 +24,7 @@ import { Chip } from "@/components/ui/chip";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
 import { PageHeader } from "@/components/ui/page-header";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { marketConfig } from "@/config/market";
 import { ajustes, clientes, comun, estados } from "@/i18n";
@@ -37,7 +38,12 @@ import { formatMoney } from "@/lib/format/money";
 import { formatPhone, isE164 } from "@/lib/format/phone";
 import { ArrowLeft, Mail, MessageCircle, Phone } from "lucide-react";
 
-import type { CustomerBookingRow, CustomerDetail } from "./types";
+import type {
+  CustomerBookingRow,
+  CustomerDetail,
+  NotifyMemberResult,
+  SetMemberResult,
+} from "./types";
 
 export type CustomerDetailScreenProps = {
   customer: CustomerDetail;
@@ -49,6 +55,12 @@ export type CustomerDetailScreenProps = {
   ) => Promise<{ ok: true } | { ok: false; code: string }>;
   onExportCustomer?: (customerId: string) => Promise<CustomerExportResult>;
   onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
+  /** WP-54: kryssrutan "Socio". `undefined` (design lab, eller
+   * `!customer.canManageMembership`) döljer kortet helt. */
+  onSetMember?: (isMember: boolean) => Promise<SetMemberResult>;
+  /** WP-54: "Avisar al cliente" — köar `bienvenidaMiembro`. `undefined`
+   * döljer knappen. */
+  onNotifyMember?: () => Promise<NotifyMemberResult>;
 };
 
 const STATUS_CHIP: Record<
@@ -108,6 +120,8 @@ export function CustomerDetailScreen({
   onUpdateNotes,
   onExportCustomer,
   onAnonymizeCustomer,
+  onSetMember,
+  onNotifyMember,
 }: CustomerDetailScreenProps) {
   const router = useRouter();
   const [notes, setNotes] = useState(customer.notes ?? "");
@@ -115,11 +129,41 @@ export function CustomerDetailScreen({
   const [savingNotes, setSavingNotes] = useState(false);
   const [notesSaved, setNotesSaved] = useState(false);
 
+  const [isMember, setIsMember] = useState(customer.isMember);
+  const [memberSince, setMemberSince] = useState(customer.memberSince);
+  const [savingMember, setSavingMember] = useState(false);
+  const [notifyStatus, setNotifyStatus] = useState<
+    "idle" | "sending" | "sent" | "already" | "error"
+  >("idle");
+
   const phone =
     customer.phone && isE164(customer.phone) ? customer.phone : null;
   const isCl = marketConfig.phoneCountry === "CL";
   const hasAnswers =
     customer.answers.latest.length > 0 || customer.answers.history.length > 0;
+
+  async function handleToggleMember(next: boolean) {
+    if (!onSetMember || savingMember) return;
+    setSavingMember(true);
+    setNotifyStatus("idle");
+    const result = await onSetMember(next);
+    setSavingMember(false);
+    if (result.ok) {
+      setIsMember(next);
+      setMemberSince(next ? new Date().toISOString() : null);
+    }
+  }
+
+  async function handleNotifyMember() {
+    if (!onNotifyMember || notifyStatus === "sending") return;
+    setNotifyStatus("sending");
+    const result = await onNotifyMember();
+    if (result.ok) {
+      setNotifyStatus(result.queued ? "sent" : "already");
+    } else {
+      setNotifyStatus("error");
+    }
+  }
 
   async function handleSaveNotes() {
     if (savingNotes) return;
@@ -173,6 +217,11 @@ export function CustomerDetailScreen({
               </Link>
             </IconButton>
             {customer.name}
+            {isMember ? (
+              <Chip tone="lavender" size="sm">
+                {estados.socio}
+              </Chip>
+            ) : null}
           </span>
         }
         meta={clientes.ficha.clienteDesde({
@@ -295,6 +344,66 @@ export function CustomerDetailScreen({
             )}
           </div>
         </Card>
+
+        {onSetMember && customer.canManageMembership ? (
+          <Card
+            radius="tile"
+            padding="lg"
+            className="flex flex-col gap-3 lg:col-span-2"
+          >
+            <h2 className="text-15 font-bold text-ink">
+              {clientes.ficha.membresiaTitulo}
+            </h2>
+            <div className="flex items-center gap-3">
+              <div className="min-w-0 flex-1">
+                <p className="text-14 font-semibold text-ink">
+                  {estados.socio}
+                </p>
+                <p className="mt-0.5 text-12 text-muted">
+                  {isMember && memberSince
+                    ? clientes.ficha.socioDesde({
+                        fecha: dateLabel(memberSince),
+                      })
+                    : clientes.ficha.socioAyuda}
+                </p>
+              </div>
+              <Switch
+                checked={isMember}
+                onChange={(next) => void handleToggleMember(next)}
+                label={estados.socio}
+                disabled={savingMember}
+              />
+            </div>
+            {isMember && customer.email && onNotifyMember ? (
+              <div className="flex items-center gap-3 border-t border-line-strong pt-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={notifyStatus === "sending"}
+                  onClick={() => void handleNotifyMember()}
+                >
+                  {clientes.ficha.notificarCta}
+                </Button>
+                {notifyStatus === "sent" ? (
+                  <span role="status" className="text-13 text-muted">
+                    {clientes.ficha.notificarEnviado}
+                  </span>
+                ) : null}
+                {notifyStatus === "already" ? (
+                  <span role="status" className="text-13 text-muted">
+                    {clientes.ficha.notificarYaEnviado}
+                  </span>
+                ) : null}
+                {notifyStatus === "error" ? (
+                  <span role="alert" className="text-13 text-ink">
+                    {comun.algoSalioMal}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </Card>
+        ) : null}
 
         {customer.stats ? (
           <Card

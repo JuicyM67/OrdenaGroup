@@ -127,6 +127,13 @@ export type RowTag = {
   label: string;
 };
 
+/** WP-54: "Socio" — visas ALLTID (utöver `rowTag`s högst-en-tagg), inte bara
+ * när ingen annan tagg vunnit, så en betald/flash-bokning av en socio
+ * fortfarande visar båda. */
+export function isMemberBooking(b: HoyBooking): boolean {
+  return b.isMember === true;
+}
+
 /** Högst en tagg. WP-45 (D-033): "Por confirmar" (en väntande förfrågan) går
  * före allt annat — annars Flash > Desde lista > Abono > Pagada (WP-24,
  * lägst prioritet: en betald "flash"-bokning visar ändå "Flash" här). */

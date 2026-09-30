@@ -27,7 +27,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconButton } from "@/components/ui/icon-button";
 import { roleIcons, strokeCard } from "@/components/ui/icons";
 import type { TimeZone } from "@/lib/format/dates";
-import { agenda, caja, comun, solicitudes } from "@/i18n";
+import { agenda, caja, comun, estados, solicitudes } from "@/i18n";
 
 import { popoverModel } from "./agenda-view";
 import {
@@ -176,6 +176,11 @@ export function EventPopover({
             {booking.paymentId ? (
               <Chip size="sm" tone="success">
                 {PAGADA_LABEL}
+              </Chip>
+            ) : null}
+            {booking.isMember ? (
+              <Chip size="sm" tone="lavender">
+                {estados.socio}
               </Chip>
             ) : null}
           </div>

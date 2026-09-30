@@ -105,6 +105,10 @@ export function BusinessSection({
       if (result.ok) {
         setStatus("saved");
         onSaved({
+          // WP-54: `memberDiscountPct`/`memberBenefitText` hör till
+          // `MemberSection`, inte till det här formuläret — bevara det
+          // senaste kända värdet i stället för att tappa det.
+          ...business,
           name: form.name,
           slug: form.slug.trim().toLowerCase(),
           comuna: form.comuna,

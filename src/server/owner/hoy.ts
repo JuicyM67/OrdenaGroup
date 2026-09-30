@@ -51,6 +51,7 @@ type BookingRow = {
   source: BookingSource;
   start_ms: number;
   end_ms: number;
+  is_member: boolean;
 };
 
 /**
@@ -101,7 +102,7 @@ export async function loadOwnerHoyIn(
 
   const { start, end } = localDayRange(today, APP_TZ);
   const bookingsRes = await q.query<BookingRow>(
-    `select bk.id, c.name as client_name, c.visits_count,
+    `select bk.id, c.name as client_name, c.visits_count, c.is_member,
             sv.name as service_name, st.id as staff_id, st.name as staff_name, st.color as staff_color,
             bk.status::text as status, bk.confirmed_by_customer_at,
             bk.price_clp, bk.discount_clp, bk.deposit_clp, bk.source::text as source,
@@ -154,6 +155,7 @@ export async function loadOwnerHoyIn(
       paymentId: paidIds.get(b.id)?.paymentId ?? null,
       source: b.source,
       visitNumber: b.visits_count + 1,
+      isMember: b.is_member,
       ...(answers && answers.length > 0 ? { answers } : {}),
     };
   });

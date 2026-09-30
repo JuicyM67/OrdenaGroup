@@ -93,6 +93,9 @@ export const estados = {
   flashConDescuento: (p: { porcentaje: number }): string =>
     `Flash −${p.porcentaje}%`,
   pendientePago: "Väntar på betalning",
+  /** Nyckeln finns av typskäl (samma som es-CL, WP-54): kund markerad som
+   * medlem med egen rabatt/förmån. */
+  socio: "Medlem",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------

@@ -25,6 +25,17 @@ function reservaConfirmacionTitulo(market: Market): string {
   return (market === "SE" ? Sv.reserva : Es.reserva).confirmacion.titulo;
 }
 
+/** WP-54: "Precio socio: $16.200 (−$1.800)" för textversionen (kortet finns
+ * bara i HTML). `null` utan medlemsrabatt. */
+function precioSocioLine(market: Market, data: BookingCardData): string | null {
+  if (!data.precio || !data.descuentoSocio) return null;
+  const miembro = emailNs(market).miembro;
+  return `${miembro.precioLabel}: ${miembro.precio({
+    precio: data.precio,
+    descuento: data.descuentoSocio,
+  })}`;
+}
+
 function cardRows(market: Market, data: BookingCardData): BookingCardRow[] {
   const campos = gestionCampos(market);
   const rows: BookingCardRow[] = [
@@ -36,8 +47,18 @@ function cardRows(market: Market, data: BookingCardData): BookingCardRow[] {
     rows.push({ label: campos.profesional, value: data.profesional });
   if (data.direccion)
     rows.push({ label: campos.direccion, value: data.direccion });
-  if (data.precio)
+  if (data.precio && data.descuentoSocio) {
+    const miembro = emailNs(market).miembro;
+    rows.push({
+      label: miembro.precioLabel,
+      value: miembro.precio({
+        precio: data.precio,
+        descuento: data.descuentoSocio,
+      }),
+    });
+  } else if (data.precio) {
     rows.push({ label: precioLabel(market), value: data.precio });
+  }
   return rows;
 }
 
@@ -93,7 +114,9 @@ export function reservaConfirmadaEmail(
     market,
     preheader,
     bodyHtml,
-    bodyText: `${titulo}\n\n${cuerpo}`,
+    bodyText: [titulo, cuerpo, precioSocioLine(market, data)]
+      .filter((x): x is string => x !== null)
+      .join("\n\n"),
     footerHtml: footHtml,
     footerText: footText,
   });
@@ -222,7 +245,9 @@ export function solicitudRecibidaEmail(
     market,
     preheader,
     bodyHtml,
-    bodyText: `${ns.titulo}\n\n${cuerpo}`,
+    bodyText: [ns.titulo, cuerpo, precioSocioLine(market, data)]
+      .filter((x): x is string => x !== null)
+      .join("\n\n"),
     footerHtml: footHtml,
     footerText: footText,
   });

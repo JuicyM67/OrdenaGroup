@@ -152,5 +152,11 @@ export function emailFixtures(market: Market): {
       invitadoPor: market === "SE" ? "Maria" : "María",
       acceptUrl: "https://app.example.com/app/invitacion/abc123",
     },
+    bienvenidaMiembro: {
+      cliente: b.cliente,
+      negocio: b.negocio,
+      pct: 10,
+      linkReserva: "https://app.example.com/barberia-norte",
+    },
   };
 }

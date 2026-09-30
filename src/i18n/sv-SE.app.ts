@@ -117,6 +117,8 @@ export const estados: Widen<typeof Es.estados> = {
   flashConDescuento: (p: { porcentaje: number }): string =>
     `Flash −${p.porcentaje}%`,
   pendientePago: "Väntar på förskott",
+  /** WP-54: kund markerad som medlem med egen rabatt/förmån. */
+  socio: "Medlem",
 };
 
 // ---------------------------------------------------------------------------
@@ -305,6 +307,8 @@ export const reserva: Widen<typeof Es.reserva> = {
     titulo: "Klart, din tid är bokad!",
     resumenTitulo: "Sammanfattning av din bokning",
     avisoWhatsapp: "Vi har skickat bekräftelsen via sms.",
+    descuentoSocio: (p: { descuento: string }): string =>
+      `Medlemsrabatt: −${p.descuento}`,
     verMiReserva: "Se min bokning",
   },
   confirmacionSolicitud: {
@@ -1183,6 +1187,25 @@ export const email: Widen<typeof Es.email> = {
     ignorar:
       "Om du inte väntade dig den här inbjudan kan du bortse från mejlet.",
   },
+  miembro: {
+    precioLabel: "Medlemspris",
+    precio: (p: { precio: string; descuento: string }): string =>
+      `${p.precio} (−${p.descuento})`,
+  },
+  bienvenidaMiembro: {
+    asunto: (p: { negocio: string }): string =>
+      `Nu är du medlem hos ${p.negocio}`,
+    preheader: (p: { beneficio: string }): string =>
+      `Din förmån: ${p.beneficio}.`,
+    titulo: "Välkommen som medlem!",
+    texto: (p: { cliente: string; negocio: string }): string =>
+      `Hej ${p.cliente}! Från och med i dag är du medlem hos ${p.negocio}.`,
+    beneficio: (p: { beneficio: string }): string =>
+      `Din förmån: ${p.beneficio}. Den gäller när du bokar med samma telefonnummer.`,
+    beneficioPct: (p: { pct: number }): string =>
+      `${p.pct} % rabatt på dina bokningar`,
+    cta: "Boka tid",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1506,6 +1529,17 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     cuenta: "Konto",
     formularioReserva: "Bokningsformulär",
     privacidad: "Integritet och data",
+    socios: "Medlemmar",
+  },
+  socios: {
+    activar: "Aktivera medlemsförmån",
+    activarAyuda:
+      "När den är på kan du markera dina stamkunder som medlemmar från deras kundkort.",
+    descuentoLabel: "Rabatt för medlemmar (%)",
+    descuentoAyuda: "Ett tal mellan 1 % och 100 %.",
+    beneficioLabel: "Text om förmånen (valfritt)",
+    beneficioPlaceholder: "T.ex. 10 % rabatt på alla behandlingar",
+    beneficioAyuda: "Upp till 140 tecken.",
   },
   reglas: {
     minNoticeLabel: "Minsta förvarning",
@@ -1585,6 +1619,7 @@ export const clientes: Widen<typeof Es.clientes> = {
       habituales: "Stamkunder",
       inactivos: "Inaktiva",
       conInasistencias: "Med uteblivna besök",
+      socios: "Medlemmar",
     },
     filtroHabitualesAyuda: "3 besök eller fler",
     filtroInactivosAyuda: "Inte varit här på mer än 90 dagar",
@@ -1615,6 +1650,13 @@ export const clientes: Widen<typeof Es.clientes> = {
     ctaSms: "Skicka sms",
     ctaEmail: "Skicka e-post",
     ctaVerFicha: "Se kundkort",
+    membresiaTitulo: "Medlem",
+    socioDesde: (p: { fecha: string }): string => `Medlem sedan ${p.fecha}`,
+    socioAyuda:
+      "Markera kunden som medlem för att ge den förmånen du ställt in under Inställningar.",
+    notificarCta: "Meddela kunden",
+    notificarEnviado: "Vi meddelade kunden via e-post.",
+    notificarYaEnviado: "Vi har redan meddelat kunden om medlemskapet.",
   },
   notas: {
     label: "Anteckningar",
@@ -1889,8 +1931,9 @@ export const sms: Widen<typeof Es.sms> = {
     fecha: string;
     hora: string;
     link: string;
+    precioSocio?: string;
   }): string =>
-    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}. Detaljer: ${p.link}`,
+    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}.${p.precioSocio ? ` Medlemspris: ${p.precioSocio}.` : ""} Detaljer: ${p.link}`,
   recordatorio: (p: {
     negocio: string;
     fecha: string;

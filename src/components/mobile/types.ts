@@ -53,6 +53,9 @@ export type HoyBooking = {
   /** WP-40 (D-031): svaren på bokningsfrågorna, om det finns några. Saknas
    * fältet (befintliga fixturer/tester) → ingen svarslista visas. */
   answers?: readonly BookingAnswerView[];
+  /** WP-54: `customers.is_member`. Saknas i design lab/äldre fixturer →
+   * ingen "Socio"-etikett. */
+  isMember?: boolean;
 };
 
 export type HoyLinks = {

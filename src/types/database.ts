@@ -370,6 +370,8 @@ export type Database = {
           instagram: string | null;
           logo_url: string | null;
           max_days_ahead: number;
+          member_benefit_text: string | null;
+          member_discount_pct: number | null;
           min_notice_minutes: number;
           name: string;
           phone: string | null;
@@ -402,6 +404,8 @@ export type Database = {
           instagram?: string | null;
           logo_url?: string | null;
           max_days_ahead?: number;
+          member_benefit_text?: string | null;
+          member_discount_pct?: number | null;
           min_notice_minutes?: number;
           name: string;
           phone?: string | null;
@@ -434,6 +438,8 @@ export type Database = {
           instagram?: string | null;
           logo_url?: string | null;
           max_days_ahead?: number;
+          member_benefit_text?: string | null;
+          member_discount_pct?: number | null;
           min_notice_minutes?: number;
           name?: string;
           phone?: string | null;
@@ -564,7 +570,9 @@ export type Database = {
           created_at: string;
           email: string | null;
           id: string;
+          is_member: boolean;
           last_visit_at: string | null;
+          member_since: string | null;
           name: string | null;
           no_show_count: number;
           notes: string | null;
@@ -583,7 +591,9 @@ export type Database = {
           created_at?: string;
           email?: string | null;
           id?: string;
+          is_member?: boolean;
           last_visit_at?: string | null;
+          member_since?: string | null;
           name?: string | null;
           no_show_count?: number;
           notes?: string | null;
@@ -602,7 +612,9 @@ export type Database = {
           created_at?: string;
           email?: string | null;
           id?: string;
+          is_member?: boolean;
           last_visit_at?: string | null;
+          member_since?: string | null;
           name?: string | null;
           no_show_count?: number;
           notes?: string | null;

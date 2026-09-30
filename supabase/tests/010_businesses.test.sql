@@ -5,7 +5,7 @@
 -- "inte tillämpligt" (en business kan inte peka på en annan business).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(52);
+select plan(55);
 \ir _helpers.psql
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
@@ -107,6 +107,22 @@ select is(
 );
 set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+
+-- WP-54: member_discount_pct (1–100) y member_benefit_text (≤140) — mismo
+-- patrón de column-grant + RLS can_edit_settings que about/cover_url/
+-- instagram (20260929140000) y auto_confirm_bookings (20260930140100).
+select throws_ok(
+  $$ update public.businesses set member_discount_pct = 0 where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '23514'
+);
+select throws_ok(
+  $$ update public.businesses set member_benefit_text = repeat('a', 141) where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '23514'
+);
+select lives_ok(
+  $$ update public.businesses set member_discount_pct = 10, member_benefit_text = '10% de descuento en todos los servicios' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  'ownerA puede ajustar member_discount_pct/member_benefit_text (columnas permitidas)'
+);
 
 -- 5. anon: select, insert, update, delete -> permission denied.
 set local role anon;

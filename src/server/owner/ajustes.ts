@@ -22,6 +22,7 @@ import {
   ajustesServiceInputSchema,
   ajustesStaffInputSchema,
   businessSettingsInputSchema,
+  memberSettingsInputSchema,
 } from "./ajustes-schemas";
 import {
   authzCode,
@@ -42,6 +43,10 @@ export type AjustesBusiness = {
   slotIntervalMinutes: number;
   /** WP-45 (D-033): `businesses.auto_confirm_bookings`. */
   autoConfirmBookings: boolean;
+  /** WP-54: `businesses.member_discount_pct`. `null` = förmånen är avstängd. */
+  memberDiscountPct: number | null;
+  /** WP-54: `businesses.member_benefit_text`. `null` = ingen egen text. */
+  memberBenefitText: string | null;
 };
 
 export type AjustesService = {
@@ -115,6 +120,18 @@ function mapDbError(e: unknown): string {
   if (code === "23514" && constraint === "business_hours_start_before_end") {
     return "hours.business_hours_start_before_end";
   }
+  if (
+    code === "23514" &&
+    constraint === "businesses_member_discount_pct_check"
+  ) {
+    return "member.discount_invalid";
+  }
+  if (
+    code === "23514" &&
+    constraint === "businesses_member_benefit_text_length_check"
+  ) {
+    return "member.benefit_too_long";
+  }
   return "unknown";
 }
 
@@ -139,6 +156,8 @@ type BusinessRow = {
   cancel_window_hours: number;
   slot_interval_minutes: number;
   auto_confirm_bookings: boolean;
+  member_discount_pct: number | null;
+  member_benefit_text: string | null;
 };
 
 type ServiceRow = {
@@ -173,7 +192,8 @@ export async function loadAjustesDataIn(
   const member = userId ? await loadMember(q, userId, businessId) : null;
   const businessRes = await q.query<BusinessRow>(
     `select name, slug, comuna, phone, address, min_notice_minutes, max_days_ahead,
-            cancel_window_hours, slot_interval_minutes, auto_confirm_bookings
+            cancel_window_hours, slot_interval_minutes, auto_confirm_bookings,
+            member_discount_pct, member_benefit_text
        from public.businesses
       where id = $1`,
     [businessId],
@@ -250,6 +270,8 @@ export async function loadAjustesDataIn(
       cancelWindowHours: b.cancel_window_hours,
       slotIntervalMinutes: b.slot_interval_minutes,
       autoConfirmBookings: b.auto_confirm_bookings,
+      memberDiscountPct: b.member_discount_pct,
+      memberBenefitText: b.member_benefit_text,
     },
     services: servicesRes.rows.map((s) => ({
       id: s.id,
@@ -318,6 +340,45 @@ export async function updateBusinessSettings(
           businessId,
           input.autoConfirmBookings,
         ],
+      );
+      return assertUpdated(r.rowCount) ?? { ok: true };
+    });
+  } catch (e) {
+    return { ok: false, code: mapDbError(e) };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Socios (WP-54): förmånen för kunder markerade som `customers.is_member`.
+// ---------------------------------------------------------------------------
+
+/** `enabled = false` → sparar alltid `null` i båda kolumnerna, oavsett vad
+ * `discountPct`/`benefitText` råkar innehålla (samma "av/på via null"-regel
+ * som db-migrationen, 20260930210200). */
+export async function updateMemberSettings(
+  userId: string,
+  businessId: string,
+  rawInput: unknown,
+): Promise<MutationResult> {
+  const parsed = memberSettingsInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: parsed.error.issues[0]?.message ?? "invalid_input",
+    };
+  }
+  const input = parsed.data;
+  const discountPct = input.enabled ? (input.discountPct ?? null) : null;
+  const benefitText =
+    input.enabled && input.benefitText ? input.benefitText : null;
+  try {
+    return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_settings");
+      const r = await q.query(
+        `update public.businesses
+            set member_discount_pct = $1, member_benefit_text = $2
+          where id = $3`,
+        [discountPct, benefitText, businessId],
       );
       return assertUpdated(r.rowCount) ?? { ok: true };
     });

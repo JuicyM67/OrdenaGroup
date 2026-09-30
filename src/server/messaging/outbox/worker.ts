@@ -234,6 +234,60 @@ async function loadInvitationContext(
 }
 
 // ---------------------------------------------------------------------------
+// WP-54: `bienvenidaMiembro` — ingen bokning (`booking_id` null), kunden slås
+// upp via `payload.customerId` (ingen adress i kön, D-029). Skickas bara om
+// kunden FORTFARANDE är medlem, inte anonymiserad och har e-post.
+// ---------------------------------------------------------------------------
+
+type MemberWelcomeContext = {
+  sendable: boolean;
+  email: string | null;
+  cliente: string;
+  negocio: string;
+  slug: string;
+  pct: number | null;
+  benefitText: string | null;
+};
+
+async function loadMemberWelcomeContext(
+  businessId: string,
+  customerId: string,
+): Promise<MemberWelcomeContext | undefined> {
+  return withServiceTx(async (q) => {
+    const r = await q.query<{
+      sendable: boolean;
+      email: string | null;
+      cliente: string;
+      negocio: string;
+      slug: string;
+      member_discount_pct: number | null;
+      member_benefit_text: string | null;
+    }>(
+      `select (c.is_member and c.anonymized_at is null) as sendable,
+              c.email, c.name as cliente,
+              b.name as negocio, b.slug,
+              b.member_discount_pct, b.member_benefit_text
+         from public.customers c
+         join public.businesses b on b.id = c.business_id
+        where c.business_id = $1 and c.id = $2`,
+      [businessId, customerId],
+    );
+    const row = r.rows[0];
+    return row
+      ? {
+          sendable: row.sendable,
+          email: row.email,
+          cliente: row.cliente,
+          negocio: row.negocio,
+          slug: row.slug,
+          pct: row.member_discount_pct,
+          benefitText: row.member_benefit_text,
+        }
+      : undefined;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Länkar och mallars data
 // ---------------------------------------------------------------------------
 
@@ -269,6 +323,29 @@ function fechaHora(ctx: MessageContext): { fecha: string; hora: string } {
   };
 }
 
+/** Priset att betala och (WP-54) medlemsrabatten. `discount_clp` sätts bara
+ * av medlemsrabatten vid skapandet (`src/server/bookings/create.ts`), så
+ * `discountClp > 0` = "Precio socio" i kortet. */
+function precioFields(ctx: MessageContext): {
+  precio: string;
+  descuentoSocio?: string;
+} {
+  const precio = formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0));
+  return ctx.discountClp > 0
+    ? { precio, descuentoSocio: formatMoney(ctx.discountClp) }
+    : { precio };
+}
+
+/** SMS-varianten: "$16.200 (-$1.800)" med ASCII "-" (GSM-7; "−" skulle
+ * tvinga hela sms:et till UCS-2). */
+function precioSocioSms(ctx: MessageContext): { precioSocio?: string } {
+  if (ctx.discountClp <= 0) return {};
+  const precio = formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0));
+  return {
+    precioSocio: `${precio} (-${formatMoney(ctx.discountClp)})`,
+  };
+}
+
 function reservaConfirmadaData(
   ctx: MessageContext,
   token: string,
@@ -282,7 +359,7 @@ function reservaConfirmadaData(
     hora,
     profesional: ctx.profesional,
     direccion: ctx.address ?? undefined,
-    precio: formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0)),
+    ...precioFields(ctx),
     horasCancelacion: ctx.cancelWindowHours,
     linkGestion: manageLink(token),
   };
@@ -345,7 +422,7 @@ function solicitudRecibidaData(
     hora,
     profesional: ctx.profesional,
     direccion: ctx.address ?? undefined,
-    precio: formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0)),
+    ...precioFields(ctx),
     linkGestion: manageLink(token),
   };
 }
@@ -506,7 +583,13 @@ async function sendCustomerSms(
       const r = await sendSms({
         to,
         template: "reservaConfirmada",
-        data: { negocio: ctx.negocio, fecha, hora, link: manageLink(token) },
+        data: {
+          negocio: ctx.negocio,
+          fecha,
+          hora,
+          link: manageLink(token),
+          ...precioSocioSms(ctx),
+        },
         idempotencyKey: row.dedupeKey,
       });
       return r.id;
@@ -756,10 +839,44 @@ async function processInviteeRow(
   return "sent";
 }
 
+async function processMemberWelcomeRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const customerId =
+    typeof row.payload.customerId === "string" ? row.payload.customerId : "";
+  if (!customerId) throw new OutboxSendError("invalid_payload");
+  const ctx = await loadMemberWelcomeContext(row.businessId, customerId);
+  if (!ctx) throw new OutboxSendError("no_customer");
+  // Hann kunden sluta vara medlem, anonymiseras eller tappa e-posten innan
+  // raden skickades är beskedet inaktuellt.
+  if (!ctx.sendable || !ctx.email) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const benefit = ctx.benefitText?.trim();
+  const r = await sendEmail({
+    to: ctx.email,
+    template: "bienvenidaMiembro",
+    data: {
+      cliente: ctx.cliente,
+      negocio: ctx.negocio,
+      ...(benefit ? { beneficioTexto: benefit } : {}),
+      ...(ctx.pct !== null ? { pct: ctx.pct } : {}),
+      linkReserva: bookAgainLink(ctx.slug),
+    },
+    idempotencyKey: row.dedupeKey,
+  });
+  await finalizeSent(row, r.id);
+  return "sent";
+}
+
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
   try {
+    if (row.template === "bienvenidaMiembro") {
+      return await processMemberWelcomeRow(row);
+    }
     // `await` explícito (no solo `return processInviteeRow(row)`): un
     // `return <promise>` dentro de un `try` NO deja que el `catch` de abajo
     // atrape un rechazo posterior — hay que esperarlo acá para que

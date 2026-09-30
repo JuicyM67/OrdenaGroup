@@ -46,6 +46,13 @@ const KNOWN: Record<string, string> = {
   "business.slot_interval_invalid": comun.algoSalioMal,
   // WP-45 (D-033): typfel bara (växel), ingen egen copy — samma mönster.
   "business.auto_confirm_invalid": comun.algoSalioMal,
+  // WP-54 (Ajustes → Socios): samma avvägning, ingen egen copy för dessa
+  // sällan träffade valideringsfel (fältens `min`/`max`/`maxLength` i UI:t
+  // hindrar normalt att de ens skickas).
+  "member.enabled_invalid": comun.algoSalioMal,
+  "member.discount_invalid": comun.algoSalioMal,
+  "member.benefit_invalid_type": comun.algoSalioMal,
+  "member.benefit_too_long": comun.algoSalioMal,
   "services.name_empty": servicios.errores.nombreVacio,
   "services.duration_invalid": servicios.errores.duracionInvalida,
   "services.buffer_invalid": servicios.errores.bufferInvalido,

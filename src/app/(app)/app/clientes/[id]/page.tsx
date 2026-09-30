@@ -12,6 +12,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import {
   getCustomerDetail,
+  notifyCustomerMembership,
+  setCustomerMember,
   updateCustomerNotes,
 } from "@/server/owner/clientes";
 import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
@@ -77,6 +79,25 @@ export default async function ClienteDetallePage({
     return anonymizeCustomer(user.id, current.business.id, parsed.data);
   };
 
+  const onSetMember = async (isMember: boolean) => {
+    "use server";
+    return setCustomerMember(
+      user.id,
+      current.business.id,
+      parsedId.data,
+      isMember,
+    );
+  };
+
+  const onNotifyMember = async () => {
+    "use server";
+    return notifyCustomerMembership(
+      user.id,
+      current.business.id,
+      parsedId.data,
+    );
+  };
+
   return (
     <CustomerDetailScreen
       customer={customer}
@@ -85,6 +106,8 @@ export default async function ClienteDetallePage({
       onUpdateNotes={onUpdateNotes}
       onExportCustomer={onExportCustomer}
       onAnonymizeCustomer={onAnonymizeCustomer}
+      onSetMember={onSetMember}
+      onNotifyMember={onNotifyMember}
     />
   );
 }

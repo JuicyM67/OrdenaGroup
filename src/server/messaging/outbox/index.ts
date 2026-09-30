@@ -9,6 +9,12 @@ import "server-only";
  */
 export { enqueueBookingEvent, enqueueBookingEventIn } from "./enqueue";
 export { kickOutbox } from "./kick";
+export { enqueueMemberWelcome } from "./member-welcome";
+export type {
+  EnqueueMemberWelcomeError,
+  EnqueueMemberWelcomeInput,
+  EnqueueMemberWelcomeResult,
+} from "./member-welcome";
 export { nextRetry, processOutbox } from "./worker";
 export type { ProcessOutboxResult, RetryDecision } from "./worker";
 export type { BookingEvent, OutboxChannel, OutboxRecipientKind } from "./types";

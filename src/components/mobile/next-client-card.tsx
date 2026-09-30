@@ -12,10 +12,15 @@ import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { PAGADA_LABEL } from "@/components/caja/types";
-import { caja, comun, hoy } from "@/i18n";
+import { caja, comun, estados, hoy } from "@/i18n";
 import { formatTime, APP_TZ } from "@/lib/format/dates";
 
-import { nextChip, parseInstantOrThrow, relative } from "./hoy-view";
+import {
+  isMemberBooking,
+  nextChip,
+  parseInstantOrThrow,
+  relative,
+} from "./hoy-view";
 import type { HoyBooking } from "./types";
 
 // Fokusringen ligger 2 px INNANFÖR kortets kant (negativ outline-offset, ingen godtycklig
@@ -110,6 +115,11 @@ export function NextClientCard({
           {hoy.siguiente({ relativo: relative(now, start) })}
         </span>
         <div className="flex flex-wrap justify-end gap-1.5">
+          {isMemberBooking(booking) ? (
+            <Chip size="sm" weight="bold" tone="lavender">
+              {estados.socio}
+            </Chip>
+          ) : null}
           {booking.paymentId ? (
             <Chip size="sm" weight="bold" tone="success">
               {PAGADA_LABEL}

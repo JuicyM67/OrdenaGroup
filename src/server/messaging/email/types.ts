@@ -26,6 +26,10 @@ export type BookingCardData = {
    * gör ingen egen valutalogik, samma mönster som `fecha`/`hora` i
    * `email.*` i i18n (WP-03). */
   readonly precio?: string;
+  /** WP-54: medlemsrabatten, redan formaterad ("$1.800"). Finns den visar
+   * kortet "Precio socio: {precio} (−{descuentoSocio})" i stället för
+   * "Precio: {precio}" (`precio` är då redan priset efter rabatt). */
+  readonly descuentoSocio?: string;
 };
 
 export type EmailTemplateMeta = {
