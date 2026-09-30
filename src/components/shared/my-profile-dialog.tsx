@@ -20,7 +20,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
-import { ajustes, comun, perfil, profesionales } from "@/i18n";
+import { ajustes, comun, perfil, profesionales, equipo } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import {
@@ -33,7 +33,6 @@ import {
 
 /** TODO_COPY: ersätt med en riktig sträng (`perfil.miPerfil` e.d.) när
  * copywriter-es-cl lagt till den. */
-const MI_PERFIL_TODO = "Mi perfil";
 
 export type MyProfileData = {
   staffId: string;
@@ -43,7 +42,9 @@ export type MyProfileData = {
 };
 
 export type MyProfileActions = {
-  updateTitle: (title: string) => Promise<{ ok: true } | { ok: false; code: string }>;
+  updateTitle: (
+    title: string,
+  ) => Promise<{ ok: true } | { ok: false; code: string }>;
   createPhotoUpload: (
     contentType: string,
   ) => Promise<
@@ -159,7 +160,7 @@ export function MyProfileDialog({
           >
             <div className="flex items-start justify-between">
               <Dialog.Title className="text-17 font-bold text-ink">
-                {MI_PERFIL_TODO}
+                {equipo.miPerfil}
               </Dialog.Title>
               <Dialog.Close asChild>
                 <IconButton label={comun.cerrar} tone="ghost" size={30}>
@@ -168,7 +169,7 @@ export function MyProfileDialog({
               </Dialog.Close>
             </div>
             <Dialog.Description id={descriptionId} className="sr-only">
-              {MI_PERFIL_TODO}
+              {equipo.miPerfil}
             </Dialog.Description>
 
             <div className="flex items-center gap-4">

@@ -1710,7 +1710,8 @@ export const onboarding = {
     horario: "Cuéntanos cuándo atiendes cada día.",
     /** WP-51: todos los campos de este paso son opcionales ("Saltar este
      * paso" reutiliza `ctaSaltar`). */
-    pagina: "Agrega fotos y datos de contacto para que te encuentren. Todo esto es opcional.",
+    pagina:
+      "Agrega fotos y datos de contacto para que te encuentren. Todo esto es opcional.",
     link: "Con esto ya tienes tu página de reservas lista.",
   },
   listo: {
@@ -2830,6 +2831,7 @@ export const solicitudes = {
 // ---------------------------------------------------------------------------
 
 export const equipo = {
+  miPerfil: "Mi perfil",
   ctaInvitar: "Invitar a la cuenta",
   invitarDialog: {
     titulo: "Invitar a la cuenta",

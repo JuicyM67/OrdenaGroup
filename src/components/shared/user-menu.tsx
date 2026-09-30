@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
-import { nav, onboarding, perfil } from "@/i18n";
+import { nav, onboarding, perfil, equipo } from "@/i18n";
 
 import { Avatar, type AvatarProps } from "../ui/avatar";
 import { strokeCard } from "../ui/icons";
@@ -31,7 +31,6 @@ import {
 
 /** TODO_COPY (copywriter-es-cl): ingen sträng ännu för menyposten — samma
  * platshållare som `my-profile-dialog.tsx`, nämnt i rapporten. */
-const MI_PERFIL_TODO = "Mi perfil";
 
 const ICON_CLASS = "size-4 shrink-0 text-muted";
 
@@ -93,7 +92,7 @@ export function UserMenu({
               className={ICON_CLASS}
               strokeWidth={strokeCard}
             />
-            {MI_PERFIL_TODO}
+            {equipo.miPerfil}
           </MenuButtonItem>
         ) : (
           <MenuLinkItem href="/app/ajustes#perfil" prefetch={false}>

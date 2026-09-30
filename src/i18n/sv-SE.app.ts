@@ -2116,6 +2116,7 @@ export const solicitudes: Widen<typeof Es.solicitudes> = {
 // ---------------------------------------------------------------------------
 
 export const equipo: Widen<typeof Es.equipo> = {
+  miPerfil: "Min profil",
   ctaInvitar: "Bjud in till kontot",
   invitarDialog: {
     titulo: "Bjud in till kontot",
