@@ -51,7 +51,11 @@ function render(
   const bodyHtml =
     heading(ns.titulo) +
     paragraph(ns.texto) +
-    button(data.confirmUrl, ns.cta) +
+    // "lime" (ljus botten, mörk text): bulletproof-knapp som håller sig
+    // läsbar oavsett mörkt läge (WP-49, se layout.ts). Åtkomstmejlen är
+    // det mest kritiska CTA:t (utan det kommer man inte in), så samma
+    // hög-kontrast-knapp som horaFlash/reservaCancelada.
+    button(data.confirmUrl, ns.cta, "lime") +
     codeLine(ns.codigo, data.token) +
     caption(ns.expira) +
     caption(ns.ignorar);
