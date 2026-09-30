@@ -36,7 +36,8 @@ async function isPlatformAdmin(userId: string): Promise<boolean> {
 
 export async function currentAal(): Promise<"aal1" | "aal2" | null> {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  const { data, error } =
+    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
   if (error || !data) return null;
   return data.currentLevel === "aal2" ? "aal2" : "aal1";
 }

@@ -99,7 +99,9 @@ export default async function AdminBusinessDetailPage({
 
       <section className="grid grid-cols-3 gap-3">
         <div className="rounded-card bg-surface p-5">
-          <p className="text-22 font-bold text-ink">{business.counts.bookings}</p>
+          <p className="text-22 font-bold text-ink">
+            {business.counts.bookings}
+          </p>
           <p className="text-13 text-ink-soft">Bokningar</p>
         </div>
         <div className="rounded-card bg-surface p-5">
@@ -107,7 +109,9 @@ export default async function AdminBusinessDetailPage({
           <p className="text-13 text-ink-soft">Personal</p>
         </div>
         <div className="rounded-card bg-surface p-5">
-          <p className="text-22 font-bold text-ink">{business.counts.members}</p>
+          <p className="text-22 font-bold text-ink">
+            {business.counts.members}
+          </p>
           <p className="text-13 text-ink-soft">Konton</p>
         </div>
       </section>
@@ -125,14 +129,25 @@ export default async function AdminBusinessDetailPage({
         <h2 className="text-15 font-bold text-ink">Medlemmar</h2>
         <ul className="flex flex-col gap-4">
           {business.members.map((m) => (
-            <li key={m.userId} className="flex flex-col gap-1.5 border-b border-border pb-4 last:border-0 last:pb-0">
+            <li
+              key={m.userId}
+              className="flex flex-col gap-1.5 border-b border-border pb-4 last:border-0 last:pb-0"
+            >
               <p className="text-14 text-ink">
                 {m.email ?? "(okänd e-post)"}{" "}
                 <span className="text-12 text-ink-soft">{m.role}</span>
               </p>
               <MemberActions
-                onSendLoginLink={sendLoginLinkAction.bind(null, business.id, m.userId)}
-                onChangeEmail={changeEmailAction.bind(null, business.id, m.userId)}
+                onSendLoginLink={sendLoginLinkAction.bind(
+                  null,
+                  business.id,
+                  m.userId,
+                )}
+                onChangeEmail={changeEmailAction.bind(
+                  null,
+                  business.id,
+                  m.userId,
+                )}
               />
             </li>
           ))}
@@ -144,7 +159,8 @@ export default async function AdminBusinessDetailPage({
         <ul className="flex flex-col gap-1.5">
           {log.map((entry) => (
             <li key={entry.id} className="text-12 text-ink-soft">
-              {new Date(entry.createdAt).toLocaleString("sv-SE")} — {entry.action}
+              {new Date(entry.createdAt).toLocaleString("sv-SE")} —{" "}
+              {entry.action}
               {Object.keys(entry.details).length
                 ? ` (${JSON.stringify(entry.details)})`
                 : ""}

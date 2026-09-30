@@ -70,7 +70,10 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col gap-4">
+    <form
+      onSubmit={(e) => void handleSubmit(e)}
+      className="flex flex-col gap-4"
+    >
       <TextField
         label="Företagets namn"
         required
@@ -88,7 +91,9 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
         Plan
         <select
           value={plan}
-          onChange={(e) => setPlan(e.target.value as InviteBusinessInput["plan"])}
+          onChange={(e) =>
+            setPlan(e.target.value as InviteBusinessInput["plan"])
+          }
           className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
         >
           {PLANS.map((p) => (
@@ -107,7 +112,9 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
           className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
         />
       </label>
-      {error ? <p className="text-13 text-alert">Det gick inte ({error}).</p> : null}
+      {error ? (
+        <p className="text-13 text-alert">Det gick inte ({error}).</p>
+      ) : null}
       <Button type="submit" size="lg" disabled={pending}>
         {pending ? "Skickar…" : "Skicka inbjudan"}
       </Button>

@@ -96,7 +96,9 @@ export async function listBusinesses(
     planOverrideUntil: row.plan_override_until,
     status: row.status,
     deletionRequestedAt: row.deletion_requested_at,
-    ownerEmail: row.owner_user_id ? (emails.get(row.owner_user_id) ?? null) : null,
+    ownerEmail: row.owner_user_id
+      ? (emails.get(row.owner_user_id) ?? null)
+      : null,
     createdAt: row.created_at,
   }));
 
@@ -255,9 +257,10 @@ export async function freezeBusiness(
       [businessId],
     );
     if (!r.rowCount) {
-      const exists = await q.query(`select 1 from public.businesses where id = $1`, [
-        businessId,
-      ]);
+      const exists = await q.query(
+        `select 1 from public.businesses where id = $1`,
+        [businessId],
+      );
       return exists.rows.length
         ? { ok: false, code: "already_frozen" }
         : { ok: false, code: "not_found" };
@@ -315,9 +318,10 @@ export async function adminRequestDeletion(
       [businessId],
     );
     if (!r.rowCount) {
-      const exists = await q.query(`select 1 from public.businesses where id = $1`, [
-        businessId,
-      ]);
+      const exists = await q.query(
+        `select 1 from public.businesses where id = $1`,
+        [businessId],
+      );
       return exists.rows.length
         ? { ok: false, code: "already_requested" }
         : { ok: false, code: "not_found" };
@@ -371,7 +375,8 @@ export async function sendLoginLink(
   const client = getStorageAdminClient();
   const { data: userData, error: userError } =
     await client.auth.admin.getUserById(targetUserId);
-  if (userError || !userData.user?.email) return { ok: false, code: "not_found" };
+  if (userError || !userData.user?.email)
+    return { ok: false, code: "not_found" };
   const email = userData.user.email;
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
@@ -414,7 +419,8 @@ export async function changeEmail(
   newEmail: string,
 ): Promise<AdminActionResult> {
   const email = newEmail.trim().toLowerCase();
-  if (!email || !email.includes("@")) return { ok: false, code: "invalid_email" };
+  if (!email || !email.includes("@"))
+    return { ok: false, code: "invalid_email" };
 
   const client = getStorageAdminClient();
   const { error } = await client.auth.admin.updateUserById(targetUserId, {

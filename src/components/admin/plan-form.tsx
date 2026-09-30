@@ -40,7 +40,10 @@ export function PlanForm({ plan, overrideUntil, onSubmit }: PlanFormProps) {
   }
 
   return (
-    <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-wrap items-end gap-3">
+    <form
+      onSubmit={(e) => void handleSubmit(e)}
+      className="flex flex-wrap items-end gap-3"
+    >
       <label className="flex flex-col gap-1 text-13 text-ink">
         Plan
         <select
@@ -67,7 +70,9 @@ export function PlanForm({ plan, overrideUntil, onSubmit }: PlanFormProps) {
       <Button type="submit" size="sm" disabled={pending}>
         {pending ? "Sparar…" : "Spara plan"}
       </Button>
-      {error ? <span className="text-13 text-alert">Det gick inte ({error}).</span> : null}
+      {error ? (
+        <span className="text-13 text-alert">Det gick inte ({error}).</span>
+      ) : null}
     </form>
   );
 }

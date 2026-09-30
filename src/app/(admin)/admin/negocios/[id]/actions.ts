@@ -36,7 +36,9 @@ export async function setPlanAction(
   return result;
 }
 
-export async function freezeAction(businessId: string): Promise<AdminActionResult> {
+export async function freezeAction(
+  businessId: string,
+): Promise<AdminActionResult> {
   const admin = await requireAdminForAction();
   const result = await freezeBusiness(admin.userId, businessId);
   await afterAction(businessId);
@@ -84,7 +86,12 @@ export async function changeEmailAction(
   newEmail: string,
 ): Promise<AdminActionResult> {
   const admin = await requireAdminForAction();
-  const result = await changeEmail(admin.userId, targetUserId, businessId, newEmail);
+  const result = await changeEmail(
+    admin.userId,
+    targetUserId,
+    businessId,
+    newEmail,
+  );
   await afterAction(businessId);
   return result;
 }

@@ -45,7 +45,12 @@ export function ConfirmActionButton({
 
   return (
     <>
-      <Button type="button" variant={variant} size="sm" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        variant={variant}
+        size="sm"
+        onClick={() => setOpen(true)}
+      >
         {label}
       </Button>
       <ConfirmDialog

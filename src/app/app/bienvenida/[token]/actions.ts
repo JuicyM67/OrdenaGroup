@@ -15,8 +15,7 @@ import {
 } from "@/server/onboarding/invitation";
 
 export type SendInvitationLinkResult =
-  | { ok: true; email: string }
-  | { ok: false; code: string };
+  { ok: true; email: string } | { ok: false; code: string };
 
 const WINDOW_SECONDS = 10 * 60;
 const IP_MAX = 5;

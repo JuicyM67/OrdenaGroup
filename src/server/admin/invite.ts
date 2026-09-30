@@ -18,8 +18,7 @@ export type InviteBusinessInput = {
 };
 
 export type InviteBusinessResult =
-  | { ok: true; invitationId: string }
-  | { ok: false; code: string };
+  { ok: true; invitationId: string } | { ok: false; code: string };
 
 export async function inviteBusiness(
   adminUserId: string,
@@ -27,7 +26,8 @@ export async function inviteBusiness(
 ): Promise<InviteBusinessResult> {
   const email = input.email.trim().toLowerCase();
   const businessName = input.businessName.trim();
-  if (!email || !email.includes("@")) return { ok: false, code: "invalid_email" };
+  if (!email || !email.includes("@"))
+    return { ok: false, code: "invalid_email" };
   if (!businessName) return { ok: false, code: "invalid_name" };
 
   const { token, hash } = createInvitationToken();
@@ -75,4 +75,3 @@ export async function inviteBusiness(
 
   return { ok: true, invitationId };
 }
-

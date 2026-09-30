@@ -68,7 +68,9 @@ export function MemberActions({
           Byt e-post
         </Button>
       </div>
-      {linkMsg ? <span className="text-12 text-ink-soft">{linkMsg}</span> : null}
+      {linkMsg ? (
+        <span className="text-12 text-ink-soft">{linkMsg}</span>
+      ) : null}
       {editing ? (
         <form
           onSubmit={(e) => void handleChangeEmail(e)}

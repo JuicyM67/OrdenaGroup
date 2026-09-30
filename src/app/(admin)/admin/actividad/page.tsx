@@ -22,7 +22,8 @@ export default async function AdminActivityPage() {
               className="flex flex-col gap-0.5 border-b border-border pb-3 text-13 last:border-0 last:pb-0"
             >
               <span className="text-ink">
-                {new Date(entry.createdAt).toLocaleString("sv-SE")} — {entry.action}
+                {new Date(entry.createdAt).toLocaleString("sv-SE")} —{" "}
+                {entry.action}
               </span>
               <span className="text-12 text-ink-soft">
                 {entry.businessId ? (

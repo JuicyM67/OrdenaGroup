@@ -21,9 +21,7 @@ export default async function AdminMfaPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-6">
       <div className="rounded-card bg-surface p-6">
-        <h1 className="mb-4 text-19 font-bold text-ink">
-          Tvåstegsverifiering
-        </h1>
+        <h1 className="mb-4 text-19 font-bold text-ink">Tvåstegsverifiering</h1>
         <MfaPanel />
       </div>
     </main>
