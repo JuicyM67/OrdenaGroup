@@ -157,6 +157,7 @@ export const errores: Widen<typeof Es.errores> = {
     network:
       "Vi kunde inte ansluta. Kontrollera din uppkoppling och försök igen.",
     waitlist_duplicate: "Du står redan på väntelistan för den här dagen.",
+    rate_limited: "För många försök. Försök igen om en stund.",
     nombreVacio: "Skriv ditt namn.",
     emailInvalido: "Kontrollera din e-postadress.",
     consentimientoRequerido: "Godkänn villkoren för att fortsätta.",

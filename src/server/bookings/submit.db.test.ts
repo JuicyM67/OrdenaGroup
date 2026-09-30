@@ -268,4 +268,63 @@ describe("createCustomerBooking + saveBookingConsent", () => {
     const consent = await consentRow(retry.value.customerId);
     expect(consent.consent_terms_at).not.toBeNull();
   });
+
+  it("pilotblockerare WP-27: max 3 framtida bokningar per telefon+företag, en avbokad räknas inte", async () => {
+    const ph = phone();
+    const at2 = (t: LocalTime) => iso(at(TUE, t));
+    // Tre olika profesionales, samma tid (10:00) och samma telefon — ingen
+    // krock i motorn (`no_overlap` är per profesional), bara den nya
+    // telefon-gränsen ska räknas.
+    for (const staffKey of ["diego", "matias", "tomas"] as const) {
+      const r = await createCustomerBooking({
+        businessId: biz.id,
+        serviceId: biz.services.corte!,
+        staffId: biz.staff[staffKey]!,
+        start: at2("10:00" as LocalTime),
+        name: "Cliente Frecuente",
+        phone: ph,
+        email: `c${phoneSeq}@example.com`,
+        idempotencyKey: randomUUID(),
+        now: NOW,
+      });
+      if (!r.ok) throw new Error(r.error);
+    }
+
+    const blocked = await createCustomerBooking({
+      businessId: biz.id,
+      serviceId: biz.services.corte!,
+      staffId: biz.staff.diego!,
+      start: at2("12:00" as LocalTime),
+      name: "Cliente Frecuente",
+      phone: ph,
+      email: `c${phoneSeq}@example.com`,
+      idempotencyKey: randomUUID(),
+      now: NOW,
+    });
+    expect(blocked.ok).toBe(false);
+    if (blocked.ok) return;
+    expect(blocked.error).toBe("rate_limited");
+
+    // Avbokar en av de tre (diegos 10:00) — plats för en ny bokning igen.
+    await adminQuery(
+      `update public.bookings set status = 'cancelled', cancelled_at = now()
+        where business_id = $1
+          and staff_id = $2
+          and customer_id = (select id from public.customers where business_id = $1 and phone_e164 = $3)
+          and lower(period) = $4::timestamptz`,
+      [biz.id, biz.staff.diego, ph, at2("10:00" as LocalTime)],
+    );
+    const afterCancel = await createCustomerBooking({
+      businessId: biz.id,
+      serviceId: biz.services.corte!,
+      staffId: biz.staff.diego!,
+      start: at2("12:00" as LocalTime),
+      name: "Cliente Frecuente",
+      phone: ph,
+      email: `c${phoneSeq}@example.com`,
+      idempotencyKey: randomUUID(),
+      now: NOW,
+    });
+    expect(afterCancel.ok).toBe(true);
+  });
 });

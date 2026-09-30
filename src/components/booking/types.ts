@@ -147,12 +147,16 @@ export interface BookingPageData {
 }
 
 /** `BookingError` (`@/server/bookings/types`, WP-10) plus `network` (klientfel,
- * anropet nådde aldrig servern) och `waitlist_duplicate` (bara väntelistan,
- * inte en del av `BookingError`). Matchar nycklarna i `errores.reserva` (utom
- * fältfelen `telefono`/`nombreVacio`/`emailInvalido`/`consentimientoRequerido`),
- * typat uttömmande i `errors.ts`. */
+ * anropet nådde aldrig servern), `waitlist_duplicate` (bara väntelistan,
+ * inte en del av `BookingError`) och `rate_limited` (säkerhetsgranskning
+ * WP-27: för många försök från samma IP, eller för många framtida bokningar
+ * på samma telefon — `src/app/[slug]/actions.ts`/`src/server/bookings/
+ * submit.ts`, inte heller en del av `BookingError` eftersom motorn
+ * (`create.ts`) aldrig returnerar den). Matchar nycklarna i `errores.reserva`
+ * (utom fältfelen `telefono`/`nombreVacio`/`emailInvalido`/
+ * `consentimientoRequerido`), typat uttömmande i `errors.ts`. */
 export type BookingServerErrorCode =
-  BookingError | "network" | "waitlist_duplicate";
+  BookingError | "network" | "waitlist_duplicate" | "rate_limited";
 
 /** Kundens uppgifter i datasteget — vanlig typ (ingen Zod), så att
  * `customer-form.tsx`/`booking-screen.tsx` kan importera den utan att dra in

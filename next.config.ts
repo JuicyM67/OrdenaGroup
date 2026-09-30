@@ -19,6 +19,27 @@ const nextConfig: NextConfig = {
   async redirects() {
     return MARKET === "SE" ? seRouteRedirects() : [];
   },
+  // WP-27: grundläggande säkerhetsheaders (ingen inbäddning → ingen clickjacking
+  // av /app eller avbokningen i /r/[token]). Full CSP med img-src kommer senare (IDEAS).
+  async headers() {
+    return [
+      {
+        // Bara sidor/API, inte /_next/static: headers på varje JS-chunk räknas
+        // annars in i JS-budgeten (D-032, encodedDataLength) utan att skydda något.
+        source: "/((?!_next/static|_next/image|favicon.ico).*)",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+        ],
+      },
+    ];
+  },
   // Next skriver annars in egna regler i CLAUDE.md vid `next dev`.
   agentRules: false,
   // Dev-indikatorn ritas i nederkanten och hamnar annars i skärmdumparna

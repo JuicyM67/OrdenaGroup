@@ -36,6 +36,44 @@ export function customerEmailRequired(m: Market): boolean {
   return m === "CL";
 }
 
+/** Pilotblockerare (säkerhetsgranskning WP-27): samma telefon kan max ha
+ * `MAX_FUTURE_BOOKINGS_PER_PHONE` framtida, icke avbokade bokningar hos
+ * samma företag samtidigt — oberoende av IP (skyddar mot att en person
+ * fyller hela agendan med påhittade telefonnummer/IP-rotation). */
+const MAX_FUTURE_BOOKINGS_PER_PHONE = 3;
+
+/**
+ * Räknar kundens befintliga framtida (start > `now`), icke avbokade
+ * bokningar hos företaget — en egen, kort transaktion (samma mönster som
+ * `saveBookingConsent`), inte en del av motorns transaktion: en approximativ
+ * gräns räcker (inv. 1, exclusion constraint, skyddar redan mot dubbelbokning
+ * av samma TID). `idempotencyKey`, om satt, exkluderas ur räkningen — annars
+ * skulle ett omförsök av kundens EGEN nyss skapade bokning kunna räkna sig
+ * själv och blockera sitt eget omförsök.
+ */
+async function futureBookingsForPhone(
+  businessId: string,
+  phone: string,
+  now: Date,
+  idempotencyKey: string | undefined,
+): Promise<number> {
+  return withServiceTx(async (q) => {
+    const r = await q.query<{ n: string }>(
+      `select count(*)::text as n
+         from public.bookings bk
+         join public.customers c
+           on c.business_id = bk.business_id and c.id = bk.customer_id
+        where bk.business_id = $1
+          and c.phone_e164 = $2
+          and bk.status <> 'cancelled'
+          and lower(bk.period) > $3
+          and ($4::uuid is null or bk.idempotency_key is distinct from $4)`,
+      [businessId, phone, now.toISOString(), idempotencyKey ?? null],
+    );
+    return Number(r.rows[0]?.n ?? "0");
+  });
+}
+
 /**
  * Kundens bokning från `/{slug}` (WP-20): anropar bara motorns
  * `createBooking`. I CL krävs e-post (D-030) → annars `invalid_input`. Samtycket sparas separat av `saveBookingConsent` — se den
@@ -43,10 +81,19 @@ export function customerEmailRequired(m: Market): boolean {
  */
 export async function createCustomerBooking(
   input: CreateCustomerBookingInput,
-): Promise<Result<CreatedBooking, BookingError>> {
+): Promise<Result<CreatedBooking, BookingError | "rate_limited">> {
   const m = input.market ?? installationMarket;
   if (customerEmailRequired(m) && !input.email?.trim()) {
     return err("invalid_input");
+  }
+  const futureCount = await futureBookingsForPhone(
+    input.businessId,
+    input.phone,
+    input.now,
+    input.idempotencyKey,
+  );
+  if (futureCount >= MAX_FUTURE_BOOKINGS_PER_PHONE) {
+    return err("rate_limited");
   }
   return createBooking(
     {

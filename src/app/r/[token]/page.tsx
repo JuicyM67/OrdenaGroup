@@ -12,8 +12,16 @@ import { ManageScreen } from "@/components/booking/manage-screen";
 import type { ManageCancelResult } from "@/components/booking/manage-view";
 import { gestion } from "@/i18n";
 import { cancelByToken, loadBookingByToken } from "@/server/bookings/manage";
+import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
 import { systemClock } from "@/server/scheduling/clock";
+
+// Pilotblockerare (säkerhetsgranskning WP-27): en IP kan avboka/hantera
+// högst `MANAGE_IP_MAX` gånger per `MANAGE_IP_WINDOW_SECONDS`. Ingen
+// telefon-baserad gräns här (till skillnad från bokningsskapandet) — kunden
+// har redan en giltig token, det finns inget "ämne" att räkna på förutom IP.
+const MANAGE_IP_WINDOW_SECONDS = 10 * 60;
+const MANAGE_IP_MAX = 20;
 
 // Bokningens status (och om avbokningsfönstret fortfarande är öppet) ändras
 // minut för minut — samma skäl som `/[slug]` (`design-lab/layout.tsx`).
@@ -43,6 +51,14 @@ export default async function ManagePage({ params }: { params: Params }) {
 
   async function cancelReservation(): Promise<ManageCancelResult> {
     "use server";
+    const ip = await getClientIp();
+    const allowed = await hitRateLimit({
+      scope: "manage:ip",
+      subject: ip,
+      windowSeconds: MANAGE_IP_WINDOW_SECONDS,
+      max: MANAGE_IP_MAX,
+    });
+    if (!allowed) return { ok: false, code: "rate_limited" };
     const result = await cancelByToken(token, systemClock());
     if (!result.ok) return { ok: false, code: result.error };
     // WP-16: samma mönster som `[slug]/actions.ts` — bekräftelsen/avin till

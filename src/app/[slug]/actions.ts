@@ -26,8 +26,18 @@ import {
   saveBookingConsent,
 } from "@/server/bookings/submit";
 import { pgErrorCode } from "@/server/db/errors";
+import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
 import { systemClock } from "@/server/scheduling/clock";
+
+/** Pilotblockerare (säkerhetsgranskning WP-27): en IP kan skapa högst
+ * `BOOKING_IP_MAX` bokningsförsök per `BOOKING_IP_WINDOW_SECONDS`. Räknas
+ * oavsett resultat (även avvisade försök), innan något annat görs — det
+ * skyddar även `resolveBusinessBySlug`/motorn från att spammas. Den andra
+ * gränsen (max framtida bokningar per telefon+företag) ligger i
+ * `createCustomerBooking` (submit.ts), som redan har `businessId`/`phone`. */
+const BOOKING_IP_WINDOW_SECONDS = 10 * 60;
+const BOOKING_IP_MAX = 10;
 
 export async function createBooking(
   slug: string,
@@ -38,6 +48,15 @@ export async function createBooking(
   // slotId är instanten direkt (page-data.ts sätter BookingSlot.id = start):
   // saknas den kan motorn inte räkna ut en starttid.
   if (!parsed.data.slotId) return { ok: false, code: "invalid_input" };
+
+  const ip = await getClientIp();
+  const ipAllowed = await hitRateLimit({
+    scope: "booking:ip",
+    subject: ip,
+    windowSeconds: BOOKING_IP_WINDOW_SECONDS,
+    max: BOOKING_IP_MAX,
+  });
+  if (!ipAllowed) return { ok: false, code: "rate_limited" };
 
   const business = await resolveBusinessBySlug(slug);
   if (!business) return { ok: false, code: "not_found" };
