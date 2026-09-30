@@ -192,6 +192,9 @@ export interface CustomerContact {
 
 export interface BookingActionOk {
   readonly ok: true;
+  /** WP-54: medlemsrabatt i minor units (servern räknar). */
+  readonly memberDiscountMinor?: number;
+  readonly memberBenefitText?: string | null;
 }
 
 export interface BookingActionErr {

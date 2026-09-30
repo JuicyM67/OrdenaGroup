@@ -18,6 +18,7 @@ import { getCustomerAnswersIn } from "@/server/booking-questions/answers";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
+import { enqueueMemberWelcome, kickOutbox } from "@/server/messaging/outbox";
 import type { ConsentChannel } from "@/server/privacy/types";
 
 import { memberView, requireMemberPerm, type MemberView } from "./member";
@@ -28,7 +29,12 @@ import { memberView, requireMemberPerm, type MemberView } from "./member";
 
 export type CustomerListSort = "ultimaVisita" | "masVisitas" | "nombre";
 export type CustomerListFilter =
-  "todos" | "habituales" | "inactivos" | "conInasistencias";
+  | "todos"
+  | "habituales"
+  | "inactivos"
+  | "conInasistencias"
+  // WP-54: clientes marcados como `is_member` ("socios", ver es-CL.ts).
+  | "socios";
 
 /** Samma trösklar som texterna i `clientes.lista.filtroHabitualesAyuda`/
  * `filtroInactivosAyuda` (es-CL.ts). En enda definition, så siffran aldrig
@@ -45,6 +51,8 @@ export type CustomerListItem = {
   noShowCount: number;
   /** ISO 8601 UTC, `null` = aldrig ett avslutat besök. */
   lastVisitAt: string | null;
+  /** WP-54: `customers.is_member`. */
+  isMember: boolean;
 };
 
 export type CustomersListView = {
@@ -60,6 +68,7 @@ type ListRow = {
   visits_count: number;
   no_show_count: number;
   last_visit_ms: number | null;
+  is_member: boolean;
 };
 
 const isoOf = (ms: number) => new Date(Math.round(ms)).toISOString();
@@ -100,7 +109,9 @@ export async function listCustomersIn(
         ? "and (v.last_visit_at is null or v.last_visit_at < $3::timestamptz)"
         : filter === "conInasistencias"
           ? "and n.no_show_count > 0"
-          : "";
+          : filter === "socios"
+            ? "and c.is_member"
+            : "";
   const filterParam: string | number =
     filter === "habituales"
       ? HABITUAL_VISITS_THRESHOLD
@@ -109,7 +120,7 @@ export async function listCustomersIn(
         : "";
 
   const r = await q.query<ListRow>(
-    `select c.id, c.name, c.phone_e164, c.email,
+    `select c.id, c.name, c.phone_e164, c.email, c.is_member,
             coalesce(v.visits_count, 0)::int as visits_count,
             coalesce(n.no_show_count, 0)::int as no_show_count,
             extract(epoch from v.last_visit_at) * 1000 as last_visit_ms
@@ -146,6 +157,7 @@ export async function listCustomersIn(
     visitsCount: row.visits_count,
     noShowCount: row.no_show_count,
     lastVisitAt: row.last_visit_ms == null ? null : isoOf(row.last_visit_ms),
+    isMember: row.is_member,
   }));
 }
 
@@ -218,6 +230,13 @@ export type CustomerDetail = {
    * exportera/anonymisera. */
   canEditNotes: boolean;
   isOwner: boolean;
+  /** WP-54: `customers.is_member`/`member_since`. */
+  isMember: boolean;
+  /** ISO 8601 UTC, `null` = inte medlem (eller aldrig blivit det). */
+  memberSince: string | null;
+  /** Samma spärr som `canEditNotes` (`private.customers_guard_notes()`
+   * bevakar `notes`/`is_member`/`member_since` tillsammans, 20260930210100). */
+  canManageMembership: boolean;
 };
 
 type CustomerRow = {
@@ -230,6 +249,8 @@ type CustomerRow = {
   consent_terms_at: string | null;
   consent_marketing_at: string | null;
   consent_channel: ConsentChannel | null;
+  is_member: boolean;
+  member_since: string | null;
 };
 
 type StatsRow = {
@@ -310,7 +331,8 @@ export async function getCustomerDetailIn(
 ): Promise<CustomerDetail | null> {
   const customerRes = await q.query<CustomerRow>(
     `select id, name, phone_e164, email, notes, created_at,
-            consent_terms_at, consent_marketing_at, consent_channel
+            consent_terms_at, consent_marketing_at, consent_channel,
+            is_member, member_since
        from public.customers
       where business_id = $1 and id = $2 and anonymized_at is null`,
     [businessId, customerId],
@@ -381,6 +403,9 @@ export async function getCustomerDetailIn(
     answers,
     canEditNotes,
     isOwner,
+    isMember: c.is_member,
+    memberSince: c.member_since,
+    canManageMembership: canEditNotes,
   };
 }
 
@@ -437,6 +462,75 @@ export async function updateCustomerNotes(
     if (r.rowCount === 0) return { ok: false, code: "not_found" };
     return { ok: true };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Membresía de socios (WP-54, F9/F6): kryssrutan "Socio" i kundkortet och
+// knappen "Avisar al cliente" (F14-liknande transaktionellt mejl).
+// ---------------------------------------------------------------------------
+
+export type SetMemberResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code: "unauthorized" | "forbidden" | "not_found";
+    };
+
+/** Samma spärr som `updateCustomerNotes` (ägare eller
+ * `can_manage_all_bookings`, `private.customers_guard_notes()` bevakar
+ * `notes`/`is_member`/`member_since` tillsammans). `member_since` sätts om
+ * på, nollas om av — ingen historik över tidigare medlemskap (planen
+ * specificerar inte det). */
+export async function setCustomerMember(
+  userId: string,
+  businessId: string,
+  customerId: string,
+  isMember: boolean,
+): Promise<SetMemberResult> {
+  return withOwnerTx(userId, async (q) => {
+    try {
+      await requireMemberPerm(q, userId, businessId, "can_manage_all_bookings");
+    } catch (e) {
+      if (e instanceof Error && e.name === "NotMemberError") {
+        return { ok: false, code: "unauthorized" };
+      }
+      return { ok: false, code: "forbidden" };
+    }
+
+    const r = await q.query(
+      `update public.customers
+          set is_member = $3,
+              member_since = case when $3 then now() else null end
+        where business_id = $1 and id = $2 and anonymized_at is null`,
+      [businessId, customerId, isMember],
+    );
+    if (r.rowCount === 0) return { ok: false, code: "not_found" };
+    return { ok: true };
+  });
+}
+
+export type NotifyMemberResult =
+  | { ok: true; queued: boolean }
+  | { ok: false; code: "forbidden" | "not_member" | "no_email" };
+
+/** "Avisar al cliente" (kundkortet): köar `bienvenidaMiembro`
+ * (`@/server/messaging/outbox`, integrations/scheduling-engineer) och
+ * triggar ett direktpass (`kickOutbox`, D-030). Behörigheten kontrolleras
+ * inne i `enqueueMemberWelcome` självt (egen `withOwnerTx`/`has_perm`) —
+ * den här funktionen bara vidarebefordrar anropet och formens kick. */
+export async function notifyCustomerMembership(
+  userId: string,
+  businessId: string,
+  customerId: string,
+): Promise<NotifyMemberResult> {
+  const result = await enqueueMemberWelcome({
+    businessId,
+    customerId,
+    actorUserId: userId,
+  });
+  if (!result.ok) return { ok: false, code: result.error };
+  if (result.queued) await kickOutbox();
+  return { ok: true, queued: result.queued };
 }
 
 // ---------------------------------------------------------------------------

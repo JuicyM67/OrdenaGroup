@@ -14,6 +14,9 @@ export type AjustesBusiness = {
   /** WP-45 (D-033): av som standard, även för befintliga företag (Ägarens
    * svar 4). Av → reservas från `/{slug}` blir `requested`. */
   autoConfirmBookings: boolean;
+  /** WP-54: `null` = förmånen för socios är avstängd. */
+  memberDiscountPct: number | null;
+  memberBenefitText: string | null;
 };
 
 export type AjustesService = {
@@ -84,6 +87,8 @@ export type AjustesActions = {
   updateStaff: (id: string, input: unknown) => Promise<MutationResult>;
   setStaffActive: (id: string, active: boolean) => Promise<MutationResult>;
   updateHours: (input: unknown) => Promise<MutationResult>;
+  /** WP-54: Ajustes → Socios (förmånen, av/på + rabatt + text). */
+  updateMemberSettings: (input: unknown) => Promise<MutationResult>;
 };
 
 // ---------------------------------------------------------------------------

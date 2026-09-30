@@ -71,6 +71,7 @@ type BookingRow = {
   confirmed_by_customer_at: string | null;
   start_ms: number;
   end_ms: number;
+  is_member: boolean;
 };
 type BlockRow = {
   staff_id: string | null;
@@ -123,7 +124,7 @@ export async function loadOwnerAgendaWeekIn(
 
   const bookingsRes = await q.query<BookingRow>(
     `select bk.id, bk.staff_id, bk.customer_id,
-            c.name as client_name, c.phone_e164, c.visits_count,
+            c.name as client_name, c.phone_e164, c.visits_count, c.is_member,
             sv.name as service_name,
             bk.price_clp, bk.discount_clp, bk.deposit_clp,
             bk.source::text as source, bk.status::text as status,
@@ -184,6 +185,7 @@ export async function loadOwnerAgendaWeekIn(
       source: b.source,
       status: b.status,
       confirmedByCustomer: b.confirmed_by_customer_at != null,
+      isMember: b.is_member,
       ...(flashPct !== undefined ? { flashPct } : {}),
       ...(answers && answers.length > 0 ? { answers } : {}),
     };

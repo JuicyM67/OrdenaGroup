@@ -100,6 +100,38 @@ export const ajustesStaffInputSchema = z.object({
 });
 export type AjustesStaffInput = z.infer<typeof ajustesStaffInputSchema>;
 
+// WP-54 (Ajustes → Socios): `businesses_member_discount_pct_check`/
+// `businesses_member_benefit_text_length_check`
+// (20260930210200_businesses_member_benefit.sql). `enabled = false` →
+// servern sparar `member_discount_pct`/`member_benefit_text` som `null`,
+// oavsett vad klienten skickade i de fälten (se `updateMemberSettings`).
+export const memberSettingsInputSchema = z
+  .object({
+    enabled: z.boolean({ error: "member.enabled_invalid" }),
+    discountPct: z.coerce
+      .number({ error: "member.discount_invalid" })
+      .int({ error: "member.discount_invalid" })
+      .min(1, { error: "member.discount_invalid" })
+      .max(100, { error: "member.discount_invalid" })
+      .optional(),
+    benefitText: z
+      .string({ error: "member.benefit_invalid_type" })
+      .trim()
+      .max(140, { error: "member.benefit_too_long" })
+      .optional()
+      .or(z.literal("")),
+  })
+  .check((ctx) => {
+    if (ctx.value.enabled && ctx.value.discountPct === undefined) {
+      ctx.issues.push({
+        code: "custom",
+        message: "member.discount_invalid",
+        input: ctx.value,
+      });
+    }
+  });
+export type MemberSettingsInput = z.infer<typeof memberSettingsInputSchema>;
+
 export const ajustesHoursInputSchema = z
   .array(hoursInputSchema)
   .max(7)

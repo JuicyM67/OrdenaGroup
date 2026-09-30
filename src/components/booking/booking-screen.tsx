@@ -126,6 +126,7 @@ export function BookingScreen({
   // Samtyckena bor kvar lokalt i CustomerForm och nollställs alltså varje gång
   // den monteras igen — de är aldrig förkryssade.
   const [contact, setContact] = useState<CustomerContact>(NO_CONTACT);
+  const [memberDiscount, setMemberDiscount] = useState<number | null>(null);
   function updateContact(patch: Partial<CustomerContact>) {
     setContact((prev) => ({ ...prev, ...patch }));
   }
@@ -251,8 +252,10 @@ export function BookingScreen({
     dispatch({ type: "submit_start" });
     try {
       const result = await submitBooking(input);
-      if (result.ok) dispatch({ type: "submit_success" });
-      else dispatch({ type: "submit_error", code: result.code });
+      if (result.ok) {
+        setMemberDiscount(result.memberDiscountMinor ?? null);
+        dispatch({ type: "submit_success" });
+      } else dispatch({ type: "submit_error", code: result.code });
     } catch {
       dispatch({ type: "submit_error", code: "network" });
     }
@@ -494,7 +497,12 @@ export function BookingScreen({
           initialErrors={initialFormErrors}
         />
       ) : (
-        <Confirmation data={data} selection={selection} day={day} />
+        <Confirmation
+          data={data}
+          selection={selection}
+          day={day}
+          memberDiscountMinor={memberDiscount}
+        />
       )}
 
       {!isProfileBrowse && isOffline && state.step !== "confirmacion" ? (

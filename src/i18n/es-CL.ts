@@ -110,6 +110,11 @@ export const estados = {
    * en esta exportación ya existente): estado de una reserva con abono
    * pendiente de pago (F11). */
   pendientePago: "Esperando abono",
+  /** WP-54: etiqueta del cliente marcado como `customers.is_member` (cliente
+   * frecuente con un beneficio propio, D-034) — "socio", no "miembro" (esa
+   * palabra ya designa a alguien del equipo, `MemberView`/Ajustes → Equipo).
+   * Se usa en Clientes (lista y ficha), Agenda (popover) y Hoy. */
+  socio: "Socio",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -400,6 +405,8 @@ export const reserva = {
     titulo: "¡Listo, tu hora quedó reservada!",
     resumenTitulo: "Resumen de tu reserva",
     avisoWhatsapp: "Te enviamos la confirmación por WhatsApp.",
+    descuentoSocio: (p: { descuento: string }): string =>
+      `Descuento socio: −${p.descuento}`,
     verMiReserva: "Ver mi reserva",
   },
   /** WP-45 (D-033): pantalla de confirmación cuando la reserva nace
@@ -1996,6 +2003,21 @@ export const ajustes = {
     /** Sección nueva (WP-26 paso 7, F12): exportar los datos del negocio y
      * eliminar la cuenta. */
     privacidad: "Privacidad y datos",
+    /** Sección nueva (WP-54): el beneficio para clientes marcados como
+     * `is_member` ("socios", ver `estados.socio`). */
+    socios: "Socios",
+  },
+  /** Sección "Socios" (WP-54): `businesses.member_discount_pct`/
+   * `member_benefit_text`. Apagado = `member_discount_pct` es `null`. */
+  socios: {
+    activar: "Activar beneficio para socios",
+    activarAyuda:
+      "Cuando está prendido, puedes marcar a tus clientes frecuentes como socios desde su ficha en Clientes.",
+    descuentoLabel: "Descuento para socios (%)",
+    descuentoAyuda: "Un número entre 1 % y 100 %.",
+    beneficioLabel: "Texto del beneficio (opcional)",
+    beneficioPlaceholder: "Ej: 10 % de descuento en todos los tratamientos",
+    beneficioAyuda: "Hasta 140 caracteres.",
   },
   reglas: {
     minNoticeLabel: "Anticipación mínima",
@@ -2099,6 +2121,8 @@ export const clientes = {
       habituales: "Habituales",
       inactivos: "Inactivos",
       conInasistencias: "Con inasistencias",
+      /** WP-54: clientes con `is_member` (ver `estados.socio`). */
+      socios: "Socios",
     },
     /** Texto de apoyo (bajo el chip o en su `aria-label`) con el criterio
      * exacto de cada filtro (plan de WP-24: "stamkunder ≥ 3 besök",
@@ -2150,6 +2174,20 @@ export const clientes = {
     ctaSms: "Enviar SMS",
     ctaEmail: "Enviar correo",
     ctaVerFicha: "Ver ficha",
+    /** WP-54: tarjeta "Socio" en la ficha del cliente (kryssrutan "Medlem"
+     * del plan). Solo la ve quien puede gestionarla
+     * (`CustomerDetail.canManageMembership`). */
+    membresiaTitulo: "Socio",
+    socioDesde: (p: { fecha: string }): string => `Socio desde ${p.fecha}`,
+    socioAyuda:
+      "Márcalo como socio para ofrecerle el beneficio que configuraste en Ajustes.",
+    /** Botón "Avisar al cliente" (D-030, `enqueueMemberWelcome`): solo
+     * aparece si el cliente es socio y tiene correo. */
+    notificarCta: "Avisar al cliente",
+    notificarEnviado: "Le avisamos por correo.",
+    /** `queued: false` — `dedupe_key` ya tenía un envío para este
+     * membresía (mismo `member_since`). */
+    notificarYaEnviado: "Ya le avisamos de su beneficio de socio.",
   },
   notas: {
     label: "Notas",

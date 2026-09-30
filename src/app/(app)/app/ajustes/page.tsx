@@ -25,6 +25,7 @@ import {
   setStaffActiveAction,
   updateBusinessSettingsAction,
   updateHoursAction,
+  updateMemberSettingsAction,
   updateServiceAction,
   updateStaffAction,
 } from "./actions";
@@ -162,6 +163,7 @@ export default async function AjustesPage() {
         updateStaff: updateStaffAction,
         setStaffActive: setStaffActiveAction,
         updateHours: updateHoursAction,
+        updateMemberSettings: updateMemberSettingsAction,
       }}
       bookingForm={bookingForm}
       bookingFormActions={{

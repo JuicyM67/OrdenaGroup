@@ -20,7 +20,12 @@ export type ConsentChannel = "web" | "whatsapp" | "manual";
 
 export type CustomerListSort = "ultimaVisita" | "masVisitas" | "nombre";
 export type CustomerListFilter =
-  "todos" | "habituales" | "inactivos" | "conInasistencias";
+  | "todos"
+  | "habituales"
+  | "inactivos"
+  | "conInasistencias"
+  // WP-54: clientes marcados como `is_member` ("socios", ver es-CL.ts).
+  | "socios";
 
 export type CustomerListItem = {
   id: string;
@@ -31,6 +36,8 @@ export type CustomerListItem = {
   noShowCount: number;
   /** ISO 8601 UTC, `null` = aldrig ett avslutat besök. */
   lastVisitAt: string | null;
+  /** WP-54: `customers.is_member`. */
+  isMember: boolean;
 };
 
 export type CustomerConsentView = {
@@ -117,6 +124,12 @@ export type CustomerDetail = {
   answers: CustomerAnswersView;
   canEditNotes: boolean;
   isOwner: boolean;
+  /** WP-54: `customers.is_member`/`member_since`. */
+  isMember: boolean;
+  /** ISO 8601 UTC, `null` = inte socio (eller aldrig blivit det). */
+  memberSince: string | null;
+  /** Samma spärr som `canEditNotes`. */
+  canManageMembership: boolean;
 };
 
 export type UpdateNotesResult =
@@ -125,3 +138,11 @@ export type UpdateNotesResult =
       ok: false;
       code: "unauthorized" | "forbidden" | "not_found" | "too_long";
     };
+
+export type SetMemberResult =
+  | { ok: true }
+  | { ok: false; code: "unauthorized" | "forbidden" | "not_found" };
+
+export type NotifyMemberResult =
+  | { ok: true; queued: boolean }
+  | { ok: false; code: "forbidden" | "not_member" | "no_email" };

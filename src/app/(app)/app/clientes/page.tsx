@@ -34,6 +34,7 @@ const FILTERS: readonly CustomerListFilter[] = [
   "habituales",
   "inactivos",
   "conInasistencias",
+  "socios",
 ];
 
 export default async function ClientesPage({

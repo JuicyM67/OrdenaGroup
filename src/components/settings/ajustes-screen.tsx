@@ -35,6 +35,7 @@ import { BookingFormSection } from "./booking-form-section";
 import { BusinessSection } from "./business-section";
 import { CategorySection } from "./category-section";
 import { HoursSection } from "./hours-section";
+import { MemberSection } from "./member-section";
 import { PrivacySection, type PrivacyActions } from "./privacy-section";
 import { ProfileSection } from "./profile-section";
 import type { ProfileActions, ProfileSettingsData } from "./profile-types";
@@ -270,6 +271,14 @@ export function AjustesScreen({
 
           {perms.can_edit_settings ? (
             <HoursSection hours={data.hours} action={actions.updateHours} />
+          ) : null}
+
+          {perms.can_edit_settings ? (
+            <MemberSection
+              business={business}
+              onSaved={setBusiness}
+              action={actions.updateMemberSettings}
+            />
           ) : null}
 
           {isOwner ? (

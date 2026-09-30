@@ -62,6 +62,9 @@ export type AgendaBooking = {
    * (`getBookingAnswersForBookings`/`listBookingAnswersIn`). Saknas fältet
    * (befintliga fixturer/tester) → ingen svarslista visas. */
   readonly answers?: readonly BookingAnswerView[];
+  /** WP-54: `customers.is_member`. Saknas i design lab/äldre fixturer →
+   * ingen "Socio"-chip i popovern. */
+  readonly isMember?: boolean;
 };
 
 export type AgendaBlock = {

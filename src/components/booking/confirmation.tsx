@@ -7,6 +7,7 @@ import { useEffect, useRef } from "react";
 
 import { Card } from "@/components/ui/card";
 import { reserva } from "@/i18n";
+import { formatMoney } from "@/lib/format/money";
 
 import type { BookingSelection } from "./flow-state";
 import { summaryText } from "./summary";
@@ -16,10 +17,12 @@ export function Confirmation({
   data,
   selection,
   day,
+  memberDiscountMinor,
 }: {
   data: BookingPageData;
   selection: BookingSelection;
   day: DayAvailability | null;
+  memberDiscountMinor?: number | null;
 }) {
   // Fokus vid stegbyte (qa-granskning, item 8): h1 får fokus när bekräftelsen
   // monteras.
@@ -62,6 +65,13 @@ export function Confirmation({
           <div className="text-15 font-bold text-ink">
             {summaryText(selection, data, day)}
           </div>
+          {memberDiscountMinor ? (
+            <div className="mt-1 text-14 font-semibold text-success-fg">
+              {reserva.confirmacion.descuentoSocio({
+                descuento: formatMoney(memberDiscountMinor),
+              })}
+            </div>
+          ) : null}
         </Card>
       </section>
 

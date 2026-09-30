@@ -13,6 +13,7 @@ import {
   setServiceActive,
   setStaffActive,
   updateBusinessSettings,
+  updateMemberSettings,
   updateService,
   updateStaff,
   type AjustesData,
@@ -110,6 +111,14 @@ export async function updateHoursAction(
   const owner = await currentOwner();
   if ("ok" in owner) return owner;
   return replaceBusinessHours(owner.userId, owner.businessId, input);
+}
+
+export async function updateMemberSettingsAction(
+  input: unknown,
+): Promise<MutationResult> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return owner;
+  return updateMemberSettings(owner.userId, owner.businessId, input);
 }
 
 // WP-45 (D-033): klockan i Ajustes topprad.

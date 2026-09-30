@@ -22,7 +22,7 @@ import { Pill } from "@/components/ui/pill";
 import { PageHeader } from "@/components/ui/page-header";
 import { Select } from "@/components/ui/select";
 import { TextField } from "@/components/ui/text-field";
-import { clientes } from "@/i18n";
+import { clientes, estados } from "@/i18n";
 import { APP_TZ, formatDate, parseInstant } from "@/lib/format/dates";
 import { formatPhone, isE164 } from "@/lib/format/phone";
 import { initialsOf } from "@/lib/format/initials";
@@ -52,6 +52,7 @@ const FILTERS: { key: CustomerListFilter; label: string }[] = [
   { key: "habituales", label: clientes.lista.filtros.habituales },
   { key: "inactivos", label: clientes.lista.filtros.inactivos },
   { key: "conInasistencias", label: clientes.lista.filtros.conInasistencias },
+  { key: "socios", label: clientes.lista.filtros.socios },
 ];
 
 function lastVisitLabel(iso: string | null): string {
@@ -183,8 +184,13 @@ export function CustomersScreen({
                   <span className="flex min-w-0 items-center gap-3">
                     <Avatar initials={initialsOf(c.name)} tone="lilac-100" />
                     <span className="flex min-w-0 flex-col">
-                      <span className="truncate text-15 font-bold text-ink">
+                      <span className="flex items-center gap-1.5 truncate text-15 font-bold text-ink">
                         {c.name}
+                        {c.isMember ? (
+                          <Chip tone="lavender" size="xs">
+                            {estados.socio}
+                          </Chip>
+                        ) : null}
                       </span>
                       <span className="truncate text-13 text-muted">
                         {phoneLabel(c.phone)}
