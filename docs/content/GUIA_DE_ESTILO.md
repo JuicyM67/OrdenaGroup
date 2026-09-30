@@ -45,6 +45,11 @@
 | Campo que el dueño agrega al formulario de reserva (`booking_questions`, WP-40) | **pregunta** | "campo" (se reserva para los campos fijos del formulario: nombre, celular, correo) |
 | Las personas que atienden, como título de sección en el perfil público y como pestaña mobile (`perfil`, WP-41) | **Equipo** (mismo texto que `onboarding.pasos.equipo`/`ajustes.secciones.equipo`) | "Personal", "Profesionales" (esas palabras quedan para otros contextos ya existentes, p. ej. `agenda.panel.profesionales`) |
 | Texto libre del negocio sobre sí mismo, en su perfil público (`businesses.about`, WP-41) | **Sobre nosotros** | "Acerca de", "Quiénes somos" |
+| Cliente con 3 o más visitas (filtro de Clientes, WP-24) | **habitual** ("Habituales") | "frecuente", "VIP" |
+| Cliente sin venir hace más de 90 días (filtro de Clientes, WP-24) | **inactivo** | "perdido", "dormido" |
+| Monto promedio de un pago cobrado (Caja, WP-24) | **ticket promedio** | "venta promedio" |
+| Cuarto período de Caja, con fecha de inicio y término a elección (WP-24) | **rango** (chip: "Rango"; campos "Desde"/"Hasta") | "personalizado", "intervalo" |
+| Reservas terminadas que todavía no se cobran (Caja, WP-24) | **por cobrar** ("Reservas por cobrar") | "pendientes", "deuda" |
 
 ## 3. Formato
 
