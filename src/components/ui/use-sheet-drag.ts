@@ -12,7 +12,11 @@
 // `style={{ top/height/left/width }}` (D-021, se eslint.config.mjs) — `transform` skulle
 // träffa den regeln, och offsetet ändras för ofta (varje pointermove) för att gå via
 // re-render ändå.
-import { useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 
 const CLOSE_THRESHOLD_PX = 96;
 

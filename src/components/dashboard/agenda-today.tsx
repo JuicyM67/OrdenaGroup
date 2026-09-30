@@ -46,8 +46,12 @@ export function AgendaToday({
             <AgendaRow
               key={booking.id}
               booking={booking}
-              onLlego={onArrival ? () => onArrival(booking.id, "completed") : undefined}
-              onNoVino={onArrival ? () => onArrival(booking.id, "no_show") : undefined}
+              onLlego={
+                onArrival ? () => onArrival(booking.id, "completed") : undefined
+              }
+              onNoVino={
+                onArrival ? () => onArrival(booking.id, "no_show") : undefined
+              }
               onMover={onMover ? () => onMover(booking) : undefined}
             />
           ))}

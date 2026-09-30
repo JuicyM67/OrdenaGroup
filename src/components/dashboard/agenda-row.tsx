@@ -30,7 +30,12 @@ export type AgendaRowProps = {
   onMover?: () => void;
 };
 
-export function AgendaRow({ booking, onLlego, onNoVino, onMover }: AgendaRowProps) {
+export function AgendaRow({
+  booking,
+  onLlego,
+  onNoVino,
+  onMover,
+}: AgendaRowProps) {
   const chip = statusChip(booking);
   const start = mustParseInstant(booking.start, "AgendaRow");
   const verEnAgendaHref = `/app/agenda?vista=dia&fecha=${toLocalDate(start, APP_TZ)}`;

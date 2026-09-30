@@ -152,7 +152,13 @@ export function NavRailAction({
 }: NavRailActionProps) {
   return (
     <Tooltip label={label}>
-      <IconButton tone="dark-2" size={56} shape={shape} label={label} {...props} />
+      <IconButton
+        tone="dark-2"
+        size={56}
+        shape={shape}
+        label={label}
+        {...props}
+      />
     </Tooltip>
   );
 }

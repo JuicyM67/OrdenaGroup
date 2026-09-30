@@ -106,7 +106,7 @@ export function MoveDialog({
           <Dialog.Content
             ref={panelRef}
             aria-describedby={descriptionId}
-            className="flex max-h-full w-full max-w-sm translate-y-0 flex-col gap-4 overflow-y-auto rounded-t-panel bg-canvas p-6 shadow-popover transition-transform duration-200 ease-out sheet-closed:translate-y-full sm:rounded-panel"
+            className="flex max-h-full w-full max-w-sm translate-y-0 flex-col gap-4 overflow-y-auto rounded-t-panel bg-canvas p-6 shadow-popover transition-transform duration-200 ease-out sm:rounded-panel sheet-closed:translate-y-full"
           >
             <div
               aria-hidden="true"

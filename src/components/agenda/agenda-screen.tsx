@@ -486,7 +486,9 @@ export function AgendaScreen({
               goTo("dia", focus);
             }}
             onNewBooking={
-              onCreateManualBooking ? () => setManualDialogOpen(true) : undefined
+              onCreateManualBooking
+                ? () => setManualDialogOpen(true)
+                : undefined
             }
             onLogout={onLogout}
           />

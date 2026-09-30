@@ -67,7 +67,11 @@ export function AgendaRail({
       ))}
       <NavRailAction label={agenda.agregarProfesional} asChild>
         <Link href="/app/ajustes#equipo" prefetch={false}>
-          <Plus aria-hidden="true" className="size-5" strokeWidth={strokeArrow} />
+          <Plus
+            aria-hidden="true"
+            className="size-5"
+            strokeWidth={strokeArrow}
+          />
         </Link>
       </NavRailAction>
       <NavRailSpacer />
@@ -87,7 +91,11 @@ export function AgendaRail({
         action={onLogout ?? (() => {})}
         label={nav.cerrarSesion}
         icon={
-          <LogOut aria-hidden="true" className="size-5.5" strokeWidth={strokeNav} />
+          <LogOut
+            aria-hidden="true"
+            className="size-5.5"
+            strokeWidth={strokeNav}
+          />
         }
       />
     </NavRail>

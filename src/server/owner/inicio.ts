@@ -50,10 +50,12 @@ function weekRangeOf(today: LocalDate): { start: Date; end: Date } {
 function monthRangeOf(today: LocalDate): { start: Date; end: Date } {
   const y = Number(today.slice(0, 4));
   const m = Number(today.slice(5, 7));
-  const first = `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-01` as LocalDate;
+  const first =
+    `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-01` as LocalDate;
   const nextY = m === 12 ? y + 1 : y;
   const nextM = m === 12 ? 1 : m + 1;
-  const firstNext = `${String(nextY).padStart(4, "0")}-${String(nextM).padStart(2, "0")}-01` as LocalDate;
+  const firstNext =
+    `${String(nextY).padStart(4, "0")}-${String(nextM).padStart(2, "0")}-01` as LocalDate;
   return {
     start: localDayRange(first, APP_TZ).start,
     end: localDayRange(firstNext, APP_TZ).start,
@@ -109,7 +111,10 @@ async function loadNoShowStats(
   q: Queryable,
   businessId: string,
   now: Date,
-): Promise<{ noShowPct: number; noShowTrend: InicioData["stats"]["noShowTrend"] }> {
+): Promise<{
+  noShowPct: number;
+  noShowTrend: InicioData["stats"]["noShowTrend"];
+}> {
   const from60 = new Date(now.getTime() - 60 * DAY_MS);
   const res = await q.query<NoShowRow>(
     `select bk.status::text as status,

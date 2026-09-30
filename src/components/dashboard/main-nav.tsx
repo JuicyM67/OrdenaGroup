@@ -90,7 +90,11 @@ export function MainNav({
         action={onLogout ?? (() => {})}
         label={nav.cerrarSesion}
         icon={
-          <LogOut aria-hidden="true" className="size-5.5" strokeWidth={strokeNav} />
+          <LogOut
+            aria-hidden="true"
+            className="size-5.5"
+            strokeWidth={strokeNav}
+          />
         }
       />
     </NavRail>

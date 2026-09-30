@@ -24,7 +24,9 @@ export type Time24InputProps = Omit<
 /** "1530" → "15:30". Max 4 siffror, kolon infogas automatiskt efter de två första. */
 export function maskTime24(raw: string): string {
   const digits = raw.replace(/\D/g, "").slice(0, 4);
-  return digits.length <= 2 ? digits : `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  return digits.length <= 2
+    ? digits
+    : `${digits.slice(0, 2)}:${digits.slice(2)}`;
 }
 
 export function Time24Input({

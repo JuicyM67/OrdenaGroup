@@ -9,7 +9,12 @@
 // "dom"-projekt, som inte aliasar bort `server-only` (se main-nav.tsx). Ikonerna importeras
 // direkt, samma motiv som main-nav.tsx (undviker `roleIcons`-indexering med
 // `noUncheckedIndexedAccess`).
-import { ExternalLink, LogOut, SlidersHorizontal, UserRound } from "lucide-react";
+import {
+  ExternalLink,
+  LogOut,
+  SlidersHorizontal,
+  UserRound,
+} from "lucide-react";
 
 import { nav, onboarding, perfil } from "@/i18n";
 
@@ -44,7 +49,12 @@ export function UserMenu({
 }: UserMenuProps) {
   const trigger =
     variant === "pill" ? (
-      <UserPill name={name} initials={initials} avatarTone={avatarTone} className={className} />
+      <UserPill
+        name={name}
+        initials={initials}
+        avatarTone={avatarTone}
+        className={className}
+      />
     ) : (
       <button
         type="button"
@@ -58,19 +68,35 @@ export function UserMenu({
   return (
     <Menu trigger={trigger} label={nav.menuUsuario({ nombre: name })}>
       <MenuLinkItem href="/app/ajustes#perfil" prefetch={false}>
-        <UserRound aria-hidden="true" className={ICON_CLASS} strokeWidth={strokeCard} />
+        <UserRound
+          aria-hidden="true"
+          className={ICON_CLASS}
+          strokeWidth={strokeCard}
+        />
         {perfil.ajustes.titulo}
       </MenuLinkItem>
       <MenuLinkItem href="/app/ajustes" prefetch={false}>
-        <SlidersHorizontal aria-hidden="true" className={ICON_CLASS} strokeWidth={strokeCard} />
+        <SlidersHorizontal
+          aria-hidden="true"
+          className={ICON_CLASS}
+          strokeWidth={strokeCard}
+        />
         {nav.ajustes}
       </MenuLinkItem>
       <MenuLinkItem href={publicPageHref} target="_blank" rel="noreferrer">
-        <ExternalLink aria-hidden="true" className={ICON_CLASS} strokeWidth={strokeCard} />
+        <ExternalLink
+          aria-hidden="true"
+          className={ICON_CLASS}
+          strokeWidth={strokeCard}
+        />
         {onboarding.listo.ctaVerPagina}
       </MenuLinkItem>
       <MenuFormItem action={onLogout ?? (() => {})}>
-        <LogOut aria-hidden="true" className={ICON_CLASS} strokeWidth={strokeCard} />
+        <LogOut
+          aria-hidden="true"
+          className={ICON_CLASS}
+          strokeWidth={strokeCard}
+        />
         {nav.cerrarSesion}
       </MenuFormItem>
     </Menu>

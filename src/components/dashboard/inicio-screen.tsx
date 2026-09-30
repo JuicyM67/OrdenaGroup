@@ -129,7 +129,10 @@ export function InicioScreen({
           <>
             {/* WP-47: sökikonen döljs tills sök finns (WP-xx: visas när funktionen finns) —
                 ledde till en 404, ingen route lyssnar på sökningar än. */}
-            <Tooltip label={notificationsLabel(notificationsCount)} side="bottom">
+            <Tooltip
+              label={notificationsLabel(notificationsCount)}
+              side="bottom"
+            >
               <IconButton
                 label={notificationsLabel(notificationsCount)}
                 tone="surface"
@@ -223,12 +226,16 @@ export function InicioScreen({
           }}
           bookingId={movingBooking.id}
           defaultDate={
-            toWallClock(mustParseInstant(movingBooking.start, "InicioScreen"), APP_TZ)
-              .date
+            toWallClock(
+              mustParseInstant(movingBooking.start, "InicioScreen"),
+              APP_TZ,
+            ).date
           }
           defaultTime={
-            toWallClock(mustParseInstant(movingBooking.start, "InicioScreen"), APP_TZ)
-              .time
+            toWallClock(
+              mustParseInstant(movingBooking.start, "InicioScreen"),
+              APP_TZ,
+            ).time
           }
           onSubmit={async (input) => {
             const result = await onMoveBooking(input);

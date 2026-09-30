@@ -1,6 +1,11 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
 
-import { fromLocal, SANTIAGO, type LocalDate, type LocalTime } from "@/lib/format/dates";
+import {
+  fromLocal,
+  SANTIAGO,
+  type LocalDate,
+  type LocalTime,
+} from "@/lib/format/dates";
 import { closePool } from "@/server/db/pool";
 import {
   assertLocalDatabase,
@@ -44,10 +49,19 @@ describe("loadOwnerInicio — stats.revenueWeekClp/revenueSeries", () => {
     const now = new Date(at(TUE, "09:00"));
 
     // Måndag (index 0): räknas.
-    await insertTestBooking(biz, { start: at("2026-10-05", "10:00"), durationMin: 35 });
+    await insertTestBooking(biz, {
+      start: at("2026-10-05", "10:00"),
+      durationMin: 35,
+    });
     // Onsdag (index 2): två bokningar räknas, en avbokad och en uteblivet räknas inte.
-    await insertTestBooking(biz, { start: at("2026-10-07", "10:00"), durationMin: 35 });
-    await insertTestBooking(biz, { start: at("2026-10-07", "13:00"), durationMin: 35 });
+    await insertTestBooking(biz, {
+      start: at("2026-10-07", "10:00"),
+      durationMin: 35,
+    });
+    await insertTestBooking(biz, {
+      start: at("2026-10-07", "13:00"),
+      durationMin: 35,
+    });
     await insertTestBooking(biz, {
       start: at("2026-10-07", "15:00"),
       durationMin: 35,
@@ -59,7 +73,10 @@ describe("loadOwnerInicio — stats.revenueWeekClp/revenueSeries", () => {
       status: "no_show",
     });
     // Nästa vecka: räknas inte.
-    await insertTestBooking(biz, { start: at("2026-10-12", "10:00"), durationMin: 35 });
+    await insertTestBooking(biz, {
+      start: at("2026-10-12", "10:00"),
+      durationMin: 35,
+    });
 
     const data = await loadOwnerInicio(biz.ownerUserId, biz.id, TUE, now, {
       name: "Camila",
@@ -143,9 +160,18 @@ describe("loadOwnerInicio — calendar.markedDates", () => {
     const now = new Date(at(TUE, "09:00"));
 
     // Två bokningar samma dag → en enda post i markedDates.
-    await insertTestBooking(biz, { start: at("2026-10-06", "10:00"), durationMin: 35 });
-    await insertTestBooking(biz, { start: at("2026-10-06", "13:00"), durationMin: 35 });
-    await insertTestBooking(biz, { start: at("2026-10-20", "10:00"), durationMin: 35 });
+    await insertTestBooking(biz, {
+      start: at("2026-10-06", "10:00"),
+      durationMin: 35,
+    });
+    await insertTestBooking(biz, {
+      start: at("2026-10-06", "13:00"),
+      durationMin: 35,
+    });
+    await insertTestBooking(biz, {
+      start: at("2026-10-20", "10:00"),
+      durationMin: 35,
+    });
     // Avbokad: räknas inte.
     await insertTestBooking(biz, {
       start: at("2026-10-15", "10:00"),
@@ -153,7 +179,10 @@ describe("loadOwnerInicio — calendar.markedDates", () => {
       status: "cancelled",
     });
     // Annan månad: räknas inte.
-    await insertTestBooking(biz, { start: at("2026-11-02", "10:00"), durationMin: 35 });
+    await insertTestBooking(biz, {
+      start: at("2026-11-02", "10:00"),
+      durationMin: 35,
+    });
 
     const data = await loadOwnerInicio(biz.ownerUserId, biz.id, TUE, now, {
       name: "Camila",

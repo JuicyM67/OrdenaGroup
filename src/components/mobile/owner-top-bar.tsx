@@ -26,7 +26,11 @@ export function OwnerMobileTopBar({ onLogout }: OwnerMobileTopBarProps) {
       data-surface="dark"
       className="flex shrink-0 items-center justify-between gap-3 bg-ink px-5 py-3 pt-safe-t lg:hidden"
     >
-      <Link href="/app/inicio" aria-label={nav.volverAlInicio} className="flex items-center gap-2.5 rounded-icon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime focus-visible:transition-none">
+      <Link
+        href="/app/inicio"
+        aria-label={nav.volverAlInicio}
+        className="flex items-center gap-2.5 rounded-icon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime focus-visible:transition-none"
+      >
         <LogoMark label={nav.volverAlInicio} size={40} decorative />
         <span className="text-15 font-bold text-on-dark">{brand.name}</span>
       </Link>
