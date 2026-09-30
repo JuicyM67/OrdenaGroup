@@ -515,8 +515,8 @@ export async function setStaffActive(
           where id = $1 and business_id = $2 for update`,
         [staffId, businessId],
       );
-      if (prev.rowCount) {
-        photoToRemove = mediaPathFromUrl(prev.rows[0]!.url, businessId);
+      if (prev.rows[0]?.url) {
+        photoToRemove = mediaPathFromUrl(prev.rows[0].url, businessId);
       }
     }
     const r = await q.query(
