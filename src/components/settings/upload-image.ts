@@ -12,7 +12,11 @@ import {
   type ImageContentType,
 } from "@/lib/validation/profile";
 
-import type { ConfirmImageResult, ImageKind, ImageUploadTicket } from "./profile-types";
+import type {
+  ConfirmImageResult,
+  ImageKind,
+  ImageUploadTicket,
+} from "./profile-types";
 
 export type UploadImageActions = {
   createImageUpload: (input: unknown) => Promise<ImageUploadTicket>;

@@ -298,9 +298,11 @@ export async function confirmImageUpload(
 ): Promise<
   { ok: true; url: string; imageId?: string } | { ok: false; code: string }
 > {
-  const input = rawInput as
-    | { kind?: unknown; path?: unknown; staffId?: unknown }
-    | null;
+  const input = rawInput as {
+    kind?: unknown;
+    path?: unknown;
+    staffId?: unknown;
+  } | null;
   const kindParsed = imageUploadInputSchema.shape.kind.safeParse(input?.kind);
   if (!kindParsed.success)
     return { ok: false, code: "profile.image_kind_invalid" };

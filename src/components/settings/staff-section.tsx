@@ -58,7 +58,11 @@ function StaffPhotoButtons({
     setBusy(true);
     setError(undefined);
     try {
-      const result = await uploadImage(file, { kind: "staff", staffId }, actions);
+      const result = await uploadImage(
+        file,
+        { kind: "staff", staffId },
+        actions,
+      );
       if ("code" in result) {
         setError(ajustesErrorText(result.code));
       } else {
@@ -236,9 +240,8 @@ export function StaffSection({
   } & StaffPhotoActions;
 }) {
   const [list, setList] = useState(staff);
-  const [photoUrls, setPhotoUrls] = useState<Record<string, string | null>>(
-    photos,
-  );
+  const [photoUrls, setPhotoUrls] =
+    useState<Record<string, string | null>>(photos);
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
   const [form, setForm] = useState<RowForm>(EMPTY_FORM);
   const [errors, setErrors] = useState<RowErrors>({});

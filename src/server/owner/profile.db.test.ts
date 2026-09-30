@@ -9,7 +9,11 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 
-import { confirmImageUpload, createImageUpload, type MediaStorage } from "./profile";
+import {
+  confirmImageUpload,
+  createImageUpload,
+  type MediaStorage,
+} from "./profile";
 
 let biz: TestBusiness;
 let other: TestBusiness;
@@ -146,10 +150,10 @@ describe("confirmImageUpload · staff (WP-44 säkerhetsgranskning)", () => {
       const otherPhotoUrl =
         "https://proj.supabase.co/storage/v1/object/public/business-media/" +
         `${other.id}/00000000-0000-4000-8000-000000000000.jpg`;
-      await adminQuery(
-        `update public.staff set photo_url = $1 where id = $2`,
-        [otherPhotoUrl, other.staff.diego],
-      );
+      await adminQuery(`update public.staff set photo_url = $1 where id = $2`, [
+        otherPhotoUrl,
+        other.staff.diego,
+      ]);
 
       // `biz`s ägare har laddat upp riktigt i sin egen mapp, men försöker
       // koppla filen till `other`s personal (D-014: business_id måste med i
