@@ -94,3 +94,5 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - `createImageUpload`: try/catch runt DB-fel.
 - Ägarens UI: tydliggör att telefon/adress visas publikt.
 - WP-26: radering av företag ska tömma `business-media/<bid>/`.
+- WP-44 (säkerhet, kan vänta): kolumnbegränsat update-grant på `staff` (photo_url bara via confirm); koppla signerad och bekräftad sökväg så att en sökväg inte kan återanvändas mellan omslag/foto; magic-bytes-kontroll av bildtyp; `throws_ok` för `staff_photo_url_format`.
+- Personalfoto även i bokningsflödets personalval (kräver ny referensdesign; JS-budget 178,3/180 kB).
