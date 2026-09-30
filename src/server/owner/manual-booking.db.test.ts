@@ -6,6 +6,7 @@ import {
   type LocalDate,
   type LocalTime,
 } from "@/lib/format/dates";
+import { LEGAL_VERSION } from "@/i18n/legal/types";
 import { closePool } from "@/server/db/pool";
 import {
   adminQuery,
@@ -160,8 +161,18 @@ describe("createManualBooking", () => {
     const c = await customerRow(r.value.customerId);
     expect(c.consent_channel).toBe("manual");
     expect(c.consent_terms_at).not.toBeNull();
-    expect(c.consent_version).toBe("manual-2026-10-v1");
+    // Säkerhetsgranskning WP-26 (punkt 10): customers.consent_version är
+    // alltid LEGAL_VERSION (serverns), aldrig clientes.consentimientoManual.version.
+    expect(c.consent_version).toBe(LEGAL_VERSION);
     expect(c.consent_marketing_at).toBeNull();
+
+    // WP-26: samma transaktion loggar en terms-händelse, kanal manual.
+    const events = await adminQuery<{ kind: string; channel: string }>(
+      `select kind::text, channel::text from public.consent_events
+        where business_id = $1 and customer_id = $2`,
+      [biz.id, r.value.customerId],
+    );
+    expect(events.rows).toEqual([{ kind: "terms", channel: "manual" }]);
   });
 
   it("Cualquiera fungerar (staffId = any)", async () => {

@@ -30,6 +30,10 @@ export type AgendaStaff = {
 
 export type AgendaBooking = {
   readonly id: string;
+  /** WP-26 steg 7 (F12): `customers.id`, för "Exportar datos"/"Anonimizar
+   * cliente" i popovern (`event-popover.tsx`). Saknas i design lab/testfixturer
+   * som inte bryr sig om dataskyddsåtgärderna — döljer då bara de knapparna. */
+  readonly customerId?: string;
   readonly staffId: StaffId;
   /** ISO 8601 med offset, t.ex. "2026-10-02T11:30:00-03:00". */
   readonly start: string;

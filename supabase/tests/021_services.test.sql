@@ -131,6 +131,11 @@ select is(
   'aaaaaaaa-2900-0000-0000-000000000001',
   'tjänsten har fått en kategori'
 );
+-- Säkerhetsgranskning WP-26 (punkt 6): service_role har inte längre DELETE på
+-- service_categories (ingen produktionskod raderar den så, se
+-- 20260930110000_revoke_unused_service_role_delete.sql) — testar `on delete
+-- set null` som postgres (bypassar RLS/grants precis som service_role gjorde).
+reset role;
 delete from public.service_categories where id = 'aaaaaaaa-2900-0000-0000-000000000001';
 select is(
   (select category_id from public.services where id = 'aaaaaaaa-2000-0000-0000-000000000001'),

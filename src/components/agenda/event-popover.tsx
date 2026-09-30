@@ -18,6 +18,11 @@ import type { TimeZone } from "@/lib/format/dates";
 import { agenda } from "@/i18n";
 
 import { popoverModel } from "./agenda-view";
+import {
+  CustomerPrivacyActions,
+  type CustomerExportResult,
+  type CustomerMutationResult,
+} from "./customer-privacy-actions";
 import type { AgendaBooking } from "./types";
 
 const ClockIcon = roleIcons.tiempo as NonNullable<typeof roleIcons.tiempo>;
@@ -33,6 +38,11 @@ export type EventPopoverProps = {
   onNoVino: () => void;
   /** `undefined` döljer knappen (WP-21: Mover finns bara i design lab). */
   onMover?: () => void;
+  /** WP-26 steg 7 (F12): "Exportar datos"/"Anonimizar cliente". `undefined`
+   * (design lab) eller en bokning utan `customerId` döljer hela raden —
+   * se `customer-privacy-actions.tsx`. */
+  onExportCustomer?: (customerId: string) => Promise<CustomerExportResult>;
+  onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
   trigger: ReactNode;
 };
 
@@ -45,9 +55,12 @@ export function EventPopover({
   onLlego,
   onNoVino,
   onMover,
+  onExportCustomer,
+  onAnonymizeCustomer,
   trigger,
 }: EventPopoverProps) {
   const model = popoverModel(booking, staffName, tz);
+  const customerId = booking.customerId;
   // WP-42: `side="left" alignOffset={-49}` (desktopens Agenda.dc.html-placering, 1440 px
   // brett rutnät med gott om utrymme till vänster om triggern) klipps mot vänsterkanten på
   // en 390 px mobil (Radix Popper flippar inte förbi ett explicit `alignOffset`). Under `lg`
@@ -169,6 +182,15 @@ export function EventPopover({
               </Button>
             ) : null}
           </div>
+
+          {customerId && onExportCustomer && onAnonymizeCustomer ? (
+            <CustomerPrivacyActions
+              customerId={customerId}
+              onExport={() => onExportCustomer(customerId)}
+              onAnonymize={() => onAnonymizeCustomer(customerId)}
+              onAnonymized={() => onOpenChange(false)}
+            />
+          ) : null}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>

@@ -108,6 +108,8 @@ const TENANT_TABLES = [
   "customer_answers",
   // WP-41
   "business_images",
+  // WP-26
+  "consent_events",
 ] as const;
 
 /** Sträng- och mallitteraler som ser ut som SQL. */
@@ -163,6 +165,12 @@ const SLUG_LOOKUP_EXCEPTION = "server/bookings/business.ts";
  * filtrerar på `business_id`. Testet nedan håller undantaget så smalt.
  */
 const TOKEN_LOOKUP_EXCEPTION = "server/bookings/manage.ts";
+/**
+ * WP-26: lagringsjobbet letar upp företag vars ångerfrist (30 dagar) gått ut
+ * — ett svep över alla företag (service_role, CRON_SECRET), per definition
+ * utan ett givet `business_id`. Varje träff hanteras sedan av `purgeBusiness(id)`.
+ */
+const RETENTION_SWEEP_EXCEPTION = "app/api/cron/retention/route.ts";
 /** All produktionskod som kan köra SQL: src/server och src/app/api. */
 const productionSources = [
   ...serverSources,
@@ -341,6 +349,7 @@ describe("src/server gränser", () => {
     const offenders: string[] = [];
     for (const f of productionSources) {
       if (rel(f) === SLUG_LOOKUP_EXCEPTION) continue;
+      if (rel(f) === RETENTION_SWEEP_EXCEPTION) continue;
       for (const s of sqlOffenders(read(f))) offenders.push(`${rel(f)}: ${s}`);
     }
     expect(offenders).toEqual([]);
@@ -350,6 +359,19 @@ describe("src/server gränser", () => {
     const f = productionSources.find((x) => rel(x) === SLUG_LOOKUP_EXCEPTION);
     expect(f).toBeDefined();
     expect(sqlOffenders(read(f!))).not.toEqual([]);
+  });
+
+  it(`${RETENTION_SWEEP_EXCEPTION}: den enda frågan utan business_id är svepet över businesses.deletion_requested_at`, () => {
+    const f = productionSources.find(
+      (x) => rel(x) === RETENTION_SWEEP_EXCEPTION,
+    );
+    expect(f).toBeDefined();
+    const offenders = sqlOffenders(read(f!));
+    // Undantaget finns (annars behövs det inte) och är bara svepfrågan.
+    expect(offenders).toHaveLength(1);
+    expect(offenders[0]).toMatch(
+      /from public\.businesses where deletion_requested_at/i,
+    );
   });
 
   it(`${TOKEN_LOOKUP_EXCEPTION}: de enda frågorna utan business_id-filter slår upp på bara manage_token_hash (D-029)`, () => {

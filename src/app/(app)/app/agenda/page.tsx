@@ -11,6 +11,7 @@
 // `src/app/[slug]/actions.ts`/`submit.ts`, WP-20).
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 
 import { AgendaScreen } from "@/components/agenda/agenda-screen";
 import { parseLocalDate, APP_TZ, toLocalDate } from "@/lib/format/dates";
@@ -26,10 +27,19 @@ import {
   moveOwnerBooking,
   saveManualConsent,
 } from "@/server/owner/manual-booking";
+import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
+
+// z.guid() (inte z.uuid()): samma motiv som src/server/owner/manual-booking.ts
+// — seedens "vanity"-id (b0000000-…) har inte en giltig RFC 4122-version/
+// variant. Säkerhetsgranskning WP-26 (punkt 9): server actions är anropbara
+// endpoints, `customerId` från klienten valideras innan den når
+// exportCustomer/anonymizeCustomer i stället för att låta ett ogiltigt värde
+// nå databasen som ett raw cast-fel.
+const customerIdSchema = z.guid();
 
 // VERCEL_ENV måste läsas per request, se src/app/design-lab/layout.tsx.
 export const dynamic = "force-dynamic";
@@ -109,6 +119,23 @@ export default async function AppAgendaPage({
     return { ok: true as const };
   };
 
+  // WP-26 steg 7 (F12): "Exportar datos"/"Anonimizar cliente" i agenda-popovern
+  // (`event-popover.tsx`). Ingen `kickOutbox()` här — anonymisering avbryter bara
+  // köade meddelanden, den skapar inga nya.
+  const onExportCustomer = async (customerId: string) => {
+    "use server";
+    const parsed = customerIdSchema.safeParse(customerId);
+    if (!parsed.success) return { ok: false as const, code: "invalid_input" };
+    return exportCustomer(user.id, business.id, parsed.data);
+  };
+
+  const onAnonymizeCustomer = async (customerId: string) => {
+    "use server";
+    const parsed = customerIdSchema.safeParse(customerId);
+    if (!parsed.success) return { ok: false as const, code: "invalid_input" };
+    return anonymizeCustomer(user.id, business.id, parsed.data);
+  };
+
   return (
     <AgendaScreen
       data={data}
@@ -120,6 +147,8 @@ export default async function AppAgendaPage({
       businessName={business.name}
       onCreateManualBooking={onCreateManualBooking}
       onMoveBooking={onMoveBooking}
+      onExportCustomer={onExportCustomer}
+      onAnonymizeCustomer={onAnonymizeCustomer}
     />
   );
 }

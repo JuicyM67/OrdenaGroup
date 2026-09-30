@@ -49,6 +49,7 @@ type HoursRow = { weekday: number; start_time: string; end_time: string };
 type BookingRow = {
   id: string;
   staff_id: string;
+  customer_id: string;
   client_name: string | null;
   phone_e164: string | null;
   visits_count: number;
@@ -112,7 +113,7 @@ export async function loadOwnerAgendaWeekIn(
   }
 
   const bookingsRes = await q.query<BookingRow>(
-    `select bk.id, bk.staff_id,
+    `select bk.id, bk.staff_id, bk.customer_id,
             c.name as client_name, c.phone_e164, c.visits_count,
             sv.name as service_name,
             bk.price_clp, bk.discount_clp, bk.deposit_clp,
@@ -151,6 +152,7 @@ export async function loadOwnerAgendaWeekIn(
     const answers = answersByBooking[b.id];
     return {
       id: b.id,
+      customerId: b.customer_id,
       staffId: b.staff_id,
       start: isoOf(b.start_ms),
       end: isoOf(b.end_ms),

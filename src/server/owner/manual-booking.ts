@@ -14,7 +14,7 @@ import "server-only";
  */
 import { z } from "zod";
 
-import { clientes } from "@/i18n";
+import { LEGAL_VERSION } from "@/i18n/legal/types";
 import { APP_TZ, fromLocal } from "@/lib/format/dates";
 import {
   localDateSchema,
@@ -25,6 +25,7 @@ import { createBooking } from "@/server/bookings/create";
 import { moveBooking } from "@/server/bookings/move";
 import type { BookingError } from "@/server/bookings/types";
 import { withOwnerTx } from "@/server/db/tx";
+import { recordConsent } from "@/server/privacy/consent";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { staffChoiceSchema } from "@/server/scheduling/schemas";
 
@@ -166,6 +167,19 @@ export async function createManualBooking(
  * redan har `web`/`whatsapp` blockeras av samma trigger — updaten kastar
  * 42501 då, vilket rullar vidare som ett kastat fel (anroparen fångar det,
  * se filkommentaren ovan).
+ *
+ * WP-26: samma transaktion loggar en `terms`-händelse (kanal `manual`,
+ * version `LEGAL_VERSION`) i `consent_events` — bara om updaten faktiskt
+ * träffade raden (RLS: 0 rader för ett annat företags ägare → ingen logg).
+ * Updaten körs som `authenticated` (RLS + triggern gäller); först därefter
+ * byts rollen till `service_role` för insert i loggen, som `authenticated`
+ * saknar grant för (D-019). `business_id` är då redan verifierad av RLS.
+ *
+ * Säkerhetsgranskning WP-26 (punkt 10): `customers.consent_version` sätts
+ * till `LEGAL_VERSION` (serverns konstant), inte till
+ * `clientes.consentimientoManual.version` (copywriterns UI-textversion) —
+ * kolumnen ska jämföras mot samma versionsschema som `consent_events.version`
+ * och `saveBookingConsent`, inte mot en textversion.
  */
 export async function saveManualConsent(
   userId: string,
@@ -173,19 +187,25 @@ export async function saveManualConsent(
   customerId: string,
   now: Date,
 ): Promise<void> {
-  await withOwnerTx(userId, (q) =>
-    q.query(
+  await withOwnerTx(userId, async (q) => {
+    const r = await q.query(
       `update public.customers
           set consent_terms_at = $3, consent_version = $4, consent_channel = 'manual'
         where business_id = $1 and id = $2`,
-      [
-        businessId,
-        customerId,
-        now.toISOString(),
-        clientes.consentimientoManual.version,
-      ],
-    ),
-  );
+      [businessId, customerId, now.toISOString(), LEGAL_VERSION],
+    );
+    if (r.rowCount !== 1) return;
+    await q.query("set local role service_role");
+    await recordConsent(q, {
+      businessId,
+      customerId,
+      subject: "customer",
+      kind: "terms",
+      version: LEGAL_VERSION,
+      channel: "manual",
+      granted: true,
+    });
+  });
 }
 
 // ---------------------------------------------------------------------------

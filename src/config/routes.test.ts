@@ -9,7 +9,7 @@ describe("routes.ts", () => {
   it("CL: href() ger de spanska sökvägarna, oförändrade", async () => {
     vi.stubEnv("NEXT_PUBLIC_MARKET", "CL");
     vi.resetModules();
-    const { href, hrefIndustria } = await import("./routes");
+    const { href, hrefIndustria, hrefLegal } = await import("./routes");
     expect(href("inicio")).toBe("/");
     expect(href("precios")).toBe("/precios");
     expect(href("funcionalidades")).toBe("/funcionalidades");
@@ -22,12 +22,15 @@ describe("routes.ts", () => {
     expect(hrefIndustria("peluquerias")).toBe("/para/peluquerias");
     expect(hrefIndustria("estetica")).toBe("/para/estetica");
     expect(hrefIndustria("kinesiologia")).toBe("/para/kinesiologia");
+    expect(hrefLegal("privacidad")).toBe("/legal/privacidad");
+    expect(hrefLegal("terminos")).toBe("/legal/terminos");
+    expect(hrefLegal("encargo")).toBe("/legal/encargo");
   });
 
   it("SE: href() ger de svenska sökvägarna", async () => {
     vi.stubEnv("NEXT_PUBLIC_MARKET", "SE");
     vi.resetModules();
-    const { href, hrefIndustria } = await import("./routes");
+    const { href, hrefIndustria, hrefLegal } = await import("./routes");
     expect(href("inicio")).toBe("/");
     expect(href("precios")).toBe("/priser");
     expect(href("funcionalidades")).toBe("/funktioner");
@@ -40,6 +43,9 @@ describe("routes.ts", () => {
     expect(hrefIndustria("peluquerias")).toBe("/for/frisorer");
     expect(hrefIndustria("estetica")).toBe("/for/hudvard");
     expect(hrefIndustria("kinesiologia")).toBe("/for/naprapat");
+    expect(hrefLegal("privacidad")).toBe("/legal/integritet");
+    expect(hrefLegal("terminos")).toBe("/legal/villkor");
+    expect(hrefLegal("encargo")).toBe("/legal/bitradesavtal");
   });
 
   it("seRouteRewrites(): en svensk slug per rutt/industri, mot rätt sidfil", async () => {
@@ -58,6 +64,9 @@ describe("routes.ts", () => {
     expect(bySource["/for/frisorer"]).toBe("/para/peluquerias");
     expect(bySource["/for/hudvard"]).toBe("/para/estetica");
     expect(bySource["/for/naprapat"]).toBe("/para/kinesiologia");
+    expect(bySource["/legal/integritet"]).toBe("/legal/privacidad");
+    expect(bySource["/legal/villkor"]).toBe("/legal/terminos");
+    expect(bySource["/legal/bitradesavtal"]).toBe("/legal/encargo");
     // "/" rörs inte (rewrite av startsidan till sig själv är onödigt och kan krocka).
     expect(rewrites.some((r) => r.source === "/")).toBe(false);
   });
@@ -78,6 +87,9 @@ describe("routes.ts", () => {
     expect(bySource["/para/peluquerias"]).toBe("/for/frisorer");
     expect(bySource["/para/estetica"]).toBe("/for/hudvard");
     expect(bySource["/para/kinesiologia"]).toBe("/for/naprapat");
+    expect(bySource["/legal/privacidad"]).toBe("/legal/integritet");
+    expect(bySource["/legal/terminos"]).toBe("/legal/villkor");
+    expect(bySource["/legal/encargo"]).toBe("/legal/bitradesavtal");
     expect(redirects.every((r) => r.permanent === true)).toBe(true);
     expect(redirects.some((r) => r.source === "/")).toBe(false);
   });

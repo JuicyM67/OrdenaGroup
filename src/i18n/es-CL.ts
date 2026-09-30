@@ -1543,6 +1543,22 @@ export const onboarding = {
    * `avisoSinServicios` (que es específico del paso de servicios). */
   pasoOmitidoAviso: (p: { seccion: string }): string =>
     `Saltaste este paso. Puedes completarlo después en Ajustes → ${p.seccion}.`,
+  /** Casilla de consentimiento del último paso (Horario), WP-26 paso 6
+   * (regla dura 7: nunca premarcada). El componente arma la frase como
+   * `prefijo <a>terminosLinkTexto</a> medio <a>encargoLinkTexto</a>sufijo`
+   * (mismo patrón que `reserva.consentimientos` en `customer-form.tsx`),
+   * con enlaces a `hrefLegal("terminos")`/`hrefLegal("encargo")` en una
+   * pestaña nueva. El servidor rechaza el envío sin esta casilla
+   * (`acceptedTermsSchema`, `src/server/onboarding/schemas.ts`) con el
+   * código `terms.not_accepted`, mapeado acá en `error`. */
+  terminos: {
+    prefijo: "Acepto los",
+    terminosLinkTexto: "Términos",
+    medio: "y el",
+    encargoLinkTexto: "Acuerdo de encargo",
+    sufijo: ".",
+    error: "Debes aceptar los Términos y el Acuerdo de encargo para continuar.",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -1724,6 +1740,9 @@ export const ajustes = {
      * Mismo texto para la pestaña y para el título `<h1>` de la pantalla
      * (mismo criterio que las otras filas de `secciones`). */
     formularioReserva: "Formulario de reserva",
+    /** Sección nueva (WP-26 paso 7, F12): exportar los datos del negocio y
+     * eliminar la cuenta. */
+    privacidad: "Privacidad y datos",
   },
   reglas: {
     minNoticeLabel: "Anticipación mínima",
@@ -1760,6 +1779,34 @@ export const ajustes = {
   cuenta: {
     sesionComo: (p: { email: string }): string =>
       `Sesión iniciada como ${p.email}`,
+  },
+  /** Sección "Privacidad y datos" (WP-26 paso 7, F12): exportar el negocio
+   * (JSON) y eliminar la cuenta con 30 días de arrepentimiento (ver
+   * `src/server/privacy/business.ts` — `requestBusinessDeletion`/
+   * `cancelBusinessDeletion`/`purgeBusiness`, "Ägarens svar" 2026-09-30). */
+  privacidad: {
+    exportarTitulo: "Exportar los datos de tu negocio",
+    exportarAyuda:
+      "Descarga un archivo con la información de tu negocio, tus clientes y tus reservas.",
+    exportarCta: "Exportar datos",
+    eliminarTitulo: "Eliminar tu cuenta",
+    eliminarAyuda:
+      "Te recomendamos exportar tus datos antes de eliminar tu cuenta.",
+    eliminarCta: "Eliminar cuenta",
+    eliminarDialogTitulo: "¿Eliminar tu cuenta?",
+    /** `n` (no `dias`): mismo nombre genérico que el resto de `es-CL.ts`
+     * para un conteo (`MUESTRA_GENERICA_V2` en `es-CL.v2.test.ts`). */
+    eliminarDialogCuerpo: (p: { n: number }): string =>
+      `Tu página de reservas se desactiva de inmediato. Tienes ${p.n} días para arrepentirte; después, eliminamos todo de forma definitiva.`,
+    eliminarConfirmarSi: "Sí, eliminar cuenta",
+    eliminarConfirmarNo: "No, mantener cuenta",
+    /** Franja visible mientras `deletion_requested_at` esté seteado (planea
+     * eliminarse, dentro del plazo). */
+    solicitadaAviso: (p: { fecha: string }): string =>
+      `Tu cuenta se eliminará el ${p.fecha}.`,
+    solicitadaCtaDeshacer: "Deshacer",
+    solicitadaDeshecha: "Eliminación cancelada.",
+    error: "No pudimos completar la acción. Inténtalo de nuevo.",
   },
 } as const satisfies Trad;
 
@@ -1850,6 +1897,21 @@ export const clientes = {
     marketingRechazado: "El cliente no quiere recibir ofertas.",
   },
   anonimizado: "Cliente anonimizado",
+  /** Acciones de dataskydd (Ley 21.719) en el popover de una reserva
+   * (WP-26 paso 7): exportar los datos del cliente o anonimizarlo. La
+   * anonimización usa `ConfirmDialog` (`src/components/ui/confirm-dialog.tsx`,
+   * D-033: irreversible, las reservas y los pagos se mantienen sin datos
+   * personales). */
+  privacidad: {
+    ctaExportar: "Exportar datos",
+    ctaAnonimizar: "Anonimizar cliente",
+    confirmarTitulo: "¿Anonimizar este cliente?",
+    confirmarCuerpo:
+      "Se eliminan su nombre, celular, correo y notas. Sus reservas y pagos se mantienen, sin esos datos. No se puede deshacer.",
+    confirmarSi: "Sí, anonimizar",
+    confirmarNo: "No, mantener",
+    error: "No pudimos completar la acción. Inténtalo de nuevo.",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------

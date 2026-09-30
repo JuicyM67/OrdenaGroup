@@ -5,8 +5,10 @@
 // de WP-15). Abierto/cerrado por día con un Pill; horas con <input type="time">.
 import { useState } from "react";
 
+import { ConsentCheckbox } from "@/components/booking/consent-checkbox";
 import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
+import { hrefLegal } from "@/config/routes";
 import { WEEKDAY_LONG } from "@/lib/format/calendar";
 import { horarios, onboarding } from "@/i18n";
 
@@ -14,9 +16,17 @@ import { validateTimeRange } from "./client-validation";
 import { onboardingErrorText } from "./error-text";
 import type { WizardHours } from "./types";
 
+const LINK_CLASS =
+  "font-semibold text-ink underline underline-offset-2 hover:text-pending-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
 export type HoursStepProps = {
   value: WizardHours[];
   onChange: (value: WizardHours[]) => void;
+  /** WP-26 paso 6: casilla obligatoria de términos + encargo, regla dura 7
+   * (nunca premarcada). Vive en el mismo paso que `onContinue` porque es la
+   * última pantalla antes de enviar el formulario a `completeOnboarding`. */
+  acceptedTerms: boolean;
+  onAcceptedTermsChange: (value: boolean) => void;
   onBack: () => void;
   onContinue: () => void;
 };
@@ -24,10 +34,13 @@ export type HoursStepProps = {
 export function HoursStep({
   value,
   onChange,
+  acceptedTerms,
+  onAcceptedTermsChange,
   onBack,
   onContinue,
 }: HoursStepProps) {
   const [errors, setErrors] = useState<(string | undefined)[]>([]);
+  const [termsError, setTermsError] = useState<string | undefined>();
 
   function updateDay(i: number, patch: Partial<WizardHours>) {
     onChange(value.map((h, idx) => (idx === i ? { ...h, ...patch } : h)));
@@ -40,7 +53,13 @@ export function HoursStep({
       return r.ok ? undefined : onboardingErrorText(r.code);
     });
     setErrors(nextErrors);
-    if (nextErrors.every((e) => e === undefined)) onContinue();
+    const nextTermsError = acceptedTerms
+      ? undefined
+      : onboardingErrorText("terms.not_accepted");
+    setTermsError(nextTermsError);
+    if (nextErrors.every((e) => e === undefined) && !nextTermsError) {
+      onContinue();
+    }
   }
 
   return (
@@ -102,6 +121,36 @@ export function HoursStep({
           </div>
         ))}
       </div>
+
+      <ConsentCheckbox
+        checked={acceptedTerms}
+        onChange={(checked) => {
+          onAcceptedTermsChange(checked);
+          if (checked) setTermsError(undefined);
+        }}
+        required
+        error={termsError}
+      >
+        {onboarding.terminos.prefijo}{" "}
+        <a
+          href={hrefLegal("terminos")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK_CLASS}
+        >
+          {onboarding.terminos.terminosLinkTexto}
+        </a>{" "}
+        {onboarding.terminos.medio}{" "}
+        <a
+          href={hrefLegal("encargo")}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={LINK_CLASS}
+        >
+          {onboarding.terminos.encargoLinkTexto}
+        </a>
+        {onboarding.terminos.sufijo}
+      </ConsentCheckbox>
 
       <div className="flex gap-3">
         <Button type="button" variant="secondary" size="xl" onClick={onBack}>
