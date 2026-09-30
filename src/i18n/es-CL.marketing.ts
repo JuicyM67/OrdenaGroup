@@ -303,71 +303,57 @@ const SITIO_PROXIMAMENTE = "Próximamente";
 
 export const sitio = {
   nav: {
-    funcionalidades: "Funcionalidades",
+    /** Único trigger con menú desplegable (WP-43, "Nav A": 4 palabras en la
+     * barra, solo "Producto" abre un panel). */
+    producto: "Producto",
+    /** Ahora es un link plano a la sección "Para quién" de la portada, sin
+     * submenú propio (WP-43, "Nav A"). */
     paraQuien: "Para quién",
     precios: "Precios",
-    preguntas: "Preguntas",
-    contacto: "Contacto",
+    /** Mismo texto que `ventajas.hero.etiqueta` (GUIA §4, mismo concepto):
+     * lleva a esa página. */
+    porQue: "Por qué elegirnos",
     entrar: "Entrar",
     ctaCrearAgenda: landing.nav.ctaCrearAgenda,
-    paraQuienSubmenu: { ...SITIO_INDUSTRIA },
     /** Botón para cerrar el megamenú de escritorio o el menú de celular,
      * cuando ya está abierto (WP-hemsida). */
     cerrar: "Cerrar",
   },
-  /** Contenido del megamenú de escritorio (WP-hemsida): la sección
-   * "Producto" con sus seis funcionalidades, el acceso directo a "Para
-   * quién" y los tres links de "Recursos", más la tarjeta destacada que
-   * promociona Horas flash. `texto` de cada ítem y de cada link de recursos
-   * mide ~60 caracteres o menos (cabe en la columna del menú); los títulos
-   * no tienen ese límite. */
+  /** Contenido del panel de "Producto" (WP-43, "Nav A"): una sola columna de
+   * seis ítems (icono + una línea de explicación) más la tarjeta destacada
+   * que promociona Horas flash. Ya no hay secciones separadas de "Para
+   * quién"/"Recursos": esos temas ahora son palabras planas de la barra
+   * (`nav.paraQuien`, `nav.precios`, `nav.porQue`). `texto` de cada ítem mide
+   * ~60 caracteres o menos (cabe en la columna del menú); los títulos no
+   * tienen ese límite. */
   megamenu: {
-    producto: {
-      titulo: "Producto",
-      items: {
-        reservas: {
-          titulo: "Reservas",
-          texto: "Tu link de reservas, listo para compartir.",
-        },
-        agenda: {
-          titulo: "Agenda",
-          texto: "Tu agenda semanal, por profesional.",
-        },
-        hoy: {
-          titulo: "Hoy",
-          texto: "El día de hoy, ordenado en tu celular.",
-        },
-        flash: {
-          titulo: "Horas flash",
-          texto: "Descuento de último minuto para horas libres.",
-        },
-        recordatorios: {
-          titulo: "Recordatorios",
-          texto: "Recordatorios automáticos por WhatsApp.",
-        },
-        listaEspera: {
-          titulo: "Lista de espera",
-          texto: "Cuando alguien cancela, la hora se ocupa sola.",
-        },
+    titulo: "Todo en uno",
+    items: {
+      reservas: {
+        titulo: "Reservas",
+        texto: "Tu link de reservas, listo para compartir.",
       },
-    },
-    paraQuien: {
-      titulo: "Para quién",
-      verTodas: "Ver todos los rubros",
-    },
-    recursos: {
-      titulo: "Recursos",
-      precios: {
-        titulo: "Precios",
-        texto: "Un precio por local, sin cobro por persona.",
+      agenda: {
+        titulo: "Agenda",
+        texto: "Tu agenda semanal, por profesional.",
       },
+      recordatorios: {
+        titulo: "Recordatorios",
+        texto: "Recordatorios automáticos por WhatsApp.",
+      },
+      listaEspera: {
+        titulo: "Lista de espera",
+        texto: "Cuando alguien cancela, la hora se ocupa sola.",
+      },
+      /** Mismo concepto que `ventajas.diferencias.items.d` (GUIA §4), acá en
+       * una sola línea corta. */
       preguntas: {
-        titulo: "Preguntas frecuentes",
-        texto: "Resuelve tus dudas antes de partir.",
+        titulo: "Preguntas de tu rubro",
+        texto: "El formulario se adapta a tu negocio.",
       },
-      contacto: {
-        titulo: "Contacto",
-        texto: "Escríbenos por WhatsApp o correo.",
+      verTodas: {
+        titulo: "Ver todas las funcionalidades",
+        texto: "Revisa la lista completa.",
       },
     },
     destacado: {

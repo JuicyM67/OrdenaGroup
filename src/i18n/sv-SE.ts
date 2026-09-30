@@ -329,69 +329,56 @@ const SITIO_KOMMER_SNART = "Kommer snart";
 
 export const sitio = {
   nav: {
-    funcionalidades: "Funktioner",
-    paraQuien: "Vem är det för",
+    /** Enda triggern med en nedfällbar panel (wp/WP-43-nav-a, "Nav A": 4 ord
+     * i menyraden, bara "Produkt" öppnar en panel). */
+    producto: "Produkt",
+    /** Nu en vanlig länk till startsidans "Vem är det för"-sektion, utan
+     * egen undermeny (wp/WP-43-nav-a, "Nav A"). */
+    paraQuien: "Branscher",
     precios: "Priser",
-    preguntas: "Vanliga frågor",
-    contacto: "Kontakt",
+    /** Samma text som `ventajas.hero.etiqueta` (GUIA §4, samma begrepp): tar
+     * till samma sida. */
+    porQue: "Varför oss",
     entrar: "Logga in",
     ctaCrearAgenda: landing.nav.ctaCrearAgenda,
-    paraQuienSubmenu: { ...SITIO_BRANSCH },
     /** Knapp för att stänga den öppna megamenyn eller mobilmenyn. */
     cerrar: "Stäng",
   },
-  /** Innehållet i skrivbordsmegamenyn (wp/hemsida): sektionen "Produkt" med
-   * dess sex funktioner, genvägen till "Vem är det för" och de tre länkarna
-   * under "Resurser", plus det utvalda kortet som puffar för Flashtider.
-   * Samma nycklar och samma teckengräns (`texto` ~60 tecken) som i
-   * `es-CL.ts`. Ingen WhatsApp (D-028): påminnelser nämns här som sms. */
+  /** Innehållet i panelen för "Produkt" (wp/WP-43-nav-a, "Nav A"): en enda
+   * kolumn med sex punkter (ikon + en rads förklaring) plus det utvalda
+   * kortet som puffar för Flashtider. Ingen egen "Vem är det för"/"Resurser"
+   * längre: de ämnena är nu egna ord i menyraden (`nav.paraQuien`,
+   * `nav.precios`, `nav.porQue`). Samma nycklar och samma teckengräns
+   * (`texto` ~60 tecken) som i `es-CL.ts`. Ingen WhatsApp (D-028):
+   * påminnelser nämns här som sms. */
   megamenu: {
-    producto: {
-      titulo: "Produkt",
-      items: {
-        reservas: {
-          titulo: "Bokningar",
-          texto: "Din bokningslänk, redo att dela.",
-        },
-        agenda: {
-          titulo: "Kalender",
-          texto: "Din veckokalender, per anställd.",
-        },
-        hoy: {
-          titulo: "Idag",
-          texto: "Dagens schema, ordnat i mobilen.",
-        },
-        flash: {
-          titulo: "Flashtider",
-          texto: "Rabatt i sista minuten för lediga tider.",
-        },
-        recordatorios: {
-          titulo: "Påminnelser",
-          texto: "Automatiska påminnelser via sms.",
-        },
-        listaEspera: {
-          titulo: "Väntelista",
-          texto: "När någon avbokar fylls tiden av sig själv.",
-        },
+    titulo: "Allt i ett",
+    items: {
+      reservas: {
+        titulo: "Bokningar",
+        texto: "Din bokningslänk, redo att dela.",
       },
-    },
-    paraQuien: {
-      titulo: "Vem är det för",
-      verTodas: "Se alla branscher",
-    },
-    recursos: {
-      titulo: "Resurser",
-      precios: {
-        titulo: "Priser",
-        texto: "Ett pris per företag, ingen avgift per anställd.",
+      agenda: {
+        titulo: "Kalender",
+        texto: "Din veckokalender, per anställd.",
       },
+      recordatorios: {
+        titulo: "Påminnelser",
+        texto: "Automatiska påminnelser via sms.",
+      },
+      listaEspera: {
+        titulo: "Väntelista",
+        texto: "När någon avbokar fylls tiden av sig själv.",
+      },
+      /** Samma begrepp som `ventajas.diferencias.items.d` (GUIA §4), här i
+       * en kort rad. */
       preguntas: {
-        titulo: "Vanliga frågor",
-        texto: "Svar på dina frågor innan du börjar.",
+        titulo: "Frågor i bokningen",
+        texto: "Formuläret anpassas efter din bransch.",
       },
-      contacto: {
-        titulo: "Kontakt",
-        texto: "Mejla oss om du har frågor.",
+      verTodas: {
+        titulo: "Se alla funktioner",
+        texto: "Hela listan på en gång.",
       },
     },
     destacado: {
