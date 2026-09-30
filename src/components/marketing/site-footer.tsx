@@ -13,8 +13,13 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { strokeArrow } from "@/components/ui/icons";
-import { brand, market } from "@/config/brand";
-import { href, hrefIndustria, hrefLegal, type IndustriaId } from "@/config/routes";
+import { brand } from "@/config/brand";
+import {
+  href,
+  hrefIndustria,
+  hrefLegal,
+  type IndustriaId,
+} from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 
 import { BrandLogo } from "./brand-logo";
@@ -50,11 +55,7 @@ const footerLinkClass =
 const legalLinkClass =
   "underline-offset-2 transition-colors duration-150 ease-out hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
-// TODO_COPY: ninguna clave de `src/i18n/` cubre hoy la etiqueta del enlace al acuerdo de
-// encargo de tratamiento (`encargo`/`bitradesavtal`) — placeholder claro hasta que
-// copywriter-es-cl agregue `sitio.footer2.legal.encargo` (o equivalente).
-const ENCARGO_LABEL =
-  market === "SE" ? "TODO_COPY: Biträdesavtal" : "TODO_COPY: Encargo";
+const ENCARGO_LABEL = copy.sitio.footer2.legal.encargo;
 
 function ArrowCircle({ tone }: { tone: "on-lime" | "on-dark" }) {
   return (

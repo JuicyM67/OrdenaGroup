@@ -405,6 +405,8 @@ export const sitio = {
     legal: {
       terminos: "Términos",
       privacidad: "Privacidad",
+      encargo: "Encargo de datos",
+      contenido: "Contenido",
       /** Sin el símbolo © (cuenta como emoji para `REGLAS_DE_TONO.emoji`,
        * U+00A9 es Extended_Pictographic): se escribe en palabras. */
       derechos: (p: { anio: number }): string =>

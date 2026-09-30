@@ -11,9 +11,7 @@ const linkClass =
 
 function LegalBlockView({ block }: { block: LegalBlock }) {
   if (block.type === "p") {
-    return (
-      <p className="text-14 leading-relaxed text-ink">{block.text}</p>
-    );
+    return <p className="text-14 leading-relaxed text-ink">{block.text}</p>;
   }
   return (
     <ul className="flex flex-col gap-2">
@@ -38,8 +36,7 @@ export function LegalPage({
   doc: LegalDoc;
   /** `null` cuando `doc.status === "final"` (WP-27): no se pinta ningún banner. */
   draftBanner: string | null;
-  /** Encabezado de la tabla de contenido. `TODO_COPY` — ninguna clave de
-   * `src/i18n/` cubre hoy este rótulo (ver informe de WP-26 paso 6). */
+  /** Encabezado de la tabla de contenido. */
   tocLabel: string;
 }) {
   return (

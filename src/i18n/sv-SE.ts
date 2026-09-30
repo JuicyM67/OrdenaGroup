@@ -426,6 +426,8 @@ export const sitio = {
     legal: {
       terminos: "Villkor",
       privacidad: "Integritet",
+      encargo: "Biträdesavtal",
+      contenido: "Innehåll",
       derechos: (p: { anio: number }): string =>
         `${p.anio}. Alla rättigheter förbehållna.`,
     },

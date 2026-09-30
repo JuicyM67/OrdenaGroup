@@ -4,6 +4,7 @@
 // skrivs om (`next.config.ts`, `seRouteRewrites`) till samma sidfil med samma id, så
 // `params.doc` är alltid en av de tre CL-namnen oavsett marknad (samma mönster som
 // `/para/[industria]`). 404 för ett okänt dokument-id.
+import { copy } from "@/i18n/marketing";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -45,10 +46,7 @@ export default async function LegalDocPage({
     doc.status === "draft"
       ? LEGAL_DRAFT_BANNER[market === "SE" ? "sv-SE" : "es-CL"]
       : null;
-  // TODO_COPY: ninguna clave de `src/i18n/` cubre hoy el rótulo de la tabla de
-  // contenido de una página legal — placeholder claro hasta que copywriter-es-cl
-  // agregue `sitio.legal.indice` (o equivalente) en `src/i18n/`.
-  const tocLabel = market === "SE" ? "TODO_COPY: Innehåll" : "TODO_COPY: Contenido";
+  const tocLabel = copy.sitio.footer2.legal.contenido;
 
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
