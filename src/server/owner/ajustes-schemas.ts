@@ -76,6 +76,8 @@ export const businessSettingsInputSchema = z.object({
   maxDaysAhead: maxDaysAheadSchema,
   cancelWindowHours: cancelWindowHoursSchema,
   slotIntervalMinutes: slotIntervalMinutesSchema,
+  // WP-45 (D-033): "Confirmar reservas automáticamente".
+  autoConfirmBookings: z.boolean({ error: "business.auto_confirm_invalid" }),
 });
 export type BusinessSettingsInput = z.infer<typeof businessSettingsInputSchema>;
 

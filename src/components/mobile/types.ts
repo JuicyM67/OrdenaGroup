@@ -8,8 +8,11 @@
 // här filen kan vara "use client"-säker trots att `answers.ts` har
 // `import "server-only"` som värde-import (samma mönster som
 // `agenda/types.ts`, WP-40).
+import type { PendingRequestItem } from "@/components/shared/notification-bell";
 import type { BookingAnswerView } from "@/server/booking-questions/answers";
 import type { Database } from "@/types/database";
+
+export type { PendingRequestItem };
 
 export type BookingStatus = Database["public"]["Enums"]["booking_status"];
 export type BookingSource = Database["public"]["Enums"]["booking_source"];
@@ -63,7 +66,9 @@ export type HoyData = {
   /** Summa för hela dagen, heltal CLP. */
   dayTotalClp: number;
   waitlistCount: number;
-  /** Antal olästa notiser. Styr notispricken och `nav.notificaciones`/`notificacionesNuevas`. */
-  unreadNotifications: number;
+  /** WP-45 (D-033): solicitudes (`requested`) pendientes de confirmar —
+   * fuente de la campana (`NotificationBell`), reemplaza al antiguo contador
+   * `unreadNotifications`. */
+  pendingRequests: PendingRequestItem[];
   links: HoyLinks;
 };

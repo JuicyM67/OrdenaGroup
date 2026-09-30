@@ -20,6 +20,7 @@ vi.mock("@/server/scheduling/run", () => ({ runAs }));
 const { createBooking } = await import("./create");
 const { moveBooking } = await import("./move");
 const { cancelBooking } = await import("./cancel");
+const { emitBookingEvent } = await import("./events");
 
 const BIZ = "b0000000-0000-4000-8000-000000000001";
 const BOOKING = "b0000000-0000-4000-8000-0000000000aa";
@@ -90,6 +91,7 @@ describe("createBooking → created", () => {
         businessId: BIZ,
         token: TOKEN,
         by,
+        status: "confirmed",
       });
     },
   );
@@ -143,6 +145,7 @@ describe("moveBooking → moved", () => {
       businessId: BIZ,
       token: NEW_TOKEN,
       by: "customer",
+      status: "confirmed",
     });
   });
 
@@ -203,5 +206,48 @@ describe("cancelBooking → cancelled", () => {
       { businessId: BIZ, actor: customer, now: NOW },
     );
     expect(enqueueBookingEvent).not.toHaveBeenCalled();
+  });
+});
+
+describe("emitBookingEvent (WP-45 steg 3: forwardar direkt till enqueueBookingEvent)", () => {
+  const base = { bookingId: BOOKING, businessId: BIZ, token: TOKEN };
+
+  it("created/requested: forwardas oförändrad (utkorgen avgör mallarna)", async () => {
+    const event = {
+      ...base,
+      type: "created" as const,
+      by: "customer" as const,
+      status: "requested" as const,
+    };
+    await emitBookingEvent(event);
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith(event);
+  });
+
+  it("moved/requested: forwardas oförändrad", async () => {
+    const event = {
+      ...base,
+      type: "moved" as const,
+      by: "customer" as const,
+      status: "requested" as const,
+    };
+    await emitBookingEvent(event);
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith(event);
+  });
+
+  it("declined (nekad eller utgången): forwardas oförändrad", async () => {
+    const declined = {
+      type: "declined" as const,
+      bookingId: BOOKING,
+      businessId: BIZ,
+      reason: "expired" as const,
+    };
+    await emitBookingEvent(declined);
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith(declined);
+  });
+
+  it("confirmed: forwardas oförändrad (inget längre översätts till created)", async () => {
+    const event = { ...base, type: "confirmed" as const, by: "owner" as const };
+    await emitBookingEvent(event);
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith(event);
   });
 });

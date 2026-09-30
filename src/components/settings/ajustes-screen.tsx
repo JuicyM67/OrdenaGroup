@@ -6,12 +6,18 @@
 // las categorías de Servicios con sus propias referencias
 // (`.visual-diff/ref/falt-A-bokningsformular.html`, `falt-B-per-tjanst.html`,
 // `falt-kategorier.html`).
+import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import { PageHeader } from "@/components/ui/page-header";
+import {
+  NotificationBell,
+  type NotificationBellResult,
+  type PendingRequestItem,
+} from "@/components/shared/notification-bell";
 import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { UserMenu } from "@/components/shared/user-menu";
 import { nav } from "@/i18n";
@@ -48,6 +54,13 @@ export type AjustesScreenProps = {
   owner: { name: string };
   /** WP-47: `logout` (server action). `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
+  /** WP-45 (D-033): klockan i topprraden. `undefined` döljer den. */
+  pendingRequests?: readonly PendingRequestItem[];
+  onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 export function AjustesScreen({
@@ -62,7 +75,11 @@ export function AjustesScreen({
   privacyActions,
   owner,
   onLogout,
+  pendingRequests,
+  onConfirmRequest,
+  onDeclineRequest,
 }: AjustesScreenProps) {
+  const router = useRouter();
   const [business, setBusiness] = useState<AjustesBusiness>(data.business);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
   const publicPageHref = `/${business.slug}`;
@@ -79,12 +96,31 @@ export function AjustesScreen({
         <OwnerMobileTabBar active="ajustes" className="lg:hidden" />
       }
       onLogout={onLogout}
+      pendingRequests={pendingRequests}
+      onConfirmRequest={onConfirmRequest}
+      onDeclineRequest={onDeclineRequest}
     >
       <PageHeader
         variant="desktop"
         title={nav.ajustes}
         actions={
           <>
+            {onConfirmRequest && onDeclineRequest ? (
+              <NotificationBell
+                requests={pendingRequests ?? []}
+                onConfirm={async (bookingId) => {
+                  const result = await onConfirmRequest(bookingId);
+                  if (result.ok) router.refresh();
+                  return result;
+                }}
+                onDecline={async (bookingId, reason) => {
+                  const result = await onDeclineRequest(bookingId, reason);
+                  if (result.ok) router.refresh();
+                  return result;
+                }}
+                withTooltip
+              />
+            ) : null}
             <span className="hidden lg:contents">
               <UserMenu
                 name={owner.name}

@@ -11,6 +11,7 @@ import {
   agendaFixtureClosedToday,
   agendaFixtureEmpty,
   agendaFixtureOverlap,
+  agendaFixtureRequested,
 } from "./fixtures";
 
 const ESTADOS: Record<string, AgendaData> = {
@@ -18,7 +19,15 @@ const ESTADOS: Record<string, AgendaData> = {
   cerrado: agendaFixtureClosedToday,
   solapadas: agendaFixtureOverlap,
   bloqueo: agendaFixtureBlockedStaff,
+  solicitudes: agendaFixtureRequested,
 };
+
+// WP-45 (D-033): demo för `?estado=solicitudes` (skärmdump, FRÅGA 5) — ingen server bakom
+// design lab, "Confirmar"/"Rechazar" svarar alltid ok utan att ändra fixturen.
+async function demoOk() {
+  "use server";
+  return { ok: true };
+}
 
 export default async function AgendaDesignLabPage({
   searchParams,
@@ -28,6 +37,7 @@ export default async function AgendaDesignLabPage({
   const { estado } = await searchParams;
   const data = (estado && ESTADOS[estado]) || agendaFixture;
   const showPopover = !estado;
+  const showRequests = estado === "solicitudes";
 
   return (
     <div className="h-225 w-360">
@@ -35,9 +45,17 @@ export default async function AgendaDesignLabPage({
         data={data}
         initialVista="semana"
         initialFecha={"2026-10-02" as LocalDate}
-        initialSelectedBookingId={showPopover ? "bk-vie-2" : undefined}
+        initialSelectedBookingId={
+          showPopover
+            ? "bk-vie-2"
+            : showRequests
+              ? "bk-vie-solicitud"
+              : undefined
+        }
         className="h-full"
         autoScrollToNow={false}
+        onConfirmRequest={showRequests ? demoOk : undefined}
+        onDeclineRequest={showRequests ? demoOk : undefined}
       />
     </div>
   );

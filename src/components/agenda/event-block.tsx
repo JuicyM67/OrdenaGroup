@@ -17,6 +17,10 @@ export type EventBlockProps = {
   variant: EventBlockVariant;
   staffColor: StaffColor;
   selected?: boolean;
+  /** WP-45 (D-033): `status === "requested"` — streckad kant + chip
+   * "Por confirmar" (bara tokens, ingen ny färg: samma taggstil som
+   * flash/väntelista-chippen nedan). */
+  pending?: boolean;
   title: string;
   /** null → `showTime` var falskt (höjden räcker inte, se geometry.ts). */
   meta: string | null;
@@ -37,6 +41,7 @@ export function EventBlock({
   variant,
   staffColor,
   selected = false,
+  pending = false,
   title,
   meta,
   showAvatar,
@@ -77,14 +82,17 @@ export function EventBlock({
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
         !hasLanes && "inset-x-1.25",
         bgClass,
+        pending && "border-2 border-dashed border-ink",
         selected && "border-2 border-ink",
       )}
     >
-      {variant !== "staff" ? (
+      {variant !== "staff" || pending ? (
         <Chip size="tag" tone="ink" className="mb-0.75 self-start">
-          {variant === "flash"
-            ? estados.flashConDescuento({ porcentaje: flashPct ?? 0 })
-            : estados.listaDeEspera}
+          {pending
+            ? estados.porConfirmar
+            : variant === "flash"
+              ? estados.flashConDescuento({ porcentaje: flashPct ?? 0 })
+              : estados.listaDeEspera}
         </Chip>
       ) : null}
       <div className="truncate text-event-title leading-event font-bold">

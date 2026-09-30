@@ -20,6 +20,7 @@ import {
   type MutationResult,
 } from "@/server/owner/ajustes";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import { confirmRequest, declineRequest } from "@/server/owner/requests";
 
 async function currentOwner(): Promise<
   { userId: string; businessId: string } | { ok: false; code: "unauthorized" }
@@ -107,4 +108,35 @@ export async function updateHoursAction(
   const owner = await currentOwner();
   if ("ok" in owner) return owner;
   return replaceBusinessHours(owner.userId, owner.businessId, input);
+}
+
+// WP-45 (D-033): klockan i Ajustes topprad.
+export async function confirmRequestAction(
+  bookingId: string,
+): Promise<{ ok: boolean }> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return { ok: false };
+  const result = await confirmRequest(
+    owner.userId,
+    owner.businessId,
+    new Date(),
+    bookingId,
+  );
+  return { ok: result.ok };
+}
+
+export async function declineRequestAction(
+  bookingId: string,
+  reason?: string,
+): Promise<{ ok: boolean }> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return { ok: false };
+  const result = await declineRequest(
+    owner.userId,
+    owner.businessId,
+    new Date(),
+    bookingId,
+    reason,
+  );
+  return { ok: result.ok };
 }

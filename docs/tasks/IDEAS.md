@@ -112,3 +112,4 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Personalen blockerar själv sin tid (lunch, frånvaro) utan `can_manage_team`.
 - Inbjudan via SMS/WhatsApp.
 - Flera ägare och överlåtelse av ägarskap.
+- WP-45: nekadialogens anropare (notification-bell, pending-requests-card, event-popover) ska returnera `error` och bara stänga vid ok, så att `invalid_input` visas i dialogen; egen text för motivfältet (copywriter).

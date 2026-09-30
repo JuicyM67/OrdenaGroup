@@ -15,6 +15,7 @@ import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import { loadOwnerInicio } from "@/server/owner/inicio";
 import { moveOwnerBooking } from "@/server/owner/manual-booking";
+import { confirmRequest, declineRequest } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
 
 export const metadata: Metadata = {
@@ -57,6 +58,29 @@ export default async function InicioPage() {
     return { ok: true as const };
   };
 
+  const onConfirmRequest = async (bookingId: string) => {
+    "use server";
+    const result = await confirmRequest(
+      user.id,
+      business.id,
+      new Date(),
+      bookingId,
+    );
+    return { ok: result.ok };
+  };
+
+  const onDeclineRequest = async (bookingId: string, reason?: string) => {
+    "use server";
+    const result = await declineRequest(
+      user.id,
+      business.id,
+      new Date(),
+      bookingId,
+      reason,
+    );
+    return { ok: result.ok };
+  };
+
   return (
     <InicioScreen
       data={data}
@@ -64,6 +88,8 @@ export default async function InicioPage() {
       onArrival={onArrival}
       onMoveBooking={onMoveBooking}
       onLogout={logout}
+      onConfirmRequest={onConfirmRequest}
+      onDeclineRequest={onDeclineRequest}
     />
   );
 }

@@ -5,9 +5,12 @@
 // vid renderingen, aldrig lagrade som text i datan.
 // Riktig tillgänglighet/priser kommer från servern (WP-21), inte uträknat i UI (hård regel 2).
 import type { AvatarProps } from "@/components/ui/avatar";
+import type { PendingRequestItem } from "@/components/shared/notification-bell";
 import type { LocalDate } from "@/lib/format/dates";
 import type { Clp } from "@/lib/format/clp";
 import type { Database } from "@/types/database";
+
+export type { PendingRequestItem };
 
 export type BookingStatus = Database["public"]["Enums"]["booking_status"];
 
@@ -46,7 +49,10 @@ export type InicioData = {
      * namnformatering i UI:t (QA). */
     firstName: string;
   };
-  notifications: { count: number };
+  /** WP-45 (D-033): solicitudes (`requested`) pendientes de confirmar —
+   * fuente compartida por la campana (`NotificationBell`) y la lista "Att
+   * bekräfta" arriba de todo en Inicio (se oculta cuando está vacía). */
+  notifications: { items: PendingRequestItem[] };
   week: {
     recoveredHours: number;
     recoveredClp: Clp;

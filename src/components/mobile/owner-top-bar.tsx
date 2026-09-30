@@ -14,13 +14,34 @@ import { nav } from "@/i18n";
 
 import { IconButton } from "@/components/ui/icon-button";
 import { LogoMark } from "@/components/ui/logo-mark";
+import {
+  NotificationBell,
+  type NotificationBellResult,
+  type PendingRequestItem,
+} from "@/components/shared/notification-bell";
 
 export type OwnerMobileTopBarProps = {
   /** `logout` (server action), bunden av anroparens `page.tsx`. `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
+  /** WP-45 (D-033): klockan — samma data/handlers som Inicio/Hoy/Ajustes,
+   * delad här eftersom Agenda/Ajustes/Inicio alla visar den här mörka
+   * topprraden på mobil ("mobil topprad där klockan finns"). Tomma listan
+   * som standard (design lab skickar ingen) — knappen visas ändå, bara utan
+   * prick. */
+  pendingRequests?: readonly PendingRequestItem[];
+  onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
-export function OwnerMobileTopBar({ onLogout }: OwnerMobileTopBarProps) {
+export function OwnerMobileTopBar({
+  onLogout,
+  pendingRequests = [],
+  onConfirmRequest,
+  onDeclineRequest,
+}: OwnerMobileTopBarProps) {
   return (
     <header
       data-surface="dark"
@@ -34,16 +55,27 @@ export function OwnerMobileTopBar({ onLogout }: OwnerMobileTopBarProps) {
         <LogoMark label={nav.volverAlInicio} size={40} decorative />
         <span className="text-15 font-bold text-on-dark">{brand.name}</span>
       </Link>
-      <form action={onLogout ?? (() => {})}>
-        <IconButton
-          type="submit"
-          label={nav.cerrarSesion}
-          tone="ghost-dark"
-          size={44}
-        >
-          <LogOut aria-hidden="true" className="size-5" strokeWidth={1.9} />
-        </IconButton>
-      </form>
+      <div className="flex items-center gap-2">
+        {onConfirmRequest && onDeclineRequest ? (
+          <NotificationBell
+            requests={pendingRequests}
+            onConfirm={onConfirmRequest}
+            onDecline={onDeclineRequest}
+            triggerTone="ghost-dark"
+            triggerSize={44}
+          />
+        ) : null}
+        <form action={onLogout ?? (() => {})}>
+          <IconButton
+            type="submit"
+            label={nav.cerrarSesion}
+            tone="ghost-dark"
+            size={44}
+          >
+            <LogOut aria-hidden="true" className="size-5" strokeWidth={1.9} />
+          </IconButton>
+        </form>
+      </div>
     </header>
   );
 }

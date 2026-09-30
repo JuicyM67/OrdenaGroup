@@ -190,3 +190,114 @@ export function reservaCanceladaEmail(
   });
   return { subject: asunto, preheader, html, text };
 }
+
+// ---------------------------------------------------------------------------
+// WP-45 (D-033): förfrågningar (`requested`) — mottagen, nekad, utgången.
+// ---------------------------------------------------------------------------
+
+export type SolicitudRecibidaData = BookingCardData & {
+  readonly cliente: string;
+  readonly negocio: string;
+  readonly linkGestion: string;
+};
+
+/** Al cliente, apenas manda una solicitud (negocio con confirmación manual,
+ * WP-45 steg 3): mismo patrón que `reservaConfirmadaEmail` (rubrik + card +
+ * botón), pero con su propio `email.solicitudRecibida` — nunca se confunde
+ * con `reservaConfirmada` (la reserva todavía no está confirmada). */
+export function solicitudRecibidaEmail(
+  market: Market,
+  data: SolicitudRecibidaData,
+): RenderedEmail {
+  const ns = emailNs(market).solicitudRecibida;
+  const asunto = ns.asunto({ negocio: data.negocio });
+  const preheader = ns.preheader(data);
+  const cuerpo = ns.texto(data);
+  const bodyHtml =
+    heading(ns.titulo) +
+    bookingCard(cardRows(market, data)) +
+    button(data.linkGestion, ns.cta);
+  const { html: footHtml, text: footText } = pieFooter(market, data.negocio);
+  const { html, text } = renderLayout({
+    market,
+    preheader,
+    bodyHtml,
+    bodyText: `${ns.titulo}\n\n${cuerpo}`,
+    footerHtml: footHtml,
+    footerText: footText,
+  });
+  return { subject: asunto, preheader, html, text };
+}
+
+export type SolicitudRechazadaData = {
+  readonly cliente: string;
+  readonly negocio: string;
+  readonly fecha: string;
+  readonly hora: string;
+  readonly linkNuevaReserva: string;
+  /** Motivo escrito por el negocio al rechazar
+   * (`solicitudes.rechazarDialog.motivoLabel`). Viaja `declineBooking` →
+   * `BookingEvent["declined"].message` → `message_outbox.payload.motivo`
+   * (worker.ts) → acá; nunca se guarda en `bookings`. */
+  readonly motivo?: string;
+};
+
+/** Al cliente, cuando el negocio rechaza su solicitud. Mismo patrón que
+ * `reservaCanceladaEmail` (cuerpo de texto plano + botón "reservar de
+ * nuevo"), con su propio `email.solicitudRechazada`. */
+export function solicitudRechazadaEmail(
+  market: Market,
+  data: SolicitudRechazadaData,
+): RenderedEmail {
+  const ns = emailNs(market).solicitudRechazada;
+  const asunto = ns.asunto({ negocio: data.negocio });
+  const preheader = ns.preheader(data);
+  const cuerpo = ns.cuerpo(data);
+  const bodyHtml =
+    textToHtmlParagraphs(cuerpo) +
+    button(data.linkNuevaReserva, nuevaReservaCta(market), "lime");
+  const { html: footHtml, text: footText } = pieFooter(market, data.negocio);
+  const { html, text } = renderLayout({
+    market,
+    preheader,
+    bodyHtml,
+    bodyText: cuerpo,
+    footerHtml: footHtml,
+    footerText: footText,
+  });
+  return { subject: asunto, preheader, html, text };
+}
+
+export type SolicitudVencidaData = {
+  readonly cliente: string;
+  readonly negocio: string;
+  readonly fecha: string;
+  readonly hora: string;
+  readonly linkNuevaReserva: string;
+};
+
+/** Al cliente, cuando la solicitud vence antes de que el negocio la
+ * confirme o la rechace (svepet/`expireRequests`, WP-45 steg 6). Mismo
+ * patrón que `solicitudRechazadaEmail`, sin `motivo`. */
+export function solicitudVencidaEmail(
+  market: Market,
+  data: SolicitudVencidaData,
+): RenderedEmail {
+  const ns = emailNs(market).solicitudVencida;
+  const asunto = ns.asunto({ negocio: data.negocio });
+  const preheader = ns.preheader(data);
+  const cuerpo = ns.cuerpo(data);
+  const bodyHtml =
+    textToHtmlParagraphs(cuerpo) +
+    button(data.linkNuevaReserva, nuevaReservaCta(market), "lime");
+  const { html: footHtml, text: footText } = pieFooter(market, data.negocio);
+  const { html, text } = renderLayout({
+    market,
+    preheader,
+    bodyHtml,
+    bodyText: cuerpo,
+    footerHtml: footHtml,
+    footerText: footText,
+  });
+  return { subject: asunto, preheader, html, text };
+}

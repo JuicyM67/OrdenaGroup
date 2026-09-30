@@ -281,6 +281,33 @@ function reservaCanceladaData(
   };
 }
 
+function solicitudRecibidaData(
+  ctx: MessageContext,
+  token: string,
+): EmailTemplateMap["solicitudRecibida"] {
+  const { fecha, hora } = fechaHora(ctx);
+  return {
+    cliente: ctx.cliente,
+    negocio: ctx.negocio,
+    servicio: ctx.servicio,
+    fecha,
+    hora,
+    profesional: ctx.profesional,
+    direccion: ctx.address ?? undefined,
+    precio: formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0)),
+    linkGestion: manageLink(token),
+  };
+}
+
+/** `reservaCancelada`/`solicitudRechazada`/`solicitudVencida` delar exakt
+ * samma fält (namn på länken till förnyad bokning är det enda som skiljer
+ * mallarna, inte datat). */
+function linkNuevaReservaData(
+  ctx: MessageContext,
+): EmailTemplateMap["solicitudRechazada"] {
+  return reservaCanceladaData(ctx);
+}
+
 /** Texten för ett svar i ägarens mejl (WP-40, D-031) — egen, liten kopia av
  * `src/components/booking/answer-format.ts`s `formatAnswerValue` (samma
  * logik, olika körtidskontext: workern importerar aldrig klientkomponenter,
@@ -379,6 +406,38 @@ async function sendCustomerEmail(
       });
       return r.id;
     }
+    case "solicitudRecibida": {
+      const r = await sendEmail({
+        to,
+        template: "solicitudRecibida",
+        data: solicitudRecibidaData(ctx, token),
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
+    case "solicitudRechazada": {
+      // WP-45: `motivo` (ägarens valfria fritextmotiv) läses ur payloaden,
+      // precis som `token` ovan — sparas aldrig någon annanstans, och
+      // payloaden rensas efter sändning (D-029, finalizeSent nedan).
+      const motivo =
+        typeof row.payload.motivo === "string" ? row.payload.motivo : undefined;
+      const r = await sendEmail({
+        to,
+        template: "solicitudRechazada",
+        data: { ...linkNuevaReservaData(ctx), ...(motivo ? { motivo } : {}) },
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
+    case "solicitudVencida": {
+      const r = await sendEmail({
+        to,
+        template: "solicitudVencida",
+        data: linkNuevaReservaData(ctx),
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
     default:
       throw new OutboxSendError("unknown_template");
   }
@@ -433,6 +492,34 @@ async function sendCustomerSms(
       });
       return r.id;
     }
+    case "solicitudRechazada": {
+      const r = await sendSms({
+        to,
+        template: "solicitudRechazada",
+        data: {
+          negocio: ctx.negocio,
+          fecha,
+          hora,
+          link: bookAgainLink(ctx.slug),
+        },
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
+    case "solicitudVencida": {
+      const r = await sendSms({
+        to,
+        template: "solicitudVencida",
+        data: {
+          negocio: ctx.negocio,
+          fecha,
+          hora,
+          link: bookAgainLink(ctx.slug),
+        },
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
     default:
       throw new OutboxSendError("unknown_template");
   }
@@ -447,18 +534,22 @@ async function sendOwner(
 ): Promise<string> {
   if (
     row.template !== "nuevaReservaDueno" &&
-    row.template !== "cancelacionDueno"
+    row.template !== "cancelacionDueno" &&
+    row.template !== "nuevaSolicitud"
   ) {
     throw new OutboxSendError("unknown_template");
   }
-  // Säkert efter kontrollen ovan (bara de här två mallarna når hit).
-  const template = row.template as "nuevaReservaDueno" | "cancelacionDueno";
+  // Säkert efter kontrollen ovan (bara de här tre mallarna når hit).
+  const template = row.template as
+    "nuevaReservaDueno" | "cancelacionDueno" | "nuevaSolicitud";
   const emails = await ownerEmailsFor(row.businessId);
   if (emails.length === 0) throw new OutboxSendError("no_owner_email");
+  // `cancelacionDueno` nunca muestra las respuestas (WP-40); `nuevaSolicitud`
+  // sí, igual que `nuevaReservaDueno` (misma vista de una reserva entrante).
   const answers =
-    template === "nuevaReservaDueno"
-      ? await duenoAnswers(row.businessId, row.bookingId)
-      : [];
+    template === "cancelacionDueno"
+      ? []
+      : await duenoAnswers(row.businessId, row.bookingId);
   const data = duenoData(ctx, answers);
   const ids: string[] = [];
   for (const [i, to] of emails.entries()) {
@@ -557,6 +648,12 @@ async function finalizeFailed(
   return decision.status;
 }
 
+/** Mallar som bara är meningsfulla medan bokningen är `requested`. */
+const REQUEST_ONLY_TEMPLATES: ReadonlySet<string> = new Set([
+  "solicitudRecibida",
+  "nuevaSolicitud",
+]);
+
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
@@ -567,6 +664,17 @@ async function processRow(
     // En påminnelse för en bokning som inte längre är confirmed skickas
     // aldrig (t.ex. avbokad/flyttad utan att den här raden hunnit avbrytas).
     if (row.template === "recordatorio" && ctx.bookingStatus !== "confirmed") {
+      await finalizeCancelled(row);
+      return "cancelled";
+    }
+    // WP-45 (säkerhetsgranskning): "solicitud recibida"/"nueva solicitud"
+    // gäller bara så länge bokningen fortfarande är en förfrågan — hann den
+    // bekräftas, nekas, gå ut eller avbokas innan raden skickades är
+    // beskedet inaktuellt (och kundens token i payloaden är redan roterad).
+    if (
+      REQUEST_ONLY_TEMPLATES.has(row.template) &&
+      ctx.bookingStatus !== "requested"
+    ) {
       await finalizeCancelled(row);
       return "cancelled";
     }

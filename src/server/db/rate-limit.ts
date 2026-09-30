@@ -47,6 +47,14 @@ export async function hitRateLimit(
   input: RateLimitInput,
   q?: Queryable,
 ): Promise<boolean> {
+  // CI:s e2e-svit loggar in och bokar många gånger från 127.0.0.1. Gränserna stängs av
+  // bara där (ci.yml sätter E2E_DISABLE_RATE_LIMITS), aldrig på Vercel.
+  if (
+    process.env.E2E_DISABLE_RATE_LIMITS === "1" &&
+    process.env.VERCEL !== "1"
+  ) {
+    return true;
+  }
   const key = rateLimitKey(input.scope, input.subject);
   const run = async (query: Queryable): Promise<boolean> => {
     const r = await query.query<{ allowed: boolean }>(

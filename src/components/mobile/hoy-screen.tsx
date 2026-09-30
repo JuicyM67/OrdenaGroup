@@ -13,13 +13,16 @@
 // hora flash/Lista de espera/Cobrar) döljs: ingen av de tre rutterna finns än — WP-xx: visas
 // när funktionen finns. Ett fel vid Llegó/No vino visas nu i stället för att sväljas tyst
 // (`role="alert"`, återanvänder `errores.agenda.network`).
-import { Bell } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  NotificationBell,
+  type NotificationBellResult,
+} from "@/components/shared/notification-bell";
 import { UserMenu } from "@/components/shared/user-menu";
-import { IconButton } from "@/components/ui/icon-button";
 import { PageHeader } from "@/components/ui/page-header";
-import { agenda, errores, hoy, nav } from "@/i18n";
+import { agenda, errores, hoy } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 
 import { OwnerMobileTabBar } from "./owner-tab-bar";
@@ -44,6 +47,12 @@ export type HoyScreenProps = {
   publicPageHref?: string;
   /** WP-47: `logout` (server action). `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
+  /** WP-45 (D-033): klockan. `undefined` i design lab (döljer den). */
+  onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 /** Hur länge Llegó/No vino-knapparna är inaktiva efter ett tryck (optimistisk uppdatering). */
@@ -54,7 +63,10 @@ export function HoyScreen({
   onArrival,
   publicPageHref,
   onLogout,
+  onConfirmRequest,
+  onDeclineRequest,
 }: HoyScreenProps) {
+  const router = useRouter();
   // `data` byts bara genom en ny instans av skärmen (anroparen sätter `key`, t.ex. per
   // `?estado=` i design lab) — annars skulle den lokala Llegó/No vino-statusen tappas varje
   // gång servern skickar samma dag på nytt.
@@ -121,8 +133,6 @@ export function HoyScreen({
     }, OPTIMISTIC_LOCK_MS);
   }
 
-  const hasUnread = data.unreadNotifications > 0;
-
   return (
     <div className="min-h-dvh bg-canvas">
       {/* WP-47: ingen `OwnerMobileTopBar` här (till skillnad från Inicio/Agenda/Ajustes) —
@@ -137,18 +147,22 @@ export function HoyScreen({
           meta={todayLabel(now)}
           actions={
             <>
-              <IconButton
-                label={
-                  hasUnread
-                    ? nav.notificacionesNuevas({ n: data.unreadNotifications })
-                    : nav.notificaciones
-                }
-                tone="surface"
-                size={46}
-                badge={hasUnread}
-              >
-                <Bell aria-hidden="true" className="size-5" strokeWidth={1.9} />
-              </IconButton>
+              {onConfirmRequest && onDeclineRequest ? (
+                <NotificationBell
+                  requests={data.pendingRequests}
+                  onConfirm={async (bookingId) => {
+                    const result = await onConfirmRequest(bookingId);
+                    if (result.ok) router.refresh();
+                    return result;
+                  }}
+                  onDecline={async (bookingId, reason) => {
+                    const result = await onDeclineRequest(bookingId, reason);
+                    if (result.ok) router.refresh();
+                    return result;
+                  }}
+                  triggerSize={46}
+                />
+              ) : null}
               <UserMenu
                 name={data.owner.name}
                 initials={initialsOf(data.owner.name)}

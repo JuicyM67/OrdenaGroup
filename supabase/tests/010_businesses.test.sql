@@ -5,7 +5,7 @@
 -- "inte tillämpligt" (en business kan inte peka på en annan business).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(46);
+select plan(49);
 \ir _helpers.psql
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
@@ -84,6 +84,29 @@ select lives_ok(
   $$ update public.businesses set instagram = 'barberia.norte' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
   'ownerA kan ändra instagram (tillåten kolumn)'
 );
+
+-- WP-45 steg 1 (20260930140100_booking_confirmation.sql): `auto_confirm_bookings`
+-- kan bara ändras av ägaren (owner/admin) i sitt EGET företag — samma
+-- "owners update"-RLS-policy som övriga kolumnbegränsade fält ovan, plus en
+-- egen kolumngrant. Fortfarande inloggad som ownerA.
+select lives_ok(
+  $$ update public.businesses set auto_confirm_bookings = true where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  'ownerA kan ändra auto_confirm_bookings på sitt eget företag (tillåten kolumn)'
+);
+-- ownerA:s försök att ändra B:s auto_confirm_bookings påverkar 0 rader (RLS).
+with updated as (
+  update public.businesses set auto_confirm_bookings = true where id = 'bbbbbbbb-0000-0000-0000-000000000002'
+  returning 1
+)
+select is((select count(*) from updated)::int, 0, 'ownerA kan inte ändra auto_confirm_bookings på B (0 rader påverkade)');
+reset role;
+select is(
+  (select auto_confirm_bookings from public.businesses where id = 'bbbbbbbb-0000-0000-0000-000000000002'),
+  false,
+  'B:s auto_confirm_bookings är oförändrat (false, standard) efter ownerA:s försök'
+);
+set local role authenticated;
+select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
 
 -- 5. anon: select, insert, update, delete -> permission denied.
 set local role anon;

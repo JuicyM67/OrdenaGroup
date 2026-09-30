@@ -79,6 +79,7 @@ export const estados = {
    * handpenning i systemet (D-027), texten är en generisk delbetalning. */
   abonoPagado: "Delbetalning betald",
   sinConfirmar: "Obekräftad",
+  porConfirmar: "Väntar på bekräftelse",
   confirmo: "Bekräftade",
   confirmoPorWhatsapp: "Bekräftade via sms",
   llego: "Kom",

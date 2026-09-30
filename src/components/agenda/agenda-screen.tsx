@@ -15,6 +15,10 @@ import {
 import { useRouter } from "next/navigation";
 
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import type {
+  NotificationBellResult,
+  PendingRequestItem,
+} from "@/components/shared/notification-bell";
 import { IconButton } from "@/components/ui/icon-button";
 import type { YearMonth } from "@/components/ui/mini-calendar/grid";
 import { SegmentedControl } from "@/components/ui/segmented-control";
@@ -149,6 +153,15 @@ export type AgendaScreenProps = {
    * räknar då bara ur `data.bookings` i stället (`monthCountsFromBookings`), vilket bara
    * täcker den vecka som redan är laddad. */
   onLoadMonthCounts?: (month: YearMonth) => Promise<MonthDayCounts>;
+  /** WP-45: klockan i den mobila topprraden (`OwnerMobileTopBar`) och
+   * Confirmar/Rechazar i agendans popover (väntande bokningar, `requested`).
+   * `undefined` i design lab. */
+  pendingRequests?: readonly PendingRequestItem[];
+  onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -184,6 +197,9 @@ export function AgendaScreen({
   onAnonymizeCustomer,
   onLogout,
   onLoadMonthCounts,
+  pendingRequests,
+  onConfirmRequest,
+  onDeclineRequest,
 }: AgendaScreenProps) {
   const router = useRouter();
   const tz = data.timezone as TimeZone;
@@ -395,6 +411,24 @@ export function AgendaScreen({
               }
             : undefined
         }
+        onConfirmRequest={
+          onConfirmRequest
+            ? async (bookingId) => {
+                const result = await onConfirmRequest(bookingId);
+                if (result.ok) router.refresh();
+                return result;
+              }
+            : undefined
+        }
+        onDeclineRequest={
+          onDeclineRequest
+            ? async (bookingId, reason) => {
+                const result = await onDeclineRequest(bookingId, reason);
+                if (result.ok) router.refresh();
+                return result;
+              }
+            : undefined
+        }
         trigger={trigger}
       />
     );
@@ -480,6 +514,7 @@ export function AgendaScreen({
           variant={variant}
           staffColor={staff?.color ?? 1}
           selected={booking.id === selectedBookingId}
+          pending={booking.status === "requested"}
           title={booking.clientName}
           meta={meta}
           showAvatar={isAvatarVisible(box.height)}
@@ -537,6 +572,9 @@ export function AgendaScreen({
           <OwnerMobileTabBar active="agenda" className="lg:hidden" />
         }
         onLogout={onLogout}
+        pendingRequests={pendingRequests}
+        onConfirmRequest={onConfirmRequest}
+        onDeclineRequest={onDeclineRequest}
         rail={
           <AgendaRail
             staff={data.staff}

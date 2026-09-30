@@ -90,7 +90,7 @@ test.describe("Hoy — Llegó/No vino bryts inte till flera rader", () => {
 
 test.describe("Hoy — klickytor ≥ 44×44", () => {
   test("flikar, Llegó/No vino och notisknappen", async ({ page }) => {
-    await page.goto("/design-lab/hoy");
+    await page.goto("/design-lab/hoy?estado=solicitudes");
     // WP-47: den gamla flikraden (Hoy/Agenda/Clientes/Caja, Clientes/Caja 404:ade) byttes
     // mot OwnerMobileTabBar (Inicio/Agenda/Hoy/Ajustes) — och QuickActions (Crear hora
     // flash/Lista de espera/Cobrar, ingen av rutterna finns) döljs helt.
@@ -100,8 +100,8 @@ test.describe("Hoy — klickytor ≥ 44×44", () => {
     for (const name of ["Llegó", "No vino"]) {
       await expectMinTapTarget(page.getByRole("button", { name }));
     }
-    // baseFixture har unreadNotifications: 1, så aria-label är den singulara varianten av
-    // nav.notificacionesNuevas, inte den tomma nav.notificaciones.
+    // WP-45: klockan räknar väntande förfrågningar; ?estado=solicitudes har en, så
+    // aria-label är den singulara varianten av nav.notificacionesNuevas.
     await expectMinTapTarget(
       page.getByRole("button", { name: "1 notificación nueva" }),
     );
@@ -112,7 +112,7 @@ test.describe("Hoy — notisknappen", () => {
   test("badge och aria-label speglar unreadNotifications (>0 → prick + notificacionesNuevas)", async ({
     page,
   }) => {
-    await page.goto("/design-lab/hoy");
+    await page.goto("/design-lab/hoy?estado=solicitudes");
     const button = page.getByRole("button", { name: "1 notificación nueva" });
     await expect(button.locator(".bg-alert")).toBeVisible();
   });
@@ -161,7 +161,7 @@ test.describe("Hoy — tangentbord", () => {
   test("header → Llegó → No vino → flikar, fokusring lime på mörk yta", async ({
     page,
   }) => {
-    await page.goto("/design-lab/hoy");
+    await page.goto("/design-lab/hoy?estado=solicitudes");
 
     const notif = page.getByRole("button", { name: "1 notificación nueva" });
     await tabUntilFocused(page, notif);

@@ -33,6 +33,8 @@ export type AjustesBusiness = {
   maxDaysAhead: number;
   cancelWindowHours: number;
   slotIntervalMinutes: number;
+  /** WP-45 (D-033): `businesses.auto_confirm_bookings`. */
+  autoConfirmBookings: boolean;
 };
 
 export type AjustesService = {
@@ -124,6 +126,7 @@ type BusinessRow = {
   max_days_ahead: number;
   cancel_window_hours: number;
   slot_interval_minutes: number;
+  auto_confirm_bookings: boolean;
 };
 
 type ServiceRow = {
@@ -156,7 +159,7 @@ export async function loadAjustesDataIn(
 ): Promise<AjustesData> {
   const businessRes = await q.query<BusinessRow>(
     `select name, slug, comuna, phone, address, min_notice_minutes, max_days_ahead,
-            cancel_window_hours, slot_interval_minutes
+            cancel_window_hours, slot_interval_minutes, auto_confirm_bookings
        from public.businesses
       where id = $1`,
     [businessId],
@@ -231,6 +234,7 @@ export async function loadAjustesDataIn(
       maxDaysAhead: b.max_days_ahead,
       cancelWindowHours: b.cancel_window_hours,
       slotIntervalMinutes: b.slot_interval_minutes,
+      autoConfirmBookings: b.auto_confirm_bookings,
     },
     services: servicesRes.rows.map((s) => ({
       id: s.id,
@@ -282,7 +286,8 @@ export async function updateBusinessSettings(
         `update public.businesses
             set name = $1, slug = $2, comuna = $3, phone = $4, address = $5,
                 min_notice_minutes = $6, max_days_ahead = $7,
-                cancel_window_hours = $8, slot_interval_minutes = $9
+                cancel_window_hours = $8, slot_interval_minutes = $9,
+                auto_confirm_bookings = $11
           where id = $10`,
         [
           input.name,
@@ -295,6 +300,7 @@ export async function updateBusinessSettings(
           input.cancelWindowHours,
           input.slotIntervalMinutes,
           businessId,
+          input.autoConfirmBookings,
         ],
       );
       return assertUpdated(r.rowCount) ?? { ok: true };

@@ -90,7 +90,7 @@ describe("kundvägen tar token, inte bookingId", () => {
         ctx(biz),
       ),
     ).toEqual({ ok: false, error: "not_found" });
-    expect((await status(biz, x.id)).status).toBe("confirmed");
+    expect((await status(biz, x.id)).status).toBe("requested");
   });
 
   it("X:s token flyttar/avbokar bara X, aldrig Y", async () => {
@@ -111,7 +111,7 @@ describe("kundvägen tar token, inte bookingId", () => {
     const cancelled = await cancelBooking({ manageToken: rotated }, ctx(biz));
     expect(cancelled.ok && cancelled.value.bookingId).toBe(x.id);
     expect((await status(biz, x.id)).status).toBe("cancelled");
-    expect((await status(biz, y.id)).status).toBe("confirmed");
+    expect((await status(biz, y.id)).status).toBe("requested");
     expect((await status(biz, y.id)).s.toISOString()).toBe(
       iso(at(TUE, "12:00")),
     );
@@ -122,7 +122,7 @@ describe("kundvägen tar token, inte bookingId", () => {
       ok: false,
       error: "not_found",
     });
-    expect((await status(other, z.id)).status).toBe("confirmed");
+    expect((await status(other, z.id)).status).toBe("requested");
   });
 
   it("kund med bookingId → invalid_input; ägare med token → invalid_input", async () => {
@@ -139,6 +139,6 @@ describe("kundvägen tar token, inte bookingId", () => {
         now: NOW,
       }),
     ).toEqual({ ok: false, error: "invalid_input" });
-    expect((await status(biz, y.id)).status).toBe("confirmed");
+    expect((await status(biz, y.id)).status).toBe("requested");
   });
 });

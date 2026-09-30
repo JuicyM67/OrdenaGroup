@@ -8,6 +8,7 @@ import {
   instantSchema,
   localDateSchema,
 } from "@/lib/format/schemas";
+import { DECLINE_REASON_MAX } from "@/lib/validation/requests";
 
 /**
  * Indatakontraktet för motorn har två delar (säkerhetsgranskning WP-10):
@@ -156,6 +157,16 @@ export const ownerCancelRequestSchema = z.strictObject({
   reason: z.string().trim().max(500).optional(),
 });
 
+/** WP-45: ägaren bekräftar eller nekar en förfrågan (bara ägaren, med id).
+ * `reason` gäller bara `declineBooking` (`confirmBooking` läser den aldrig) —
+ * valfritt motiv till kunden, skickas som `motivo` i `solicitudRechazada`
+ * (e-post), sparas aldrig i `bookings` (D-029: ingen persondata i en
+ * DB-kolumn som inte redan finns, outbox-payloaden rensas efter sändning). */
+export const ownerDecisionRequestSchema = z.strictObject({
+  bookingId: uuid,
+  reason: z.string().trim().max(DECLINE_REASON_MAX).optional(),
+});
+
 export type AvailableDaysRequest = z.input<typeof availableDaysRequestSchema>;
 export type AvailableSlotsRequest = z.input<typeof availableSlotsRequestSchema>;
 export type CreateBookingRequest = z.input<typeof createBookingRequestSchema>;
@@ -165,3 +176,4 @@ export type MoveBookingRequest =
 export type CancelBookingRequest =
   | z.input<typeof customerCancelRequestSchema>
   | z.input<typeof ownerCancelRequestSchema>;
+export type DecisionRequest = z.input<typeof ownerDecisionRequestSchema>;

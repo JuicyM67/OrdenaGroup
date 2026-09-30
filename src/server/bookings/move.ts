@@ -5,7 +5,6 @@ import { lockStaffForBooking } from "@/server/db/locks";
 import type { Queryable } from "@/server/db/pool";
 import { toTstzrange } from "@/server/db/tstzrange";
 import { savepoint } from "@/server/db/tx";
-import { enqueueBookingEvent } from "@/server/messaging/outbox";
 import { staffOffersService } from "@/server/scheduling/availability";
 import { checkStart } from "@/server/scheduling/core/validate";
 import { loadSnapshot } from "@/server/scheduling/load";
@@ -21,6 +20,7 @@ import {
 } from "@/server/scheduling/schemas";
 import type { Actor, StaffChoice } from "@/server/scheduling/types";
 
+import { emitBookingEvent } from "./events";
 import {
   CHANGEABLE,
   insideCancelWindow,
@@ -67,12 +67,13 @@ export async function moveBooking(
   // WP-16: efter commit (enqueueBookingEvent kastar aldrig). Den nya token
   // går bara till meddelandet; den gamla länken gäller inte längre (D-029).
   if (result.ok) {
-    await enqueueBookingEvent({
+    await emitBookingEvent({
       type: "moved",
       bookingId: result.value.booking.id,
       businessId: c.businessId,
       token: result.value.booking.manageToken,
       by: c.actor.kind,
+      status: result.value.booking.status,
     });
   }
   return result;

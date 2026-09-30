@@ -12,15 +12,22 @@ import {
   reservaCanceladaEmail,
   reservaConfirmadaEmail,
   reservaMovidaEmail,
+  solicitudRecibidaEmail,
+  solicitudRechazadaEmail,
+  solicitudVencidaEmail,
   type RecordatorioData,
   type ReservaCanceladaData,
   type ReservaConfirmadaData,
   type ReservaMovidaData,
+  type SolicitudRecibidaData,
+  type SolicitudRechazadaData,
+  type SolicitudVencidaData,
 } from "./templates/booking";
 import { bienvenidaEmail, type BienvenidaData } from "./templates/bienvenida";
 import {
   cancelacionDuenoEmail,
   nuevaReservaDuenoEmail,
+  nuevaSolicitudEmail,
   type DuenoReservaData,
 } from "./templates/dueno";
 import { horaFlashEmail, type HoraFlashData } from "./templates/hora-flash";
@@ -43,6 +50,11 @@ export type EmailTemplateMap = {
   readonly cancelacionDueno: DuenoReservaData;
   readonly listaEsperaCupo: ListaEsperaCupoData;
   readonly horaFlash: HoraFlashData;
+  /** WP-45 (D-033): förfrågningar (`requested`). */
+  readonly nuevaSolicitud: DuenoReservaData;
+  readonly solicitudRecibida: SolicitudRecibidaData;
+  readonly solicitudRechazada: SolicitudRechazadaData;
+  readonly solicitudVencida: SolicitudVencidaData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -62,6 +74,10 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   cancelacionDueno: "booking",
   listaEsperaCupo: "booking",
   horaFlash: "booking",
+  nuevaSolicitud: "booking",
+  solicitudRecibida: "booking",
+  solicitudRechazada: "booking",
+  solicitudVencida: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -76,6 +92,10 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "cancelacionDueno",
   "listaEsperaCupo",
   "horaFlash",
+  "nuevaSolicitud",
+  "solicitudRecibida",
+  "solicitudRechazada",
+  "solicitudVencida",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -108,6 +128,14 @@ export function renderEmail<T extends EmailTemplateName>(
       return listaEsperaCupoEmail(market, data as ListaEsperaCupoData);
     case "horaFlash":
       return horaFlashEmail(market, data as HoraFlashData);
+    case "nuevaSolicitud":
+      return nuevaSolicitudEmail(market, data as DuenoReservaData);
+    case "solicitudRecibida":
+      return solicitudRecibidaEmail(market, data as SolicitudRecibidaData);
+    case "solicitudRechazada":
+      return solicitudRechazadaEmail(market, data as SolicitudRechazadaData);
+    case "solicitudVencida":
+      return solicitudVencidaEmail(market, data as SolicitudVencidaData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

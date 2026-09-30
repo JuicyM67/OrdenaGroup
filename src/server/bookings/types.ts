@@ -16,7 +16,7 @@ export type BookingError =
   | "too_far" // lokalt datum > idag + max_days_ahead (bara kund)
   | "slot_taken" // 23P01 från no_overlap, eller alla "any"-kandidater tagna
   | "not_found" // bokningen finns inte i företaget, eller fel token (move/cancel)
-  | "invalid_status" // move/cancel på annat än confirmed/pending_payment
+  | "invalid_status" // move/cancel på annat än requested/confirmed/pending_payment; confirm/decline på annat än requested (WP-45)
   | "outside_cancel_window"; // kund senare än cancel_window_hours före start
 
 export type CreatedBooking = {
@@ -32,7 +32,9 @@ export type CreatedBooking = {
   priceClp: Clp;
   discountClp: 0;
   depositClp: 0;
-  status: "confirmed";
+  /** WP-45: kund via bokningssidan → `requested` om inte företaget har
+   * `auto_confirm_bookings`; ägarens (manuella) bokningar alltid `confirmed`. */
+  status: "requested" | "confirmed";
   /** Klartext, returneras EN gång; bara SHA-256 sparas. Loggas aldrig. */
   manageToken: string;
 };
@@ -45,7 +47,8 @@ export type MovedBooking = {
   start: string;
   end: string;
   priceClp: Clp;
-  status: "confirmed" | "pending_payment";
+  /** Flytten behåller statusen (WP-45: en förfrågan förblir `requested`). */
+  status: "requested" | "confirmed" | "pending_payment";
   /** Ny klartext-token (D-029: flytten roterar den, gamla länkar slutar
    * gälla). Bara SHA-256 sparas. Loggas aldrig. */
   manageToken: string;

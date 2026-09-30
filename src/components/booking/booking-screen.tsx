@@ -285,7 +285,9 @@ export function BookingScreen({
   if (state.step === "datos") {
     ctaLabel = dayIsFull
       ? reserva.waitlist.ctaUnirme
-      : reserva.antesDeConfirmar.ctaConfirmar;
+      : data.business.autoConfirmBookings
+        ? reserva.antesDeConfirmar.ctaConfirmar
+        : reserva.antesDeConfirmar.ctaEnviarSolicitud;
     ctaDisabled = state.formStatus === "submitting";
     ctaAction = undefined;
   }

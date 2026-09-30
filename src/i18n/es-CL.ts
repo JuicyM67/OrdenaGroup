@@ -89,6 +89,11 @@ export const estados = {
   confirmada: "Confirmada",
   abonoPagado: "Abono pagado",
   sinConfirmar: "Sin confirmar",
+  /** WP-45 (D-033): chip de una reserva `requested`, cuando el negocio
+   * todavía no la confirma ni la rechaza. Distinto de `sinConfirmar` (ahí
+   * quien no confirmó es el cliente, con `confirmed_by_customer_at`; acá es
+   * el negocio el que falta). */
+  porConfirmar: "Por confirmar",
   confirmo: "Confirmó",
   confirmoPorWhatsapp: "Confirmó por WhatsApp",
   llego: "Llegó",
@@ -324,6 +329,9 @@ export const reserva = {
   bookingBar: {
     ctaReservar: "Reservar",
     ctaReservado: "¡Reservado!",
+    /** WP-45: variante de `ctaReservado` cuando la reserva nace `requested`
+     * (el negocio no confirma automático). */
+    ctaSolicitudEnviada: "¡Solicitud enviada!",
   },
   clienteForm: {
     titulo: "Tus datos",
@@ -340,7 +348,16 @@ export const reserva = {
       `Puedes cancelar o cambiar la hora hasta ${p.horas} h antes, sin costo.`,
     avisoWhatsapp: (p: { negocio: string }): string =>
       `Te enviaremos la confirmación y un recordatorio por WhatsApp de ${p.negocio} a este número.`,
+    /** WP-45: variante de `avisoWhatsapp` cuando el negocio tiene apagada la
+     * confirmación automática (`auto_confirm_bookings = false`, el valor por
+     * defecto). CL todavía no tiene plantilla de WhatsApp para "solicitud
+     * recibida" (WP-22 pendiente), por eso el primer aviso es por correo. */
+    avisoWhatsappSolicitud: (p: { negocio: string }): string =>
+      `Si tu hora queda pendiente, te avisamos por correo; ya confirmada, la confirmación y el recordatorio llegan por WhatsApp de ${p.negocio}.`,
     ctaConfirmar: "Confirmar reserva",
+    /** WP-45: variante de `ctaConfirmar` cuando el negocio tiene apagada la
+     * confirmación automática: la reserva queda `requested`, no `confirmed`. */
+    ctaEnviarSolicitud: "Enviar solicitud",
   },
   /** Versión "2026-10-v2" (borrador, ver R8 del plan): pendiente de revisión
    * de un abogado antes de WP-27. Si cambias `terminos`, `terminosLinkTexto`,
@@ -370,6 +387,16 @@ export const reserva = {
     avisoWhatsapp: "Te enviamos la confirmación por WhatsApp.",
     verMiReserva: "Ver mi reserva",
   },
+  /** WP-45 (D-033): pantalla de confirmación cuando la reserva nace
+   * `requested` (el negocio no confirma automático), en vez de
+   * `reserva.confirmacion`. */
+  confirmacionSolicitud: {
+    titulo: "¡Solicitud enviada!",
+    resumenTitulo: "Resumen de tu solicitud",
+    aviso: (p: { negocio: string }): string =>
+      `Te avisaremos por correo cuando ${p.negocio} confirme tu hora.`,
+    verMiSolicitud: "Ver mi solicitud",
+  },
   vacios: {
     eligeServicio: "Elige un servicio para ver las horas disponibles.",
     cargandoHorarios: "Buscando horas disponibles…",
@@ -397,6 +424,11 @@ export const gestion = {
   },
   ctaCambiarHora: "Cambiar hora",
   ctaCancelarReserva: "Cancelar reserva",
+  /** WP-45: aviso en `r/[token]` cuando la reserva todavía está `requested`
+   * (el negocio no la confirmó ni la rechazó). El chip de estado usa
+   * `estados.porConfirmar`; esto es el texto largo debajo del chip. */
+  pendienteAviso:
+    "El negocio todavía no confirma esta hora. Te avisaremos apenas lo haga.",
   confirmarCancelacion: {
     titulo: "¿Cancelar tu reserva?",
     cuerpo: "Le avisaremos al negocio y liberaremos tu hora para otra persona.",
@@ -500,6 +532,13 @@ export const inicio = {
     /** "Vie 9 oct · 15:00". */
     fechaHora: (p: { fecha: string; hora: string }): string =>
       `${p.fecha} · ${p.hora}`,
+  },
+  /** WP-45 (D-033): lista de solicitudes pendientes por confirmar
+   * (`requested`), arriba de todo en Inicio; se oculta cuando no hay
+   * ninguna. Mismo texto que el título de la campana
+   * (`solicitudes.campana.titulo`, GUIA §2: mismo vocabulario). */
+  solicitudes: {
+    titulo: "Solicitudes por confirmar",
   },
   flashCard: {
     titulo: "Hora flash activa",
@@ -1248,6 +1287,82 @@ export const email = {
       `${p.cliente} canceló su hora de ${p.servicio} del ${p.fecha} a las ${p.hora}. Esa hora ya quedó libre en tu agenda.`,
     cta: "Ver mi agenda",
   },
+  /** Al dueño, cuando una solicitud queda pendiente de confirmar (WP-45,
+   * D-033): no se manda si `auto_confirm_bookings` está prendido (ahí la
+   * reserva nace `confirmed` y usa `nuevaReservaDueno`). Misma forma que
+   * `nuevaReservaDueno`/`cancelacionDueno`. */
+  nuevaSolicitud: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `Solicitud de ${p.cliente} para el ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} a las ${p.hora}. Confírmala o recházala.`,
+    titulo: "Tienes una solicitud por confirmar",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} solicitó ${p.servicio} para el ${p.fecha} a las ${p.hora}. Confírmala o recházala antes de que expire.`,
+    cta: "Revisar solicitud",
+  },
+  /** Al cliente, apenas manda una solicitud desde `/[slug]` cuando el
+   * negocio tiene apagada la confirmación automática (WP-45, F7): por ahora
+   * solo por correo (CL: hasta que exista la plantilla de WhatsApp de
+   * WP-22; "Ägarens svar" 2). La confirmación real (WhatsApp + recordatorio)
+   * llega después, con `reservaConfirmada`, cuando el negocio la acepte. */
+  solicitudRecibida: {
+    asunto: (p: { negocio: string }): string =>
+      `Recibimos tu solicitud de hora en ${p.negocio}`,
+    preheader: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `${p.servicio} el ${p.fecha} a las ${p.hora}.`,
+    titulo: "Recibimos tu solicitud",
+    texto: (p: {
+      negocio: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `Tu solicitud de ${p.servicio} en ${p.negocio} para el ${p.fecha} a las ${p.hora} quedó pendiente de confirmación. Te avisamos apenas ${p.negocio} la confirme.`,
+    cta: "Ver mi solicitud",
+  },
+  /** Al cliente, cuando el negocio rechaza su solicitud (WP-45). Misma forma
+   * que `reservaCancelada` (cuerpo de texto plano + botón para reservar de
+   * nuevo). `motivo` es opcional: lo escribe el negocio al rechazar
+   * (`solicitudes.rechazarDialog.motivoLabel`) y solo se incluye si existe. */
+  solicitudRechazada: {
+    asunto: (p: { negocio: string }): string =>
+      `Tu solicitud de hora en ${p.negocio} no se pudo confirmar`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `La hora del ${p.fecha} a las ${p.hora} no quedó confirmada.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      linkNuevaReserva: string;
+      motivo?: string;
+    }): string =>
+      `Hola ${p.cliente}:\n\n${p.negocio} no pudo confirmar tu solicitud de hora del ${p.fecha} a las ${p.hora}.${p.motivo ? ` Motivo: ${p.motivo}.` : ""}\n\nPuedes reservar otra hora cuando quieras: ${p.linkNuevaReserva}`,
+  },
+  /** Al cliente, cuando la solicitud vence antes de que el negocio la
+   * confirme o la rechace (WP-45, "Ägarens svar" 1: 24 h después de
+   * enviada, o 2 h antes de la hora si eso llega primero). Misma forma que
+   * `solicitudRechazada`, sin `motivo` (nadie la rechazó a mano). */
+  solicitudVencida: {
+    asunto: (p: { negocio: string }): string =>
+      `Tu solicitud de hora en ${p.negocio} venció`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `La hora del ${p.fecha} a las ${p.hora} ya no está disponible.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      linkNuevaReserva: string;
+    }): string =>
+      `Hola ${p.cliente}:\n\nTu solicitud de hora en ${p.negocio} para el ${p.fecha} a las ${p.hora} venció antes de que alcanzáramos a confirmarla.\n\nPuedes reservar otra hora cuando quieras: ${p.linkNuevaReserva}`,
+  },
   /** Al cliente en lista de espera, cuando se libera un cupo (respaldo por
    * correo del WhatsApp `lista_espera_oferta`). */
   listaEsperaCupo: {
@@ -1779,6 +1894,14 @@ export const ajustes = {
     cancelWindowAyuda:
       "Este número se lo mostramos al cliente antes de confirmar y en la confirmación por WhatsApp.",
     slotIntervalLabel: "Cada cuánto se ofrecen horas",
+    /** Interruptor nuevo (WP-45, D-033): apagado por defecto, incluso para
+     * los negocios que ya existen ("Ägarens svar" 4). Si está apagado, las
+     * reservas de la página nacen `requested` y hay que confirmarlas o
+     * rechazarlas a mano; si está prendido, nacen `confirmed` directo, como
+     * antes de WP-45. */
+    confirmarAutomatico: "Confirmar reservas automáticamente",
+    confirmarAutomaticoAyuda:
+      "Si lo apagas, cada reserva que llega por tu página queda pendiente hasta que tú la confirmes o la rechaces. Mientras tanto, la hora queda bloqueada para que nadie más la tome.",
   },
   waitlistMode: {
     sequential: "Uno por uno, en orden",
@@ -2186,6 +2309,25 @@ export const sms = {
     link: string;
   }): string =>
     `Tu hora en ${p.negocio} del ${p.fecha} a las ${p.hora} quedó cancelada. Reserva otra: ${p.link}`,
+  /** Solicitud rechazada/vencida (WP-45): mismo patrón que
+   * `reservaCancelada`. En CL no se envían todavía (solo por correo hasta
+   * que exista una plantilla de WhatsApp para esto, WP-22); quedan acá por
+   * paridad de tipo con `sv-SE.app.ts`, donde sí se usan junto al correo
+   * (D-028, "Ägarens svar" 2). */
+  solicitudRechazada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Tu solicitud de hora en ${p.negocio} del ${p.fecha} a las ${p.hora} no se pudo confirmar. Reserva otra: ${p.link}`,
+  solicitudVencida: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Tu solicitud de hora en ${p.negocio} del ${p.fecha} a las ${p.hora} venció. Reserva otra: ${p.link}`,
   listaEsperaCupo: (p: {
     negocio: string;
     servicio: string;
@@ -2566,5 +2708,55 @@ export const perfil = {
       /** Mismo texto que `ajustes.cambiosGuardados` (una sola definición). */
       cambiosGuardados: ajustes.cambiosGuardados,
     },
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// solicitudes: WP-45 (D-033) — campana de notificaciones, diálogo de
+// rechazo y mensajes compartidos entre la campana, Inicio y el popover de
+// la Agenda para las reservas `requested`. El título de la lista de Inicio
+// vive en `inicio.solicitudes.titulo` (mismo texto): acá se reusa esa
+// misma clave para la campana en vez de escribirlo dos veces (GUIA §2,
+// mismo vocabulario para el mismo concepto).
+// ---------------------------------------------------------------------------
+
+export const solicitudes = {
+  campana: {
+    titulo: inicio.solicitudes.titulo,
+    /** Estado vacío de la campana (distinto de la lista de Inicio, que se
+     * oculta directamente cuando no hay solicitudes). */
+    vacio: "No tienes solicitudes pendientes.",
+  },
+  /** Fila de una solicitud, reutilizada en la campana y en la lista de
+   * Inicio: "{cliente} · {servicio} · {fecha}, {hora}". */
+  fila: (p: {
+    cliente: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+  }): string => `${p.cliente} · ${p.servicio} · ${p.fecha}, ${p.hora}`,
+  /** Botones de Confirmar/Rechazar: mismo texto en la campana, en Inicio y
+   * en el popover de la Agenda. */
+  acciones: {
+    confirmar: "Confirmar",
+    rechazar: "Rechazar",
+  },
+  /** "Rechazar" nunca usa la palabra "Cancelar" (GUIA §5): es una acción
+   * distinta de cancelar una reserva ya confirmada. `motivoLabel` es
+   * opcional a propósito (plan de WP-45, paso 4): el negocio no está
+   * obligado a explicar por qué rechaza. */
+  rechazarDialog: {
+    titulo: "¿Rechazar esta solicitud?",
+    cuerpo: "Le avisaremos al cliente y podrá reservar otra hora.",
+    motivoLabel: "Motivo (opcional)",
+    motivoPlaceholder: "Por ejemplo: no tenemos hora ese día.",
+    ctaSi: "Sí, rechazar",
+    ctaNo: "No, mantener",
+  },
+  /** Feedback después de confirmar/rechazar, desde cualquiera de los tres
+   * lugares (campana, Inicio, popover de la Agenda). */
+  toast: {
+    confirmada: "Solicitud confirmada.",
+    rechazada: "Solicitud rechazada.",
   },
 } as const satisfies Trad;

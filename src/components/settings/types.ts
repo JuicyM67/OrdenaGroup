@@ -11,6 +11,9 @@ export type AjustesBusiness = {
   maxDaysAhead: number;
   cancelWindowHours: number;
   slotIntervalMinutes: number;
+  /** WP-45 (D-033): av som standard, även för befintliga företag (Ägarens
+   * svar 4). Av → reservas från `/{slug}` blir `requested`. */
+  autoConfirmBookings: boolean;
 };
 
 export type AjustesService = {

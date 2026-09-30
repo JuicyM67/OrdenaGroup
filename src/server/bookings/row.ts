@@ -87,7 +87,9 @@ export function insideCancelWindow(
   return now.getTime() <= b.start - b.cancelWindowHours * 3_600_000;
 }
 
+/** Kund och ägare får flytta/avboka (WP-45: även en väntande förfrågan). */
 export const CHANGEABLE: readonly BookingStatus[] = [
+  "requested",
   "confirmed",
   "pending_payment",
 ];

@@ -1,9 +1,17 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { HoyScreen } from "./hoy-screen";
 import type { HoyData } from "./types";
+
+// WP-45 (D-033): `router.refresh()` efter Bekräfta/Neka (klockan) — samma
+// mönster hade `AgendaScreen`/`InicioScreen` redan (ingen renderas i ett
+// test.tsx, så det här är den första gången `next/navigation` behöver
+// mockas här).
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 
 function makeData(): HoyData {
   return {
@@ -43,7 +51,7 @@ function makeData(): HoyData {
     dayCount: 2,
     dayTotalClp: 20_000,
     waitlistCount: 0,
-    unreadNotifications: 0,
+    pendingRequests: [],
     links: {
       flash: "/app/horas-flash/nueva",
       waitlist: "/app/lista-de-espera",
@@ -62,15 +70,49 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function okResult() {
+  return { ok: true };
+}
+
+const TWO_REQUESTS = [
+  {
+    id: "req-1",
+    clientName: "Ana",
+    service: "Corte",
+    start: "2026-10-03T11:00:00-03:00",
+  },
+  {
+    id: "req-2",
+    clientName: "Beto",
+    service: "Corte",
+    start: "2026-10-03T12:00:00-03:00",
+  },
+];
+
 describe("HoyScreen", () => {
-  it("notispricken visas bara när unreadNotifications > 0, med rätt aria-label", () => {
+  it("klockan döljs helt utan onConfirmRequest/onDeclineRequest (WP-45)", () => {
+    render(<HoyScreen data={makeData()} />);
+    expect(screen.queryByRole("button", { name: "Notificaciones" })).toBeNull();
+  });
+
+  it("notispricken visas bara när det finns solicitudes pendientes, med rätt aria-label", () => {
     const { rerender } = render(
-      <HoyScreen data={{ ...makeData(), unreadNotifications: 0 }} />,
+      <HoyScreen
+        data={makeData()}
+        onConfirmRequest={okResult}
+        onDeclineRequest={okResult}
+      />,
     );
     const button = screen.getByRole("button", { name: "Notificaciones" });
     expect(button.querySelector('[aria-hidden="true"].bg-alert')).toBeNull();
 
-    rerender(<HoyScreen data={{ ...makeData(), unreadNotifications: 2 }} />);
+    rerender(
+      <HoyScreen
+        data={{ ...makeData(), pendingRequests: TWO_REQUESTS }}
+        onConfirmRequest={okResult}
+        onDeclineRequest={okResult}
+      />,
+    );
     const buttonUnread = screen.getByRole("button", {
       name: "2 notificaciones nuevas",
     });

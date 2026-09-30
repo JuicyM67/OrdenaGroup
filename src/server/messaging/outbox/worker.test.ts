@@ -281,6 +281,28 @@ describe("processOutbox: claim → skicka → avsluta", () => {
     expect(db.updatesMatching(/status = 'cancelled'/)).toHaveLength(1);
   });
 
+  it.each([
+    ["solicitudRecibida", "customer", "confirmed"],
+    ["solicitudRecibida", "customer", "cancelled"],
+    ["nuevaSolicitud", "owner", "cancelled"],
+  ] as const)(
+    "%s (%s) när bokningen är %s: cancelled, aldrig skickad (WP-45)",
+    async (template, recipient, status) => {
+      db.claimRows = [
+        claimRow({
+          template,
+          recipient_kind: recipient,
+          dedupe_key: `${template}:email:${recipient}:x:1`,
+        }),
+      ];
+      db.contextRow = contextRow({ booking_status: status });
+      db.ownerEmails = ["a@negocio.cl"];
+      const result = await processOutbox({ limit: 25 });
+      expect(result).toMatchObject({ claimed: 1, sent: 0, cancelled: 1 });
+      expect(sendEmailMock).not.toHaveBeenCalled();
+    },
+  );
+
   it("fel (attempts=1): status='queued', backoff 1 min, felkod utan persondata", async () => {
     sendEmailMock.mockRejectedValueOnce(
       new Error("Resend: skicka misslyckades (HTTP 500)"),
