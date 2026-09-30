@@ -594,7 +594,9 @@ export function AgendaScreen({
             WP-50: månadsvyn (härledd, ingen ritad referens) delar samma ram. */}
         <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           <AgendaToolbar
-            title={vista === "mes" ? monthTitle(browsedMonth) : weekTitle(focus)}
+            title={
+              vista === "mes" ? monthTitle(browsedMonth) : weekTitle(focus)
+            }
             prevLabel={vista === "mes" ? calendario.mesAnterior : undefined}
             nextLabel={vista === "mes" ? calendario.mesSiguiente : undefined}
             onToday={() => {
@@ -618,7 +620,8 @@ export function AgendaScreen({
               aria-label={agenda.vistaAria}
               value={vista}
               onValueChange={(v) => {
-                if (v === "semana" || v === "dia" || v === "mes") goTo(v, focus);
+                if (v === "semana" || v === "dia" || v === "mes")
+                  goTo(v, focus);
               }}
               options={[
                 { value: "mes", label: calendario.vista.mes },
@@ -696,7 +699,11 @@ export function AgendaScreen({
               size={44}
               onClick={() => goTo(vista === "mes" ? "dia" : "mes", focus)}
             >
-              <CalendarDays aria-hidden="true" className="size-5" strokeWidth={2} />
+              <CalendarDays
+                aria-hidden="true"
+                className="size-5"
+                strokeWidth={2}
+              />
             </IconButton>
           </div>
           <MobileDayNav

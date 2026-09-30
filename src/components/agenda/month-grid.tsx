@@ -52,10 +52,7 @@ export function MonthGrid({
     >
       <div className="grid shrink-0 grid-cols-7 px-1 pb-2">
         {weekdayMinLabels.map((wd, i) => (
-          <div
-            key={i}
-            className="text-center text-12 font-semibold text-muted"
-          >
+          <div key={i} className="text-center text-12 font-semibold text-muted">
             {wd}
           </div>
         ))}

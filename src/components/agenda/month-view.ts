@@ -73,17 +73,17 @@ export function summarizeMonthCounts(
   ][]) {
     let total = 0;
     const colors: StaffColor[] = [];
-    for (const [staffId, n] of Object.entries(byStaff) as [
-      StaffId,
-      number,
-    ][]) {
+    for (const [staffId, n] of Object.entries(byStaff) as [StaffId, number][]) {
       total += n;
       if (n <= 0) continue;
       const color = staffColorById.get(staffId);
       if (color !== undefined && !colors.includes(color)) colors.push(color);
     }
     if (total > 0) {
-      result.set(date, { count: total, staffColors: colors.slice(0, MAX_DOTS) });
+      result.set(date, {
+        count: total,
+        staffColors: colors.slice(0, MAX_DOTS),
+      });
     }
   }
   return result;

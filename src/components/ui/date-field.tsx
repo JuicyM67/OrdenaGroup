@@ -102,7 +102,8 @@ export function DateField({
     weekdays: WEEKDAY_MIN_LABELS,
     prevMonth: calendario.mesAnterior,
     nextMonth: calendario.mesSiguiente,
-    dayLabel: (date) => formatLocalDate(date as LocalDate, "weekdayDayMonthLong"),
+    dayLabel: (date) =>
+      formatLocalDate(date as LocalDate, "weekdayDayMonthLong"),
   };
 
   return (

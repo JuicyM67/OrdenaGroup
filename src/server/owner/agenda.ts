@@ -226,12 +226,14 @@ function monthDateRange(month: YearMonth): {
   start: LocalDate;
   endInclusive: LocalDate;
 } {
-  const start = `${String(month.year).padStart(4, "0")}-${pad2(month.month)}-01` as LocalDate;
+  const start =
+    `${String(month.year).padStart(4, "0")}-${pad2(month.month)}-01` as LocalDate;
   const next =
     month.month === 12
       ? { year: month.year + 1, month: 1 }
       : { year: month.year, month: month.month + 1 };
-  const nextStart = `${String(next.year).padStart(4, "0")}-${pad2(next.month)}-01` as LocalDate;
+  const nextStart =
+    `${String(next.year).padStart(4, "0")}-${pad2(next.month)}-01` as LocalDate;
   return { start, endInclusive: addLocalDays(nextStart, -1) };
 }
 

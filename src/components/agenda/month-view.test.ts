@@ -3,7 +3,11 @@ import { afterEach, describe, expect, it } from "vitest";
 import { SANTIAGO, type LocalDate, type LocalTime } from "@/lib/format/dates";
 import type { E164 } from "@/lib/format/phone";
 
-import type { AgendaBooking, AgendaBusinessHours, MonthDayCounts } from "./types";
+import type {
+  AgendaBooking,
+  AgendaBusinessHours,
+  MonthDayCounts,
+} from "./types";
 import {
   isMonthDayClosed,
   monthCellAria,

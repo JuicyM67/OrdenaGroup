@@ -36,24 +36,14 @@ export function AgendaToolbar({
       <Button type="button" variant="primary" size="xs" onClick={onToday}>
         {calendario.hoy}
       </Button>
-      <IconButton
-        label={prevLabel}
-        tone="ghost"
-        size={34}
-        onClick={onPrevWeek}
-      >
+      <IconButton label={prevLabel} tone="ghost" size={34} onClick={onPrevWeek}>
         <ChevronLeft
           aria-hidden="true"
           className="size-4.5"
           strokeWidth={2.2}
         />
       </IconButton>
-      <IconButton
-        label={nextLabel}
-        tone="ghost"
-        size={34}
-        onClick={onNextWeek}
-      >
+      <IconButton label={nextLabel} tone="ghost" size={34} onClick={onNextWeek}>
         <ChevronRight
           aria-hidden="true"
           className="size-4.5"
