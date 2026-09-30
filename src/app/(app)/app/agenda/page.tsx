@@ -26,6 +26,7 @@ import {
   moveOwnerBooking,
   saveManualConsent,
 } from "@/server/owner/manual-booking";
+import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -109,6 +110,19 @@ export default async function AppAgendaPage({
     return { ok: true as const };
   };
 
+  // WP-26 steg 7 (F12): "Exportar datos"/"Anonimizar cliente" i agenda-popovern
+  // (`event-popover.tsx`). Ingen `kickOutbox()` här — anonymisering avbryter bara
+  // köade meddelanden, den skapar inga nya.
+  const onExportCustomer = async (customerId: string) => {
+    "use server";
+    return exportCustomer(user.id, business.id, customerId);
+  };
+
+  const onAnonymizeCustomer = async (customerId: string) => {
+    "use server";
+    return anonymizeCustomer(user.id, business.id, customerId);
+  };
+
   return (
     <AgendaScreen
       data={data}
@@ -120,6 +134,8 @@ export default async function AppAgendaPage({
       businessName={business.name}
       onCreateManualBooking={onCreateManualBooking}
       onMoveBooking={onMoveBooking}
+      onExportCustomer={onExportCustomer}
+      onAnonymizeCustomer={onAnonymizeCustomer}
     />
   );
 }

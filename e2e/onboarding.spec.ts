@@ -52,6 +52,8 @@ test("login → onboarding → länk till bokningssidan", async ({
 
   // Paso 3 de 4: Horario (se dejan los valores por defecto: lun–vie 09:00–19:00).
   await expect(page.getByRole("heading", { name: "Horario" })).toBeVisible();
+  // WP-26: casilla obligatoria de términos + encargo, nunca premarcada.
+  await page.getByRole("checkbox", { name: /Acepto los Términos/ }).check();
   await page.getByRole("button", { name: "Continuar" }).click();
 
   // Paso 4 de 4: Tu link.

@@ -52,6 +52,10 @@ export type OnboardingWizardProps = {
 export function OnboardingWizard({ onSubmit }: OnboardingWizardProps) {
   const [step, setStep] = useState<StepId>("business");
   const [data, setData] = useState<WizardData>(initialData);
+  // WP-26 paso 6: casilla obligatoria de términos + encargo (regla dura 7,
+  // nunca premarcada), mostrada en HoursStep (el último paso antes de
+  // enviar). No vive en `WizardData` porque solo la usa este paso.
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | undefined>();
   const [result, setResult] = useState<OnboardingSubmitResult | undefined>();
@@ -79,6 +83,7 @@ export function OnboardingWizard({ onSubmit }: OnboardingWizardProps) {
                 end: undefined,
               },
         ),
+        acceptedTerms,
       });
       if (r.ok) {
         setResult(r);
@@ -142,6 +147,8 @@ export function OnboardingWizard({ onSubmit }: OnboardingWizardProps) {
         <HoursStep
           value={data.hours}
           onChange={(hours) => setData({ ...data, hours })}
+          acceptedTerms={acceptedTerms}
+          onAcceptedTermsChange={setAcceptedTerms}
           onBack={() => setStep("staff")}
           onContinue={() => void finish()}
         />

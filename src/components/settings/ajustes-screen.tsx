@@ -23,6 +23,7 @@ import { BookingFormSection } from "./booking-form-section";
 import { BusinessSection } from "./business-section";
 import { CategorySection } from "./category-section";
 import { HoursSection } from "./hours-section";
+import { PrivacySection, type PrivacyActions } from "./privacy-section";
 import { ProfileSection } from "./profile-section";
 import type { ProfileActions, ProfileSettingsData } from "./profile-types";
 import { ServicesSection } from "./services-section";
@@ -38,6 +39,9 @@ export type AjustesScreenProps = {
   loadBookingFormBundle: () => Promise<BookingFormBundle | null>;
   profile: ProfileSettingsData;
   profileActions: ProfileActions;
+  /** WP-26 steg 7: "Privacidad y datos" (F12). */
+  deletionRequestedAt: string | null;
+  privacyActions: PrivacyActions;
 };
 
 export function AjustesScreen({
@@ -48,6 +52,8 @@ export function AjustesScreen({
   loadBookingFormBundle,
   profile,
   profileActions,
+  deletionRequestedAt,
+  privacyActions,
 }: AjustesScreenProps) {
   const [business, setBusiness] = useState<AjustesBusiness>(data.business);
   const [bookingForm, setBookingForm] = useState(initialBookingForm);
@@ -123,6 +129,12 @@ export function AjustesScreen({
           />
 
           <HoursSection hours={data.hours} action={actions.updateHours} />
+
+          <PrivacySection
+            slug={business.slug}
+            deletionRequestedAt={deletionRequestedAt}
+            actions={privacyActions}
+          />
         </div>
       </div>
     </AppShell>

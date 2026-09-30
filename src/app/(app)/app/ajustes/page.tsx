@@ -46,6 +46,12 @@ import {
   updateBusinessProfileAction,
   updateStaffTitleAction,
 } from "./profile-actions";
+import {
+  cancelBusinessDeletionAction,
+  exportBusinessAction,
+  loadPrivacyStatusAction,
+  requestBusinessDeletionAction,
+} from "./privacy-actions";
 
 export const metadata: Metadata = {
   title: nav.ajustes,
@@ -84,6 +90,12 @@ export default async function AjustesPage() {
         },
         businessCategory: null,
       };
+  // WP-26 steg 7: "Privacidad y datos" — `null` (ingen begärd radering) om
+  // statusen inte kunde läsas, hellre än att krascha sidan.
+  const privacyStatus = await loadPrivacyStatusAction();
+  const deletionRequestedAt = privacyStatus.ok
+    ? privacyStatus.deletionRequestedAt
+    : null;
 
   return (
     <AjustesScreen
@@ -123,6 +135,12 @@ export default async function AjustesPage() {
         confirmImageUpload: confirmImageUploadAction,
         deleteImage: deleteImageAction,
         reorderImages: reorderImagesAction,
+      }}
+      deletionRequestedAt={deletionRequestedAt}
+      privacyActions={{
+        exportBusiness: exportBusinessAction,
+        requestDeletion: requestBusinessDeletionAction,
+        cancelDeletion: cancelBusinessDeletionAction,
       }}
     />
   );

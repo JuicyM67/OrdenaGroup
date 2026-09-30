@@ -234,6 +234,31 @@ export async function exportBusiness(
 // Kontoradering: 30 dagars ångerfrist
 // ---------------------------------------------------------------------------
 
+export type DeletionStatusResult =
+  | { ok: true; deletionRequestedAt: string | null }
+  | { ok: false; code: string };
+
+/** Läser bara `deletion_requested_at` (Ajustes: "Privacidad y datos", WP-26
+ * steg 7) — ingen egen mutation, samma behörighetskontroll som de andra
+ * funktionerna här. */
+export async function getBusinessDeletionStatus(
+  userId: string,
+  businessId: string,
+): Promise<DeletionStatusResult> {
+  return withServiceTx(async (q) => {
+    if (!(await isOwnerOrAdmin(q, userId, businessId))) {
+      return { ok: false, code: "unauthorized" };
+    }
+    const r = await q.query<{ deletion_requested_at: string | null }>(
+      `select deletion_requested_at from public.businesses where id = $1`,
+      [businessId],
+    );
+    const row = r.rows[0];
+    if (!row) return { ok: false, code: "not_found" };
+    return { ok: true, deletionRequestedAt: row.deletion_requested_at };
+  });
+}
+
 /** Stänger kontot direkt (bokningssidan offline). Idempotent. */
 export async function requestBusinessDeletion(
   userId: string,

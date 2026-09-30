@@ -1209,6 +1209,14 @@ export const onboarding: Widen<typeof Es.onboarding> = {
     "Din sida tar inte emot bokningar förrän du lagt till en tjänst.",
   pasoOmitidoAviso: (p: { seccion: string }): string =>
     `Du hoppade över det här steget. Du kan slutföra det senare i Inställningar → ${p.seccion}.`,
+  terminos: {
+    prefijo: "Jag godkänner",
+    terminosLinkTexto: "villkoren",
+    medio: "och",
+    encargoLinkTexto: "biträdesavtalet",
+    sufijo: ".",
+    error: "Du måste godkänna villkoren och biträdesavtalet för att fortsätta.",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -1358,6 +1366,7 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     mercadopago: "Betalningar",
     cuenta: "Konto",
     formularioReserva: "Bokningsformulär",
+    privacidad: "Integritet och data",
   },
   reglas: {
     minNoticeLabel: "Minsta förvarning",
@@ -1389,6 +1398,25 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     "Någon annan ändrade det här. Ladda om för att se senaste versionen.",
   cuenta: {
     sesionComo: (p: { email: string }): string => `Inloggad som ${p.email}`,
+  },
+  privacidad: {
+    exportarTitulo: "Exportera ditt företags data",
+    exportarAyuda:
+      "Ladda ner en fil med information om ditt företag, dina kunder och dina bokningar.",
+    exportarCta: "Exportera data",
+    eliminarTitulo: "Radera ditt konto",
+    eliminarAyuda: "Vi rekommenderar att du exporterar dina data innan du raderar kontot.",
+    eliminarCta: "Radera konto",
+    eliminarDialogTitulo: "Radera ditt konto?",
+    eliminarDialogCuerpo: (p: { n: number }): string =>
+      `Din bokningssida stängs av direkt. Du har ${p.n} dagar på dig att ångra dig; därefter raderar vi allt permanent.`,
+    eliminarConfirmarSi: "Ja, radera kontot",
+    eliminarConfirmarNo: "Nej, behåll kontot",
+    solicitadaAviso: (p: { fecha: string }): string =>
+      `Ditt konto raderas ${p.fecha}.`,
+    solicitadaCtaDeshacer: "Ångra",
+    solicitadaDeshecha: "Raderingen avbröts.",
+    error: "Vi kunde inte slutföra åtgärden. Försök igen.",
   },
 };
 
@@ -1458,6 +1486,16 @@ export const clientes: Widen<typeof Es.clientes> = {
     marketingRechazado: "Kunden vill inte få erbjudanden.",
   },
   anonimizado: "Anonymiserad kund",
+  privacidad: {
+    ctaExportar: "Exportera data",
+    ctaAnonimizar: "Anonymisera kund",
+    confirmarTitulo: "Anonymisera den här kunden?",
+    confirmarCuerpo:
+      "Namn, mobilnummer, e-post och anteckningar tas bort. Bokningar och betalningar behålls, utan de uppgifterna. Går inte att ångra.",
+    confirmarSi: "Ja, anonymisera",
+    confirmarNo: "Nej, behåll",
+    error: "Vi kunde inte slutföra åtgärden. Försök igen.",
+  },
 };
 
 // ---------------------------------------------------------------------------

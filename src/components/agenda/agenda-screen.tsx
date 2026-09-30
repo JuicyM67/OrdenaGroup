@@ -40,6 +40,10 @@ import {
   weekTitle,
 } from "./agenda-view";
 import { BlockItem } from "./block-item";
+import type {
+  CustomerExportResult,
+  CustomerMutationResult,
+} from "./customer-privacy-actions";
 import { DayGrid } from "./day-grid";
 import { DayPillRow } from "./day-pill-row";
 import { EventBlock } from "./event-block";
@@ -118,6 +122,12 @@ export type AgendaScreenProps = {
     date: LocalDate;
     time: LocalTime;
   }) => Promise<AgendaActionResult>;
+  /** WP-26 steg 7 (F12): "Exportar datos"/"Anonimizar cliente" i popovern.
+   * `undefined` i design lab — hela raden döljs då (`event-popover.tsx`). */
+  onExportCustomer?: (customerId: string) => Promise<CustomerExportResult>;
+  onAnonymizeCustomer?: (
+    customerId: string,
+  ) => Promise<CustomerMutationResult>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -149,6 +159,8 @@ export function AgendaScreen({
   businessName = "",
   onCreateManualBooking,
   onMoveBooking,
+  onExportCustomer,
+  onAnonymizeCustomer,
 }: AgendaScreenProps) {
   const router = useRouter();
   const tz = data.timezone as TimeZone;
@@ -304,6 +316,16 @@ export function AgendaScreen({
             ? () => {
                 setPopoverOpen(false);
                 if (onMoveBooking) setMovingBooking(booking);
+              }
+            : undefined
+        }
+        onExportCustomer={onExportCustomer}
+        onAnonymizeCustomer={
+          onAnonymizeCustomer
+            ? async (customerId) => {
+                const result = await onAnonymizeCustomer(customerId);
+                if (result.ok) router.refresh();
+                return result;
               }
             : undefined
         }
