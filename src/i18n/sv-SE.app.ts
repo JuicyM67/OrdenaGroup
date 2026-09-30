@@ -1519,16 +1519,18 @@ export const horarios: Widen<typeof Es.horarios> = {
 
 export const ajustes: Widen<typeof Es.ajustes> = {
   secciones: {
-    negocio: "Ditt företag",
+    // WP-55: flikarna i /app/ajustes (ägarens feedback 2026-09-30) — korta nog för en
+    // vänsterkolumn med ikon + namn, samma sträng som respektive sektions egen rubrik.
+    negocio: "Företag",
     link: "Din bokningslänk",
     reglas: "Bokningsregler",
     servicios: "Tjänster",
-    equipo: "Personal",
+    equipo: "Team",
     horario: "Öppettider",
     mercadopago: "Betalningar",
     cuenta: "Konto",
     formularioReserva: "Bokningsformulär",
-    privacidad: "Integritet och data",
+    privacidad: "Integritet",
     socios: "Medlemmar",
   },
   socios: {
@@ -1657,6 +1659,30 @@ export const clientes: Widen<typeof Es.clientes> = {
     notificarCta: "Meddela kunden",
     notificarEnviado: "Vi meddelade kunden via e-post.",
     notificarYaEnviado: "Vi har redan meddelat kunden om medlemskapet.",
+    mensaje: {
+      titulo: "Skicka meddelande",
+      paraLabel: "Till",
+      textoLabel: "Meddelande",
+      textoPlaceholder: "Skriv ditt meddelande…",
+      contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+      segmentosSms: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "sms" : "sms (flera meddelanden)"}`,
+      notaWhatsapp: "Skickas som sms.",
+      ctaCancelar: "Avbryt",
+      ctaEnviar: "Skicka",
+      enviando: "Skickar…",
+      enviado: "Meddelandet skickades.",
+      error: {
+        vacio: "Skriv ett meddelande.",
+        forbidden:
+          "Du har inte behörighet att skicka meddelanden till den här kunden.",
+        no_phone: "Den här kunden saknar ett giltigt mobilnummer.",
+        too_long: "Meddelandet får inte vara längre än 320 tecken.",
+        rate_limited:
+          "Du har skickat många meddelanden. Vänta en stund och försök igen.",
+        generico: "Vi kunde inte skicka meddelandet. Försök igen.",
+      },
+    },
   },
   notas: {
     label: "Anteckningar",
@@ -2000,6 +2026,8 @@ export const sms: Widen<typeof Es.sms> = {
     `Ny bokning: ${p.cliente} bokade ${p.servicio} ${p.fecha} kl. ${p.hora}.`,
   codigoAcceso: (p: { codigo: string }): string =>
     `Din inloggningskod är ${p.codigo}. Dela den aldrig med någon.`,
+  mensajeLibre: (p: { negocio: string; texto: string }): string =>
+    `${p.negocio}: ${p.texto}`,
   pie: "Svara STOPP för att avsluta.",
 };
 

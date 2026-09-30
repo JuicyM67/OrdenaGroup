@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+
 // Sección "Socios" (WP-54, Ajustes): förmånen för kunder markerade som
 // `customers.is_member` — av/på + rabatt i % + valfri text. Samma
 // formmönster som `BusinessSection` (eget kort, egen "Guardar cambios").
@@ -36,9 +38,11 @@ export function MemberSection({
   action,
 }: {
   business: AjustesBusiness;
-  onSaved: (business: AjustesBusiness) => void;
+  /** Utan onSaved laddas sidan om (flikarna i WP-55 är egna rutter). */
+  onSaved?: (business: AjustesBusiness) => void;
   action: AjustesActions["updateMemberSettings"];
 }) {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(() => toFormState(business));
   const [error, setError] = useState<string | undefined>();
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
@@ -62,7 +66,7 @@ export function MemberSection({
       });
       if (result.ok) {
         setStatus("saved");
-        onSaved({
+        (onSaved ?? (() => router.refresh()))({
           ...business,
           memberDiscountPct: form.enabled ? Number(form.discountPct) : null,
           memberBenefitText:

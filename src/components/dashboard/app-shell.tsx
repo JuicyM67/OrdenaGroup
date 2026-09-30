@@ -63,7 +63,7 @@ export function AppShell({
         onConfirmRequest={onConfirmRequest}
         onDeclineRequest={onDeclineRequest}
       />
-      <main className="flex flex-1 flex-col gap-6 px-5 py-5 pb-28 lg:overflow-hidden lg:rounded-shell lg:bg-canvas lg:px-8 lg:py-7 lg:pb-7">
+      <main className="flex flex-1 flex-col gap-6 px-5 py-5 pb-28 lg:min-h-0 lg:overflow-hidden lg:rounded-shell lg:bg-canvas lg:px-8 lg:py-7 lg:pb-7">
         {children}
       </main>
       {mobileTabBar}

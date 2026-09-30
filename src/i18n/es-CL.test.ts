@@ -177,6 +177,8 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
    * `email.invitacionEquipo` (WP-46, D-034). */
   accion: "cancelar esta reserva",
   invitadoPor: "Diego",
+  /** WP-55: `sms.mensajeLibre`. */
+  texto: "Recuerda traer tu carnet.",
 };
 
 function invocarGenerico(fn: unknown): unknown {

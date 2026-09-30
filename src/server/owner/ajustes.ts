@@ -184,12 +184,10 @@ function shortTime(t: string): string {
   return t.slice(0, 5);
 }
 
-export async function loadAjustesDataIn(
+async function loadBusinessRow(
   q: Queryable,
   businessId: string,
-  userId?: string,
-): Promise<AjustesData> {
-  const member = userId ? await loadMember(q, userId, businessId) : null;
+): Promise<AjustesBusiness> {
   const businessRes = await q.query<BusinessRow>(
     `select name, slug, comuna, phone, address, min_notice_minutes, max_days_ahead,
             cancel_window_hours, slot_interval_minutes, auto_confirm_bookings,
@@ -200,7 +198,26 @@ export async function loadAjustesDataIn(
   );
   const b = businessRes.rows[0];
   if (!b) throw new Error("loadAjustesData: företaget hittades inte");
+  return {
+    name: b.name,
+    slug: b.slug,
+    comuna: b.comuna,
+    phone: b.phone ?? "",
+    address: b.address ?? "",
+    minNoticeMinutes: b.min_notice_minutes,
+    maxDaysAhead: b.max_days_ahead,
+    cancelWindowHours: b.cancel_window_hours,
+    slotIntervalMinutes: b.slot_interval_minutes,
+    autoConfirmBookings: b.auto_confirm_bookings,
+    memberDiscountPct: b.member_discount_pct,
+    memberBenefitText: b.member_benefit_text,
+  };
+}
 
+async function loadServiceRows(
+  q: Queryable,
+  businessId: string,
+): Promise<AjustesService[]> {
   const servicesRes = await q.query<ServiceRow>(
     `select id, name, duration_min, price_clp, buffer_after_min, active,
             description
@@ -209,6 +226,21 @@ export async function loadAjustesDataIn(
       order by sort, name`,
     [businessId],
   );
+  return servicesRes.rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    durationMin: s.duration_min,
+    priceClp: s.price_clp,
+    bufferAfterMin: s.buffer_after_min,
+    active: s.active,
+    description: s.description ?? "",
+  }));
+}
+
+async function loadStaffRows(
+  q: Queryable,
+  businessId: string,
+): Promise<AjustesStaffMember[]> {
   const staffRes = await q.query<StaffRow>(
     `select id, name, active, title
        from public.staff
@@ -222,6 +254,25 @@ export async function loadAjustesDataIn(
       where business_id = $1`,
     [businessId],
   );
+  const serviceIdsByStaff = new Map<string, string[]>();
+  for (const row of staffServicesRes.rows) {
+    const list = serviceIdsByStaff.get(row.staff_id) ?? [];
+    list.push(row.service_id);
+    serviceIdsByStaff.set(row.staff_id, list);
+  }
+  return staffRes.rows.map((s) => ({
+    id: s.id,
+    name: s.name,
+    active: s.active,
+    title: s.title ?? "",
+    serviceIds: serviceIdsByStaff.get(s.id) ?? [],
+  }));
+}
+
+async function loadHoursRows(
+  q: Queryable,
+  businessId: string,
+): Promise<AjustesHour[]> {
   const hoursRes = await q.query<HoursRow>(
     `select weekday, start_time, end_time
        from public.business_hours
@@ -229,18 +280,9 @@ export async function loadAjustesDataIn(
       order by weekday`,
     [businessId],
   );
-
-  const serviceIdsByStaff = new Map<string, string[]>();
-  for (const row of staffServicesRes.rows) {
-    const list = serviceIdsByStaff.get(row.staff_id) ?? [];
-    list.push(row.service_id);
-    serviceIdsByStaff.set(row.staff_id, list);
-  }
-
   const hoursByWeekday = new Map<number, HoursRow>();
   for (const row of hoursRes.rows) hoursByWeekday.set(row.weekday, row);
-
-  const hours: AjustesHour[] = [1, 2, 3, 4, 5, 6, 7].map((weekday) => {
+  return [1, 2, 3, 4, 5, 6, 7].map((weekday) => {
     const row = hoursByWeekday.get(weekday);
     return row
       ? {
@@ -256,41 +298,21 @@ export async function loadAjustesDataIn(
           end: "19:00",
         };
   });
+}
 
-  return {
-    member: memberView(member),
-    business: {
-      name: b.name,
-      slug: b.slug,
-      comuna: b.comuna,
-      phone: b.phone ?? "",
-      address: b.address ?? "",
-      minNoticeMinutes: b.min_notice_minutes,
-      maxDaysAhead: b.max_days_ahead,
-      cancelWindowHours: b.cancel_window_hours,
-      slotIntervalMinutes: b.slot_interval_minutes,
-      autoConfirmBookings: b.auto_confirm_bookings,
-      memberDiscountPct: b.member_discount_pct,
-      memberBenefitText: b.member_benefit_text,
-    },
-    services: servicesRes.rows.map((s) => ({
-      id: s.id,
-      name: s.name,
-      durationMin: s.duration_min,
-      priceClp: s.price_clp,
-      bufferAfterMin: s.buffer_after_min,
-      active: s.active,
-      description: s.description ?? "",
-    })),
-    staff: staffRes.rows.map((s) => ({
-      id: s.id,
-      name: s.name,
-      active: s.active,
-      title: s.title ?? "",
-      serviceIds: serviceIdsByStaff.get(s.id) ?? [],
-    })),
-    hours,
-  };
+export async function loadAjustesDataIn(
+  q: Queryable,
+  businessId: string,
+  userId?: string,
+): Promise<AjustesData> {
+  const member = userId ? await loadMember(q, userId, businessId) : null;
+  const [business, services, staff, hours] = await Promise.all([
+    loadBusinessRow(q, businessId),
+    loadServiceRows(q, businessId),
+    loadStaffRows(q, businessId),
+    loadHoursRows(q, businessId),
+  ]);
+  return { member: memberView(member), business, services, staff, hours };
 }
 
 export function loadAjustesData(
@@ -298,6 +320,42 @@ export function loadAjustesData(
   businessId: string,
 ): Promise<AjustesData> {
   return withOwnerTx(userId, (q) => loadAjustesDataIn(q, businessId, userId));
+}
+
+// ---------------------------------------------------------------------------
+// WP-55: smalare läsningar, en per flik i /app/ajustes/[flik] — samma rader som
+// `loadAjustesDataIn` ovan plockar isär, men utan att hämta det flikar INTE visar
+// ("Tu negocio"/"Reglas de reserva"/"Socios" visar alla tre bara raden i `businesses`,
+// t.ex.). `member` (behörigheter) läses redan av `getCurrentMember` i varje sidas
+// `access.ts`/`page.tsx` — behövs inte här igen.
+// ---------------------------------------------------------------------------
+
+export function loadAjustesBusiness(
+  userId: string,
+  businessId: string,
+): Promise<AjustesBusiness> {
+  return withOwnerTx(userId, (q) => loadBusinessRow(q, businessId));
+}
+
+export function loadAjustesServices(
+  userId: string,
+  businessId: string,
+): Promise<AjustesService[]> {
+  return withOwnerTx(userId, (q) => loadServiceRows(q, businessId));
+}
+
+export function loadAjustesStaff(
+  userId: string,
+  businessId: string,
+): Promise<AjustesStaffMember[]> {
+  return withOwnerTx(userId, (q) => loadStaffRows(q, businessId));
+}
+
+export function loadAjustesHours(
+  userId: string,
+  businessId: string,
+): Promise<AjustesHour[]> {
+  return withOwnerTx(userId, (q) => loadHoursRows(q, businessId));
 }
 
 // ---------------------------------------------------------------------------

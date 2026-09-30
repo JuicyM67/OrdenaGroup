@@ -2,7 +2,8 @@
 //
 // WP-47: "+ Nueva reserva" öppnar den riktiga dialogen (`onNewBooking`, samma som
 // toolbar/MobileDayNav i agenda-screen.tsx) i stället för att vara ett no-op. "+ Agregar
-// profesional" länkar till /app/ajustes#equipo (personalsektionen finns redan där). Ajustes
+// profesional" länkar till /app/ajustes/equipo (WP-55: egen flik, personalsektionen finns
+// där). Ajustes
 // och "Cerrar sesión" läggs till längst ned, samma mönster som main-nav.tsx. WP-24: Clientes
 // och Caja (samma D-034-spärr på Caja som main-nav.tsx) läggs till strax ovanför Ajustes —
 // referensen (Agenda.dc.html) saknar dem helt i den här panelen (bara logga/+ny/personal),
@@ -80,7 +81,7 @@ export function AgendaRail({
         />
       ))}
       <NavRailAction label={agenda.agregarProfesional} asChild>
-        <Link href="/app/ajustes#equipo" prefetch={false}>
+        <Link href="/app/ajustes/equipo" prefetch={false}>
           <Plus
             aria-hidden="true"
             className="size-5"

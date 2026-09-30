@@ -288,6 +288,45 @@ async function loadMemberWelcomeContext(
 }
 
 // ---------------------------------------------------------------------------
+// WP-55: `mensajeLibre` — mensaje libre desde la ficha del cliente
+// (`/app/clientes/[id]`, `sendCustomerMessage`). Sin `booking_id`: el cliente
+// se busca vía `payload.customerId` (mismo patrón D-029 que
+// `loadMemberWelcomeContext` arriba) — solo `payload.text` (el texto que
+// escribió el dueño/staff) va en la fila, nunca el teléfono. Se cancela si el
+// cliente fue anonimizado o perdió el teléfono entre el encolado y el envío.
+// ---------------------------------------------------------------------------
+
+type FreeMessageContext = {
+  sendable: boolean;
+  phone: string | null;
+  negocio: string;
+};
+
+async function loadFreeMessageContext(
+  businessId: string,
+  customerId: string,
+): Promise<FreeMessageContext | undefined> {
+  return withServiceTx(async (q) => {
+    const r = await q.query<{
+      sendable: boolean;
+      phone_e164: string | null;
+      negocio: string;
+    }>(
+      `select (c.anonymized_at is null and c.phone_e164 is not null) as sendable,
+              c.phone_e164, b.name as negocio
+         from public.customers c
+         join public.businesses b on b.id = c.business_id
+        where c.business_id = $1 and c.id = $2`,
+      [businessId, customerId],
+    );
+    const row = r.rows[0];
+    return row
+      ? { sendable: row.sendable, phone: row.phone_e164, negocio: row.negocio }
+      : undefined;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Länkar och mallars data
 // ---------------------------------------------------------------------------
 
@@ -870,12 +909,43 @@ async function processMemberWelcomeRow(
   return "sent";
 }
 
+/** WP-55: `mensajeLibre` — `payload.text` es el mensaje tal cual lo escribió
+ * el dueño/staff (`sendCustomerMessage` ya lo validó, ≤ 320 caracteres); acá
+ * solo se antepone `negocio` como remitente (`sms.mensajeLibre`). */
+async function processFreeMessageRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const customerId =
+    typeof row.payload.customerId === "string" ? row.payload.customerId : "";
+  const texto = typeof row.payload.text === "string" ? row.payload.text : "";
+  if (!customerId || !texto) throw new OutboxSendError("invalid_payload");
+  const ctx = await loadFreeMessageContext(row.businessId, customerId);
+  if (!ctx) throw new OutboxSendError("no_customer");
+  // El cliente pudo ser anonimizado o perder el teléfono entre el encolado y
+  // el envío — el mensaje queda inactual.
+  if (!ctx.sendable || !ctx.phone) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const r = await sendSms({
+    to: ctx.phone,
+    template: "mensajeLibre",
+    data: { negocio: ctx.negocio, texto },
+    idempotencyKey: row.dedupeKey,
+  });
+  await finalizeSent(row, r.id);
+  return "sent";
+}
+
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
   try {
     if (row.template === "bienvenidaMiembro") {
       return await processMemberWelcomeRow(row);
+    }
+    if (row.template === "mensajeLibre") {
+      return await processFreeMessageRow(row);
     }
     // `await` explícito (no solo `return processInviteeRow(row)`): un
     // `return <promise>` dentro de un `try` NO deja que el `catch` de abajo

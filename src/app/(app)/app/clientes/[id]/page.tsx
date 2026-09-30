@@ -8,7 +8,9 @@ import { z } from "zod";
 
 import { logout } from "@/app/auth/actions";
 import { CustomerDetailScreen } from "@/components/customers/customer-detail-screen";
+import { market } from "@/config/brand";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { sendCustomerMessage } from "@/server/messaging/outbox/customer-message";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import {
   getCustomerDetail,
@@ -98,6 +100,20 @@ export default async function ClienteDetallePage({
     );
   };
 
+  // WP-55: "Enviar mensaje" — bara SE (ClickSend). I CL öppnar dialogen
+  // `wa.me` direkt i klienten, utan servern (`MessageDialog`, D-006/D-007).
+  const onSendMessage = async (text: string) => {
+    "use server";
+    const result = await sendCustomerMessage({
+      businessId: current.business.id,
+      customerId: parsedId.data,
+      actorUserId: user.id,
+      text,
+    });
+    if (!result.ok) return { ok: false as const, code: result.error };
+    return { ok: true as const };
+  };
+
   return (
     <CustomerDetailScreen
       customer={customer}
@@ -108,6 +124,7 @@ export default async function ClienteDetallePage({
       onAnonymizeCustomer={onAnonymizeCustomer}
       onSetMember={onSetMember}
       onNotifyMember={onNotifyMember}
+      onSendMessage={market === "SE" ? onSendMessage : undefined}
     />
   );
 }

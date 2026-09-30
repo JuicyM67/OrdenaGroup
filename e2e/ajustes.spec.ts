@@ -2,6 +2,10 @@
 // slug barberia-norte) cambia el precio de un servicio en /app/ajustes y lo ve reflejado en
 // /barberia-norte. Un solo test (no la storageState compartida, que no tiene negocio) — mismo
 // motivo que e2e/owner-live.spec.ts: max_frequency 1s del magic link y "spara tokens".
+//
+// WP-55: Ajustes es ahora un panel con pestañas, cada una su propia ruta
+// (/app/ajustes/negocio, /app/ajustes/servicios, …) — /app/ajustes solo redirige a la
+// primera. "Nombre del negocio" y los servicios ya no están en la misma pantalla.
 import { expect, test } from "@playwright/test";
 
 import { waitForConfirmLink } from "./helpers/mailpit";
@@ -28,6 +32,7 @@ test("Ajustes: cambiar el precio de un servicio se ve en /barberia-norte", async
   await page.waitForURL("**/app/inicio");
 
   await page.goto("/app/ajustes");
+  await page.waitForURL("**/app/ajustes/negocio");
   await expect(
     page.getByRole("heading", { level: 1, name: "Ajustes" }),
   ).toBeVisible();
@@ -39,6 +44,7 @@ test("Ajustes: cambiar el precio de un servicio se ve en /barberia-norte", async
     "Barbería Norte",
   );
 
+  await page.goto("/app/ajustes/servicios");
   const row = page
     .getByTestId("service-row")
     .filter({ hasText: "Corte clásico" });

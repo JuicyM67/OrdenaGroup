@@ -17,6 +17,7 @@ import {
   type CustomerMutationResult,
 } from "@/components/agenda/customer-privacy-actions";
 import { CustomerAnswersCard } from "./customer-answers-card";
+import { MessageDialog } from "./message-dialog";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,12 +37,13 @@ import {
 } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { formatPhone, isE164 } from "@/lib/format/phone";
-import { ArrowLeft, Mail, MessageCircle, Phone } from "lucide-react";
+import { ArrowLeft, Mail, MessageSquare, Phone } from "lucide-react";
 
 import type {
   CustomerBookingRow,
   CustomerDetail,
   NotifyMemberResult,
+  SendMessageResult,
   SetMemberResult,
 } from "./types";
 
@@ -61,6 +63,10 @@ export type CustomerDetailScreenProps = {
   /** WP-54: "Avisar al cliente" — köar `bienvenidaMiembro`. `undefined`
    * döljer knappen. */
   onNotifyMember?: () => Promise<NotifyMemberResult>;
+  /** WP-55: "Enviar mensaje" (`MessageDialog`). Bara SE (`sendCustomerMessage`,
+   * SMS via ClickSend) — `undefined` i CL, vars dialog öppnar `wa.me` utan
+   * servern (se `message-dialog.tsx`). */
+  onSendMessage?: (text: string) => Promise<SendMessageResult>;
 };
 
 const STATUS_CHIP: Record<
@@ -122,6 +128,7 @@ export function CustomerDetailScreen({
   onAnonymizeCustomer,
   onSetMember,
   onNotifyMember,
+  onSendMessage,
 }: CustomerDetailScreenProps) {
   const router = useRouter();
   const [notes, setNotes] = useState(customer.notes ?? "");
@@ -135,6 +142,7 @@ export function CustomerDetailScreen({
   const [notifyStatus, setNotifyStatus] = useState<
     "idle" | "sending" | "sent" | "already" | "error"
   >("idle");
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
 
   const phone =
     customer.phone && isE164(customer.phone) ? customer.phone : null;
@@ -249,25 +257,19 @@ export function CustomerDetailScreen({
                 {clientes.ficha.ctaLlamar}
               </a>
             </Button>
-            <Button asChild variant="secondary" size="sm">
-              <a href={`sms:${phone}`}>{clientes.ficha.ctaSms}</a>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setMessageDialogOpen(true)}
+            >
+              <MessageSquare
+                aria-hidden="true"
+                className="size-4"
+                strokeWidth={strokeArrow}
+              />
+              {isCl ? clientes.ficha.ctaWhatsapp : clientes.ficha.ctaSms}
             </Button>
-            {isCl ? (
-              <Button asChild variant="secondary" size="sm">
-                <a
-                  href={`https://wa.me/${phone.replace("+", "")}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <MessageCircle
-                    aria-hidden="true"
-                    className="size-4"
-                    strokeWidth={strokeArrow}
-                  />
-                  {clientes.ficha.ctaWhatsapp}
-                </a>
-              </Button>
-            ) : null}
           </>
         ) : null}
         {customer.email ? (
@@ -283,6 +285,17 @@ export function CustomerDetailScreen({
           </Button>
         ) : null}
       </div>
+
+      {phone ? (
+        <MessageDialog
+          open={messageDialogOpen}
+          onOpenChange={setMessageDialogOpen}
+          customerName={customer.name}
+          phone={phone}
+          channel={isCl ? "whatsapp" : "sms"}
+          onSend={onSendMessage}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         <Card radius="tile" padding="lg" className="flex flex-col gap-3">

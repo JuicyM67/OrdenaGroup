@@ -1,9 +1,13 @@
 "use client";
 
-// Sección "Tu negocio" + "Reglas de reserva" (WP-15b slim, ver plan). Mismos campos y
-// mismas reglas de slug que onboarding (business-step.tsx), reutilizando sus validadores
-// de cliente. Un solo formulario, un solo botón "Guardar cambios": las dos secciones
-// escriben en la misma fila de `businesses`.
+import { useRouter } from "next/navigation";
+
+// Sección "Tu negocio" (WP-15b slim → WP-55: separada de "Reglas de reserva", ver
+// `booking-rules-section.tsx`, ahora cada una en su propia pestaña de Ajustes). Mismos
+// campos y mismas reglas de slug que onboarding (business-step.tsx), reutilizando sus
+// validadores de cliente. Las dos secciones siguen escribiendo en la misma fila de
+// `businesses` (mismo `action`) — esta solo edita/envía los campos de "Tu negocio";
+// los campos de reglas viajan sin cambios desde `business` (ver `handleSubmit`).
 import { useState } from "react";
 
 import {
@@ -13,14 +17,11 @@ import {
 } from "@/components/onboarding/client-validation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Switch } from "@/components/ui/switch";
 import { TextField } from "@/components/ui/text-field";
 import { ajustes, negocio } from "@/i18n";
 
 import { ajustesErrorText } from "./error-text";
 import type { AjustesActions, AjustesBusiness } from "./types";
-
-const SLOT_INTERVALS = [5, 10, 15, 20, 30, 60] as const;
 
 type FormState = {
   name: string;
@@ -28,11 +29,6 @@ type FormState = {
   comuna: string;
   phone: string;
   address: string;
-  minNoticeMinutes: string;
-  maxDaysAhead: string;
-  cancelWindowHours: string;
-  slotIntervalMinutes: string;
-  autoConfirmBookings: boolean;
 };
 
 function toFormState(b: AjustesBusiness): FormState {
@@ -42,11 +38,6 @@ function toFormState(b: AjustesBusiness): FormState {
     comuna: b.comuna,
     phone: b.phone,
     address: b.address,
-    minNoticeMinutes: String(b.minNoticeMinutes),
-    maxDaysAhead: String(b.maxDaysAhead),
-    cancelWindowHours: String(b.cancelWindowHours),
-    slotIntervalMinutes: String(b.slotIntervalMinutes),
-    autoConfirmBookings: b.autoConfirmBookings,
   };
 }
 
@@ -58,9 +49,11 @@ export function BusinessSection({
   action,
 }: {
   business: AjustesBusiness;
-  onSaved: (business: AjustesBusiness) => void;
+  /** Utan onSaved laddas sidan om (flikarna i WP-55 är egna rutter). */
+  onSaved?: (business: AjustesBusiness) => void;
   action: AjustesActions["updateBusinessSettings"];
 }) {
+  const router = useRouter();
   const [form, setForm] = useState<FormState>(() => toFormState(business));
   const [errors, setErrors] = useState<Errors>({});
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">(
@@ -96,29 +89,23 @@ export function BusinessSection({
         comuna: form.comuna,
         phone: form.phone,
         address: form.address,
-        minNoticeMinutes: Number(form.minNoticeMinutes),
-        maxDaysAhead: Number(form.maxDaysAhead),
-        cancelWindowHours: Number(form.cancelWindowHours),
-        slotIntervalMinutes: Number(form.slotIntervalMinutes),
-        autoConfirmBookings: form.autoConfirmBookings,
+        // "Reglas de reserva" vive en su propia pestaña (booking-rules-section.tsx) pero
+        // `updateBusinessSettings` escribe la fila entera: viajan sin cambios.
+        minNoticeMinutes: business.minNoticeMinutes,
+        maxDaysAhead: business.maxDaysAhead,
+        cancelWindowHours: business.cancelWindowHours,
+        slotIntervalMinutes: business.slotIntervalMinutes,
+        autoConfirmBookings: business.autoConfirmBookings,
       });
       if (result.ok) {
         setStatus("saved");
-        onSaved({
-          // WP-54: `memberDiscountPct`/`memberBenefitText` hör till
-          // `MemberSection`, inte till det här formuläret — bevara det
-          // senaste kända värdet i stället för att tappa det.
+        (onSaved ?? (() => router.refresh()))({
           ...business,
           name: form.name,
           slug: form.slug.trim().toLowerCase(),
           comuna: form.comuna,
           phone: form.phone,
           address: form.address,
-          minNoticeMinutes: Number(form.minNoticeMinutes),
-          maxDaysAhead: Number(form.maxDaysAhead),
-          cancelWindowHours: Number(form.cancelWindowHours),
-          slotIntervalMinutes: Number(form.slotIntervalMinutes),
-          autoConfirmBookings: form.autoConfirmBookings,
         });
       } else {
         setStatus("error");
@@ -131,7 +118,6 @@ export function BusinessSection({
   }
 
   const slugChanged = form.slug.trim().toLowerCase() !== business.slug;
-  const maxDaysAheadN = Number(form.maxDaysAhead) || 0;
 
   return (
     <form
@@ -194,83 +180,6 @@ export function BusinessSection({
           onChange={(e) => set("address", e.target.value)}
           maxLength={200}
         />
-      </Card>
-
-      <Card radius="tile" padding="lg" className="flex flex-col gap-4">
-        <h2 className="text-18 font-bold text-ink">
-          {ajustes.secciones.reglas}
-        </h2>
-
-        <TextField
-          label={ajustes.reglas.minNoticeLabel}
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={10080}
-          value={form.minNoticeMinutes}
-          onChange={(e) => set("minNoticeMinutes", e.target.value)}
-          required
-        />
-
-        <TextField
-          label={ajustes.reglas.maxDaysAheadLabel({ n: maxDaysAheadN })}
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={365}
-          value={form.maxDaysAhead}
-          onChange={(e) => set("maxDaysAhead", e.target.value)}
-          required
-        />
-
-        <TextField
-          label={ajustes.reglas.cancelWindowLabel}
-          hint={ajustes.reglas.cancelWindowAyuda}
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={168}
-          value={form.cancelWindowHours}
-          onChange={(e) => set("cancelWindowHours", e.target.value)}
-          required
-        />
-
-        <div className="flex flex-col gap-1.5">
-          <label
-            htmlFor="slot-interval"
-            className="text-13 font-semibold text-ink"
-          >
-            {ajustes.reglas.slotIntervalLabel}
-          </label>
-          <select
-            id="slot-interval"
-            value={form.slotIntervalMinutes}
-            onChange={(e) => set("slotIntervalMinutes", e.target.value)}
-            className="h-13 w-full rounded-control border-2 border-transparent bg-field px-4 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            {SLOT_INTERVALS.map((n) => (
-              <option key={n} value={n}>
-                {n} min
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-3 border-t border-line-strong pt-4">
-          <div className="min-w-0 flex-1">
-            <p className="text-14 font-semibold text-ink">
-              {ajustes.reglas.confirmarAutomatico}
-            </p>
-            <p className="mt-0.5 text-12 text-muted">
-              {ajustes.reglas.confirmarAutomaticoAyuda}
-            </p>
-          </div>
-          <Switch
-            checked={form.autoConfirmBookings}
-            onChange={(checked) => set("autoConfirmBookings", checked)}
-            label={ajustes.reglas.confirmarAutomatico}
-          />
-        </div>
       </Card>
 
       {submitError ? (
