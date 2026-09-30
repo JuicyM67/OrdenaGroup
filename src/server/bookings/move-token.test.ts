@@ -86,7 +86,14 @@ describe("moveIn roterar token (D-029)", () => {
   });
 
   it("två flyttar ger två olika token", async () => {
-    const q = { query: async () => ({ rows: [] }) };
+    // WP-46: aktören är en medlem → `loadMember` läser `memberships` (ägaren).
+    const q = {
+      query: async (text: string) => ({
+        rows: /from public\.memberships/.test(text)
+          ? [{ role: "owner", staff_id: null }]
+          : [],
+      }),
+    };
     const input = {
       businessId: BIZ,
       ref: { bookingId: BOOKING },

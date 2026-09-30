@@ -32,7 +32,13 @@ const MAX_ATTEMPTS = 2;
 export async function runAs<T, E extends string>(
   actor: Actor,
   fn: (q: Queryable) => Promise<Result<T, E>>,
-  opts: { onConflict?: { ok: false; error: E } } = {},
+  opts: {
+    onConflict?: { ok: false; error: E };
+    /** WP-46: 42501 från RLS/triggern (`bookings_guard_status`) när en
+     * personalaktör saknar behörighet. Databasen har sista ordet; TS-
+     * kontrollen (`src/server/bookings/authz.ts`) speglar samma regler. */
+    onForbidden?: { ok: false; error: E };
+  } = {},
 ): Promise<Result<T, E>> {
   const guarded = async (q: Queryable) => {
     const r = await fn(q);
@@ -47,6 +53,9 @@ export async function runAs<T, E extends string>(
     } catch (e) {
       if (e instanceof Rollback) return (e as Rollback<E>).result;
       if (e instanceof SchedulingInfraError) throw e;
+      if (opts.onForbidden && pgErrorCode(e) === "42501") {
+        return opts.onForbidden;
+      }
       if (isRetryableConflict(e)) {
         if (attempt < MAX_ATTEMPTS) continue;
         if (opts.onConflict) return opts.onConflict;

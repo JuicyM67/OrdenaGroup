@@ -15,6 +15,7 @@ import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
 import { mediaPathFromUrl } from "@/server/bookings/media";
+import { loadMember } from "@/server/db/permissions";
 
 import {
   ajustesHoursInputSchema,
@@ -22,6 +23,12 @@ import {
   ajustesStaffInputSchema,
   businessSettingsInputSchema,
 } from "./ajustes-schemas";
+import {
+  authzCode,
+  memberView,
+  requireMemberPerm,
+  type MemberView,
+} from "./member";
 
 export type AjustesBusiness = {
   name: string;
@@ -65,6 +72,9 @@ export type AjustesHour = {
 };
 
 export type AjustesData = {
+  /** WP-46: den inloggades roll och effektiva behörigheter (UI döljer
+   * sektioner; servern kontrollerar ändå varje mutation). */
+  member: MemberView;
   business: AjustesBusiness;
   services: AjustesService[];
   staff: AjustesStaffMember[];
@@ -85,6 +95,8 @@ function pgConstraint(e: unknown): string | undefined {
 
 /** Samma mönster som complete-onboarding.ts: bara SQLSTATE/constraint, aldrig detail. */
 function mapDbError(e: unknown): string {
+  const authz = authzCode(e);
+  if (authz) return authz;
   const code = pgErrorCode(e);
   const constraint = pgConstraint(e);
   if (code === "42501") return "unauthorized";
@@ -156,7 +168,9 @@ function shortTime(t: string): string {
 export async function loadAjustesDataIn(
   q: Queryable,
   businessId: string,
+  userId?: string,
 ): Promise<AjustesData> {
+  const member = userId ? await loadMember(q, userId, businessId) : null;
   const businessRes = await q.query<BusinessRow>(
     `select name, slug, comuna, phone, address, min_notice_minutes, max_days_ahead,
             cancel_window_hours, slot_interval_minutes, auto_confirm_bookings
@@ -224,6 +238,7 @@ export async function loadAjustesDataIn(
   });
 
   return {
+    member: memberView(member),
     business: {
       name: b.name,
       slug: b.slug,
@@ -260,7 +275,7 @@ export function loadAjustesData(
   userId: string,
   businessId: string,
 ): Promise<AjustesData> {
-  return withOwnerTx(userId, (q) => loadAjustesDataIn(q, businessId));
+  return withOwnerTx(userId, (q) => loadAjustesDataIn(q, businessId, userId));
 }
 
 // ---------------------------------------------------------------------------
@@ -282,6 +297,7 @@ export async function updateBusinessSettings(
   const input = parsed.data;
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_settings");
       const r = await q.query(
         `update public.businesses
             set name = $1, slug = $2, comuna = $3, phone = $4, address = $5,
@@ -341,6 +357,7 @@ export async function createService(
   const input = parsed.data;
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_catalog");
       const sort = await nextSort(q, "services", businessId);
       const r = await q.query<{ id: string }>(
         `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort, description)
@@ -380,6 +397,7 @@ export async function updateService(
   const input = parsed.data;
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_catalog");
       const r = await q.query(
         // WP-41: `description` utelämnad (äldre formulär) = oförändrad.
         `update public.services
@@ -410,13 +428,18 @@ export async function setServiceActive(
   serviceId: string,
   active: boolean,
 ): Promise<MutationResult> {
-  return withOwnerTx(userId, async (q) => {
-    const r = await q.query(
-      `update public.services set active = $1 where id = $2 and business_id = $3`,
-      [active, serviceId, businessId],
-    );
-    return assertUpdated(r.rowCount) ?? { ok: true };
-  });
+  try {
+    return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_catalog");
+      const r = await q.query(
+        `update public.services set active = $1 where id = $2 and business_id = $3`,
+        [active, serviceId, businessId],
+      );
+      return assertUpdated(r.rowCount) ?? { ok: true };
+    });
+  } catch (e) {
+    return { ok: false, code: mapDbError(e) };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -457,6 +480,7 @@ export async function createStaff(
   const input = parsed.data;
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_manage_team");
       const sort = await nextSort(q, "staff", businessId);
       const r = await q.query<{ id: string }>(
         `insert into public.staff (business_id, name, color, sort)
@@ -489,6 +513,7 @@ export async function updateStaff(
   const input = parsed.data;
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_manage_team");
       const r = await q.query(
         `update public.staff set name = $1 where id = $2 and business_id = $3`,
         [input.name, staffId, businessId],
@@ -514,26 +539,32 @@ export async function setStaffActive(
   // direkt i stället för att bli kvar oanvänd. Storage-borttagningen sker
   // EFTER commit (samma mönster/motivering som `src/server/owner/profile.ts`).
   let photoToRemove: string | null = null;
-  const result = await withOwnerTx<MutationResult>(userId, async (q) => {
-    if (!active) {
-      const prev = await q.query<{ url: string | null }>(
-        `select photo_url as url from public.staff
+  let result: MutationResult;
+  try {
+    result = await withOwnerTx<MutationResult>(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_manage_team");
+      if (!active) {
+        const prev = await q.query<{ url: string | null }>(
+          `select photo_url as url from public.staff
           where id = $1 and business_id = $2 for update`,
-        [staffId, businessId],
-      );
-      if (prev.rows[0]?.url) {
-        photoToRemove = mediaPathFromUrl(prev.rows[0].url, businessId);
+          [staffId, businessId],
+        );
+        if (prev.rows[0]?.url) {
+          photoToRemove = mediaPathFromUrl(prev.rows[0].url, businessId);
+        }
       }
-    }
-    const r = await q.query(
-      `update public.staff
+      const r = await q.query(
+        `update public.staff
           set active = $1,
               photo_url = case when $1 then photo_url else null end
         where id = $2 and business_id = $3`,
-      [active, staffId, businessId],
-    );
-    return assertUpdated(r.rowCount) ?? { ok: true };
-  });
+        [active, staffId, businessId],
+      );
+      return assertUpdated(r.rowCount) ?? { ok: true };
+    });
+  } catch (e) {
+    return { ok: false, code: mapDbError(e) };
+  }
   if (result.ok && photoToRemove) {
     const { ownerMediaStorage } = await import("./media-storage");
     await (await ownerMediaStorage()).remove([photoToRemove]);
@@ -560,6 +591,7 @@ export async function replaceBusinessHours(
   const input = parsed.data;
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_settings");
       const del = await q.query(
         `delete from public.business_hours where business_id = $1`,
         [businessId],

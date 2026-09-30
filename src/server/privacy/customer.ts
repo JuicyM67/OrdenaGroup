@@ -2,7 +2,7 @@ import "server-only";
 
 import { withServiceTx } from "@/server/db/tx";
 
-import { isOwnerOrAdmin } from "./authz";
+import { ownerDenial } from "./authz";
 import type { MutationResult } from "./types";
 
 /**
@@ -12,7 +12,8 @@ import type { MutationResult } from "./types";
  * koppla loss `consent_events`) kräver grants som `authenticated` inte har,
  * så hela flödet — INKLUSIVE behörighetskontrollen — görs i en enda
  * `withServiceTx`-transaktion i stället för att lita på RLS (samma mönster
- * som `public.create_business()`: en egen medlemskapskontroll).
+ * som `public.create_business()`: en egen medlemskapskontroll). WP-46
+ * (D-034): bara ägaren (`ownerDenial`), aldrig personal eller admin.
  */
 
 // ---------------------------------------------------------------------------
@@ -97,9 +98,8 @@ export async function exportCustomer(
   customerId: string,
 ): Promise<ExportResult> {
   return withServiceTx(async (q) => {
-    if (!(await isOwnerOrAdmin(q, userId, businessId))) {
-      return { ok: false, code: "unauthorized" };
-    }
+    const denied = await ownerDenial(q, userId, businessId);
+    if (denied) return { ok: false, code: denied };
 
     const customerRes = await q.query<CustomerRow>(
       `select id, phone_e164, name, email, notes, visits_count, no_show_count,
@@ -267,9 +267,8 @@ export async function anonymizeCustomer(
   customerId: string,
 ): Promise<MutationResult> {
   return withServiceTx(async (q) => {
-    if (!(await isOwnerOrAdmin(q, userId, businessId))) {
-      return { ok: false, code: "unauthorized" };
-    }
+    const denied = await ownerDenial(q, userId, businessId);
+    if (denied) return { ok: false, code: denied };
 
     const existing = await q.query(
       `select 1 from public.customers

@@ -24,6 +24,7 @@ import {
 import { createBooking } from "@/server/bookings/create";
 import { moveBooking } from "@/server/bookings/move";
 import type { BookingError } from "@/server/bookings/types";
+import { loadMember, requirePerm } from "@/server/db/permissions";
 import { withOwnerTx } from "@/server/db/tx";
 import { recordConsent } from "@/server/privacy/consent";
 import { err, ok, type Result } from "@/server/scheduling/result";
@@ -188,6 +189,13 @@ export async function saveManualConsent(
   now: Date,
 ): Promise<void> {
   await withOwnerTx(userId, async (q) => {
+    // WP-46: samma regel som RLS-policyn "manage customers update" (kundraden
+    // hör till bokningarna i stort, inte till en enskild profesional). Inte
+    // medlem → ingenting (som förut: RLS gav 0 rader); medlem utan flaggan
+    // → `PermissionDeniedError` (anroparen loggar, bokningen finns redan).
+    const member = await loadMember(q, userId, businessId);
+    if (!member) return;
+    requirePerm(member, "can_manage_all_bookings");
     const r = await q.query(
       `update public.customers
           set consent_terms_at = $3, consent_version = $4, consent_channel = 'manual'

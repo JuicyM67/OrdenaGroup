@@ -12,8 +12,9 @@ import {
   type DecisionRequest,
   type EngineContext,
 } from "@/server/scheduling/schemas";
-import type { BookingStatus } from "@/server/scheduling/types";
+import type { Actor, BookingStatus } from "@/server/scheduling/types";
 
+import { actorMember, bookingPermOk } from "./authz";
 import { REQUEST_LEAD_HOURS, REQUEST_TTL_HOURS } from "./deadline";
 import { emitBookingEvent } from "./events";
 import { createManageToken } from "./token";
@@ -77,8 +78,11 @@ export async function confirmBooking(
     businessId: c.businessId,
     bookingId: p.data.bookingId,
     now: c.now,
+    actor: c.actor,
   };
-  const r = await runAs(c.actor, (q) => confirmIn(q, input));
+  const r = await runAs(c.actor, (q) => confirmIn(q, input), {
+    onForbidden: err("forbidden"),
+  });
   if (!r.ok) return r;
   if (r.value.token !== null) {
     await emitBookingEvent({
@@ -117,8 +121,11 @@ export async function declineBooking(
     businessId: c.businessId,
     bookingId: p.data.bookingId,
     now: c.now,
+    actor: c.actor,
   };
-  const r = await runAs(c.actor, (q) => declineIn(q, input));
+  const r = await runAs(c.actor, (q) => declineIn(q, input), {
+    onForbidden: err("forbidden"),
+  });
   if (r.ok && r.value.freed !== null) {
     await emitBookingEvent({
       type: "declined",
@@ -135,7 +142,32 @@ export type DecisionInput = {
   businessId: string;
   bookingId: string;
   now: Date;
+  /** WP-46: vem som bekräftar/nekar (ägare eller personal). */
+  actor: Actor;
 };
+
+/**
+ * WP-46: bekräfta och neka en förfrågan kräver skrivrätt på bokningens
+ * profesional (`can_manage_own_bookings`/`can_manage_all_bookings`), inte
+ * `can_cancel_bookings` (se `./authz.ts`). `not_found` om bokningen inte
+ * syns alls, `forbidden` om den syns men medlemmen inte får röra den.
+ */
+async function authorizeDecision(
+  q: Queryable,
+  input: DecisionInput,
+): Promise<BookingError | null> {
+  const member = await actorMember(q, input.actor, input.businessId);
+  if (member === undefined) return null;
+  const r = await q.query<{ staff_id: string }>(
+    `select staff_id from public.bookings where business_id = $1 and id = $2`,
+    [input.businessId, input.bookingId],
+  );
+  const row = r.rows[0];
+  if (!row) return "not_found";
+  return bookingPermOk(member, { kind: "manage", staffId: row.staff_id })
+    ? null
+    : "forbidden";
+}
 
 async function currentStatus(
   q: Queryable,
@@ -156,6 +188,8 @@ export async function confirmIn(
   q: Queryable,
   input: DecisionInput,
 ): Promise<Result<{ bookingId: string; token: string | null }, BookingError>> {
+  const denied = await authorizeDecision(q, input);
+  if (denied) return err(denied);
   const { token, hash } = createManageToken();
   const r = await q.query<{ id: string }>(
     `update public.bookings
@@ -199,6 +233,8 @@ export async function declineIn(
   q: Queryable,
   input: DecisionInput,
 ): Promise<DeclineResult> {
+  const denied = await authorizeDecision(q, input);
+  if (denied) return err(denied);
   const r = await q.query<FreedRow>(
     `update public.bookings
         set status = 'cancelled', cancelled_at = $3, cancel_reason = 'declined',

@@ -36,6 +36,9 @@ import { pgErrorCode } from "@/server/db/errors";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 import { mediaPathFromUrl, publicMediaUrl } from "@/server/bookings/media";
+import type { Perm } from "@/server/db/permissions";
+
+import { authzCode, requireMemberPerm } from "./member";
 
 export interface MediaStorage {
   createSignedUploadUrl(
@@ -86,6 +89,8 @@ function pgConstraint(e: unknown): string | undefined {
 
 /** Bara SQLSTATE/constraint, aldrig detail (ingen persondata i fel/loggar). */
 function mapDbError(e: unknown): string {
+  const authz = authzCode(e);
+  if (authz) return authz;
   const code = pgErrorCode(e);
   const constraint = pgConstraint(e);
   if (code === "42501") return "unauthorized";
@@ -104,13 +109,10 @@ function mapDbError(e: unknown): string {
   return "unknown";
 }
 
-/** Ägare/admin i just det här företaget (samma villkor som RLS-policyerna). */
-async function isOwner(q: Queryable, businessId: string): Promise<boolean> {
-  const r = await q.query<{ ok: boolean }>(
-    `select private.is_member($1, array['owner', 'admin']::public.member_role[]) as ok`,
-    [businessId],
-  );
-  return r.rows[0]?.ok === true;
+/** WP-46: personalens foto → `can_manage_team`; omslag, logga och galleri
+ * → `can_edit_settings` (planens "inställningar, profil"). */
+function imagePerm(kind: ImageKind): Perm {
+  return kind === "staff" ? "can_manage_team" : "can_edit_settings";
 }
 
 async function galleryCount(q: Queryable, businessId: string): Promise<number> {
@@ -195,6 +197,7 @@ export async function updateBusinessProfile(
   const input = parsed.data;
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_settings");
       const r = await q.query(
         `update public.businesses
             set about = $1, instagram = $2, address = $3, phone = $4
@@ -218,6 +221,7 @@ export async function updateStaffTitle(
   if (!parsed.success) return { ok: false, code: firstIssue(parsed.error) };
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_manage_team");
       const r = await q.query(
         `update public.staff set title = $1 where id = $2 and business_id = $3`,
         [parsed.data, staffId, businessId],
@@ -255,25 +259,31 @@ export async function createImageUpload(
     return { ok: false, code: "invalid_input" };
   }
 
-  const check = await withOwnerTx(userId, async (q) => {
-    if (!(await isOwner(q, businessId))) return "unauthorized";
-    if (
-      kind === "gallery" &&
-      (await galleryCount(q, businessId)) >= GALLERY_MAX
-    ) {
-      return "profile.gallery_full";
-    }
-    if (kind === "staff") {
-      // Personen måste tillhöra det här företaget (annars kunde en ägare
-      // signera en uppladdning "åt" en annan ägares anställd).
-      const belongs = await q.query(
-        `select 1 from public.staff where id = $1 and business_id = $2`,
-        [staffId, businessId],
-      );
-      if (!belongs.rowCount) return "invalid_input";
-    }
-    return null;
-  });
+  let check: string | null;
+  try {
+    check = await withOwnerTx(userId, async (q) => {
+      // WP-46: personalens foto hör till teamet, resten till profilen.
+      await requireMemberPerm(q, userId, businessId, imagePerm(kind));
+      if (
+        kind === "gallery" &&
+        (await galleryCount(q, businessId)) >= GALLERY_MAX
+      ) {
+        return "profile.gallery_full";
+      }
+      if (kind === "staff") {
+        // Personen måste tillhöra det här företaget (annars kunde en ägare
+        // signera en uppladdning "åt" en annan ägares anställd).
+        const belongs = await q.query(
+          `select 1 from public.staff where id = $1 and business_id = $2`,
+          [staffId, businessId],
+        );
+        if (!belongs.rowCount) return "invalid_input";
+      }
+      return null;
+    });
+  } catch (e) {
+    return { ok: false, code: mapDbError(e) };
+  }
   if (check) return { ok: false, code: check };
 
   const path = `${businessId}/${randomUUID()}.${IMAGE_EXTENSION[contentType]}`;
@@ -322,6 +332,7 @@ export async function confirmImageUpload(
     | { ok: false; code: string; discard: boolean };
   try {
     result = await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, imagePerm(kind));
       // Objektet måste finnas (klienten har laddat upp) och hålla gränserna
       // — bucketen tvingar dem redan, det här är försvar på djupet.
       const obj = await q.query<{ size: string | null; mime: string | null }>(
@@ -435,6 +446,7 @@ export async function deleteImage(
   let removed: string | null;
   try {
     const r = await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, imagePerm(target.kind));
       if (target.kind === "gallery") {
         const del = await q.query<{ path: string }>(
           `delete from public.business_images
@@ -495,6 +507,7 @@ export async function reorderImages(
   const ids = parsed.data;
   try {
     return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_settings");
       const cur = await q.query<{ id: string }>(
         `select id from public.business_images where business_id = $1`,
         [businessId],

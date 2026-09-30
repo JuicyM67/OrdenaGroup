@@ -161,12 +161,12 @@ describe("exportBusiness (WP-26 steg 3)", () => {
     }
   });
 
-  it("admin (företagsnivå-rollen) får unauthorized — bara owner", async () => {
+  it("admin (företagsnivå-rollen) får forbidden — bara owner", async () => {
     const adminUserId = await addMember(biz.id, "admin");
     try {
       expect(await exportBusiness(adminUserId, biz.id)).toEqual({
         ok: false,
-        code: "unauthorized",
+        code: "forbidden",
       });
     } finally {
       await removeMember(biz.id, adminUserId);
@@ -264,16 +264,16 @@ describe("requestBusinessDeletion / cancelBusinessDeletion (30 dagars ångerfris
     expect(row.rows[0]?.status).toBe("active");
   });
 
-  it("admin (företagsnivå-rollen) får unauthorized på request och cancel — bara owner", async () => {
+  it("admin (företagsnivå-rollen) får forbidden på request och cancel — bara owner", async () => {
     const adminUserId = await addMember(biz.id, "admin");
     try {
       expect(await requestBusinessDeletion(adminUserId, biz.id)).toEqual({
         ok: false,
-        code: "unauthorized",
+        code: "forbidden",
       });
       expect(await cancelBusinessDeletion(adminUserId, biz.id)).toEqual({
         ok: false,
-        code: "unauthorized",
+        code: "forbidden",
       });
       const row = await adminQuery<{ status: string }>(
         `select status from public.businesses where id = $1`,

@@ -55,6 +55,7 @@ const SERVER_MESSAGES = {
   invalid_input: errores.agenda.invalid_input,
   outside_hours: errores.agenda.outside_hours,
   business_unavailable: errores.agenda.business_unavailable,
+  forbidden: errores.permiso.generico,
 } satisfies Record<BookingError, string>;
 
 function isKnownServerErrorCode(code: string): code is BookingError {

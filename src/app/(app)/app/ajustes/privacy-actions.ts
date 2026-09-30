@@ -5,7 +5,7 @@
 // verifierade sessionen här inne, aldrig från klienten. Tunna omslag runt
 // `src/server/privacy/business.ts` (redan byggd, WP-26 steg 3) — ingen ny affärslogik här.
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import { getCurrentMember } from "@/server/onboarding/owner-business";
 import {
   cancelBusinessDeletion,
   exportBusiness,
@@ -24,9 +24,11 @@ async function currentOwner(): Promise<
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, code: "unauthorized" };
-  const business = await getOwnerBusiness(user.id);
-  if (!business) return { ok: false, code: "unauthorized" };
-  return { userId: user.id, businessId: business.id };
+  // WP-46: ägare ELLER personal; varje server-funktion kontrollerar sedan
+  // flaggan själv (`forbidden` om den saknas).
+  const current = await getCurrentMember(user.id);
+  if (!current) return { ok: false, code: "unauthorized" };
+  return { userId: user.id, businessId: current.business.id };
 }
 
 export async function loadPrivacyStatusAction(): Promise<DeletionStatusResult> {

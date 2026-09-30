@@ -159,8 +159,12 @@ export interface BookingPageData {
  * (`create.ts`) aldrig returnerar den). Matchar nycklarna i `errores.reserva`
  * (utom fältfelen `telefono`/`nombreVacio`/`emailInvalido`/
  * `consentimientoRequerido`), typat uttömmande i `errors.ts`. */
+/** `forbidden` (WP-46) gäller bara inloggade medlemmar, aldrig kunden. */
 export type BookingServerErrorCode =
-  BookingError | "network" | "waitlist_duplicate" | "rate_limited";
+  | Exclude<BookingError, "forbidden">
+  | "network"
+  | "waitlist_duplicate"
+  | "rate_limited";
 
 /** Kundens uppgifter i datasteget — vanlig typ (ingen Zod), så att
  * `customer-form.tsx`/`booking-screen.tsx` kan importera den utan att dra in

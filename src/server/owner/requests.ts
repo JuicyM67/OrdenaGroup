@@ -18,6 +18,7 @@ import { revalidatePath } from "next/cache";
 import type { PendingRequestItem } from "@/lib/validation/requests";
 import { confirmBooking, declineBooking } from "@/server/bookings/confirm";
 import type { BookingError } from "@/server/bookings/types";
+import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 
@@ -52,15 +53,40 @@ export async function listPendingRequests(
   businessId: string,
   now: Date,
 ): Promise<PendingRequestItem[]> {
-  return withOwnerTx(userId, (q) => listPendingRequestsIn(q, businessId, now));
+  return withOwnerTx(userId, async (q) =>
+    listPendingRequestsIn(
+      q,
+      businessId,
+      now,
+      await loadMember(q, userId, businessId),
+    ),
+  );
 }
 
-/** Inre steg (för tester): kör i anroparens transaktion. */
+/**
+ * WP-46: bara förfrågningar som medlemmen får bekräfta/neka (samma regel
+ * som `src/server/bookings/authz.ts`): alla med `can_manage_all_bookings`
+ * (och ägaren), annars bara den egna profesionalens, annars inga.
+ * `null` = ingen medlem → inga. Returnerar `undefined` = inget filter.
+ */
+function staffFilter(member: Member | null): string[] | undefined {
+  if (hasPerm(member, "can_manage_all_bookings")) return undefined;
+  if (member?.staffId && hasPerm(member, "can_manage_own_bookings")) {
+    return [member.staffId];
+  }
+  return [];
+}
+
+/** Inre steg (för tester): kör i anroparens transaktion. `member` utelämnad
+ * = inget behörighetsfilter (bara tester och ägarens egna vägar). */
 export async function listPendingRequestsIn(
   q: Queryable,
   businessId: string,
   now: Date,
+  member?: Member | null,
 ): Promise<PendingRequestItem[]> {
+  const only = member === undefined ? undefined : staffFilter(member);
+  if (only !== undefined && only.length === 0) return [];
   const r = await q.query<Row>(
     `select bk.id, c.name as client_name, sv.name as service_name,
             extract(epoch from lower(bk.period)) * 1000 as start_ms
@@ -72,8 +98,9 @@ export async function listPendingRequestsIn(
       where bk.business_id = $1
         and bk.status = 'requested'
         and lower(bk.period) > $2
+        and ($3::uuid[] is null or bk.staff_id = any($3::uuid[]))
       order by lower(bk.period)`,
-    [businessId, now],
+    [businessId, now, only ?? null],
   );
   return r.rows.map((x) => ({
     id: x.id,

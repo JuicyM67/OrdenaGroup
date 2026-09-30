@@ -18,8 +18,18 @@ import {
   type EngineContext,
   type MoveBookingRequest,
 } from "@/server/scheduling/schemas";
-import type { Actor, StaffChoice } from "@/server/scheduling/types";
+import {
+  ANY_STAFF,
+  type Actor,
+  type StaffChoice,
+} from "@/server/scheduling/types";
 
+import {
+  actorMember,
+  bookingPermOk,
+  canManageStaffBookings,
+  visibleButLocked,
+} from "./authz";
 import { emitBookingEvent } from "./events";
 import {
   CHANGEABLE,
@@ -63,6 +73,7 @@ export async function moveBooking(
   const input = { ...c, ref, newStart, newStaffId };
   const result = await runAs(c.actor, (q) => moveIn(q, input), {
     onConflict: err("slot_taken"),
+    onForbidden: err("forbidden"),
   });
   // WP-16: efter commit (enqueueBookingEvent kastar aldrig). Den nya token
   // går bara till meddelandet; den gamla länken gäller inte längre (D-029).
@@ -93,8 +104,30 @@ export async function moveIn(
   q: Queryable,
   input: MoveInput,
 ): Promise<MoveResult> {
+  const member = await actorMember(q, input.actor, input.businessId);
   const b = await lockBooking(q, input.businessId, input.ref);
-  if (!b) return err("not_found");
+  if (!b) {
+    return member !== undefined &&
+      "bookingId" in input.ref &&
+      (await visibleButLocked(q, input.businessId, input.ref.bookingId))
+      ? err("forbidden")
+      : err("not_found");
+  }
+  // WP-46: medlemmen måste få röra bokningen (gamla profesionalen) och,
+  // om en specifik ny profesional valts, även den (RLS `with check`).
+  const wanted =
+    input.newStaffId !== undefined && input.newStaffId !== ANY_STAFF
+      ? input.newStaffId
+      : undefined;
+  if (
+    !bookingPermOk(member, {
+      kind: "manage",
+      staffId: b.staffId,
+      newStaffId: wanted,
+    })
+  ) {
+    return err("forbidden");
+  }
   const isCustomer = input.actor.kind === "customer";
   if (isCustomer && !b.businessActive) return err("business_unavailable");
   if (!CHANGEABLE.includes(b.status)) return err("invalid_status");
@@ -133,15 +166,21 @@ export async function moveIn(
     start,
   );
   if (!check.ok) return check;
+  // "Cualquiera": bara profesionales som medlemmen får boka på.
+  const candidates =
+    member === undefined
+      ? check.value
+      : check.value.filter((id) => canManageStaffBookings(member, id));
+  if (candidates.length === 0) return err("forbidden");
 
-  await lockStaffForBooking(q, input.businessId, check.value);
+  await lockStaffForBooking(q, input.businessId, candidates);
 
   const periodEnd = start + (b.periodEnd - b.start);
   const blockedEnd = start + (b.blockedEnd - b.start);
   // D-029: en flytt roterar kundens token — gamla länkar slutar gälla och
   // `moved`-meddelandet bär den nya. Bara hashen sparas.
   const { token, hash } = createManageToken();
-  for (const staffId of check.value) {
+  for (const staffId of candidates) {
     try {
       await savepoint(q, () =>
         q.query(
