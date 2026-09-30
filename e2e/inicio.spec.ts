@@ -99,16 +99,16 @@ test.describe("tidszon (America/Santiago oavsett webbläsarens tidszon)", () => 
 test("tangentbord: nav → header → Ver agenda → radernas knappar → kalender", async ({
   page,
 }) => {
-  await page.goto("/design-lab/main");
+  await page.goto("/design-lab/main?estado=solicitudes");
 
   await tabUntilFocused(
     page,
     page.getByRole("link", { name: "Inicio", exact: true }),
   );
-  // Fixture-läget (referencia) har notifications.count: 1 → aria-labelns singularform.
+  // WP-45: klockan räknar väntande förfrågningar; ?estado=solicitudes har två → pluralform.
   await tabUntilFocused(
     page,
-    page.getByRole("button", { name: "1 notificación nueva" }),
+    page.getByRole("button", { name: "2 notificaciones nuevas" }),
   );
 
   const verAgenda = page.getByRole("link", { name: "Ver agenda" }).first();
