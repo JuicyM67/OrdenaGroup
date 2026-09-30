@@ -1,0 +1,26 @@
+# Register över behandlingar (RAT) — utkast
+
+> Utkast från WP-26 (security-reviewer). Granskas av jurist före lansering (WP-27). Juridisk enhet: platshållare i `src/config/brand.ts` (`legal`).
+
+**Ansvarig:** [SpA, RUT – pendiente] (CL) / [AB, org.nr – saknas] (SE). Kontakt: privacidad@ordenagroup.cl / integritet@bookingbuddy.se.
+
+| # | Behandling | Roll | Registrerade | Uppgifter | Ändamål | Rättslig grund | Lagring | Mottagare / överföring |
+|---|---|---|---|---|---|---|---|---|
+| 1 | Bokningar och kundregister | Biträde (företaget ansvarigt) | Slutkunder | Namn, telefon (E.164), e-post, bokningshistorik, svar på bokningsfrågor, ägarens anteckningar, antal besök/uteblivna | Utföra och administrera bokningen | Avtal (kund–företag) | Anonymiseras 24 mån efter senaste bokning eller på ägarens begäran | Supabase (sa-east-1 / eu-north-1), Vercel (gru1 / arn1) |
+| 1a | Känsliga uppgifter i bokningsfrågor/anteckningar (t.ex. kinesiologi) | Biträde | Slutkunder | Hälsouppgifter | Som ovan | Uttryckligt samtycke (Ley 21.719) / GDPR art. 9.2 a | Som ovan | Som ovan. **Juristfråga:** krävs separat samtyckesruta för tjänster med hälsofrågor? |
+| 2 | Transaktionella meddelanden | Biträde | Slutkunder | Telefon/e-post (hämtas vid sändning), mall, status, engångstoken | Bekräftelse, påminnelse, ändringslänk | Avtal | Utkorgsrader 90 dagar; payload töms vid sänd/död/avbruten | Meta WhatsApp (US), Resend (US), ClickSend (AU) |
+| 3 | Samtyckeslogg | Biträde (kund) / ansvarig (ägare) | Slutkunder, ägare | Typ, version, kanal, granted, tid | Visa att samtycke gavs | Rättslig förpliktelse (bevisbörda) | 5 år efter frikoppling från kund | Supabase |
+| 4 | Marknadsföring (WP-30) | Biträde | Slutkunder | Telefon, samtycke | Kampanjer | Samtycke (aldrig förkryssat) | Tills återkallelse/anonymisering | Meta |
+| 5 | Ägarkonton och autentisering | Ansvarig | Ägare, personal | E-post, auth-metadata, medlemskap/roll | Tillhandahålla tjänsten | Avtal | Tills kontot raderas + 30 dagars ångerfrist | Supabase Auth |
+| 6 | Företagsprofil och personal | Biträde | Personal | Namn, titel, foto | Visa bokningssidan | Avtal / berättigat intresse | Foto raderas vid inaktivering; allt vid kontoradering | Supabase Storage, Vercel CDN |
+| 7 | Betalningar (WP-25) | Biträde / ansvarig för abonnemang | Slutkunder, ägare | Belopp, metod, referens | Handpenning, kassa | Avtal; bokföringsplikt (SII 6 år / Bokföringslagen 7 år) | Följer bokningen i dag — ses över i WP-34 | Mercado Pago, Flow (CL); Stripe (SE, abonnemang) |
+| 8 | Drift- och felloggar | Ansvarig | Alla | IP, request-id, SQLSTATE; ingen persondata i applikationsloggar | Säkerhet, drift | Berättigat intresse | Enligt Vercel/Supabase (fylls i) | Vercel, Supabase, GitHub Actions (bara räknare) |
+
+## Säkerhetsåtgärder
+RLS på alla tabeller, inga anon-policies, sammansatta FK per företag · service_role bara på servern med `business_id`-filter och gränstest · `manage_token` bara som hash · webhooks/cron verifieras timing-safe · TLS och kryptering i vila · ingen persondata i loggar · 30 dagars ångerfrist vid kontoradering.
+
+## Rättigheter
+Ägaren exporterar/anonymiserar åt kunden i v1 (agendans kundpanel). Kundens egen väg via `r/[token]` finns i IDEAS.
+
+## Öppna punkter
+Standardavtalsklausuler / överföringsgrund för US och AU · juristfrågor 6, 7, 10, 11 (`JURIST_FRAGOR.md`) · lagringstid för fakturor (WP-34) · incidentrutin · underbiträdesförteckning i DPA.

@@ -96,3 +96,11 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - WP-26: radering av företag ska tömma `business-media/<bid>/`.
 - WP-44 (säkerhet, kan vänta): kolumnbegränsat update-grant på `staff` (photo_url bara via confirm); koppla signerad och bekräftad sökväg så att en sökväg inte kan återanvändas mellan omslag/foto; magic-bytes-kontroll av bildtyp; `throws_ok` för `staff_photo_url_format`.
 - Personalfoto även i bokningsflödets personalval (kräver ny referensdesign; JS-budget 178,3/180 kB).
+- WP-26 (säkerhet, före WP-30): tredje part kan ändra befintligt web-samtycke genom att boka med samma nummer — skriv bara `consent_marketing_at` från web när null, dubbel opt-in i WhatsApp före kampanjer, `booking_id`/`verified` i consent_events.
+- WP-26: mejl via outbox när kontoradering begärs + påminnelse dag −3; ev. bekräfta med slug/ny inloggning på servern.
+- WP-26: ersätt `set local role service_role` i ägartransaktioner med smal security definer `private.record_owner_consent(...)`.
+- WP-26: spara ägarens `owner_terms`/`dpa`-bevis separat vid purge (preskriptionstid).
+- WP-26: vid kontoradering — avboka och avisera framtida bokningar, eller varna i dialogen.
+- WP-26: begränsa antal purge per cron-körning (Vercel-timeout); lagringstid för frysta konton som aldrig begär radering; dedup av samtyckeslogg vid omförsök.
+- WP-26: lägg `memberships`, `payments`, `message_outbox` i `TENANT_TABLES` (boundaries.test.ts).
+- DESIGN.md §7: dokumentera `ConfirmDialog`.
