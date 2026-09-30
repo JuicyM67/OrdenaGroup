@@ -4,6 +4,8 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-038 · 2026-09-30 · Plattformsadmin (superadmin) skild från företagsroller
+Superadmin (`/admin`, WP-36) är en egen tabell `private.platform_admins` som bara servern läser (service role) — ingen koppling till `memberships`-rollerna. Kräver tvåstegsverifiering (Supabase MFA, aal2). Varje adminåtgärd loggas i `private.admin_audit_log` (oföränderlig). Företag kan läggas upp åt någon via `private.business_invitations` + `public.accept_business_invitation(token)`; plan kan sättas manuellt med `businesses.plan_override_until`. Första admin läggs in manuellt med SQL av ägaren.
 ### D-037 · 2026-09-30 · Personalgräns per plan (WP-46)
 Antal konton per företag, ägaren inräknad: `free` 1, `emprende` 1, `equipo` 3, `local` 10. **Varför:** D-009 (platt pris per företag) säger bara att kostnaden inte styrs av antalet användare — den sätter ingen gräns. Ägaren har nu bestämt siffrorna: personalkonton (WP-46) hör till `equipo`/`local`; `free`/`emprende` har bara plats för ägaren själv och kan inte bjuda in någon. **Konsekvens:** `private.plan_staff_limit(business_plan)` (tidigare en no-op-hook, `supabase/migrations/20260930160000_plan_staff_limits.sql`) returnerar nu de här siffrorna. `private.staff_seat_count` räknar `memberships` med `role in ('owner','staff')` plus väntande, icke-utgångna/återkallade/accepterade `member_invitations` — triggern `member_invitations_guard_limit` och `accept_invitation` nekar nya/accepterade inbjudningar vid gränsen (42501).
 
