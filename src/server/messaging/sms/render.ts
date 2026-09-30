@@ -33,6 +33,22 @@ export type SmsTemplateMap = {
     hora: string;
     link: string;
   };
+  /** WP-45 (D-033): förfrågan nekad/utgången. SE: samma kanaler som
+   * `reservaCancelada` ("Ägarens svar" 2). CL skickas inte ännu (bara
+   * e-post tills WP-22:s WhatsApp-mall finns) — typen finns ändå för
+   * paritet med `sv-SE.app.ts`. */
+  readonly solicitudRechazada: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  };
+  readonly solicitudVencida: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  };
   readonly listaEsperaCupo: {
     negocio: string;
     servicio: string;
@@ -64,6 +80,8 @@ export const SMS_TEMPLATE_NAMES: readonly SmsTemplateName[] = [
   "recordatorioHoy",
   "reservaMovida",
   "reservaCancelada",
+  "solicitudRechazada",
+  "solicitudVencida",
   "listaEsperaCupo",
   "horaFlash",
   "nuevaReservaDueno",

@@ -56,6 +56,30 @@ export function nuevaReservaDuenoEmail(
   });
 }
 
+/** Al dueño, cuando una solicitud (`requested`, WP-45/D-033) queda
+ * pendiente de confirmar: no se manda si `auto_confirm_bookings` está
+ * prendido (ahí la reserva nace `confirmed` y usa `nuevaReservaDueno`).
+ * Misma forma y mismas respuestas (`answers`) que `nuevaReservaDueno`. */
+export function nuevaSolicitudEmail(
+  market: Market,
+  data: DuenoReservaData,
+): RenderedEmail {
+  const ns = emailNs(market).nuevaSolicitud;
+  const comun = emailNs(market).comun;
+  return composeSimpleEmail({
+    market,
+    subject: ns.asunto({ cliente: data.cliente, fecha: data.fecha }),
+    preheader: ns.preheader({ servicio: data.servicio, hora: data.hora }),
+    titulo: ns.titulo,
+    paragraphs: [ns.texto(data)],
+    cardRows: cardRows(market, data),
+    cta: { label: ns.cta, href: data.agendaUrl },
+    footerLines: [
+      comun.piePagina({ marca: brand.name, negocio: data.negocio }),
+    ],
+  });
+}
+
 /** Al dueño, cuando un cliente cancela su propia reserva desde `r/[token]`
  * o por WhatsApp/SMS. Misma forma que `nuevaReservaDueno`. */
 export function cancelacionDuenoEmail(

@@ -102,6 +102,7 @@ describe("enqueueBookingEventIn: created", () => {
       businessId: BIZ,
       token: TOKEN,
       by: "customer",
+      status: "confirmed",
     });
     const rows = db.inserted();
     const templates = rows.map((r) => `${r.template}:${r.recipientKind}`);
@@ -128,6 +129,7 @@ describe("enqueueBookingEventIn: created", () => {
       businessId: BIZ,
       token: TOKEN,
       by: "customer",
+      status: "confirmed",
     });
     const owner = db
       .inserted()
@@ -148,6 +150,7 @@ describe("enqueueBookingEventIn: created", () => {
       businessId: BIZ,
       token: TOKEN,
       by: "owner",
+      status: "confirmed",
     });
     expect(db.inserted().some((r) => r.recipientKind === "owner")).toBe(false);
   });
@@ -160,6 +163,7 @@ describe("enqueueBookingEventIn: created", () => {
       businessId: BIZ,
       token: TOKEN,
       by: "owner",
+      status: "confirmed",
     });
     expect(db.inserted()).toEqual([]);
   });
@@ -172,6 +176,7 @@ describe("enqueueBookingEventIn: created", () => {
       businessId: BIZ,
       token: TOKEN,
       by: "owner",
+      status: "confirmed",
     });
     expect(db.inserted().some((r) => r.template === "recordatorio")).toBe(
       false,
@@ -189,6 +194,7 @@ describe("enqueueBookingEventIn: created", () => {
       businessId: BIZ,
       token: TOKEN,
       by: "owner",
+      status: "confirmed",
     });
     const reminder = db.inserted().find((r) => r.template === "recordatorio");
     expect(reminder?.nextAttemptAt?.getTime()).toBe(
@@ -205,6 +211,7 @@ describe("enqueueBookingEventIn: created", () => {
         businessId: BIZ,
         token: TOKEN,
         by: "owner",
+        status: "confirmed",
       }),
     ).resolves.toBeUndefined();
     expect(db.inserted()).toEqual([]);
@@ -218,6 +225,7 @@ describe("enqueueBookingEventIn: created", () => {
       businessId: BIZ,
       token: TOKEN,
       by: "owner",
+      status: "confirmed",
     });
     const confirmada = db
       .inserted()
@@ -238,6 +246,7 @@ describe("enqueueBookingEventIn: moved", () => {
       businessId: BIZ,
       token: NEW_TOKEN,
       by: "customer",
+      status: "confirmed",
     });
     expect(db.reminderCancellations()).toHaveLength(1);
     const rows = db.inserted();
@@ -255,8 +264,158 @@ describe("enqueueBookingEventIn: moved", () => {
       businessId: BIZ,
       token: TOKEN,
       by: "customer",
+      status: "confirmed",
     });
     expect(db.inserted().some((r) => r.recipientKind === "owner")).toBe(false);
+  });
+
+  it("status requested (kundens flytt av en obekräftad förfrågan): reservaMovida men ingen recordatorio", async () => {
+    const db = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueBookingEventIn(db, {
+      type: "moved",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      token: TOKEN,
+      by: "customer",
+      status: "requested",
+    });
+    expect(
+      db.inserted().some((r) => r.template === "reservaMovida"),
+    ).toBe(true);
+    expect(db.inserted().some((r) => r.template === "recordatorio")).toBe(
+      false,
+    );
+  });
+});
+
+describe("enqueueBookingEventIn: created (status requested — WP-45/D-033)", () => {
+  it("kund: solicitudRecibida (bara e-post, ingen recordatorio), ägaren: nuevaSolicitud", async () => {
+    const db = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueBookingEventIn(db, {
+      type: "created",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      token: TOKEN,
+      by: "customer",
+      status: "requested",
+    });
+    const rows = db.inserted();
+    const customerRow = rows.find((r) => r.recipientKind === "customer");
+    expect(customerRow?.template).toBe("solicitudRecibida");
+    expect(customerRow?.channel).toBe("email");
+    expect(customerRow?.payload).toEqual({ token: TOKEN });
+    expect(rows.some((r) => r.template === "reservaConfirmada")).toBe(false);
+    expect(rows.some((r) => r.template === "recordatorio")).toBe(false);
+    const owner = rows.find((r) => r.recipientKind === "owner");
+    expect(owner?.template).toBe("nuevaSolicitud");
+    expect(owner?.channel).toBe("email");
+  });
+
+  it("bara EN kundrad (aldrig sms, oavsett marknad — till skillnad från customerChannels)", async () => {
+    const db = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueBookingEventIn(db, {
+      type: "created",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      token: TOKEN,
+      by: "customer",
+      status: "requested",
+    });
+    expect(
+      db.inserted().filter((r) => r.recipientKind === "customer"),
+    ).toHaveLength(1);
+  });
+
+  it("ingen e-post hos kunden: ingen solicitudRecibida-rad, men ägaren får ändå nuevaSolicitud", async () => {
+    const db = new FakeDb({ start_ms: FAR_START, has_email: false });
+    await enqueueBookingEventIn(db, {
+      type: "created",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      token: TOKEN,
+      by: "customer",
+      status: "requested",
+    });
+    const rows = db.inserted();
+    expect(rows.some((r) => r.recipientKind === "customer")).toBe(false);
+    expect(
+      rows.some(
+        (r) => r.recipientKind === "owner" && r.template === "nuevaSolicitud",
+      ),
+    ).toBe(true);
+  });
+});
+
+describe("enqueueBookingEventIn: confirmed (ägaren bekräftar en förfrågan)", () => {
+  it("reservaConfirmada + recordatorio, inget ägarmejl", async () => {
+    const db = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueBookingEventIn(db, {
+      type: "confirmed",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      token: TOKEN,
+      by: "owner",
+    });
+    const rows = db.inserted();
+    expect(rows.some((r) => r.template === "reservaConfirmada")).toBe(true);
+    expect(rows.some((r) => r.template === "recordatorio")).toBe(true);
+    expect(rows.some((r) => r.recipientKind === "owner")).toBe(false);
+  });
+
+  it("start < 24 h bort: ingen recordatorio-rad", async () => {
+    const db = new FakeDb({ start_ms: SOON_START, has_email: true });
+    await enqueueBookingEventIn(db, {
+      type: "confirmed",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      token: TOKEN,
+      by: "owner",
+    });
+    expect(db.inserted().some((r) => r.template === "recordatorio")).toBe(
+      false,
+    );
+  });
+});
+
+describe("enqueueBookingEventIn: declined", () => {
+  it("reason declined: solicitudRechazada (SE e-post+sms, CL e-post)", async () => {
+    const db = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueBookingEventIn(db, {
+      type: "declined",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      reason: "declined",
+    });
+    const rows = db.inserted();
+    expect(rows.every((r) => r.template === "solicitudRechazada")).toBe(true);
+    expect(rows.some((r) => r.template === "reservaCancelada")).toBe(false);
+    for (const r of rows) expect(r.payload).toEqual({});
+  });
+
+  it("reason expired: solicitudVencida", async () => {
+    const db = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueBookingEventIn(db, {
+      type: "declined",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      reason: "expired",
+    });
+    expect(
+      db.inserted().every((r) => r.template === "solicitudVencida"),
+    ).toBe(true);
+  });
+
+  it("ingen ägarrad (nekad/utgången förfrågan skickar inget till ägaren)", async () => {
+    const db = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueBookingEventIn(db, {
+      type: "declined",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      reason: "declined",
+    });
+    expect(db.inserted().some((r) => r.recipientKind === "owner")).toBe(
+      false,
+    );
   });
 });
 

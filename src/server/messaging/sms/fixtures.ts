@@ -36,6 +36,18 @@ export function smsFixtures(market: Market): {
       hora: b.hora,
       link,
     },
+    solicitudRechazada: {
+      negocio: b.negocio,
+      fecha: b.fecha,
+      hora: b.hora,
+      link,
+    },
+    solicitudVencida: {
+      negocio: b.negocio,
+      fecha: b.fecha,
+      hora: b.hora,
+      link,
+    },
     listaEsperaCupo: {
       negocio: b.negocio,
       servicio: b.servicio,

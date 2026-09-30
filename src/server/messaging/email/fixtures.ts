@@ -110,5 +110,38 @@ export function emailFixtures(market: Market): {
       pct: 20,
       reservarUrl: "https://app.example.com/reservar?flash=abc123",
     },
+    nuevaSolicitud: {
+      negocio: b.negocio,
+      cliente: b.cliente,
+      servicio: b.servicio,
+      fecha: b.fecha,
+      hora: b.hora,
+      agendaUrl: "https://app.example.com/app/agenda",
+    },
+    solicitudRecibida: {
+      cliente: b.cliente,
+      negocio: b.negocio,
+      servicio: b.servicio,
+      fecha: b.fecha,
+      hora: b.hora,
+      profesional: b.profesional,
+      direccion: b.direccion,
+      precio: b.precio,
+      linkGestion: "https://app.example.com/r/abc123",
+    },
+    solicitudRechazada: {
+      cliente: b.cliente,
+      negocio: b.negocio,
+      fecha: b.fecha,
+      hora: b.hora,
+      linkNuevaReserva: "https://app.example.com/reservar",
+    },
+    solicitudVencida: {
+      cliente: b.cliente,
+      negocio: b.negocio,
+      fecha: b.fecha,
+      hora: b.hora,
+      linkNuevaReserva: "https://app.example.com/reservar",
+    },
   };
 }

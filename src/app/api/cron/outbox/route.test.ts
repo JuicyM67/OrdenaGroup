@@ -4,17 +4,27 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * WP-16 steg 2: `/api/cron/outbox` avvisar fel/saknad `CRON_SECRET`
  * (timing-safe), och kör `processOutbox` bara när den matchar.
+ *
+ * WP-45 steg 6: samma pass anropar `expireRequests` FÖRE `processOutbox`
+ * (`solicitudVencida` ska hinna med i samma körning, se filkommentaren i
+ * `route.ts`) — testas här med ett fejkat anropsordning-spår.
  */
-const processOutboxMock = vi.fn(async () => ({
-  claimed: 0,
-  sent: 0,
-  cancelled: 0,
-  queued: 0,
-  dead: 0,
-}));
+const calls: string[] = [];
+const processOutboxMock = vi.fn(async () => {
+  calls.push("processOutbox");
+  return { claimed: 0, sent: 0, cancelled: 0, queued: 0, dead: 0 };
+});
+const expireRequestsMock = vi.fn(async () => {
+  calls.push("expireRequests");
+  return [];
+});
 vi.mock("@/server/messaging/outbox", () => ({
   processOutbox: (...args: unknown[]) =>
     (processOutboxMock as (...a: unknown[]) => unknown)(...args),
+}));
+vi.mock("@/server/bookings/confirm", () => ({
+  expireRequests: (...args: unknown[]) =>
+    (expireRequestsMock as (...a: unknown[]) => unknown)(...args),
 }));
 
 const { GET, POST } = await import("./route");
@@ -28,6 +38,8 @@ function req(headers: Record<string, string> = {}): NextRequest {
 beforeEach(() => {
   process.env.CRON_SECRET = "s3cret-value";
   processOutboxMock.mockClear();
+  expireRequestsMock.mockClear();
+  calls.length = 0;
 });
 
 afterEach(() => {
@@ -40,12 +52,14 @@ describe("POST /api/cron/outbox", () => {
     const res = await POST(req());
     expect(res.status).toBe(401);
     expect(processOutboxMock).not.toHaveBeenCalled();
+    expect(expireRequestsMock).not.toHaveBeenCalled();
   });
 
   it("401 med fel hemlighet", async () => {
     const res = await POST(req({ authorization: "Bearer nope" }));
     expect(res.status).toBe(401);
     expect(processOutboxMock).not.toHaveBeenCalled();
+    expect(expireRequestsMock).not.toHaveBeenCalled();
   });
 
   it("401 med en hemlighet av annan längd (timing-safe utan krasch)", async () => {
@@ -58,12 +72,15 @@ describe("POST /api/cron/outbox", () => {
     const res = await POST(req({ authorization: "Bearer s3cret-value" }));
     expect(res.status).toBe(401);
     expect(processOutboxMock).not.toHaveBeenCalled();
+    expect(expireRequestsMock).not.toHaveBeenCalled();
   });
 
-  it("200 med rätt hemlighet, kör processOutbox och svarar med räknarna", async () => {
+  it("200 med rätt hemlighet: expireRequests FÖRE processOutbox, svarar med räknarna", async () => {
     const res = await POST(req({ authorization: "Bearer s3cret-value" }));
     expect(res.status).toBe(200);
+    expect(expireRequestsMock).toHaveBeenCalledTimes(1);
     expect(processOutboxMock).toHaveBeenCalledExactlyOnceWith({ limit: 50 });
+    expect(calls).toEqual(["expireRequests", "processOutbox"]);
     const body = (await res.json()) as unknown;
     expect(body).toEqual({
       claimed: 0,
@@ -71,6 +88,7 @@ describe("POST /api/cron/outbox", () => {
       cancelled: 0,
       queued: 0,
       dead: 0,
+      expired: 0,
     });
   });
 });

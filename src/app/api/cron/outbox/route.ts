@@ -4,11 +4,18 @@
 // Bekräftelser går ändå ut inom 1 min via `kickOutbox` (oberoende av cronen);
 // det här passet tar hand om påminnelser (24 h) och rader som misslyckades
 // första gången (backoff).
+//
+// WP-45 steg 6: samma pass låter obesvarade förfrågningar (`requested`) gå
+// ut FÖRE utkorgen töms, så att `solicitudVencida` (som `expireRequests`
+// själv köar efter commit, se `src/server/bookings/confirm.ts`) hinner med
+// i samma körning i stället för att vänta till nästa.
 import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { expireRequests } from "@/server/bookings/confirm";
 import { processOutbox } from "@/server/messaging/outbox";
+import { systemClock } from "@/server/scheduling/clock";
 
 export const dynamic = "force-dynamic";
 
@@ -42,10 +49,11 @@ async function handle(request: NextRequest): Promise<NextResponse> {
   if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
+  const expired = await expireRequests(systemClock());
   const result = await processOutbox({ limit: CRON_LIMIT });
   // Bara räknare (regel hård 8: ingen persondata i loggar).
-  console.log("outbox: pass klart", result);
-  return NextResponse.json(result);
+  console.log("outbox: pass klart", { expired: expired.length, ...result });
+  return NextResponse.json({ ...result, expired: expired.length });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

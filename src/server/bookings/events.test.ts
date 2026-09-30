@@ -91,6 +91,7 @@ describe("createBooking → created", () => {
         businessId: BIZ,
         token: TOKEN,
         by,
+        status: "confirmed",
       });
     },
   );
@@ -144,6 +145,7 @@ describe("moveBooking → moved", () => {
       businessId: BIZ,
       token: NEW_TOKEN,
       by: "customer",
+      status: "confirmed",
     });
   });
 
@@ -207,37 +209,45 @@ describe("cancelBooking → cancelled", () => {
   });
 });
 
-describe("emitBookingEvent (WP-45, tills utkorgen breddats i steg 3)", () => {
+describe("emitBookingEvent (WP-45 steg 3: forwardar direkt till enqueueBookingEvent)", () => {
   const base = { bookingId: BOOKING, businessId: BIZ, token: TOKEN };
 
-  it("förfrågan (created/moved med requested) och declined köar inget", async () => {
-    await emitBookingEvent({
+  it("created/requested: forwardas oförändrad (utkorgen avgör mallarna)", async () => {
+    const event = {
       ...base,
-      type: "created",
-      by: "customer",
-      status: "requested",
-    });
-    await emitBookingEvent({
-      ...base,
-      type: "moved",
-      by: "customer",
-      status: "requested",
-    });
-    await emitBookingEvent({
-      type: "declined",
-      bookingId: BOOKING,
-      businessId: BIZ,
-      reason: "expired",
-    });
-    expect(enqueueBookingEvent).not.toHaveBeenCalled();
+      type: "created" as const,
+      by: "customer" as const,
+      status: "requested" as const,
+    };
+    await emitBookingEvent(event);
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith(event);
   });
 
-  it("confirmed → bekräftelse + påminnelse som created av ägaren", async () => {
-    await emitBookingEvent({ ...base, type: "confirmed", by: "owner" });
-    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith({
+  it("moved/requested: forwardas oförändrad", async () => {
+    const event = {
       ...base,
-      type: "created",
-      by: "owner",
-    });
+      type: "moved" as const,
+      by: "customer" as const,
+      status: "requested" as const,
+    };
+    await emitBookingEvent(event);
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith(event);
+  });
+
+  it("declined (nekad eller utgången): forwardas oförändrad", async () => {
+    const declined = {
+      type: "declined" as const,
+      bookingId: BOOKING,
+      businessId: BIZ,
+      reason: "expired" as const,
+    };
+    await emitBookingEvent(declined);
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith(declined);
+  });
+
+  it("confirmed: forwardas oförändrad (inget längre översätts till created)", async () => {
+    const event = { ...base, type: "confirmed" as const, by: "owner" as const };
+    await emitBookingEvent(event);
+    expect(enqueueBookingEvent).toHaveBeenCalledExactlyOnceWith(event);
   });
 });

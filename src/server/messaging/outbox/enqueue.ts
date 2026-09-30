@@ -126,6 +126,27 @@ async function queueCustomerMessage(
   }
 }
 
+/** Bara e-post, oavsett marknad (`solicitudRecibida`: "Ägarens svar" 2 —
+ * SE också bara e-post för "förfrågan mottagen", till skillnad från
+ * `reservaConfirmada` som får sms i SE). Ingen rad om kunden saknar e-post. */
+async function queueCustomerEmailOnly(
+  q: Queryable,
+  businessId: string,
+  bookingId: string,
+  startMs: number,
+  template: string,
+  hasEmail: boolean,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  if (!hasEmail) return;
+  await insertRow(q, businessId, bookingId, startMs, {
+    channel: "email",
+    recipientKind: "customer",
+    template,
+    payload,
+  });
+}
+
 /** Ägaren får alltid e-post, aldrig sms (utanför scope, WP-16-planen §2). */
 async function queueOwnerMessage(
   q: Queryable,
@@ -191,6 +212,30 @@ export async function enqueueBookingEventIn(
   const { startMs, hasEmail } = ctx;
 
   if (e.type === "created") {
+    if (e.status === "requested") {
+      // WP-45 (D-033): en förfrågan blockerar tiden men är inte bekräftad —
+      // kunden får bara "solicitud recibida" (ingen `reservaConfirmada`,
+      // ingen påminnelse), ägaren får "nueva solicitud" att ta ställning
+      // till. Bekräftelsen/påminnelsen köas separat när ägaren bekräftar
+      // (`e.type === "confirmed"`).
+      await queueCustomerEmailOnly(
+        q,
+        e.businessId,
+        e.bookingId,
+        startMs,
+        "solicitudRecibida",
+        hasEmail,
+        { token: e.token },
+      );
+      await queueOwnerMessage(
+        q,
+        e.businessId,
+        e.bookingId,
+        startMs,
+        "nuevaSolicitud",
+      );
+      return;
+    }
     await queueCustomerMessage(
       q,
       e.businessId,
@@ -231,6 +276,34 @@ export async function enqueueBookingEventIn(
       hasEmail,
       { token: e.token },
     );
+    // En förfrågan som kunden flyttar (`r/[token]`) förblir `requested`:
+    // ingen påminnelse förrän ägaren bekräftar den (WP-45, "Ägarens svar").
+    if (e.status === "confirmed") {
+      await queueReminder(
+        q,
+        e.businessId,
+        e.bookingId,
+        startMs,
+        hasEmail,
+        e.token,
+      );
+    }
+    return;
+  }
+
+  if (e.type === "confirmed") {
+    // Ägaren bekräftade en förfrågan (`requested → confirmed`): samma
+    // bekräftelse + 24 h-påminnelse som en ny bokning som redan var
+    // `confirmed` (WP-45 steg 3) — men inget ägarmejl (ägaren agerade själv).
+    await queueCustomerMessage(
+      q,
+      e.businessId,
+      e.bookingId,
+      startMs,
+      "reservaConfirmada",
+      hasEmail,
+      { token: e.token },
+    );
     await queueReminder(
       q,
       e.businessId,
@@ -238,6 +311,24 @@ export async function enqueueBookingEventIn(
       startMs,
       hasEmail,
       e.token,
+    );
+    return;
+  }
+
+  if (e.type === "declined") {
+    // Nekad (av ägaren) eller utgången (av svepet): kunden får besked med
+    // länk till `/{slug}` för att boka igen — aldrig "reserva cancelada"
+    // (den förfrågan blev aldrig en bekräftad reserva).
+    const template =
+      e.reason === "expired" ? "solicitudVencida" : "solicitudRechazada";
+    await queueCustomerMessage(
+      q,
+      e.businessId,
+      e.bookingId,
+      startMs,
+      template,
+      hasEmail,
+      {},
     );
     return;
   }
