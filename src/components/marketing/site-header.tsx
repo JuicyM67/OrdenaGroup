@@ -262,7 +262,10 @@ export function SiteHeader() {
 
             <NavigationMenu.Item>
               <NavigationMenu.Link asChild>
-                <Link href={href("inicio", "para-quien")} className={navLinkClass}>
+                <Link
+                  href={href("inicio", "para-quien")}
+                  className={navLinkClass}
+                >
                   {copy.sitio.nav.paraQuien}
                 </Link>
               </NavigationMenu.Link>
