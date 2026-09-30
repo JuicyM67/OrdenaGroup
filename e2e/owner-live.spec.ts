@@ -270,9 +270,10 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
   await manualDialog
     .getByLabel(agenda.manual.campos.servicio, { exact: true })
     .selectOption({ label: "Corte clásico" });
-  await manualDialog
-    .getByLabel(agenda.manual.campos.dia, { exact: true })
-    .fill(today);
+  // WP-50: el campo "Día" ya no es un <input type="date"> (mostraba mm/dd/yyyy según el
+  // idioma del navegador) sino un botón que abre un MiniCalendar — el diálogo ya se abre
+  // con `defaultDate={focus}` = `today` (ver `/app/agenda?vista=dia&fecha=${today}` arriba),
+  // así que no hace falta tocarlo.
   await manualDialog
     .getByLabel(agenda.manual.campos.hora, { exact: true })
     .fill("18:11");
@@ -299,9 +300,7 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
     .click();
   const moveDialog = page.getByRole("dialog", { name: agenda.mover.titulo });
   await expect(moveDialog).toBeVisible();
-  await moveDialog
-    .getByLabel(agenda.manual.campos.dia, { exact: true })
-    .fill(today);
+  // WP-50: mismo motivo que arriba — la reserva es de hoy, `defaultDate` ya es `today`.
   // 18:20 + 35 min (Corte clásico) = 18:55, dentro del horario (cierra 19:00) — 18:31
   // se pasaría de la hora de cierre y daría outside_hours.
   await moveDialog

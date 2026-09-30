@@ -13,6 +13,10 @@ export type AgendaToolbarProps = {
   onPrevWeek: () => void;
   onNextWeek: () => void;
   onNewBooking: () => void;
+  /** WP-50: månadsvyn byter pilarna mot `calendario.mesAnterior`/`mesSiguiente` — standard
+   * (vecko-/dagvyn) oförändrad. */
+  prevLabel?: string;
+  nextLabel?: string;
 };
 
 export function AgendaToolbar({
@@ -21,6 +25,8 @@ export function AgendaToolbar({
   onPrevWeek,
   onNextWeek,
   onNewBooking,
+  prevLabel = calendario.semanaAnterior,
+  nextLabel = calendario.semanaSiguiente,
 }: AgendaToolbarProps) {
   return (
     <div className="flex h-12 items-center gap-3">
@@ -31,7 +37,7 @@ export function AgendaToolbar({
         {calendario.hoy}
       </Button>
       <IconButton
-        label={calendario.semanaAnterior}
+        label={prevLabel}
         tone="ghost"
         size={34}
         onClick={onPrevWeek}
@@ -43,7 +49,7 @@ export function AgendaToolbar({
         />
       </IconButton>
       <IconButton
-        label={calendario.semanaSiguiente}
+        label={nextLabel}
         tone="ghost"
         size={34}
         onClick={onNextWeek}

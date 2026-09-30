@@ -11,6 +11,7 @@ import { X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
+import { DateField } from "@/components/ui/date-field";
 import { IconButton } from "@/components/ui/icon-button";
 import { Select } from "@/components/ui/select";
 import { TextField } from "@/components/ui/text-field";
@@ -266,13 +267,10 @@ export function ManualBookingDialog({
               </Select>
 
               <div className="grid grid-cols-2 gap-3">
-                <TextField
+                <DateField
                   label={agenda.manual.campos.dia}
-                  type="date"
                   value={date}
-                  onChange={(e) => {
-                    setDate(e.target.value);
-                  }}
+                  onChange={setDate}
                   error={errors.date}
                   required
                 />

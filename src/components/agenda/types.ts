@@ -88,3 +88,8 @@ export type AgendaData = {
   /** Reservas per profesional för en given dag (dagvyns kolumnhuvud). */
   readonly dayCounts?: Record<LocalDate, Record<StaffId, number>>;
 };
+
+/** WP-50: reservas per profesional för varje dag i en månad (månadsvyn), samma
+ * form som `AgendaData["dayCounts"]` men för hela månaden. Returneras av
+ * `loadOwnerAgendaMonthCounts` (`src/server/owner/agenda.ts`). */
+export type MonthDayCounts = Record<LocalDate, Record<StaffId, number>>;

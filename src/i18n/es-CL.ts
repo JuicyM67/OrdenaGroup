@@ -589,6 +589,20 @@ export const agenda = {
   /** aria-label de la sección semanal: "Semana del {desde} al {hasta}". */
   semana: (p: { desde: string; hasta: string }): string =>
     `Semana del ${p.desde} al ${p.hasta}`,
+  /** WP-50: vista mensual (`month-grid.tsx`, härledd — ingen ritad referens). */
+  mes: {
+    /** aria-label de `<section aria-label="Cuadrícula del mes">`. */
+    rejillaAria: "Cuadrícula del mes",
+    /** aria-label de una celda de día con reservas: "{fecha}, {n} reservas". */
+    celdaConReservasAria: (p: { fecha: string; n: number }): string =>
+      `${p.fecha}, ${p.n} ${p.n === 1 ? "reserva" : "reservas"}`,
+    celdaSinReservasAria: (p: { fecha: string }): string =>
+      `${p.fecha}, sin reservas`,
+    celdaCerradaAria: (p: { fecha: string }): string => `${p.fecha}, cerrado`,
+    /** Botón (mobile) que alterna entre la vista Día y Mes. */
+    verMesAria: "Ver el mes",
+    verDiaAria: "Ver el día",
+  },
   bloqueo: {
     almuerzo: "Almuerzo",
     bloqueado: "bloqueado",
