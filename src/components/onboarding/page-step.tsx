@@ -1,0 +1,169 @@
+"use client";
+
+// Paso "Tu página" (WP-51), entre horario y "Tu link". Todo opcional
+// ("Saltar este paso" reutiliza `onboarding.ctaSaltar`): omslag, logga,
+// dirección e Instagram/TikTok/Facebook. A diferencia de los pasos
+// anteriores, el negocio YA EXISTE cuando se muestra este paso (creado por
+// `finish()` en onboarding-wizard.tsx) — por eso reutiliza directamente
+// `SingleImageField` (profile-section.tsx) y `SocialHandleField`
+// (booking/social-icons.tsx), los mismos componentes que Ajustes → Perfil,
+// en vez de un formulario propio.
+import { useState } from "react";
+
+import {
+  FacebookGlyph,
+  InstagramGlyph,
+  SocialHandleField,
+  TiktokGlyph,
+} from "@/components/booking/social-icons";
+import { SingleImageField } from "@/components/settings/profile-section";
+import { Button } from "@/components/ui/button";
+import { TextField } from "@/components/ui/text-field";
+import { negocio, onboarding, perfil, redesSociales } from "@/i18n";
+
+import { onboardingErrorText } from "./error-text";
+import type { PageStepActions } from "./types";
+
+export type PageStepProps = {
+  /** Del paso "business" (ya guardado): se reenvía tal cual para no
+   * borrarlo — `updateProfile`/`updateBusinessProfile` siempre escribe las
+   * cuatro columnas (about/instagram/address/phone) juntas. */
+  phone: string;
+  actions: PageStepActions;
+  onContinue: () => void;
+  onSkip: () => void;
+};
+
+export function PageStep({ phone, actions, onContinue, onSkip }: PageStepProps) {
+  const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [address, setAddress] = useState("");
+  const [instagram, setInstagram] = useState("");
+  const [tiktok, setTiktok] = useState("");
+  const [facebook, setFacebook] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  async function handleContinue() {
+    if (submitting) return;
+    setSubmitting(true);
+    setError(undefined);
+    try {
+      const result = await actions.updateProfile({
+        about: "",
+        instagram,
+        tiktok,
+        facebook,
+        address,
+        phone,
+      });
+      if (result.ok) {
+        onContinue();
+      } else {
+        setError(onboardingErrorText(result.code));
+      }
+    } catch {
+      setError(onboardingErrorText("unknown"));
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-1.5">
+        <p className="text-13 font-semibold text-muted">
+          {onboarding.paso({ n: 4, total: 5 })}
+        </p>
+        <h1 className="text-22 font-bold tracking-title text-ink">
+          {onboarding.pasos.pagina}
+        </h1>
+        <p className="text-13 text-muted">{onboarding.intro.pagina}</p>
+      </div>
+
+      <div className="flex flex-col gap-4 rounded-tile bg-surface p-4">
+        <SingleImageField
+          label={perfil.ajustes.campos.portadaLabel}
+          help={perfil.ajustes.campos.portadaAyuda}
+          url={coverUrl}
+          kind="cover"
+          actions={actions}
+          onChange={setCoverUrl}
+        />
+        <SingleImageField
+          label={perfil.ajustes.campos.logoLabel}
+          help={perfil.ajustes.campos.logoAyuda}
+          url={logoUrl}
+          kind="logo"
+          actions={actions}
+          onChange={setLogoUrl}
+        />
+      </div>
+
+      <TextField
+        label={negocio.campos.addressLabel}
+        placeholder={negocio.campos.addressPlaceholder}
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+        maxLength={200}
+      />
+
+      <SocialHandleField
+        icon={InstagramGlyph}
+        label={perfil.ajustes.campos.instagramLabel}
+        placeholder={perfil.ajustes.campos.instagramPlaceholder.replace(
+          /^@/,
+          "",
+        )}
+        hint={perfil.ajustes.campos.instagramAyuda}
+        value={instagram}
+        onChange={(e) => setInstagram(e.target.value)}
+      />
+
+      <SocialHandleField
+        icon={TiktokGlyph}
+        label={redesSociales.campos.tiktokLabel}
+        placeholder={redesSociales.campos.tiktokPlaceholder}
+        hint={redesSociales.campos.tiktokAyuda}
+        value={tiktok}
+        onChange={(e) => setTiktok(e.target.value)}
+      />
+
+      <SocialHandleField
+        icon={FacebookGlyph}
+        label={redesSociales.campos.facebookLabel}
+        placeholder={redesSociales.campos.facebookPlaceholder}
+        hint={redesSociales.campos.facebookAyuda}
+        value={facebook}
+        onChange={(e) => setFacebook(e.target.value)}
+      />
+
+      {error ? (
+        <p role="alert" className="text-13 font-semibold text-ink">
+          {error}
+        </p>
+      ) : null}
+
+      <div className="flex gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          size="xl"
+          disabled={submitting}
+          onClick={onSkip}
+        >
+          {onboarding.ctaSaltar}
+        </Button>
+        <Button
+          type="button"
+          size="xl"
+          className="flex-1"
+          disabled={submitting}
+          onClick={() => void handleContinue()}
+        >
+          {onboarding.ctaContinuar}
+        </Button>
+      </div>
+    </div>
+  );
+}

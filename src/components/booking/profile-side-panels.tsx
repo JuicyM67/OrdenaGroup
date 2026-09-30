@@ -15,14 +15,16 @@ import {
   mapsUrl,
   mustParseInstant,
 } from "./profile-view";
+import { SocialLinks } from "./social-icons";
 import type { BookingProfile, BookingService, IsoInstant } from "./types";
 
-// Rena externa länkar (Google Maps, Instagram) — `<a>` rakt av, inte
-// `TextLink` (`next/link`): `next/link` finns annars ingenstans i den här
-// routens klientbunt (`/{slug}` har ingen intern navigation), så den skulle
-// bara dra in `next/link`s klientkod för två länkar som aldrig navigerar
-// inom appen (JS-budgeten, D-032, e2e/reserva.spec.ts). Samma textstil som
-// `TextLink` (text-link.tsx), kopierad hit av samma skäl.
+// Rena externa länkar (Google Maps) — `<a>` rakt av, inte `TextLink`
+// (`next/link`): `next/link` finns annars ingenstans i den här routens
+// klientbunt (`/{slug}` har ingen intern navigation), så den skulle bara dra
+// in `next/link`s klientkod för en länk som aldrig navigerar inom appen
+// (JS-budgeten, D-032, e2e/reserva.spec.ts). Samma textstil som `TextLink`
+// (text-link.tsx), kopierad hit av samma skäl. Instagram/TikTok/Facebook
+// (WP-51) har egna ikonknappar, se `SocialLinks` (social-icons.tsx).
 const EXTERNAL_LINK_CLASS =
   "text-13 font-semibold text-ink underline transition-colors duration-150 ease-out hover:text-pending-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none";
 
@@ -114,33 +116,34 @@ export function MapCard({ address }: { address: string | null }) {
 
 export function ContactCard({
   phone,
-  instagram,
+  instagramUrl,
+  tiktokUrl,
+  facebookUrl,
   businessName,
 }: {
   phone: string | null;
-  instagram: string | null;
+  instagramUrl: string | null;
+  tiktokUrl: string | null;
+  facebookUrl: string | null;
   businessName: string;
 }) {
-  if (!phone && !instagram) return null;
+  if (!phone && !instagramUrl && !tiktokUrl && !facebookUrl) return null;
   return (
-    <Card radius="tile" padding="lg" className="flex flex-col gap-1.5">
+    <Card radius="tile" padding="lg" className="flex flex-col gap-2.5">
       <p className="text-15 font-bold text-ink">
         {perfil.publico.secciones.contacto}
       </p>
       {phone ? (
         <span className="text-14 text-ink">{formatPhone(phone as E164)}</span>
       ) : null}
-      {instagram ? (
-        <a
-          href={`https://instagram.com/${instagram}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={perfil.publico.instagramAria({ negocio: businessName })}
-          className={EXTERNAL_LINK_CLASS}
-        >
-          @{instagram}
-        </a>
-      ) : null}
+      <SocialLinks
+        instagramUrl={instagramUrl}
+        tiktokUrl={tiktokUrl}
+        facebookUrl={facebookUrl}
+        businessName={businessName}
+        tone="canvas"
+        size={44}
+      />
     </Card>
   );
 }

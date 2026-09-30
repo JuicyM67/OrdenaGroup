@@ -10,7 +10,12 @@
 import { Chip } from "@/components/ui/chip";
 import { initialsOf } from "@/lib/format/initials";
 
-import { nextAvailableChipLabel, openChipLabel } from "./profile-view";
+import { SocialLinks } from "./social-icons";
+import {
+  businessCategoryLabel,
+  nextAvailableChipLabel,
+  openChipLabel,
+} from "./profile-view";
 import type { BookingBusiness, BookingProfile, IsoInstant } from "./types";
 
 export function ProfileHeader({
@@ -24,7 +29,10 @@ export function ProfileHeader({
 }) {
   const initials = initialsOf(business.name);
   const proximaHora = nextAvailableChipLabel(now, profile.nextAvailable);
-  const location = [business.comuna, profile.address]
+  // WP-51: "Barbería · Providencia" (bransch · comuna), no comuna + dirección
+  // completa (esa combinación repetía la comuna dos veces — ver el reporte).
+  // Misma forma que la referencia ("Frisör · Götgatan 12").
+  const location = [businessCategoryLabel(business.category), business.comuna]
     .filter(Boolean)
     .join(" · ");
 
@@ -70,7 +78,7 @@ export function ProfileHeader({
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-1.5 px-4 pt-3.5 lg:hidden">
+      <div className="flex flex-wrap items-center gap-1.5 px-4 pt-3.5 lg:hidden">
         <Chip tone="success" size="sm">
           {openChipLabel(profile.openNow)}
         </Chip>
@@ -79,6 +87,15 @@ export function ProfileHeader({
             {proximaHora}
           </Chip>
         ) : null}
+        <SocialLinks
+          instagramUrl={profile.instagramUrl}
+          tiktokUrl={profile.tiktokUrl}
+          facebookUrl={profile.facebookUrl}
+          businessName={business.name}
+          tone="surface"
+          size={36}
+          className="ml-auto"
+        />
       </div>
     </div>
   );
@@ -124,13 +141,15 @@ function ProfileLogo({
 export function ProfileChipsDesktop({
   profile,
   now,
+  businessName,
 }: {
   profile: BookingProfile;
   now: IsoInstant;
+  businessName: string;
 }) {
   const proximaHora = nextAvailableChipLabel(now, profile.nextAvailable);
   return (
-    <div className="hidden gap-2 lg:flex">
+    <div className="hidden items-center gap-2 lg:flex">
       <Chip tone="success" size="sm">
         {openChipLabel(profile.openNow)}
       </Chip>
@@ -139,6 +158,15 @@ export function ProfileChipsDesktop({
           {proximaHora}
         </Chip>
       ) : null}
+      <SocialLinks
+        instagramUrl={profile.instagramUrl}
+        tiktokUrl={profile.tiktokUrl}
+        facebookUrl={profile.facebookUrl}
+        businessName={businessName}
+        tone="surface"
+        size={36}
+        className="ml-auto"
+      />
     </div>
   );
 }

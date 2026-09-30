@@ -8,7 +8,7 @@
  * fase 1 y el respaldo por correo.
  *
  * Alcance (WP-03b, F1–F3, F9–F11): inicio de sesión (`acceso`), onboarding
- * en 4 pasos, el perfil del negocio (`negocio`) y el catálogo (`servicios`,
+ * en 5 pasos (WP-51 agregó "Tu página"), el perfil del negocio (`negocio`) y el catálogo (`servicios`,
  * `profesionales`, `horarios`), Clientes (F9), Caja (F10), Ajustes y el
  * abono por Mercado Pago (`abono`, F11), más las validaciones de esas
  * pantallas (`validacion`). Estas exportaciones viven al final del archivo
@@ -1674,7 +1674,7 @@ export const negocio = {
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
-// onboarding: cuenta nueva en 4 pasos (F1, "menos de 10 minutos")
+// onboarding: cuenta nueva en 5 pasos (F1, "menos de 10 minutos"; WP-51 agregó "Tu página")
 // ---------------------------------------------------------------------------
 
 /** Forma sin género para quien atiende sin equipo (revisión de seguridad,
@@ -1684,7 +1684,7 @@ const AGREGA_EQUIPO_VACIO =
   "Agrega a las personas que atienden. Si atiendes sin equipo, agrégate a ti.";
 
 export const onboarding = {
-  bienvenida: "Configura tu agenda en 4 pasos, toma menos de 10 minutos.",
+  bienvenida: "Configura tu agenda en 5 pasos, toma menos de 10 minutos.",
   paso: (p: { n: number; total: number }): string =>
     `Paso ${p.n} de ${p.total}`,
   /** Mismos nombres que las secciones equivalentes en `ajustes.secciones`
@@ -1693,6 +1693,10 @@ export const onboarding = {
     servicios: "Servicios",
     equipo: "Equipo",
     horario: "Horario",
+    /** WP-51: paso nuevo entre horario y link. El negocio ya existe en la
+     * base de datos en este paso (a diferencia de los anteriores) — ver el
+     * comentario sobre `finish()` en onboarding-wizard.tsx. */
+    pagina: "Tu página",
     link: "Tu link",
   },
   ctaContinuar: "Continuar",
@@ -1704,6 +1708,9 @@ export const onboarding = {
     servicios: "Agrega lo que ofreces: nombre, duración y precio.",
     equipo: AGREGA_EQUIPO_VACIO,
     horario: "Cuéntanos cuándo atiendes cada día.",
+    /** WP-51: todos los campos de este paso son opcionales ("Saltar este
+     * paso" reutiliza `ctaSaltar`). */
+    pagina: "Agrega fotos y datos de contacto para que te encuentren. Todo esto es opcional.",
     link: "Con esto ya tienes tu página de reservas lista.",
   },
   listo: {
@@ -2972,4 +2979,29 @@ export const invitacion = {
     limiteDelPlan:
       "El plan de este negocio no permite más cuentas de personal por ahora.",
   },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// redesSociales: WP-51 — TikTok y Facebook en el perfil público (`/[slug]`,
+// header y tarjeta de contacto) y en Ajustes → Perfil / onboarding
+// "Tu página". Bloque nuevo (en vez de ampliar `perfil`/`negocio`) para
+// evitar conflictos con otros agentes que tocan es-CL.ts en paralelo (ver
+// el worktree de WP-51). Instagram reutiliza las claves que ya existían
+// (`perfil.ajustes.campos.instagram*`, `perfil.publico.instagramAria`):
+// mismo vocabulario, sin duplicar.
+// ---------------------------------------------------------------------------
+
+export const redesSociales = {
+  campos: {
+    tiktokLabel: "TikTok",
+    tiktokPlaceholder: "tunegocio",
+    tiktokAyuda: "Solo tu usuario, sin el link completo.",
+    facebookLabel: "Facebook",
+    facebookPlaceholder: "tunegocio",
+    facebookAyuda: "Solo tu usuario, sin el link completo.",
+  },
+  /** aria-label de los botones de ícono en el perfil público (header y
+   * tarjeta de contacto). Instagram reutiliza `perfil.publico.instagramAria`. */
+  tiktokAria: (p: { negocio: string }): string => `TikTok de ${p.negocio}`,
+  facebookAria: (p: { negocio: string }): string => `Facebook de ${p.negocio}`,
 } as const satisfies Trad;

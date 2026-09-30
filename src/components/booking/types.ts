@@ -77,6 +77,12 @@ export interface BookingBusiness {
   readonly slug: string;
   readonly name: string;
   readonly comuna: string;
+  /** WP-51: rubro (`negocio.rubros`, p. ej. "barberia"), mostrado en el
+   * encabezado del perfil junto a la comuna ("Barbería · Providencia",
+   * `ProfilDesktop.dc.html`/`ProfilMobil.dc.html`: "Frisör · Götgatan 12").
+   * Frivilligt (fixturer/tester saknar det) — behandla en saknad nyckel som
+   * `null`, samma mönster som `categoryId` i `BookingService`. */
+  readonly category?: string | null;
   readonly city: string;
   readonly weekdaysOpen: readonly IsoWeekday[];
   readonly open: LocalTime;
@@ -104,6 +110,15 @@ export interface BookingProfile {
   readonly logoUrl: string | null;
   /** Handtag utan "@". */
   readonly instagram: string | null;
+  /** WP-51: mismas reglas que instagram (handtag utan "@", 1–30 tecken). */
+  readonly tiktok: string | null;
+  readonly facebook: string | null;
+  /** WP-51: länkar redan byggda på servern utifrån handtaget ovan
+   * (`page-data.ts`) — klienten konstruerar aldrig sociala URL:er själv.
+   * `null` om inget handtag är satt. */
+  readonly instagramUrl: string | null;
+  readonly tiktokUrl: string | null;
+  readonly facebookUrl: string | null;
   readonly address: string | null;
   /** E.164. */
   readonly phone: string | null;

@@ -1289,13 +1289,14 @@ export const negocio: Widen<typeof Es.negocio> = {
 // ---------------------------------------------------------------------------
 
 export const onboarding: Widen<typeof Es.onboarding> = {
-  bienvenida: "Ställ in din kalender i 4 steg, det tar mindre än 10 minuter.",
+  bienvenida: "Ställ in din kalender i 5 steg, det tar mindre än 10 minuter.",
   paso: (p: { n: number; total: number }): string =>
     `Steg ${p.n} av ${p.total}`,
   pasos: {
     servicios: "Tjänster",
     equipo: "Personal",
     horario: "Öppettider",
+    pagina: "Din sida",
     link: "Din länk",
   },
   ctaContinuar: "Fortsätt",
@@ -1306,6 +1307,8 @@ export const onboarding: Widen<typeof Es.onboarding> = {
     servicios: "Lägg till det du erbjuder: namn, tid och pris.",
     equipo: AGREGA_EQUIPO_VACIO_SV,
     horario: "Berätta när du har öppet varje dag.",
+    pagina:
+      "Lägg till foton och kontaktuppgifter så att kunderna hittar dig. Allt är valfritt.",
     link: "Nu har du din bokningssida klar.",
   },
   listo: {
@@ -2237,6 +2240,24 @@ export const invitacion: Widen<typeof Es.invitacion> = {
 };
 
 // ---------------------------------------------------------------------------
+// redesSociales: WP-51 — TikTok och Facebook, se es-CL.ts för motivering av
+// det egna blocket (i stället för att bygga ut `perfil`/`negocio`).
+// ---------------------------------------------------------------------------
+
+export const redesSociales: Widen<typeof Es.redesSociales> = {
+  campos: {
+    tiktokLabel: "TikTok",
+    tiktokPlaceholder: "dittforetag",
+    tiktokAyuda: "Bara ditt användarnamn, utan hela länken.",
+    facebookLabel: "Facebook",
+    facebookPlaceholder: "dittforetag",
+    facebookAyuda: "Bara ditt användarnamn, utan hela länken.",
+  },
+  tiktokAria: (p: { negocio: string }): string => `TikTok för ${p.negocio}`,
+  facebookAria: (p: { negocio: string }): string => `Facebook för ${p.negocio}`,
+};
+
+// ---------------------------------------------------------------------------
 // Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
@@ -2273,5 +2294,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   solicitudes,
   equipo,
   invitacion,
+  redesSociales,
 };
 void _check;

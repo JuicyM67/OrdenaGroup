@@ -66,7 +66,11 @@ export function ProfileBrowse({
       <div className="hidden px-30 pt-20 pb-20 lg:block">
         <div className="flex gap-8">
           <main className="flex min-w-0 flex-1 flex-col gap-4.5">
-            <ProfileChipsDesktop profile={profile} now={data.now} />
+            <ProfileChipsDesktop
+              profile={profile}
+              now={data.now}
+              businessName={business.name}
+            />
             <h2 className="font-display text-28 font-bold text-ink">
               {perfil.publico.secciones.reservarHora}
             </h2>
@@ -121,7 +125,9 @@ export function ProfileBrowse({
             <MapCard address={profile.address} />
             <ContactCard
               phone={profile.phone}
-              instagram={profile.instagram}
+              instagramUrl={profile.instagramUrl}
+              tiktokUrl={profile.tiktokUrl}
+              facebookUrl={profile.facebookUrl}
               businessName={business.name}
             />
           </aside>
@@ -191,7 +197,9 @@ export function ProfileBrowse({
               <MapCard address={profile.address} />
               <ContactCard
                 phone={profile.phone}
-                instagram={profile.instagram}
+                instagramUrl={profile.instagramUrl}
+                tiktokUrl={profile.tiktokUrl}
+                facebookUrl={profile.facebookUrl}
                 businessName={business.name}
               />
             </div>

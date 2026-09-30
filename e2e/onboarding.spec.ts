@@ -1,6 +1,7 @@
-// F1, WP-15: inloggning (magisk länk, lokal Supabase + Mailpit) → onboarding i 4 steg →
-// bokningslänk. Egen, fräsch session (ignorerar storageState-projektet i playwright.config.ts,
-// som redan är inloggad OCH onboardad) — den här specen gör hela flödet själv, från noll.
+// F1, WP-15: inloggning (magisk länk, lokal Supabase + Mailpit) → onboarding i 5 steg
+// (WP-51 lade till "Tu página" mellan Horario och Tu link) → bokningslänk. Egen, fräsch
+// session (ignorerar storageState-projektet i playwright.config.ts, som redan är inloggad
+// OCH onboardad) — den här specen gör hela flödet själv, från noll.
 import { expect, test } from "@playwright/test";
 
 import { waitForConfirmLink } from "./helpers/mailpit";
@@ -35,7 +36,7 @@ test("login → onboarding → länk till bokningssidan", async ({
   await page.getByLabel("Teléfono del negocio").fill("+56912345678");
   await page.getByRole("button", { name: "Continuar" }).click();
 
-  // Paso 1 de 4: Servicios.
+  // Paso 1 de 5: Servicios.
   await expect(page.getByRole("heading", { name: "Servicios" })).toBeVisible();
   await page.getByRole("button", { name: "Agregar servicio" }).click();
   await page.getByLabel("Nombre del servicio").fill("Corte de pelo");
@@ -43,20 +44,26 @@ test("login → onboarding → länk till bokningssidan", async ({
   await page.getByLabel("Precio").fill("12000");
   await page.getByRole("button", { name: "Continuar" }).click();
 
-  // Paso 2 de 4: Equipo.
+  // Paso 2 de 5: Equipo.
   await expect(page.getByRole("heading", { name: "Equipo" })).toBeVisible();
   await page.getByRole("button", { name: "Agregar profesional" }).click();
   await page.getByLabel("Nombre").fill("Diego");
   await page.getByRole("button", { name: "Corte de pelo" }).click();
   await page.getByRole("button", { name: "Continuar" }).click();
 
-  // Paso 3 de 4: Horario (se dejan los valores por defecto: lun–vie 09:00–19:00).
+  // Paso 3 de 5: Horario (se dejan los valores por defecto: lun–vie 09:00–19:00).
   await expect(page.getByRole("heading", { name: "Horario" })).toBeVisible();
   // WP-26: casilla obligatoria de términos + encargo, nunca premarcada.
   await page.getByRole("checkbox", { name: /Acepto los Términos/ }).check();
   await page.getByRole("button", { name: "Continuar" }).click();
 
-  // Paso 4 de 4: Tu link.
+  // Paso 4 de 5: Tu página (WP-51) — el negocio ya existe acá. Todo es
+  // opcional: este flujo salta el paso (la subida de imágenes ya se
+  // cubre en las pruebas de Ajustes → Perfil, mismos componentes).
+  await expect(page.getByRole("heading", { name: "Tu página" })).toBeVisible();
+  await page.getByRole("button", { name: "Saltar este paso" }).click();
+
+  // Paso 5 de 5: Tu link.
   await expect(
     page.getByRole("heading", { name: "Tu link está listo" }),
   ).toBeVisible();

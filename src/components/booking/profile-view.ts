@@ -4,7 +4,7 @@
  * UI räknar aldrig ut tillgänglighet eller pris (hård regel 2): allt här
  * bara formaterar text ur redan färdig data (`BookingProfile`).
  */
-import { calendario, horarios, perfil } from "@/i18n";
+import { calendario, horarios, negocio, perfil } from "@/i18n";
 import {
   APP_TZ,
   formatLocalDate,
@@ -16,7 +16,12 @@ import {
   type IsoWeekday,
 } from "@/lib/format/dates";
 
-import type { BookingProfile, BookingProfileHours, IsoInstant } from "./types";
+import type {
+  BookingBusiness,
+  BookingProfile,
+  BookingProfileHours,
+  IsoInstant,
+} from "./types";
 
 /** Samma mönster som `dashboard/inicio-view.ts`: kastar hellre än att tysta ett datafel. */
 export function mustParseInstant(iso: IsoInstant, fn: string): Date {
@@ -130,6 +135,17 @@ export function hoursRows(
  * inbäddad karta i v1). */
 export function mapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+}
+
+/** WP-51: "Barbería · Providencia" en el encabezado (`negocio.rubros[category]`;
+ * una categoría desconocida o sin configurar se omite, no se muestra la
+ * clave cruda). */
+export function businessCategoryLabel(
+  category: BookingBusiness["category"],
+): string | null {
+  if (!category) return null;
+  const rubros = negocio.rubros as Record<string, string | undefined>;
+  return rubros[category] ?? null;
 }
 
 /** Avatartonerna för Personal-korten (design: lilac/peach/sky), cyklade per index —

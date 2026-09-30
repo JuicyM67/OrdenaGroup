@@ -1,7 +1,18 @@
 // Klientens interna form av onboarding-wizarden (WP-15 slim, F1). Skickas till servern
 // bara en gång, i sista steget (`onboarding-wizard.tsx`); `src/server/onboarding/schemas.ts`
 // validerar allt på nytt.
+//
+// WP-51 (steget "Tu página"): till skillnad från `business`/`services`/`staff`/`hours`
+// ovan sparas det här steget INTE i `WizardData`/`onboardingInputSchema` — det körs
+// EFTER att företaget redan skapats (se `finish()` i onboarding-wizard.tsx), så det
+// återanvänder samma server actions som Ajustes → Perfil (`app/onboarding/actions.ts`,
+// tunna omslag runt `src/server/owner/profile.ts`) i stället för ett eget skrivsteg i
+// den stora transaktionen.
 import type { IsoWeekday } from "@/lib/format/dates";
+import type {
+  ProfileMutationResult,
+  SingleImageFieldActions,
+} from "@/components/settings/profile-types";
 
 export type WizardBusiness = {
   name: string;
@@ -44,6 +55,9 @@ export const STEP_IDS = [
   "services",
   "staff",
   "hours",
+  // WP-51: entre "hours" (fin de la transacción, el negocio ya existe) y
+  // "done" ("Tu link").
+  "pagina",
   "done",
 ] as const;
 export type StepId = (typeof STEP_IDS)[number];
@@ -56,3 +70,12 @@ export type StepId = (typeof STEP_IDS)[number];
  */
 export type OnboardingSubmitResult =
   { ok: true; businessId: string; slug: string } | { ok: false; code: string };
+
+/** Server actions för steget "Tu página" (WP-51) — `businessId` skickas
+ * aldrig från klienten, servern läser det ur sessionen (samma mönster som
+ * `ProfileActions`, `settings/profile-types.ts`). Delar bilduppladdningens
+ * form med `SingleImageField` (`profile-section.tsx`, återanvänd oförändrad
+ * här). */
+export type PageStepActions = SingleImageFieldActions & {
+  updateProfile: (input: unknown) => Promise<ProfileMutationResult>;
+};
