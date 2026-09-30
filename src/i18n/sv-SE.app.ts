@@ -465,6 +465,16 @@ export const agenda: Widen<typeof Es.agenda> = {
   vistaAria: "Vy",
   semana: (p: { desde: string; hasta: string }): string =>
     `Vecka från ${p.desde} till ${p.hasta}`,
+  mes: {
+    rejillaAria: "Månadsöversikt",
+    celdaConReservasAria: (p: { fecha: string; n: number }): string =>
+      `${p.fecha}, ${p.n} ${p.n === 1 ? "bokning" : "bokningar"}`,
+    celdaSinReservasAria: (p: { fecha: string }): string =>
+      `${p.fecha}, inga bokningar`,
+    celdaCerradaAria: (p: { fecha: string }): string => `${p.fecha}, stängt`,
+    verMesAria: "Visa månaden",
+    verDiaAria: "Visa dagen",
+  },
   bloqueo: {
     almuerzo: "Lunch",
     bloqueado: "blockerad",

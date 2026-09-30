@@ -3,7 +3,9 @@
 // `vista`, fokusdag, synliga profesionales, vald bokning och lokala statusändringar
 // (WP-12 FRÅGA 7). URL:en hålls i synk med `?vista=&fecha=` via `router.replace`
 // (ingen historikpost per klick).
+import { CalendarDays } from "lucide-react";
 import {
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -13,6 +15,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import { IconButton } from "@/components/ui/icon-button";
 import type { YearMonth } from "@/components/ui/mini-calendar/grid";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
@@ -65,12 +68,25 @@ import type {
 import { ManualBookingDialog } from "./manual-booking-dialog";
 import { MobileDayNav } from "./mobile-day-nav";
 import { MonthCard } from "./month-card";
+import { MonthGrid } from "./month-grid";
+import {
+  monthCountsFromBookings,
+  monthTitle,
+  summarizeMonthCounts,
+  type MonthDaySummary,
+} from "./month-view";
 import { MoveDialog } from "./move-dialog";
 import { NowLine } from "./now-line";
 import { StaffFilter } from "./staff-filter";
 import { StaffSwitcher } from "./staff-switcher";
 import { TimeGrid, type TimeGridColumn } from "./time-grid";
-import type { AgendaBooking, AgendaData, StaffId } from "./types";
+import type {
+  AgendaBooking,
+  AgendaData,
+  MonthDayCounts,
+  StaffColor,
+  StaffId,
+} from "./types";
 import { useIsDesktopLayout } from "./use-desktop-layout";
 import { WaitlistSummary } from "./waitlist-summary";
 
@@ -80,7 +96,7 @@ const SWIPE_THRESHOLD_PX = 48;
 
 export type AgendaActionResult = { ok: true } | { ok: false; error: string };
 
-type Vista = "semana" | "dia";
+type Vista = "semana" | "dia" | "mes";
 
 export type AgendaScreenProps = {
   data: AgendaData;
@@ -128,6 +144,11 @@ export type AgendaScreenProps = {
   onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
   /** WP-47: `logout` (server action). `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
+  /** WP-50: hämtar antal bokningar per profesional och dag för en hel månad (server
+   * action, samma closure-mönster som `onArrival`). `undefined` i design lab — månadsvyn
+   * räknar då bara ur `data.bookings` i stället (`monthCountsFromBookings`), vilket bara
+   * täcker den vecka som redan är laddad. */
+  onLoadMonthCounts?: (month: YearMonth) => Promise<MonthDayCounts>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -162,6 +183,7 @@ export function AgendaScreen({
   onExportCustomer,
   onAnonymizeCustomer,
   onLogout,
+  onLoadMonthCounts,
 }: AgendaScreenProps) {
   const router = useRouter();
   const tz = data.timezone as TimeZone;
@@ -226,7 +248,10 @@ export function AgendaScreen({
     const start = touchStart.current;
     touchStart.current = null;
     const t = e.changedTouches[0];
-    if (!start || !t) return;
+    // WP-50: svepet byter bara dag i dagvyn — i månadsvyn ligger MonthGrid i samma
+    // wrapper (touch-lyssnarna sitter kvar där), men en horisontell svep där ska inte
+    // hoppa en dag åt gången.
+    if (vista !== "dia" || !start || !t) return;
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
     if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy) * 2)
@@ -259,6 +284,46 @@ export function AgendaScreen({
 
   const visibleStaff = data.staff.filter((s) => visibleStaffIds.has(s.id));
   const staffById = new Map(data.staff.map((s) => [s.id, s]));
+
+  // WP-50: månadsvyns antal per dag. `onLoadMonthCounts` (server action) hämtar en hel
+  // månad; utan den (design lab) räknas bara ur den redan laddade veckans bokningar
+  // (`monthCountsFromBookings`), se AgendaScreenProps. Beror bara på props (`data.staff`/
+  // `data.bookings`, referensstabila mellan klientinteraktioner) och `browsedMonth`, aldrig
+  // på det ominnehållna `staffById` (skulle annars köra om varje rendering).
+  // Utan `onLoadMonthCounts` (design lab) finns inget att hämta asynkront — räkna bara ur
+  // den redan laddade veckans bokningar direkt (ren härledning, inget `useEffect`/state).
+  const [fetchedMonthCounts, setFetchedMonthCounts] =
+    useState<MonthDayCounts | null>(null);
+  const [monthCountsLoading, setMonthCountsLoading] = useState(false);
+  useEffect(() => {
+    if (vista !== "mes" || !onLoadMonthCounts) return undefined;
+    let cancelled = false;
+    // Nästlad async-funktion (inte `await` direkt i effektkroppen): `setMonthCountsLoading`
+    // ska bara köras som svar på anropet vi själva startar, inte synkront i varje
+    // effekt-körning (react-hooks/set-state-in-effect — kaskaderande omrendering).
+    async function run(onLoad: (m: YearMonth) => Promise<MonthDayCounts>) {
+      setMonthCountsLoading(true);
+      try {
+        const counts = await onLoad(browsedMonth);
+        if (!cancelled) setFetchedMonthCounts(counts);
+      } finally {
+        if (!cancelled) setMonthCountsLoading(false);
+      }
+    }
+    void run(onLoadMonthCounts);
+    return () => {
+      cancelled = true;
+    };
+  }, [vista, browsedMonth, onLoadMonthCounts]);
+  const staffColorById = new Map<StaffId, StaffColor>(
+    data.staff.map((s) => [s.id, s.color]),
+  );
+  const monthCounts = onLoadMonthCounts
+    ? fetchedMonthCounts
+    : monthCountsFromBookings(data.bookings, browsedMonth, tz);
+  const monthSummary: ReadonlyMap<LocalDate, MonthDaySummary> = monthCounts
+    ? summarizeMonthCounts(monthCounts, staffColorById)
+    : new Map();
 
   function bookingWithOverride(booking: AgendaBooking): AgendaBooking {
     const override = arrivalOverrides[booking.id];
@@ -525,13 +590,27 @@ export function AgendaScreen({
           </>
         }
       >
-        {/* Skrivbordet (≥ lg): vecko-/dagvyn, oförändrad (npm run visual agenda/agenda-dia). */}
+        {/* Skrivbordet (≥ lg): vecko-/dagvyn, oförändrad (npm run visual agenda/agenda-dia).
+            WP-50: månadsvyn (härledd, ingen ritad referens) delar samma ram. */}
         <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
           <AgendaToolbar
-            title={weekTitle(focus)}
-            onToday={() => goTo(vista, today)}
-            onPrevWeek={() => goTo(vista, addLocalDays(focus, -7))}
-            onNextWeek={() => goTo(vista, addLocalDays(focus, 7))}
+            title={
+              vista === "mes" ? monthTitle(browsedMonth) : weekTitle(focus)
+            }
+            prevLabel={vista === "mes" ? calendario.mesAnterior : undefined}
+            nextLabel={vista === "mes" ? calendario.mesSiguiente : undefined}
+            onToday={() => {
+              if (vista === "mes") setBrowsedMonth(monthOf(today));
+              else goTo(vista, today);
+            }}
+            onPrevWeek={() => {
+              if (vista === "mes") setBrowsedMonth(prevMonth);
+              else goTo(vista, addLocalDays(focus, -7));
+            }}
+            onNextWeek={() => {
+              if (vista === "mes") setBrowsedMonth(nextMonth);
+              else goTo(vista, addLocalDays(focus, 7));
+            }}
             onNewBooking={() => {
               if (onCreateManualBooking) setManualDialogOpen(true);
             }}
@@ -541,26 +620,38 @@ export function AgendaScreen({
               aria-label={agenda.vistaAria}
               value={vista}
               onValueChange={(v) => {
-                if (v === "semana" || v === "dia") goTo(v, focus);
+                if (v === "semana" || v === "dia" || v === "mes")
+                  goTo(v, focus);
               }}
               options={[
-                { value: "mes", label: calendario.vista.mes, disabled: true },
+                { value: "mes", label: calendario.vista.mes },
                 { value: "semana", label: calendario.vista.semana },
                 { value: "dia", label: calendario.vista.dia },
               ]}
             />
           </div>
-          <DayPillRow
-            days={week}
-            today={today}
-            closedDates={closedDates}
-            gmtLabel={offsetLbl}
-            vista={vista}
-            selectedDate={vista === "dia" ? focus : null}
-            onSelectDay={(date) => goTo("dia", date)}
-          />
+          {vista !== "mes" ? (
+            <DayPillRow
+              days={week}
+              today={today}
+              closedDates={closedDates}
+              gmtLabel={offsetLbl}
+              vista={vista}
+              selectedDate={vista === "dia" ? focus : null}
+              onSelectDay={(date) => goTo("dia", date)}
+            />
+          ) : null}
           {isDesktopLayout ? (
-            vista === "semana" ? (
+            vista === "mes" ? (
+              <MonthGrid
+                month={browsedMonth}
+                today={today}
+                hours={data.business.hours}
+                counts={monthSummary}
+                loading={monthCountsLoading}
+                onSelectDay={(date) => goTo("dia", date)}
+              />
+            ) : vista === "semana" ? (
               <TimeGrid
                 ariaLabel={sectionAria(
                   week[0] as LocalDate,
@@ -594,18 +685,52 @@ export function AgendaScreen({
         </div>
 
         {/* Mobil (< lg): dagvy som standard, en profesional åt gången (WP-42 — härledd,
-            ingen ritad referens). Ingen veckovy på mobil. */}
+            ingen ritad referens). Ingen veckovy på mobil, men WP-50 lägger till en
+            Día/Mes-växlare (egen rad — mobilen har ingen SegmentedControl, och en sjätte
+            knapp i MobileDayNav trängde undan månadstiteln, granskningsfynd). */}
         <div className="flex min-h-0 flex-1 flex-col gap-3 lg:hidden">
+          <div className="flex justify-end">
+            <IconButton
+              label={
+                vista === "mes" ? agenda.mes.verDiaAria : agenda.mes.verMesAria
+              }
+              aria-pressed={vista === "mes"}
+              tone={vista === "mes" ? "ink" : "ghost"}
+              size={44}
+              onClick={() => goTo(vista === "mes" ? "dia" : "mes", focus)}
+            >
+              <CalendarDays
+                aria-hidden="true"
+                className="size-5"
+                strokeWidth={2}
+              />
+            </IconButton>
+          </div>
           <MobileDayNav
-            title={formatLocalDate(focus, "weekdayDayMonthShort")}
-            onToday={() => goTo("dia", today)}
-            onPrevDay={() => goTo("dia", addLocalDays(focus, -1))}
-            onNextDay={() => goTo("dia", addLocalDays(focus, 1))}
+            title={
+              vista === "mes"
+                ? monthTitle(browsedMonth)
+                : formatLocalDate(focus, "weekdayDayMonthShort")
+            }
+            prevLabel={vista === "mes" ? calendario.mesAnterior : undefined}
+            nextLabel={vista === "mes" ? calendario.mesSiguiente : undefined}
+            onToday={() => {
+              if (vista === "mes") setBrowsedMonth(monthOf(today));
+              else goTo("dia", today);
+            }}
+            onPrevDay={() => {
+              if (vista === "mes") setBrowsedMonth(prevMonth);
+              else goTo("dia", addLocalDays(focus, -1));
+            }}
+            onNextDay={() => {
+              if (vista === "mes") setBrowsedMonth(nextMonth);
+              else goTo("dia", addLocalDays(focus, 1));
+            }}
             onNewBooking={() => {
               if (onCreateManualBooking) setManualDialogOpen(true);
             }}
           />
-          {data.staff.length > 1 ? (
+          {data.staff.length > 1 && vista !== "mes" ? (
             <StaffSwitcher
               staff={data.staff}
               selectedId={highlightedStaffId}
@@ -618,24 +743,36 @@ export function AgendaScreen({
             onTouchEnd={handleDayTouchEnd}
           >
             {!isDesktopLayout ? (
-              <DayGrid
-                data={data}
-                date={focus}
-                tz={tz}
-                today={today}
-                now={now}
-                gridRange={gridRange}
-                visibleStaff={data.staff.filter(
-                  (s) => s.id === highlightedStaffId,
-                )}
-                highlightedStaffId={highlightedStaffId}
-                selectedBookingId={selectedBookingId}
-                renderTrigger={(b, t) =>
-                  renderPopoverIfSelected(b, t, "mobile")
-                }
-                onSelectBooking={(id) => selectBooking(id, "mobile")}
-                initialScrollHour={scrollHour}
-              />
+              vista === "mes" ? (
+                <MonthGrid
+                  month={browsedMonth}
+                  today={today}
+                  hours={data.business.hours}
+                  counts={monthSummary}
+                  loading={monthCountsLoading}
+                  onSelectDay={(date) => goTo("dia", date)}
+                  className="mt-0"
+                />
+              ) : (
+                <DayGrid
+                  data={data}
+                  date={focus}
+                  tz={tz}
+                  today={today}
+                  now={now}
+                  gridRange={gridRange}
+                  visibleStaff={data.staff.filter(
+                    (s) => s.id === highlightedStaffId,
+                  )}
+                  highlightedStaffId={highlightedStaffId}
+                  selectedBookingId={selectedBookingId}
+                  renderTrigger={(b, t) =>
+                    renderPopoverIfSelected(b, t, "mobile")
+                  }
+                  onSelectBooking={(id) => selectBooking(id, "mobile")}
+                  initialScrollHour={scrollHour}
+                />
+              )
             ) : null}
           </div>
         </div>

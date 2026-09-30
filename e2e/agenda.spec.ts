@@ -250,13 +250,11 @@ test.describe("Agenda — tangentbord", () => {
     await expect(dialog).not.toBeVisible();
   });
 
-  test("piltangenter i SegmentedControl hoppar över Mes (disabled)", async ({
-    page,
-  }) => {
+  test("piltangenter i SegmentedControl når Mes (WP-50)", async ({ page }) => {
     await page.goto("/design-lab/agenda");
     await page.getByRole("radio", { name: "Semana" }).focus();
     await page.keyboard.press("ArrowLeft");
-    await expect(page.getByRole("radio", { name: "Día" })).toBeFocused();
+    await expect(page.getByRole("radio", { name: "Mes" })).toBeFocused();
   });
 });
 

@@ -20,7 +20,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pgErrorCode } from "@/server/db/errors";
 import { kickOutbox } from "@/server/messaging/outbox";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
-import { loadOwnerAgendaWeek } from "@/server/owner/agenda";
+import {
+  loadOwnerAgendaMonthCounts,
+  loadOwnerAgendaWeek,
+} from "@/server/owner/agenda";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import {
   createManualBooking,
@@ -72,6 +75,13 @@ export default async function AppAgendaPage({
   const onArrival = async (bookingId: string, status: ArrivalStatus) => {
     "use server";
     await markArrival(user.id, business.id, bookingId, status);
+  };
+
+  // WP-50: agendans månadsvy — hämtas per efterfrågad månad i stället för att skickas med
+  // sidans första laddning (samma closure-mönster som `onArrival`).
+  const onLoadMonthCounts = async (month: { year: number; month: number }) => {
+    "use server";
+    return loadOwnerAgendaMonthCounts(user.id, business.id, month);
   };
 
   const onCreateManualBooking = async (input: unknown) => {
@@ -140,7 +150,9 @@ export default async function AppAgendaPage({
   return (
     <AgendaScreen
       data={data}
-      initialVista={vista === "dia" ? "dia" : "semana"}
+      initialVista={
+        vista === "dia" ? "dia" : vista === "mes" ? "mes" : "semana"
+      }
       initialFecha={parsedFecha?.ok ? parsedFecha.value : undefined}
       showMover={true}
       onArrival={onArrival}
@@ -151,6 +163,7 @@ export default async function AppAgendaPage({
       onExportCustomer={onExportCustomer}
       onAnonymizeCustomer={onAnonymizeCustomer}
       onLogout={logout}
+      onLoadMonthCounts={onLoadMonthCounts}
     />
   );
 }

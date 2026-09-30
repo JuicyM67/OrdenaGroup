@@ -8,6 +8,8 @@ import type {
   AgendaStaff,
   BookingSource,
   BookingStatus,
+  MonthDayCounts,
+  StaffId,
   TimeOffKind,
 } from "@/components/agenda/types";
 import type { Clp } from "@/lib/format/clp";
@@ -15,6 +17,7 @@ import {
   addLocalDays,
   localDayRange,
   startOfLocalWeek,
+  toLocalDate,
   APP_TZ,
   type LocalDate,
   type LocalTime,
@@ -208,4 +211,76 @@ export async function loadOwnerAgendaWeekIn(
     waitlist: null,
     weekCounts,
   };
+}
+
+/** month: 1–12, kan inte återanvända `mini-calendar/grid.ts`s `YearMonth` här (den lever i
+ * src/components/ui, `src/server` importerar inga körtidsvärden därifrån). */
+type YearMonth = { year: number; month: number };
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Kalendermånadens första dag och sista dag (båda inkluderade). */
+function monthDateRange(month: YearMonth): {
+  start: LocalDate;
+  endInclusive: LocalDate;
+} {
+  const start =
+    `${String(month.year).padStart(4, "0")}-${pad2(month.month)}-01` as LocalDate;
+  const next =
+    month.month === 12
+      ? { year: month.year + 1, month: 1 }
+      : { year: month.year, month: month.month + 1 };
+  const nextStart =
+    `${String(next.year).padStart(4, "0")}-${pad2(next.month)}-01` as LocalDate;
+  return { start, endInclusive: addLocalDays(nextStart, -1) };
+}
+
+/**
+ * Antal bokningar per profesional och dag för en hel kalendermånad (WP-50, agendans
+ * månadsvy). Smal jämfört med `loadOwnerAgendaWeek`: ingen kund-/tjänstedata, bara det
+ * `MonthGrid` (`src/components/agenda/month-grid.tsx`) faktiskt visar (prickar + antal) —
+ * profesionalens färg slås upp av klienten mot den redan laddade `data.staff`.
+ */
+export async function loadOwnerAgendaMonthCounts(
+  userId: string,
+  businessId: string,
+  month: YearMonth,
+): Promise<MonthDayCounts> {
+  return withOwnerTx(userId, (q) =>
+    loadOwnerAgendaMonthCountsIn(q, businessId, month),
+  );
+}
+
+type MonthCountRow = { staff_id: string; start_ms: number };
+
+/** Inre steg (för tester): kör i anroparens transaktion. */
+export async function loadOwnerAgendaMonthCountsIn(
+  q: Queryable,
+  businessId: string,
+  month: YearMonth,
+): Promise<MonthDayCounts> {
+  const { start, endInclusive } = monthDateRange(month);
+  const rangeStart = localDayRange(start, APP_TZ).start;
+  const rangeEnd = localDayRange(endInclusive, APP_TZ).end;
+
+  const res = await q.query<MonthCountRow>(
+    `select bk.staff_id,
+            extract(epoch from lower(bk.period)) * 1000 as start_ms
+       from public.bookings bk
+      where bk.business_id = $1
+        and bk.status <> 'cancelled'
+        and bk.period && tstzrange($2, $3, '[)')`,
+    [businessId, rangeStart, rangeEnd],
+  );
+
+  const counts: Record<string, Record<StaffId, number>> = {};
+  for (const row of res.rows) {
+    const date = toLocalDate(new Date(row.start_ms), APP_TZ);
+    const byStaff = counts[date] ?? {};
+    byStaff[row.staff_id] = (byStaff[row.staff_id] ?? 0) + 1;
+    counts[date] = byStaff;
+  }
+  return counts;
 }
