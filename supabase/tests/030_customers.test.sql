@@ -56,10 +56,13 @@ select throws_ok($$ insert into public.customers (business_id, phone_e164, name)
 select throws_ok($$ update public.customers set name = 'x' where id = 'aaaaaaaa-3000-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.customers where id = 'aaaaaaaa-3000-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA ser noll rader.
+-- 6. staffA ser nu A:s kunder (WP-46 steg 2, Ägarens svar punkt 3: hela
+-- kalendern/kundregistret är läsbart för owner+staff), men kan fortfarande
+-- inte skapa/ändra/ta bort kunder (ingen can_manage_all_bookings/owner).
+-- vendorA oförändrad (0).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.customers)::int, 0, 'staffA ser noll kunder');
+select is((select count(*) from public.customers)::int, 2, 'staffA ser A:s kunder (bara läsning)');
 select throws_ok(
   $$ insert into public.customers (business_id, phone_e164, name) values ('aaaaaaaa-0000-0000-0000-000000000001', '+56900007777', 'Otro') $$,
   '42501'

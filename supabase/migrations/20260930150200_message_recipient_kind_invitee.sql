@@ -1,0 +1,16 @@
+-- WP-46 · Steg 4 (db-engineer) · Nytt mottagartyp-värde 'invitee'
+-- F#: F1/F6 (personalinbjudan). Plan: docs/tasks/plans/WP-46.md, steg 4.
+--
+-- `alter type ... add value` kan inte köras i samma transaktion som den
+-- körs i (Postgres-begränsning) — samma mönster som
+-- 20260930140000_booking_status_requested.sql. Nästa migration
+-- (20260930150300_member_invitations.sql) skapar `member_invitations` och
+-- kan då referera värdet (i kommentarer/framtida kod; själva kolumnen
+-- `message_outbox.recipient_kind` ändras inte här, bara den tillåtna
+-- mängden värden växer).
+--
+-- Arbetaren (WP-16/integrations-engineer, senare WP) slår upp
+-- inbjudningens adress via `message_outbox.payload->>'invitation_id'` när
+-- `recipient_kind = 'invitee'` — ingen adress i utkorgen, samma D-029/D-030-
+-- mönster som redan gäller för 'customer'/'owner'.
+alter type public.message_recipient_kind add value 'invitee';

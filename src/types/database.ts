@@ -611,9 +611,94 @@ export type Database = {
           },
         ];
       };
+      member_invitations: {
+        Row: {
+          accepted_at: string | null;
+          business_id: string;
+          can_cancel_bookings: boolean;
+          can_edit_catalog: boolean;
+          can_edit_settings: boolean;
+          can_manage_all_bookings: boolean;
+          can_manage_own_bookings: boolean;
+          can_manage_team: boolean;
+          can_view_reports: boolean;
+          created_at: string;
+          email: string;
+          expires_at: string;
+          id: string;
+          invited_by: string;
+          revoked_at: string | null;
+          staff_id: string;
+          token_hash: string;
+          updated_at: string;
+        };
+        Insert: {
+          accepted_at?: string | null;
+          business_id: string;
+          can_cancel_bookings?: boolean;
+          can_edit_catalog?: boolean;
+          can_edit_settings?: boolean;
+          can_manage_all_bookings?: boolean;
+          can_manage_own_bookings?: boolean;
+          can_manage_team?: boolean;
+          can_view_reports?: boolean;
+          created_at?: string;
+          email: string;
+          expires_at?: string;
+          id?: string;
+          invited_by: string;
+          revoked_at?: string | null;
+          staff_id: string;
+          token_hash: string;
+          updated_at?: string;
+        };
+        Update: {
+          accepted_at?: string | null;
+          business_id?: string;
+          can_cancel_bookings?: boolean;
+          can_edit_catalog?: boolean;
+          can_edit_settings?: boolean;
+          can_manage_all_bookings?: boolean;
+          can_manage_own_bookings?: boolean;
+          can_manage_team?: boolean;
+          can_view_reports?: boolean;
+          created_at?: string;
+          email?: string;
+          expires_at?: string;
+          id?: string;
+          invited_by?: string;
+          revoked_at?: string | null;
+          staff_id?: string;
+          token_hash?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "member_invitations_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "member_invitations_business_id_staff_id_fkey";
+            columns: ["business_id", "staff_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
       memberships: {
         Row: {
           business_id: string;
+          can_cancel_bookings: boolean;
+          can_edit_catalog: boolean;
+          can_edit_settings: boolean;
+          can_manage_all_bookings: boolean;
+          can_manage_own_bookings: boolean;
+          can_manage_team: boolean;
+          can_view_reports: boolean;
           created_at: string;
           role: Database["public"]["Enums"]["member_role"];
           staff_id: string | null;
@@ -622,6 +707,13 @@ export type Database = {
         };
         Insert: {
           business_id: string;
+          can_cancel_bookings?: boolean;
+          can_edit_catalog?: boolean;
+          can_edit_settings?: boolean;
+          can_manage_all_bookings?: boolean;
+          can_manage_own_bookings?: boolean;
+          can_manage_team?: boolean;
+          can_view_reports?: boolean;
           created_at?: string;
           role: Database["public"]["Enums"]["member_role"];
           staff_id?: string | null;
@@ -630,6 +722,13 @@ export type Database = {
         };
         Update: {
           business_id?: string;
+          can_cancel_bookings?: boolean;
+          can_edit_catalog?: boolean;
+          can_edit_settings?: boolean;
+          can_manage_all_bookings?: boolean;
+          can_manage_own_bookings?: boolean;
+          can_manage_team?: boolean;
+          can_view_reports?: boolean;
           created_at?: string;
           role?: Database["public"]["Enums"]["member_role"];
           staff_id?: string | null;
@@ -1080,6 +1179,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      accept_invitation: { Args: { token: string }; Returns: string };
       create_business: {
         Args: {
           category: string;
@@ -1113,7 +1213,7 @@ export type Database = {
       message_channel: "email" | "sms";
       message_outbox_status:
         "queued" | "sending" | "sent" | "failed" | "dead" | "cancelled";
-      message_recipient_kind: "customer" | "owner";
+      message_recipient_kind: "customer" | "owner" | "invitee";
       payment_kind: "deposit" | "balance" | "full";
       payment_method: "cash" | "card_terminal" | "transfer" | "mercadopago";
       payment_status: "pending" | "approved" | "rejected" | "refunded";
@@ -1281,7 +1381,7 @@ export const Constants = {
         "dead",
         "cancelled",
       ],
-      message_recipient_kind: ["customer", "owner"],
+      message_recipient_kind: ["customer", "owner", "invitee"],
       payment_kind: ["deposit", "balance", "full"],
       payment_method: ["cash", "card_terminal", "transfer", "mercadopago"],
       payment_status: ["pending", "approved", "rejected", "refunded"],

@@ -1,5 +1,7 @@
--- INV-3/INV-4: tenant-isolering för `staff`. FRÅGA 4: staff/vendor ser inga
--- rader i katalogen (bara sin egen businesses-/membership-rad, se 010/011).
+-- INV-3/INV-4: tenant-isolering för `staff`. WP-46 (steg 2): staff ser nu
+-- HELA personallistan (`private.is_member(business_id, array['owner','staff'])`),
+-- men kan fortfarande inte skriva utan `can_manage_team`. `vendor` (WP-35)
+-- är oförändrad: ingen åtkomst alls (FRÅGA 4, se 010/011).
 begin;
 create extension if not exists pgtap with schema extensions;
 select plan(18);
@@ -52,10 +54,12 @@ select throws_ok($$ insert into public.staff (business_id, name, color) values (
 select throws_ok($$ update public.staff set name = 'x' where id = 'aaaaaaaa-1000-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.staff where id = 'aaaaaaaa-1000-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA ser noll rader och kan inte skriva.
+-- 6. staffA ser nu A:s personal (WP-46: hela kalendern/katalogen är läsbar
+-- för owner+staff), men kan fortfarande inte skriva (ingen can_manage_team).
+-- vendorA ser fortfarande noll rader.
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.staff)::int, 0, 'staffA ser noll personal');
+select is((select count(*) from public.staff)::int, 1, 'staffA ser A:s personal (bara läsning)');
 select throws_ok(
   $$ insert into public.staff (business_id, name, color) values ('aaaaaaaa-0000-0000-0000-000000000001', 'Otro', 'staff-1') $$,
   '42501'

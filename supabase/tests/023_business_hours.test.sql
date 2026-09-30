@@ -51,10 +51,11 @@ select throws_ok($$ insert into public.business_hours (business_id, weekday, sta
 select throws_ok($$ update public.business_hours set end_time = '18:00' where id = 'aaaaaaaa-2300-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.business_hours where id = 'aaaaaaaa-2300-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA ser noll rader.
+-- 6. staffA ser nu A:s öppettider (WP-46 steg 2: läsning för owner+staff),
+-- men kan fortfarande inte skriva (ingen can_edit_settings). vendorA (0).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.business_hours)::int, 0, 'staffA ser noll öppettider');
+select is((select count(*) from public.business_hours)::int, 1, 'staffA ser A:s öppettider (bara läsning)');
 select throws_ok(
   $$ insert into public.business_hours (business_id, weekday, start_time, end_time) values ('aaaaaaaa-0000-0000-0000-000000000001', 5, '10:00', '19:00') $$,
   '42501'

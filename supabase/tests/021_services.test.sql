@@ -57,10 +57,11 @@ select throws_ok($$ insert into public.services (business_id, name, duration_min
 select throws_ok($$ update public.services set name = 'x' where id = 'aaaaaaaa-2000-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.services where id = 'aaaaaaaa-2000-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA ser noll rader och kan inte skriva.
+-- 6. staffA ser nu A:s tjänster (WP-46: läsning för owner+staff), men kan
+-- fortfarande inte skriva (ingen can_edit_catalog). vendorA oförändrad (0).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.services)::int, 0, 'staffA ser noll tjänster');
+select is((select count(*) from public.services)::int, 1, 'staffA ser A:s tjänster (bara läsning)');
 select throws_ok(
   $$ insert into public.services (business_id, name, duration_min, price_clp) values ('aaaaaaaa-0000-0000-0000-000000000001', 'Otro', 30, 5000) $$,
   '42501'
