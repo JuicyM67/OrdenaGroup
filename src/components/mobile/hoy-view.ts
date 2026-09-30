@@ -29,7 +29,10 @@ export function todayLabel(now: Date): string {
   return formatDate(now, APP_TZ, "weekdayDayMonthLong");
 }
 
-const OPEN_STATUSES = new Set(["confirmed", "pending_payment"]);
+// WP-45 (D-033): "requested" här också — annars försvinner en väntande förfrågan
+// helt ur "Siguiente"/"Resto del día" (granskningsfynd i WP-45-planen: ett
+// allowlist-filter som `<> 'cancelled'` inte hade missat).
+const OPEN_STATUSES = new Set(["confirmed", "pending_payment", "requested"]);
 
 function isEligibleToday(
   b: HoyBooking,
@@ -105,17 +108,30 @@ export function relative(now: Date, start: Date): string {
 
 export type NextChip = { tone: "success" | "pending"; label: string };
 
-/** Bekräftad av kunden → success ("Confirmó"), annars pending ("Sin confirmar"). */
+/** WP-45 (D-033): en väntande förfrågan (`requested`) → "Por confirmar", före
+ * kundens egen bekräftelse (annat begrepp, `confirmed_by_customer_at`).
+ * Annars: bekräftad av kunden → success ("Confirmó"), annars pending
+ * ("Sin confirmar"). */
 export function nextChip(b: HoyBooking): NextChip {
+  if (b.status === "requested") {
+    return { tone: "pending", label: estados.porConfirmar };
+  }
   return b.confirmedByCustomer
     ? { tone: "success", label: estados.confirmo }
     : { tone: "pending", label: estados.sinConfirmar };
 }
 
-export type RowTag = { tone: "lime" | "peach" | "peach-50"; label: string };
+export type RowTag = {
+  tone: "lime" | "peach" | "peach-50" | "pending";
+  label: string;
+};
 
-/** Högst en tagg, med prioritet Flash > Desde lista > Abono, annars ingen (FRÅGA 6). */
+/** Högst en tagg. WP-45 (D-033): "Por confirmar" (en väntande förfrågan) går
+ * före allt annat — annars Flash > Desde lista > Abono, som förut (FRÅGA 6). */
 export function rowTag(b: HoyBooking): RowTag | undefined {
+  if (b.status === "requested") {
+    return { tone: "pending", label: estados.porConfirmar };
+  }
   if (b.source === "flash") return { tone: "lime", label: estados.flash };
   if (b.source === "waitlist")
     return { tone: "peach", label: estados.desdeLista };

@@ -163,6 +163,18 @@ for (const tz of [undefined, "UTC", "Europe/Stockholm"]) {
         expect(nextBooking(bookings, now)?.id).toBe("ongoing");
       });
 
+      it("WP-45: en väntande förfrågan (requested) räknas som nästa kund (granskningsfynd — ett allowlist-filter hade tappat den)", () => {
+        const bookings = [
+          booking({
+            id: "solicitud",
+            status: "requested",
+            start: "2026-10-02T15:00:00-03:00",
+            end: "2026-10-02T15:30:00-03:00",
+          }),
+        ];
+        expect(nextBooking(bookings, now)?.id).toBe("solicitud");
+      });
+
       it("en bokning i morgon räknas inte", () => {
         const bookings = [
           booking({
@@ -238,6 +250,14 @@ for (const tz of [undefined, "UTC", "Europe/Stockholm"]) {
           rowTag(booking({ source: "manual", depositPaidClp: 0 })),
         ).toBeUndefined();
       });
+
+      it("WP-45: requested → Por confirmar, före Flash/Desde lista/Abono", () => {
+        expect(
+          rowTag(
+            booking({ status: "requested", source: "flash", depositPaidClp: 5000 }),
+          ),
+        ).toEqual({ tone: "pending", label: "Por confirmar" });
+      });
     });
 
     describe("nextChip", () => {
@@ -253,6 +273,12 @@ for (const tz of [undefined, "UTC", "Europe/Stockholm"]) {
           tone: "pending",
           label: "Sin confirmar",
         });
+      });
+
+      it("WP-45: requested → pending/Por confirmar, oavsett confirmedByCustomer", () => {
+        expect(
+          nextChip(booking({ status: "requested", confirmedByCustomer: true })),
+        ).toEqual({ tone: "pending", label: "Por confirmar" });
       });
     });
   });
