@@ -57,26 +57,29 @@ select throws_ok($$ update public.customers set name = 'x' where id = 'aaaaaaaa-
 select throws_ok($$ delete from public.customers where id = 'aaaaaaaa-3000-0000-0000-000000000001' $$, '42501');
 
 -- 6. staffA ser nu A:s kunder (WP-46 steg 2, Ägarens svar punkt 3: hela
--- kalendern/kundregistret är läsbart för owner+staff), men kan fortfarande
--- inte skapa/ändra/ta bort kunder (ingen can_manage_all_bookings/owner).
--- vendorA oförändrad (0).
+-- kalendern/kundregistret är läsbart för owner+staff). staffA har
+-- can_manage_own_bookings=true som standard (WP-46 uppföljning 2: räcker nu
+-- också för att skapa/ändra kunder — kundregistret är delat, och en
+-- profesional med bara egna bokningar måste kunna skapa en manuell bokning
+-- på sig själv och markera Llegó/No vino) — men kan fortfarande inte RADERA
+-- en kund (bara ägaren, privacy). vendorA oförändrad (0, ingen åtkomst alls).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select count(*) from public.customers)::int, 2, 'staffA ser A:s kunder (bara läsning)');
-select throws_ok(
+select lives_ok(
   $$ insert into public.customers (business_id, phone_e164, name) values ('aaaaaaaa-0000-0000-0000-000000000001', '+56900007777', 'Otro') $$,
-  '42501'
+  'staffA kan skapa en kund (can_manage_own_bookings räcker)'
 );
 with updated as (
-  update public.customers set name = 'Hackeado' where id = 'aaaaaaaa-3000-0000-0000-000000000001'
+  update public.customers set name = 'Editado por staff' where id = 'aaaaaaaa-3000-0000-0000-000000000001'
   returning 1
 )
-select is((select count(*) from updated)::int, 0, 'staffA kan inte uppdatera en kund (0 rader)');
+select is((select count(*) from updated)::int, 1, 'staffA kan uppdatera en kund (can_manage_own_bookings räcker)');
 with deleted as (
   delete from public.customers where id = 'aaaaaaaa-3000-0000-0000-000000000001'
   returning 1
 )
-select is((select count(*) from deleted)::int, 0, 'staffA kan inte radera en kund (0 rader)');
+select is((select count(*) from deleted)::int, 0, 'staffA kan inte radera en kund (0 rader, bara ägaren)');
 
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);
 select is((select count(*) from public.customers)::int, 0, 'vendorA ser noll kunder');

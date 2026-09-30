@@ -365,6 +365,7 @@ export type Database = {
           cover_url: string | null;
           created_at: string;
           deletion_requested_at: string | null;
+          facebook: string | null;
           id: string;
           instagram: string | null;
           logo_url: string | null;
@@ -378,6 +379,7 @@ export type Database = {
           status: Database["public"]["Enums"]["business_status"];
           status_before_deletion_request:
             Database["public"]["Enums"]["business_status"] | null;
+          tiktok: string | null;
           timezone: string;
           trial_ends_at: string | null;
           updated_at: string;
@@ -394,6 +396,7 @@ export type Database = {
           cover_url?: string | null;
           created_at?: string;
           deletion_requested_at?: string | null;
+          facebook?: string | null;
           id?: string;
           instagram?: string | null;
           logo_url?: string | null;
@@ -407,6 +410,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["business_status"];
           status_before_deletion_request?:
             Database["public"]["Enums"]["business_status"] | null;
+          tiktok?: string | null;
           timezone?: string;
           trial_ends_at?: string | null;
           updated_at?: string;
@@ -423,6 +427,7 @@ export type Database = {
           cover_url?: string | null;
           created_at?: string;
           deletion_requested_at?: string | null;
+          facebook?: string | null;
           id?: string;
           instagram?: string | null;
           logo_url?: string | null;
@@ -436,6 +441,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["business_status"];
           status_before_deletion_request?:
             Database["public"]["Enums"]["business_status"] | null;
+          tiktok?: string | null;
           timezone?: string;
           trial_ends_at?: string | null;
           updated_at?: string;

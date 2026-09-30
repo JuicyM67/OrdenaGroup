@@ -52,10 +52,12 @@ select throws_ok($$ insert into public.staff_services (business_id, staff_id, se
 select throws_ok($$ update public.staff_services set staff_id = 'bbbbbbbb-1000-0000-0000-000000000001' where business_id = 'aaaaaaaa-0000-0000-0000-000000000001' $$, '42501');
 select throws_ok($$ delete from public.staff_services where business_id = 'aaaaaaaa-0000-0000-0000-000000000001' $$, '42501');
 
--- 6. staffA/vendorA ser noll rader.
+-- 6. staffA ser nu A:s staff_services (WP-46 uppföljning 2: SELECT för
+-- owner+staff), men kan fortfarande inte skriva (ingen can_manage_team).
+-- vendorA oförändrad (0).
 select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.staff_services)::int, 0, 'staffA ser noll staff_services');
+select is((select count(*) from public.staff_services)::int, 1, 'staffA ser A:s staff_services (bara läsning)');
 select throws_ok(
   $$ insert into public.staff_services (business_id, staff_id, service_id) values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001') $$,
   '42501'

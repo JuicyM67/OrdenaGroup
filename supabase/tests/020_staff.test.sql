@@ -4,7 +4,7 @@
 -- är oförändrad: ingen åtkomst alls (FRÅGA 4, se 010/011).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(22);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -89,6 +89,39 @@ select throws_ok(
   $$ insert into public.staff (business_id, name, color, title) values ('aaaaaaaa-0000-0000-0000-000000000001', 'X', 'staff-1', repeat('a', 101)) $$,
   '23514'
 );
+
+-- WP-46 uppföljning 2: en profesional utan can_manage_team kan ändra
+-- SIN EGEN photo_url/title (`private.staff_guard_self_update`), men inte
+-- name (kolumnspärr via triggern, inte RLS) och inte en kollegas rad alls
+-- (RLS `using` filtrerar bort den, 0 rader — ingen exception).
+insert into public.staff (id, business_id, name, color) values
+  ('aaaaaaaa-1000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', 'Staff A2', 'staff-2');
+insert into auth.users (id, email, role, aud) values
+  ('66666666-2222-2222-2222-222222222222', 'self-profile@example.com', 'authenticated', 'authenticated');
+insert into public.memberships (business_id, user_id, role, staff_id) values
+  ('aaaaaaaa-0000-0000-0000-000000000001', '66666666-2222-2222-2222-222222222222', 'staff', 'aaaaaaaa-1000-0000-0000-000000000001');
+
+select set_config('request.jwt.claims', json_build_object('sub', '66666666-2222-2222-2222-222222222222', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select lives_ok(
+  $$ update public.staff set photo_url = 'https://example.com/foto.jpg' where id = 'aaaaaaaa-1000-0000-0000-000000000001' $$,
+  'en profesional kan sätta sin EGEN photo_url utan can_manage_team'
+);
+select lives_ok(
+  $$ update public.staff set title = 'Barbero senior' where id = 'aaaaaaaa-1000-0000-0000-000000000001' $$,
+  'en profesional kan sätta sin EGEN title utan can_manage_team'
+);
+select throws_ok(
+  $$ update public.staff set name = 'Otro nombre' where id = 'aaaaaaaa-1000-0000-0000-000000000001' $$,
+  '42501'
+);
+with updated as (
+  update public.staff set photo_url = 'https://example.com/otro.jpg' where id = 'aaaaaaaa-1000-0000-0000-000000000002'
+  returning 1
+)
+select is((select count(*) from updated)::int, 0, 'en profesional kan inte ändra en kollegas photo_url (0 rader)');
+
+reset role;
 
 select finish();
 rollback;
