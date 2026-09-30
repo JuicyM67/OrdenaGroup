@@ -10,6 +10,7 @@ import { useId, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
+import { useSheetDrag } from "@/components/ui/use-sheet-drag";
 import { agenda, comun, errores } from "@/i18n";
 import type { LocalDate, LocalTime } from "@/lib/format/dates";
 
@@ -39,6 +40,11 @@ export function MoveDialog({
   onSubmit,
 }: MoveDialogProps) {
   const descriptionId = useId();
+  // WP-47 (tillägg D): dra-för-att-stänga på mobil (bottenark). Destrukturerad direkt, se
+  // manual-booking-dialog.tsx för motiveringen (`react-hooks/refs`).
+  const { panelRef, handleProps: dragHandleProps } = useSheetDrag(() =>
+    onOpenChange(false),
+  );
   const [step, setStep] = useState<Step>("elegir");
   const [date, setDate] = useState<string>(defaultDate);
   const [time, setTime] = useState<string>(defaultTime);
@@ -93,12 +99,20 @@ export function MoveDialog({
     >
       <Dialog.Portal>
         {/* WP-42: bottenark på mobil (items-end, rundade hörn bara upptill), centrerad dialog
-            från sm och uppåt (samma mönster som manual-booking-dialog.tsx). */}
+            från sm och uppåt (samma mönster som manual-booking-dialog.tsx). WP-47:
+            `bg-canvas` (kontrast mot vita fält), glider ner vid stängning och kan dras ner
+            (`useSheetDrag`) — se manual-booking-dialog.tsx för motiveringen. */}
         <Dialog.Overlay className="fixed inset-0 z-20 flex items-end justify-center bg-ink/45 sm:items-center sm:p-4">
           <Dialog.Content
+            ref={panelRef}
             aria-describedby={descriptionId}
-            className="flex max-h-full w-full max-w-sm flex-col gap-4 overflow-y-auto rounded-t-panel bg-surface p-6 shadow-popover sm:rounded-panel"
+            className="flex max-h-full w-full max-w-sm translate-y-0 flex-col gap-4 overflow-y-auto rounded-t-panel bg-canvas p-6 shadow-popover transition-transform duration-200 ease-out sm:rounded-panel sheet-closed:translate-y-full"
           >
+            <div
+              aria-hidden="true"
+              className="-mt-2 mb-1 h-1.5 w-10 shrink-0 touch-none self-center rounded-full bg-line-strong sm:hidden"
+              {...dragHandleProps}
+            />
             {step === "elegir" ? (
               <>
                 <div className="flex items-start justify-between">

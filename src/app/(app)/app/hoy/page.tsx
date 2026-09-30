@@ -8,6 +8,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { logout } from "@/app/auth/actions";
 import { HoyScreen } from "@/components/mobile/hoy-screen";
 import { hoy } from "@/i18n";
 import { APP_TZ, toLocalDate } from "@/lib/format/dates";
@@ -45,5 +46,12 @@ export default async function HoyPage() {
     await markArrival(user.id, business.id, bookingId, status);
   };
 
-  return <HoyScreen data={data} onArrival={onArrival} />;
+  return (
+    <HoyScreen
+      data={data}
+      onArrival={onArrival}
+      publicPageHref={`/${business.slug}`}
+      onLogout={logout}
+    />
+  );
 }

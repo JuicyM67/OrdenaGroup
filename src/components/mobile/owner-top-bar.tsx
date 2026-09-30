@@ -1,7 +1,11 @@
 // WP-42: kompakt mörk topprad för ägarens app-skal på < lg (AppShell/AgendaShell), när
-// sidomenyn (NavRail/AgendaRail) döljs. Logga + varumärkesnamn (`src/config/brand.ts`,
-// hård regel 10 — namnet finns bara där) och en "Cerrar sesión"-genväg (samma
-// oanslutna platshållare som `MainNav`s `NavRailLink href="#cerrar-sesion"`, WP-15).
+// sidomenyn (NavRail/AgendaRail) döljs. Logga (länk till /app/inicio) + varumärkesnamn
+// (`src/config/brand.ts`, hård regel 10 — namnet finns bara där) och en riktig
+// "Cerrar sesión" (`<form action={onLogout}>`, WP-47).
+//
+// `onLogout` tas emot som prop i stället för att importera `logout` (`@/app/auth/actions`)
+// direkt: den importerar `server-only` transitivt, och den här filen kan renderas av
+// komponenttester i Vitests "dom"-projekt (se main-nav.tsx för samma motiv).
 import { LogOut } from "lucide-react";
 import Link from "next/link";
 
@@ -11,21 +15,35 @@ import { nav } from "@/i18n";
 import { IconButton } from "@/components/ui/icon-button";
 import { LogoMark } from "@/components/ui/logo-mark";
 
-export function OwnerMobileTopBar() {
+export type OwnerMobileTopBarProps = {
+  /** `logout` (server action), bunden av anroparens `page.tsx`. `undefined` i design lab. */
+  onLogout?: () => void | Promise<void>;
+};
+
+export function OwnerMobileTopBar({ onLogout }: OwnerMobileTopBarProps) {
   return (
     <header
       data-surface="dark"
       className="flex shrink-0 items-center justify-between gap-3 bg-ink px-5 py-3 pt-safe-t lg:hidden"
     >
-      <span className="flex items-center gap-2.5">
+      <Link
+        href="/app/inicio"
+        aria-label={nav.volverAlInicio}
+        className="flex items-center gap-2.5 rounded-icon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime focus-visible:transition-none"
+      >
         <LogoMark label={nav.volverAlInicio} size={40} decorative />
         <span className="text-15 font-bold text-on-dark">{brand.name}</span>
-      </span>
-      <IconButton label={nav.cerrarSesion} tone="ghost-dark" size={44} asChild>
-        <Link href="#cerrar-sesion" prefetch={false}>
+      </Link>
+      <form action={onLogout ?? (() => {})}>
+        <IconButton
+          type="submit"
+          label={nav.cerrarSesion}
+          tone="ghost-dark"
+          size={44}
+        >
           <LogOut aria-hidden="true" className="size-5" strokeWidth={1.9} />
-        </Link>
-      </IconButton>
+        </IconButton>
+      </form>
     </header>
   );
 }

@@ -10,6 +10,7 @@ import { createContext, use, type ReactNode } from "react";
 import { LogoMark } from "./logo-mark";
 import { cn } from "./cn";
 import { IconButton, type IconButtonProps } from "./icon-button";
+import { Tooltip } from "./tooltip";
 
 type NavRailVariant = "bare" | "panel";
 
@@ -92,18 +93,51 @@ export function NavRailLink({
   prefetch,
 }: NavRailLinkProps) {
   return (
-    <Link
-      href={href}
-      prefetch={prefetch}
-      aria-label={label}
-      aria-current={active ? "page" : undefined}
-      className={cn(
-        "flex size-13 items-center justify-center rounded-control transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
-        active ? "bg-dark-2 text-lime" : "text-on-dark-subtle",
-      )}
-    >
-      {icon}
-    </Link>
+    // WP-47 (tillägg A): tooltip vid hover, samma `label` som aria-label — bara visuellt.
+    <Tooltip label={label}>
+      <Link
+        href={href}
+        prefetch={prefetch}
+        aria-label={label}
+        aria-current={active ? "page" : undefined}
+        className={cn(
+          "flex size-13 items-center justify-center rounded-control transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
+          active ? "bg-dark-2 text-lime" : "text-on-dark-subtle",
+        )}
+      >
+        {icon}
+      </Link>
+    </Tooltip>
+  );
+}
+
+export type NavRailFormActionProps = {
+  /** Server action (t.ex. `logout`, `src/app/auth/actions.ts`) — riktig
+   * `<form action={action}>`, fungerar utan JS (regel "riktiga knappar och länkar"). */
+  action: () => void | Promise<void>;
+  label: string;
+  icon: ReactNode;
+};
+
+/** Samma yta/beteende som `NavRailLink`, men en formulärknapp i stället för en länk
+ * (WP-47: "Cerrar sesión", som inte navigerar till en sida). */
+export function NavRailFormAction({
+  action,
+  label,
+  icon,
+}: NavRailFormActionProps) {
+  return (
+    <Tooltip label={label}>
+      <form action={action}>
+        <button
+          type="submit"
+          aria-label={label}
+          className="flex size-13 items-center justify-center rounded-control text-on-dark-subtle transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime"
+        >
+          {icon}
+        </button>
+      </form>
+    </Tooltip>
   );
 }
 
@@ -113,9 +147,20 @@ export type NavRailActionProps = Omit<IconButtonProps, "tone" | "size"> & {
 
 export function NavRailAction({
   shape = "circle",
+  label,
   ...props
 }: NavRailActionProps) {
-  return <IconButton tone="dark-2" size={56} shape={shape} {...props} />;
+  return (
+    <Tooltip label={label}>
+      <IconButton
+        tone="dark-2"
+        size={56}
+        shape={shape}
+        label={label}
+        {...props}
+      />
+    </Tooltip>
+  );
 }
 
 export function NavRailDivider() {

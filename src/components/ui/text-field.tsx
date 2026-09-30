@@ -1,11 +1,17 @@
 // Textfält för formulär (Reserva/datasteget, WP-13, R1/FRÅGA 2–3 i planen). Ingen
 // referens i *.dc.html: formspråket är härlett (vita fält h 52 `rounded-control`,
 // samma 2 px-kant som ServiceCard) och godkänt av ägaren via skärmdumpar (PR E).
+//
+// WP-47 (tillägg B): `type="time"` renderar `Time24Input` (maskerat textfält) i stället
+// för webbläsarens `<input type="time">` — den senare visar AM/PM efter webbläsarens
+// språk, inte appens (se time24-input.tsx). Bara de två anroparna som redan använder
+// `type="time"` (manual-booking-dialog.tsx, move-dialog.tsx) påverkas.
 import { AlertCircle } from "lucide-react";
-import type { ComponentPropsWithoutRef, Ref } from "react";
+import type { ChangeEvent, ComponentPropsWithoutRef, Ref } from "react";
 import { useId } from "react";
 
 import { cn } from "./cn";
+import { maskTime24 } from "./time24-input";
 
 export type TextFieldProps = Omit<
   ComponentPropsWithoutRef<"input">,
@@ -29,6 +35,8 @@ export function TextField({
   ref,
   className,
   inputClassName,
+  type,
+  onChange,
   ...props
 }: TextFieldProps) {
   const generatedId = useId();
@@ -36,6 +44,7 @@ export function TextField({
   const hintId = hint ? `${inputId}-hint` : undefined;
   const errorId = error ? `${inputId}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
+  const isTime = type === "time";
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
@@ -45,6 +54,19 @@ export function TextField({
       <input
         ref={ref}
         id={inputId}
+        {...props}
+        type={isTime ? "text" : type}
+        inputMode={isTime ? "numeric" : props.inputMode}
+        placeholder={isTime ? "HH:MM" : props.placeholder}
+        maxLength={isTime ? 5 : props.maxLength}
+        onChange={
+          isTime
+            ? (e: ChangeEvent<HTMLInputElement>) => {
+                e.target.value = maskTime24(e.target.value);
+                onChange?.(e);
+              }
+            : onChange
+        }
         aria-invalid={!!error}
         aria-describedby={describedBy}
         aria-required={required}
@@ -54,7 +76,6 @@ export function TextField({
           error && "border-alert",
           inputClassName,
         )}
-        {...props}
       />
       {hint ? (
         <span id={hintId} className="text-13 text-muted">

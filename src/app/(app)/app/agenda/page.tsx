@@ -13,6 +13,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
+import { logout } from "@/app/auth/actions";
 import { AgendaScreen } from "@/components/agenda/agenda-screen";
 import { parseLocalDate, APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -149,6 +150,7 @@ export default async function AppAgendaPage({
       onMoveBooking={onMoveBooking}
       onExportCustomer={onExportCustomer}
       onAnonymizeCustomer={onAnonymizeCustomer}
+      onLogout={logout}
     />
   );
 }

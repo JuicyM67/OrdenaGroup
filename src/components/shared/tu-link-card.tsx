@@ -31,6 +31,9 @@ function appUrl(): string {
 
 export function TuLinkCard({ slug, businessName, className }: TuLinkCardProps) {
   const [copied, setCopied] = useState(false);
+  // WP-47: la Clipboard API puede fallar (permiso denegado, contexto no seguro) — antes
+  // fallaba en silencio (`setCopied(false)`, indistinguible del estado inicial).
+  const [copyError, setCopyError] = useState(false);
   const url = `${appUrl()}/${slug}`;
   const mensaje = inicio.tuLink.mensajeWhatsapp({
     negocio: businessName,
@@ -41,8 +44,10 @@ export function TuLinkCard({ slug, businessName, className }: TuLinkCardProps) {
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
+      setCopyError(false);
     } catch {
       setCopied(false);
+      setCopyError(true);
     }
   }
 
@@ -90,6 +95,12 @@ export function TuLinkCard({ slug, businessName, className }: TuLinkCardProps) {
           </a>
         </Button>
       </div>
+
+      {copyError ? (
+        <p role="alert" className="text-13 font-semibold text-ink">
+          {inicio.tuLink.errorCopiar}
+        </p>
+      ) : null}
 
       <TextLink href={`/${slug}`} target="_blank" rel="noreferrer">
         {inicio.tuLink.abrir}

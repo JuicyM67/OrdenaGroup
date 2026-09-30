@@ -76,7 +76,7 @@ export function DoneStep({ slug, businessName, hasServices }: DoneStepProps) {
       </Button>
 
       <Button asChild size="xl">
-        <Link href="/app/inicio">{onboarding.listo.ctaIrAgenda}</Link>
+        <Link href="/app/agenda">{onboarding.listo.ctaIrAgenda}</Link>
       </Button>
     </div>
   );

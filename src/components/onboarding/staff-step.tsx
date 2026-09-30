@@ -76,9 +76,8 @@ export function StaffStep({
         <p className="text-13 text-muted">{onboarding.intro.equipo}</p>
       </div>
 
-      {value.length === 0 ? (
-        <p className="text-13 text-muted">{profesionales.vacio}</p>
-      ) : null}
+      {/* WP-47 (tillägg C): `profesionales.vacio` är samma text som `onboarding.intro.equipo`
+          ovan (se es-CL.ts, `AGREGA_EQUIPO_VACIO`) — visades dubblerat när listan var tom. */}
 
       <div className="flex flex-col gap-4">
         {value.map((s, i) => (

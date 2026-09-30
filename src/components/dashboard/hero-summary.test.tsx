@@ -19,7 +19,6 @@ describe("HeroSummary", () => {
         ownerFirstName="Camila"
         week={{ recoveredHours: 4, recoveredClp: 72_000 }}
         features={features}
-        detailHref="#detalle"
       />,
     );
     const highlighted = screen.getByText("4 horas · $72.000");
@@ -31,25 +30,22 @@ describe("HeroSummary", () => {
         ownerFirstName="Camila"
         week={{ recoveredHours: 4, recoveredClp: 72_000 }}
         features={features}
-        detailHref="#detalle"
       />,
     );
     expect(container.getElementsByClassName("text-lime")).toHaveLength(1);
   });
 
-  it('el enlace "VER DETALLE" tiene href', () => {
+  // WP-47: "Ver detalle" (`#detalle-semana`, ninguna sección con ese id existe) se oculta —
+  // WP-xx: visas när funktionen finns.
+  it('no queda ningún link "VER DETALLE" (WP-47, sin backend)', () => {
     render(
       <HeroSummary
         ownerFirstName="Camila"
         week={{ recoveredHours: 4, recoveredClp: 72_000 }}
         features={features}
-        detailHref="#detalle"
       />,
     );
-    expect(screen.getByRole("link", { name: /VER DETALLE/i })).toHaveAttribute(
-      "href",
-      "#detalle",
-    );
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
   it("el saludo usa ownerFirstName tal cual (ninguna formateo propio)", () => {
@@ -58,7 +54,6 @@ describe("HeroSummary", () => {
         ownerFirstName="Camila"
         week={{ recoveredHours: 4, recoveredClp: 72_000 }}
         features={features}
-        detailHref="#detalle"
       />,
     );
     expect(screen.getByText("Hola, Camila")).toBeInTheDocument();
@@ -70,7 +65,6 @@ describe("HeroSummary", () => {
         ownerFirstName="Camila"
         week={{ recoveredHours: 0, recoveredClp: 0 }}
         features={features}
-        detailHref="#detalle"
       />,
     );
     const { container } = render(
@@ -78,7 +72,6 @@ describe("HeroSummary", () => {
         ownerFirstName="Camila"
         week={{ recoveredHours: 0, recoveredClp: 0 }}
         features={features}
-        detailHref="#detalle"
       />,
     );
     expect(container.getElementsByClassName("text-lime")).toHaveLength(0);

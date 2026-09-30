@@ -76,6 +76,9 @@ export const nav = {
   notificacionesNuevas: (p: { n: number }): string =>
     `${p.n} ${p.n === 1 ? "notificación nueva" : "notificaciones nuevas"}`,
   masOpciones: "Más opciones",
+  /** WP-47: aria-label del menú desplegable de la cuenta (UserPill/avatar
+   * móvil), no un texto visible. */
+  menuUsuario: (p: { nombre: string }): string => `Menú de ${p.nombre}`,
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -482,6 +485,9 @@ export const inicio = {
     fila: (p: { servicio: string; profesional: string }): string =>
       `${p.servicio} · con ${p.profesional}`,
     vacio: "No tienes reservas para hoy todavía.",
+    /** WP-47: ítem del menú "Más opciones" (agenda-row.tsx) que lleva a esa
+     * reserva en `/app/agenda?vista=dia&fecha=`. */
+    verEnAgenda: "Ver en agenda",
   },
   /** WP-fixar-sv: lista compacta de las próximas reservas (no solo las de hoy), para que
    * el dueño no se pierda una reserva de la próxima semana si está mirando la semana
@@ -532,6 +538,9 @@ export const inicio = {
     /** GUIA: "página de reservas" es el término fijo para la página a la que
      * lleva el link (distinta del link en sí). */
     abrir: "Ver mi página de reservas",
+    /** WP-47: la Clipboard API puede fallar (permiso denegado, contexto no
+     * seguro) — se muestra en vez de fallar en silencio. */
+    errorCopiar: "No pudimos copiar el link. Cópialo manualmente.",
   },
 } as const satisfies Trad;
 

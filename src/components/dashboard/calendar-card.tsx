@@ -3,7 +3,8 @@
 // Se DESIGN.md §7 "MiniCalendar" och docs/tasks/plans/WP-11.md §4 steg 6. Klientkomponent:
 // `labels.dayLabel` är en funktion och kan inte skickas från en serverkomponent (samma skäl
 // som design-lab/components/mini-calendar-demo.tsx, WP-02). Månadsbyte hålls i lokalt
-// state; val av dag markerar bara — navigering till Agenda för den dagen är WP-21 (idé).
+// state; val av dag navigerar till Agendans dagvy (WP-47).
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Card } from "@/components/ui/card";
@@ -42,6 +43,7 @@ export function CalendarCard({
   today,
   markedDates,
 }: CalendarCardProps) {
+  const router = useRouter();
   const [month, setMonth] = useState<YearMonth>(initialMonth);
   const [selected, setSelected] = useState<string>(today);
   const marked = new Set<string>(markedDates);
@@ -60,7 +62,11 @@ export function CalendarCard({
         today={today}
         markedDates={marked}
         variant="light"
-        onSelect={setSelected}
+        onSelect={(date) => {
+          setSelected(date);
+          // WP-47: klick på en dag går till Agendans dagvy för det datumet.
+          router.push(`/app/agenda?vista=dia&fecha=${date}`);
+        }}
         onPrevMonth={() => setMonth((m) => addMonths(m, -1))}
         onNextMonth={() => setMonth((m) => addMonths(m, 1))}
         labels={{

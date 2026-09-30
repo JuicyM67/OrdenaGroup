@@ -12,9 +12,18 @@ import type { TodayBooking } from "./types";
 export type AgendaTodayProps = {
   bookings: readonly TodayBooking[];
   href: string;
+  /** WP-47: Llegó/No vino från "…"-menyn (agenda-row.tsx). `undefined` döljer menyposterna. */
+  onArrival?: (bookingId: string, status: "completed" | "no_show") => void;
+  /** WP-47: "Mover" från "…"-menyn — öppnar `MoveDialog` (inicio-screen.tsx). */
+  onMover?: (booking: TodayBooking) => void;
 };
 
-export function AgendaToday({ bookings, href }: AgendaTodayProps) {
+export function AgendaToday({
+  bookings,
+  href,
+  onArrival,
+  onMover,
+}: AgendaTodayProps) {
   return (
     <Card
       as="section"
@@ -34,7 +43,17 @@ export function AgendaToday({ bookings, href }: AgendaTodayProps) {
       ) : (
         <ul className="flex min-h-0 flex-1 flex-col gap-1.5 overflow-y-auto">
           {bookings.map((booking) => (
-            <AgendaRow key={booking.id} booking={booking} />
+            <AgendaRow
+              key={booking.id}
+              booking={booking}
+              onLlego={
+                onArrival ? () => onArrival(booking.id, "completed") : undefined
+              }
+              onNoVino={
+                onArrival ? () => onArrival(booking.id, "no_show") : undefined
+              }
+              onMover={onMover ? () => onMover(booking) : undefined}
+            />
           ))}
         </ul>
       )}

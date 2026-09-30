@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-035 · 2026-09-30 · Obyggda funktioner döljs i ägarappen tills de finns
+Ägaren: "alla knappar ska fungera". Ingångar till funktioner utan backend (Clientes, Horas flash, Caja, Lista de espera, Te echamos de menos, sök, Ver detalle, Hoy-snabbåtgärder) döljs med kommentaren `// WP-xx: visas när funktionen finns` i stället för att leda till 404. Visuell avvikelse mot referensen accepteras tills respektive WP är klar: main 2,43 %, hoy 11,0 % (WP-47). Ingen ny referens tas.
+
 ### D-032 · 2026-09-29 · JS-budget för bokningssidan höjs till 180 kB
 **Varför:** kategorier och bokningsfrågor (WP-40) gav +3–4 kB; tidsbudgeten (tjänsten klickbar inom 3,5 s på 4G + 4x CPU) klaras fortfarande med marginal (~3,0 s). **Konsekvens:** `e2e/reserva.spec.ts` mäter ≤ 180 kB gzip. Tidsbudgeten är oförändrad. Zod får fortfarande inte hamna i klientbunten.
 
