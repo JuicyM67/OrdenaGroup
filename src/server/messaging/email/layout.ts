@@ -117,8 +117,8 @@ function wordmarkHtml(market: Market): string {
           rest
             ? `
         <td bgcolor="${c.lime}" style="background-color:${c.lime};font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.onLimeSoft};border-radius:8px;padding:2px 8px;">${escapeHtml(
-                rest,
-              )}</td>`
+          rest,
+        )}</td>`
             : ""
         }
       </tr>
