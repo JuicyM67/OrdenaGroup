@@ -150,12 +150,20 @@ export function loadProfileSettings(
         order by sort, created_at`,
       [businessId],
     );
-    // WP-44: redan sparade som fullständiga publika URL:er (samma kolumnform
-    // som cover_url/logo_url), ingen `publicMediaUrl`-omvandling här.
-    const staffPhotos = await q.query<{ id: string; photo_url: string }>(
+    const staffPhotoRows = await q.query<{ id: string; photo_url: string }>(
       `select id, photo_url from public.staff
         where business_id = $1 and photo_url is not null`,
       [businessId],
+    );
+    // Säkerhetsgranskning WP-44: samma filter som den publika sidan
+    // (`page-data.ts`) — bara bilder i vår bucket och företagets egen mapp
+    // visas, aldrig en extern URL (försvar på djupet, kolumnen kan i teorin
+    // bara innehålla sådana via vårt eget skrivflöde, men vi litar inte
+    // blint på det här heller).
+    const staffPhotos = Object.fromEntries(
+      staffPhotoRows.rows
+        .filter((s) => mediaPathFromUrl(s.photo_url, businessId) !== null)
+        .map((s) => [s.id, s.photo_url]),
     );
     return {
       about: row.about ?? "",
@@ -168,9 +176,7 @@ export function loadProfileSettings(
         id: i.id,
         url: publicMediaUrl(i.path),
       })),
-      staffPhotos: Object.fromEntries(
-        staffPhotos.rows.map((s) => [s.id, s.photo_url]),
-      ),
+      staffPhotos,
     };
   });
 }
@@ -364,10 +370,10 @@ export async function confirmImageUpload(
         );
         if (!prev.rowCount)
           return { ok: false, code: "invalid_input", discard: true };
-        await q.query(`update public.staff set photo_url = $1 where id = $2`, [
-          url,
-          staffId,
-        ]);
+        await q.query(
+          `update public.staff set photo_url = $1 where id = $2 and business_id = $3`,
+          [url, staffId, businessId],
+        );
         return {
           ok: true,
           url,
@@ -443,9 +449,10 @@ export async function deleteImage(
           [target.staffId, businessId],
         );
         if (!prev.rowCount) return null;
-        await q.query(`update public.staff set photo_url = null where id = $1`, [
-          target.staffId,
-        ]);
+        await q.query(
+          `update public.staff set photo_url = null where id = $1 and business_id = $2`,
+          [target.staffId, businessId],
+        );
         return {
           ok: true as const,
           path: mediaPathFromUrl(prev.rows[0]!.url, businessId),

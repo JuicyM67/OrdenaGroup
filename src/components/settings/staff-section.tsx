@@ -34,15 +34,17 @@ type StaffPhotoActions = Pick<
   "createImageUpload" | "confirmImageUpload" | "deleteImage"
 >;
 
-function StaffPhotoField({
+/** Bara knapparna (WP-44 mobillayout, granskningsfynd): avataren renderas
+ * separat bredvid namnet (rad 1 på 390 px), knapparna får en egen rad (rad
+ * 2) — annars trycks namnet/tjänsterna in i en smal kolumn bredvid knapparna
+ * på 390 px. */
+function StaffPhotoButtons({
   staffId,
-  name,
   url,
   actions,
   onChange,
 }: {
   staffId: string;
-  name: string;
   url: string | null;
   actions: StaffPhotoActions;
   onChange: (url: string | null) => void;
@@ -81,46 +83,37 @@ function StaffPhotoField({
   }
 
   return (
-    <div className="flex shrink-0 items-center gap-3">
-      <Avatar
-        initials={initialsOf(name)}
-        photoUrl={url}
-        alt={name}
-        size={46}
-        tone="peach"
-      />
-      <div className="flex flex-col gap-1">
-        <label htmlFor={inputId} className="sr-only">
-          {profesionales.campos.fotoLabel}
-        </label>
-        <div className="flex gap-2">
+    <div className="flex flex-col gap-1">
+      <label htmlFor={inputId} className="sr-only">
+        {profesionales.campos.fotoLabel}
+      </label>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          disabled={busy}
+          onClick={() => inputRef.current?.click()}
+        >
+          {url ? perfil.ajustes.botones.cambiar : perfil.ajustes.botones.subir}
+        </Button>
+        {url ? (
           <Button
             type="button"
             variant="secondary"
             size="md"
             disabled={busy}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => void handleRemove()}
           >
-            {url ? perfil.ajustes.botones.cambiar : perfil.ajustes.botones.subir}
+            {perfil.ajustes.botones.eliminar}
           </Button>
-          {url ? (
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              disabled={busy}
-              onClick={() => void handleRemove()}
-            >
-              {perfil.ajustes.botones.eliminar}
-            </Button>
-          ) : null}
-        </div>
-        {error ? (
-          <span role="alert" className="text-13 text-ink">
-            {error}
-          </span>
         ) : null}
       </div>
+      {error ? (
+        <span role="alert" className="text-13 text-ink">
+          {error}
+        </span>
+      ) : null}
       <input
         ref={inputRef}
         id={inputId}
@@ -337,11 +330,18 @@ export function StaffSection({
   async function toggleActive(s: AjustesStaffMember) {
     setPendingId(s.id);
     try {
-      const result = await actions.setActive(s.id, !s.active);
+      const nextActive = !s.active;
+      const result = await actions.setActive(s.id, nextActive);
       if (result.ok) {
         setList((prev) =>
-          prev.map((x) => (x.id === s.id ? { ...x, active: !x.active } : x)),
+          prev.map((x) => (x.id === s.id ? { ...x, active: nextActive } : x)),
         );
+        // WP-44/Ley 21.719: servern tar bort fotot när personalen
+        // inaktiveras (setStaffActive), så det försvinner härifrån också
+        // i stället för att visa en trasig bild.
+        if (!nextActive) {
+          setPhotoUrls((prev) => ({ ...prev, [s.id]: null }));
+        }
       }
     } finally {
       setPendingId(null);
@@ -373,34 +373,44 @@ export function StaffSection({
             <div
               key={s.id}
               className={cn(
-                "flex flex-col items-start gap-3 rounded-tile bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between",
+                "flex flex-col gap-3 rounded-tile bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between",
                 !s.active && "opacity-50",
               )}
             >
-              <div className="flex min-w-0 items-center gap-3">
-                <StaffPhotoField
+              {/* 390 px: rad 1 = avatar + namn/tjänster (full bredd), rad 2 = fotoknapparna
+               * (granskningsfynd). Från `sm:` samma rad igen (avatar+namn, sen knapparna). */}
+              <div className="flex flex-col gap-3 sm:min-w-0 sm:flex-row sm:items-center">
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar
+                    initials={initialsOf(s.name)}
+                    photoUrl={photoUrls[s.id] ?? null}
+                    alt={s.name}
+                    size={46}
+                    tone="peach"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-15 font-bold text-ink">{s.name}</p>
+                    {s.title ? (
+                      <p className="text-13 text-muted">{s.title}</p>
+                    ) : null}
+                    {s.serviceIds.length > 0 ? (
+                      <p className="text-13 text-muted">
+                        {services
+                          .filter((svc) => s.serviceIds.includes(svc.id))
+                          .map((svc) => svc.name)
+                          .join(", ")}
+                      </p>
+                    ) : null}
+                  </div>
+                </div>
+                <StaffPhotoButtons
                   staffId={s.id}
-                  name={s.name}
                   url={photoUrls[s.id] ?? null}
                   actions={actions}
                   onChange={(url) =>
                     setPhotoUrls((prev) => ({ ...prev, [s.id]: url }))
                   }
                 />
-                <div className="min-w-0">
-                  <p className="text-15 font-bold text-ink">{s.name}</p>
-                  {s.title ? (
-                    <p className="text-13 text-muted">{s.title}</p>
-                  ) : null}
-                  {s.serviceIds.length > 0 ? (
-                    <p className="text-13 text-muted">
-                      {services
-                        .filter((svc) => s.serviceIds.includes(svc.id))
-                        .map((svc) => svc.name)
-                        .join(", ")}
-                    </p>
-                  ) : null}
-                </div>
               </div>
               <div className="flex shrink-0 gap-2">
                 <Button

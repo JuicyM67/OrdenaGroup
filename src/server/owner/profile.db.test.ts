@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { closePool } from "@/server/db/pool";
 import {
@@ -9,7 +9,7 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 
-import { createImageUpload, type MediaStorage } from "./profile";
+import { confirmImageUpload, createImageUpload, type MediaStorage } from "./profile";
 
 let biz: TestBusiness;
 let other: TestBusiness;
@@ -136,5 +136,46 @@ describe("createImageUpload (WP-41)", () => {
         )
       ).ok,
     ).toBe(true);
+  });
+});
+
+describe("confirmImageUpload · staff (WP-44 säkerhetsgranskning)", () => {
+  it("ett annat företags staffId ger invalid_input, deras foto ändras inte", async () => {
+    vi.stubEnv("NEXT_PUBLIC_SUPABASE_URL", "https://proj.supabase.co");
+    try {
+      const otherPhotoUrl =
+        "https://proj.supabase.co/storage/v1/object/public/business-media/" +
+        `${other.id}/00000000-0000-4000-8000-000000000000.jpg`;
+      await adminQuery(
+        `update public.staff set photo_url = $1 where id = $2`,
+        [otherPhotoUrl, other.staff.diego],
+      );
+
+      // `biz`s ägare har laddat upp riktigt i sin egen mapp, men försöker
+      // koppla filen till `other`s personal (D-014: business_id måste med i
+      // varje fråga, inte bara `staffId`).
+      const path = `${biz.id}/11111111-1111-4111-8111-111111111111.png`;
+      await adminQuery(
+        `insert into storage.objects (bucket_id, name, metadata)
+         values ('business-media', $1, jsonb_build_object('size', 500000, 'mimetype', 'image/png'))`,
+        [path],
+      );
+
+      const result = await confirmImageUpload(
+        biz.ownerUserId,
+        biz.id,
+        { kind: "staff", path, staffId: other.staff.diego },
+        fakeStorage(),
+      );
+      expect(result).toEqual({ ok: false, code: "invalid_input" });
+
+      const row = await adminQuery<{ photo_url: string }>(
+        `select photo_url from public.staff where id = $1`,
+        [other.staff.diego],
+      );
+      expect(row.rows[0]!.photo_url).toBe(otherPhotoUrl);
+    } finally {
+      vi.unstubAllEnvs();
+    }
   });
 });

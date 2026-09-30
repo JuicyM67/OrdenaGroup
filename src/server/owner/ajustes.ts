@@ -14,6 +14,7 @@ import type { IsoWeekday } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
+import { mediaPathFromUrl } from "@/server/bookings/media";
 
 import {
   ajustesHoursInputSchema,
@@ -502,13 +503,36 @@ export async function setStaffActive(
   staffId: string,
   active: boolean,
 ): Promise<MutationResult> {
-  return withOwnerTx(userId, async (q) => {
+  // Ley 21.719/WP-44: en inaktiverad medarbetare kan inte bokas längre, och
+  // profilbilden (gratis, allas plan) är en personuppgift — den tas bort
+  // direkt i stället för att bli kvar oanvänd. Storage-borttagningen sker
+  // EFTER commit (samma mönster/motivering som `src/server/owner/profile.ts`).
+  let photoToRemove: string | null = null;
+  const result = await withOwnerTx<MutationResult>(userId, async (q) => {
+    if (!active) {
+      const prev = await q.query<{ url: string | null }>(
+        `select photo_url as url from public.staff
+          where id = $1 and business_id = $2 for update`,
+        [staffId, businessId],
+      );
+      if (prev.rowCount) {
+        photoToRemove = mediaPathFromUrl(prev.rows[0]!.url, businessId);
+      }
+    }
     const r = await q.query(
-      `update public.staff set active = $1 where id = $2 and business_id = $3`,
+      `update public.staff
+          set active = $1,
+              photo_url = case when $1 then photo_url else null end
+        where id = $2 and business_id = $3`,
       [active, staffId, businessId],
     );
     return assertUpdated(r.rowCount) ?? { ok: true };
   });
+  if (result.ok && photoToRemove) {
+    const { ownerMediaStorage } = await import("./media-storage");
+    await (await ownerMediaStorage()).remove([photoToRemove]);
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------
