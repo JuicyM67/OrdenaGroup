@@ -134,7 +134,7 @@ const productoItemClass =
  * för Horas flash till höger (`w-55` = 220 px, samma bredd som i referensen). */
 function ProductoMenuPanel() {
   return (
-    <div className="flex w-180 gap-4 rounded-card border border-surface/60 bg-surface/95 p-5.5 shadow-glass backdrop-blur-glass backdrop-saturate-150">
+    <div className="flex w-180 gap-4 rounded-card border border-line bg-surface p-5.5 shadow-popover">
       <div className="flex flex-1 flex-col gap-1.5">
         <span className="px-2.5 pb-1.5 text-12 font-bold tracking-caps text-muted uppercase">
           {copy.sitio.megamenu.titulo}
