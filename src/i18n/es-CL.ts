@@ -88,6 +88,7 @@ export const nav = {
 export const estados = {
   confirmada: "Confirmada",
   abonoPagado: "Abono pagado",
+  pagada: "Pagada",
   sinConfirmar: "Sin confirmar",
   /** WP-45 (D-033): chip de una reserva `requested`, cuando el negocio
    * todavía no la confirma ni la rechaza. Distinto de `sinConfirmar` (ahí

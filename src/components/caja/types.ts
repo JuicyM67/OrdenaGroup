@@ -4,13 +4,15 @@
 // (gränsregeln i uppdraget), samma mönster som `AgendaMemberView`/
 // `HoyMemberView` (agenda/types.ts, mobile/types.ts) eller `CustomerExportResult`
 // i `customer-privacy-actions.tsx`. Håll de två filerna i synk för hand.
+import { estados } from "@/i18n";
 import type { LocalDate } from "@/lib/format/dates";
 
 // ---------------------------------------------------------------------------
 // Markera betald / ångra (src/server/payments/mark-paid.ts)
 // ---------------------------------------------------------------------------
 
-export type ManualPaymentMethod = "cash" | "card_terminal" | "transfer" | "swish";
+export type ManualPaymentMethod =
+  "cash" | "card_terminal" | "transfer" | "swish";
 
 export type MarkBookingPaidInput = {
   bookingId: string;
@@ -29,20 +31,15 @@ export type MarkBookingPaidError =
   | "unexpected";
 
 export type MarkBookingPaidResult =
-  | { ok: true; paymentId: string }
-  | { ok: false; code: MarkBookingPaidError };
+  { ok: true; paymentId: string } | { ok: false; code: MarkBookingPaidError };
 
 export type UndoPaymentInput = { paymentId: string };
 
 export type UndoPaymentError =
-  | "forbidden"
-  | "not_found"
-  | "same_day_required"
-  | "unexpected";
+  "forbidden" | "not_found" | "same_day_required" | "unexpected";
 
 export type UndoPaymentResult =
-  | { ok: true }
-  | { ok: false; code: UndoPaymentError };
+  { ok: true } | { ok: false; code: UndoPaymentError };
 
 // ---------------------------------------------------------------------------
 // Caja e informes (src/server/reports/caja.ts)
@@ -110,7 +107,11 @@ export type InformesData = {
     bookedMinutes: number;
     availableMinutes: number;
   }[];
-  newVsReturning: { weekStart: LocalDate; nuevos: number; recurrentes: number }[];
+  newVsReturning: {
+    weekStart: LocalDate;
+    nuevos: number;
+    recurrentes: number;
+  }[];
   noShowTrend: { weekStart: LocalDate; pct: number }[];
 };
 
@@ -132,4 +133,4 @@ export type CajaActions = {
 // copywriter-es-cl: lägg gärna till t.ex. `estados.pagada` och byt ut den
 // här platshållaren — delad av Hoy (`mobile/hoy-view.ts`) och agendans
 // popover (`agenda/event-popover.tsx`).
-export const PAGADA_LABEL = "TODO_COPY: Pagada";
+export const PAGADA_LABEL = estados.pagada;

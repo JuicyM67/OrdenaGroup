@@ -102,6 +102,7 @@ export const nav: Widen<typeof Es.nav> = {
 export const estados: Widen<typeof Es.estados> = {
   confirmada: "Bekräftad",
   abonoPagado: "Förskott betalt",
+  pagada: "Betald",
   sinConfirmar: "Obekräftad",
   porConfirmar: "Väntar på bekräftelse",
   confirmo: "Bekräftade",

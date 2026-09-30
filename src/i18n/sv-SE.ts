@@ -78,6 +78,7 @@ export const estados = {
   /** Nyckeln finns av typskäl (samma som es-CL): i Sverige finns ingen
    * handpenning i systemet (D-027), texten är en generisk delbetalning. */
   abonoPagado: "Delbetalning betald",
+  pagada: "Betald",
   sinConfirmar: "Obekräftad",
   porConfirmar: "Väntar på bekräftelse",
   confirmo: "Bekräftade",
