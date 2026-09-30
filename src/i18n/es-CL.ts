@@ -166,6 +166,10 @@ export const errores = {
     outside_hours: "Ese horario ya no está disponible.",
     network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
     waitlist_duplicate: "Ya estás en la lista de espera para este día.",
+    /** Código nuevo (seguridad, WP-27, pilotblockerare): demasiados intentos
+     * desde el mismo IP, o ya hay demasiadas reservas futuras con este
+     * número de teléfono en este negocio. */
+    rate_limited: "Demasiados intentos. Prueba de nuevo en unos minutos.",
     nombreVacio: "Escribe tu nombre.",
     emailInvalido: "Revisa tu correo electrónico.",
     consentimientoRequerido: "Acepta los términos para continuar.",

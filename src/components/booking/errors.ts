@@ -51,6 +51,7 @@ const SERVER_MESSAGES = {
   waitlist_duplicate: errores.reserva.waitlist_duplicate,
   network: errores.reserva.network,
   business_unavailable: errores.reserva.business_unavailable,
+  rate_limited: errores.reserva.rate_limited,
 } satisfies Record<BookingServerErrorCode, string>;
 
 const PHONE_ERROR_KINDS = new Set<string>([

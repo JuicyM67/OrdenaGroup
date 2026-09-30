@@ -4,6 +4,7 @@
 // finns (`signInWithOtp` skapar kontot i farten om det inte finns — `enable_signup`
 // är på, se docs/tech/SUPABASE_CONFIG.md), så UI:t kan aldrig läcka om ett konto finns.
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 
 export type RequestMagicLinkResult =
   { ok: true } | { ok: false; code: RequestMagicLinkErrorCode };
@@ -13,6 +14,16 @@ export type RequestMagicLinkErrorCode =
   "invalid_email" | "over_email_send_rate_limit" | "captcha_failed" | "network";
 
 const EMAIL_MAX = 254;
+
+/** Pilotblockerare (säkerhetsgranskning WP-27): egen rate limit utöver
+ * Supabase Auths inbyggda (`over_email_send_rate_limit`, en global gräns per
+ * projekt) — en gräns per IP och en snävare per e-post, så att en enda
+ * adress/avsändare inte kan spamma inloggningslänkar. Samma felkod
+ * (`over_email_send_rate_limit`) återanvänds: texten ("Espera un minuto…")
+ * stämmer lika bra här. */
+const LOGIN_WINDOW_SECONDS = 10 * 60;
+const LOGIN_IP_MAX = 5;
+const LOGIN_EMAIL_MAX = 3;
 
 function mapAuthErrorCode(code: string | undefined): RequestMagicLinkErrorCode {
   switch (code) {
@@ -37,6 +48,24 @@ export async function requestMagicLink(
   if (email === "" || email.length > EMAIL_MAX || !email.includes("@")) {
     return { ok: false, code: "invalid_email" };
   }
+
+  const ip = await getClientIp();
+  const ipAllowed = await hitRateLimit({
+    scope: "login:ip",
+    subject: ip,
+    windowSeconds: LOGIN_WINDOW_SECONDS,
+    max: LOGIN_IP_MAX,
+  });
+  if (!ipAllowed) return { ok: false, code: "over_email_send_rate_limit" };
+
+  // `toLowerCase()`: samma adress med annan skiftläge ska dela räknare.
+  const emailAllowed = await hitRateLimit({
+    scope: "login:email",
+    subject: email.toLowerCase(),
+    windowSeconds: LOGIN_WINDOW_SECONDS,
+    max: LOGIN_EMAIL_MAX,
+  });
+  if (!emailAllowed) return { ok: false, code: "over_email_send_rate_limit" };
 
   try {
     const supabase = await createSupabaseServerClient();
