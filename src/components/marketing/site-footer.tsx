@@ -6,14 +6,15 @@
 //
 // Kolumnen med sociala länkar utelämnas: `brand.ts` har inga sociala fält (regel dura 10 —
 // inga påhittade länkar). E-post utelämnas av samma skäl (`brand.supportEmail` finns
-// inte). "Términos"/"Privacidad" är text utan länk: de sidorna finns inte än.
+// inte). "Términos"/"Privacidad" är nu riktiga länkar till `/legal/[doc]` (WP-26 steg 6),
+// tillsammans med en tredje länk till biträdesavtalet (DPA).
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { strokeArrow } from "@/components/ui/icons";
-import { brand } from "@/config/brand";
-import { href, hrefIndustria, type IndustriaId } from "@/config/routes";
+import { brand, market } from "@/config/brand";
+import { href, hrefIndustria, hrefLegal, type IndustriaId } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 
 import { BrandLogo } from "./brand-logo";
@@ -45,6 +46,15 @@ const PRODUCTO_LINKS = [
 
 const footerLinkClass =
   "text-14 font-semibold text-on-dark-soft transition-colors duration-150 ease-out hover:text-lime focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime";
+
+const legalLinkClass =
+  "underline-offset-2 transition-colors duration-150 ease-out hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
+// TODO_COPY: ninguna clave de `src/i18n/` cubre hoy la etiqueta del enlace al acuerdo de
+// encargo de tratamiento (`encargo`/`bitradesavtal`) — placeholder claro hasta que
+// copywriter-es-cl agregue `sitio.footer2.legal.encargo` (o equivalente).
+const ENCARGO_LABEL =
+  market === "SE" ? "TODO_COPY: Biträdesavtal" : "TODO_COPY: Encargo";
 
 function ArrowCircle({ tone }: { tone: "on-lime" | "on-dark" }) {
   return (
@@ -159,9 +169,16 @@ export function SiteFooter() {
                   </div>
                 ))}
               </div>
-              <div className="flex items-center gap-5 rounded-control bg-lime-50 px-3.5 py-2 text-12 font-semibold text-ink">
-                <span>{copy.sitio.footer2.legal.terminos}</span>
-                <span>{copy.sitio.footer2.legal.privacidad}</span>
+              <div className="flex flex-wrap items-center gap-5 rounded-control bg-lime-50 px-3.5 py-2 text-12 font-semibold text-ink">
+                <Link href={hrefLegal("terminos")} className={legalLinkClass}>
+                  {copy.sitio.footer2.legal.terminos}
+                </Link>
+                <Link href={hrefLegal("privacidad")} className={legalLinkClass}>
+                  {copy.sitio.footer2.legal.privacidad}
+                </Link>
+                <Link href={hrefLegal("encargo")} className={legalLinkClass}>
+                  {ENCARGO_LABEL}
+                </Link>
                 <span>©{copy.sitio.footer2.legal.derechos({ anio })}</span>
               </div>
             </div>

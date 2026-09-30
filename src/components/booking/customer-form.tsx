@@ -10,6 +10,7 @@ import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
 import { market } from "@/config/brand";
+import { hrefLegal } from "@/config/routes";
 import { comun, reserva } from "@/i18n";
 // WP-40 (D-031): `validateAnswers` är uttryckligen klientsäker (se
 // filkommentaren i `booking-questions.ts`) trots att den drar in Zod — en
@@ -49,6 +50,10 @@ interface FieldErrors {
   email?: string;
   terms?: string;
 }
+
+// WP-26 steg 6: länk till integritetspolicyn från samtyckesrutan, öppnas i ny flik.
+// `hrefLegal` är en ren funktion (ingen legal-text importeras i klientbundeln, R JS-budget).
+const PRIVACY_HREF = hrefLegal("privacidad");
 
 /** Uuid via `crypto.getRandomValues` (qa-granskning, item 10): aldrig en
  * konstant — en delad idempotencyKey mellan olika kunder/enheter skulle låta
@@ -416,10 +421,15 @@ export function CustomerForm({
               : reserva.consentimientos.terminos}{" "}
             {reserva.consentimientos.responsable({
               negocio: data.business.name,
-            })}
-            {isWaitlist
-              ? ` ${reserva.consentimientos.privacidadLinkTexto}`
-              : null}
+            })}{" "}
+            <a
+              href={PRIVACY_HREF}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-ink underline underline-offset-2 hover:text-pending-fg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              {reserva.consentimientos.privacidadLinkTexto}
+            </a>
           </ConsentCheckbox>
           <ConsentCheckbox checked={marketing} onChange={setMarketing}>
             {reserva.consentimientos.marketing({ negocio: data.business.name })}
