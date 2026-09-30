@@ -104,3 +104,11 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - WP-26: begränsa antal purge per cron-körning (Vercel-timeout); lagringstid för frysta konton som aldrig begär radering; dedup av samtyckeslogg vid omförsök.
 - WP-26: lägg `memberships`, `payments`, `message_outbox` i `TENANT_TABLES` (boundaries.test.ts).
 - DESIGN.md §7: dokumentera `ConfirmDialog`.
+
+## Uppskjutet från WP-45/WP-46 (bekräftelse och personalkonton, 2026-09-30)
+- Notiser i realtid (Supabase Realtime eller webbpush) i stället för uppdatering vid navigering/fokus.
+- Egen notistabell med läst/oläst och fler notistyper (avbokning, flytt, väntelista).
+- Företagsväxlare: ett konto kan vara medlem i flera företag.
+- Personalen blockerar själv sin tid (lunch, frånvaro) utan `can_manage_team`.
+- Inbjudan via SMS/WhatsApp.
+- Flera ägare och överlåtelse av ägarskap.
