@@ -254,7 +254,11 @@ for (const tz of [undefined, "UTC", "Europe/Stockholm"]) {
       it("WP-45: requested → Por confirmar, före Flash/Desde lista/Abono", () => {
         expect(
           rowTag(
-            booking({ status: "requested", source: "flash", depositPaidClp: 5000 }),
+            booking({
+              status: "requested",
+              source: "flash",
+              depositPaidClp: 5000,
+            }),
           ),
         ).toEqual({ tone: "pending", label: "Por confirmar" });
       });

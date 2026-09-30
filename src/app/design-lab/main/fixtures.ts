@@ -214,11 +214,7 @@ const BASE = {
 } satisfies Omit<InicioData, "today">;
 
 export type InicioEstado =
-  | "referencia"
-  | "vacio"
-  | "lleno"
-  | "sin-flash"
-  | "solicitudes";
+  "referencia" | "vacio" | "lleno" | "sin-flash" | "solicitudes";
 
 /** WP-45 (D-033): `?estado=solicitudes` — klockan y "Att bekräfta" con datos, para la
  * captura que el dueño aprueba como línea base (no forma parte de `npm run visual main`,

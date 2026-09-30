@@ -75,16 +75,24 @@ async function okResult() {
 }
 
 const TWO_REQUESTS = [
-  { id: "req-1", clientName: "Ana", service: "Corte", start: "2026-10-03T11:00:00-03:00" },
-  { id: "req-2", clientName: "Beto", service: "Corte", start: "2026-10-03T12:00:00-03:00" },
+  {
+    id: "req-1",
+    clientName: "Ana",
+    service: "Corte",
+    start: "2026-10-03T11:00:00-03:00",
+  },
+  {
+    id: "req-2",
+    clientName: "Beto",
+    service: "Corte",
+    start: "2026-10-03T12:00:00-03:00",
+  },
 ];
 
 describe("HoyScreen", () => {
   it("klockan döljs helt utan onConfirmRequest/onDeclineRequest (WP-45)", () => {
     render(<HoyScreen data={makeData()} />);
-    expect(
-      screen.queryByRole("button", { name: "Notificaciones" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Notificaciones" })).toBeNull();
   });
 
   it("notispricken visas bara när det finns solicitudes pendientes, med rätt aria-label", () => {
