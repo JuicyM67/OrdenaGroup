@@ -27,7 +27,7 @@ describe("firstForwardedIp", () => {
     expect(firstForwardedIp("  1.2.3.4  ,5.6.7.8")).toBe("1.2.3.4");
   });
 
-  it("null eller tomt → \"unknown\"", () => {
+  it('null eller tomt → "unknown"', () => {
     expect(firstForwardedIp(null)).toBe("unknown");
     expect(firstForwardedIp("")).toBe("unknown");
     expect(firstForwardedIp(" , 5.6.7.8")).toBe("unknown");
