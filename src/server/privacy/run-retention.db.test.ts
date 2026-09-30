@@ -147,3 +147,45 @@ describe("private.run_retention(): utkorgsrader äldre än 90 dagar", () => {
     expect(remaining.has(stillQueued.rows[0]!.id)).toBe(true);
   });
 });
+
+describe("private.run_retention(): samtyckesloggen sparas 5 år utan kundkoppling", () => {
+  it("raderar frikopplade rader (customer_id null) äldre än 5 år, men inte nyare eller kopplade rader", async () => {
+    const customer = await adminQuery<{ id: string }>(
+      `insert into public.customers (business_id, phone_e164, name) values ($1, '+56922220005', 'Cliente Consent') returning id`,
+      [biz.id],
+    );
+    const customerId = customer.rows[0]!.id;
+
+    const oldDecoupled = await adminQuery<{ id: string }>(
+      `insert into public.consent_events (business_id, customer_id, subject, kind, version, channel, granted, created_at)
+       values ($1, null, 'customer', 'terms', 'v1', 'web', true, now() - interval '5 years 1 day') returning id`,
+      [biz.id],
+    );
+    const recentDecoupled = await adminQuery<{ id: string }>(
+      `insert into public.consent_events (business_id, customer_id, subject, kind, version, channel, granted, created_at)
+       values ($1, null, 'customer', 'terms', 'v1', 'web', true, now() - interval '4 years') returning id`,
+      [biz.id],
+    );
+    const oldButLinked = await adminQuery<{ id: string }>(
+      `insert into public.consent_events (business_id, customer_id, subject, kind, version, channel, granted, created_at)
+       values ($1, $2, 'customer', 'terms', 'v1', 'web', true, now() - interval '5 years 1 day') returning id`,
+      [biz.id, customerId],
+    );
+
+    await adminQuery(`select * from private.run_retention()`);
+
+    const ids = [
+      oldDecoupled.rows[0]!.id,
+      recentDecoupled.rows[0]!.id,
+      oldButLinked.rows[0]!.id,
+    ];
+    const rows = await adminQuery<{ id: string }>(
+      `select id from public.consent_events where id = any($1::uuid[])`,
+      [ids],
+    );
+    const remaining = new Set(rows.rows.map((r) => r.id));
+    expect(remaining.has(oldDecoupled.rows[0]!.id)).toBe(false);
+    expect(remaining.has(recentDecoupled.rows[0]!.id)).toBe(true);
+    expect(remaining.has(oldButLinked.rows[0]!.id)).toBe(true);
+  });
+});
