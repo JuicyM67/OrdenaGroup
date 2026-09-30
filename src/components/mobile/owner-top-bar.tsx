@@ -30,7 +30,10 @@ export type OwnerMobileTopBarProps = {
    * prick. */
   pendingRequests?: readonly PendingRequestItem[];
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
-  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 export function OwnerMobileTopBar({

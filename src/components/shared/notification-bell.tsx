@@ -46,7 +46,13 @@ export type NotificationBellResult = { ok: boolean };
 export type NotificationBellProps = {
   requests: readonly PendingRequestItem[];
   onConfirm: (bookingId: string) => Promise<NotificationBellResult>;
-  onDecline: (bookingId: string) => Promise<NotificationBellResult>;
+  /** `reason`: ägarens valfria motiv (`RechazarDialog`), ≤ 300 tecken,
+   * skickas som `motivo` i mejlet till kunden (`declineBooking`,
+   * `ownerDecisionRequestSchema.reason`). */
+  onDecline: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
   /** Tamaño/tono del `IconButton` disparador — igual que la campana ya
    * dibujada en cada pantalla antes de WP-45. */
   triggerSize?: IconButtonProps["size"];
@@ -70,7 +76,9 @@ function rowText(request: PendingRequestItem): string {
 }
 
 function notificationsLabel(count: number): string {
-  return count > 0 ? nav.notificacionesNuevas({ n: count }) : nav.notificaciones;
+  return count > 0
+    ? nav.notificacionesNuevas({ n: count })
+    : nav.notificaciones;
 }
 
 export function NotificationBell({
@@ -94,9 +102,7 @@ export function NotificationBell({
   // inicio-screen.tsx): ingen `useEffect`-synk mot `requests` behövs —
   // filtret räknas om varje rendering, och anroparens `router.refresh()`
   // (efter `revalidatePath`) ger till slut samma lista utan lokal state.
-  const [handledIds, setHandledIds] = useState<ReadonlySet<string>>(
-    new Set(),
-  );
+  const [handledIds, setHandledIds] = useState<ReadonlySet<string>>(new Set());
   const items = requests.filter((r) => !handledIds.has(r.id));
   const [busyId, setBusyId] = useState<string | null>(null);
   const [decliningId, setDecliningId] = useState<string | null>(null);
@@ -123,10 +129,10 @@ export function NotificationBell({
     }
   }
 
-  async function handleDecline(bookingId: string) {
+  async function handleDecline(bookingId: string, reason: string) {
     setBusyId(bookingId);
     try {
-      const result = await onDecline(bookingId);
+      const result = await onDecline(bookingId, reason || undefined);
       if (result.ok) {
         setHandledIds((prev) => new Set(prev).add(bookingId));
         announce(solicitudes.toast.rechazada);
@@ -161,7 +167,9 @@ export function NotificationBell({
   const list = (
     <div className="flex max-h-96 flex-col gap-1 overflow-y-auto">
       {items.length === 0 ? (
-        <p className="px-1 py-4 text-13 text-muted">{solicitudes.campana.vacio}</p>
+        <p className="px-1 py-4 text-13 text-muted">
+          {solicitudes.campana.vacio}
+        </p>
       ) : (
         items.map((request) => (
           <div
@@ -227,7 +235,11 @@ export function NotificationBell({
                     </Dialog.Title>
                     <Dialog.Close asChild>
                       <IconButton label={comun.cerrar} tone="ghost" size={30}>
-                        <X aria-hidden="true" className="size-4" strokeWidth={2.2} />
+                        <X
+                          aria-hidden="true"
+                          className="size-4"
+                          strokeWidth={2.2}
+                        />
                       </IconButton>
                     </Dialog.Close>
                   </div>
@@ -267,25 +279,21 @@ export function NotificationBell({
         </Popover.Root>
       )}
 
-      {/* `motivo` (WP-45 rapport): `declineBooking` (src/server/bookings/confirm.ts,
-       * ownerDecisionRequestSchema) tar bara `bookingId` — inget fält för ett fritt
-       * motiv än, till skillnad från `ownerCancelRequestSchema.reason`.
-       * `RechazarDialog` fångar `motivo` (matchar copyn och `solicitudRechazada.
-       * cuerpo`s `motivo?`-parameter, som väntar på det) men den når inte hit:
-       * motorn ägs av scheduling-engineer (regel: rapportera i stället för att
-       * ändra den) — se PR-rapporten. */}
       <RechazarDialog
         open={decliningRequest != null}
         onOpenChange={(next) => {
           if (!next) setDecliningId(null);
         }}
-        onConfirm={async () => {
-          if (decliningRequest) await handleDecline(decliningRequest.id);
+        onConfirm={async (motivo) => {
+          if (decliningRequest)
+            await handleDecline(decliningRequest.id, motivo);
         }}
       />
 
       <div role="status" className="sr-only">
-        {announcement ? <span key={announcement.id}>{announcement.text}</span> : null}
+        {announcement ? (
+          <span key={announcement.id}>{announcement.text}</span>
+        ) : null}
       </div>
     </>
   );

@@ -23,7 +23,10 @@ export type OutboxRecipientKind = "customer" | "owner";
  *   länken i "solicitud recibida" slutar gälla.
  * - `declined`: förfrågan nekades (`reason: "declined"`, av ägaren) eller
  *   gick ut (`reason: "expired"`, av svepet). Ingen token: länken går till
- *   `/{slug}`.
+ *   `/{slug}`. `message` (bara vid `reason: "declined"`, ägarens valfria
+ *   fritextmotiv, ≤ 300 tecken) skickas som `motivo` till kunden i
+ *   `solicitudRechazada` (e-post, inte SMS) — sparas aldrig i `bookings`,
+ *   bara i outboxens rad, som rensas efter sändning (D-029).
  */
 export type BookingEvent =
   | {
@@ -60,4 +63,8 @@ export type BookingEvent =
       bookingId: string;
       businessId: string;
       reason: "declined" | "expired";
+      /** Bara vid `reason: "declined"` (ägaren skrev ett motiv). Trimmat,
+       * ≤ 300 tecken (samma gräns som `ownerDecisionRequestSchema.reason`,
+       * `src/server/scheduling/schemas.ts`). */
+      message?: string;
     };

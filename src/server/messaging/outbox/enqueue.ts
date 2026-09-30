@@ -321,15 +321,22 @@ export async function enqueueBookingEventIn(
     // (den förfrågan blev aldrig en bekräftad reserva).
     const template =
       e.reason === "expired" ? "solicitudVencida" : "solicitudRechazada";
-    await queueCustomerMessage(
-      q,
-      e.businessId,
-      e.bookingId,
-      startMs,
-      template,
-      hasEmail,
-      {},
-    );
+    // `e.message` (ägarens valfria motiv, bara vid `reason: "declined"`):
+    // skickas som `motivo` bara på e-postraden, aldrig sms — kortare kanal,
+    // och SE:s "nekad"/"utgången" går redan ut på både e-post och sms
+    // (Ägarens svar 2) utan att motivet behöver följa med dit. Sparas
+    // aldrig i `bookings`: bara i den här radens payload, som rensas efter
+    // sändning (D-029, worker.ts `finalizeSent`).
+    for (const channel of customerChannels(hasEmail)) {
+      const payload =
+        channel === "email" && e.message ? { motivo: e.message } : {};
+      await insertRow(q, e.businessId, e.bookingId, startMs, {
+        channel,
+        recipientKind: "customer",
+        template,
+        payload,
+      });
+    }
     return;
   }
 

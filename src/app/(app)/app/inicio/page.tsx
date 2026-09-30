@@ -60,13 +60,24 @@ export default async function InicioPage() {
 
   const onConfirmRequest = async (bookingId: string) => {
     "use server";
-    const result = await confirmRequest(user.id, business.id, new Date(), bookingId);
+    const result = await confirmRequest(
+      user.id,
+      business.id,
+      new Date(),
+      bookingId,
+    );
     return { ok: result.ok };
   };
 
-  const onDeclineRequest = async (bookingId: string) => {
+  const onDeclineRequest = async (bookingId: string, reason?: string) => {
     "use server";
-    const result = await declineRequest(user.id, business.id, new Date(), bookingId);
+    const result = await declineRequest(
+      user.id,
+      business.id,
+      new Date(),
+      bookingId,
+      reason,
+    );
     return { ok: result.ok };
   };
 

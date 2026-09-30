@@ -416,10 +416,15 @@ async function sendCustomerEmail(
       return r.id;
     }
     case "solicitudRechazada": {
+      // WP-45: `motivo` (ägarens valfria fritextmotiv) läses ur payloaden,
+      // precis som `token` ovan — sparas aldrig någon annanstans, och
+      // payloaden rensas efter sändning (D-029, finalizeSent nedan).
+      const motivo =
+        typeof row.payload.motivo === "string" ? row.payload.motivo : undefined;
       const r = await sendEmail({
         to,
         template: "solicitudRechazada",
-        data: linkNuevaReservaData(ctx),
+        data: { ...linkNuevaReservaData(ctx), ...(motivo ? { motivo } : {}) },
         idempotencyKey: row.dedupeKey,
       });
       return r.id;
@@ -536,9 +541,7 @@ async function sendOwner(
   }
   // Säkert efter kontrollen ovan (bara de här tre mallarna når hit).
   const template = row.template as
-    | "nuevaReservaDueno"
-    | "cancelacionDueno"
-    | "nuevaSolicitud";
+    "nuevaReservaDueno" | "cancelacionDueno" | "nuevaSolicitud";
   const emails = await ownerEmailsFor(row.businessId);
   if (emails.length === 0) throw new OutboxSendError("no_owner_email");
   // `cancelacionDueno` nunca muestra las respuestas (WP-40); `nuevaSolicitud`

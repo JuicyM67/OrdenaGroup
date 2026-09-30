@@ -96,6 +96,12 @@ export async function confirmBooking(
  * Idempotent: redan avbokad (nekad, utgången eller avbokad av kunden) → ok
  * med `freed = null`, ingen ny händelse. Bekräftad → `invalid_status`
  * (använd avbokning).
+ *
+ * `request.reason` (valfritt, ägarens fritextmotiv till kunden) sparas
+ * ALDRIG i `bookings` — den bär bara med händelsen (`message`) till
+ * `enqueueBookingEvent`/`solicitudRechazada` (e-post, `motivo`; SMS är utan
+ * motiv). D-029: outbox-payloaden rensas efter sändning, så motivet lever
+ * inte kvar i databasen längre än meddelandet behöver skickas.
  */
 export async function declineBooking(
   request: DecisionRequest,
@@ -117,6 +123,7 @@ export async function declineBooking(
       bookingId: r.value.bookingId,
       businessId: c.businessId,
       reason: "declined",
+      ...(p.data.reason ? { message: p.data.reason } : {}),
     });
   }
   return r;

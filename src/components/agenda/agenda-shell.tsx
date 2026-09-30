@@ -27,7 +27,10 @@ export type AgendaShellProps = {
    * den (design lab). */
   pendingRequests?: readonly PendingRequestItem[];
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
-  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
   className?: string;
 };
 

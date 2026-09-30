@@ -262,14 +262,17 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
   await expect(page.getByText(newCustomer)).toBeVisible();
 
   // --- WP-45: la campana en Inicio — el dueño confirma la solicitud. Se
-  // acota al popover (`aria-label`, notification-bell.tsx): "Att bekräfta"
-  // (pending-requests-card.tsx) muestra la MISMA fila más abajo en la
-  // misma página, y un locator sin acotar sería ambiguo (strict mode). ---
+  // acota al popover con `getByRole("dialog", …)` (Radix Popover.Content,
+  // notification-bell.tsx): "Att bekräfta" (pending-requests-card.tsx)
+  // muestra la MISMA fila más abajo en la misma página con el MISMO
+  // aria-label (`<section aria-label="…">`, no "dialog") — un locator por
+  // `[aria-label=…]` sin acotar por rol era ambiguo (strict mode,
+  // granskningsfynd). ---
   await page.goto("/app/inicio");
   await page.getByRole("button", { name: /notificaci/i }).click();
-  const bellPopover = page.locator(
-    `[aria-label="${inicio.solicitudes.titulo}"]`,
-  );
+  const bellPopover = page.getByRole("dialog", {
+    name: inicio.solicitudes.titulo,
+  });
   await expect(bellPopover).toBeVisible();
   await bellPopover
     .getByText(new RegExp(newCustomer))

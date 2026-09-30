@@ -83,7 +83,8 @@ export async function listPendingRequestsIn(
   }));
 }
 
-export type RequestActionResult = { ok: true } | { ok: false; error: BookingError };
+export type RequestActionResult =
+  { ok: true } | { ok: false; error: BookingError };
 
 /** Klockan/Inicio-listan/agendans popover: Confirmar. */
 export async function confirmRequest(
@@ -101,18 +102,19 @@ export async function confirmRequest(
   return { ok: true };
 }
 
-/** Klockan/Inicio-listan/agendans popover: Rechazar. Inget `reason`-fält
- * än (se `src/components/shared/notification-bell.tsx`, `motivo` fångas i
- * UI:t men når inte hit — `ownerDecisionRequestSchema` tar bara
- * `bookingId`). */
+/** Klockan/Inicio-listan/agendans popover: Rechazar. `reason` (ägarens
+ * valfria motiv, `RechazarDialog`) går vidare till `declineBooking`
+ * (`ownerDecisionRequestSchema.reason`, ≤ 300 tecken) → `solicitudRechazada`
+ * (e-post, `motivo`) — sparas aldrig i `bookings`. */
 export async function declineRequest(
   userId: string,
   businessId: string,
   now: Date,
   bookingId: string,
+  reason?: string,
 ): Promise<RequestActionResult> {
   const r = await declineBooking(
-    { bookingId },
+    { bookingId, ...(reason ? { reason } : {}) },
     { businessId, actor: { kind: "owner", userId }, now },
   );
   if (!r.ok) return { ok: false, error: r.error };

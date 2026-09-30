@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { Queryable } from "@/server/db/pool";
 
@@ -279,9 +279,9 @@ describe("enqueueBookingEventIn: moved", () => {
       by: "customer",
       status: "requested",
     });
-    expect(
-      db.inserted().some((r) => r.template === "reservaMovida"),
-    ).toBe(true);
+    expect(db.inserted().some((r) => r.template === "reservaMovida")).toBe(
+      true,
+    );
     expect(db.inserted().some((r) => r.template === "recordatorio")).toBe(
       false,
     );
@@ -392,6 +392,46 @@ describe("enqueueBookingEventIn: declined", () => {
     for (const r of rows) expect(r.payload).toEqual({});
   });
 
+  // WP-45: `e.message` (ägarens valfria motiv, bara vid `reason: "declined"`)
+  // → `payload.motivo` bara på e-postraden, aldrig sms. SE (dynamiskt
+  // ominporterad med NEXT_PUBLIC_MARKET=SE, samma mönster som
+  // `src/config/market.test.ts`) ger båda kanalerna i samma anrop, så ett
+  // enda test räcker för att bevisa båda delarna.
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("motivo: bara på e-postraden, aldrig sms — och inte alls utan motiv", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MARKET", "SE");
+    vi.resetModules();
+    const { enqueueBookingEventIn: enqueueSE } = await import("./enqueue");
+
+    const withMotivo = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueSE(withMotivo, {
+      type: "declined",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      reason: "declined",
+      message: "No tenemos hora ese día.",
+    });
+    const rows = withMotivo.inserted();
+    expect(rows).toHaveLength(2);
+    const emailRow = rows.find((r) => r.channel === "email");
+    const smsRow = rows.find((r) => r.channel === "sms");
+    expect(emailRow?.payload).toEqual({ motivo: "No tenemos hora ese día." });
+    expect(smsRow?.payload).toEqual({});
+
+    const withoutMotivo = new FakeDb({ start_ms: FAR_START, has_email: true });
+    await enqueueSE(withoutMotivo, {
+      type: "declined",
+      bookingId: BOOKING,
+      businessId: BIZ,
+      reason: "declined",
+    });
+    for (const r of withoutMotivo.inserted()) expect(r.payload).toEqual({});
+  });
+
   it("reason expired: solicitudVencida", async () => {
     const db = new FakeDb({ start_ms: FAR_START, has_email: true });
     await enqueueBookingEventIn(db, {
@@ -400,9 +440,9 @@ describe("enqueueBookingEventIn: declined", () => {
       businessId: BIZ,
       reason: "expired",
     });
-    expect(
-      db.inserted().every((r) => r.template === "solicitudVencida"),
-    ).toBe(true);
+    expect(db.inserted().every((r) => r.template === "solicitudVencida")).toBe(
+      true,
+    );
   });
 
   it("ingen ägarrad (nekad/utgången förfrågan skickar inget till ägaren)", async () => {
@@ -413,9 +453,7 @@ describe("enqueueBookingEventIn: declined", () => {
       businessId: BIZ,
       reason: "declined",
     });
-    expect(db.inserted().some((r) => r.recipientKind === "owner")).toBe(
-      false,
-    );
+    expect(db.inserted().some((r) => r.recipientKind === "owner")).toBe(false);
   });
 });
 

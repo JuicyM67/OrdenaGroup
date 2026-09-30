@@ -156,9 +156,14 @@ export const ownerCancelRequestSchema = z.strictObject({
   reason: z.string().trim().max(500).optional(),
 });
 
-/** WP-45: ägaren bekräftar eller nekar en förfrågan (bara ägaren, med id). */
+/** WP-45: ägaren bekräftar eller nekar en förfrågan (bara ägaren, med id).
+ * `reason` gäller bara `declineBooking` (`confirmBooking` läser den aldrig) —
+ * valfritt motiv till kunden, skickas som `motivo` i `solicitudRechazada`
+ * (e-post), sparas aldrig i `bookings` (D-029: ingen persondata i en
+ * DB-kolumn som inte redan finns, outbox-payloaden rensas efter sändning). */
 export const ownerDecisionRequestSchema = z.strictObject({
   bookingId: uuid,
+  reason: z.string().trim().max(300).optional(),
 });
 
 export type AvailableDaysRequest = z.input<typeof availableDaysRequestSchema>;

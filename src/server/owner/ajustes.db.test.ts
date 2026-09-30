@@ -33,6 +33,7 @@ const RULES = {
   minNoticeMinutes: 60,
   maxDaysAhead: 30,
   cancelWindowHours: 3,
+  autoConfirmBookings: false,
   slotIntervalMinutes: 15,
 };
 

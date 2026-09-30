@@ -49,7 +49,12 @@ export type EventPopoverProps = {
    * `booking.status === "requested"`. `undefined` döljer knapparna helt (t.ex.
    * design lab) — samma mönster som `onMover`. */
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
-  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  /** `reason`: ägarens valfria motiv (`RechazarDialog`), se
+   * `notification-bell.tsx`. */
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
   trigger: ReactNode;
 };
 
@@ -200,7 +205,12 @@ export function EventPopover({
                 onMover ? "grid-cols-3" : "grid-cols-2",
               )}
             >
-              <Button type="button" variant="primary" size="sm" onClick={onLlego}>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                onClick={onLlego}
+              >
                 {agenda.popover.acciones.llego}
               </Button>
               <Button
@@ -239,8 +249,11 @@ export function EventPopover({
         <RechazarDialog
           open={declineDialogOpen}
           onOpenChange={setDeclineDialogOpen}
-          onConfirm={async () => {
-            const result = await onDeclineRequest(booking.id);
+          onConfirm={async (motivo) => {
+            const result = await onDeclineRequest(
+              booking.id,
+              motivo || undefined,
+            );
             if (result.ok) {
               setDeclineDialogOpen(false);
               onOpenChange(false);

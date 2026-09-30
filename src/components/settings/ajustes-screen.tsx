@@ -57,7 +57,10 @@ export type AjustesScreenProps = {
   /** WP-45 (D-033): klockan i topprraden. `undefined` döljer den. */
   pendingRequests?: readonly PendingRequestItem[];
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
-  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 export function AjustesScreen({
@@ -110,8 +113,8 @@ export function AjustesScreen({
                   if (result.ok) router.refresh();
                   return result;
                 }}
-                onDecline={async (bookingId) => {
-                  const result = await onDeclineRequest(bookingId);
+                onDecline={async (bookingId, reason) => {
+                  const result = await onDeclineRequest(bookingId, reason);
                   if (result.ok) router.refresh();
                   return result;
                 }}

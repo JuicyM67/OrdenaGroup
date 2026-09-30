@@ -49,7 +49,10 @@ export type HoyScreenProps = {
   onLogout?: () => void | Promise<void>;
   /** WP-45 (D-033): klockan. `undefined` i design lab (döljer den). */
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
-  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 /** Hur länge Llegó/No vino-knapparna är inaktiva efter ett tryck (optimistisk uppdatering). */
@@ -152,8 +155,8 @@ export function HoyScreen({
                     if (result.ok) router.refresh();
                     return result;
                   }}
-                  onDecline={async (bookingId) => {
-                    const result = await onDeclineRequest(bookingId);
+                  onDecline={async (bookingId, reason) => {
+                    const result = await onDeclineRequest(bookingId, reason);
                     if (result.ok) router.refresh();
                     return result;
                   }}

@@ -236,9 +236,9 @@ export type SolicitudRechazadaData = {
   readonly hora: string;
   readonly linkNuevaReserva: string;
   /** Motivo escrito por el negocio al rechazar
-   * (`solicitudes.rechazarDialog.motivoLabel`, WP-45 steg 5, UI). El evento
-   * del motor (`declined`) todavía no lo transporta — se omite hasta que
-   * exista ese campo. */
+   * (`solicitudes.rechazarDialog.motivoLabel`). Viaja `declineBooking` →
+   * `BookingEvent["declined"].message` → `message_outbox.payload.motivo`
+   * (worker.ts) → acá; nunca se guarda en `bookings`. */
   readonly motivo?: string;
 };
 

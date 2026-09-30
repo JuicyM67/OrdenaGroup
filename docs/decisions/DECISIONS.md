@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-036 · 2026-09-30 · Bokningar från bokningssidan är förfrågningar (WP-45)
+Kundens bokning skapas som `requested` och blockerar tiden tills företaget bekräftar eller nekar, eller tills den löper ut: 24 h efter förfrågan, senast 2 h före start. "Bekräfta automatiskt" (Ajustes, av som standard) ger `confirmed` direkt. Kunden får "förfrågan mottagen" via e-post; bekräftelse (SE e-post+SMS, CL e-post) och 24 h-påminnelse går först efter bekräftelse; nekad/utgången → e-post (+SMS i SE) med länk att boka nytt och valfritt motiv. Notiser härleds ur väntande bokningar (ingen tabell i v1). Handpenning: företaget bekräftar först, sedan betalningslänk (byggs i WP-25). Ersätter planens förslag "D-033".
+
 ### D-035 · 2026-09-30 · Obyggda funktioner döljs i ägarappen tills de finns
 Ägaren: "alla knappar ska fungera". Ingångar till funktioner utan backend (Clientes, Horas flash, Caja, Lista de espera, Te echamos de menos, sök, Ver detalle, Hoy-snabbåtgärder) döljs med kommentaren `// WP-xx: visas när funktionen finns` i stället för att leda till 404. Visuell avvikelse mot referensen accepteras tills respektive WP är klar: main 2,43 %, hoy 11,0 % (WP-47). Ingen ny referens tas.
 

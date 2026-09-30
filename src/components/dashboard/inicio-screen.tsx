@@ -82,7 +82,10 @@ export type InicioScreenProps = {
   /** WP-45 (D-033): klockan (topprad) + listan "Att bekräfta" (överst i
    * spalten). `undefined` i design lab — döljer båda. */
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
-  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 const AGENDA_HREF = "/app/agenda";
@@ -143,8 +146,8 @@ export function InicioScreen({
                   if (result.ok) router.refresh();
                   return result;
                 }}
-                onDecline={async (bookingId) => {
-                  const result = await onDeclineRequest(bookingId);
+                onDecline={async (bookingId, reason) => {
+                  const result = await onDeclineRequest(bookingId, reason);
                   if (result.ok) router.refresh();
                   return result;
                 }}
@@ -187,8 +190,8 @@ export function InicioScreen({
             if (result.ok) router.refresh();
             return result;
           }}
-          onDecline={async (bookingId) => {
-            const result = await onDeclineRequest(bookingId);
+          onDecline={async (bookingId, reason) => {
+            const result = await onDeclineRequest(bookingId, reason);
             if (result.ok) router.refresh();
             return result;
           }}

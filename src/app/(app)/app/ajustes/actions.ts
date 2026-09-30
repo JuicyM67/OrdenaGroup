@@ -127,6 +127,7 @@ export async function confirmRequestAction(
 
 export async function declineRequestAction(
   bookingId: string,
+  reason?: string,
 ): Promise<{ ok: boolean }> {
   const owner = await currentOwner();
   if ("ok" in owner) return { ok: false };
@@ -135,6 +136,7 @@ export async function declineRequestAction(
     owner.businessId,
     new Date(),
     bookingId,
+    reason,
   );
   return { ok: result.ok };
 }

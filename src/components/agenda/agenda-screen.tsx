@@ -158,7 +158,10 @@ export type AgendaScreenProps = {
    * `undefined` i design lab. */
   pendingRequests?: readonly PendingRequestItem[];
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
-  onDeclineRequest?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineRequest?: (
+    bookingId: string,
+    reason?: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -419,8 +422,8 @@ export function AgendaScreen({
         }
         onDeclineRequest={
           onDeclineRequest
-            ? async (bookingId) => {
-                const result = await onDeclineRequest(bookingId);
+            ? async (bookingId, reason) => {
+                const result = await onDeclineRequest(bookingId, reason);
                 if (result.ok) router.refresh();
                 return result;
               }

@@ -24,7 +24,9 @@ import {
 export type PendingRequestsCardProps = {
   requests: readonly PendingRequestItem[];
   onConfirm: (bookingId: string) => Promise<{ ok: boolean }>;
-  onDecline: (bookingId: string) => Promise<{ ok: boolean }>;
+  /** `reason`: ägarens valfria motiv (`RechazarDialog`), se
+   * `notification-bell.tsx`. */
+  onDecline: (bookingId: string, reason?: string) => Promise<{ ok: boolean }>;
 };
 
 function rowText(request: PendingRequestItem): string {
@@ -47,9 +49,7 @@ export function PendingRequestsCard({
   // Bort optimistiskt ur listan (samma `handledIds`-mönster som Llegó/No
   // vino i inicio-screen.tsx): inget `useEffect` — filtret räknas om varje
   // rendering, `router.refresh()` (InicioScreen) ger till slut samma lista.
-  const [handledIds, setHandledIds] = useState<ReadonlySet<string>>(
-    new Set(),
-  );
+  const [handledIds, setHandledIds] = useState<ReadonlySet<string>>(new Set());
   const items = requests.filter((r) => !handledIds.has(r.id));
   const [busyId, setBusyId] = useState<string | null>(null);
   const [decliningId, setDecliningId] = useState<string | null>(null);
@@ -67,10 +67,10 @@ export function PendingRequestsCard({
     }
   }
 
-  async function handleDecline(bookingId: string) {
+  async function handleDecline(bookingId: string, reason: string) {
     setBusyId(bookingId);
     try {
-      const result = await onDecline(bookingId);
+      const result = await onDecline(bookingId, reason || undefined);
       if (result.ok) setHandledIds((prev) => new Set(prev).add(bookingId));
     } finally {
       setBusyId(null);
@@ -125,8 +125,8 @@ export function PendingRequestsCard({
         onOpenChange={(next) => {
           if (!next) setDecliningId(null);
         }}
-        onConfirm={async () => {
-          if (decliningId) await handleDecline(decliningId);
+        onConfirm={async (motivo) => {
+          if (decliningId) await handleDecline(decliningId, motivo);
         }}
       />
     </Card>
