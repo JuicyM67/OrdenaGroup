@@ -162,6 +162,14 @@ describe("createManualBooking", () => {
     expect(c.consent_terms_at).not.toBeNull();
     expect(c.consent_version).toBe("manual-2026-10-v1");
     expect(c.consent_marketing_at).toBeNull();
+
+    // WP-26: samma transaktion loggar en terms-händelse, kanal manual.
+    const events = await adminQuery<{ kind: string; channel: string }>(
+      `select kind::text, channel::text from public.consent_events
+        where business_id = $1 and customer_id = $2`,
+      [biz.id, r.value.customerId],
+    );
+    expect(events.rows).toEqual([{ kind: "terms", channel: "manual" }]);
   });
 
   it("Cualquiera fungerar (staffId = any)", async () => {

@@ -167,12 +167,28 @@ export const hoursInputSchema = z
     }
   });
 
+/**
+ * WP-26 steg 6: villkorsrutan i onboarding (allmänna villkor + biträdesavtal,
+ * `/legal/terminos` + `/legal/encargo`). Fältnamn i indatan:
+ * `acceptedTerms`, och servern godtar BARA `true` — rutan får aldrig vara
+ * förkryssad i UI, så en saknad eller `false` avvisas med
+ * `terms.not_accepted` (ingen rad skrivs). Loggas som `owner_terms` + `dpa`
+ * i `consent_events` (complete-onboarding.ts).
+ */
+export const ONBOARDING_TERMS_FIELD = "acceptedTerms" as const;
+
+export const acceptedTermsSchema = z.literal(true, {
+  error: "terms.not_accepted",
+});
+
 export const onboardingInputSchema = z
   .object({
     business: businessInputSchema,
     services: z.array(serviceInputSchema).max(50),
     staff: z.array(staffInputSchema).max(30),
     hours: z.array(hoursInputSchema).max(7),
+    // Sist: övriga fel (steg 1–3) visas före villkorsrutan (sista steget).
+    [ONBOARDING_TERMS_FIELD]: acceptedTermsSchema,
   })
   .check((ctx) => {
     const { services, staff, hours } = ctx.value;

@@ -10,9 +10,11 @@ import "server-only";
  * från klienten (samma mönster som /[slug]/actions.ts).
  */
 import { marketConfig } from "@/config/market";
+import { LEGAL_VERSION } from "@/i18n/legal/types";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
+import { recordConsent } from "@/server/privacy/consent";
 
 import { onboardingInputSchema, type OnboardingInput } from "./schemas";
 
@@ -143,6 +145,22 @@ export async function completeOnboarding(
       await insertBusinessHours(q, businessId, input.hours);
       const serviceIds = await insertServices(q, businessId, input.services);
       await insertStaff(q, businessId, input.staff, serviceIds);
+
+      // WP-26: villkor + biträdesavtal (schemat kräver `acceptedTerms: true`),
+      // i samma transaktion som företaget. `consent_events` tar bara insert
+      // från `service_role` (D-019): rollen byts först här, efter att
+      // `create_business()` redan verifierat ägaren via `auth.uid()`.
+      await q.query("set local role service_role");
+      for (const kind of ["owner_terms", "dpa"] as const) {
+        await recordConsent(q, {
+          businessId,
+          subject: "owner",
+          kind,
+          version: LEGAL_VERSION,
+          channel: "web",
+          granted: true,
+        });
+      }
 
       return { ok: true, businessId, slug: input.business.slug } as const;
     });

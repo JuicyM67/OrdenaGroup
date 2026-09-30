@@ -8,6 +8,7 @@ import {
   type LocalDate,
   type LocalTime,
 } from "@/lib/format/dates";
+import { LEGAL_VERSION } from "@/i18n/legal/types";
 import { closePool } from "@/server/db/pool";
 import {
   adminQuery,
@@ -117,6 +118,93 @@ describe("createCustomerBooking + saveBookingConsent", () => {
     expect(consent.consent_marketing_at).toBeNull();
     expect(consent.consent_version).toBe("2026-10-v1");
     expect(consent.consent_channel).toBe("web");
+  });
+
+  it("WP-26: samtycket loggas i consent_events (terms + marketing, LEGAL_VERSION, web)", async () => {
+    const result = await createCustomerBooking({
+      businessId: biz.id,
+      serviceId: biz.services.corte!,
+      staffId: biz.staff.diego!,
+      start: iso(at(TUE, "13:00")),
+      name: "Paula Soto",
+      phone: phone(),
+      email: `c${phoneSeq}@example.com`,
+      idempotencyKey: randomUUID(),
+      now: NOW,
+    });
+    if (!result.ok) throw new Error(result.error);
+
+    await saveBookingConsent({
+      businessId: biz.id,
+      customerId: result.value.customerId,
+      marketing: false,
+      consentVersion: "2026-10-v1",
+      now: NOW,
+    });
+    const events = await adminQuery<{
+      business_id: string;
+      subject: string;
+      kind: string;
+      version: string;
+      channel: string;
+      granted: boolean;
+    }>(
+      `select business_id, subject::text, kind::text, version, channel::text, granted
+         from public.consent_events where customer_id = $1 order by consent_events.kind`,
+      [result.value.customerId],
+    );
+    const base = {
+      business_id: biz.id,
+      subject: "customer",
+      version: LEGAL_VERSION,
+      channel: "web",
+    };
+    expect(events.rows).toEqual([
+      { ...base, kind: "terms", granted: true },
+      { ...base, kind: "marketing", granted: false },
+    ]);
+  });
+
+  it("WP-26 (IDEAS 2026-09-28): publik bokning skriver inte över ägarens manual-samtycke", async () => {
+    const ph = phone();
+    const earlier = new Date("2026-09-01T12:00:00.000Z");
+    const inserted = await adminQuery<{ id: string }>(
+      `insert into public.customers
+         (business_id, phone_e164, name, consent_terms_at, consent_version, consent_channel)
+       values ($1, $2, 'Registro manual', $3, 'manual-2026-10-v1', 'manual')
+       returning id`,
+      [biz.id, ph, earlier.toISOString()],
+    );
+    const customerId = inserted.rows[0]!.id;
+
+    const result = await createCustomerBooking({
+      businessId: biz.id,
+      serviceId: biz.services.corte!,
+      staffId: biz.staff.matias!,
+      start: iso(at(TUE, "13:00")),
+      name: "Otra persona",
+      phone: ph,
+      email: `c${phoneSeq}@example.com`,
+      idempotencyKey: randomUUID(),
+      now: NOW,
+    });
+    if (!result.ok) throw new Error(result.error);
+    expect(result.value.customerId).toBe(customerId);
+
+    await saveBookingConsent({
+      businessId: biz.id,
+      customerId,
+      marketing: true,
+      consentVersion: "2026-10-v1",
+      now: NOW,
+    });
+    const consent = await consentRow(customerId);
+    expect(consent).toEqual({
+      consent_terms_at: earlier,
+      consent_marketing_at: null,
+      consent_version: "manual-2026-10-v1",
+      consent_channel: "manual",
+    });
   });
 
   it("fel start (utanför öppettid): ingen ny kund skapas", async () => {

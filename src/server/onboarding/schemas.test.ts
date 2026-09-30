@@ -6,6 +6,7 @@ import { onboardingInputSchema, RESERVED_SLUGS, RUBRO_KEYS } from "./schemas";
 
 function validInput() {
   return {
+    acceptedTerms: true,
     business: {
       name: "Barbería Central",
       slug: "barberia-central",

@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 
+import { LEGAL_VERSION } from "@/i18n/legal/types";
 import {
   adminQuery,
   assertLocalDatabase,
@@ -17,6 +18,7 @@ function uniqueSlug(): string {
 
 function validInput(slug: string) {
   return {
+    acceptedTerms: true,
     business: {
       name: "Barbería WP-15",
       slug,
@@ -122,6 +124,37 @@ describe("completeOnboarding (integration, lokal Supabase)", () => {
     );
     // Solo los días abiertos (lunes, martes) generan filas; domingo (cerrado) no.
     expect(hours.rows.map((r) => r.weekday)).toEqual([1, 2]);
+
+    // WP-26: villkor + biträdesavtal loggas i samma transaktion.
+    const consents = await adminQuery<{ kind: string; subject: string }>(
+      `select kind::text, subject::text from public.consent_events
+        where business_id = $1 and granted and version = $2 order by consent_events.kind`,
+      [result.businessId, LEGAL_VERSION],
+    );
+    expect(consents.rows).toEqual([
+      { kind: "owner_terms", subject: "owner" },
+      { kind: "dpa", subject: "owner" },
+    ]);
+  });
+
+  it("WP-26: utan acceptedTerms → terms.not_accepted, inget företag skapas", async () => {
+    const userId = await createTestUser();
+    createdUsers.push(userId);
+    const slug = uniqueSlug();
+    const { acceptedTerms: _omit, ...withoutTerms } = validInput(slug);
+    void _omit;
+
+    for (const input of [withoutTerms, { ...withoutTerms, acceptedTerms: false }]) {
+      expect(await completeOnboarding(userId, input)).toEqual({
+        ok: false,
+        code: "terms.not_accepted",
+      });
+    }
+    const count = await adminQuery<{ n: string }>(
+      "select count(*)::text as n from public.businesses where slug = $1",
+      [slug],
+    );
+    expect(count.rows[0]?.n).toBe("0");
   });
 
   it("slug duplicado → business.slug_taken, ingen rad skapas", async () => {
