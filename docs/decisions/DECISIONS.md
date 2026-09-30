@@ -4,6 +4,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-039 · 2026-09-30 · JS-budget för bokningssidan höjs till 190 kB (ersätter D-032:s 180 kB)
+Sidan låg på gränsen och storleken svänger ~1 kB mellan byggen när andra delar av appen ändras, så leveranser som inte rör `/[slug]` föll. Ägaren valde att höja till 190 kB och optimera separat (WP-53: rendera profilvyn på servern, väntat 15–25 kB). Tidskravet (klickbar inom 3,5 s på 4G + 4x CPU) är oförändrat.
+
 ### D-038 · 2026-09-30 · Plattformsadmin (superadmin) skild från företagsroller
 Superadmin (`/admin`, WP-36) är en egen tabell `private.platform_admins` som bara servern läser (service role) — ingen koppling till `memberships`-rollerna. Kräver tvåstegsverifiering (Supabase MFA, aal2). Varje adminåtgärd loggas i `private.admin_audit_log` (oföränderlig). Företag kan läggas upp åt någon via `private.business_invitations` + `public.accept_business_invitation(token)`; plan kan sättas manuellt med `businesses.plan_override_until`. Första admin läggs in manuellt med SQL av ägaren.
 ### D-037 · 2026-09-30 · Personalgräns per plan (WP-46)

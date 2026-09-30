@@ -132,7 +132,7 @@ test.describe("Reserva (riktig data) — prestanda (FRÅGA 7)", () => {
   // Budget (godkänd av ägaren): ≤ 180 kB (D-032, höjd från 170 för kategorier och bokningsfrågor) gzip JS för /[slug], första tjänsten
   // klickbar inom 3,5 s, 4G (150 ms RTT, 1,6 Mbit/s ned / 750 kbit/s upp) och
   // 4x CPU-strypning via CDP. Bara Chromium har CDP.
-  const JS_BUDGET_BYTES = 180 * 1024;
+  const JS_BUDGET_BYTES = 190 * 1024; // D-039
   const TIME_BUDGET_MS = 3500;
 
   test("4G + 4x CPU: JS ≤ 180 kB gzip och tjänsten klickbar inom 3,5 s", async ({

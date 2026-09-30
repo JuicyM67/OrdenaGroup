@@ -65,6 +65,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-47 | Döda knappar i ägarappen: utloggning, kontomeny, rail, radmeny, statistik, 24 h-tid, bottenark, favicon, tooltips; obyggt dolt (D-035) | ui-engineer | – | – | ☑ |
 | WP-49 | Mejl läsbara i mörkt läge | integrations-engineer | WP-16 | F7 | ☑ |
 | WP-50 | Månadsvy i Agenda + datumväljare i marknadens format | ui-engineer | WP-47 | F6 | ☑ |
+| WP-53 | Rendera profilvyn på /[slug] som serverkomponent (JS-budget tillbaka under 180 kB, D-039) | ui-engineer | – | F4 | ☐ |
 | WP-45 | Bekräftelse av bokningar + notiser (status `requested`, bekräfta automatiskt i Ajustes, klocka/Inicio/Agenda med Confirmar/Rechazar, mejl "solicitud recibida"/"rechazada", utgång) | db-engineer + scheduling-engineer + integrations-engineer + copywriter-es-cl + ui-engineer | WP-16, WP-21 | F4–F7 | ☑ |
 | WP-46 | Personalkonton och behörigheter (inbjudan via e-post, 7 fasta flaggor på memberships, RLS + serverkontroll, "Mis reservas") | db-engineer + scheduling-engineer + integrations-engineer + copywriter-es-cl + ui-engineer | WP-45 | F1, F3, F6 | ◐ (plan: docs/tasks/plans/WP-46.md) |
 
