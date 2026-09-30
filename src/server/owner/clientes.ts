@@ -84,16 +84,20 @@ export async function listCustomersIn(
 ): Promise<CustomerListItem[]> {
   const sort = opts.sort ?? "ultimaVisita";
   const filter = opts.filter ?? "todos";
-  const search = opts.search?.trim() || null;
+  // `%`/`_` i söktexten ska matcha bokstavligt, inte som jokertecken.
+  const rawSearch = opts.search?.trim() || null;
+  const search = rawSearch
+    ? rawSearch.replace(/[\\%_]/g, (m) => `\\${m}`)
+    : null;
   const inactiveCutoff = new Date(
     now.getTime() - INACTIVE_DAYS_THRESHOLD * 24 * 60 * 60 * 1000,
   );
 
   const filterSql =
     filter === "habituales"
-      ? "and v.visits_count >= $4"
+      ? "and v.visits_count >= $3::int"
       : filter === "inactivos"
-        ? "and (v.last_visit_at is null or v.last_visit_at < $4)"
+        ? "and (v.last_visit_at is null or v.last_visit_at < $3::timestamptz)"
         : filter === "conInasistencias"
           ? "and n.no_show_count > 0"
           : "";
@@ -124,11 +128,14 @@ export async function listCustomersIn(
        ) n on true
       where c.business_id = $1
         and c.anonymized_at is null
-        and ($2::text is null or c.name ilike '%' || $2 || '%'
-             or c.phone_e164 ilike '%' || $2 || '%')
+        and ($2::text is null or c.name ilike '%' || $2 || '%' escape '\\'
+             or c.phone_e164 ilike '%' || $2 || '%' escape '\\')
         ${filterSql}
       order by ${SORT_SQL[sort]}`,
-    [businessId, search, filterParam === "" ? null : filterParam, filterParam],
+    // $3 bara när filtret använder den (en oanvänd parameter ger 42P18).
+    filterParam === ""
+      ? [businessId, search]
+      : [businessId, search, filterParam],
   );
 
   return r.rows.map((row) => ({
