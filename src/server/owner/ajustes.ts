@@ -27,6 +27,7 @@ import {
   ajustesStaffInputSchema,
   businessSettingsInputSchema,
   memberSettingsInputSchema,
+  waitlistSettingsInputSchema,
   winbackSettingsInputSchema,
 } from "./ajustes-schemas";
 import {
@@ -64,6 +65,10 @@ export type AjustesBusiness = {
   winbackOfferPct: number | null;
   /** WP-31: `businesses.winback_offer_days`. `null` = ingen rabatt. */
   winbackOfferDays: number | null;
+  /** WP-23: `businesses.waitlist_mode` ("sequential"/"broadcast"). */
+  waitlistMode: "sequential" | "broadcast";
+  /** WP-23: `businesses.waitlist_hold_minutes` (5–240). */
+  waitlistHoldMinutes: number;
 };
 
 export type AjustesService = {
@@ -170,6 +175,12 @@ function mapDbError(e: unknown): string {
   ) {
     return "winback.offer_days_invalid";
   }
+  if (
+    code === "23514" &&
+    constraint === "businesses_waitlist_hold_minutes_check"
+  ) {
+    return "waitlist.hold_minutes_invalid";
+  }
   return "unknown";
 }
 
@@ -201,7 +212,16 @@ type BusinessRow = {
   winback_message: string | null;
   winback_offer_pct: number | null;
   winback_offer_days: number | null;
+  waitlist_mode: string;
+  waitlist_hold_minutes: number;
 };
+
+/** Samma försvarsmönster som `toCancelApproval` (`src/server/bookings/row.ts`)
+ * — enumet garanterar redan värdet i databasen, men TS litar aldrig blint på
+ * en textcast. */
+function toWaitlistMode(v: string): "sequential" | "broadcast" {
+  return v === "broadcast" ? "broadcast" : "sequential";
+}
 
 type ServiceRow = {
   id: string;
@@ -235,7 +255,8 @@ async function loadBusinessRow(
     `select name, slug, comuna, phone, address, min_notice_minutes, max_days_ahead,
             cancel_window_hours, slot_interval_minutes, auto_confirm_bookings,
             cancel_approval, member_discount_pct, member_benefit_text,
-            winback_days, winback_message, winback_offer_pct, winback_offer_days
+            winback_days, winback_message, winback_offer_pct, winback_offer_days,
+            waitlist_mode::text as waitlist_mode, waitlist_hold_minutes
        from public.businesses
       where id = $1`,
     [businessId],
@@ -256,6 +277,8 @@ async function loadBusinessRow(
     cancelApproval: toCancelApproval(b.cancel_approval),
     memberDiscountPct: b.member_discount_pct,
     memberBenefitText: b.member_benefit_text,
+    waitlistMode: toWaitlistMode(b.waitlist_mode),
+    waitlistHoldMinutes: b.waitlist_hold_minutes,
     winbackDays: b.winback_days,
     winbackMessage: b.winback_message,
     winbackOfferPct: b.winback_offer_pct,
@@ -533,6 +556,39 @@ export async function updateWinbackSettings(
                 winback_offer_pct = $3, winback_offer_days = $4
           where id = $5`,
         [days, message, offerPct, offerDays, businessId],
+      );
+      return assertUpdated(r.rowCount) ?? { ok: true };
+    });
+  } catch (e) {
+    return { ok: false, code: mapDbError(e) };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// WP-23 (Ajustes → Reglas de reserva): väntelistans läge + hålltid.
+// ---------------------------------------------------------------------------
+
+export async function updateWaitlistSettings(
+  userId: string,
+  businessId: string,
+  rawInput: unknown,
+): Promise<MutationResult> {
+  const parsed = waitlistSettingsInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: parsed.error.issues[0]?.message ?? "invalid_input",
+    };
+  }
+  const input = parsed.data;
+  try {
+    return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_settings");
+      const r = await q.query(
+        `update public.businesses
+            set waitlist_mode = $1, waitlist_hold_minutes = $2
+          where id = $3`,
+        [input.mode, input.holdMinutes, businessId],
       );
       return assertUpdated(r.rowCount) ?? { ok: true };
     });

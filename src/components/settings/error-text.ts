@@ -64,6 +64,10 @@ const KNOWN: Record<string, string> = {
   "winback.message_too_long": comun.algoSalioMal,
   "winback.offer_pct_invalid": comun.algoSalioMal,
   "winback.offer_days_invalid": comun.algoSalioMal,
+  // WP-23 (Ajustes → Reglas de reserva → lista de espera): samma avvägning
+  // — fälten begränsar redan valen i UI:t.
+  "waitlist.mode_invalid": comun.algoSalioMal,
+  "waitlist.hold_minutes_invalid": comun.algoSalioMal,
   "services.name_empty": servicios.errores.nombreVacio,
   "services.duration_invalid": servicios.errores.duracionInvalida,
   "services.buffer_invalid": servicios.errores.bufferInvalido,

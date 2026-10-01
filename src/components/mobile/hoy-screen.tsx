@@ -10,9 +10,12 @@
 // inkluderad) — Hoy hade ingen utloggningsväg alls tidigare, men får den via avataren, inte
 // en extra mörk topprad (`OwnerMobileTopBar`, se motiveringen vid render nedan). WP-24:
 // `OwnerMobileTabBar` har nu Clientes och Caja igen (Caja gömd utan `can_view_reports`).
-// `QuickActions` (Crear hora flash/Lista de espera/Cobrar) döljs fortfarande: ingen av de
-// tre rutterna finns än — WP-xx: visas när funktionen finns. Ett fel vid Llegó/No vino
-// visas nu i stället för att sväljas tyst (`role="alert"`, återanvänder `errores.agenda.network`).
+// Ett fel vid Llegó/No vino visas nu i stället för att sväljas tyst (`role="alert"`,
+// återanvänder `errores.agenda.network`).
+//
+// WP-23/WP-30: `QuickActions` (Crear hora flash/Lista de espera/Cobrar) återinförs — alla
+// tre rutter finns nu (`/app/flash`, `/app/agenda`, `/app/caja`, se `links` i
+// `src/server/owner/hoy.ts`).
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
@@ -44,6 +47,7 @@ import {
   todayLabel,
 } from "./hoy-view";
 import { NextClientCard } from "./next-client-card";
+import { QuickActions } from "./quick-actions";
 import { RestOfDay } from "./rest-of-day";
 import type { HoyBooking, HoyData, HoyMemberView, HoyPerm } from "./types";
 
@@ -325,8 +329,7 @@ export function HoyScreen({
           }
         />
 
-        {/* WP-47: QuickActions (Crear hora flash/Lista de espera/Cobrar) döljs — ingen av
-            de tre rutterna finns än. WP-xx: visas när funktionen finns. */}
+        <QuickActions links={data.links} waitlistCount={data.waitlistCount} />
 
         <RestOfDay
           bookings={rest}

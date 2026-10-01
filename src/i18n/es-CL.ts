@@ -685,10 +685,18 @@ export const agenda = {
       `Quitar a ${p.nombre} de la lista de espera`,
     /** WP-30: aria-label del bloque de una hora flash activa (aún no
      * reservada) en el rutnät. */
-    horaFlashDisponibleAria: (p: { hora: string; porcentaje: number }): string =>
-      `Hora flash disponible a las ${p.hora}, −${p.porcentaje}%`,
+    horaFlashDisponibleAria: (p: {
+      hora: string;
+      porcentaje: number;
+    }): string => `Hora flash disponible a las ${p.hora}, −${p.porcentaje}%`,
   },
   nuevaReserva: "Nueva reserva",
+  /** WP-30: menú al hacer clic en un espacio vacío de la agenda (día). */
+  celdaVacia: {
+    menuAria: "Crear en esta hora",
+    nuevaReserva: "Nueva reserva",
+    horaFlash: "Hora flash",
+  },
   agregarProfesional: AGREGAR_PROFESIONAL,
   verAgendaDe: (p: { nombre: string }): string => `Ver agenda de ${p.nombre}`,
   vistaAria: "Vista",
@@ -3710,6 +3718,10 @@ export const flash = {
     linkCopiado: "Link copiado",
     errorCopiar: "No pudimos copiar el link.",
     enviarAClientes: "Enviar a clientes",
+    /** `sendFlashCampaign` → "flash_not_active" (la hora ya fue reservada o
+     * cancelada mientras se armaba el envío). */
+    enviarErrorNoActiva:
+      "Esta hora flash ya no está activa, así que no se puede enviar.",
     cancelar: "Cancelar",
     cancelarDialogTitulo: "¿Cancelar esta hora flash?",
     cancelarDialogCuerpo:
@@ -3742,7 +3754,8 @@ export const vOferta = {
   confirmada: "¡Listo! Tu hora quedó reservada.",
   confirmadaAviso: "Te llega la confirmación con todos los detalles.",
   yaTomada: "Esa hora ya fue tomada por otra persona.",
-  yaTomadaAviso: "Sigues en la lista de espera: te avisaremos si se libera otra.",
+  yaTomadaAviso:
+    "Sigues en la lista de espera: te avisaremos si se libera otra.",
   vencida: "El tiempo para confirmar esta hora ya pasó.",
   yaReservada: "Ya reservaste esta hora.",
   linkInvalido: "Este link no es válido.",

@@ -1,9 +1,9 @@
 // Se DESIGN.md §7 "NavRail" och docs/tasks/plans/WP-11.md §4 steg 3. `NavRail
-// variant="bare"` med logga, fem huvudlänkar och "Cerrar sesión" sist.
+// variant="bare"` med logga, sex huvudlänkar och "Cerrar sesión" sist.
 //
 // WP-47: Clientes/Horas flash/Caja döljdes (ingen route/backend fanns, ledde till 404) —
-// WP-24 återinför Clientes och Caja (sidorna finns nu); Horas flash är fortfarande dold
-// (fas 2 saknar route). `canViewReports` (WP-24, D-034): Caja kräver `can_view_reports`
+// WP-24 återinförde Clientes och Caja; WP-23/WP-30 återinför Horas flash (route/backend
+// finns nu). `canViewReports` (WP-24, D-034): Caja kräver `can_view_reports`
 // (eller ägare) — annars skulle länken leda till en redirect till /app/agenda. `undefined`
 // (design lab, ingen medlemsdata) visar Caja, samma "ingen inskränkning utan data"-mönster
 // som `showReports` i `src/server/owner/inicio.ts`. Loggan länkar till /app/inicio
@@ -23,6 +23,7 @@ import {
   LogOut,
   SlidersHorizontal,
   Users,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -48,12 +49,13 @@ export const DEFAULT_MAIN_NAV_HREFS: Record<MainNavKey, string> = {
   ajustes: "/app/ajustes",
 };
 
-/** WP-24: Horas flash saknar fortfarande route/backend (fas 2, döljs). Clientes och Caja
- * har egna sidor — Caja filtreras dessutom av `canViewReports` (se nedan). */
+/** WP-23/WP-30: Horas flash återinförd (route/backend finns nu). Caja filtreras
+ * dessutom av `canViewReports` (se nedan). */
 const VISIBLE_KEYS: readonly MainNavKey[] = [
   "inicio",
   "agenda",
   "clientes",
+  "horasFlash",
   "caja",
   "ajustes",
 ];
@@ -62,6 +64,7 @@ const ITEMS: { key: MainNavKey; label: string; icon: LucideIcon }[] = [
   { key: "inicio", label: nav.inicio, icon: LayoutGrid },
   { key: "agenda", label: nav.agenda, icon: Calendar },
   { key: "clientes", label: nav.clientes, icon: Users },
+  { key: "horasFlash", label: nav.horasFlash, icon: Zap },
   { key: "caja", label: nav.caja, icon: BarChart3 },
   { key: "ajustes", label: nav.ajustes, icon: SlidersHorizontal },
 ];

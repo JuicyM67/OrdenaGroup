@@ -82,10 +82,31 @@ export type AgendaBusinessHours = Partial<
   >
 >;
 
+/** WP-23: en rad i väntelistkortets lista (Agenda-asiden). Bara `waiting`/
+ * `offered` visas — `booked`/`expired`/`removed` är inte längre något
+ * ägaren behöver agera på. */
+export type AgendaWaitlistEntry = {
+  readonly id: string;
+  readonly customerName: string;
+  readonly service: string;
+  readonly status: "waiting" | "offered";
+};
+
 export type AgendaWaitlist = {
   readonly count: number;
   readonly day: LocalDate;
+  readonly entries: readonly AgendaWaitlistEntry[];
 } | null;
+
+/** WP-30: en aktiv (ännu inte bokad) blixttid, ritad som ett eget block i
+ * rutnätet (lime, samma ton som en bokad flash-bokning). */
+export type AgendaFlashSlot = {
+  readonly id: string;
+  readonly staffId: StaffId;
+  readonly start: string;
+  readonly end: string;
+  readonly discountPct: number;
+};
 
 /** WP-46: speglar `Perm`/`MemberView` (`src/server/db/permissions.ts`,
  * `src/server/owner/member.ts`), duplicerat — samma motiv som resten av
@@ -114,6 +135,8 @@ export type AgendaData = {
   readonly bookings: readonly AgendaBooking[];
   readonly blocks: readonly AgendaBlock[];
   readonly waitlist: AgendaWaitlist;
+  /** WP-30: aktiva blixttider för veckan (ännu inte bokade). */
+  readonly flashSlots: readonly AgendaFlashSlot[];
   readonly weekCounts: Record<StaffId, number>;
   /** Reservas per profesional för en given dag (dagvyns kolumnhuvud). */
   readonly dayCounts?: Record<LocalDate, Record<StaffId, number>>;

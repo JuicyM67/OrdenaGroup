@@ -17,6 +17,7 @@ import {
   declineCancelRequestAction,
   declineRequestAction,
   updateBusinessSettingsAction,
+  updateWaitlistSettingsAction,
 } from "../actions";
 
 export const metadata: Metadata = {
@@ -52,6 +53,11 @@ export default async function AjustesReglasPage() {
       <BookingRulesSection
         business={business}
         action={updateBusinessSettingsAction}
+        waitlistAction={
+          ctx.current.view.perms.can_edit_settings
+            ? updateWaitlistSettingsAction
+            : undefined
+        }
       />
     </AjustesShell>
   );

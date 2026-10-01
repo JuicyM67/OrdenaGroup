@@ -21,6 +21,13 @@ import type {
   UndoPaymentInput,
   UndoPaymentResult,
 } from "@/components/caja/types";
+import { FlashSlotDialog } from "@/components/flash/flash-slot-dialog";
+import type {
+  CreateFlashResult,
+  CreateFlashSlotInput,
+  FlashCatalogService,
+  FlashStaff,
+} from "@/components/flash/types";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import type {
   NotificationBellResult,
@@ -62,6 +69,7 @@ import type {
 } from "./customer-privacy-actions";
 import { DayGrid } from "./day-grid";
 import { DayPillRow } from "./day-pill-row";
+import { EmptySlotMenu } from "./empty-slot-menu";
 import { EventBlock } from "./event-block";
 import { EventPopover } from "./event-popover";
 import {
@@ -191,6 +199,17 @@ export type AgendaScreenProps = {
   onUndoPayment?: (input: UndoPaymentInput) => Promise<UndoPaymentResult>;
   /** Metoderna "Marcar pagada" ska erbjuda (`MANUAL_METHODS`). `[]` i design lab. */
   manualMethods?: readonly ManualPaymentMethod[];
+  /** WP-23: "Ta bort" i väntelistkortet (server action, `removeWaitlistEntry`).
+   * `undefined` i design lab — döljer knapparna. */
+  onRemoveWaitlistEntry?: (entryId: string) => Promise<{ ok: boolean }>;
+  /** WP-30: personal/tjänster för "Hora flash"-dialogen (tomrutsmenyn i dagvyn och
+   * Hoy-snabbknappen går till /app/flash i stället). `undefined`/tom lista döljer
+   * "Hora flash" i tomrutsmenyn — bara "Nueva reserva" visas då. */
+  flashStaff?: readonly FlashStaff[];
+  flashServices?: readonly FlashCatalogService[];
+  onCreateFlashSlot?: (
+    input: CreateFlashSlotInput,
+  ) => Promise<CreateFlashResult>;
 };
 
 function monthOf(date: LocalDate): YearMonth {
@@ -254,6 +273,10 @@ export function AgendaScreen({
   onMarkPaid,
   onUndoPayment,
   manualMethods = [],
+  onRemoveWaitlistEntry,
+  flashStaff = [],
+  flashServices = [],
+  onCreateFlashSlot,
 }: AgendaScreenProps) {
   const router = useRouter();
   const tz = data.timezone as TimeZone;
@@ -302,6 +325,27 @@ export function AgendaScreen({
   const [manualDialogOpen, setManualDialogOpen] = useState(
     () => initialManualCustomer != null,
   );
+  // WP-30: klick på ett tomt fält i dagvyn (tomrutsmenyn) förifyller tid/profesional i
+  // "Nueva reserva"/"Hora flash" — `manualDialogDefaults`/`flashDialogDefaults` är `null`
+  // när dialogerna öppnas via knapparna i stället (tomt formulär, samma som förut).
+  const [manualDialogDefaults, setManualDialogDefaults] = useState<{
+    date: LocalDate;
+    time: LocalTime;
+    staffId: StaffId;
+  } | null>(null);
+  const [flashDialogOpen, setFlashDialogOpen] = useState(false);
+  const [flashDialogDefaults, setFlashDialogDefaults] = useState<{
+    date: LocalDate;
+    time: LocalTime;
+    staffId: StaffId;
+  } | null>(null);
+  const [emptySlotTarget, setEmptySlotTarget] = useState<{
+    clientX: number;
+    clientY: number;
+    date: LocalDate;
+    time: LocalTime;
+    staffId: StaffId;
+  } | null>(null);
   const [movingBooking, setMovingBooking] = useState<AgendaBooking | null>(
     null,
   );
@@ -740,7 +784,10 @@ export function AgendaScreen({
             }}
             onNewBooking={
               onCreateManualBooking && canCreateBooking
-                ? () => setManualDialogOpen(true)
+                ? () => {
+                    setManualDialogDefaults(null);
+                    setManualDialogOpen(true);
+                  }
                 : undefined
             }
             onLogout={onLogout}
@@ -797,7 +844,18 @@ export function AgendaScreen({
               />
             )}
             <LegendCard />
-            <WaitlistSummary waitlist={data.waitlist} />
+            <WaitlistSummary
+              waitlist={data.waitlist}
+              onRemove={
+                onRemoveWaitlistEntry
+                  ? async (entryId) => {
+                      const result = await onRemoveWaitlistEntry(entryId);
+                      if (result.ok) router.refresh();
+                      return result;
+                    }
+                  : undefined
+              }
+            />
           </>
         }
       >
@@ -824,7 +882,10 @@ export function AgendaScreen({
             }}
             onNewBooking={
               onCreateManualBooking && canCreateBooking
-                ? () => setManualDialogOpen(true)
+                ? () => {
+                    setManualDialogDefaults(null);
+                    setManualDialogOpen(true);
+                  }
                 : undefined
             }
           />
@@ -892,6 +953,12 @@ export function AgendaScreen({
                 }
                 onSelectBooking={(id) => selectBooking(id, "desktop")}
                 initialScrollHour={scrollHour}
+                onSelectFlashSlot={() => router.push("/app/flash")}
+                onEmptyClick={
+                  onCreateManualBooking && canCreateBooking
+                    ? (input) => setEmptySlotTarget({ date: focus, ...input })
+                    : undefined
+                }
               />
             )
           ) : null}
@@ -941,7 +1008,10 @@ export function AgendaScreen({
             }}
             onNewBooking={
               onCreateManualBooking && canCreateBooking
-                ? () => setManualDialogOpen(true)
+                ? () => {
+                    setManualDialogDefaults(null);
+                    setManualDialogOpen(true);
+                  }
                 : undefined
             }
           />
@@ -1008,6 +1078,12 @@ export function AgendaScreen({
                   }
                   onSelectBooking={(id) => selectBooking(id, "mobile")}
                   initialScrollHour={scrollHour}
+                  onSelectFlashSlot={() => router.push("/app/flash")}
+                  onEmptyClick={
+                    onCreateManualBooking && canCreateBooking
+                      ? (input) => setEmptySlotTarget({ date: focus, ...input })
+                      : undefined
+                  }
                 />
               )
             ) : null}
@@ -1017,8 +1093,16 @@ export function AgendaScreen({
 
       {onCreateManualBooking ? (
         <ManualBookingDialog
+          key={
+            manualDialogDefaults
+              ? `${manualDialogDefaults.date}-${manualDialogDefaults.time}-${manualDialogDefaults.staffId}`
+              : "default"
+          }
           open={manualDialogOpen}
-          onOpenChange={setManualDialogOpen}
+          onOpenChange={(open) => {
+            setManualDialogOpen(open);
+            if (!open) setManualDialogDefaults(null);
+          }}
           services={catalog}
           // WP-46: sin `can_manage_all_bookings` (bara `can_manage_own_bookings`)
           // kan personalen bara skapa reservas åt sig själv — samma regel som
@@ -1030,10 +1114,65 @@ export function AgendaScreen({
               : data.staff
           }
           businessName={businessName}
-          defaultDate={focus}
+          defaultDate={manualDialogDefaults?.date ?? focus}
+          defaultTime={manualDialogDefaults?.time}
+          defaultStaffId={manualDialogDefaults?.staffId}
           initialCustomer={initialManualCustomer}
           onSubmit={async (input) => {
             const result = await onCreateManualBooking(input);
+            if (result.ok) router.refresh();
+            return result;
+          }}
+        />
+      ) : null}
+
+      {/* WP-30: tomrutsmenyn (klick på en tom cell i dagvyn). */}
+      <EmptySlotMenu
+        target={emptySlotTarget}
+        onClose={() => setEmptySlotTarget(null)}
+        onNuevaReserva={() => {
+          if (!emptySlotTarget) return;
+          setManualDialogDefaults({
+            date: emptySlotTarget.date,
+            time: emptySlotTarget.time,
+            staffId: emptySlotTarget.staffId,
+          });
+          setManualDialogOpen(true);
+        }}
+        onHoraFlash={
+          onCreateFlashSlot && flashStaff.length > 0
+            ? () => {
+                if (!emptySlotTarget) return;
+                setFlashDialogDefaults({
+                  date: emptySlotTarget.date,
+                  time: emptySlotTarget.time,
+                  staffId: emptySlotTarget.staffId,
+                });
+                setFlashDialogOpen(true);
+              }
+            : undefined
+        }
+      />
+
+      {onCreateFlashSlot ? (
+        <FlashSlotDialog
+          key={
+            flashDialogDefaults
+              ? `${flashDialogDefaults.date}-${flashDialogDefaults.time}-${flashDialogDefaults.staffId}`
+              : "default"
+          }
+          open={flashDialogOpen}
+          onOpenChange={(open) => {
+            setFlashDialogOpen(open);
+            if (!open) setFlashDialogDefaults(null);
+          }}
+          staff={flashStaff}
+          services={flashServices}
+          defaultDate={flashDialogDefaults?.date ?? focus}
+          defaultTime={flashDialogDefaults?.time}
+          defaultStaffId={flashDialogDefaults?.staffId}
+          onSubmit={async (input) => {
+            const result = await onCreateFlashSlot(input);
             if (result.ok) router.refresh();
             return result;
           }}

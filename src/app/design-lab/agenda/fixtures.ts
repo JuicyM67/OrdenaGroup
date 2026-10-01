@@ -347,7 +347,31 @@ export const agendaFixture: AgendaData = {
   staff: STAFF,
   bookings,
   blocks,
-  waitlist: { count: 3, day: "2026-10-03" as LocalDate },
+  waitlist: {
+    count: 3,
+    day: "2026-10-03" as LocalDate,
+    entries: [
+      {
+        id: "wl-1",
+        customerName: "Francisca Soto",
+        service: "Corte + barba",
+        status: "waiting",
+      },
+      {
+        id: "wl-2",
+        customerName: "Ignacio Vera",
+        service: "Corte clásico",
+        status: "offered",
+      },
+      {
+        id: "wl-3",
+        customerName: "Camila Rojas",
+        service: "Coloración",
+        status: "waiting",
+      },
+    ],
+  },
+  flashSlots: [],
   weekCounts: { [DIEGO]: 21, [MATIAS]: 17, [TOMAS]: 15 },
 };
 

@@ -16,17 +16,19 @@ import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
+import { listWaitlist } from "@/server/waitlist";
 
 import { memberView, type MemberView } from "./member";
 import { listPendingRequestsIn } from "./requests";
 import { isoOf, listPaidBookingIds, staffColorOf } from "./shared";
 
-/** Samma statiska länkar som `/design-lab/hoy/fixtures.ts` (rutterna finns
- * inte än — Caja/väntelista/hora flash är utanför WP-21). */
+/** WP-23/WP-30: "Crear hora flash"/"Lista de espera" pekar nu på de riktiga
+ * sidorna (`/app/flash`, väntelistkortet i `/app/agenda`). "Cobrar" pekar på
+ * Caja (WP-24) — ingen egen "snabb inkassering"-ruta finns. */
 const LINKS: HoyData["links"] = {
-  flash: "/app/horas-flash/nueva",
-  waitlist: "/app/lista-de-espera",
-  cobrar: "/app/caja/cobrar",
+  flash: "/app/flash",
+  waitlist: "/app/agenda",
+  cobrar: "/app/caja",
   tabs: {
     hoy: "/app/hoy",
     agenda: "/app/agenda",
@@ -65,6 +67,9 @@ export async function loadOwnerHoy(
   now: Date,
   ownerName: string,
 ): Promise<HoyData & { member: MemberView }> {
+  // WP-23: `listWaitlist` (scheduling-engineer) öppnar sin egen
+  // `withOwnerTx` — samma motiv som `loadOwnerInicio`.
+  const waitlistItems = await listWaitlist(userId, businessId, today, now);
   return withOwnerTx(userId, async (q) => {
     const member = await loadMember(q, userId, businessId);
     const data = await loadOwnerHoyIn(
@@ -75,7 +80,11 @@ export async function loadOwnerHoy(
       ownerName,
       member,
     );
-    return { ...data, member: memberView(member) };
+    return {
+      ...data,
+      waitlistCount: waitlistItems.length,
+      member: memberView(member),
+    };
   });
 }
 

@@ -26,6 +26,10 @@ export type AjustesBusiness = {
   winbackMessage: string | null;
   winbackOfferPct: number | null;
   winbackOfferDays: number | null;
+  /** WP-23: `businesses.waitlist_mode`. */
+  waitlistMode: "sequential" | "broadcast";
+  /** WP-23: `businesses.waitlist_hold_minutes` (5–240). */
+  waitlistHoldMinutes: number;
 };
 
 export type AjustesService = {
@@ -100,6 +104,8 @@ export type AjustesActions = {
   updateMemberSettings: (input: unknown) => Promise<MutationResult>;
   /** WP-31: Ajustes → Socios y envíos ("Te echamos de menos" automático). */
   updateWinbackSettings: (input: unknown) => Promise<MutationResult>;
+  /** WP-23: Ajustes → Reglas de reserva (lista de espera: modo + hålltid). */
+  updateWaitlistSettings: (input: unknown) => Promise<MutationResult>;
 };
 
 // ---------------------------------------------------------------------------

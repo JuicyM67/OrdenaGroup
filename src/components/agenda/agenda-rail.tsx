@@ -8,12 +8,15 @@
 // och Caja (samma D-034-spärr på Caja som main-nav.tsx) läggs till strax ovanför Ajustes —
 // referensen (Agenda.dc.html) saknar dem helt i den här panelen (bara logga/+ny/personal),
 // men utan en egen väg dit skulle de vara onåbara från Agenda-skärmen på skrivbordet.
+// WP-23/WP-30: Horas flash återinförd mellan Clientes och Caja (D-035-döljningen gällde
+// bara den funktionen, se main-nav.tsx).
 import {
   BarChart3,
   LogOut,
   Plus,
   SlidersHorizontal,
   Users,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -96,6 +99,18 @@ export function AgendaRail({
         prefetch={false}
         icon={
           <Users
+            aria-hidden="true"
+            className="size-5.5"
+            strokeWidth={strokeNav}
+          />
+        }
+      />
+      <NavRailLink
+        href="/app/flash"
+        label={nav.horasFlash}
+        prefetch={false}
+        icon={
+          <Zap
             aria-hidden="true"
             className="size-5.5"
             strokeWidth={strokeNav}

@@ -18,14 +18,14 @@ describe("FlashCard", () => {
       />,
     );
     expect(screen.getByText("Mar 6 · 11:30 · −20%")).toBeInTheDocument();
-    // WP-47: el link "Compartir" (`/app/flash`, sin backend) se oculta.
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    // WP-23/WP-30: el link "Compartir" (`/app/flash`) vuelve a mostrarse.
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/app/flash");
   });
 
-  it("activeFlash=null: muestra inicio.flashCard.vacio, sin link (WP-47)", () => {
+  it("activeFlash=null: muestra inicio.flashCard.vacio, con link a /app/flash", () => {
     render(<FlashCard activeFlash={null} />);
     expect(screen.getByText(inicio.flashCard.vacio)).toBeInTheDocument();
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/app/flash");
     // No debe quedar rastro del estado con datos (fecha/hora/descuento).
     expect(screen.queryByText(/−\d+%/)).not.toBeInTheDocument();
   });

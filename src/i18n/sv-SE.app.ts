@@ -520,6 +520,11 @@ export const agenda: Widen<typeof Es.agenda> = {
     }): string => `Flashtid tillgänglig kl. ${p.hora}, −${p.porcentaje}%`,
   },
   nuevaReserva: "Ny bokning",
+  celdaVacia: {
+    menuAria: "Skapa vid den här tiden",
+    nuevaReserva: "Ny bokning",
+    horaFlash: "Flashtid",
+  },
   agregarProfesional: AGREGAR_PROFESIONAL_SV,
   verAgendaDe: (p: { nombre: string }): string => `Se ${p.nombre}s kalender`,
   vistaAria: "Vy",
@@ -2757,6 +2762,8 @@ export const flash: Widen<typeof Es.flash> = {
     linkCopiado: "Länk kopierad",
     errorCopiar: "Vi kunde inte kopiera länken.",
     enviarAClientes: "Skicka till kunder",
+    enviarErrorNoActiva:
+      "Den här flashtiden är inte längre aktiv, så den går inte att skicka.",
     cancelar: "Avbryt",
     cancelarDialogTitulo: "Avbryta den här flashtiden?",
     cancelarDialogCuerpo:
@@ -2787,7 +2794,8 @@ export const vOferta: Widen<typeof Es.vOferta> = {
   confirmada: "Klart! Din tid är bokad.",
   confirmadaAviso: "Bekräftelsen med alla detaljer kommer strax.",
   yaTomada: "Den tiden togs av någon annan.",
-  yaTomadaAviso: "Du står kvar på väntelistan: vi hör av oss om en ny tid blir ledig.",
+  yaTomadaAviso:
+    "Du står kvar på väntelistan: vi hör av oss om en ny tid blir ledig.",
   vencida: "Tiden för att bekräfta den här tiden har gått ut.",
   yaReservada: "Du har redan bokat den här tiden.",
   linkInvalido: "Den här länken är inte giltig.",
