@@ -248,6 +248,13 @@ function AgendaToolbarCrop() {
           <Plus aria-hidden="true" className="size-4" strokeWidth={2.4} />
           Nueva reserva
         </Button>
+        {/* WP-61 (ägarens UX-genomgång WP-57): klockan + profilmenyn längst till höger,
+            samma persona ("Camila R."/"CR") som `MainHeaderCrop` ovan — `/design-lab/agenda`s
+            standardläge visar ingen prick (inga nya solicitudes), se `badge={false}` nedan. */}
+        <IconButton label="Notificaciones" tone="surface">
+          <Bell aria-hidden="true" className="size-5" strokeWidth={1.9} />
+        </IconButton>
+        <UserPill name="Camila R." initials="CR" />
       </div>
     </div>
   );

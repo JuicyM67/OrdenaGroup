@@ -213,7 +213,17 @@ export function InicioScreen({
 
       <div
         className={cn(
-          "grid gap-4",
+          // WP-61 (pilotfynd #3): utan ett explicit `grid-cols-1` på mobil (bara
+          // `lg:grid-cols-…` fanns) sizade webbläsaren den enda implicita kolumnen som
+          // "auto" (max-content) i stället för en definit `1fr`-bana — en vanlig CSS
+          // Grid-"blowout": `PendingRequestsCard`s rad (`white-space: nowrap` + `truncate`,
+          // se pending-requests-card.tsx) bidrog då med sin FULLA, oavkortade textbredd
+          // till kolumnens storlek (`min-w-0`/`truncate` hjälper bara när kolumnen redan
+          // har en definit bredd att krympa inom), vilket gjorde griden (och därmed hela
+          // sidan) ~8 px bredare än 390 px. `grid-cols-1` ger `minmax(0,1fr)` redan vid
+          // bas-brytpunkten (samma mönster som KPI-radens `grid-cols-2 gap-4
+          // lg:grid-cols-4` nedan).
+          "grid grid-cols-1 gap-4",
           showPending ? "lg:grid-cols-3" : "lg:grid-cols-1",
         )}
       >

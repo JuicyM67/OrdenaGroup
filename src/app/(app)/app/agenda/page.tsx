@@ -26,6 +26,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pgErrorCode } from "@/server/db/errors";
 import { kickOutbox } from "@/server/messaging/outbox";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import { ownerNameParts } from "@/server/owner/shared";
 import { loadAjustesServices, loadAjustesStaff } from "@/server/owner/ajustes";
 import {
   loadOwnerAgendaMonthCounts,
@@ -52,6 +53,13 @@ import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
 import { removeWaitlistEntry } from "@/server/waitlist";
 
 import { markPaidAction, undoPaymentAction } from "../caja/actions";
+import {
+  confirmMyPhotoUploadAction,
+  createMyPhotoUploadAction,
+  deleteMyPhotoAction,
+  loadMyProfileAction,
+  updateMyTitleAction,
+} from "../my-profile-actions";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -81,6 +89,12 @@ export default async function AppAgendaPage({
 
   const business = await getOwnerBusiness(user.id);
   if (!business) redirect(appHref("appOnboarding"));
+
+  // WP-61 (ägarens UX-genomgång WP-57): klockan + profilmenyn i agendans verktygsrad/mobila
+  // topprad (AgendaToolbar/OwnerMobileTopBar, via AgendaShell) — samma data/mönster som
+  // /app/inicio (se ../inicio/page.tsx).
+  const owner = ownerNameParts(user.email);
+  const myProfile = await loadMyProfileAction();
 
   const { vista, fecha, cliente } = await searchParams;
   const parsedFecha = fecha ? parseLocalDate(fecha) : null;
@@ -282,6 +296,19 @@ export default async function AppAgendaPage({
       flashServices={flashServices}
       onCreateFlashSlot={onCreateFlashSlot}
       onLogout={logout}
+      ownerName={owner.name}
+      publicPageHref={`/${business.slug}`}
+      myProfile={myProfile ?? undefined}
+      myProfileActions={
+        myProfile
+          ? {
+              updateTitle: updateMyTitleAction,
+              createPhotoUpload: createMyPhotoUploadAction,
+              confirmPhotoUpload: confirmMyPhotoUploadAction,
+              deletePhoto: deleteMyPhotoAction,
+            }
+          : undefined
+      }
       onLoadMonthCounts={onLoadMonthCounts}
       pendingRequests={pendingRequests}
       onConfirmRequest={onConfirmRequest}

@@ -141,6 +141,8 @@ export function BookingScreen({
   const [discountReason, setDiscountReason] = useState<
     "member" | "offer" | undefined
   >(undefined);
+  // WP-61: kundens egen `/r/[token]`-länk i `Confirmation`.
+  const [manageToken, setManageToken] = useState<string | undefined>(undefined);
   function updateContact(patch: Partial<CustomerContact>) {
     setContact((prev) => ({ ...prev, ...patch }));
   }
@@ -272,6 +274,7 @@ export function BookingScreen({
       if (result.ok) {
         setMemberDiscount(result.memberDiscountMinor ?? null);
         setDiscountReason(result.discountReason);
+        setManageToken(result.manageToken);
         dispatch({ type: "submit_success" });
       } else dispatch({ type: "submit_error", code: result.code });
     } catch {
@@ -525,6 +528,7 @@ export function BookingScreen({
           day={day}
           memberDiscountMinor={memberDiscount}
           discountReason={discountReason}
+          manageToken={manageToken}
         />
       )}
 

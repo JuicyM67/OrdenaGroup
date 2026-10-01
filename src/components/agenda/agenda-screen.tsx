@@ -30,6 +30,10 @@ import type {
 } from "@/components/flash/types";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
+import type {
   NotificationBellResult,
   PendingRequestItem,
 } from "@/components/shared/notification-bell";
@@ -171,6 +175,17 @@ export type AgendaScreenProps = {
   onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
   /** WP-47: `logout` (server action). `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
+  /** WP-61 (ägarens UX-genomgång WP-57): profilmenyn (`UserMenu`) i `AgendaToolbar`
+   * (skrivbordet) och `OwnerMobileTopBar` (mobil) — samma data som `InicioScreen` skickar
+   * till `AppShell`. `undefined` (design lab) döljer namnet/initialerna (`Avatar` visar då en
+   * ikon i stället, `initialsOf("")`). */
+  ownerName?: string;
+  /** `/${slug}` — "Ver mi página" i kontomenyn. `undefined` i design lab. */
+  publicPageHref?: string;
+  /** WP-46: "Min profil" i kontomenyn. `undefined` döljer menyposten (ägare utan egen
+   * personalrad, design lab). */
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
   /** WP-50: hämtar antal bokningar per profesional och dag för en hel månad (server
    * action, samma closure-mönster som `onArrival`). `undefined` i design lab — månadsvyn
    * räknar då bara ur `data.bookings` i stället (`monthCountsFromBookings`), vilket bara
@@ -267,6 +282,10 @@ export function AgendaScreen({
   onExportCustomer,
   onAnonymizeCustomer,
   onLogout,
+  ownerName,
+  publicPageHref,
+  myProfile,
+  myProfileActions,
   onLoadMonthCounts,
   pendingRequests,
   onConfirmRequest,
@@ -801,6 +820,15 @@ export function AgendaScreen({
         onDeclineRequest={onDeclineRequest}
         onApproveCancelRequest={onApproveCancelRequest}
         onDeclineCancelRequest={onDeclineCancelRequest}
+        ownerName={ownerName}
+        publicPageHref={publicPageHref}
+        canViewReports={
+          member === undefined
+            ? undefined
+            : hasAgendaPerm(member, "can_view_reports")
+        }
+        myProfile={myProfile}
+        myProfileActions={myProfileActions}
         rail={
           <AgendaRail
             staff={data.staff}

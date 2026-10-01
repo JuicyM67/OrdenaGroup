@@ -161,7 +161,9 @@ type IdempotencyRow = {
  * Den bokning som redan finns för `(business_id, idempotencyKey)` — ett
  * omförsök (svaret tappades förra gången, men bokningen committades).
  * `manageToken` kan inte återskapas (bara hashen sparas, R6/qa) och lämnas
- * tom: inget i WP-20 läser den (`BookingActionOk` har inget tokenfält).
+ * tom (`""`): `src/app/[slug]/actions.ts` gör om det till `undefined` innan
+ * det når `BookingActionOk.manageToken` (WP-61) — "Ver mi reserva" döljs då
+ * i stället för att länka till en tom/felaktig token.
  */
 async function findByIdempotencyKey(
   q: Queryable,

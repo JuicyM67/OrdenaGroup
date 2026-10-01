@@ -197,6 +197,11 @@ export interface BookingActionOk {
   /** WP-31: orsaken till `memberDiscountMinor` (medlem eller erbjudande). */
   readonly discountReason?: "member" | "offer";
   readonly memberBenefitText?: string | null;
+  /** WP-61 (pilotfynd #1): kundens egen `/r/[token]`-token, för
+   * "Ver mi reserva"/"Ver mi solicitud" i `Confirmation`. `undefined` vid ett
+   * idempotent omförsök (`src/app/[slug]/actions.ts`) eller när anroparen
+   * (t.ex. väntelistan) inte har någon bokning att länka till. */
+  readonly manageToken?: string;
 }
 
 export interface BookingActionErr {

@@ -1,5 +1,8 @@
-// Confirmation — steg 6 (R1: ingen referens, samma formspråk). Ingen BookingBar
-// (planens R "Ver mi reserva" visas inte förrän WP-20 har en token).
+// Confirmation — steg 6 (R1: ingen referens, samma formspråk). Ingen BookingBar.
+// WP-61 (pilotfynd #1): "Ver mi reserva"/"Ver mi solicitud" länkar till kundens
+// egen `/r/[manageToken]` (samma token som bekräftelsemejlet, se
+// `src/app/[slug]/actions.ts`) — en vanlig `<a>`, inget extra klient-JS
+// (D-039: JS-budget 190 kB på `/[slug]`).
 "use client";
 
 import { Check } from "lucide-react";
@@ -19,6 +22,7 @@ export function Confirmation({
   day,
   memberDiscountMinor,
   discountReason,
+  manageToken,
 }: {
   data: BookingPageData;
   selection: BookingSelection;
@@ -26,6 +30,9 @@ export function Confirmation({
   memberDiscountMinor?: number | null;
   /** WP-31: erbjudande i stället för medlemsrabatt (servern avgör). */
   discountReason?: "member" | "offer" | undefined;
+  /** WP-61: `undefined` döljer länken (idempotent omförsök utan token, eller
+   * design lab/fixturer som inte skickar en). */
+  manageToken?: string | undefined;
 }) {
   // Fokus vid stegbyte (qa-granskning, item 8): h1 får fokus när bekräftelsen
   // monteras.
@@ -96,6 +103,16 @@ export function Confirmation({
       <p className="text-12 text-muted">
         {reserva.meta.vendidoPor({ negocio: data.business.name })}
       </p>
+      {manageToken ? (
+        <a
+          href={`/r/${manageToken}`}
+          className="text-14 font-bold text-ink underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          {isRequest
+            ? reserva.confirmacionSolicitud.verMiSolicitud
+            : reserva.confirmacion.verMiReserva}
+        </a>
+      ) : null}
     </div>
   );
 }
