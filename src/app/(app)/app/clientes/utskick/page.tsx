@@ -1,0 +1,50 @@
+// /app/clientes/utskick (WP-31, F14): historial de campañas enviadas.
+// Requiere ägare eller `can_manage_all_bookings` (planens ord) — annars
+// redirect a /app/clientes (samma mönster som Caja i clientes-planen,
+// D-034).
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+
+import { logout } from "@/app/auth/actions";
+import { CampaignsScreen } from "@/components/campaigns/campaigns-screen";
+import { campanas } from "@/i18n";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getCurrentMember } from "@/server/onboarding/owner-business";
+
+import { listCampaignsAction } from "./actions";
+
+export const metadata: Metadata = {
+  title: campanas.titulo,
+  robots: { index: false, follow: false },
+};
+
+// VERCEL_ENV måste läsas per request, se src/app/design-lab/layout.tsx.
+export const dynamic = "force-dynamic";
+
+export default async function UtskickPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ enviado?: string }>;
+}) {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
+
+  const current = await getCurrentMember(user.id);
+  if (!current) redirect("/app/onboarding");
+  if (!current.view.perms.can_manage_all_bookings) redirect("/app/clientes");
+
+  const { enviado } = await searchParams;
+  const items = await listCampaignsAction();
+
+  return (
+    <CampaignsScreen
+      items={items}
+      canViewReports={current.view.perms.can_view_reports}
+      enviado={enviado === "1"}
+      onLogout={logout}
+    />
+  );
+}

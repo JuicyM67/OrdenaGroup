@@ -12,6 +12,7 @@ import type {
 import type { BookingActionResult } from "@/components/booking/types";
 import { reserva } from "@/i18n";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
+import { findValidOfferIn, isOfferTokenShape } from "@/server/bookings/offer";
 import { loadReservaPageData } from "@/server/bookings/page-data";
 import { withServiceTx } from "@/server/db/tx";
 import { systemClock } from "@/server/scheduling/clock";
@@ -23,6 +24,7 @@ import { createBooking, joinWaitlist } from "./actions";
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug: string }>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export async function generateMetadata({
   params,
@@ -41,21 +43,55 @@ export async function generateMetadata({
   };
 }
 
-export default async function ReservaPage({ params }: { params: Params }) {
+export default async function ReservaPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { slug } = await params;
   const business = await resolveBusinessBySlug(slug);
   if (!business) notFound();
 
-  const data = await withServiceTx((q) =>
-    loadReservaPageData(q, {
+  // WP-31 (F14): erbjudandelänken `?o=<token>`. Valideras här bara för att
+  // visa raden; `createIn` validerar igen i bokningens transaktion (rätt
+  // kund, ej inlöst). Ogiltig token = sidan som vanligt, inget fel.
+  const rawOffer = (await searchParams).o;
+  const offerToken =
+    typeof rawOffer === "string" && isOfferTokenShape(rawOffer)
+      ? rawOffer
+      : undefined;
+  const now = systemClock();
+  const [data, offer] = await withServiceTx(async (q) => {
+    const d = await loadReservaPageData(q, {
       businessId: business.id,
       slug,
-      now: systemClock(),
-    }),
-  );
+      now,
+    });
+    const o = offerToken
+      ? await findValidOfferIn(q, {
+          businessId: business.id,
+          token: offerToken,
+          now,
+        })
+      : undefined;
+    return [d, o] as const;
+  });
   // Bara en skyddsnät mot en race (företaget togs bort mellan de två
   // frågorna ovan) — `resolveBusinessBySlug` hittade det just innan.
   if (!data) notFound();
+
+  const boundOfferToken = offer ? offerToken : undefined;
+  const offerNotice = offer ? (
+    <p
+      role="note"
+      className="flex flex-col gap-0.5 self-start rounded-control bg-lime px-3 py-2 text-13 font-semibold text-ink"
+    >
+      <span>{reserva.oferta.aviso({ pct: offer.pct })}</span>
+      {offer.text ? <span className="font-normal">{offer.text}</span> : null}
+    </p>
+  ) : undefined;
 
   // Bara de här två closurerna är riktiga server actions (qa-granskning
   // WP-13, item 5 — gäller fortfarande): `slug` binds på servern (fri
@@ -64,7 +100,9 @@ export default async function ReservaPage({ params }: { params: Params }) {
     input: CustomerFormOutput,
   ): Promise<BookingActionResult> {
     "use server";
-    return createBooking(slug, input);
+    // WP-31: token binds här på servern (krypterad closure-variabel), bara
+    // när sidan själv godkände den — aldrig ur klientens formulär.
+    return createBooking(slug, input, { offerToken: boundOfferToken });
   }
 
   async function submitWaitlist(
@@ -106,6 +144,7 @@ export default async function ReservaPage({ params }: { params: Params }) {
   return (
     <BookingScreen
       social={social}
+      offerNotice={offerNotice}
       data={data}
       submitBooking={submitBooking}
       joinWaitlist={submitWaitlist}

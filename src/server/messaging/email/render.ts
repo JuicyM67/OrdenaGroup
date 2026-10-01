@@ -31,6 +31,10 @@ import {
   type BienvenidaMiembroData,
 } from "./templates/bienvenida-miembro";
 import {
+  campanaMarketingEmail,
+  type CampanaMarketingData,
+} from "./templates/campana-marketing";
+import {
   cancelacionDuenoEmail,
   nuevaReservaDuenoEmail,
   nuevaSolicitudEmail,
@@ -80,6 +84,8 @@ export type EmailTemplateMap = {
   readonly solicitudCancelacion: DuenoReservaData;
   /** WP-56: al cliente, el negocio no aceptó su cancelación. */
   readonly cancelacionRechazada: CancelacionRechazadaData;
+  /** WP-31 (F14): campaña de marketing (`/app/clientes/utskick`). */
+  readonly campanaMarketing: CampanaMarketingData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -110,6 +116,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   bienvenidaMiembro: "booking",
   solicitudCancelacion: "booking",
   cancelacionRechazada: "booking",
+  campanaMarketing: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -133,6 +140,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "bienvenidaMiembro",
   "solicitudCancelacion",
   "cancelacionRechazada",
+  "campanaMarketing",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -186,6 +194,8 @@ export function renderEmail<T extends EmailTemplateName>(
         market,
         data as CancelacionRechazadaData,
       );
+    case "campanaMarketing":
+      return campanaMarketingEmail(market, data as CampanaMarketingData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

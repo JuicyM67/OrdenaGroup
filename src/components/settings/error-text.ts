@@ -55,6 +55,15 @@ const KNOWN: Record<string, string> = {
   "member.discount_invalid": comun.algoSalioMal,
   "member.benefit_invalid_type": comun.algoSalioMal,
   "member.benefit_too_long": comun.algoSalioMal,
+  // WP-31 (Ajustes → Socios y envíos → "Te echamos de menos"): misma
+  // avvägning que `member.*` arriba — camperos `min`/`max`/`maxLength` en el
+  // formulario evitan normalmente que se manden.
+  "winback.enabled_invalid": comun.algoSalioMal,
+  "winback.days_invalid": comun.algoSalioMal,
+  "winback.message_invalid_type": comun.algoSalioMal,
+  "winback.message_too_long": comun.algoSalioMal,
+  "winback.offer_pct_invalid": comun.algoSalioMal,
+  "winback.offer_days_invalid": comun.algoSalioMal,
   "services.name_empty": servicios.errores.nombreVacio,
   "services.duration_invalid": servicios.errores.duracionInvalida,
   "services.buffer_invalid": servicios.errores.bufferInvalido,

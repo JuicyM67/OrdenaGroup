@@ -15,6 +15,7 @@ import {
   APP_TZ,
   type LocalDate,
 } from "@/lib/format/dates";
+import { countInactiveCustomersIn } from "@/server/campaigns/audience";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
@@ -23,7 +24,11 @@ import { memberView, type MemberView } from "./member";
 import { listPendingRequestsIn } from "./requests";
 import { isoOf } from "./shared";
 
-type BusinessRow = { name: string; comuna: string };
+type BusinessRow = {
+  name: string;
+  comuna: string;
+  winback_days: number | null;
+};
 type BookingRow = {
   id: string;
   client_name: string | null;
@@ -170,15 +175,17 @@ async function loadMarkedDates(
 }
 
 /**
- * Inicios data (WP-21, statistiken i WP-47). "Agenda de hoy"/"Reservas hoy"
- * (stats.bookingsToday/toConfirm), stats.revenueWeekClp/revenueSeries
- * (veckans intäkt, exkl. avbokade/uteblivna), stats.noShowPct/noShowTrend
- * (uteblivanden senaste 30 dagarna mot föregående 30) och
- * calendar.markedDates (dagar med bokningar i den visade månaden) är riktig
- * data. Resten (recoveredHours, väntelista, hora flash, te echamos de menos)
- * kräver funktioner utanför WP-21/WP-47 (väntelista F8, hora flash fas 2,
- * D-005) och visas i sina befintliga tomlägen (nollor/tom lista/
- * `activeFlash: null`), aldrig med påhittad text.
+ * Inicios data (WP-21, statistiken i WP-47, winback i WP-31). "Agenda de
+ * hoy"/"Reservas hoy" (stats.bookingsToday/toConfirm),
+ * stats.revenueWeekClp/revenueSeries (veckans intäkt, exkl. avbokade/
+ * uteblivna), stats.noShowPct/noShowTrend (uteblivanden senaste 30 dagarna
+ * mot föregående 30), calendar.markedDates (dagar med bokningar i den
+ * visade månaden) och features.winback.count (antal inaktiva kunder med
+ * samtycke, `businesses.winback_days` eller 60 om avstängd — se
+ * `countInactiveCustomersIn`) är riktig data. Resten (recoveredHours,
+ * väntelista, hora flash) kräver funktioner utanför WP-21/WP-47 (väntelista
+ * F8, hora flash fas 2) och visas i sina befintliga tomlägen (nollor/tom
+ * lista/`activeFlash: null`), aldrig med påhittad text.
  */
 export async function loadOwnerInicio(
   userId: string,
@@ -217,10 +224,10 @@ export async function loadOwnerInicioIn(
   const showReports =
     member === undefined || hasPerm(member, "can_view_reports");
   const bizRes = await q.query<BusinessRow>(
-    `select name, comuna from public.businesses where id = $1`,
+    `select name, comuna, winback_days from public.businesses where id = $1`,
     [businessId],
   );
-  const biz = bizRes.rows[0] ?? { name: "", comuna: "" };
+  const biz = bizRes.rows[0] ?? { name: "", comuna: "", winback_days: null };
 
   const { start, end } = localDayRange(today, APP_TZ);
   const bookingsRes = await q.query<BookingRow>(
@@ -309,6 +316,15 @@ export async function loadOwnerInicioIn(
     member,
   );
 
+  // WP-31: samma behörighet som "Nuevo envío" (`can_manage_all_bookings`,
+  // owner kortsluter redan till true via `hasPerm`) — annars 0, ingen fråga
+  // mot kundtabellen för den som inte får skicka utskick ändå.
+  const canManageCampaigns =
+    member === undefined || hasPerm(member, "can_manage_all_bookings");
+  const winbackCount = canManageCampaigns
+    ? await countInactiveCustomersIn(q, businessId, biz.winback_days ?? 60)
+    : 0;
+
   return {
     now: now.toISOString(),
     business: { name: biz.name, comuna: biz.comuna },
@@ -318,7 +334,7 @@ export async function loadOwnerInicioIn(
     features: {
       waitlist: { count: 0, day: today, progress: 0 },
       flash: { active: 0, booked: 0, progress: 0 },
-      winback: { count: 0 },
+      winback: { count: winbackCount },
     },
     stats: {
       bookingsToday: today_.length,

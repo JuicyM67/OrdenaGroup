@@ -284,6 +284,26 @@ export function CustomerDetailScreen({
             </a>
           </Button>
         ) : null}
+        {/* WP-31: "Enviar oferta" — misma spärr som membresía arriba (ägare
+            eller can_manage_all_bookings, `canManageMembership`). Kräver
+            dessutom att kunden faktiskt gett marknadsföringssamtycke —
+            annars disabled med förklaring bredvid. */}
+        {customer.canManageMembership ? (
+          customer.consentMarketing.at ? (
+            <Button asChild variant="secondary" size="sm">
+              <Link href={`/app/clientes/utskick/nytt?kunder=${customer.id}`}>
+                {clientes.ficha.ctaEnviarOferta}
+              </Link>
+            </Button>
+          ) : (
+            <span className="flex items-center gap-2 text-13 text-muted">
+              <Button type="button" variant="secondary" size="sm" disabled>
+                {clientes.ficha.ctaEnviarOferta}
+              </Button>
+              {clientes.ficha.ofertaSinConsentimiento}
+            </span>
+          )
+        ) : null}
       </div>
 
       {phone ? (

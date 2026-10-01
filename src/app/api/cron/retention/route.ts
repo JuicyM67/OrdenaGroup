@@ -15,6 +15,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { runWinback } from "@/server/campaigns";
 import { withServiceTx } from "@/server/db/tx";
 import { purgeBusiness } from "@/server/privacy/business";
 
@@ -91,13 +92,30 @@ async function purgeOverdueBusinesses(): Promise<{
   return { purgedBusinesses, skippedBusinesses };
 }
 
+/** WP-31 (F14): "Te echamos de menos" automatiskt, en gång/dag från det
+ * här passet (planens ord: "befintlig retention-cron"). Ett fel stoppar
+ * aldrig resten av passet (samma "fortsätt ändå"-princip som
+ * `purgeOverdueBusinesses`) — bara räknare loggas, aldrig persondata. */
+async function runWinbackSafely(): Promise<{
+  winbackBusinesses: number;
+  winbackQueued: number;
+}> {
+  try {
+    const r = await runWinback(new Date());
+    return { winbackBusinesses: r.businesses, winbackQueued: r.queued };
+  } catch {
+    return { winbackBusinesses: 0, winbackQueued: 0 };
+  }
+}
+
 async function handle(request: NextRequest): Promise<NextResponse> {
   if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
   const retention = await runRetention();
   const businesses = await purgeOverdueBusinesses();
-  const result = { ...retention, ...businesses };
+  const winback = await runWinbackSafely();
+  const result = { ...retention, ...businesses, ...winback };
   // Bara räknare (regel 8: ingen persondata i loggar).
   console.log("retention: pass klart", result);
   return NextResponse.json(result);

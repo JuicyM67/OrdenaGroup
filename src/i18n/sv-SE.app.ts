@@ -312,7 +312,12 @@ export const reserva: Widen<typeof Es.reserva> = {
     avisoWhatsapp: "Vi har skickat bekräftelsen via sms.",
     descuentoSocio: (p: { descuento: string }): string =>
       `Medlemsrabatt: −${p.descuento}`,
+    descuentoOferta: (p: { descuento: string }): string =>
+      `Rabatt via erbjudande: −${p.descuento}`,
     verMiReserva: "Se min bokning",
+  },
+  oferta: {
+    aviso: (p: { pct: number }): string => `${p.pct} % rabatt via erbjudande`,
   },
   confirmacionSolicitud: {
     titulo: "Förfrågan skickad!",
@@ -1175,6 +1180,22 @@ export const email: Widen<typeof Es.email> = {
       `Passa på med ${p.servicio} den ${p.fecha} kl. ${p.hora} med rabatt. Den tar snart slut.`,
     cta: "Boka nu",
   },
+  campanaMarketing: {
+    asunto: (p: { negocio: string }): string => `Nyheter från ${p.negocio}`,
+    preheader: "Läs om det här erbjudandet.",
+    titulo: (p: { negocio: string }): string =>
+      `Ett meddelande från ${p.negocio}`,
+    ofertaLabel: "Erbjudande",
+    oferta: (p: { pct: number; fecha?: string }): string =>
+      p.fecha
+        ? `−${p.pct}% rabatt, gäller till ${p.fecha}`
+        : `−${p.pct}% rabatt`,
+    ofertaTextoLabel: "Detaljer",
+    cta: "Boka",
+    baja: "Avregistrera mig från dessa erbjudanden",
+    porQue: (p: { negocio: string }): string =>
+      `Du får detta mejl för att du tackade ja till erbjudanden från ${p.negocio}.`,
+  },
   acceso: {
     magicLink: {
       asunto: (p: { marca: string }): string =>
@@ -1225,6 +1246,7 @@ export const email: Widen<typeof Es.email> = {
   },
   miembro: {
     precioLabel: "Medlemspris",
+    precioOfertaLabel: "Erbjudandepris",
     precio: (p: { precio: string; descuento: string }): string =>
       `${p.precio} (−${p.descuento})`,
   },
@@ -1567,7 +1589,7 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     cuenta: "Konto",
     formularioReserva: "Bokningsformulär",
     privacidad: "Integritet",
-    socios: "Medlemmar",
+    socios: "Medlemmar & utskick",
   },
   socios: {
     activar: "Aktivera medlemsförmån",
@@ -1578,6 +1600,21 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     beneficioLabel: "Text om förmånen (valfritt)",
     beneficioPlaceholder: "T.ex. 10 % rabatt på alla behandlingar",
     beneficioAyuda: "Upp till 140 tecken.",
+  },
+  winback: {
+    titulo: "Vi saknar dig (automatiskt)",
+    activar: "Aktivera automatisk påminnelse",
+    activarAyuda:
+      "Vi skriver automatiskt till kunder som inte har kommit tillbaka, utan att du behöver göra något.",
+    diasLabel: "Dagar utan besök",
+    diasAyuda: "Ett tal mellan 30 och 365.",
+    mensajeLabel: "Meddelande",
+    mensajePlaceholder: "T.ex. Vi saknar dig, välkommen tillbaka",
+    mensajeAyuda: "Upp till 320 tecken.",
+    ofertaPctLabel: "Rabatt (%, valfritt)",
+    ofertaPctAyuda: "Ett tal mellan 1 % och 100 %.",
+    ofertaDiasLabel: "Giltig i (dagar)",
+    ofertaDiasAyuda: "Hur många dagar rabatten gäller från att den skickas.",
   },
   reglas: {
     minNoticeLabel: "Minsta förvarning",
@@ -1649,6 +1686,7 @@ export const ajustes: Widen<typeof Es.ajustes> = {
 
 export const clientes: Widen<typeof Es.clientes> = {
   titulo: "Kunder",
+  ctaCampanas: "Utskick",
   lista: {
     buscarPlaceholder: "Sök på namn eller mobilnummer",
     columnaUltimaVisita: "Senaste besök",
@@ -1696,6 +1734,9 @@ export const clientes: Widen<typeof Es.clientes> = {
     ctaSms: "Skicka sms",
     ctaEmail: "Skicka e-post",
     ctaVerFicha: "Se kundkort",
+    ctaEnviarOferta: "Skicka erbjudande",
+    ofertaSinConsentimiento:
+      "Den här kunden har inte tackat ja till erbjudanden.",
     membresiaTitulo: "Medlem",
     socioDesde: (p: { fecha: string }): string => `Medlem sedan ${p.fecha}`,
     socioAyuda:
@@ -1779,6 +1820,87 @@ export const clientes: Widen<typeof Es.clientes> = {
     confirmarSi: "Ja, anonymisera",
     confirmarNo: "Nej, behåll",
     error: "Vi kunde inte slutföra åtgärden. Försök igen.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// campanas: /app/clientes/utskick (WP-31, F14)
+// ---------------------------------------------------------------------------
+
+export const campanas: Widen<typeof Es.campanas> = {
+  titulo: "Utskick",
+  canal: {
+    email: "E-post",
+    sms: "Sms",
+  },
+  historial: {
+    vacio: "Du har inte skickat något utskick än.",
+    columnaCanal: "Kanal",
+    columnaFecha: "Datum",
+    columnaDestinatarios: "Mottagare",
+    columnaReservas: "Bokningar via länken",
+    ctaNueva: "Nytt utskick",
+    enviadoToast: "Vi skickade ditt utskick.",
+  },
+  nueva: {
+    titulo: "Nytt utskick",
+    volver: "Tillbaka till Utskick",
+    nombreLabel: "Namn på utskicket",
+    nombrePlaceholder: "T.ex. Välkommen tillbaka i september",
+    audienciaLabel: "Vem ska få det?",
+    audiencia: {
+      all: "Alla som tackat ja till erbjudanden",
+      members: "Medlemmar",
+      regulars: "Stamkunder",
+      inactive: "Inaktiva i",
+      selected: "Valda kunder",
+    },
+    audienciaInactivosDiasLabel: "dagar",
+    audienciaSeleccionadosResumen: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "vald kund" : "valda kunder"}`,
+    canalLabel: "Kanal",
+    mensajeLabel: "Meddelande",
+    mensajePlaceholder: "Skriv ditt meddelande…",
+    contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    segmentosSms: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "sms" : "sms (flera meddelanden)"}`,
+    ofertaActivar: "Lägg till en rabatt",
+    ofertaActivarAyuda:
+      "Valfritt: en procentrabatt, med en kort text och ett sista giltighetsdatum.",
+    ofertaPctLabel: "Rabatt (%)",
+    ofertaPctAyuda: "Ett tal mellan 1 % och 100 %.",
+    ofertaTextoLabel: "Rabattext (valfritt)",
+    ofertaTextoPlaceholder: "T.ex. 15 % rabatt på din nästa tid",
+    ofertaValidoHastaLabel: "Giltig till",
+    previsualizacion: {
+      titulo: "Innan du skickar",
+      cargando: "Räknar ut…",
+      destinatarios: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "kund kommer få det här meddelandet" : "kunder kommer få det här meddelandet"}`,
+      sinConsentimiento: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "kund får det inte" : "kunder får det inte"} eftersom de inte tackat ja till erbjudanden.`,
+      sms: (p: { porMensaje: number; total: number }): string =>
+        `${p.porMensaje} sms per meddelande · ${p.total} sms totalt`,
+      vacio: "Välj vem som ska få det för att se hur många kunder det blir.",
+    },
+    ctaEnviar: "Skicka",
+    enviando: "Skickar…",
+    confirmarTitulo: "Skicka det här utskicket?",
+    confirmarCuerpo: (p: { n: number }): string =>
+      `Det går till ${p.n} ${p.n === 1 ? "kund" : "kunder"} som tackat ja till erbjudanden. Går inte att ångra.`,
+    confirmarSi: "Ja, skicka",
+    confirmarNo: "Nej, fortsätt redigera",
+    soloConsentimiento:
+      "Det går bara till kunder som tackat ja till erbjudanden.",
+    error: {
+      forbidden: "Du har inte behörighet att skicka utskick.",
+      invalid_input: "Kontrollera uppgifterna i formuläret.",
+      no_recipients: "Det finns inga kunder som får det här utskicket.",
+      sms_not_available: "Sms är inte tillgängligt i din installation.",
+      rate_limited:
+        "Du har skickat många utskick. Vänta en stund och försök igen.",
+      unexpected: "Vi kunde inte skicka utskicket. Försök igen.",
+    },
   },
 };
 
@@ -2002,8 +2124,9 @@ export const sms: Widen<typeof Es.sms> = {
     hora: string;
     link: string;
     precioSocio?: string;
+    precioOferta?: string;
   }): string =>
-    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}.${p.precioSocio ? ` Medlemspris: ${p.precioSocio}.` : ""} Detaljer: ${p.link}`,
+    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}.${p.precioSocio ? ` Medlemspris: ${p.precioSocio}.` : ""}${p.precioOferta ? ` Erbjudandepris: ${p.precioOferta}.` : ""} Detaljer: ${p.link}`,
   recordatorio: (p: {
     negocio: string;
     fecha: string;
@@ -2093,6 +2216,12 @@ export const sms: Widen<typeof Es.sms> = {
     `Din inloggningskod är ${p.codigo}. Dela den aldrig med någon.`,
   mensajeLibre: (p: { negocio: string; texto: string }): string =>
     `${p.negocio}: ${p.texto}`,
+  campanaMarketing: (p: {
+    negocio: string;
+    texto: string;
+    link: string;
+    bajaLink: string;
+  }): string => `${p.negocio}: ${p.texto} Boka: ${p.link} Avreg: ${p.bajaLink}`,
   pie: "Svara STOPP för att avsluta.",
 };
 
@@ -2532,6 +2661,21 @@ export const redesSociales: Widen<typeof Es.redesSociales> = {
 };
 
 // ---------------------------------------------------------------------------
+// baja: `/baja/[token]` (WP-31, F14) — publik sida (utan inloggning) för
+// avregistreringslänken i ett marknadsföringsutskick.
+// ---------------------------------------------------------------------------
+
+export const baja: Widen<typeof Es.baja> = {
+  titulo: "Avregistrera dig",
+  cuerpo: (p: { negocio: string }): string =>
+    `Du slutar få erbjudanden och nyheter från ${p.negocio} via e-post eller sms. Du fortsätter att få avin om dina egna bokningar.`,
+  cta: "Avregistrera mig",
+  listo: (p: { negocio: string }): string =>
+    `Klart. Du kommer inte längre få erbjudanden från ${p.negocio}.`,
+  error: "Vi kunde inte genomföra det här. Försök igen.",
+};
+
+// ---------------------------------------------------------------------------
 // Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
@@ -2561,6 +2705,7 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   horarios,
   ajustes,
   clientes,
+  campanas,
   CAJA_METODOS_MANUALES,
   caja,
   abono,
@@ -2570,5 +2715,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   equipo,
   invitacion,
   redesSociales,
+  baja,
 };
 void _check;

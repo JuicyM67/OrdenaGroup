@@ -16,6 +16,7 @@ import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import { Avatar } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Pill } from "@/components/ui/pill";
@@ -44,6 +45,9 @@ export type CustomersScreenProps = {
   query: CustomersQuery;
   /** WP-24 (D-034): döljer Caja i navigeringen. `undefined` visar den. */
   canViewReports?: boolean;
+  /** WP-31: länk till `/app/clientes/utskick` (ägare eller
+   * `can_manage_all_bookings`). `undefined` döljer knappen. */
+  canManageCampaigns?: boolean;
   onLogout?: () => void | Promise<void>;
 };
 
@@ -71,6 +75,7 @@ export function CustomersScreen({
   items,
   query,
   canViewReports,
+  canManageCampaigns,
   onLogout,
 }: CustomersScreenProps) {
   const router = useRouter();
@@ -122,7 +127,17 @@ export function CustomersScreen({
       }
       onLogout={onLogout}
     >
-      <PageHeader variant="desktop" title={clientes.titulo} />
+      <PageHeader
+        variant="desktop"
+        title={clientes.titulo}
+        actions={
+          canManageCampaigns ? (
+            <Button asChild variant="secondary" size="lg">
+              <Link href="/app/clientes/utskick">{clientes.ctaCampanas}</Link>
+            </Button>
+          ) : undefined
+        }
+      />
 
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <TextField

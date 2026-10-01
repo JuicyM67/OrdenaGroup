@@ -6,6 +6,7 @@ import type { Metadata } from "next";
 import { logout } from "@/app/auth/actions";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { MemberSection } from "@/components/settings/member-section";
+import { WinbackSection } from "@/components/settings/winback-section";
 import { nav } from "@/i18n";
 import { loadAjustesBusiness } from "@/server/owner/ajustes";
 
@@ -16,6 +17,7 @@ import {
   declineCancelRequestAction,
   declineRequestAction,
   updateMemberSettingsAction,
+  updateWinbackSettingsAction,
 } from "../actions";
 
 export const metadata: Metadata = {
@@ -49,6 +51,10 @@ export default async function AjustesSociosPage() {
       myProfileActions={ctx.myProfileActions}
     >
       <MemberSection business={business} action={updateMemberSettingsAction} />
+      <WinbackSection
+        business={business}
+        action={updateWinbackSettingsAction}
+      />
     </AjustesShell>
   );
 }

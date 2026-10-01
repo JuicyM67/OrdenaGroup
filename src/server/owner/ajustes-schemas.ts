@@ -139,6 +139,69 @@ export const memberSettingsInputSchema = z
   });
 export type MemberSettingsInput = z.infer<typeof memberSettingsInputSchema>;
 
+// WP-31 (Ajustes → Socios y envíos): "Te echamos de menos" automático —
+// `businesses_winback_days_check`/`businesses_winback_message_length_check`/
+// `businesses_winback_offer_pct_check`/`businesses_winback_offer_days_check`
+// (20261001120100_businesses_winback_settings.sql). `enabled = false` →
+// servern guarda las cuatro columnas como `null` (mismo patrón que
+// `updateMemberSettings`), sin importar qué haya en el resto del formulario.
+export const winbackSettingsInputSchema = z
+  .object({
+    enabled: z.boolean({ error: "winback.enabled_invalid" }),
+    days: z.coerce
+      .number({ error: "winback.days_invalid" })
+      .int({ error: "winback.days_invalid" })
+      .min(30, { error: "winback.days_invalid" })
+      .max(365, { error: "winback.days_invalid" })
+      .optional(),
+    message: z
+      .string({ error: "winback.message_invalid_type" })
+      .trim()
+      .max(320, { error: "winback.message_too_long" })
+      .optional()
+      .or(z.literal("")),
+    offerPct: z.coerce
+      .number({ error: "winback.offer_pct_invalid" })
+      .int({ error: "winback.offer_pct_invalid" })
+      .min(1, { error: "winback.offer_pct_invalid" })
+      .max(100, { error: "winback.offer_pct_invalid" })
+      .optional(),
+    offerDays: z.coerce
+      .number({ error: "winback.offer_days_invalid" })
+      .int({ error: "winback.offer_days_invalid" })
+      .min(1, { error: "winback.offer_days_invalid" })
+      .max(90, { error: "winback.offer_days_invalid" })
+      .optional(),
+  })
+  .check((ctx) => {
+    if (ctx.value.enabled && ctx.value.days === undefined) {
+      ctx.issues.push({
+        code: "custom",
+        message: "winback.days_invalid",
+        input: ctx.value,
+      });
+    }
+    // El % y la validez van juntos: uno sin el otro no sirve para armar la
+    // oferta (mismo criterio que `campaigns_offer_pct_check`, que sí permite
+    // un % sin texto, pero acá además pedimos la validez porque no hay un
+    // envío manual detrás que la complete).
+    if (ctx.value.offerPct !== undefined && ctx.value.offerDays === undefined) {
+      ctx.issues.push({
+        code: "custom",
+        message: "winback.offer_days_invalid",
+        input: ctx.value,
+      });
+    }
+    if (ctx.value.offerDays !== undefined && ctx.value.offerPct === undefined) {
+      ctx.issues.push({
+        code: "custom",
+        message: "winback.offer_pct_invalid",
+        input: ctx.value,
+      });
+    }
+  });
+export type WinbackSettingsInput = z.infer<typeof winbackSettingsInputSchema>;
+
 export const ajustesHoursInputSchema = z
   .array(hoursInputSchema)
   .max(7)

@@ -30,6 +30,7 @@ import { actorMember, canManageStaffBookings } from "./authz";
 import { findOrCreateCustomer } from "./customers";
 import { emitBookingEvent } from "./events";
 import { memberDiscountIn } from "./member";
+import { offerDiscountIn, redeemOfferIn } from "./offer";
 import { createManageToken } from "./token";
 import type { BookingError, CreatedBooking } from "./types";
 
@@ -69,6 +70,13 @@ function sourceFor(
  * annars 0. Gäller alla källor (web, manuell, väntelista). Inga andra
  * rabatter sätts vid skapandet; skulle det komma fler tas den största
  * (`Math.max`), de kombineras aldrig.
+ *
+ * WP-31 (F14): `offerToken` (erbjudandelänken) valideras här i
+ * transaktionen (`./offer.ts`, raden låses). Gäller bara om bokande kund är
+ * mottagaren; största rabatten vinner (lika → medlem, token förbrukas inte).
+ * Vinner erbjudandet sätts `campaign_recipient_id` och mottagarraden
+ * markeras inlöst i samma transaktion. Ogiltig/förbrukad token → bokningen
+ * skapas ändå, utan erbjudanderabatt (aldrig ett fel för kunden).
  */
 export async function createBooking(
   request: CreateBookingRequest,
@@ -121,6 +129,8 @@ export type CreateInput = {
    * = inga svar, obligatoriska frågor krävs). Ägare: bara om satt (manuell
    * bokning frågar inte). Fel → `invalid_input`, inget sparas. */
   answers?: Record<string, unknown> | undefined;
+  /** WP-31: erbjudandelänkens token (klartext). */
+  offerToken?: string | undefined;
 };
 
 type IdempotencyRow = {
@@ -133,6 +143,7 @@ type IdempotencyRow = {
   pe: number;
   price_clp: number;
   discount_clp: number;
+  campaign_recipient_id: string | null;
 };
 
 /**
@@ -148,7 +159,7 @@ async function findByIdempotencyKey(
 ): Promise<CreatedBooking | undefined> {
   const r = await q.query<IdempotencyRow>(
     `select id, staff_id, service_id, customer_id, price_clp, discount_clp,
-            status::text as status,
+            campaign_recipient_id, status::text as status,
             extract(epoch from lower(period))::float8 * 1000 as s,
             extract(epoch from upper(period))::float8 * 1000 as pe
        from public.bookings
@@ -167,6 +178,14 @@ async function findByIdempotencyKey(
     end: new Date(Math.round(x.pe)).toISOString(),
     priceClp: x.price_clp,
     discountClp: x.discount_clp,
+    ...(x.discount_clp > 0
+      ? {
+          discountReason:
+            x.campaign_recipient_id !== null
+              ? ("offer" as const)
+              : ("member" as const),
+        }
+      : {}),
     depositClp: 0,
     status: x.status,
     manageToken: "",
@@ -264,7 +283,25 @@ export async function createIn(
     customerId,
     priceClp,
   );
-  const discountClp = Math.max(0, memberDiscount?.discountMinor ?? 0);
+  const offer = input.offerToken
+    ? await offerDiscountIn(q, {
+        businessId: input.businessId,
+        customerId,
+        token: input.offerToken,
+        priceMinor: priceClp,
+        now: input.now,
+      })
+    : undefined;
+  const memberMinor = Math.max(0, memberDiscount?.discountMinor ?? 0);
+  // Största vinner, aldrig summan. Lika → medlem (token förbrukas inte).
+  const useOffer = offer !== undefined && offer.discountMinor > memberMinor;
+  const discountClp = useOffer ? offer.discountMinor : memberMinor;
+  const discountReason: CreatedBooking["discountReason"] = useOffer
+    ? "offer"
+    : memberMinor > 0
+      ? "member"
+      : undefined;
+  const campaignRecipientId = useOffer ? offer.recipientId : null;
   const { token, hash } = createManageToken();
   const periodEnd = start + snapshot.service.durationMin * MIN;
   const blockedEnd = periodEnd + snapshot.service.bufferAfterMin * MIN;
@@ -277,10 +314,11 @@ export async function createIn(
           `insert into public.bookings
              (business_id, staff_id, service_id, customer_id, period, blocked,
               status, source, price_clp, discount_clp, deposit_clp,
-              manage_token_hash, notes, idempotency_key, created_at)
+              manage_token_hash, notes, idempotency_key, created_at,
+              campaign_recipient_id)
            values ($1, $2, $3, $4, $5::tstzrange, $6::tstzrange,
                    $12::public.booking_status, $7::public.booking_source,
-                   $8, $14, 0, $9, $10, $11, $13)
+                   $8, $14, 0, $9, $10, $11, $13, $15)
            returning id`,
           [
             input.businessId,
@@ -298,6 +336,7 @@ export async function createIn(
             // WP-45: förfrågans 24 h räknas från den injicerade klockan.
             input.now,
             discountClp,
+            campaignRecipientId,
           ],
         );
         return r.rows[0]!.id;
@@ -329,6 +368,18 @@ export async function createIn(
     // Samma transaktion som bokningen: ett fel här kastas och rullar tillbaka
     // även bokningen. Ingen svarsrad skrivs för en bokning som aldrig blev
     // av (23P01 ovan) eller för ett omförsök (returnerat före insert).
+    if (campaignRecipientId !== null) {
+      // Raden är låst sedan `offerDiscountIn`; villkoret är sista spärren.
+      // Hann någon ändå före rullas hela bokningen tillbaka hellre än att
+      // ge rabatten två gånger (kastar → transaktionen avbryts).
+      const redeemed = await redeemOfferIn(q, {
+        businessId: input.businessId,
+        recipientId: campaignRecipientId,
+        bookingId: booked.id,
+        now: input.now,
+      });
+      if (!redeemed) throw new Error("createIn: erbjudandet redan inlöst");
+    }
     if (validated.value.length > 0) {
       await saveBookingAnswersIn(q, {
         businessId: input.businessId,
@@ -348,7 +399,8 @@ export async function createIn(
       end: new Date(periodEnd).toISOString(),
       priceClp,
       discountClp,
-      ...(memberDiscount
+      ...(discountReason ? { discountReason } : {}),
+      ...(discountReason === "member" && memberDiscount
         ? { memberBenefitText: memberDiscount.benefitText }
         : {}),
       depositClp: 0,

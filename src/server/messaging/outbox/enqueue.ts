@@ -22,6 +22,14 @@ type EnqueueContext = {
   hasEmail: boolean;
   /** WP-56: `businesses.phone` är ett mobilnummer (ägar-sms möjligt). */
   ownerMobile: boolean;
+  /** Bokningsradens `updated_at` (ms) — dedupe-nyckelns unika del för
+   * `cancel_requested`/`cancel_declined` (WP-31-fix): till skillnad från
+   * övriga händelser ändras inte bokningens starttid här, så `startMs`
+   * ensamt skulle göra en ny förfrågan efter ett nekande till en dubblett
+   * (`on conflict do nothing`). Varje statusändring (till/från
+   * `cancel_requested`) sätter `updated_at` på nytt via
+   * `private.set_updated_at()`, så den fungerar som ett löpnummer. */
+  updatedAtMs: number;
 };
 
 /** WP-56: ägar-sms bara till ett mobilnummer i installationens land. */
@@ -39,10 +47,12 @@ async function loadContext(
     start_ms: number;
     has_email: boolean;
     business_phone: string | null;
+    updated_at_ms: number;
   }>(
     `select extract(epoch from lower(bk.period))::float8 * 1000 as start_ms,
             (c.email is not null) as has_email,
-            b.phone as business_phone
+            b.phone as business_phone,
+            extract(epoch from bk.updated_at)::float8 * 1000 as updated_at_ms
        from public.bookings bk
        join public.customers c on c.business_id = bk.business_id and c.id = bk.customer_id
        join public.businesses b on b.id = bk.business_id
@@ -55,29 +65,34 @@ async function loadContext(
         startMs: Math.round(row.start_ms),
         hasEmail: row.has_email,
         ownerMobile: isOwnerMobile(row.business_phone),
+        updatedAtMs: Math.round(row.updated_at_ms),
       }
     : undefined;
 }
 
-/** `<mall>:<kanal>:<mottagare>:<booking_id>:<start-epoch>` (WP-16.md §4).
- * `startMs` är bokningens NUVARANDE starttid (efter en ev. flytt), så en
- * flytt får ett nytt dedupe_key medan ett omförsök av SAMMA händelse (samma
- * start) inte skapar en dubblett. */
+/** `<mall>:<kanal>:<mottagare>:<booking_id>:<unik-epoch>` (WP-16.md §4).
+ * För de flesta händelser är `uniqMs` bokningens NUVARANDE starttid (efter
+ * en ev. flytt), så en flytt får ett nytt dedupe_key medan ett omförsök av
+ * SAMMA händelse (samma start) inte skapar en dubblett. `cancel_requested`/
+ * `cancel_declined` skickar i stället bokningsradens `updated_at` (WP-31-
+ * fix): starttiden ändras inte där, så en ny förfrågan efter ett nekande
+ * måste skilja sig på något annat för att inte tystas av
+ * `on conflict do nothing`. */
 function dedupeKey(
   template: string,
   channel: OutboxChannel,
   recipient: OutboxRecipientKind,
   bookingId: string,
-  startMs: number,
+  uniqMs: number,
 ): string {
-  return `${template}:${channel}:${recipient}:${bookingId}:${Math.floor(startMs / 1000)}`;
+  return `${template}:${channel}:${recipient}:${bookingId}:${Math.floor(uniqMs / 1000)}`;
 }
 
 async function insertRow(
   q: Queryable,
   businessId: string,
   bookingId: string,
-  startMs: number,
+  uniqMs: number,
   row: {
     channel: OutboxChannel;
     recipientKind: OutboxRecipientKind;
@@ -104,7 +119,7 @@ async function insertRow(
         row.channel,
         row.recipientKind,
         bookingId,
-        startMs,
+        uniqMs,
       ),
       row.nextAttemptAt ?? null,
     ],
@@ -133,13 +148,13 @@ async function queueCustomerMessage(
   q: Queryable,
   businessId: string,
   bookingId: string,
-  startMs: number,
+  uniqMs: number,
   template: string,
   hasEmail: boolean,
   payload: Record<string, unknown>,
 ): Promise<void> {
   for (const channel of customerChannels(hasEmail)) {
-    await insertRow(q, businessId, bookingId, startMs, {
+    await insertRow(q, businessId, bookingId, uniqMs, {
       channel,
       recipientKind: "customer",
       template,
@@ -155,13 +170,13 @@ async function queueCustomerEmailOnly(
   q: Queryable,
   businessId: string,
   bookingId: string,
-  startMs: number,
+  uniqMs: number,
   template: string,
   hasEmail: boolean,
   payload: Record<string, unknown>,
 ): Promise<void> {
   if (!hasEmail) return;
-  await insertRow(q, businessId, bookingId, startMs, {
+  await insertRow(q, businessId, bookingId, uniqMs, {
     channel: "email",
     recipientKind: "customer",
     template,
@@ -174,10 +189,10 @@ async function queueOwnerMessage(
   q: Queryable,
   businessId: string,
   bookingId: string,
-  startMs: number,
+  uniqMs: number,
   template: string,
 ): Promise<void> {
-  await insertRow(q, businessId, bookingId, startMs, {
+  await insertRow(q, businessId, bookingId, uniqMs, {
     channel: "email",
     recipientKind: "owner",
     template,
@@ -193,12 +208,12 @@ async function queueOwnerSms(
   q: Queryable,
   businessId: string,
   bookingId: string,
-  startMs: number,
+  uniqMs: number,
   template: string,
   ownerMobile: boolean,
 ): Promise<void> {
   if (market !== "SE" || !ownerMobile) return;
-  await insertRow(q, businessId, bookingId, startMs, {
+  await insertRow(q, businessId, bookingId, uniqMs, {
     channel: "sms",
     recipientKind: "owner",
     template,
@@ -252,7 +267,7 @@ export async function enqueueBookingEventIn(
   const ctx = await loadContext(q, e.businessId, e.bookingId);
   // Borde inte hända (anropas efter commit) — inget att köa utan bokningen.
   if (!ctx) return;
-  const { startMs, hasEmail, ownerMobile } = ctx;
+  const { startMs, hasEmail, ownerMobile, updatedAtMs } = ctx;
 
   if (e.type === "created") {
     if (e.status === "requested") {
@@ -394,20 +409,22 @@ export async function enqueueBookingEventIn(
   if (e.type === "cancel_requested") {
     // WP-56: kunden begärde avbokning — tiden är kvar (påminnelsen också)
     // tills företaget svarar. Ägaren: e-post (båda marknader) + sms (SE).
-    // dedupe_key bär starttiden: en andra förfrågan för samma tid efter ett
-    // nekande köas inte igen (samma begränsning som övriga mallar).
+    // dedupe_key bär bokningens `updated_at` (WP-31-fix), inte starttiden:
+    // en andra förfrågan för samma tid efter ett nekande sätter `updated_at`
+    // på nytt (statusen växlar fram och tillbaka) och får alltså ett nytt
+    // meddelande i stället för att tystas av `on conflict do nothing`.
     await queueOwnerMessage(
       q,
       e.businessId,
       e.bookingId,
-      startMs,
+      updatedAtMs,
       "solicitudCancelacion",
     );
     await queueOwnerSms(
       q,
       e.businessId,
       e.bookingId,
-      startMs,
+      updatedAtMs,
       "solicitudCancelacion",
       ownerMobile,
     );
@@ -416,11 +433,12 @@ export async function enqueueBookingEventIn(
 
   if (e.type === "cancel_declined") {
     // WP-56: avbokningen godkändes inte — kunden: e-post + sms (SE).
+    // Samma skäl som ovan: `updated_at`, inte starttiden, i dedupe_key.
     await queueCustomerMessage(
       q,
       e.businessId,
       e.bookingId,
-      startMs,
+      updatedAtMs,
       "cancelacionRechazada",
       hasEmail,
       {},

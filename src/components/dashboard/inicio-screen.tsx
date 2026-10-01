@@ -101,6 +101,9 @@ export type InicioScreenProps = {
    * utan egen personalrad, design lab). */
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-31: "Enviar recordatorio" i "Te echamos de menos"-kortet. `undefined`
+   * döljer knappen (ingen behörighet att skicka utskick). */
+  winbackHref?: string;
 };
 
 const AGENDA_HREF = "/app/agenda";
@@ -118,6 +121,7 @@ export function InicioScreen({
   onDeclineCancelRequest,
   myProfile,
   myProfileActions,
+  winbackHref,
 }: InicioScreenProps) {
   const router = useRouter();
   const now = mustParseInstant(data.now, "InicioScreen");
@@ -233,6 +237,7 @@ export function InicioScreen({
         ownerFirstName={data.owner.firstName}
         week={data.week}
         features={data.features}
+        winbackHref={winbackHref}
       />
 
       {onConfirmRequest && onDeclineRequest ? (

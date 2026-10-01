@@ -54,9 +54,14 @@ export type CreateBookingActionResult =
     })
   | BookingActionErr;
 
+/**
+ * WP-31: `offerToken` binds på servern (closuren i `page.tsx`, från `?o=`),
+ * aldrig ur klientens formulär. `createIn` validerar den i transaktionen.
+ */
 export async function createBooking(
   slug: string,
   input: unknown,
+  opts: { offerToken?: string | undefined } = {},
 ): Promise<CreateBookingActionResult> {
   const parsed = customerFormSchemaFor(market).safeParse(input);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
@@ -89,6 +94,7 @@ export async function createBooking(
     // WP-40 (D-031): servern (`createIn`) validerar på nytt mot sin egen
     // frågelista för tjänsten — klientens `answers` litas aldrig på.
     answers: parsed.data.answers,
+    offerToken: opts.offerToken,
     now,
   });
   if (!result.ok) return { ok: false, code: result.error };
@@ -120,14 +126,15 @@ export async function createBooking(
     );
   }
 
-  // Medlemsrabatten är den enda rabatten som sätts vid skapandet (create.ts),
-  // så `discountClp > 0` = medlemspris (även vid ett idempotent omförsök,
-  // då förmånstexten inte läses om → `null`).
-  const { discountClp, memberBenefitText } = result.value;
+  // `discountClp > 0` = medlemspris eller (WP-31) erbjudande, se
+  // `discountReason`. Vid ett idempotent omförsök läses förmånstexten inte
+  // om → `null`. `memberDiscountMinor` bär rabatten oavsett orsak.
+  const { discountClp, memberBenefitText, discountReason } = result.value;
   if (discountClp > 0) {
     return {
       ok: true,
       memberDiscountMinor: discountClp,
+      discountReason: discountReason ?? "member",
       memberBenefitText: memberBenefitText ?? null,
     };
   }

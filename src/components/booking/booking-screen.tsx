@@ -4,6 +4,7 @@
 "use client";
 
 import {
+  type ReactNode,
   useEffect,
   useId,
   useReducer,
@@ -81,6 +82,9 @@ export interface BookingScreenProps {
   data: BookingPageData;
   /** WP-51: sociala ikonknappar renderade av servern (ingen klient-JS, D-032). */
   social?: ProfileSocialSlots;
+  /** WP-31: erbjudanderaden (`?o=`), färdigrenderad av servern. Token
+   * binds i `submitBooking`-closuren på servern, aldrig här. */
+  offerNotice?: ReactNode;
   submitBooking: (input: CustomerFormOutput) => Promise<BookingActionResult>;
   joinWaitlist: (input: WaitlistFormOutput) => Promise<BookingActionResult>;
   /** Bara till design lab (`?estado=`): förvalt tillstånd i stället för det tomma. */
@@ -107,6 +111,7 @@ export function BookingScreen({
   initialFormErrors,
   forceOffline,
   social,
+  offerNotice,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
@@ -127,6 +132,9 @@ export function BookingScreen({
   // den monteras igen — de är aldrig förkryssade.
   const [contact, setContact] = useState<CustomerContact>(NO_CONTACT);
   const [memberDiscount, setMemberDiscount] = useState<number | null>(null);
+  const [discountReason, setDiscountReason] = useState<
+    "member" | "offer" | undefined
+  >(undefined);
   function updateContact(patch: Partial<CustomerContact>) {
     setContact((prev) => ({ ...prev, ...patch }));
   }
@@ -254,6 +262,7 @@ export function BookingScreen({
       const result = await submitBooking(input);
       if (result.ok) {
         setMemberDiscount(result.memberDiscountMinor ?? null);
+        setDiscountReason(result.discountReason);
         dispatch({ type: "submit_success" });
       } else dispatch({ type: "submit_error", code: result.code });
     } catch {
@@ -316,6 +325,11 @@ export function BookingScreen({
           : "relative flex min-h-full flex-col gap-6 p-5 pb-35"
       }
     >
+      {offerNotice && state.step !== "confirmacion" ? (
+        <div className={isProfileBrowse ? "px-5 pt-4" : undefined}>
+          {offerNotice}
+        </div>
+      ) : null}
       {state.step === "seleccion" ? (
         isProfileBrowse && data.profile ? (
           <ProfileBrowse
@@ -502,6 +516,7 @@ export function BookingScreen({
           selection={selection}
           day={day}
           memberDiscountMinor={memberDiscount}
+          discountReason={discountReason}
         />
       )}
 

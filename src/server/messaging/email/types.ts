@@ -30,6 +30,9 @@ export type BookingCardData = {
    * kortet "Precio socio: {precio} (−{descuentoSocio})" i stället för
    * "Precio: {precio}" (`precio` är då redan priset efter rabatt). */
   readonly descuentoSocio?: string;
+  /** WP-31: rabatten (`descuentoSocio`) kommer från en erbjudandelänk →
+   * etiketten "Precio con oferta" i stället för "Precio socio". */
+  readonly descuentoOferta?: boolean;
 };
 
 export type EmailTemplateMeta = {

@@ -1,0 +1,17 @@
+// Felkod → text för Campañas (WP-31, F14). Samma mönster som
+// `src/components/settings/error-text.ts`: en okänd kod ger
+// `comun.algoSalioMal` i stället för att krascha UI:t.
+import { campanas, comun } from "@/i18n";
+
+const KNOWN: Record<string, string> = {
+  forbidden: campanas.nueva.error.forbidden,
+  invalid_input: campanas.nueva.error.invalid_input,
+  no_recipients: campanas.nueva.error.no_recipients,
+  sms_not_available: campanas.nueva.error.sms_not_available,
+  rate_limited: campanas.nueva.error.rate_limited,
+  unexpected: campanas.nueva.error.unexpected,
+};
+
+export function campanaErrorText(code: string): string {
+  return KNOWN[code] ?? comun.algoSalioMal;
+}
