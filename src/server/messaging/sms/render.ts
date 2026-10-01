@@ -61,6 +61,8 @@ export type SmsTemplateMap = {
     link: string;
     minutos: number;
   };
+  /** WP-23: al cliente, la hora ofrecida ya fue tomada por otra persona. */
+  readonly listaEsperaTomada: { negocio: string; fecha: string };
   readonly horaFlash: {
     negocio: string;
     hora: string;
@@ -123,6 +125,7 @@ export const SMS_TEMPLATE_NAMES: readonly SmsTemplateName[] = [
   "solicitudRechazada",
   "solicitudVencida",
   "listaEsperaCupo",
+  "listaEsperaTomada",
   "horaFlash",
   "nuevaReservaDueno",
   "nuevaSolicitudDueno",

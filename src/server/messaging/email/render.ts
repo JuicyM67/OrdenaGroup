@@ -52,7 +52,9 @@ import {
 } from "./templates/invitacion";
 import {
   listaEsperaCupoEmail,
+  listaEsperaTomadaEmail,
   type ListaEsperaCupoData,
+  type ListaEsperaTomadaData,
 } from "./templates/lista-espera";
 import type { EmailKind, RenderedEmail } from "./types";
 
@@ -70,6 +72,8 @@ export type EmailTemplateMap = {
   readonly nuevaReservaDueno: DuenoReservaData;
   readonly cancelacionDueno: DuenoReservaData;
   readonly listaEsperaCupo: ListaEsperaCupoData;
+  /** WP-23: al cliente, la hora ofrecida ya fue tomada por otra persona. */
+  readonly listaEsperaTomada: ListaEsperaTomadaData;
   readonly horaFlash: HoraFlashData;
   /** WP-45 (D-033): förfrågningar (`requested`). */
   readonly nuevaSolicitud: DuenoReservaData;
@@ -105,6 +109,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   nuevaReservaDueno: "booking",
   cancelacionDueno: "booking",
   listaEsperaCupo: "booking",
+  listaEsperaTomada: "booking",
   horaFlash: "booking",
   nuevaSolicitud: "booking",
   solicitudRecibida: "booking",
@@ -131,6 +136,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "nuevaReservaDueno",
   "cancelacionDueno",
   "listaEsperaCupo",
+  "listaEsperaTomada",
   "horaFlash",
   "nuevaSolicitud",
   "solicitudRecibida",
@@ -173,6 +179,8 @@ export function renderEmail<T extends EmailTemplateName>(
       return cancelacionDuenoEmail(market, data as DuenoReservaData);
     case "listaEsperaCupo":
       return listaEsperaCupoEmail(market, data as ListaEsperaCupoData);
+    case "listaEsperaTomada":
+      return listaEsperaTomadaEmail(market, data as ListaEsperaTomadaData);
     case "horaFlash":
       return horaFlashEmail(market, data as HoraFlashData);
     case "nuevaSolicitud":

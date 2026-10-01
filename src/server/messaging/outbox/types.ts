@@ -77,3 +77,27 @@ export type BookingEvent =
   | { type: "cancel_requested"; bookingId: string; businessId: string }
   /** WP-56: företaget nekade avbokningen, bokningen gäller igen. */
   | { type: "cancel_declined"; bookingId: string; businessId: string };
+
+/**
+ * KONTRAKT mot `src/server/waitlist/` (scheduling-engineer, WP-23): håll
+ * exakt. `enqueueWaitlistEvent` anropas EFTER väntelistetransaktionen
+ * committats (samma regel som `enqueueBookingEvent` ovan), en gång per
+ * händelse.
+ *
+ * - `waitlist_offer`: en tid blev ledig och erbjuds `entryId` (sequential:
+ *   en i taget; broadcast: alla samtidigt, en rad per entry). `token` är
+ *   klartext-token för `/v/[token]` (D-029 — bara hashen ligger i
+ *   `waitlist_entries.offer_token_hash`).
+ * - `waitlist_taken`: tiden som erbjöds `entryId` hann tas av någon annan
+ *   (en annan entry i samma broadcast, eller — i sequential-läget — relevant
+ *   bara om något annat tog tiden utanför kön) innan den här kunden hann
+ *   svara. Ingen token: ren avisering, kunden står kvar i kön.
+ */
+export type WaitlistEvent =
+  | {
+      type: "waitlist_offer";
+      businessId: string;
+      entryId: string;
+      token: string;
+    }
+  | { type: "waitlist_taken"; businessId: string; entryId: string };

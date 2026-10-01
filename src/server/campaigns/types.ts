@@ -82,3 +82,33 @@ export type CampaignListItem = {
   recipients: number;
   redeemed: number;
 };
+
+/**
+ * WP-30 (F13): "Skicka till kunder" för en horas flash-tid
+ * (`sendFlashCampaign`, `src/server/campaigns/flash.ts`). Samma
+ * `audience`/`channel`/`message`-form som `CampaignInput`, men utan
+ * `offer_*` — rabatten ligger på själva tiden (`flash_slots.discount_pct`),
+ * inte på en erbjudande-token (se den filens kommentar).
+ */
+export type FlashCampaignInput = {
+  flashSlotId: string;
+  channel: CampaignChannel;
+  audience: CampaignAudience;
+  message: string;
+};
+
+export const flashCampaignInputSchema = z
+  .strictObject({
+    flashSlotId: uuid,
+    channel: z.enum(["email", "sms"]),
+    audience: campaignAudienceSchema,
+    message: z.string().trim().min(1),
+  })
+  .refine((v) => (v.channel === "sms" ? v.message.length <= 320 : true), {
+    path: ["message"],
+    message: "message_too_long_sms",
+  })
+  .refine((v) => (v.channel === "email" ? v.message.length <= 1000 : true), {
+    path: ["message"],
+    message: "message_too_long_email",
+  });

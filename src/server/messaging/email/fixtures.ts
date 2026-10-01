@@ -106,6 +106,11 @@ export function emailFixtures(market: Market): {
       minutos: 15,
       confirmarUrl: "https://app.example.com/lista-espera/abc123",
     },
+    listaEsperaTomada: {
+      cliente: b.cliente,
+      negocio: b.negocio,
+      fecha: b.fecha,
+    },
     horaFlash: {
       negocio: b.negocio,
       servicio: b.servicio,

@@ -21,6 +21,7 @@ import { expireRequests } from "@/server/bookings/confirm";
 import { pgErrorCode } from "@/server/db/errors";
 import { processOutbox } from "@/server/messaging/outbox";
 import { systemClock } from "@/server/scheduling/clock";
+import { expireWaitlistOffers } from "@/server/waitlist";
 
 export const dynamic = "force-dynamic";
 
@@ -63,10 +64,21 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
+  // WP-23: samma idé som ovan — en utgången väntelisteoffert (sequential:
+  // nästa i kön; broadcast: ingen efterträdare) ska gå ut FÖRE utkorgen
+  // töms, i samma pass. Ett fel här stoppar aldrig utkorgen heller.
+  let waitlistExpired = 0;
+  try {
+    waitlistExpired = (await expireWaitlistOffers(systemClock())).expired;
+  } catch (e) {
+    console.error("outbox: expireWaitlistOffers misslyckades", {
+      code: pgErrorCode(e) ?? "unknown",
+    });
+  }
   const result = await processOutbox({ limit: CRON_LIMIT });
   // Bara räknare (regel hård 8: ingen persondata i loggar).
-  console.log("outbox: pass klart", { expired, ...result });
-  return NextResponse.json({ ...result, expired });
+  console.log("outbox: pass klart", { expired, waitlistExpired, ...result });
+  return NextResponse.json({ ...result, expired, waitlistExpired });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
