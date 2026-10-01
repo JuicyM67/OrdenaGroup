@@ -326,10 +326,15 @@ export async function anonymizeCustomer(
     // kunden finns inte kvar att meddela). Tiden blir ledig direkt, och
     // varken svepet (`expireRequests`) eller `confirmIn` kan senare skicka
     // något till den raderade kunden. `cancel_reason` nollas nedan (B1).
+    // WP-56-uppföljning: `cancel_requested` (väntande avbokningsförfrågan)
+    // behandlas likadant som `requested` — avbryts tyst i stället för att
+    // invänta ägarens svar. `status_before_cancel_request` nollas i samma
+    // sats (bookings_status_before_cancel_request_check kräver det när
+    // statusen inte längre är `cancel_requested`).
     await q.query(
       `update public.bookings
-          set status = 'cancelled', cancelled_at = now()
-        where business_id = $1 and customer_id = $2 and status = 'requested'`,
+          set status = 'cancelled', cancelled_at = now(), status_before_cancel_request = null
+        where business_id = $1 and customer_id = $2 and status in ('requested', 'cancel_requested')`,
       [businessId, customerId],
     );
 

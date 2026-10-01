@@ -5,7 +5,7 @@
 -- staff_id och alltså inte kan representera "min egen bokning").
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(14);
+select plan(15);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -34,6 +34,13 @@ insert into public.bookings (id, business_id, staff_id, service_id, customer_id,
   ('aaaaaaaa-4000-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000003', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
    tstzrange('2026-11-02 13:00+00', '2026-11-02 13:35+00', '[)'), tstzrange('2026-11-02 13:00+00', '2026-11-02 13:35+00', '[)'), 'confirmed', 'manual', 12000);
 
+-- booking5: cancel_requested, staff 1 (own-mgr:s egen), väntande
+-- avbokningsförfrågan på en tidigare confirmed bokning (WP-56-uppföljning,
+-- punkt 5b).
+insert into public.bookings (id, business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, status_before_cancel_request) values
+  ('aaaaaaaa-4000-0000-0000-000000000005', 'aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000001', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+   tstzrange('2026-11-02 14:00+00', '2026-11-02 14:35+00', '[)'), tstzrange('2026-11-02 14:00+00', '2026-11-02 14:35+00', '[)'), 'cancel_requested', 'web', 12000, 'confirmed');
+
 -- Fyra nya konton, ett per scenario (inte _helpers.psql:s staffA).
 insert into auth.users (id, email, role, aud) values
   ('99999999-0000-0000-0000-000000000001', 'own-mgr@example.com', 'authenticated', 'authenticated'),
@@ -55,7 +62,7 @@ insert into public.memberships (business_id, user_id, role, staff_id, can_manage
 -- bara får ÄNDRA sin egen (staff 1).
 select set_config('request.jwt.claims', json_build_object('sub', '99999999-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 set local role authenticated;
-select is((select count(*) from public.bookings where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 4, 'own-mgr ser hela kalendern (4 bokningar)');
+select is((select count(*) from public.bookings where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 5, 'own-mgr ser hela kalendern (5 bokningar)');
 
 -- 2. own-mgr kan ändra sin EGEN bokning (booking1, staff 1).
 select lives_ok(
@@ -86,6 +93,16 @@ select throws_ok(
 select lives_ok(
   $$ update public.bookings set status = 'cancelled', cancelled_at = now(), cancel_reason = 'declined' where id = 'aaaaaaaa-4000-0000-0000-000000000001' $$,
   'own-mgr kan neka sin egen förfrågan (requested -> cancelled) utan can_cancel_bookings'
+);
+
+-- 5b. Godkänna (cancel_requested -> cancelled) EGEN avbokningsförfrågan
+-- (booking5, WP-56-uppföljning): tillåtet med bara can_manage_own_bookings,
+-- samma lätta regel som att neka en vanlig förfrågan (punkt 5) — ingen
+-- can_cancel_bookings krävs för att hantera en FÖRFRÅGAN, oavsett om den är
+-- en ny bokning eller en avbokning.
+select lives_ok(
+  $$ update public.bookings set status = 'cancelled', cancelled_at = now(), status_before_cancel_request = null where id = 'aaaaaaaa-4000-0000-0000-000000000005' $$,
+  'own-mgr kan godkänna avbokning på egen bokning (cancel_requested -> cancelled) utan can_cancel_bookings'
 );
 
 -- 6. AVBOKA (inte neka) en redan CONFIRMED egen bokning (booking3) kräver
@@ -135,7 +152,7 @@ with updated as (
 select is((select count(*) from updated)::int, 0, 'cancel-only kan inte röra någon bokning utan manage_own/manage_all (0 rader)');
 
 -- 11. cancel-only ser ändå hela kalendern (rollen staff räcker för SELECT).
-select is((select count(*) from public.bookings where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 4, 'cancel-only ser ändå hela kalendern');
+select is((select count(*) from public.bookings where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 5, 'cancel-only ser ändå hela kalendern');
 
 -- 12. own-mgr kan inte läsa `memberships` för de andra kontona (bara sin
 -- egen rad — INV-4/S3, ingen ändring i WP-46: se 011_memberships.test.sql).
