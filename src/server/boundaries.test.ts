@@ -476,6 +476,8 @@ const ENGINE_GUARDS = [
   "cancelBooking",
   "confirmBooking",
   "declineBooking",
+  "approveCancellation",
+  "declineCancellation",
 ] as const;
 const ALL_GUARDS = [
   ...BASE_GUARDS,

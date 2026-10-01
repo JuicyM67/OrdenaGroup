@@ -34,6 +34,7 @@ const RULES = {
   maxDaysAhead: 30,
   cancelWindowHours: 3,
   autoConfirmBookings: false,
+  cancelApproval: "none",
   slotIntervalMinutes: 15,
 };
 
