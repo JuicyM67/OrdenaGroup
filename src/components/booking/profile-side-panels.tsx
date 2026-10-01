@@ -10,6 +10,7 @@ import { APP_TZ, formatDuration, formatTime } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { formatPhone, type E164 } from "@/lib/format/phone";
 
+import { ProfileServiceButton } from "./profile-interactive";
 import {
   fastestTimeDetail,
   hoursRows,
@@ -36,12 +37,10 @@ export function FastestTimesCard({
   profile,
   now,
   services,
-  onSelect,
 }: {
   profile: BookingProfile;
   now: IsoInstant;
   services: readonly BookingService[];
-  onSelect: (serviceId: string) => void;
 }) {
   const next = profile.nextAvailable;
   if (!next) return null;
@@ -56,13 +55,12 @@ export function FastestTimesCard({
       className="flex flex-col gap-3"
     >
       <p className="text-16 font-semibold">{perfil.publico.masRapido}</p>
-      <button
-        type="button"
-        onClick={() => onSelect(next.serviceId)}
+      <ProfileServiceButton
+        serviceId={next.serviceId}
         className="rounded-event bg-lime px-3 py-2.5 text-center text-13 font-bold text-ink transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime focus-visible:transition-none"
       >
         {formatTimeOnly(next.start)}
-      </button>
+      </ProfileServiceButton>
       <span className="text-12 text-on-dark-muted">
         {fastestTimeDetail(now, next.start, service.name)}
         {" · "}

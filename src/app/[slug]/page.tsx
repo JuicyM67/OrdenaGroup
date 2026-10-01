@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { BookingScreen } from "@/components/booking/booking-screen";
+import { ProfileBrowse } from "@/components/booking/profile-browse";
 import { SocialLinks } from "@/components/booking/social-icons";
 import type {
   CustomerFormOutput,
@@ -156,9 +157,16 @@ export default async function ReservaPage({
       }
     : undefined;
 
+  // WP-53 (D-040): profilvyn renderas här, på servern — `BookingScreen` tar
+  // bara emot det färdiga trädet (`profileContent`), ingen av
+  // `ProfileBrowse`s markup/text/formatering hamnar i klientbunten.
+  const profileContent = p ? (
+    <ProfileBrowse data={data} profile={p} social={social} />
+  ) : undefined;
+
   return (
     <BookingScreen
-      social={social}
+      profileContent={profileContent}
       offerNotice={offerNotice}
       data={data}
       initialSelection={initialSelection}

@@ -34,11 +34,7 @@ import {
   type BookingSelection,
 } from "./flow-state";
 import type { CustomerFormOutput, WaitlistFormOutput } from "./form-schema";
-import {
-  type MobileTab,
-  ProfileBrowse,
-  type ProfileSocialSlots,
-} from "./profile-browse";
+import { ProfileFlowProvider, type MobileTab } from "./profile-flow-context";
 import { ServiceCard } from "./service-card";
 import { StaffPicker } from "./staff-picker";
 import { barPrice, findDay, summaryText } from "./summary";
@@ -81,8 +77,10 @@ function getServerOnlineSnapshot(): boolean {
 
 export interface BookingScreenProps {
   data: BookingPageData;
-  /** WP-51: sociala ikonknappar renderade av servern (ingen klient-JS, D-032). */
-  social?: ProfileSocialSlots;
+  /** WP-53 (D-040): hela profilvyn (`ProfileBrowse`), färdigrenderad av
+   * servern — ingen av dess markup/text/formatering är med i klientbunten.
+   * `undefined` när `data.profile` saknas (fixturer/tester utan profil). */
+  profileContent?: ReactNode;
   /** WP-31: erbjudanderaden (`?o=`), färdigrenderad av servern. Token
    * binds i `submitBooking`-closuren på servern, aldrig här. */
   offerNotice?: ReactNode;
@@ -115,7 +113,7 @@ export function BookingScreen({
   loadingHorarios,
   initialFormErrors,
   forceOffline,
-  social,
+  profileContent,
   offerNotice,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
@@ -157,14 +155,17 @@ export function BookingScreen({
       ? servicesForCategory(data.services, categoryId)
       : data.services;
 
-  // WP-41: företagsprofilen (`ProfileBrowse`) är den nya starten på `/{slug}`
-  // — "Boka" på en tjänst väljer den (samma reducer som förut) och växlar
-  // till den befintliga profesional/dag/hora-vyn ("picker"). Fixturer utan
-  // `data.profile` (design lab, `e2e/design-lab-reserva.spec.ts`) hoppar
-  // rakt till "picker" — oförändrat beteende där. `mobileTab` är profilens
-  // egen flikstat (Tjänster/Personal/Om oss/Info), skild från `categoryId`.
+  // WP-41: företagsprofilen (`ProfileBrowse`, serverrenderad till
+  // `profileContent` sedan WP-53/D-040) är den nya starten på `/{slug}` —
+  // "Boka" på en tjänst väljer den (samma reducer som förut) och växlar till
+  // den befintliga profesional/dag/hora-vyn ("picker"). Fixturer utan
+  // `data.profile` (design lab, `e2e/design-lab-reserva.spec.ts`) saknar
+  // `profileContent` och hoppar rakt till "picker" — oförändrat beteende
+  // där. `mobileTab` är profilens egen flikstat (Tjänster/Personal/Om
+  // oss/Info), skild från `categoryId`; båda delas med profilvyn via
+  // `ProfileFlowProvider` (profile-flow-context.tsx).
   const [viewMode, setViewMode] = useState<"profile" | "picker">(
-    data.profile && !initialSelection ? "profile" : "picker",
+    profileContent && !initialSelection ? "profile" : "picker",
   );
   const [mobileTab, setMobileTab] = useState<MobileTab>("servicios");
   function bookService(serviceId: string) {
@@ -339,22 +340,21 @@ export function BookingScreen({
         </div>
       ) : null}
       {state.step === "seleccion" ? (
-        isProfileBrowse && data.profile ? (
-          <ProfileBrowse
-            data={data}
-            profile={data.profile}
-            tabs={tabs}
-            categoryId={categoryId}
-            onSelectCategory={setCategoryId}
-            visibleServices={visibleServices}
-            onBookService={bookService}
-            mobileTab={mobileTab}
-            onSelectMobileTab={setMobileTab}
-            social={social}
-          />
+        isProfileBrowse && profileContent ? (
+          <ProfileFlowProvider
+            value={{
+              categoryId,
+              onSelectCategory: setCategoryId,
+              mobileTab,
+              onSelectMobileTab: setMobileTab,
+              bookService,
+            }}
+          >
+            {profileContent}
+          </ProfileFlowProvider>
         ) : (
           <>
-            {data.profile ? (
+            {profileContent ? (
               // WP-41: ingen referens för den här länken (ny, bara i "picker"-läget
               // — se kommentaren vid `viewMode` ovan). Vanlig `<button>`, inte
               // `TextLink` (den är till riktig navigation via `next/link`, det här
