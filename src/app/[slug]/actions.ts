@@ -52,6 +52,16 @@ export type CreateBookingActionResult =
   | (BookingActionOk & {
       readonly memberDiscountMinor?: number;
       readonly memberBenefitText?: string | null;
+      /**
+       * WP-61 (pilotfynd #1): kundens EGEN `/r/[token]`-token (samma som i
+       * bekräftelsemejlet) — inte "riktig tokentextsäkerhet av ett annat slag"
+       * mer än mejlet redan är: kunden äger redan den här bokningen. Saknas
+       * (`undefined`) vid ett idempotent omförsök (`findByIdempotencyKey`,
+       * `src/server/bookings/create.ts`, kan inte återskapa den hashade
+       * token) — `Confirmation` döljer länken då i stället för att länka till
+       * fel/tom token.
+       */
+      readonly manageToken?: string;
     })
   | BookingActionErr;
 
@@ -130,7 +140,12 @@ export async function createBooking(
   // `discountClp > 0` = medlemspris eller (WP-31) erbjudande, se
   // `discountReason`. Vid ett idempotent omförsök läses förmånstexten inte
   // om → `null`. `memberDiscountMinor` bär rabatten oavsett orsak.
-  const { discountClp, memberBenefitText, discountReason } = result.value;
+  const { discountClp, memberBenefitText, discountReason, manageToken } =
+    result.value;
+  // WP-61: tom sträng vid ett idempotent omförsök (`findByIdempotencyKey`,
+  // create.ts, kan inte återskapa den hashade token) — `undefined` i stället
+  // för `""` så `Confirmation` kan avgöra med ett enkelt `if (manageToken)`.
+  const manageTokenOrUndefined = manageToken !== "" ? manageToken : undefined;
   // WP-30: flashpriset syns redan på tiden (servern satte `priceClp` på
   // sloten) — ingen extra rabattrad i bekräftelsen.
   if (discountClp > 0 && discountReason !== "flash") {
@@ -139,9 +154,10 @@ export async function createBooking(
       memberDiscountMinor: discountClp,
       discountReason: discountReason ?? "member",
       memberBenefitText: memberBenefitText ?? null,
+      manageToken: manageTokenOrUndefined,
     };
   }
-  return { ok: true };
+  return { ok: true, manageToken: manageTokenOrUndefined };
 }
 
 /**
