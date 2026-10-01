@@ -112,4 +112,17 @@ export type InicioData = {
    * medlemmar utan `can_view_reports`. `loadOwnerInicio` sätter alltid fältet
    * (`memberView`), design lab-fixturer kan utelämna det (nav:en visar då Caja). */
   member?: InicioMemberView;
+  /**
+   * WP-57 (punkt 4, UX-genomgång "Kom igång-kort med progress"): fem steg härledda ur
+   * befintlig data (inget nytt "onboarding klar"-fält) — `GettingStartedCard` döljs av
+   * anroparen när alla fem är `true`. `undefined` (design lab/äldre fixturer) döljer kortet
+   * helt i stället för att visa falska steg.
+   */
+  gettingStarted?: {
+    services: boolean;
+    hours: boolean;
+    profile: boolean;
+    flash: boolean;
+    team: boolean;
+  };
 };

@@ -6,52 +6,71 @@
 // utfälld (etiketter synliga) tills användaren själv fäller ihop den, vilket är det
 // granskningen efterfrågar ("nya användare måste hovra för att förstå").
 //
+// `useSyncExternalStore` (inte `useState`+`useEffect`, som skulle kräva ett `setState`
+// synkront i en effekt — flaggas av `react-hooks/set-state-in-effect`): samma "svara med
+// standardläget direkt (SSR/första renderingen), synka till det riktiga strax efter"-mönster
+// som `use-compact-viewport.ts`/`use-desktop-layout.ts`, fast här är källan en modulvariabel
+// (`localStorage`) i stället för `matchMedia`.
+//
 // `localStorage` är inte tillgängligt i alla miljöer (privat läge, SSR, jsdom-tester utan
 // den) — alla anrop skyddas med try/catch, ett fel ignoreras tyst och läget gäller bara den
 // här sessionen (samma "best effort"-mönster som övriga lokala preferenser i appen).
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 const STORAGE_KEY = "llena:nav-collapsed";
 
-function readStored(): boolean | null {
+const listeners = new Set<() => void>();
+let cached: boolean | null = null;
+
+function hasLocalStorage(): boolean {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw === "1") return true;
-    if (raw === "0") return false;
-    return null;
+    return typeof window !== "undefined" && !!window.localStorage;
   } catch {
-    return null;
+    return false;
   }
 }
 
-function writeStored(collapsed: boolean): void {
+function readStored(): boolean {
+  if (cached !== null) return cached;
   try {
-    window.localStorage.setItem(STORAGE_KEY, collapsed ? "1" : "0");
+    cached = hasLocalStorage()
+      ? window.localStorage.getItem(STORAGE_KEY) === "1"
+      : false;
+  } catch {
+    cached = false;
+  }
+  return cached;
+}
+
+function writeStored(next: boolean): void {
+  cached = next;
+  try {
+    if (hasLocalStorage()) {
+      window.localStorage.setItem(STORAGE_KEY, next ? "1" : "0");
+    }
   } catch {
     // Ingen lagring tillgänglig — läget gäller bara den här sessionen.
   }
+  for (const listener of listeners) listener();
 }
 
-/**
- * `[collapsed, setCollapsed]`. Första renderingen (och SSR) svarar alltid `false`
- * (utfälld) — `useEffect` synkar sedan mot den lagrade preferensen om det finns en, precis
- * efter montering (samma "svara med standardläget direkt, synka till det riktiga strax
- * efter"-mönster som `use-desktop-layout.ts`/`use-compact-viewport.ts`, fast här räcker en
- * vanlig `useState` + `useEffect` eftersom värdet bara ändras av användaren själv, inte av
- * webbläsarens fönsterstorlek).
- */
+function subscribe(onStoreChange: () => void): () => void {
+  listeners.add(onStoreChange);
+  return () => listeners.delete(onStoreChange);
+}
+
+function getServerSnapshot(): boolean {
+  return false;
+}
+
+/** `[collapsed, setCollapsed]`. SSR och den allra första renderingen svarar alltid `false`
+ * (utfälld) — synkar sedan till den lagrade preferensen utan en hydreringsvarning. */
 export function useNavCollapsed(): [boolean, (next: boolean) => void] {
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
-    const stored = readStored();
-    if (stored !== null) setCollapsed(stored);
-  }, []);
-
-  const update = useCallback((next: boolean) => {
-    setCollapsed(next);
-    writeStored(next);
-  }, []);
-
-  return [collapsed, update];
+  const collapsed = useSyncExternalStore(
+    subscribe,
+    readStored,
+    getServerSnapshot,
+  );
+  const setCollapsed = useCallback((next: boolean) => writeStored(next), []);
+  return [collapsed, setCollapsed];
 }

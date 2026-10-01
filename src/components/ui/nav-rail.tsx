@@ -46,7 +46,7 @@ export function NavRail({
         aria-label={ariaLabel}
         data-surface="dark"
         className={cn(
-          "flex shrink-0 flex-col transition-[width] duration-150 ease-out",
+          "flex shrink-0 flex-col",
           collapsed ? "w-20 items-center" : "w-52 items-stretch px-2",
           variant === "bare"
             ? "gap-3 py-3"
