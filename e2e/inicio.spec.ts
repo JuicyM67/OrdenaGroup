@@ -188,10 +188,10 @@ test("?estado=sin-flash: visar inicio.flashCard.vacio i stället för datum/tid/
     page.getByText("No tienes ninguna hora flash activa todavía."),
   ).toBeVisible();
   await expect(page.getByText(/−\d+%/)).toHaveCount(0);
-  // WP-47: länken ("Crear hora flash") döljs — /app/flash saknar backend.
+  // WP-30: /app/flash finns — länken "Crear hora flash" visas igen.
   await expect(
     page.getByRole("link", { name: "Crear hora flash" }),
-  ).toHaveCount(0);
+  ).toHaveCount(1);
 });
 
 test.describe("axe (wcag2a, wcag2aa, wcag21aa)", () => {
