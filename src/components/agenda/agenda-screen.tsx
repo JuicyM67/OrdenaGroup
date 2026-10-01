@@ -443,6 +443,17 @@ export function AgendaScreen({
       try {
         const counts = await onLoad(browsedMonth);
         if (!cancelled) setFetchedMonthCounts(counts);
+      } catch (err) {
+        // Granskningsfynd (2026-10-01): ett fel i `onLoadMonthCounts` (server action,
+        // src/server/owner/agenda.ts) saknade tidigare en `catch` här — `fetchedMonthCounts`
+        // blev kvar `null`/på föregående månads data, så HELA rutnätet (inte bara en dag)
+        // visade "inga tider" utan felmeddelande. `{}` i stället för `null`: samma
+        // "tomt, inte trasigt"-läge som en månad utan bokningar — `console.*` tillåtet
+        // här (utanför src/server, samma avvägning som `app/agenda/page.tsx`).
+        if (!cancelled) {
+          console.error("agenda: kunde inte läsa månadens antal", err);
+          setFetchedMonthCounts({});
+        }
       } finally {
         if (!cancelled) setMonthCountsLoading(false);
       }

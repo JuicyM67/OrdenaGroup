@@ -307,6 +307,13 @@ export async function loadOwnerAgendaMonthCounts(
   );
 }
 
+/** `start_ms`: egentligen en sträng vid körning, inte `number` — Postgres (16+) låter
+ * `extract(epoch from …)` returnera `numeric` i stället för `double precision`, och
+ * `pg` har ingen inbyggd parser för `numeric` (undviker tyst precisionsförlust för stora
+ * tal) — den kommer alltså som en strängad siffra, t.ex. `"1791170100000.000000"`.
+ * Samma `MonthCountRow`-liknande rader i `loadOwnerAgendaWeekIn` ovan (`isoOf`,
+ * `./shared.ts`) klarar sig oskadda av samma anledning som nedan: `Math.round(ms)`
+ * (`Number(ms)` här) tvångskonverterar strängen till ett tal innan `new Date(...)`. */
 type MonthCountRow = { staff_id: string; start_ms: number };
 
 /** Inre steg (för tester): kör i anroparens transaktion. */
@@ -331,7 +338,14 @@ export async function loadOwnerAgendaMonthCountsIn(
 
   const counts: Record<string, Record<StaffId, number>> = {};
   for (const row of res.rows) {
-    const date = toLocalDate(new Date(row.start_ms), APP_TZ);
+    // BUGG (ägarens test, 2026-10-01): `new Date(row.start_ms)` kastade "ogiltig Date"
+    // (`toWallClock`) så fort `extract(epoch from …)` kom tillbaka som `numeric` (se
+    // `MonthCountRow`-kommentaren ovan) — månadsvyns `onLoadMonthCounts` (agenda-
+    // screen.tsx) saknar `catch`, så hela anropet föll och `fetchedMonthCounts` blev
+    // kvar på `null`: INGEN dag i månadsvyn visade några tider, trots att vecko-/
+    // dagvyn (som går via `isoOf`, redan tålig för samma sak) såg likadan data fint.
+    // `Number(...)` här tvångskonverterar — samma skydd som `isoOf` redan hade.
+    const date = toLocalDate(new Date(Number(row.start_ms)), APP_TZ);
     const byStaff = counts[date] ?? {};
     byStaff[row.staff_id] = (byStaff[row.staff_id] ?? 0) + 1;
     counts[date] = byStaff;
