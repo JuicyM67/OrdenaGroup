@@ -183,6 +183,7 @@ export type Database = {
         Row: {
           blocked: unknown;
           business_id: string;
+          campaign_recipient_id: string | null;
           cancel_reason: string | null;
           cancelled_at: string | null;
           confirmed_by_customer_at: string | null;
@@ -209,6 +210,7 @@ export type Database = {
         Insert: {
           blocked: unknown;
           business_id: string;
+          campaign_recipient_id?: string | null;
           cancel_reason?: string | null;
           cancelled_at?: string | null;
           confirmed_by_customer_at?: string | null;
@@ -235,6 +237,7 @@ export type Database = {
         Update: {
           blocked?: unknown;
           business_id?: string;
+          campaign_recipient_id?: string | null;
           cancel_reason?: string | null;
           cancelled_at?: string | null;
           confirmed_by_customer_at?: string | null;
@@ -285,6 +288,13 @@ export type Database = {
             columns: ["business_id", "staff_id"];
             isOneToOne: false;
             referencedRelation: "staff";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "bookings_campaign_recipient_id_fkey";
+            columns: ["business_id", "campaign_recipient_id"];
+            isOneToOne: false;
+            referencedRelation: "campaign_recipients";
             referencedColumns: ["business_id", "id"];
           },
         ];
@@ -394,6 +404,10 @@ export type Database = {
           trial_ends_at: string | null;
           updated_at: string;
           waitlist_mode: Database["public"]["Enums"]["waitlist_mode"];
+          winback_days: number | null;
+          winback_message: string | null;
+          winback_offer_days: number | null;
+          winback_offer_pct: number | null;
         };
         Insert: {
           about?: string | null;
@@ -429,6 +443,10 @@ export type Database = {
           trial_ends_at?: string | null;
           updated_at?: string;
           waitlist_mode?: Database["public"]["Enums"]["waitlist_mode"];
+          winback_days?: number | null;
+          winback_message?: string | null;
+          winback_offer_days?: number | null;
+          winback_offer_pct?: number | null;
         };
         Update: {
           about?: string | null;
@@ -464,8 +482,139 @@ export type Database = {
           trial_ends_at?: string | null;
           updated_at?: string;
           waitlist_mode?: Database["public"]["Enums"]["waitlist_mode"];
+          winback_days?: number | null;
+          winback_message?: string | null;
+          winback_offer_days?: number | null;
+          winback_offer_pct?: number | null;
         };
         Relationships: [];
+      };
+      campaign_recipients: {
+        Row: {
+          business_id: string;
+          campaign_id: string;
+          created_at: string;
+          customer_id: string;
+          id: string;
+          redeemed_at: string | null;
+          redeemed_booking_id: string | null;
+          sent_at: string | null;
+          token_hash: string;
+          updated_at: string;
+        };
+        Insert: {
+          business_id: string;
+          campaign_id: string;
+          created_at?: string;
+          customer_id: string;
+          id?: string;
+          redeemed_at?: string | null;
+          redeemed_booking_id?: string | null;
+          sent_at?: string | null;
+          token_hash: string;
+          updated_at?: string;
+        };
+        Update: {
+          business_id?: string;
+          campaign_id?: string;
+          created_at?: string;
+          customer_id?: string;
+          id?: string;
+          redeemed_at?: string | null;
+          redeemed_booking_id?: string | null;
+          sent_at?: string | null;
+          token_hash?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "campaign_recipients_business_id_campaign_id_fkey";
+            columns: ["business_id", "campaign_id"];
+            isOneToOne: false;
+            referencedRelation: "campaigns";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "campaign_recipients_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "campaign_recipients_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "campaign_recipients_business_id_redeemed_booking_id_fkey";
+            columns: ["business_id", "redeemed_booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      campaigns: {
+        Row: {
+          audience: NonNullable<Json>;
+          business_id: string;
+          channel: Database["public"]["Enums"]["message_channel"];
+          created_at: string;
+          created_by: string;
+          id: string;
+          message: string;
+          name: string;
+          offer_pct: number | null;
+          offer_text: string | null;
+          offer_valid_until: string | null;
+          sent_at: string | null;
+          status: Database["public"]["Enums"]["campaign_status"];
+          updated_at: string;
+        };
+        Insert: {
+          audience: NonNullable<Json>;
+          business_id: string;
+          channel: Database["public"]["Enums"]["message_channel"];
+          created_at?: string;
+          created_by: string;
+          id?: string;
+          message: string;
+          name: string;
+          offer_pct?: number | null;
+          offer_text?: string | null;
+          offer_valid_until?: string | null;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["campaign_status"];
+          updated_at?: string;
+        };
+        Update: {
+          audience?: NonNullable<Json>;
+          business_id?: string;
+          channel?: Database["public"]["Enums"]["message_channel"];
+          created_at?: string;
+          created_by?: string;
+          id?: string;
+          message?: string;
+          name?: string;
+          offer_pct?: number | null;
+          offer_text?: string | null;
+          offer_valid_until?: string | null;
+          sent_at?: string | null;
+          status?: Database["public"]["Enums"]["campaign_status"];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       consent_events: {
         Row: {
@@ -581,6 +730,7 @@ export type Database = {
           id: string;
           is_member: boolean;
           last_visit_at: string | null;
+          last_winback_at: string | null;
           member_since: string | null;
           name: string | null;
           no_show_count: number;
@@ -602,6 +752,7 @@ export type Database = {
           id?: string;
           is_member?: boolean;
           last_visit_at?: string | null;
+          last_winback_at?: string | null;
           member_since?: string | null;
           name?: string | null;
           no_show_count?: number;
@@ -623,6 +774,7 @@ export type Database = {
           id?: string;
           is_member?: boolean;
           last_visit_at?: string | null;
+          last_winback_at?: string | null;
           member_since?: string | null;
           name?: string | null;
           no_show_count?: number;
@@ -1272,6 +1424,7 @@ export type Database = {
         | "cancelled";
       business_plan: "free" | "emprende" | "equipo" | "local";
       business_status: "active" | "frozen";
+      campaign_status: "draft" | "sent";
       consent_channel: "web" | "whatsapp" | "manual";
       consent_kind: "terms" | "marketing" | "waitlist" | "owner_terms" | "dpa";
       consent_subject: "customer" | "owner";
@@ -1436,6 +1589,7 @@ export const Constants = {
       ],
       business_plan: ["free", "emprende", "equipo", "local"],
       business_status: ["active", "frozen"],
+      campaign_status: ["draft", "sent"],
       consent_channel: ["web", "whatsapp", "manual"],
       consent_kind: ["terms", "marketing", "waitlist", "owner_terms", "dpa"],
       consent_subject: ["customer", "owner"],
