@@ -191,6 +191,7 @@ export type Database = {
           customer_id: string;
           deposit_clp: number;
           discount_clp: number;
+          flash_slot_id: string | null;
           id: string;
           idempotency_key: string | null;
           manage_token_hash: string | null;
@@ -206,6 +207,7 @@ export type Database = {
           status_before_cancel_request:
             Database["public"]["Enums"]["booking_status"] | null;
           updated_at: string;
+          waitlist_entry_id: string | null;
         };
         Insert: {
           blocked: unknown;
@@ -218,6 +220,7 @@ export type Database = {
           customer_id: string;
           deposit_clp?: number;
           discount_clp?: number;
+          flash_slot_id?: string | null;
           id?: string;
           idempotency_key?: string | null;
           manage_token_hash?: string | null;
@@ -233,6 +236,7 @@ export type Database = {
           status_before_cancel_request?:
             Database["public"]["Enums"]["booking_status"] | null;
           updated_at?: string;
+          waitlist_entry_id?: string | null;
         };
         Update: {
           blocked?: unknown;
@@ -245,6 +249,7 @@ export type Database = {
           customer_id?: string;
           deposit_clp?: number;
           discount_clp?: number;
+          flash_slot_id?: string | null;
           id?: string;
           idempotency_key?: string | null;
           manage_token_hash?: string | null;
@@ -260,6 +265,7 @@ export type Database = {
           status_before_cancel_request?:
             Database["public"]["Enums"]["booking_status"] | null;
           updated_at?: string;
+          waitlist_entry_id?: string | null;
         };
         Relationships: [
           {
@@ -295,6 +301,20 @@ export type Database = {
             columns: ["business_id", "campaign_recipient_id"];
             isOneToOne: false;
             referencedRelation: "campaign_recipients";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "bookings_flash_slot_id_fkey";
+            columns: ["business_id", "flash_slot_id"];
+            isOneToOne: false;
+            referencedRelation: "flash_slots";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "bookings_waitlist_entry_id_fkey";
+            columns: ["business_id", "waitlist_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "waitlist_entries";
             referencedColumns: ["business_id", "id"];
           },
         ];
@@ -403,6 +423,7 @@ export type Database = {
           timezone: string;
           trial_ends_at: string | null;
           updated_at: string;
+          waitlist_hold_minutes: number;
           waitlist_mode: Database["public"]["Enums"]["waitlist_mode"];
           winback_days: number | null;
           winback_message: string | null;
@@ -442,6 +463,7 @@ export type Database = {
           timezone?: string;
           trial_ends_at?: string | null;
           updated_at?: string;
+          waitlist_hold_minutes?: number;
           waitlist_mode?: Database["public"]["Enums"]["waitlist_mode"];
           winback_days?: number | null;
           winback_message?: string | null;
@@ -481,6 +503,7 @@ export type Database = {
           timezone?: string;
           trial_ends_at?: string | null;
           updated_at?: string;
+          waitlist_hold_minutes?: number;
           waitlist_mode?: Database["public"]["Enums"]["waitlist_mode"];
           winback_days?: number | null;
           winback_message?: string | null;
@@ -790,6 +813,73 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "businesses";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      flash_slots: {
+        Row: {
+          booking_id: string | null;
+          business_id: string;
+          created_at: string;
+          created_by: string;
+          discount_pct: number;
+          ends_at: string;
+          id: string;
+          service_ids: string[] | null;
+          staff_id: string;
+          starts_at: string;
+          status: Database["public"]["Enums"]["flash_slot_status"];
+          updated_at: string;
+        };
+        Insert: {
+          booking_id?: string | null;
+          business_id: string;
+          created_at?: string;
+          created_by: string;
+          discount_pct: number;
+          ends_at: string;
+          id?: string;
+          service_ids?: string[] | null;
+          staff_id: string;
+          starts_at: string;
+          status?: Database["public"]["Enums"]["flash_slot_status"];
+          updated_at?: string;
+        };
+        Update: {
+          booking_id?: string | null;
+          business_id?: string;
+          created_at?: string;
+          created_by?: string;
+          discount_pct?: number;
+          ends_at?: string;
+          id?: string;
+          service_ids?: string[] | null;
+          staff_id?: string;
+          starts_at?: string;
+          status?: Database["public"]["Enums"]["flash_slot_status"];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "flash_slots_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "flash_slots_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "flash_slots_business_id_staff_id_fkey";
+            columns: ["business_id", "staff_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["business_id", "id"];
           },
         ];
       };
@@ -1356,6 +1446,80 @@ export type Database = {
           },
         ];
       };
+      waitlist_entries: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          customer_id: string;
+          day: string;
+          id: string;
+          offer_expires_at: string | null;
+          offer_token_hash: string | null;
+          offered_at: string | null;
+          service_id: string;
+          staff_id: string | null;
+          status: Database["public"]["Enums"]["waitlist_status"];
+          updated_at: string;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          customer_id: string;
+          day: string;
+          id?: string;
+          offer_expires_at?: string | null;
+          offer_token_hash?: string | null;
+          offered_at?: string | null;
+          service_id: string;
+          staff_id?: string | null;
+          status?: Database["public"]["Enums"]["waitlist_status"];
+          updated_at?: string;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          customer_id?: string;
+          day?: string;
+          id?: string;
+          offer_expires_at?: string | null;
+          offer_token_hash?: string | null;
+          offered_at?: string | null;
+          service_id?: string;
+          staff_id?: string | null;
+          status?: Database["public"]["Enums"]["waitlist_status"];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_entries_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "waitlist_entries_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "waitlist_entries_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "waitlist_entries_business_id_staff_id_fkey";
+            columns: ["business_id", "staff_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -1429,6 +1593,7 @@ export type Database = {
       consent_kind: "terms" | "marketing" | "waitlist" | "owner_terms" | "dpa";
       consent_subject: "customer" | "owner";
       deposit_kind: "none" | "fixed" | "percent";
+      flash_slot_status: "active" | "booked" | "cancelled";
       member_role: "owner" | "staff" | "vendor" | "admin";
       message_category: "utility" | "marketing" | "service";
       message_channel: "email" | "sms";
@@ -1449,6 +1614,7 @@ export type Database = {
         | "date";
       time_off_kind: "block" | "lunch" | "vacation" | "holiday";
       waitlist_mode: "sequential" | "broadcast";
+      waitlist_status: "waiting" | "offered" | "booked" | "expired" | "removed";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -1594,6 +1760,7 @@ export const Constants = {
       consent_kind: ["terms", "marketing", "waitlist", "owner_terms", "dpa"],
       consent_subject: ["customer", "owner"],
       deposit_kind: ["none", "fixed", "percent"],
+      flash_slot_status: ["active", "booked", "cancelled"],
       member_role: ["owner", "staff", "vendor", "admin"],
       message_category: ["utility", "marketing", "service"],
       message_channel: ["email", "sms"],
@@ -1626,6 +1793,7 @@ export const Constants = {
       ],
       time_off_kind: ["block", "lunch", "vacation", "holiday"],
       waitlist_mode: ["sequential", "broadcast"],
+      waitlist_status: ["waiting", "offered", "booked", "expired", "removed"],
     },
   },
 } as const;
