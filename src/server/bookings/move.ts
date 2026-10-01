@@ -30,6 +30,12 @@ import {
   canManageStaffBookings,
   visibleButLocked,
 } from "./authz";
+import {
+  emitWaitlistEvents,
+  type WaitlistEvent,
+} from "@/server/waitlist/events";
+import { collectFreed } from "@/server/waitlist/match";
+
 import { emitBookingEvent } from "./events";
 import {
   CHANGEABLE,
@@ -71,10 +77,24 @@ export async function moveBooking(
     ({ newStart, newStaffId } = p.data);
   }
   const input = { ...c, ref, newStart, newStaffId };
-  const result = await runAs(c.actor, (q) => moveIn(q, input), {
-    onConflict: err("slot_taken"),
-    onForbidden: err("forbidden"),
-  });
+  const waitlist: WaitlistEvent[] = [];
+  const result = await runAs(
+    c.actor,
+    async (q) => {
+      const r = await moveIn(q, input);
+      // WP-23: den gamla tiden erbjuds väntelistan (snapshoten ser redan
+      // den flyttade bokningen på sin nya plats).
+      if (r.ok) {
+        await collectFreed(q, waitlist, {
+          businessId: c.businessId,
+          now: c.now,
+          freed: r.value.freed,
+        });
+      }
+      return r;
+    },
+    { onConflict: err("slot_taken"), onForbidden: err("forbidden") },
+  );
   // WP-16: efter commit (enqueueBookingEvent kastar aldrig). Den nya token
   // går bara till meddelandet; den gamla länken gäller inte längre (D-029).
   if (result.ok) {
@@ -86,6 +106,7 @@ export async function moveBooking(
       by: c.actor.kind,
       status: result.value.booking.status,
     });
+    await emitWaitlistEvents(waitlist);
   }
   return result;
 }

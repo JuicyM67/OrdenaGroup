@@ -92,9 +92,9 @@ describe("loadReservaPageData", () => {
     );
 
     const anyDays = byStaff.any!;
-    // Bara "open"-dagar med minst en tid (full/closed utelämnas helt).
-    for (const day of anyDays) {
-      expect(day.state).toBe("open");
+    // "open"-dagar med minst en tid; WP-23: fulla dagar kommer som "full"
+    // utan tider, stängda utelämnas.
+    for (const day of anyDays.filter((d) => d.state === "open")) {
       expect(day.hasFlash).toBe(false);
       expect(day.slots.length).toBeGreaterThan(0);
       expect(day.slots.length).toBeLessThanOrEqual(12);
@@ -108,7 +108,7 @@ describe("loadReservaPageData", () => {
     expect(anyDays.every((d) => d.date <= addLocalDays(TODAY, 20))).toBe(true);
   });
 
-  it("en helt fullbokad dag utelämnas (som en stängd dag) — väntelistan syns aldrig", async () => {
+  it("WP-23: en helt fullbokad dag skickas som full utan tider (väntelistan)", async () => {
     const solo = await createTestBusiness({
       hours: [{ weekday: 2, start: "10:00", end: "10:30" }],
       staff: [{ key: "diego" }],
@@ -127,7 +127,9 @@ describe("loadReservaPageData", () => {
       });
       const data = await load(solo);
       const days = data!.availability[solo.services.s30!]!.any!;
-      expect(days.some((d) => d.date === "2026-10-06")).toBe(false);
+      const tueDay = days.find((d) => d.date === "2026-10-06");
+      expect(tueDay?.state).toBe("full");
+      expect(tueDay?.slots).toEqual([]);
     } finally {
       await dropTestBusiness(solo);
     }

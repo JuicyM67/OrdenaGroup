@@ -31,6 +31,7 @@ import {
   canContinue,
   initialFlowState,
   type BookingFlowState,
+  type BookingSelection,
 } from "./flow-state";
 import type { CustomerFormOutput, WaitlistFormOutput } from "./form-schema";
 import {
@@ -89,6 +90,9 @@ export interface BookingScreenProps {
   joinWaitlist: (input: WaitlistFormOutput) => Promise<BookingActionResult>;
   /** Bara till design lab (`?estado=`): förvalt tillstånd i stället för det tomma. */
   initialState?: BookingFlowState;
+  /** WP-30: `/{slug}?flash=<id>` — förvald tjänst/profesional/dag/tid,
+   * beräknad på servern. Hoppar direkt till valvyn. */
+  initialSelection?: BookingSelection;
   /** Bara till design lab (`?estado=cargando`): visar `vacios.cargandoHorarios`. */
   loadingHorarios?: boolean;
   /** Bara till design lab (`?estado=datos-errores`): fältfel utan att skicka. */
@@ -107,6 +111,7 @@ export function BookingScreen({
   submitBooking,
   joinWaitlist,
   initialState,
+  initialSelection,
   loadingHorarios,
   initialFormErrors,
   forceOffline,
@@ -115,7 +120,10 @@ export function BookingScreen({
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
-    initialState ?? initialFlowState,
+    initialState ??
+      (initialSelection
+        ? { ...initialFlowState, selection: initialSelection }
+        : initialFlowState),
   );
   const isBrowserOnline = useSyncExternalStore(
     subscribeOnline,
@@ -156,7 +164,7 @@ export function BookingScreen({
   // rakt till "picker" — oförändrat beteende där. `mobileTab` är profilens
   // egen flikstat (Tjänster/Personal/Om oss/Info), skild från `categoryId`.
   const [viewMode, setViewMode] = useState<"profile" | "picker">(
-    data.profile ? "profile" : "picker",
+    data.profile && !initialSelection ? "profile" : "picker",
   );
   const [mobileTab, setMobileTab] = useState<MobileTab>("servicios");
   function bookService(serviceId: string) {

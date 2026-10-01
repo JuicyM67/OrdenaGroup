@@ -13,6 +13,11 @@ import {
   type EngineContext,
 } from "@/server/scheduling/schemas";
 import type { Actor, BookingStatus } from "@/server/scheduling/types";
+import {
+  emitWaitlistEvents,
+  type WaitlistEvent,
+} from "@/server/waitlist/events";
+import { collectFreed, onSlotFreed } from "@/server/waitlist/match";
 
 import { actorMember, bookingPermOk } from "./authz";
 import { REQUEST_LEAD_HOURS, REQUEST_TTL_HOURS } from "./deadline";
@@ -123,9 +128,22 @@ export async function declineBooking(
     now: c.now,
     actor: c.actor,
   };
-  const r = await runAs(c.actor, (q) => declineIn(q, input), {
-    onForbidden: err("forbidden"),
-  });
+  const waitlist: WaitlistEvent[] = [];
+  const r = await runAs(
+    c.actor,
+    async (q) => {
+      const x = await declineIn(q, input);
+      if (x.ok) {
+        await collectFreed(q, waitlist, {
+          businessId: c.businessId,
+          now: c.now,
+          freed: x.value.freed,
+        });
+      }
+      return x;
+    },
+    { onForbidden: err("forbidden") },
+  );
   if (r.ok && r.value.freed !== null) {
     await emitBookingEvent({
       type: "declined",
@@ -135,6 +153,7 @@ export async function declineBooking(
       ...(p.data.reason ? { message: p.data.reason } : {}),
     });
   }
+  if (r.ok) await emitWaitlistEvents(waitlist);
   return r;
 }
 
@@ -279,7 +298,9 @@ const EXPIRE_BATCH = 100;
  * nekas själv efter deadline (`confirmIn`).
  */
 export async function expireRequests(now: Date): Promise<ExpiredRequest[]> {
-  return withServiceTx(async (q) => {
+  const waitlist: WaitlistEvent[] = [];
+  const expired = await withServiceTx(async (q) => {
+    waitlist.length = 0;
     const expired = await expireRequestsIn(q, now);
     for (const e of expired) {
       await enqueueBookingEventIn(q, {
@@ -288,9 +309,21 @@ export async function expireRequests(now: Date): Promise<ExpiredRequest[]> {
         businessId: e.businessId,
         reason: "expired",
       });
+      // WP-23: den frigjorda tiden erbjuds väntelistan i samma transaktion.
+      waitlist.push(
+        ...(await onSlotFreed(q, {
+          businessId: e.businessId,
+          staffId: e.freed.staffId,
+          start: e.freed.blocked.start,
+          end: e.freed.blocked.end,
+          now,
+        })),
+      );
     }
     return expired;
   });
+  await emitWaitlistEvents(waitlist);
+  return expired;
 }
 
 /**

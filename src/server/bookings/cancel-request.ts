@@ -16,6 +16,12 @@ import {
   currentStatus,
   type DecisionInput,
 } from "./confirm";
+import {
+  emitWaitlistEvents,
+  type WaitlistEvent,
+} from "@/server/waitlist/events";
+import { collectFreed } from "@/server/waitlist/match";
+
 import { emitBookingEvent } from "./events";
 import type { BookingError, Freed } from "./types";
 
@@ -88,9 +94,22 @@ export async function approveCancellation(
 ): Promise<ApproveCancellationResult> {
   const d = ownerInput(input, ctx);
   if (!d) return err("invalid_input");
-  const r = await runAs(d.actor, (q) => approveCancellationIn(q, d), {
-    onForbidden: err("forbidden"),
-  });
+  const waitlist: WaitlistEvent[] = [];
+  const r = await runAs(
+    d.actor,
+    async (q) => {
+      const x = await approveCancellationIn(q, d);
+      if (x.ok) {
+        await collectFreed(q, waitlist, {
+          businessId: d.businessId,
+          now: d.now,
+          freed: x.value.freed,
+        });
+      }
+      return x;
+    },
+    { onForbidden: err("forbidden") },
+  );
   if (r.ok && r.value.freed !== null) {
     await emitBookingEvent({
       type: "cancelled",
@@ -99,6 +118,7 @@ export async function approveCancellation(
       by: "customer",
     });
   }
+  if (r.ok) await emitWaitlistEvents(waitlist);
   return r;
 }
 

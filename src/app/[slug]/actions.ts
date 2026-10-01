@@ -33,6 +33,7 @@ import { pgErrorCode } from "@/server/db/errors";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
 import { systemClock } from "@/server/scheduling/clock";
+import { joinWaitlist as joinWaitlistServer } from "@/server/waitlist/join";
 
 /** Pilotblockerare (säkerhetsgranskning WP-27): en IP kan skapa högst
  * `BOOKING_IP_MAX` bokningsförsök per `BOOKING_IP_WINDOW_SECONDS`. Räknas
@@ -130,7 +131,9 @@ export async function createBooking(
   // `discountReason`. Vid ett idempotent omförsök läses förmånstexten inte
   // om → `null`. `memberDiscountMinor` bär rabatten oavsett orsak.
   const { discountClp, memberBenefitText, discountReason } = result.value;
-  if (discountClp > 0) {
+  // WP-30: flashpriset syns redan på tiden (servern satte `priceClp` på
+  // sloten) — ingen extra rabattrad i bekräftelsen.
+  if (discountClp > 0 && discountReason !== "flash") {
     return {
       ok: true,
       memberDiscountMinor: discountClp,
@@ -142,20 +145,34 @@ export async function createBooking(
 }
 
 /**
- * Väntelistan är utanför WP-20 (F8/WP-23, se docs/tasks/plans/WP-20.md):
- * `loadReservaPageData` utelämnar redan hela dagen när den är full (precis
- * som en stängd dag), så `BookingScreen` kan i praktiken aldrig anropa den
- * här funktionen från `/{slug}` — `WaitlistCard`/"Avísame" syns aldrig för
- * riktig data. Kvar bara för att matcha `BookingScreen`s kontrakt
- * (`joinWaitlist` är en obligatorisk prop); väntelistan finns kvar i
- * design lab (fixturerna har fulla dagar).
+ * WP-23 (F8): kunden går med i väntelistan när dagen är full
+ * (`loadReservaPageData` skickar fulla dagar som `state: "full"`). Formuläret
+ * valideras här; `joinWaitlist` i `src/server/waitlist/join.ts` gör rate
+ * limit per IP, kontrollerar att dagen verkligen är full, skapar/återanvänder
+ * kunden och loggar samtycket `waitlist`.
  */
 export async function joinWaitlist(
   slug: string,
   input: unknown,
 ): Promise<BookingActionResult> {
-  void slug;
   const parsed = waitlistFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
-  return { ok: false, code: "invalid_input" };
+  const r = await joinWaitlistServer(slug, {
+    serviceId: parsed.data.serviceId,
+    day: parsed.data.date,
+    staffId: parsed.data.staffId === "any" ? null : parsed.data.staffId,
+    name: parsed.data.name,
+    phone: parsed.data.phone,
+    ...(parsed.data.email ? { email: parsed.data.email } : {}),
+    consentWaitlist: parsed.data.termsAccepted,
+    idempotencyKey: parsed.data.idempotencyKey,
+  });
+  // Inget meddelande köas vid anmälan (bara när en tid erbjuds).
+  if (r.ok) return { ok: true };
+  // `not_full`: dagen fick en ledig tid medan formuläret var öppet — samma
+  // besked som en tid som inte längre går ("slot_taken" → tillbaka till valen).
+  return {
+    ok: false,
+    code: r.code === "not_full" ? "slot_taken" : r.code,
+  };
 }
