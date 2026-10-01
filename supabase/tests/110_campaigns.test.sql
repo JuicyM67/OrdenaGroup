@@ -52,19 +52,24 @@ select is((select count(*) from public.campaigns where business_id = 'bbbbbbbb-0
 select is((select count(*) from public.campaign_recipients where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 1, 'ownerA ve el destinatario de A');
 select is((select count(*) from public.campaign_recipients where business_id = 'bbbbbbbb-0000-0000-0000-000000000002')::int, 0, 'ownerA ve cero destinatarios de B');
 
--- 5-7. ownerA: escritura (has_perm siempre true para role = owner) ---------
-select lives_ok(
+-- 5-7. ownerA: escritura directa SIEMPRE prohibida (seguridad, 20261001130000)
+-- -- aunque `has_perm` sea `true` para role = owner, el GRANT de
+-- insert/update/delete ya no existe para `authenticated`: solo
+-- `src/server/campaigns/send.ts` (service_role) puede escribir estas dos
+-- tablas. `42501` (no `42P01`/fila inexistente): el permiso de tabla falla
+-- antes de que la fila se busque.
+select throws_ok(
   $$ insert into public.campaigns (id, business_id, name, channel, audience, message, status, created_by)
      values ('aaaaaaaa-5000-0000-0000-000000000002', 'aaaaaaaa-0000-0000-0000-000000000001', 'Prueba', 'email', '{"kind":"all"}'::jsonb, 'Hola', 'draft', '11111111-1111-1111-1111-111111111111') $$,
-  'ownerA puede crear una campaña'
+  '42501'
 );
-select lives_ok(
-  $$ update public.campaigns set status = 'sent', sent_at = now() where id = 'aaaaaaaa-5000-0000-0000-000000000002' $$,
-  'ownerA puede marcar su campaña como enviada'
+select throws_ok(
+  $$ update public.campaigns set status = 'sent', sent_at = now() where id = 'aaaaaaaa-5000-0000-0000-000000000001' $$,
+  '42501'
 );
-select lives_ok(
-  $$ delete from public.campaigns where id = 'aaaaaaaa-5000-0000-0000-000000000002' $$,
-  'ownerA puede eliminar su campaña'
+select throws_ok(
+  $$ delete from public.campaigns where id = 'aaaaaaaa-5000-0000-0000-000000000001' $$,
+  '42501'
 );
 reset role;
 
@@ -80,15 +85,17 @@ select throws_ok(
 );
 reset role;
 
--- 11-13. mgrA (can_manage_all_bookings = true, no es owner) -----------------
+-- 11-13. mgrA (can_manage_all_bookings = true, no es owner): lee igual que
+-- ownerA (RLS sigue el flag, no el rol), pero tampoco puede escribir
+-- directamente (seguridad, 20261001130000 — mismo motivo que 5-7).
 select set_config('request.jwt.claims', json_build_object('sub', '99999999-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select count(*) from public.campaigns where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 1, 'mgrA ve la campaña de A (can_manage_all_bookings)');
 select is((select count(*) from public.campaign_recipients where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 1, 'mgrA ve el destinatario de A');
-select lives_ok(
+select throws_ok(
   $$ insert into public.campaigns (id, business_id, name, channel, audience, message, status, created_by)
      values ('aaaaaaaa-5000-0000-0000-000000000003', 'aaaaaaaa-0000-0000-0000-000000000001', 'De mgrA', 'sms', '{"kind":"selected","customerIds":["aaaaaaaa-3000-0000-0000-000000000001"]}'::jsonb, 'Hola', 'draft', '99999999-0000-0000-0000-000000000001') $$,
-  'mgrA puede crear una campaña sin ser owner'
+  '42501'
 );
 reset role;
 

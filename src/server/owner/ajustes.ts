@@ -501,7 +501,12 @@ export async function updateMemberSettings(
 
 /** `enabled = false` → sparar alltid `null` i alla fyra kolumner (samma
  * av/på-via-null-regel som `updateMemberSettings`), oavsett vad `days`/
- * `message`/`offerPct`/`offerDays` råkar innehålla. */
+ * `message`/`offerPct`/`offerDays` råkar innehålla.
+ *
+ * Behörighet (säkerhetsgranskning WP-31): `can_manage_all_bookings`, inte
+ * `can_edit_settings` — samma flagga som krävs för att skicka ett manuellt
+ * utskick (`src/server/campaigns/send.ts`), eftersom den här inställningen
+ * styr automatiska marknadsföringsutskick till kunder (samma risknivå). */
 export async function updateWinbackSettings(
   userId: string,
   businessId: string,
@@ -521,7 +526,7 @@ export async function updateWinbackSettings(
   const offerDays = input.enabled ? (input.offerDays ?? null) : null;
   try {
     return await withOwnerTx(userId, async (q) => {
-      await requireMemberPerm(q, userId, businessId, "can_edit_settings");
+      await requireMemberPerm(q, userId, businessId, "can_manage_all_bookings");
       const r = await q.query(
         `update public.businesses
             set winback_days = $1, winback_message = $2,

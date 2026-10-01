@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 
 import { market } from "@/config/brand";
 import { hashOfferToken } from "@/server/bookings/offer";
+import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx, withServiceTx } from "@/server/db/tx";
 import { hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
@@ -149,7 +150,7 @@ function createOfferToken(): { token: string; hash: Buffer } {
  * `createdBy` är då en ägare slagen upp av `winback.ts`, ingen agent/
  * mänsklig aktör krävs).
  */
-async function writeCampaign(input: {
+type WriteCampaignInput = {
   businessId: string;
   createdBy: string;
   name: string;
@@ -160,78 +161,93 @@ async function writeCampaign(input: {
   offerText: string | null;
   offerValidUntil: string | null;
   customerIds: string[];
-}): Promise<{ campaignId: string; queued: number }> {
-  return withServiceTx(async (q) => {
-    const campaignRow = await q.query<{ id: string }>(
-      `insert into public.campaigns
-         (business_id, name, channel, audience, message, offer_pct, offer_text,
-          offer_valid_until, status, sent_at, created_by)
-       values ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, 'sent', now(), $9)
-       returning id`,
-      [
-        input.businessId,
-        input.name,
-        input.channel,
-        input.audienceJson,
-        input.message,
-        input.offerPct,
-        input.offerText,
-        input.offerValidUntil,
-        input.createdBy,
-      ],
-    );
-    const campaignId = campaignRow.rows[0]?.id;
-    if (!campaignId) throw new Error("writeCampaign: campaña no insertada");
-    if (input.customerIds.length === 0) {
-      return { campaignId, queued: 0 };
-    }
+};
 
-    // `Set` skyddar mot en dubblett i `customerIds` (skulle annars få två
-    // mottagarrader men bara en rad kvar i `tokenByCustomerId` nedan, så fel
-    // token kunde hamna i en av utkorgsraderna).
-    const uniqueCustomerIds = Array.from(new Set(input.customerIds));
-    const tokensByCustomer = uniqueCustomerIds.map((customerId) => ({
-      customerId,
-      ...createOfferToken(),
-    }));
-    // Hash:en som hex-TEXT, inte en `bytea[]`-parameter direkt (`pg` har
-    // ingen inbyggd array-kodare för `Buffer[]`): `decode(..., 'hex')` i
-    // SQL:en gör om den till `bytea` per rad.
-    const recipientRows = await q.query<{ id: string; customer_id: string }>(
-      `insert into public.campaign_recipients
-         (business_id, campaign_id, customer_id, token_hash)
-       select $1, $2, t.customer_id, decode(t.token_hash_hex, 'hex')
-         from unnest($3::uuid[], $4::text[]) as t(customer_id, token_hash_hex)
-       returning id, customer_id`,
-      [
-        input.businessId,
-        campaignId,
-        tokensByCustomer.map((t) => t.customerId),
-        tokensByCustomer.map((t) => t.hash.toString("hex")),
-      ],
-    );
-    const tokenByCustomerId = new Map(
-      tokensByCustomer.map((t) => [t.customerId, t.token]),
-    );
-    const payloads: string[] = [];
-    const dedupeKeys: string[] = [];
-    for (const row of recipientRows.rows) {
-      const token = tokenByCustomerId.get(row.customer_id);
-      if (!token) continue; // kan inte hända (samma lista), bara en typsäker vakt
-      payloads.push(JSON.stringify({ campaignRecipientId: row.id, token }));
-      dedupeKeys.push(`campanaMarketing:${input.channel}:customer:${row.id}`);
-    }
-    const inserted = await q.query(
-      `insert into public.message_outbox
-         (business_id, booking_id, channel, recipient_kind, template, payload,
-          category, dedupe_key)
-       select $1, null, $2, 'customer', 'campanaMarketing', t.payload::jsonb, 'marketing', t.dedupe_key
-         from unnest($3::text[], $4::text[]) as t(payload, dedupe_key)
-       on conflict (dedupe_key) do nothing`,
-      [input.businessId, input.channel, payloads, dedupeKeys],
-    );
-    return { campaignId, queued: inserted.rowCount ?? 0 };
-  });
+/** Inre steg: kör i anroparens transaktion (`q`). Delad av `sendCampaign`
+ * (egen `withServiceTx`, se `writeCampaign` nedan) och `winback.ts` (som
+ * behöver skriva kampanjen OCH `customers.last_winback_at` ATOMISKT, i
+ * samma transaktion — säkerhetsgranskning WP-31). */
+async function writeCampaignIn(
+  q: Queryable,
+  input: WriteCampaignInput,
+): Promise<{ campaignId: string; queued: number }> {
+  const campaignRow = await q.query<{ id: string }>(
+    `insert into public.campaigns
+       (business_id, name, channel, audience, message, offer_pct, offer_text,
+        offer_valid_until, status, sent_at, created_by)
+     values ($1, $2, $3, $4::jsonb, $5, $6, $7, $8, 'sent', now(), $9)
+     returning id`,
+    [
+      input.businessId,
+      input.name,
+      input.channel,
+      input.audienceJson,
+      input.message,
+      input.offerPct,
+      input.offerText,
+      input.offerValidUntil,
+      input.createdBy,
+    ],
+  );
+  const campaignId = campaignRow.rows[0]?.id;
+  if (!campaignId) throw new Error("writeCampaignIn: campaña no insertada");
+  if (input.customerIds.length === 0) {
+    return { campaignId, queued: 0 };
+  }
+
+  // `Set` skyddar mot en dubblett i `customerIds` (skulle annars få två
+  // mottagarrader men bara en rad kvar i `tokenByCustomerId` nedan, så fel
+  // token kunde hamna i en av utkorgsraderna).
+  const uniqueCustomerIds = Array.from(new Set(input.customerIds));
+  const tokensByCustomer = uniqueCustomerIds.map((customerId) => ({
+    customerId,
+    ...createOfferToken(),
+  }));
+  // Hash:en som hex-TEXT, inte en `bytea[]`-parameter direkt (`pg` har
+  // ingen inbyggd array-kodare för `Buffer[]`): `decode(..., 'hex')` i
+  // SQL:en gör om den till `bytea` per rad.
+  const recipientRows = await q.query<{ id: string; customer_id: string }>(
+    `insert into public.campaign_recipients
+       (business_id, campaign_id, customer_id, token_hash)
+     select $1, $2, t.customer_id, decode(t.token_hash_hex, 'hex')
+       from unnest($3::uuid[], $4::text[]) as t(customer_id, token_hash_hex)
+     returning id, customer_id`,
+    [
+      input.businessId,
+      campaignId,
+      tokensByCustomer.map((t) => t.customerId),
+      tokensByCustomer.map((t) => t.hash.toString("hex")),
+    ],
+  );
+  const tokenByCustomerId = new Map(
+    tokensByCustomer.map((t) => [t.customerId, t.token]),
+  );
+  const payloads: string[] = [];
+  const dedupeKeys: string[] = [];
+  for (const row of recipientRows.rows) {
+    const token = tokenByCustomerId.get(row.customer_id);
+    if (!token) continue; // kan inte hända (samma lista), bara en typsäker vakt
+    payloads.push(JSON.stringify({ campaignRecipientId: row.id, token }));
+    dedupeKeys.push(`campanaMarketing:${input.channel}:customer:${row.id}`);
+  }
+  const inserted = await q.query(
+    `insert into public.message_outbox
+       (business_id, booking_id, channel, recipient_kind, template, payload,
+        category, dedupe_key)
+     select $1, null, $2, 'customer', 'campanaMarketing', t.payload::jsonb, 'marketing', t.dedupe_key
+       from unnest($3::text[], $4::text[]) as t(payload, dedupe_key)
+     on conflict (dedupe_key) do nothing`,
+    [input.businessId, input.channel, payloads, dedupeKeys],
+  );
+  return { campaignId, queued: inserted.rowCount ?? 0 };
+}
+
+/** `sendCampaign`: öppnar en egen `withServiceTx` (ägarens behörighet redan
+ * kontrollerad i en separat `withOwnerTx`-läsning innan den här anropas). */
+function writeCampaign(
+  input: WriteCampaignInput,
+): Promise<{ campaignId: string; queued: number }> {
+  return withServiceTx((q) => writeCampaignIn(q, input));
 }
 
 export async function sendCampaign(
@@ -351,12 +367,7 @@ export async function countInactiveCustomers(
   });
 }
 
-/** Används bara av `winback.ts` (cron, ingen inloggad ägare) — samma
- * skrivsteg som `sendCampaign`, men utan `withOwnerTx`-behörighetskollen
- * (anroparen har redan valt ut `customerIds` själv) och utan rate limit
- * (ett pass/dag/företag, planens egen spärr "högst en gång var 90:e dag"
- * per kund, `customers.last_winback_at`). */
-export async function writeCampaignAsSystem(input: {
+export type WriteCampaignAsSystemInput = {
   businessId: string;
   createdBy: string;
   name: string;
@@ -366,8 +377,25 @@ export async function writeCampaignAsSystem(input: {
   offerPct: number | null;
   offerText: string | null;
   offerValidUntil: string | null;
-}): Promise<{ campaignId: string; queued: number }> {
-  return writeCampaign({
+};
+
+/** Används bara av `winback.ts` (cron, ingen inloggad ägare) — samma
+ * skrivsteg som `sendCampaign`, men utan `withOwnerTx`-behörighetskollen
+ * (anroparen har redan valt ut `customerIds` själv) och utan rate limit
+ * (ett pass/dag/företag, planens egen spärr "högst en gång var 90:e dag"
+ * per kund, `customers.last_winback_at`).
+ *
+ * Inre steg (för `winback.ts`, säkerhetsgranskning WP-31): tar `q` så att
+ * `customers.last_winback_at` kan sättas i SAMMA transaktion som kampanjen/
+ * utkorgsraderna skrivs — annars kunde ett avbrott mellan de två stegen
+ * sätta `last_winback_at` utan att något meddelande faktiskt köades, eller
+ * tvärtom köa ett meddelande utan att `last_winback_at` sätts (en kund som
+ * får winback varje dag resten av pilotperioden). */
+export async function writeCampaignAsSystemIn(
+  q: Queryable,
+  input: WriteCampaignAsSystemInput,
+): Promise<{ campaignId: string; queued: number }> {
+  return writeCampaignIn(q, {
     businessId: input.businessId,
     createdBy: input.createdBy,
     name: input.name,

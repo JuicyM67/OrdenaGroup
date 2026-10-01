@@ -5,7 +5,7 @@ import { addLocalDays, APP_TZ, toLocalDate } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 
-import { MAX_RECIPIENTS, writeCampaignAsSystem } from "./send";
+import { MAX_RECIPIENTS, writeCampaignAsSystemIn } from "./send";
 import type { CampaignChannel } from "./types";
 
 /**
@@ -29,13 +29,20 @@ type BusinessRow = {
   winback_offer_days: number | null;
 };
 
+/** Bara aktiva/provperiod-företag (`status = 'active'` — `business_status`
+ * har inget eget `'trial'`-värde, en provperiod är bara `status = 'active'`
+ * med `trial_ends_at` i framtiden) som inte bett om att raderas
+ * (säkerhetsgranskning WP-31): ett `frozen`- eller raderingsmarkerat
+ * företag ska inte få nya automatiska utskick köade. */
 async function eligibleBusinessesIn(q: Queryable): Promise<BusinessRow[]> {
   const r = await q.query<BusinessRow>(
     `select id, winback_days, winback_message, winback_offer_pct, winback_offer_days
        from public.businesses
       where winback_days is not null
         and winback_message is not null
-        and btrim(winback_message) <> ''`,
+        and btrim(winback_message) <> ''
+        and status = 'active'
+        and deletion_requested_at is null`,
   );
   return r.rows;
 }
@@ -138,18 +145,27 @@ export async function runWinback(now: Date): Promise<RunWinbackResult> {
           ? addLocalDays(today, b.winback_offer_days)
           : null;
 
-      const result = await writeCampaignAsSystem({
-        businessId: b.id,
-        createdBy: ownerId,
-        name: `Te echamos de menos — ${today}`,
-        channel,
-        audience: { kind: "selected", customerIds },
-        message: b.winback_message,
-        offerPct: b.winback_offer_pct,
-        offerText: null,
-        offerValidUntil,
+      // Säkerhetsgranskning WP-31: kampanjen (+ mottagarraderna + utkorgen)
+      // och `customers.last_winback_at` sätts ATOMISKT i samma transaktion
+      // — annars kunde ett avbrott mellan de två stegen antingen köa ett
+      // meddelande utan att `last_winback_at` sätts (kunden får winback
+      // igen nästa dag) eller sätta `last_winback_at` utan att något
+      // meddelande faktiskt köades (kunden missar winbacken helt i 90 dagar).
+      const result = await withServiceTx(async (q) => {
+        const r = await writeCampaignAsSystemIn(q, {
+          businessId: b.id,
+          createdBy: ownerId,
+          name: `Te echamos de menos — ${today}`,
+          channel,
+          audience: { kind: "selected", customerIds },
+          message: b.winback_message,
+          offerPct: b.winback_offer_pct,
+          offerText: null,
+          offerValidUntil,
+        });
+        await markWinbackSentIn(q, b.id, customerIds, now);
+        return r;
       });
-      await withServiceTx((q) => markWinbackSentIn(q, b.id, customerIds, now));
       queued += result.queued;
       sentFor += 1;
     } catch {
