@@ -202,6 +202,20 @@ export const winbackSettingsInputSchema = z
   });
 export type WinbackSettingsInput = z.infer<typeof winbackSettingsInputSchema>;
 
+// WP-23 (Ajustes → Reglas de reserva): `businesses.waitlist_mode`/
+// `waitlist_hold_minutes` (20261001150200_businesses_waitlist_hold_minutes.sql).
+export const waitlistSettingsInputSchema = z.object({
+  mode: z.enum(["sequential", "broadcast"], {
+    error: "waitlist.mode_invalid",
+  }),
+  holdMinutes: z.coerce
+    .number({ error: "waitlist.hold_minutes_invalid" })
+    .int({ error: "waitlist.hold_minutes_invalid" })
+    .min(5, { error: "waitlist.hold_minutes_invalid" })
+    .max(240, { error: "waitlist.hold_minutes_invalid" }),
+});
+export type WaitlistSettingsInput = z.infer<typeof waitlistSettingsInputSchema>;
+
 export const ajustesHoursInputSchema = z
   .array(hoursInputSchema)
   .max(7)

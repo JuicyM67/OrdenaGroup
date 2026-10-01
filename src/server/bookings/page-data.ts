@@ -31,7 +31,18 @@ import {
   staffOffersService,
 } from "@/server/scheduling/availability";
 import { firstFreeStart, openNow } from "@/server/scheduling/core/profile";
-import { dayStatus, slotsForDay } from "@/server/scheduling/core/slots";
+import {
+  allSlotsForDay,
+  dayStatus,
+  pickSlots,
+  toAvailableSlot,
+  type Candidate,
+} from "@/server/scheduling/core/slots";
+import {
+  flashForSlot,
+  flashPrice,
+  loadActiveFlashSlotsIn,
+} from "@/server/flash/public";
 import { loadSnapshot } from "@/server/scheduling/load";
 import {
   ANY_STAFF,
@@ -55,8 +66,12 @@ import { mediaPathFromUrl, publicMediaUrl } from "./media";
  * redan laddade ögonblicksbilden, så fönstrets längd kostar inga extra
  * frågor, bara mer JSON i svaret.
  *
- * En "full" dag utelämnas helt (precis som en stängd dag): väntelistan är
- * utanför WP-20 (dölj knappen/flödet i riktig data, behåll i design lab).
+ * WP-23: en "full" dag skickas som `state: "full"` utan tider (kortet
+ * "Avísame" / väntelistan); en stängd dag utelämnas.
+ *
+ * WP-30: aktiva flash-tider ger tiderna i fönstret flashpris
+ * (`priceClp` = nedsatt, `originalPriceClp`, `discountPct`) och dagen
+ * `hasFlash`. Flashtider gallras aldrig bort (de läggs till efter de 12).
  */
 const RANGE_DAYS = 21;
 
@@ -361,6 +376,7 @@ export async function loadReservaPageData(
     const to = addLocalDays(from, RANGE_DAYS - 1);
     const dates = eachLocalDate(from, to);
     const staffChoices = [ANY_STAFF, ...staffRows.rows.map((s) => s.id)];
+    const flashes = await loadActiveFlashSlotsIn(q, businessId, now);
 
     for (const service of serviceRows.rows) {
       questionsByService[service.id] = await getQuestionsForServiceIn(
@@ -401,17 +417,40 @@ export async function loadReservaPageData(
             now,
           };
           const status = dayStatus(dayInput);
-          // "closed" och "full" utelämnas båda (väntelistan är utanför WP-20).
-          if (status !== "available") continue;
+          if (status === "closed") continue;
+          if (status === "full") {
+            days.push({ date, state: "full", hasFlash: false, slots: [] });
+            continue;
+          }
 
-          const slots = slotsForDay(dayInput, CUSTOMER_SLOT_LIMIT).map((s) => ({
-            // Instanten är själva id:t (unikt inom den här dagens lista):
-            // samma sträng skickas rakt igenom som `createBooking`s `start`.
-            id: s.start,
-            start: s.start,
-            priceClp: loaded.value.priceClp,
-          }));
-          days.push({ date, state: "open", hasFlash: false, slots });
+          const all = allSlotsForDay(dayInput);
+          const picked = new Map<number, Candidate>(
+            pickSlots(all, CUSTOMER_SLOT_LIMIT).map((c) => [c.start, c]),
+          );
+          for (const c of all) {
+            if (flashForSlot(flashes, c, service.id)) picked.set(c.start, c);
+          }
+          const price = loaded.value.priceClp;
+          let hasFlash = false;
+          const slots = [...picked.values()]
+            .sort((a, b) => a.start - b.start)
+            .map((c) => {
+              const s = toAvailableSlot(c, loaded.value.snapshot);
+              const flash = flashForSlot(flashes, c, service.id);
+              // Instanten är själva id:t (unikt inom den här dagens lista):
+              // samma sträng skickas rakt igenom som `createBooking`s `start`.
+              if (!flash)
+                return { id: s.start, start: s.start, priceClp: price };
+              hasFlash = true;
+              return {
+                id: s.start,
+                start: s.start,
+                priceClp: flashPrice(price, flash.discountPct),
+                originalPriceClp: price,
+                discountPct: flash.discountPct,
+              };
+            });
+          days.push({ date, state: "open", hasFlash, slots });
         }
         byStaff[staffChoice] = days;
       }

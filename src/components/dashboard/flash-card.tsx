@@ -2,13 +2,14 @@
 // `activeFlash === null` (FRÅGA 4): samma mörka kort, med `inicio.flashCard.vacio` i stället
 // för datum/tid/rabatt.
 //
-// WP-47: pil-länken till `/app/flash` (skapa/dela en hora flash) döljs — horas flash fas 2
-// saknar backend/route än. WP-xx: visas när funktionen finns.
-import { Zap } from "lucide-react";
+// WP-23/WP-30: pil-länken till `/app/flash` återinförs (route/backend finns nu).
+import { ArrowUpRight, Zap } from "lucide-react";
+import Link from "next/link";
 
 import { Card } from "@/components/ui/card";
-import { strokeCard } from "@/components/ui/icons";
-import { inicio } from "@/i18n";
+import { strokeArrow, strokeCard } from "@/components/ui/icons";
+import { IconButton } from "@/components/ui/icon-button";
+import { hoy, inicio } from "@/i18n";
 import { APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
 
 import { mustParseInstant } from "./inicio-view";
@@ -17,6 +18,20 @@ import type { InicioData } from "./types";
 export type FlashCardProps = {
   activeFlash: InicioData["activeFlash"];
 };
+
+function ShareLink({ label }: { label: string }) {
+  return (
+    <IconButton asChild size={44} tone="surface" label={label}>
+      <Link href="/app/flash" prefetch={false}>
+        <ArrowUpRight
+          aria-hidden="true"
+          className="size-4.5"
+          strokeWidth={strokeArrow}
+        />
+      </Link>
+    </IconButton>
+  );
+}
 
 function IconTile() {
   return (
@@ -49,6 +64,7 @@ export function FlashCard({ activeFlash }: FlashCardProps) {
             {inicio.flashCard.vacio}
           </div>
         </div>
+        <ShareLink label={hoy.accionesRapidas.crearHoraFlash} />
       </Card>
     );
   }
@@ -83,6 +99,7 @@ export function FlashCard({ activeFlash }: FlashCardProps) {
           })}
         </div>
       </div>
+      <ShareLink label={inicio.flashCard.compartir} />
     </Card>
   );
 }

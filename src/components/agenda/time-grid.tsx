@@ -37,6 +37,16 @@ export type TimeGridProps = {
   allColumnsClosed?: boolean;
   /** Första synliga timmen vid montering (öppningen, eller nu − 1 h om idag syns). */
   initialScrollHour?: number;
+  /** WP-30: klick direkt på en kolumns tomma yta (inte på ett barn — bubblade klick
+   * filtreras bort med `e.target === e.currentTarget`). `offsetY` är i samma
+   * koordinatsystem som `eventBox().top` (TOP_PX-baserat), så anroparen kan räkna om
+   * den till en klocktid med samma formel som `eventBox` använder baklänges. */
+  onBackgroundClick?: (
+    columnKey: string,
+    offsetY: number,
+    clientX: number,
+    clientY: number,
+  ) => void;
 };
 
 export function TimeGrid({
@@ -47,6 +57,7 @@ export function TimeGrid({
   columns,
   allColumnsClosed = false,
   initialScrollHour,
+  onBackgroundClick,
 }: TimeGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -99,8 +110,22 @@ export function TimeGrid({
                   </div>
                 ) : null}
                 <div
-                  className="absolute inset-x-0"
+                  className="absolute inset-x-0 bottom-0"
                   style={{ top: headerHeight }}
+                  onClick={
+                    onBackgroundClick && !col.closed
+                      ? (e) => {
+                          if (e.target !== e.currentTarget) return;
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          onBackgroundClick(
+                            col.key,
+                            e.clientY - rect.top,
+                            e.clientX,
+                            e.clientY,
+                          );
+                        }
+                      : undefined
+                  }
                 >
                   {col.items}
                 </div>

@@ -508,8 +508,23 @@ export const agenda: Widen<typeof Es.agenda> = {
       `${p.n} ${p.n === 1 ? "person väntar" : "personer väntar"} den ${p.dia}`,
     avisoWhatsapp: "Meddelas bara via sms",
     minimoUnProfesional: "Du måste lämna minst en medarbetare synlig.",
+    listaEsperaEstado: {
+      waiting: "Väntar",
+      offered: "Erbjudande skickat",
+    },
+    quitarDeLaLista: (p: { nombre: string }): string =>
+      `Ta bort ${p.nombre} från väntelistan`,
+    horaFlashDisponibleAria: (p: {
+      hora: string;
+      porcentaje: number;
+    }): string => `Flashtid tillgänglig kl. ${p.hora}, −${p.porcentaje}%`,
   },
   nuevaReserva: "Ny bokning",
+  celdaVacia: {
+    menuAria: "Skapa vid den här tiden",
+    nuevaReserva: "Ny bokning",
+    horaFlash: "Flashtid",
+  },
   agregarProfesional: AGREGAR_PROFESIONAL_SV,
   verAgendaDe: (p: { nombre: string }): string => `Se ${p.nombre}s kalender`,
   vistaAria: "Vy",
@@ -1171,6 +1186,14 @@ export const email: Widen<typeof Es.email> = {
     expira: (p: { minutos: number }): string =>
       `Du har ${p.minutos} min på dig att bekräfta innan vi erbjuder den till någon annan.`,
   },
+  listaEsperaTomada: {
+    asunto: (p: { negocio: string }): string =>
+      `Den tiden hos ${p.negocio} är redan tagen`,
+    preheader: (p: { fecha: string }): string =>
+      `Du står kvar på väntelistan för ${p.fecha}.`,
+    cuerpo: (p: { cliente: string; negocio: string; fecha: string }): string =>
+      `Hej ${p.cliente},\n\nTiden vi erbjöd dig hos ${p.negocio} är redan tagen av någon annan. Du står kvar på väntelistan för ${p.fecha} och vi hör av oss om en ny tid blir ledig.`,
+  },
   horaFlash: {
     asunto: (p: { negocio: string; pct: number }): string =>
       `Flashtid hos ${p.negocio}: −${p.pct}%`,
@@ -1645,6 +1668,8 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     broadcast:
       "Vi meddelar alla som väntar samtidigt, och den som svarar först får tiden.",
   },
+  waitlistHoldMinutesLabel: "Hur länge vi väntar innan nästa i kön erbjuds",
+  waitlistHoldMinutesAyuda: "Mellan 5 och 240 minuter.",
   slugAviso:
     'Om du ändrar din länk slutar den gamla att fungera. Redan skickade sms med knappen "Boka igen" pekar fortfarande på den gamla länken.',
   guardarCambios: "Spara ändringar",
@@ -2177,6 +2202,8 @@ export const sms: Widen<typeof Es.sms> = {
     minutos: number;
   }): string =>
     `En tid hos ${p.negocio} blev ledig! ${p.servicio}, ${p.fecha} kl. ${p.hora}. Du har ${p.minutos} min: ${p.link}`,
+  listaEsperaTomada: (p: { negocio: string; fecha: string }): string =>
+    `Den tiden hos ${p.negocio} är redan tagen. Du står kvar på väntelistan för ${p.fecha}.`,
   horaFlash: (p: {
     negocio: string;
     hora: string;
@@ -2675,6 +2702,106 @@ export const baja: Widen<typeof Es.baja> = {
   error: "Vi kunde inte genomföra det här. Försök igen.",
 };
 
+export const flashStory: Widen<typeof Es.flashStory> = {
+  badge: "Flashtid",
+  soloUnaHora: "Bara en tid",
+  cta: "Boka via länken i bion",
+};
+
+// ---------------------------------------------------------------------------
+// flash: `/app/flash` (WP-30, F13) — ägarens skärm: aktiva och tidigare
+// flashtider, dialogen "Ny flashtid", kortet för varje tid (storybild,
+// kopiera länk, skicka till kunder, avbryt).
+// ---------------------------------------------------------------------------
+
+export const flash: Widen<typeof Es.flash> = {
+  titulo: "Flashtider",
+  todosLosServicios: "Alla tjänster",
+  activas: {
+    titulo: "Aktiva",
+    vacio: "Du har inga aktiva flashtider än.",
+  },
+  reservadas: {
+    titulo: "Bokade",
+    vacio: "Du har inga bokade flashtider än.",
+  },
+  nueva: {
+    cta: "Ny flashtid",
+    titulo: "Ny flashtid",
+    campos: {
+      profesional: "Medarbetare",
+      dia: "Dag",
+      hora: "Starttid",
+      modo: "Hur vill du ange tiden?",
+      modoDuracion: "Fri längd",
+      modoServicios: "Specifika tjänster",
+      duracionLabel: "Längd",
+      serviciosLabel: "Tjänster",
+      descuentoLabel: "Rabatt (%)",
+    },
+    ctaGuardar: "Skapa flashtid",
+    errores: {
+      profesionalRequerido: "Välj en medarbetare.",
+      servicioRequerido: "Välj minst en tjänst.",
+      descuentoInvalido: "Ett tal mellan 1 % och 90 %.",
+      forbidden:
+        "Du har inte behörighet att skapa flashtider för den medarbetaren.",
+      not_free: "Den tiden är inte ledig i medarbetarens schema.",
+      overlap:
+        "Det finns redan en annan aktiv flashtid som krockar med den tiden.",
+      invalid_input: "Kontrollera uppgifterna och försök igen.",
+      unknown: "Vi kunde inte skapa flashtiden. Försök igen.",
+    },
+  },
+  tarjeta: {
+    descuento: (p: { porcentaje: number }): string => `−${p.porcentaje}%`,
+    reservada: "Bokad",
+    historiaTitulo: "Bild för story",
+    descargar: "Ladda ner",
+    copiarLink: "Kopiera länk",
+    linkCopiado: "Länk kopierad",
+    errorCopiar: "Vi kunde inte kopiera länken.",
+    enviarAClientes: "Skicka till kunder",
+    enviarErrorNoActiva:
+      "Den här flashtiden är inte längre aktiv, så den går inte att skicka.",
+    cancelar: "Avbryt",
+    cancelarDialogTitulo: "Avbryta den här flashtiden?",
+    cancelarDialogCuerpo:
+      "Tiden blir tillgänglig igen utan rabatt. Det går inte att ångra.",
+    cancelarConfirmarSi: "Ja, avbryt",
+    cancelarConfirmarNo: "Nej, behåll",
+    errorCancelar: "Vi kunde inte avbryta flashtiden. Försök igen.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// vOferta: `/v/[token]` (WP-23, F8) — publik sida (utan inloggning) för
+// väntelistans erbjudande ("En tid blev ledig").
+// ---------------------------------------------------------------------------
+
+export const vOferta: Widen<typeof Es.vOferta> = {
+  titulo: "En tid blev ledig",
+  campos: {
+    servicio: "Tjänst",
+    dia: "Dag",
+    hora: "Tid",
+    profesional: "Medarbetare",
+  },
+  expira: (p: { minutos: number; segundos: number }): string =>
+    `Du har ${p.minutos}:${p.segundos.toString().padStart(2, "0")} min på dig att bekräfta`,
+  ctaTomar: "Ta den här tiden",
+  tomando: "Bekräftar…",
+  confirmada: "Klart! Din tid är bokad.",
+  confirmadaAviso: "Bekräftelsen med alla detaljer kommer strax.",
+  yaTomada: "Den tiden togs av någon annan.",
+  yaTomadaAviso:
+    "Du står kvar på väntelistan: vi hör av oss om en ny tid blir ledig.",
+  vencida: "Tiden för att bekräfta den här tiden har gått ut.",
+  yaReservada: "Du har redan bokat den här tiden.",
+  linkInvalido: "Den här länken är inte giltig.",
+  error: "Vi kunde inte bekräfta din tid. Försök igen.",
+};
+
 // ---------------------------------------------------------------------------
 // Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
 // typfel här (körs av `npm run typecheck`).
@@ -2716,5 +2843,8 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   invitacion,
   redesSociales,
   baja,
+  flashStory,
+  flash,
+  vOferta,
 };
 void _check;

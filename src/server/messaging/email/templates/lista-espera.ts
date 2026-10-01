@@ -3,7 +3,12 @@ import "server-only";
 import { brand, type Market } from "@/config/brand";
 
 import { emailNs, gestionCampos } from "../content";
-import { composeSimpleEmail } from "../layout";
+import {
+  composeSimpleEmail,
+  footerHtml,
+  renderLayout,
+  textToHtmlParagraphs,
+} from "../layout";
 import type { RenderedEmail } from "../types";
 
 export type ListaEsperaCupoData = {
@@ -45,4 +50,35 @@ export function listaEsperaCupoEmail(
       comun.porQueRecibes,
     ],
   });
+}
+
+export type ListaEsperaTomadaData = {
+  readonly cliente: string;
+  readonly negocio: string;
+  readonly fecha: string;
+};
+
+/** Al cliente en lista de espera, cuando la hora que se le ofreció (por
+ * `listaEsperaCupoEmail`/`lista_espera_oferta`) ya fue tomada por otra
+ * persona. Solo texto (sin botón: no hay nada que hacer en línea, sigue
+ * esperando) — mismo patrón que `cancelacionRechazadaEmail`. */
+export function listaEsperaTomadaEmail(
+  market: Market,
+  data: ListaEsperaTomadaData,
+): RenderedEmail {
+  const ns = emailNs(market).listaEsperaTomada;
+  const comun = emailNs(market).comun;
+  const asunto = ns.asunto({ negocio: data.negocio });
+  const preheader = ns.preheader({ fecha: data.fecha });
+  const cuerpo = ns.cuerpo(data);
+  const pie = comun.piePagina({ marca: brand.name, negocio: data.negocio });
+  const { html, text } = renderLayout({
+    market,
+    preheader,
+    bodyHtml: textToHtmlParagraphs(cuerpo),
+    bodyText: cuerpo,
+    footerHtml: footerHtml([pie]),
+    footerText: pie,
+  });
+  return { subject: asunto, preheader, html, text };
 }

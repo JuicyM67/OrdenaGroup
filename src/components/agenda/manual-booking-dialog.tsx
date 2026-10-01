@@ -30,7 +30,7 @@ import {
 import { ConsentCheckbox } from "../booking/consent-checkbox";
 import { zodIssueToFieldError } from "../booking/errors";
 import { agendaServerError, manualFieldError } from "./errors";
-import type { AgendaStaff } from "./types";
+import type { AgendaStaff, StaffId } from "./types";
 
 export type ManualBookingCatalogService = {
   readonly id: string;
@@ -63,6 +63,10 @@ export type ManualBookingDialogProps = {
    * samma kund i stället för att skapa en ny. `undefined`/tomma fält = som
    * förut (tomt formulär). */
   initialCustomer?: { name: string; phone: string; email: string };
+  /** WP-30: klick på ett tomt fält i rutnätet (`agenda-screen.tsx`s
+   * tomrutsmeny) förifyller tid/profesional. `undefined` = tomt som förut. */
+  defaultTime?: LocalTime;
+  defaultStaffId?: StaffId;
   onSubmit: (
     input: ManualBookingSubmit,
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
@@ -87,6 +91,8 @@ export function ManualBookingDialog({
   staff,
   businessName,
   defaultDate,
+  defaultTime,
+  defaultStaffId,
   initialCustomer,
   onSubmit,
 }: ManualBookingDialogProps) {
@@ -98,9 +104,9 @@ export function ManualBookingDialog({
     onOpenChange(false),
   );
   const [serviceId, setServiceId] = useState("");
-  const [staffId, setStaffId] = useState(ANY_STAFF);
+  const [staffId, setStaffId] = useState(defaultStaffId ?? ANY_STAFF);
   const [date, setDate] = useState<string>(defaultDate);
-  const [time, setTime] = useState("");
+  const [time, setTime] = useState(defaultTime ?? "");
   const [name, setName] = useState(initialCustomer?.name ?? "");
   const [phone, setPhone] = useState(
     initialCustomer?.phone && isE164(initialCustomer.phone)
@@ -116,9 +122,9 @@ export function ManualBookingDialog({
 
   function reset() {
     setServiceId("");
-    setStaffId(ANY_STAFF);
+    setStaffId(defaultStaffId ?? ANY_STAFF);
     setDate(defaultDate);
-    setTime("");
+    setTime(defaultTime ?? "");
     setName(initialCustomer?.name ?? "");
     setPhone(
       initialCustomer?.phone && isE164(initialCustomer.phone)

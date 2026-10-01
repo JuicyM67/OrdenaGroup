@@ -15,16 +15,23 @@ import { z } from "zod";
 
 import { logout } from "@/app/auth/actions";
 import { AgendaScreen } from "@/components/agenda/agenda-screen";
+import type {
+  CreateFlashSlotInput,
+  FlashCatalogService,
+  FlashStaff,
+} from "@/components/flash/types";
 import { parseLocalDate, APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pgErrorCode } from "@/server/db/errors";
 import { kickOutbox } from "@/server/messaging/outbox";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import { loadAjustesServices, loadAjustesStaff } from "@/server/owner/ajustes";
 import {
   loadOwnerAgendaMonthCounts,
   loadOwnerAgendaWeek,
 } from "@/server/owner/agenda";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
+import { createFlashSlotFromDialog } from "@/server/owner/flash-slots";
 import {
   createManualBooking,
   loadOwnerBookableCatalog,
@@ -41,6 +48,7 @@ import {
 import { getCustomerContact } from "@/server/owner/clientes";
 import { MANUAL_METHODS } from "@/server/payments/mark-paid";
 import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
+import { removeWaitlistEntry } from "@/server/waitlist";
 
 import { markPaidAction, undoPaymentAction } from "../caja/actions";
 
@@ -81,15 +89,50 @@ export default async function AppAgendaPage({
   // `?cliente=<id>` — öppnar "Nueva reserva" direkt, förifylld.
   const parsedCliente = cliente ? customerIdSchema.safeParse(cliente) : null;
 
-  const [data, catalog, pendingRequests, initialManualCustomer] =
-    await Promise.all([
-      loadOwnerAgendaWeek(user.id, business.id, focus, now),
-      loadOwnerBookableCatalog(user.id, business.id),
-      listPendingRequests(user.id, business.id, now),
-      parsedCliente?.success
-        ? getCustomerContact(user.id, business.id, parsedCliente.data)
-        : Promise.resolve(null),
-    ]);
+  const [
+    data,
+    catalog,
+    pendingRequests,
+    initialManualCustomer,
+    staffRows,
+    serviceRows,
+  ] = await Promise.all([
+    loadOwnerAgendaWeek(user.id, business.id, focus, now),
+    loadOwnerBookableCatalog(user.id, business.id),
+    listPendingRequests(user.id, business.id, now),
+    parsedCliente?.success
+      ? getCustomerContact(user.id, business.id, parsedCliente.data)
+      : Promise.resolve(null),
+    // WP-30: tomrutsmenyns "Hora flash" (FlashSlotDialog) behöver tjänsternas
+    // längd (`durationMin`), som `loadOwnerBookableCatalog`s katalog inte har.
+    loadAjustesStaff(user.id, business.id),
+    loadAjustesServices(user.id, business.id),
+  ]);
+
+  const flashStaff: FlashStaff[] = staffRows
+    .filter((s) => s.active)
+    .map((s) => ({ id: s.id, name: s.name }));
+  const flashServices: FlashCatalogService[] = serviceRows
+    .filter((s) => s.active)
+    .map((s) => ({
+      id: s.id,
+      name: s.name,
+      durationMin: s.durationMin,
+      staffIds: staffRows
+        .filter((st) => st.serviceIds.includes(s.id))
+        .map((st) => st.id),
+    }));
+
+  const onCreateFlashSlot = async (input: CreateFlashSlotInput) => {
+    "use server";
+    try {
+      return await createFlashSlotFromDialog(user.id, business.id, input);
+    } catch {
+      // Ogiltigt datum/tid (t.ex. en trasig klient) — `fromLocal`/
+      // `toISOString()` kan kasta innan motorns egen zod-validering nås.
+      return { ok: false as const, code: "invalid_input" as const };
+    }
+  };
 
   const onArrival = async (bookingId: string, status: ArrivalStatus) => {
     "use server";
@@ -211,6 +254,13 @@ export default async function AppAgendaPage({
     return { ok: result.ok };
   };
 
+  // WP-23: väntelistkortets "Ta bort".
+  const onRemoveWaitlistEntry = async (entryId: string) => {
+    "use server";
+    const result = await removeWaitlistEntry(user.id, business.id, entryId);
+    return { ok: result.ok };
+  };
+
   return (
     <AgendaScreen
       data={data}
@@ -226,6 +276,10 @@ export default async function AppAgendaPage({
       onMoveBooking={onMoveBooking}
       onExportCustomer={onExportCustomer}
       onAnonymizeCustomer={onAnonymizeCustomer}
+      onRemoveWaitlistEntry={onRemoveWaitlistEntry}
+      flashStaff={flashStaff}
+      flashServices={flashServices}
+      onCreateFlashSlot={onCreateFlashSlot}
       onLogout={logout}
       onLoadMonthCounts={onLoadMonthCounts}
       pendingRequests={pendingRequests}

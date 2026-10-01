@@ -27,16 +27,21 @@ import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import type { Queryable } from "@/server/db/pool";
 import { loadMember } from "@/server/db/permissions";
 import { withOwnerTx } from "@/server/db/tx";
+import { listFlashSlots } from "@/server/flash";
+import { listWaitlist } from "@/server/waitlist";
 
 import { memberView, type MemberView } from "./member";
 import { isoOf, listPaidBookingIds, staffColorOf } from "./shared";
 
 /**
- * Agendans data för en vecka (WP-21). Laddar företagets personal, öppettider,
- * bokningar och block för veckan som innehåller `focus`, och mappar dem till
- * samma `AgendaData`-modell som `/design-lab/agenda` (fixtures.ts). Ingen
- * "Mover" här (utanför scope) och ingen väntelista (F8/WP-23): `waitlist` är
- * alltid `null`.
+ * Agendans data för en vecka (WP-21, väntelista/horas flash WP-23/WP-30).
+ * Laddar företagets personal, öppettider, bokningar och block för veckan
+ * som innehåller `focus`, och mappar dem till samma `AgendaData`-modell som
+ * `/design-lab/agenda` (fixtures.ts). Ingen "Mover" här (utanför scope).
+ * `waitlist`/`flashSlots`: `listWaitlist`/`listFlashSlots`
+ * (scheduling-engineer) öppnar var sin egen transaktion — läses därför
+ * utanför `withOwnerTx`-blocket nedan, inte via `loadOwnerAgendaWeekIn`
+ * (samma motiv som `loadOwnerInicio`/`loadOwnerHoy`).
  */
 export async function loadOwnerAgendaWeek(
   userId: string,
@@ -44,13 +49,44 @@ export async function loadOwnerAgendaWeek(
   focus: LocalDate,
   now: Date,
 ): Promise<AgendaData & { member: MemberView }> {
-  return withOwnerTx(userId, async (q) => {
-    // WP-46: hela kalendern för alla medlemmar (RLS "read calendar"); UI:t
-    // använder `member` för "Mis reservas" och för att dölja knappar.
-    const member = await loadMember(q, userId, businessId);
-    const data = await loadOwnerAgendaWeekIn(q, businessId, focus, now);
-    return { ...data, member: memberView(member) };
-  });
+  const today = toLocalDate(now, APP_TZ);
+  const [waitlistItems, flashItems, result] = await Promise.all([
+    listWaitlist(userId, businessId, today, now),
+    listFlashSlots(userId, businessId, now),
+    withOwnerTx(userId, async (q) => {
+      // WP-46: hela kalendern för alla medlemmar (RLS "read calendar"); UI:t
+      // använder `member` för "Mis reservas" och för att dölja knappar.
+      const member = await loadMember(q, userId, businessId);
+      const data = await loadOwnerAgendaWeekIn(q, businessId, focus, now);
+      return { data, member };
+    }),
+  ]);
+  const { data, member } = result;
+  return {
+    ...data,
+    waitlist: {
+      count: waitlistItems.length,
+      day: today,
+      entries: waitlistItems
+        .filter((w) => w.day === today)
+        .map((w) => ({
+          id: w.id,
+          customerName: w.customerName,
+          service: w.serviceName,
+          status: w.status,
+        })),
+    },
+    flashSlots: flashItems
+      .filter((f) => f.status === "active")
+      .map((f) => ({
+        id: f.id,
+        staffId: f.staffId,
+        start: f.start,
+        end: f.end,
+        discountPct: f.discountPct,
+      })),
+    member: memberView(member),
+  };
 }
 
 type StaffRow = { id: string; name: string; color: string };
@@ -223,8 +259,10 @@ export async function loadOwnerAgendaWeekIn(
     staff,
     bookings,
     blocks,
-    // F8/väntelista (WP-23): utanför scope, ingen tomläges-uppgift att räkna.
+    // `loadOwnerAgendaWeek` (ovan) patchar in riktiga värden efteråt — se
+    // filkommentaren. Tomma här är bara startläget.
     waitlist: null,
+    flashSlots: [],
     weekCounts,
   };
 }

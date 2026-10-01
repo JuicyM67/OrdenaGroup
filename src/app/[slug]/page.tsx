@@ -13,6 +13,11 @@ import type { BookingActionResult } from "@/components/booking/types";
 import { reserva } from "@/i18n";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { findValidOfferIn, isOfferTokenShape } from "@/server/bookings/offer";
+import {
+  flashSelection,
+  isFlashIdShape,
+  loadActiveFlashSlotsIn,
+} from "@/server/flash/public";
 import { loadReservaPageData } from "@/server/bookings/page-data";
 import { withServiceTx } from "@/server/db/tx";
 import { systemClock } from "@/server/scheduling/clock";
@@ -57,13 +62,17 @@ export default async function ReservaPage({
   // WP-31 (F14): erbjudandelänken `?o=<token>`. Valideras här bara för att
   // visa raden; `createIn` validerar igen i bokningens transaktion (rätt
   // kund, ej inlöst). Ogiltig token = sidan som vanligt, inget fel.
-  const rawOffer = (await searchParams).o;
+  const sp = await searchParams;
+  const rawOffer = sp.o;
   const offerToken =
     typeof rawOffer === "string" && isOfferTokenShape(rawOffer)
       ? rawOffer
       : undefined;
+  // WP-30: `?flash=<id>` förväljer flash-tiden (tjänst, profesional, tid).
+  // Okänd/avbruten/bokad tid = sidan som vanligt.
+  const flashId = isFlashIdShape(sp.flash) ? sp.flash : undefined;
   const now = systemClock();
-  const [data, offer] = await withServiceTx(async (q) => {
+  const [data, offer, flash] = await withServiceTx(async (q) => {
     const d = await loadReservaPageData(q, {
       businessId: business.id,
       slug,
@@ -76,13 +85,19 @@ export default async function ReservaPage({
           now,
         })
       : undefined;
-    return [d, o] as const;
+    const f = flashId
+      ? (await loadActiveFlashSlotsIn(q, business.id, now)).find(
+          (x) => x.id === flashId,
+        )
+      : undefined;
+    return [d, o, f] as const;
   });
   // Bara en skyddsnät mot en race (företaget togs bort mellan de två
   // frågorna ovan) — `resolveBusinessBySlug` hittade det just innan.
   if (!data) notFound();
 
   const boundOfferToken = offer ? offerToken : undefined;
+  const initialSelection = flash ? flashSelection(data, flash) : undefined;
   const offerNotice = offer ? (
     <p
       role="note"
@@ -146,6 +161,7 @@ export default async function ReservaPage({
       social={social}
       offerNotice={offerNotice}
       data={data}
+      initialSelection={initialSelection}
       submitBooking={submitBooking}
       joinWaitlist={submitWaitlist}
     />

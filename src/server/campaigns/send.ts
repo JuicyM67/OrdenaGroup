@@ -33,8 +33,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Pilotblockerare: högst 2 kampanjer/timme/företag, högst 2000 mottagare
  * per utskick (planens uttryckliga gränser). */
-const RATE_LIMIT_WINDOW_SECONDS = 3600;
-const RATE_LIMIT_MAX_PER_HOUR = 2;
+/** Delade med `flash.ts` (`sendFlashCampaign` återanvänder samma
+ * timmesspärr per företag). */
+export const RATE_LIMIT_WINDOW_SECONDS = 3600;
+export const RATE_LIMIT_MAX_PER_HOUR = 2;
 /** Delad med `winback.ts` (samma gräns, ett dagligt cron-utskick). */
 export const MAX_RECIPIENTS = 2000;
 
@@ -60,9 +62,11 @@ export type SendCampaignResult =
   | { ok: true; campaignId: string; queued: number }
   | { ok: false; code: SendCampaignError };
 
-type PermissionRow = { allowed: boolean; negocio: string; slug: string };
+export type PermissionRow = { allowed: boolean; negocio: string; slug: string };
 
-async function loadPermissionAndBusiness(
+/** Delad med `flash.ts` (`sendFlashCampaign` behöver samma behörighetskoll
+ * + företagets namn/slug). */
+export async function loadPermissionAndBusiness(
   userId: string,
   businessId: string,
 ): Promise<PermissionRow | undefined> {
@@ -138,7 +142,9 @@ export async function previewCampaign(
   };
 }
 
-function createOfferToken(): { token: string; hash: Buffer } {
+/** Delad med `flash.ts` (token bara för avregistreringslänken där, se den
+ * filens kommentar — ingen erbjudande-inlösen för horas flash). */
+export function createOfferToken(): { token: string; hash: Buffer } {
   const token = randomBytes(32).toString("base64url");
   return { token, hash: hashOfferToken(token) };
 }

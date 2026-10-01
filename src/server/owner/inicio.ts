@@ -6,6 +6,7 @@ import type {
   InicioData,
   TodayBooking,
 } from "@/components/dashboard/types";
+import { flash } from "@/i18n";
 import {
   addLocalDays,
   isoWeekdayOf,
@@ -19,6 +20,8 @@ import { countInactiveCustomersIn } from "@/server/campaigns/audience";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
+import { listFlashSlots } from "@/server/flash";
+import { listWaitlist } from "@/server/waitlist";
 
 import { memberView, type MemberView } from "./member";
 import { listPendingRequestsIn } from "./requests";
@@ -182,10 +185,10 @@ async function loadMarkedDates(
  * mot föregående 30), calendar.markedDates (dagar med bokningar i den
  * visade månaden) och features.winback.count (antal inaktiva kunder med
  * samtycke, `businesses.winback_days` eller 60 om avstängd — se
- * `countInactiveCustomersIn`) är riktig data. Resten (recoveredHours,
- * väntelista, hora flash) kräver funktioner utanför WP-21/WP-47 (väntelista
- * F8, hora flash fas 2) och visas i sina befintliga tomlägen (nollor/tom
- * lista/`activeFlash: null`), aldrig med påhittad text.
+ * `countInactiveCustomersIn`) är riktig data. WP-23/WP-30:
+ * `features.waitlist`/`features.flash`/`activeFlash` är nu också riktig
+ * data (`src/server/owner/waitlist.ts`/`flash.ts`). `week.recoveredHours`
+ * (F16, WP-33) är fortfarande utanför scope — alltid 0, aldrig påhittad text.
  */
 export async function loadOwnerInicio(
   userId: string,
@@ -194,6 +197,20 @@ export async function loadOwnerInicio(
   now: Date,
   owner: { name: string; firstName: string },
 ): Promise<InicioData & { member: MemberView }> {
+  // WP-23/WP-30: `listWaitlist`/`listFlashSlots` (scheduling-engineer,
+  // `src/server/waitlist`/`src/server/flash`) öppnar var sin egen
+  // `withOwnerTx` — körs därför INTE inne i blocket nedan (en nästlad
+  // transaktion i samma anrop vore onödig komplexitet för en ren läsning).
+  const [waitlistItems, flashItems] = await Promise.all([
+    listWaitlist(userId, businessId, today, now),
+    listFlashSlots(userId, businessId, now),
+  ]);
+  const activeFlashSlots = flashItems.filter((f) => f.status === "active");
+  const bookedFlashSlots = flashItems.filter((f) => f.status === "booked");
+  // Flash-tiderna är redan sorterade på starts_at (listFlashSlots) — den
+  // första aktiva är den som visas i Inicios FlashCard.
+  const soonest = activeFlashSlots[0];
+
   return withOwnerTx(userId, async (q) => {
     const member = await loadMember(q, userId, businessId);
     const data = await loadOwnerInicioIn(
@@ -204,8 +221,46 @@ export async function loadOwnerInicio(
       owner,
       member,
     );
-    return { ...data, member: memberView(member) };
+    const activeFlashCard = soonest
+      ? {
+          start: soonest.start,
+          discountPct: soonest.discountPct,
+          service: await flashServiceLabel(q, businessId, soonest.serviceIds),
+          staff: soonest.staffName,
+        }
+      : null;
+    return {
+      ...data,
+      features: {
+        ...data.features,
+        waitlist: { ...data.features.waitlist, count: waitlistItems.length },
+        flash: {
+          active: activeFlashSlots.length,
+          booked: bookedFlashSlots.length,
+          progress: data.features.flash.progress,
+        },
+      },
+      activeFlash: activeFlashCard,
+      member: memberView(member),
+    };
   });
+}
+
+/** "Corte de pelo" (en tjänst) eller `flash.todosLosServicios` (`null` =
+ * alla) — FlashCard visar bara EN rad, ingen uppräkning av flera tjänster. */
+async function flashServiceLabel(
+  q: Queryable,
+  businessId: string,
+  serviceIds: readonly string[] | null,
+): Promise<string> {
+  if (serviceIds === null || serviceIds.length === 0) {
+    return flash.todosLosServicios;
+  }
+  const res = await q.query<{ name: string }>(
+    `select name from public.services where business_id = $1 and id = $2`,
+    [businessId, serviceIds[0]],
+  );
+  return res.rows[0]?.name ?? "";
 }
 
 /** Inre steg (för tester): kör i anroparens transaktion. `member`
@@ -331,6 +386,11 @@ export async function loadOwnerInicioIn(
     owner,
     notifications: { items: pendingRequests },
     week: { recoveredHours: 0, recoveredClp: 0 },
+    // WP-23/WP-30: `loadOwnerInicio` (ovan) fyller i riktiga tal för
+    // waitlist/flash efteråt — `listWaitlist`/`listFlashSlots`
+    // (scheduling-engineer) öppnar var sin egen transaktion och kan därför
+    // inte anropas härifrån (`loadOwnerInicioIn` körs i anroparens, se
+    // filkommentaren). Nollor här är bara startläget innan den patchningen.
     features: {
       waitlist: { count: 0, day: today, progress: 0 },
       flash: { active: 0, booked: 0, progress: 0 },

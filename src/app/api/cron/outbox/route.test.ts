@@ -22,6 +22,9 @@ vi.mock("@/server/messaging/outbox", () => ({
   processOutbox: (...args: unknown[]) =>
     (processOutboxMock as (...a: unknown[]) => unknown)(...args),
 }));
+vi.mock("@/server/waitlist", () => ({
+  expireWaitlistOffers: async () => ({ expired: 0, offered: 0 }),
+}));
 vi.mock("@/server/bookings/confirm", () => ({
   expireRequests: (...args: unknown[]) =>
     (expireRequestsMock as (...a: unknown[]) => unknown)(...args),
@@ -89,6 +92,7 @@ describe("POST /api/cron/outbox", () => {
       queued: 0,
       dead: 0,
       expired: 0,
+      waitlistExpired: 0,
     });
   });
 });

@@ -16,6 +16,7 @@ import {
   updateMemberSettings,
   updateService,
   updateStaff,
+  updateWaitlistSettings,
   updateWinbackSettings,
   type AjustesData,
   type CreateResult,
@@ -133,6 +134,14 @@ export async function updateWinbackSettingsAction(
   const owner = await currentOwner();
   if ("ok" in owner) return owner;
   return updateWinbackSettings(owner.userId, owner.businessId, input);
+}
+
+export async function updateWaitlistSettingsAction(
+  input: unknown,
+): Promise<MutationResult> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return owner;
+  return updateWaitlistSettings(owner.userId, owner.businessId, input);
 }
 
 // WP-45 (D-033): klockan i Ajustes topprad.

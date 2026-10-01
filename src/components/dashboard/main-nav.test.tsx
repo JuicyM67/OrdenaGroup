@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { MainNav } from "./main-nav";
 
 describe("MainNav", () => {
-  it("bara Inicio har aria-current=page; 6 enlaces (logo + 5 rutas) con nombre accesible", () => {
+  it("bara Inicio har aria-current=page; 7 enlaces (logo + 6 rutas) con nombre accesible", () => {
     render(<MainNav active="inicio" />);
 
-    // WP-24: Clientes/Caja vuelven a mostrarse (Horas flash sigue oculta, fase 2) — logo
-    // (/app/inicio), Inicio, Agenda, Clientes, Caja, Ajustes.
+    // WP-23/WP-30: Horas flash vuelve a mostrarse — logo (/app/inicio), Inicio,
+    // Agenda, Clientes, Horas flash, Caja, Ajustes.
     const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(6);
+    expect(links).toHaveLength(7);
     for (const link of links) {
       expect(link).toHaveAccessibleName();
     }

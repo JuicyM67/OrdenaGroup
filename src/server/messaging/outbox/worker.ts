@@ -414,6 +414,178 @@ async function loadCampaignContext(
 }
 
 // ---------------------------------------------------------------------------
+// WP-23: `listaEsperaCupo`/`listaEsperaTomada` — en väntelisterad, ingen
+// bokning (`booking_id` null). `payload.entryId` slår upp kunden/entryn
+// (D-029, samma mönster som `loadCampaignContext`); `listaEsperaCupo` har
+// också `payload.token` (klartext, för `/v/[token]`).
+//
+// `listaEsperaCupo` läser den erbjudna tiden med `getWaitlistOffer` (`@/
+// server/waitlist`, scheduling-engineer) — entryn har bara `day date`, den
+// specifika lediga tiden räknas om på servern varje gång (samma som "Ta
+// tiden" gör), inte en frusen kolumn. `getWaitlistOffer` returnerar bara
+// `ok: false` om erbjudandet inte längre gäller (taget/utgånget/bokat/
+// ogiltigt) — raden avbryts då tyst, precis som `REQUEST_ONLY_TEMPLATES` för
+// bokningar.
+// ---------------------------------------------------------------------------
+
+type WaitlistCustomerContext = {
+  /** "YYYY-MM-DD" — dagen kunden väntar på. */
+  day: string;
+  sendable: boolean;
+  cliente: string;
+  email: string | null;
+  phone: string | null;
+  negocio: string;
+};
+
+async function loadWaitlistCustomerContext(
+  businessId: string,
+  entryId: string,
+): Promise<WaitlistCustomerContext | undefined> {
+  return withServiceTx(async (q) => {
+    const r = await q.query<{
+      day: string;
+      sendable: boolean;
+      cliente: string;
+      email: string | null;
+      phone_e164: string | null;
+      negocio: string;
+    }>(
+      `select we.day::text as day,
+              (c.anonymized_at is null) as sendable,
+              c.name as cliente, c.email, c.phone_e164,
+              b.name as negocio
+         from public.waitlist_entries we
+         join public.customers c on c.business_id = we.business_id and c.id = we.customer_id
+         join public.businesses b on b.id = we.business_id
+        where we.business_id = $1 and we.id = $2`,
+      [businessId, entryId],
+    );
+    const row = r.rows[0];
+    return row
+      ? {
+          day: row.day,
+          sendable: row.sendable,
+          cliente: row.cliente,
+          email: row.email,
+          phone: row.phone_e164,
+          negocio: row.negocio,
+        }
+      : undefined;
+  });
+}
+
+async function processWaitlistCupoRow(
+  row: ClaimedRow,
+  ctx: WaitlistCustomerContext,
+): Promise<"sent" | "cancelled"> {
+  const token = typeof row.payload.token === "string" ? row.payload.token : "";
+  if (!token) throw new OutboxSendError("invalid_payload");
+  const { getWaitlistOffer } = await import("@/server/waitlist");
+  const result = await getWaitlistOffer(token, new Date());
+  if (!result.ok) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const offer = result.offer;
+  const start = new Date(offer.start);
+  const fecha = formatDate(
+    start,
+    APP_TZ,
+    "weekdayDayMonthLongLower",
+    APP_LOCALE,
+  );
+  const hora = formatTime(start, APP_TZ);
+  const minutos = Math.max(
+    1,
+    Math.ceil((new Date(offer.expiresAt).getTime() - Date.now()) / 60_000),
+  );
+  const link = waitlistOfferLink(token);
+  if (row.channel === "email") {
+    const r = await sendEmail({
+      to: ctx.email as string,
+      template: "listaEsperaCupo",
+      data: {
+        negocio: offer.businessName,
+        servicio: offer.serviceName,
+        fecha,
+        hora,
+        minutos,
+        confirmarUrl: link,
+      },
+      idempotencyKey: row.dedupeKey,
+    });
+    await finalizeSent(row, r.id);
+    return "sent";
+  }
+  const r = await sendSms({
+    to: ctx.phone as string,
+    template: "listaEsperaCupo",
+    data: {
+      negocio: offer.businessName,
+      servicio: offer.serviceName,
+      fecha,
+      hora,
+      link,
+      minutos,
+    },
+    idempotencyKey: row.dedupeKey,
+  });
+  await finalizeSent(row, r.id);
+  return "sent";
+}
+
+/** `listaEsperaTomada`: ren avisering, ingen token/länk — meningsfull
+ * oavsett entryns nuvarande status (kunden kan ha fått flera erbjudanden
+ * sen dess). */
+async function processWaitlistTomadaRow(
+  row: ClaimedRow,
+  ctx: WaitlistCustomerContext,
+): Promise<"sent" | "cancelled"> {
+  const dia = formatLocalDate(
+    ctx.day as LocalDate,
+    "weekdayDayMonthLongLower",
+    APP_LOCALE,
+  );
+  if (row.channel === "email") {
+    const r = await sendEmail({
+      to: ctx.email as string,
+      template: "listaEsperaTomada",
+      data: { cliente: ctx.cliente, negocio: ctx.negocio, fecha: dia },
+      idempotencyKey: row.dedupeKey,
+    });
+    await finalizeSent(row, r.id);
+    return "sent";
+  }
+  const r = await sendSms({
+    to: ctx.phone as string,
+    template: "listaEsperaTomada",
+    data: { negocio: ctx.negocio, fecha: dia },
+    idempotencyKey: row.dedupeKey,
+  });
+  await finalizeSent(row, r.id);
+  return "sent";
+}
+
+async function processWaitlistRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const entryId =
+    typeof row.payload.entryId === "string" ? row.payload.entryId : "";
+  if (!entryId) throw new OutboxSendError("invalid_payload");
+  const ctx = await loadWaitlistCustomerContext(row.businessId, entryId);
+  if (!ctx) throw new OutboxSendError("no_customer");
+  const channelOk = row.channel === "email" ? !!ctx.email : !!ctx.phone;
+  if (!ctx.sendable || !channelOk) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  return row.template === "listaEsperaCupo"
+    ? processWaitlistCupoRow(row, ctx)
+    : processWaitlistTomadaRow(row, ctx);
+}
+
+// ---------------------------------------------------------------------------
 // Länkar och mallars data
 // ---------------------------------------------------------------------------
 
@@ -457,6 +629,20 @@ function offerLink(slug: string, token: string): string {
  * alltid med i en kampanj). */
 function bajaLink(token: string): string {
   return `${appUrl()}/baja/${token}`;
+}
+
+/** WP-23: `${APP_URL}/v/<token>` — väntelistans erbjudandelänk ("Ta
+ * tiden", `claimWaitlistOffer`). */
+function waitlistOfferLink(token: string): string {
+  return `${appUrl()}/v/${token}`;
+}
+
+/** WP-30: `${APP_URL}/{slug}?flash=<id>` — horas flash-länken i en
+ * kampanj (`sendFlashCampaign`), i stället för `offerLink`s `?o=<token>`:
+ * rabatten ligger på själva tiden (`flash_slots.discount_pct`), inte på en
+ * erbjudande-token. */
+function flashLink(slug: string, flashSlotId: string): string {
+  return `${appUrl()}/${slug}?flash=${flashSlotId}`;
 }
 
 /** WP-56: företagets telefon för "kontakta oss", formaterad. */
@@ -1152,6 +1338,25 @@ async function processFreeMessageRow(
  * `max 2000 mottagare`). `payload.token` (klartext) används både för
  * erbjudandelänken och avregistreringslänken (samma `campaign_recipients`-
  * token, se `src/server/campaigns/send.ts`). */
+/** WP-30: `payload.flashSlotId` (opcional) — presente solo en los envíos de
+ * `sendFlashCampaign`. Revalida a la hora de ENVIAR (D-029, igual que el
+ * resto del contexto): la flash pudo ser reservada o cancelada entre el
+ * encolado y el envío, y entonces el link ya no apunta a nada vigente. */
+async function isFlashSlotActive(
+  businessId: string,
+  flashSlotId: string,
+): Promise<boolean> {
+  return withServiceTx(async (q) => {
+    const r = await q.query<{ active: boolean }>(
+      `select (status = 'active') as active
+         from public.flash_slots
+        where business_id = $1 and id = $2`,
+      [businessId, flashSlotId],
+    );
+    return r.rows[0]?.active ?? false;
+  });
+}
+
 async function processCampaignRow(
   row: ClaimedRow,
 ): Promise<"sent" | "cancelled"> {
@@ -1160,6 +1365,10 @@ async function processCampaignRow(
       ? row.payload.campaignRecipientId
       : "";
   const token = typeof row.payload.token === "string" ? row.payload.token : "";
+  const flashSlotId =
+    typeof row.payload.flashSlotId === "string"
+      ? row.payload.flashSlotId
+      : undefined;
   if (!campaignRecipientId || !token) {
     throw new OutboxSendError("invalid_payload");
   }
@@ -1170,7 +1379,13 @@ async function processCampaignRow(
     await finalizeCancelled(row);
     return "cancelled";
   }
-  const reservarUrl = offerLink(ctx.slug, token);
+  if (flashSlotId && !(await isFlashSlotActive(row.businessId, flashSlotId))) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const reservarUrl = flashSlotId
+    ? flashLink(ctx.slug, flashSlotId)
+    : offerLink(ctx.slug, token);
   const baja = bajaLink(token);
   const offerValidUntil = ctx.offerValidUntil
     ? formatLocalDate(
@@ -1224,6 +1439,12 @@ async function processRow(
     }
     if (row.template === "campanaMarketing") {
       return await processCampaignRow(row);
+    }
+    if (
+      row.template === "listaEsperaCupo" ||
+      row.template === "listaEsperaTomada"
+    ) {
+      return await processWaitlistRow(row);
     }
     // `await` explícito (no solo `return processInviteeRow(row)`): un
     // `return <promise>` dentro de un `try` NO deja que el `catch` de abajo

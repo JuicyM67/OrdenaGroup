@@ -58,6 +58,7 @@ export function smsFixtures(market: Market): {
       link,
       minutos: 15,
     },
+    listaEsperaTomada: { negocio: b.negocio, fecha: b.fecha },
     horaFlash: { negocio: b.negocio, hora: b.hora, pct: 20, link },
     nuevaReservaDueno: {
       cliente: b.cliente,

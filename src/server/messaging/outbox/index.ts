@@ -8,6 +8,10 @@ import "server-only";
  * INTEGRATIONS.md §5 och docs/decisions/DECISIONS.md (D-029/D-030).
  */
 export { enqueueBookingEvent, enqueueBookingEventIn } from "./enqueue";
+export {
+  enqueueWaitlistEvent,
+  enqueueWaitlistEventIn,
+} from "./enqueue-waitlist";
 export { kickOutbox } from "./kick";
 export { enqueueMemberWelcome } from "./member-welcome";
 export type {
@@ -17,4 +21,9 @@ export type {
 } from "./member-welcome";
 export { nextRetry, processOutbox } from "./worker";
 export type { ProcessOutboxResult, RetryDecision } from "./worker";
-export type { BookingEvent, OutboxChannel, OutboxRecipientKind } from "./types";
+export type {
+  BookingEvent,
+  OutboxChannel,
+  OutboxRecipientKind,
+  WaitlistEvent,
+} from "./types";

@@ -29,7 +29,7 @@ import type { Actor, StaffChoice } from "@/server/scheduling/types";
 import { actorMember, canManageStaffBookings } from "./authz";
 import { findOrCreateCustomer } from "./customers";
 import { emitBookingEvent } from "./events";
-import { memberDiscountIn } from "./member";
+import { memberDiscountIn, memberDiscountMinor } from "./member";
 import { offerDiscountIn, redeemOfferIn } from "./offer";
 import { createManageToken } from "./token";
 import type { BookingError, CreatedBooking } from "./types";
@@ -61,8 +61,9 @@ function sourceFor(
  *
  * WP-45 (D-033): kundens bokning från bokningssidan (`source = 'web'`) blir
  * `requested` om inte företaget har `auto_confirm_bookings`; ägarens
- * (manuella) och väntelistans bokningar är alltid `confirmed`. En förfrågan
- * blockerar tiden precis som en bekräftad (`no_overlap`).
+ * (manuella) bokningar är alltid `confirmed`. WP-23: väntelistans bokning
+ * (`source = 'waitlist'`, kunden tar erbjudandet) följer samma regel som
+ * webben. En förfrågan blockerar tiden precis som en bekräftad (`no_overlap`).
  * `deposit_clp = 0` (WP-25/30).
  *
  * WP-54: `discount_clp` = medlemsrabatten (`./member.ts`) om kunden
@@ -77,6 +78,13 @@ function sourceFor(
  * Vinner erbjudandet sätts `campaign_recipient_id` och mottagarraden
  * markeras inlöst i samma transaktion. Ogiltig/förbrukad token → bokningen
  * skapas ändå, utan erbjudanderabatt (aldrig ett fel för kunden).
+ *
+ * WP-30 (F13): matchar bokningen en aktiv flash-tid (samma profesional,
+ * start i [starts_at, ends_at), tjänsten tillåten) låses raden, flash-
+ * profesionalen provas först ("Cualquiera"), och flash-tiden blir `booked`
+ * (`booking_id`) i samma transaktion; `bookings.flash_slot_id` sätts.
+ * Rabatten = största av medlem/flash/erbjudande (lika: medlem, flash,
+ * erbjudande — token förbrukas bara när erbjudandet ensamt är störst).
  */
 export async function createBooking(
   request: CreateBookingRequest,
@@ -131,6 +139,8 @@ export type CreateInput = {
   answers?: Record<string, unknown> | undefined;
   /** WP-31: erbjudandelänkens token (klartext). */
   offerToken?: string | undefined;
+  /** WP-23: väntelisteposten som bokningen kommer från (`claimWaitlistOffer`). */
+  waitlistEntryId?: string | undefined;
 };
 
 type IdempotencyRow = {
@@ -144,6 +154,7 @@ type IdempotencyRow = {
   price_clp: number;
   discount_clp: number;
   campaign_recipient_id: string | null;
+  flash_slot_id: string | null;
 };
 
 /**
@@ -159,7 +170,7 @@ async function findByIdempotencyKey(
 ): Promise<CreatedBooking | undefined> {
   const r = await q.query<IdempotencyRow>(
     `select id, staff_id, service_id, customer_id, price_clp, discount_clp,
-            campaign_recipient_id, status::text as status,
+            campaign_recipient_id, flash_slot_id, status::text as status,
             extract(epoch from lower(period))::float8 * 1000 as s,
             extract(epoch from upper(period))::float8 * 1000 as pe
        from public.bookings
@@ -183,7 +194,9 @@ async function findByIdempotencyKey(
           discountReason:
             x.campaign_recipient_id !== null
               ? ("offer" as const)
-              : ("member" as const),
+              : x.flash_slot_id !== null
+                ? ("flash" as const)
+                : ("member" as const),
         }
       : {}),
     depositClp: 0,
@@ -228,15 +241,18 @@ export async function createIn(
   }
   const { snapshot, priceClp, autoConfirm } = loaded.value;
   const status: CreatedBooking["status"] =
-    input.source === "web" && input.actor.kind === "customer" && !autoConfirm
+    input.source !== "manual" && input.actor.kind === "customer" && !autoConfirm
       ? "requested"
       : "confirmed";
 
   // WP-40: svaren valideras mot serverns frågelista för tjänsten (klientens
   // lista litas aldrig på) — okänd fråga, fråga från ett annat företag eller
   // en annan tjänst avvisas. Skrivs efter insert, i samma transaktion.
+  // WP-23: väntelistans bokning (kunden tar erbjudandet med ett klick)
+  // ställer inga frågor — som ägarens manuella bokning.
   const mustAnswer =
-    input.actor.kind === "customer" || input.answers !== undefined;
+    (input.actor.kind === "customer" && input.source !== "waitlist") ||
+    input.answers !== undefined;
   const questions = mustAnswer
     ? await getQuestionsForServiceIn(q, input.businessId, input.serviceId)
     : [];
@@ -262,13 +278,27 @@ export async function createIn(
   // i RLS (policyn "manage customers insert") — en 42501 därifrån blir
   // `forbidden` via `runAs({ onForbidden })`.
   const member = await actorMember(q, input.actor, input.businessId);
-  const candidates =
+  const allowed =
     member === undefined
       ? check.value
       : check.value.filter((id) => canManageStaffBookings(member, id));
-  if (candidates.length === 0) return err("forbidden");
+  if (allowed.length === 0) return err("forbidden");
 
-  await lockStaffForBooking(q, input.businessId, candidates);
+  await lockStaffForBooking(q, input.businessId, allowed);
+
+  // WP-30: aktiva flash-tider som bokningen träffar (raden låst). Flash-
+  // profesionalen provas först så att "Cualquiera" landar på flash-tiden.
+  const flashes = await matchingFlashSlotsIn(q, {
+    businessId: input.businessId,
+    serviceId: input.serviceId,
+    staffIds: allowed,
+    start,
+  });
+  const flashByStaff = new Map(flashes.map((f) => [f.staffId, f]));
+  const candidates = [
+    ...allowed.filter((id) => flashByStaff.has(id)),
+    ...allowed.filter((id) => !flashByStaff.has(id)),
+  ];
 
   const customerId = await findOrCreateCustomer(
     q,
@@ -293,21 +323,25 @@ export async function createIn(
       })
     : undefined;
   const memberMinor = Math.max(0, memberDiscount?.discountMinor ?? 0);
-  // Största vinner, aldrig summan. Lika → medlem (token förbrukas inte).
-  const useOffer = offer !== undefined && offer.discountMinor > memberMinor;
-  const discountClp = useOffer ? offer.discountMinor : memberMinor;
-  const discountReason: CreatedBooking["discountReason"] = useOffer
-    ? "offer"
-    : memberMinor > 0
-      ? "member"
-      : undefined;
-  const campaignRecipientId = useOffer ? offer.recipientId : null;
+  const offerMinor = offer?.discountMinor ?? 0;
+  // Rabatten beror på profesionalen (flash-tiden gäller bara hens tid).
+  const pricingFor = (staffId: string): Pricing => {
+    const flash = flashByStaff.get(staffId);
+    return choosePricing({
+      memberMinor,
+      offerMinor,
+      flashMinor: flash ? memberDiscountMinor(priceClp, flash.pct) : 0,
+      flashSlotId: flash?.id ?? null,
+      offerRecipientId: offer?.recipientId ?? null,
+    });
+  };
   const { token, hash } = createManageToken();
   const periodEnd = start + snapshot.service.durationMin * MIN;
   const blockedEnd = periodEnd + snapshot.service.bufferAfterMin * MIN;
 
-  let booked: { id: string; staffId: string } | undefined;
+  let booked: { id: string; staffId: string; pricing: Pricing } | undefined;
   for (const staffId of candidates) {
+    const pricing = pricingFor(staffId);
     try {
       const id = await savepoint(q, async () => {
         const r = await q.query<{ id: string }>(
@@ -315,10 +349,10 @@ export async function createIn(
              (business_id, staff_id, service_id, customer_id, period, blocked,
               status, source, price_clp, discount_clp, deposit_clp,
               manage_token_hash, notes, idempotency_key, created_at,
-              campaign_recipient_id)
+              campaign_recipient_id, flash_slot_id, waitlist_entry_id)
            values ($1, $2, $3, $4, $5::tstzrange, $6::tstzrange,
                    $12::public.booking_status, $7::public.booking_source,
-                   $8, $14, 0, $9, $10, $11, $13, $15)
+                   $8, $14, 0, $9, $10, $11, $13, $15, $16, $17)
            returning id`,
           [
             input.businessId,
@@ -335,13 +369,15 @@ export async function createIn(
             status,
             // WP-45: förfrågans 24 h räknas från den injicerade klockan.
             input.now,
-            discountClp,
-            campaignRecipientId,
+            pricing.discountClp,
+            pricing.campaignRecipientId,
+            pricing.flashSlotId,
+            input.waitlistEntryId ?? null,
           ],
         );
         return r.rows[0]!.id;
       });
-      booked = { id, staffId };
+      booked = { id, staffId, pricing };
       break;
     } catch (e) {
       // Nyckelkrock (sällsynt här — den vanliga vägen fångas redan av
@@ -368,6 +404,20 @@ export async function createIn(
     // Samma transaktion som bokningen: ett fel här kastas och rullar tillbaka
     // även bokningen. Ingen svarsrad skrivs för en bokning som aldrig blev
     // av (23P01 ovan) eller för ett omförsök (returnerat före insert).
+    const { discountClp, discountReason, campaignRecipientId, flashSlotId } =
+      booked.pricing;
+    if (flashSlotId !== null) {
+      // Raden är låst sedan `matchingFlashSlotsIn`; villkoret är sista spärren.
+      const r = await q.query(
+        `update public.flash_slots
+            set status = 'booked', booking_id = $3
+          where business_id = $1 and id = $2 and status = 'active'`,
+        [input.businessId, flashSlotId, booked.id],
+      );
+      if ((r.rowCount ?? 0) !== 1) {
+        throw new Error("createIn: flash-tiden redan bokad");
+      }
+    }
     if (campaignRecipientId !== null) {
       // Raden är låst sedan `offerDiscountIn`; villkoret är sista spärren.
       // Hann någon ändå före rullas hela bokningen tillbaka hellre än att
@@ -421,4 +471,84 @@ export async function createIn(
     if (existing) return ok(existing);
   }
   return err("slot_taken");
+}
+
+type Pricing = {
+  discountClp: number;
+  discountReason: CreatedBooking["discountReason"];
+  campaignRecipientId: string | null;
+  flashSlotId: string | null;
+};
+
+/**
+ * Största rabatten vinner, aldrig summan. Lika → medlem, sedan flash, sist
+ * erbjudandet (token förbrukas bara när erbjudandet ensamt är störst).
+ * `flashSlotId` sätts alltid när bokningen träffar en flash-tid (tiden är
+ * förbrukad även om en annan rabatt var större).
+ */
+export function choosePricing(x: {
+  memberMinor: number;
+  offerMinor: number;
+  flashMinor: number;
+  flashSlotId: string | null;
+  offerRecipientId: string | null;
+}): Pricing {
+  const best = Math.max(0, x.memberMinor, x.offerMinor, x.flashMinor);
+  const reason: CreatedBooking["discountReason"] =
+    best === 0
+      ? undefined
+      : x.memberMinor === best
+        ? "member"
+        : x.flashMinor === best
+          ? "flash"
+          : "offer";
+  return {
+    discountClp: best,
+    discountReason: reason,
+    campaignRecipientId: reason === "offer" ? x.offerRecipientId : null,
+    flashSlotId: x.flashSlotId,
+  };
+}
+
+type FlashMatch = { id: string; staffId: string; pct: number };
+
+/**
+ * WP-30: aktiva flash-tider för (en av) profesionalerna där `start` ligger i
+ * [starts_at, ends_at) och tjänsten är tillåten (`service_ids` null = alla).
+ * Låser raderna (`for update`) så att två samtidiga bokningar av samma
+ * flash-tid serialiseras (`no_overlap` avgör ändå vem som får tiden).
+ */
+async function matchingFlashSlotsIn(
+  q: Queryable,
+  input: {
+    businessId: string;
+    serviceId: string;
+    staffIds: readonly string[];
+    start: number;
+  },
+): Promise<FlashMatch[]> {
+  const r = await q.query<{ id: string; staff_id: string; pct: number }>(
+    `select id, staff_id, discount_pct::int as pct
+       from public.flash_slots
+      where business_id = $1 and status = 'active'
+        and staff_id = any($2::uuid[])
+        and starts_at <= $3::timestamptz and $3::timestamptz < ends_at
+        and (service_ids is null or $4::uuid = any(service_ids))
+      order by starts_at
+      for update`,
+    [
+      input.businessId,
+      input.staffIds,
+      new Date(input.start).toISOString(),
+      input.serviceId,
+    ],
+  );
+  const seen = new Set<string>();
+  const out: FlashMatch[] = [];
+  for (const x of r.rows) {
+    if (seen.has(x.staff_id)) continue; // no_overlap: högst en per profesional
+    seen.add(x.staff_id);
+    out.push({ id: x.id, staffId: x.staff_id, pct: x.pct });
+  }
+  return out;
 }

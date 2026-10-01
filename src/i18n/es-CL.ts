@@ -676,8 +676,27 @@ export const agenda = {
      * agenda": siempre debe quedar al menos uno, para no dejar la semana
      * vacía sin darse cuenta. */
     minimoUnProfesional: "Debes dejar al menos un profesional visible.",
+    /** WP-23: estado de cada fila en la lista del cupo de espera. */
+    listaEsperaEstado: {
+      waiting: "En espera",
+      offered: "Oferta enviada",
+    },
+    quitarDeLaLista: (p: { nombre: string }): string =>
+      `Quitar a ${p.nombre} de la lista de espera`,
+    /** WP-30: aria-label del bloque de una hora flash activa (aún no
+     * reservada) en el rutnät. */
+    horaFlashDisponibleAria: (p: {
+      hora: string;
+      porcentaje: number;
+    }): string => `Hora flash disponible a las ${p.hora}, −${p.porcentaje}%`,
   },
   nuevaReserva: "Nueva reserva",
+  /** WP-30: menú al hacer clic en un espacio vacío de la agenda (día). */
+  celdaVacia: {
+    menuAria: "Crear en esta hora",
+    nuevaReserva: "Nueva reserva",
+    horaFlash: "Hora flash",
+  },
   agregarProfesional: AGREGAR_PROFESIONAL,
   verAgendaDe: (p: { nombre: string }): string => `Ver agenda de ${p.nombre}`,
   vistaAria: "Vista",
@@ -1479,6 +1498,18 @@ export const email = {
     expira: (p: { minutos: number }): string =>
       `Tienes ${p.minutos} min para confirmar antes de que se la ofrezcamos a otra persona.`,
   },
+  /** WP-23: al cliente en lista de espera, cuando la hora que le ofrecimos
+   * ya fue tomada por otra persona (respaldo por correo del WhatsApp
+   * `lista_espera_tomada`). Solo texto (sin botón: no hay nada que hacer en
+   * línea, sigue esperando). Misma frase que la plantilla de WhatsApp. */
+  listaEsperaTomada: {
+    asunto: (p: { negocio: string }): string =>
+      `Esa hora en ${p.negocio} ya se ocupó`,
+    preheader: (p: { fecha: string }): string =>
+      `Sigues en la lista de espera para el ${p.fecha}.`,
+    cuerpo: (p: { cliente: string; negocio: string; fecha: string }): string =>
+      `Hola ${p.cliente}:\n\nEsa hora en ${p.negocio} ya fue tomada por otra persona. Sigues en la lista de espera para el ${p.fecha} y te avisaremos si se libera otra.`,
+  },
   /** Oferta de una hora liberada con descuento (marketing): respaldo por
    * correo de la hora flash que el dueño comparte. */
   horaFlash: {
@@ -2155,6 +2186,11 @@ export const ajustes = {
     broadcast:
       "Le avisamos a todas las personas en espera y gana quien confirme primero.",
   },
+  /** WP-23: `businesses.waitlist_hold_minutes` (5–240). Cuánto esperamos la
+   * respuesta de un cliente (modo "uno por uno") antes de ofrecer la hora
+   * al siguiente. */
+  waitlistHoldMinutesLabel: "Tiempo de espera antes de ofrecer al siguiente",
+  waitlistHoldMinutesAyuda: "Entre 5 y 240 minutos.",
   slugAviso:
     'Si cambias tu link, el anterior deja de funcionar. Los WhatsApp ya enviados con el botón "Reservar de nuevo" van a apuntar al link viejo.',
   guardarCambios: "Guardar cambios",
@@ -2882,6 +2918,10 @@ export const sms = {
     minutos: number;
   }): string =>
     `¡Hora libre en ${p.negocio}! ${p.servicio}, el ${p.fecha} ${p.hora}. Tienes ${p.minutos} min: ${p.link}`,
+  /** WP-23: al cliente, la hora que se le ofreció ya fue tomada por otra
+   * persona. */
+  listaEsperaTomada: (p: { negocio: string; fecha: string }): string =>
+    `Esa hora en ${p.negocio} ya fue tomada. Sigues en la lista de espera para el ${p.fecha}.`,
   /** Marketing: se manda junto con `pie` (línea de baja), como mensaje
    * aparte o al final del mismo SMS (lo decide quien arma el envío). */
   horaFlash: (p: {
@@ -3603,4 +3643,121 @@ export const baja = {
     `Listo. Ya no recibirás más ofertas de ${p.negocio}.`,
   /** Token inválido/desconocido → 404 (`notFound()`), no un mensaje acá. */
   error: "No pudimos procesar tu solicitud. Inténtalo de nuevo.",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// flashStory: `GET /api/flash/[id]/story.png` (WP-30, F13) — las dos líneas
+// de texto fijo de la imagen (1080×1920, `docs/design/reference/
+// HoraFlash.dc.html`), aparte del contenido de la propia flash (negocio,
+// servicio, día/hora, precios). Bloque nuevo al final del archivo (mismo
+// criterio que `baja`/`redesSociales`): evita conflictos con otros agentes.
+// ---------------------------------------------------------------------------
+
+export const flashStory = {
+  badge: "Hora flash",
+  soloUnaHora: "Solo una hora",
+  cta: "Reserva en el link de la bio",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// flash: `/app/flash` (WP-30, F13) — pantalla del dueño: horas flash activas
+// y reservadas (`listFlashSlots` solo devuelve las que no han terminado
+// todavía, ver src/server/flash/slots.ts), diálogo "Nueva hora flash",
+// tarjeta de cada hora (imagen para historia, copiar link, enviar a
+// clientes, cancelar). Bloque nuevo al
+// final del archivo (mismo criterio que `baja`/`flashStory`): evita
+// conflictos con otros agentes que tocan `es-CL.ts` en paralelo.
+// ---------------------------------------------------------------------------
+
+export const flash = {
+  titulo: "Horas flash",
+  /** FlashCard (Inicio)/EventBlock (Agenda) cuando la hora no tiene
+   * servicios específicos (`serviceIds: null` = todos). */
+  todosLosServicios: "Todos los servicios",
+  activas: {
+    titulo: "Activas",
+    vacio: "No tienes horas flash activas todavía.",
+  },
+  reservadas: {
+    titulo: "Reservadas",
+    vacio: "No tienes horas flash reservadas todavía.",
+  },
+  nueva: {
+    cta: "Nueva hora flash",
+    titulo: "Nueva hora flash",
+    campos: {
+      profesional: "Profesional",
+      dia: "Día",
+      hora: "Hora de inicio",
+      modo: "¿Cómo defines la hora?",
+      modoDuracion: "Duración libre",
+      modoServicios: "Servicios específicos",
+      duracionLabel: "Duración",
+      serviciosLabel: "Servicios",
+      descuentoLabel: "Descuento (%)",
+    },
+    ctaGuardar: "Crear hora flash",
+    errores: {
+      profesionalRequerido: "Elige un profesional.",
+      servicioRequerido: "Elige al menos un servicio.",
+      descuentoInvalido: "Un número entre 1 % y 90 %.",
+      forbidden:
+        "No tienes permiso para crear horas flash para ese profesional.",
+      not_free: "Esa hora no está libre en la agenda de ese profesional.",
+      overlap: "Ya existe otra hora flash activa que se cruza con esa hora.",
+      invalid_input: "Revisa los datos e inténtalo de nuevo.",
+      unknown: "No pudimos crear la hora flash. Inténtalo de nuevo.",
+    },
+  },
+  tarjeta: {
+    descuento: (p: { porcentaje: number }): string => `−${p.porcentaje}%`,
+    reservada: "Reservada",
+    historiaTitulo: "Imagen para historia",
+    descargar: "Descargar",
+    copiarLink: "Copiar link",
+    linkCopiado: "Link copiado",
+    errorCopiar: "No pudimos copiar el link.",
+    enviarAClientes: "Enviar a clientes",
+    /** `sendFlashCampaign` → "flash_not_active" (la hora ya fue reservada o
+     * cancelada mientras se armaba el envío). */
+    enviarErrorNoActiva:
+      "Esta hora flash ya no está activa, así que no se puede enviar.",
+    cancelar: "Cancelar",
+    cancelarDialogTitulo: "¿Cancelar esta hora flash?",
+    cancelarDialogCuerpo:
+      "La hora vuelve a quedar disponible sin descuento. Esta acción no se puede deshacer.",
+    cancelarConfirmarSi: "Sí, cancelar",
+    cancelarConfirmarNo: "No, mantener",
+    errorCancelar: "No pudimos cancelar la hora flash. Inténtalo de nuevo.",
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// vOferta: `/v/[token]` (WP-23, F8) — página pública (sin login) de la
+// oferta de lista de espera ("Se liberó una hora", `lista_espera_oferta`).
+// Bloque nuevo al final del archivo (mismo criterio que `baja`/`flash`):
+// evita conflictos con otros agentes que tocan `es-CL.ts` en paralelo.
+// ---------------------------------------------------------------------------
+
+export const vOferta = {
+  titulo: "Se liberó una hora",
+  campos: {
+    servicio: "Servicio",
+    dia: "Día",
+    hora: "Hora",
+    profesional: "Profesional",
+  },
+  expira: (p: { minutos: number; segundos: number }): string =>
+    `Tienes ${p.minutos}:${p.segundos.toString().padStart(2, "0")} min para confirmar`,
+  ctaTomar: "Tomar esta hora",
+  tomando: "Confirmando…",
+  confirmada: "¡Listo! Tu hora quedó reservada.",
+  confirmadaAviso: "Te llega la confirmación con todos los detalles.",
+  yaTomada: "Esa hora ya fue tomada por otra persona.",
+  yaTomadaAviso:
+    "Sigues en la lista de espera: te avisaremos si se libera otra.",
+  vencida: "El tiempo para confirmar esta hora ya pasó.",
+  yaReservada: "Ya reservaste esta hora.",
+  linkInvalido: "Este link no es válido.",
+  error: "No pudimos confirmar tu hora. Inténtalo de nuevo.",
 } as const satisfies Trad;

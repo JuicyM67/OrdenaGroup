@@ -13,6 +13,11 @@ import {
   type EngineContext,
 } from "@/server/scheduling/schemas";
 import type { Actor } from "@/server/scheduling/types";
+import {
+  emitWaitlistEvents,
+  type WaitlistEvent,
+} from "@/server/waitlist/events";
+import { collectFreed } from "@/server/waitlist/match";
 
 import { actorMember, bookingPermOk, visibleButLocked } from "./authz";
 import { emitBookingEvent } from "./events";
@@ -48,7 +53,9 @@ export type CancelBookingValue = {
  * (`by` följer aktören). Idempotent: redan avbokad → ok med `freed = null`.
  * Kunden bara fram till start − cancel_window_hours (även om företaget är
  * fryst); ägaren alltid. `cancelled_at` är den injicerade klockan.
- * Väntelistan (WP-23) anropas inte här. Köar `cancelled` efter commit (WP-16).
+ * Köar `cancelled` efter commit (WP-16). WP-23: den frigjorda tiden
+ * erbjuds väntelistan i samma transaktion (`onSlotFreed`), erbjudandena
+ * köas efter commit.
  *
  * WP-56: kräver företaget godkännande (`cancel_approval` = `all`, eller
  * `late` och start − now < cancel_window_hours) blir kundens avbokning av en
@@ -77,9 +84,22 @@ export async function cancelBooking(
     reason = p.data.reason;
   }
   const input = { ...c, ref, reason };
-  const result = await runAs(c.actor, (q) => cancelDetailedIn(q, input), {
-    onForbidden: err("forbidden"),
-  });
+  const waitlist: WaitlistEvent[] = [];
+  const result = await runAs(
+    c.actor,
+    async (q) => {
+      const r = await cancelDetailedIn(q, input);
+      if (r.ok) {
+        await collectFreed(q, waitlist, {
+          businessId: c.businessId,
+          now: c.now,
+          freed: r.value.pending ? null : r.value.freed,
+        });
+      }
+      return r;
+    },
+    { onForbidden: err("forbidden") },
+  );
   if (!result.ok) return result;
   const { bookingId, freed, declined, pending } = result.value;
   if (pending) {
@@ -115,6 +135,7 @@ export async function cancelBooking(
       });
     }
   }
+  await emitWaitlistEvents(waitlist);
   return ok({ bookingId, freed });
 }
 
