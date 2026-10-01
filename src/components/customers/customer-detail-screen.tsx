@@ -1,10 +1,21 @@
 "use client";
 
-// CustomerDetailScreen — /app/clientes/[id] (WP-24, F9): kundkortet. Samma
-// skal som CustomersScreen. Export/anonimizar återanvänder
-// `CustomerPrivacyActions` (agendans popover, WP-26) — samma server actions,
-// bara en annan plats i UI:t. Svaren på bokningsfrågor återanvänder
-// `CustomerAnswersCard` (redan byggd för den här skärmen, WP-40).
+// CustomerDetailScreen — /app/clientes/[id] (WP-24, F9; WP-57 UX-ombyggnad).
+// Samma skal som CustomersScreen. Export/anonimizar återanvänder samma
+// server actions som agendans popover (`CustomerPrivacyActions`), men
+// placeras här som egna menyposter under "⋯" i stället för den komponenten
+// (WP-57: "alla åtgärder samlade" i en rad + en meny, inte ett eget kort per
+// åtgärd). Svaren på bokningsfrågor återanvänder `CustomerAnswersCard`
+// (redan byggd för den här skärmen, WP-40).
+//
+// WP-57 (UX-genomgången, "Kundkort" + fel 1–2): ett huvud med identitet,
+// taggar, fyra nyckeltal och alla åtgärder, i stället för åtta separata kort
+// med samma vikt. Datum formateras ALLTID via `src/lib/format/dates.ts`
+// (fel 1: kundkortet visade tidigare `Date.toString()`, t.ex. "Thu Oct 01
+// 2026 … GMT+0200" — roten var `src/server/owner/clientes.ts`, som nu
+// konverterar med `.toISOString()` innan strängen lämnar servern).
+// Samtyckesrutan har nu två tydligt etiketterade rader i stället för två
+// meningar utan rubrik (fel 2).
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -12,23 +23,29 @@ import { useState } from "react";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
 import {
-  CustomerPrivacyActions,
   type CustomerExportResult,
   type CustomerMutationResult,
 } from "@/components/agenda/customer-privacy-actions";
 import { CustomerAnswersCard } from "./customer-answers-card";
 import { MessageDialog } from "./message-dialog";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
+import { OwnerPageHeader } from "@/components/shared/owner-page-header";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Chip } from "@/components/ui/chip";
+import { Chip, type ChipProps } from "@/components/ui/chip";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
-import { PageHeader } from "@/components/ui/page-header";
-import { Switch } from "@/components/ui/switch";
+import { initialsOf } from "@/lib/format/initials";
+import { Menu, MenuButtonItem, MenuLinkItem } from "@/components/ui/menu";
 import { Textarea } from "@/components/ui/textarea";
 import { marketConfig } from "@/config/market";
-import { ajustes, clientes, comun, estados } from "@/i18n";
+import { ajustes, clientes, comun, estados, nav } from "@/i18n";
 import {
   APP_TZ,
   formatDate,
@@ -37,8 +54,15 @@ import {
 } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { formatPhone, isE164 } from "@/lib/format/phone";
-import { ArrowLeft, Mail, MessageSquare, Phone } from "lucide-react";
+import {
+  ArrowLeft,
+  Mail,
+  MessageSquare,
+  MoreHorizontal,
+  Phone,
+} from "lucide-react";
 
+import { HABITUAL_VISITS_THRESHOLD } from "./types";
 import type {
   CustomerBookingRow,
   CustomerDetail,
@@ -57,16 +81,23 @@ export type CustomerDetailScreenProps = {
   ) => Promise<{ ok: true } | { ok: false; code: string }>;
   onExportCustomer?: (customerId: string) => Promise<CustomerExportResult>;
   onAnonymizeCustomer?: (customerId: string) => Promise<CustomerMutationResult>;
-  /** WP-54: kryssrutan "Socio". `undefined` (design lab, eller
-   * `!customer.canManageMembership`) döljer kortet helt. */
+  /** WP-54: medlemskap, nu en menypost under "⋯" i stället för ett eget
+   * kort. `undefined` (design lab, eller `!customer.canManageMembership`)
+   * döljer menyposten helt. */
   onSetMember?: (isMember: boolean) => Promise<SetMemberResult>;
   /** WP-54: "Avisar al cliente" — köar `bienvenidaMiembro`. `undefined`
-   * döljer knappen. */
+   * döljer menyposten. */
   onNotifyMember?: () => Promise<NotifyMemberResult>;
   /** WP-55: "Enviar mensaje" (`MessageDialog`). Bara SE (`sendCustomerMessage`,
    * SMS via ClickSend) — `undefined` i CL, vars dialog öppnar `wa.me` utan
    * servern (se `message-dialog.tsx`). */
   onSendMessage?: (text: string) => Promise<SendMessageResult>;
+  /** WP-57 punkt 7: `<OwnerPageHeader>` (klocka + profilmeny), samma data
+   * som Inicio skickar till `AppShell` (`owner-chrome.tsx`). */
+  ownerName: string;
+  publicPageHref: string;
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
 };
 
 const STATUS_CHIP: Record<
@@ -119,6 +150,51 @@ function BookingRow({ booking }: { booking: CustomerBookingRow }) {
   );
 }
 
+type Tag = { tone: ChipProps["tone"]; label: string };
+
+/** Mismas tres etiquetas que `tagsOf` en `customers-screen.tsx` (duplicado
+ * a propósito, mismo motivo que el resto de este archivo: un "use client"
+ * nunca importa de otro componente solo para una función de 4 líneas). */
+function tagsOf(customer: CustomerDetail): Tag[] {
+  const tags: Tag[] = [];
+  if (customer.isMember) tags.push({ tone: "lavender", label: estados.socio });
+  if (customer.stats.visitsCount >= HABITUAL_VISITS_THRESHOLD) {
+    tags.push({ tone: "peach", label: "TODO_COPY: Habitual" });
+  }
+  if (customer.consentMarketing.at) {
+    tags.push({ tone: "success", label: "TODO_COPY: Acepta ofertas" });
+  }
+  return tags;
+}
+
+function ConsentRow({
+  // TODO_COPY: no hay en es-CL.ts una palabra corta para "Términos" (consentTerms)
+  // ni para "Ofertas y novedades" (consentMarketing) como ETIQUETA de fila — los
+  // textos existentes (`clientes.consentimientos.*`) son oraciones completas,
+  // no títulos. El valor del chip sí usa esas oraciones reales.
+  label,
+  consent,
+}: {
+  label: string;
+  consent: CustomerDetail["consentTerms"];
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 py-2">
+      <span className="text-14 font-semibold text-ink">{label}</span>
+      <Chip tone={consent.at ? "success" : "neutral"} size="sm">
+        {consent.at
+          ? clientes.consentimientos.aceptoEl({
+              fecha: dateLabel(consent.at),
+              canal: consent.channel
+                ? clientes.consentimientos.canalEnFrase[consent.channel]
+                : "",
+            })
+          : clientes.consentimientos.sinRegistro}
+      </Chip>
+    </div>
+  );
+}
+
 export function CustomerDetailScreen({
   customer,
   canViewReports,
@@ -129,6 +205,10 @@ export function CustomerDetailScreen({
   onSetMember,
   onNotifyMember,
   onSendMessage,
+  ownerName,
+  publicPageHref,
+  myProfile,
+  myProfileActions,
 }: CustomerDetailScreenProps) {
   const router = useRouter();
   const [notes, setNotes] = useState(customer.notes ?? "");
@@ -137,29 +217,30 @@ export function CustomerDetailScreen({
   const [notesSaved, setNotesSaved] = useState(false);
 
   const [isMember, setIsMember] = useState(customer.isMember);
-  const [memberSince, setMemberSince] = useState(customer.memberSince);
   const [savingMember, setSavingMember] = useState(false);
   const [notifyStatus, setNotifyStatus] = useState<
     "idle" | "sending" | "sent" | "already" | "error"
   >("idle");
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [anonymizeOpen, setAnonymizeOpen] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const phone =
     customer.phone && isE164(customer.phone) ? customer.phone : null;
   const isCl = marketConfig.phoneCountry === "CL";
   const hasAnswers =
     customer.answers.latest.length > 0 || customer.answers.history.length > 0;
+  const hasUpcoming = customer.upcoming.length > 0;
+  const hasHistory = customer.history.length > 0;
 
-  async function handleToggleMember(next: boolean) {
+  async function handleToggleMember() {
     if (!onSetMember || savingMember) return;
     setSavingMember(true);
     setNotifyStatus("idle");
-    const result = await onSetMember(next);
+    const result = await onSetMember(!isMember);
     setSavingMember(false);
-    if (result.ok) {
-      setIsMember(next);
-      setMemberSince(next ? new Date().toISOString() : null);
-    }
+    if (result.ok) setIsMember(!isMember);
   }
 
   async function handleNotifyMember() {
@@ -193,6 +274,81 @@ export function CustomerDetailScreen({
     }
   }
 
+  function downloadJson(filename: string, data: unknown) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleExport() {
+    if (!onExportCustomer || exporting) return;
+    setExporting(true);
+    setActionError(null);
+    try {
+      const result = await onExportCustomer(customer.id);
+      if (result.ok) {
+        downloadJson(`cliente-${customer.id}.json`, result.data);
+      } else {
+        setActionError(clientes.privacidad.error);
+      }
+    } catch {
+      setActionError(clientes.privacidad.error);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleAnonymize() {
+    if (!onAnonymizeCustomer) return;
+    setActionError(null);
+    const result = await onAnonymizeCustomer(customer.id);
+    if (result.ok) {
+      setAnonymizeOpen(false);
+      router.push("/app/clientes");
+    } else {
+      setActionError(clientes.privacidad.error);
+    }
+  }
+
+  const statTiles: { value: string; label: string }[] = [
+    {
+      value: String(customer.stats.visitsCount),
+      label: clientes.lista.columnaVisitas,
+    },
+    {
+      value: String(customer.stats.noShowCount),
+      label: clientes.lista.columnaInasistencias,
+    },
+    ...(customer.canViewMoney
+      ? [
+          {
+            value: formatMoney(customer.stats.totalRevenueClp),
+            label: clientes.ficha.totalGastado,
+          },
+        ]
+      : []),
+    {
+      value: customer.stats.lastVisitAt
+        ? dateLabel(customer.stats.lastVisitAt)
+        : "—",
+      label: clientes.lista.columnaUltimaVisita,
+    },
+  ];
+
+  const hasMenu =
+    (customer.isOwner && onExportCustomer) ||
+    (customer.isOwner && onAnonymizeCustomer) ||
+    (onSetMember && customer.canManageMembership) ||
+    (isMember && customer.email && onNotifyMember);
+
   return (
     <AppShell
       rail={
@@ -210,9 +366,14 @@ export function CustomerDetailScreen({
         />
       }
       onLogout={onLogout}
+      ownerName={ownerName}
+      publicPageHref={publicPageHref}
+      canViewReports={canViewReports}
+      myProfile={myProfile}
+      myProfileActions={myProfileActions}
+      hideMobileTopBar
     >
-      <PageHeader
-        variant="desktop"
+      <OwnerPageHeader
         title={
           <span className="flex items-center gap-3">
             <IconButton label={comun.volver} tone="ghost" size={36} asChild>
@@ -224,43 +385,43 @@ export function CustomerDetailScreen({
                 />
               </Link>
             </IconButton>
-            {customer.name}
-            {isMember ? (
-              <Chip tone="lavender" size="sm">
-                {estados.socio}
-              </Chip>
-            ) : null}
+            {clientes.titulo}
           </span>
         }
-        meta={clientes.ficha.clienteDesde({
-          fecha: dateLabel(customer.createdAt),
-        })}
-        actions={
+      />
+
+      <Card radius="tile" padding="lg" className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-start gap-4">
+          <Avatar initials={initialsOf(customer.name)} tone="lilac-100" size={56} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-24 font-bold tracking-display text-ink">
+                {customer.name}
+              </h1>
+              {tagsOf(customer).map((t) => (
+                <Chip key={t.label} tone={t.tone} size="sm">
+                  {t.label}
+                </Chip>
+              ))}
+            </div>
+            <p className="text-14 text-muted">
+              {clientes.ficha.clienteDesde({ fecha: dateLabel(customer.createdAt) })}
+              {phone ? ` · ${formatPhone(phone)}` : ""}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
           <Button asChild variant="primary" size="lg">
             <Link href={`/app/agenda?cliente=${customer.id}`}>
               {clientes.ficha.ctaNuevaReserva}
             </Link>
           </Button>
-        }
-      />
-
-      <div className="flex flex-wrap gap-2">
-        {phone ? (
-          <>
-            <Button asChild variant="secondary" size="sm">
-              <a href={`tel:${phone}`}>
-                <Phone
-                  aria-hidden="true"
-                  className="size-4"
-                  strokeWidth={strokeArrow}
-                />
-                {clientes.ficha.ctaLlamar}
-              </a>
-            </Button>
+          {phone ? (
             <Button
               type="button"
               variant="secondary"
-              size="sm"
+              size="lg"
               onClick={() => setMessageDialogOpen(true)}
             >
               <MessageSquare
@@ -270,41 +431,119 @@ export function CustomerDetailScreen({
               />
               {isCl ? clientes.ficha.ctaWhatsapp : clientes.ficha.ctaSms}
             </Button>
-          </>
-        ) : null}
-        {customer.email ? (
-          <Button asChild variant="secondary" size="sm">
-            <a href={`mailto:${customer.email}`}>
-              <Mail
-                aria-hidden="true"
-                className="size-4"
-                strokeWidth={strokeArrow}
-              />
-              {clientes.ficha.ctaEmail}
-            </a>
-          </Button>
-        ) : null}
-        {/* WP-31: "Enviar oferta" — misma spärr som membresía arriba (ägare
-            eller can_manage_all_bookings, `canManageMembership`). Kräver
-            dessutom att kunden faktiskt gett marknadsföringssamtycke —
-            annars disabled med förklaring bredvid. */}
-        {customer.canManageMembership ? (
-          customer.consentMarketing.at ? (
-            <Button asChild variant="secondary" size="sm">
-              <Link href={`/app/clientes/utskick/nytt?kunder=${customer.id}`}>
-                {clientes.ficha.ctaEnviarOferta}
-              </Link>
+          ) : null}
+          {phone ? (
+            <Button asChild variant="secondary" size="lg">
+              <a href={`tel:${phone}`}>
+                <Phone
+                  aria-hidden="true"
+                  className="size-4"
+                  strokeWidth={strokeArrow}
+                />
+                {clientes.ficha.ctaLlamar}
+              </a>
             </Button>
-          ) : (
-            <span className="flex items-center gap-2 text-13 text-muted">
-              <Button type="button" variant="secondary" size="sm" disabled>
-                {clientes.ficha.ctaEnviarOferta}
+          ) : null}
+          {customer.canManageMembership ? (
+            customer.consentMarketing.at ? (
+              <Button asChild variant="secondary" size="lg">
+                <Link href={`/app/clientes/utskick/nytt?kunder=${customer.id}`}>
+                  {clientes.ficha.ctaEnviarOferta}
+                </Link>
               </Button>
-              {clientes.ficha.ofertaSinConsentimiento}
-            </span>
-          )
+            ) : (
+              <span className="flex items-center gap-2 text-13 text-muted">
+                <Button type="button" variant="secondary" size="lg" disabled>
+                  {clientes.ficha.ctaEnviarOferta}
+                </Button>
+                {clientes.ficha.ofertaSinConsentimiento}
+              </span>
+            )
+          ) : null}
+          {hasMenu ? (
+            <Menu
+              label={nav.masOpciones}
+              trigger={
+                <IconButton label={nav.masOpciones} tone="surface" size={44}>
+                  <MoreHorizontal aria-hidden="true" className="size-4.5" strokeWidth={strokeArrow} />
+                </IconButton>
+              }
+            >
+              {customer.email ? (
+                <MenuLinkItem
+                  href={`mailto:${customer.email}`}
+                  icon={<Mail aria-hidden="true" className="size-4" strokeWidth={strokeArrow} />}
+                >
+                  {clientes.ficha.ctaEmail}
+                </MenuLinkItem>
+              ) : null}
+              {onSetMember && customer.canManageMembership ? (
+                <MenuButtonItem
+                  disabled={savingMember}
+                  onClick={() => void handleToggleMember()}
+                >
+                  {/* TODO_COPY: no hay un verbo corto "Marcar/Quitar de socios"
+                      en es-CL.ts, solo el sustantivo `estados.socio` ("Socio"). */}
+                  {isMember
+                    ? "TODO_COPY: Quitar de socios"
+                    : "TODO_COPY: Marcar como socio"}
+                </MenuButtonItem>
+              ) : null}
+              {isMember && customer.email && onNotifyMember ? (
+                <MenuButtonItem
+                  disabled={notifyStatus === "sending"}
+                  onClick={() => void handleNotifyMember()}
+                >
+                  {clientes.ficha.notificarCta}
+                </MenuButtonItem>
+              ) : null}
+              {customer.isOwner && onExportCustomer ? (
+                <MenuButtonItem
+                  disabled={exporting}
+                  onClick={() => void handleExport()}
+                >
+                  {clientes.privacidad.ctaExportar}
+                </MenuButtonItem>
+              ) : null}
+              {customer.isOwner && onAnonymizeCustomer ? (
+                <MenuButtonItem onClick={() => setAnonymizeOpen(true)}>
+                  {clientes.privacidad.ctaAnonimizar}
+                </MenuButtonItem>
+              ) : null}
+            </Menu>
+          ) : null}
+        </div>
+
+        {notifyStatus === "sent" || notifyStatus === "already" ? (
+          <span role="status" className="text-13 text-muted">
+            {notifyStatus === "sent"
+              ? clientes.ficha.notificarEnviado
+              : clientes.ficha.notificarYaEnviado}
+          </span>
         ) : null}
-      </div>
+        {notifyStatus === "error" || actionError ? (
+          <span role="alert" className="text-13 text-ink">
+            {actionError ?? comun.algoSalioMal}
+          </span>
+        ) : null}
+
+        <div
+          className={
+            statTiles.length === 4
+              ? "grid grid-cols-2 gap-4 border-t border-line-strong pt-4 sm:grid-cols-4"
+              : "grid grid-cols-3 gap-4 border-t border-line-strong pt-4"
+          }
+        >
+          {statTiles.map((s) => (
+            <div key={s.label} className="flex flex-col gap-0.5">
+              <span className="font-display text-22 font-semibold tracking-display whitespace-nowrap">
+                {s.value}
+              </span>
+              <span className="text-12 text-muted">{s.label}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {phone ? (
         <MessageDialog
@@ -317,205 +556,93 @@ export function CustomerDetailScreen({
         />
       ) : null}
 
+      <ConfirmDialog
+        open={anonymizeOpen}
+        onOpenChange={setAnonymizeOpen}
+        title={clientes.privacidad.confirmarTitulo}
+        body={clientes.privacidad.confirmarCuerpo}
+        confirmLabel={clientes.privacidad.confirmarSi}
+        cancelLabel={clientes.privacidad.confirmarNo}
+        onConfirm={handleAnonymize}
+      />
+
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-        <Card radius="tile" padding="lg" className="flex flex-col gap-3">
-          <h2 className="text-15 font-bold text-ink">
-            {clientes.ficha.contactoTitulo}
-          </h2>
-          <div className="flex flex-col gap-1 text-14">
-            <div className="flex justify-between gap-3">
-              <span className="text-muted">{clientes.editar.phoneLabel}</span>
-              <span className="font-semibold text-ink">
-                {phone ? formatPhone(phone) : "—"}
-              </span>
-            </div>
-            <div className="flex justify-between gap-3">
-              <span className="text-muted">{clientes.editar.emailLabel}</span>
-              <span className="font-semibold text-ink">
-                {customer.email ?? "—"}
-              </span>
-            </div>
-          </div>
-        </Card>
-
-        <Card radius="tile" padding="lg" className="flex flex-col gap-3">
-          <h2 className="text-15 font-bold text-ink">
-            {clientes.ficha.consentimientosTitulo}
-          </h2>
-          <div className="flex flex-col gap-1.5 text-13">
-            {customer.consentTerms.at ? (
-              <span className="text-ink">
-                {clientes.consentimientos.aceptoEl({
-                  fecha: dateLabel(customer.consentTerms.at),
-                  canal: customer.consentTerms.channel
-                    ? clientes.consentimientos.canalEnFrase[
-                        customer.consentTerms.channel
-                      ]
-                    : "",
-                })}
-              </span>
-            ) : (
-              <span className="text-muted">
-                {clientes.consentimientos.sinRegistro}
-              </span>
-            )}
-            {customer.consentMarketing.at ? (
-              <span className="text-ink">
-                {clientes.consentimientos.aceptoEl({
-                  fecha: dateLabel(customer.consentMarketing.at),
-                  canal: customer.consentMarketing.channel
-                    ? clientes.consentimientos.canalEnFrase[
-                        customer.consentMarketing.channel
-                      ]
-                    : "",
-                })}
-              </span>
-            ) : (
-              <span className="text-muted">
-                {clientes.consentimientos.sinRegistro}
-              </span>
-            )}
-          </div>
-        </Card>
-
-        {onSetMember && customer.canManageMembership ? (
-          <Card
-            radius="tile"
-            padding="lg"
-            className="flex flex-col gap-3 lg:col-span-2"
-          >
-            <h2 className="text-15 font-bold text-ink">
-              {clientes.ficha.membresiaTitulo}
-            </h2>
-            <div className="flex items-center gap-3">
-              <div className="min-w-0 flex-1">
-                <p className="text-14 font-semibold text-ink">
-                  {estados.socio}
-                </p>
-                <p className="mt-0.5 text-12 text-muted">
-                  {isMember && memberSince
-                    ? clientes.ficha.socioDesde({
-                        fecha: dateLabel(memberSince),
-                      })
-                    : clientes.ficha.socioAyuda}
-                </p>
-              </div>
-              <Switch
-                checked={isMember}
-                onChange={(next) => void handleToggleMember(next)}
-                label={estados.socio}
-                disabled={savingMember}
-              />
-            </div>
-            {isMember && customer.email && onNotifyMember ? (
-              <div className="flex items-center gap-3 border-t border-line-strong pt-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  disabled={notifyStatus === "sending"}
-                  onClick={() => void handleNotifyMember()}
-                >
-                  {clientes.ficha.notificarCta}
-                </Button>
-                {notifyStatus === "sent" ? (
-                  <span role="status" className="text-13 text-muted">
-                    {clientes.ficha.notificarEnviado}
-                  </span>
-                ) : null}
-                {notifyStatus === "already" ? (
-                  <span role="status" className="text-13 text-muted">
-                    {clientes.ficha.notificarYaEnviado}
-                  </span>
-                ) : null}
-                {notifyStatus === "error" ? (
-                  <span role="alert" className="text-13 text-ink">
-                    {comun.algoSalioMal}
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-          </Card>
-        ) : null}
-
-        {customer.stats ? (
-          <Card
-            radius="tile"
-            padding="lg"
-            className="flex flex-col gap-3 lg:col-span-2"
-          >
-            <h2 className="text-15 font-bold text-ink">
-              {clientes.ficha.estadisticasTitulo}
-            </h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div className="flex flex-col gap-0.5">
-                <span className="font-display text-24 font-semibold tracking-display">
-                  {customer.stats.visitsCount}
-                </span>
-                <span className="text-12 text-muted">
-                  {clientes.lista.columnaVisitas}
-                </span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="font-display text-24 font-semibold tracking-display">
-                  {customer.stats.noShowCount}
-                </span>
-                <span className="text-12 text-muted">
-                  {clientes.lista.columnaInasistencias}
-                </span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="font-display text-24 font-semibold tracking-display">
-                  {formatMoney(customer.stats.totalRevenueClp)}
-                </span>
-                <span className="text-12 text-muted">
-                  {clientes.ficha.totalGastado}
-                </span>
-              </div>
-              <div className="flex flex-col gap-0.5">
-                <span className="font-display text-24 font-semibold tracking-display">
-                  {customer.stats.averagePriceClp == null
-                    ? "—"
-                    : formatMoney(customer.stats.averagePriceClp)}
-                </span>
-                <span className="text-12 text-muted">
-                  {clientes.ficha.promedioPorVisita}
-                </span>
-              </div>
-            </div>
-          </Card>
-        ) : null}
-
         <Card radius="tile" padding="lg" className="flex flex-col gap-1">
-          <h2 className="mb-2 text-15 font-bold text-ink">
+          {/* TODO_COPY: no hay un título corto "Tidslinje"/"Timeline" en
+              es-CL.ts — se reutilizan los dos títulos existentes como
+              subtítulos de la misma lista en vez de inventar uno nuevo. */}
+          <h3 className="text-13 font-bold text-muted uppercase tracking-caps">
             {clientes.ficha.proximasTitulo}
-          </h2>
-          {customer.upcoming.length === 0 ? (
-            <p className="text-13 text-muted">{clientes.ficha.proximasVacio}</p>
-          ) : (
-            <ul>
+          </h3>
+          {hasUpcoming ? (
+            <ul className="mb-3">
               {customer.upcoming.map((b) => (
                 <BookingRow key={b.id} booking={b} />
               ))}
             </ul>
-          )}
-        </Card>
-
-        <Card radius="tile" padding="lg" className="flex flex-col gap-1">
-          <h2 className="mb-2 text-15 font-bold text-ink">
-            {clientes.ficha.historialTitulo}
-          </h2>
-          {customer.history.length === 0 ? (
-            <p className="text-13 text-muted">
-              {clientes.ficha.historialVacio}
-            </p>
           ) : (
+            <p className="mb-3 text-13 text-muted">
+              {clientes.ficha.proximasVacio}
+            </p>
+          )}
+          <h3 className="text-13 font-bold text-muted uppercase tracking-caps">
+            {clientes.ficha.historialTitulo}
+          </h3>
+          {hasHistory ? (
             <ul>
               {customer.history.map((b) => (
                 <BookingRow key={b.id} booking={b} />
               ))}
             </ul>
+          ) : (
+            <p className="text-13 text-muted">{clientes.ficha.historialVacio}</p>
           )}
+        </Card>
+
+        <Card radius="tile" padding="lg" className="flex flex-col gap-1">
+          <h2 className="mb-1 text-15 font-bold text-ink">
+            {clientes.ficha.consentimientosTitulo}
+          </h2>
+          <div className="flex flex-col divide-y divide-line">
+            <ConsentRow label="TODO_COPY: Términos" consent={customer.consentTerms} />
+            <ConsentRow
+              label="TODO_COPY: Ofertas y novedades"
+              consent={customer.consentMarketing}
+            />
+          </div>
+
+          <div className="mt-3 flex flex-col gap-3 border-t border-line-strong pt-3">
+            <Textarea
+              label={clientes.notas.label}
+              hint={clientes.notas.ayuda}
+              value={notes}
+              onChange={(e) => {
+                setNotes(e.target.value);
+                setNotesSaved(false);
+              }}
+              maxLength={1000}
+              disabled={!customer.canEditNotes}
+              error={notesError ?? undefined}
+            />
+            {customer.canEditNotes ? (
+              <div className="flex items-center gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  disabled={savingNotes}
+                  onClick={() => void handleSaveNotes()}
+                >
+                  {comun.guardar}
+                </Button>
+                {notesSaved ? (
+                  <span role="status" className="text-13 text-muted">
+                    {ajustes.cambiosGuardados}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
         </Card>
 
         <section className="flex flex-col gap-3 lg:col-span-2">
@@ -532,56 +659,6 @@ export function CustomerDetailScreen({
             </Card>
           )}
         </section>
-
-        <Card
-          radius="tile"
-          padding="lg"
-          className="flex flex-col gap-3 lg:col-span-2"
-        >
-          <Textarea
-            label={clientes.notas.label}
-            hint={clientes.notas.ayuda}
-            value={notes}
-            onChange={(e) => {
-              setNotes(e.target.value);
-              setNotesSaved(false);
-            }}
-            maxLength={1000}
-            disabled={!customer.canEditNotes}
-            error={notesError ?? undefined}
-          />
-          {customer.canEditNotes ? (
-            <div className="flex items-center gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={savingNotes}
-                onClick={() => void handleSaveNotes()}
-              >
-                {comun.guardar}
-              </Button>
-              {notesSaved ? (
-                <span role="status" className="text-13 text-muted">
-                  {ajustes.cambiosGuardados}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-        </Card>
-
-        {customer.isOwner && onExportCustomer && onAnonymizeCustomer ? (
-          <div className="lg:col-span-2">
-            <CustomerPrivacyActions
-              customerId={customer.id}
-              onExport={() => onExportCustomer(customer.id)}
-              onAnonymize={() => onAnonymizeCustomer(customer.id)}
-              onAnonymized={() => {
-                router.push("/app/clientes");
-              }}
-            />
-          </div>
-        ) : null}
       </div>
     </AppShell>
   );

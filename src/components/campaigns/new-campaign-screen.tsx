@@ -14,6 +14,11 @@ import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
+import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
@@ -21,7 +26,6 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField } from "@/components/ui/date-field";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
-import { PageHeader } from "@/components/ui/page-header";
 import { Pill } from "@/components/ui/pill";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,6 +56,12 @@ export type NewCampaignScreenProps = {
   onLogout?: () => void | Promise<void>;
   onPreview: (input: CampaignInput) => Promise<PreviewCampaignResult>;
   onSend: (input: CampaignInput) => Promise<SendCampaignResult>;
+  /** WP-57 punkt 7: `<OwnerPageHeader>` (klocka + profilmeny), samma data
+   * som Inicio skickar till `AppShell` (`owner-chrome.tsx`). */
+  ownerName: string;
+  publicPageHref: string;
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
 };
 
 const MESSAGE_MAX: Record<CampaignChannel, number> = { email: 1000, sms: 320 };
@@ -77,6 +87,10 @@ export function NewCampaignScreen({
   onLogout,
   onPreview,
   onSend,
+  ownerName,
+  publicPageHref,
+  myProfile,
+  myProfileActions,
 }: NewCampaignScreenProps) {
   const router = useRouter();
   const hasSelected = !!selectedCustomers && selectedCustomers.length > 0;
@@ -223,9 +237,14 @@ export function NewCampaignScreen({
         />
       }
       onLogout={onLogout}
+      ownerName={ownerName}
+      publicPageHref={publicPageHref}
+      canViewReports={canViewReports}
+      myProfile={myProfile}
+      myProfileActions={myProfileActions}
+      hideMobileTopBar
     >
-      <PageHeader
-        variant="desktop"
+      <OwnerPageHeader
         title={
           <span className="flex items-center gap-3">
             <IconButton
@@ -245,7 +264,7 @@ export function NewCampaignScreen({
             {campanas.nueva.titulo}
           </span>
         }
-        meta={campanas.nueva.soloConsentimiento}
+        subtitle={campanas.nueva.soloConsentimiento}
       />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">

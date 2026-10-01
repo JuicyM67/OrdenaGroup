@@ -8,13 +8,16 @@ import { CajaScreen } from "@/components/caja/caja-screen";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { MANUAL_METHODS } from "@/server/payments/mark-paid";
+import { ownerNameParts } from "@/server/owner/shared";
 
 import {
-  loadCajaAction,
-  loadInformesAction,
-  markPaidAction,
-  undoPaymentAction,
-} from "./actions";
+  confirmMyPhotoUploadAction,
+  createMyPhotoUploadAction,
+  deleteMyPhotoAction,
+  loadMyProfileAction,
+  updateMyTitleAction,
+} from "../my-profile-actions";
+import { loadCajaAction, markPaidAction, undoPaymentAction } from "./actions";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -35,6 +38,8 @@ export default async function CajaPage() {
   if (!current.view.perms.can_view_reports) redirect("/app/agenda");
 
   const initialData = await loadCajaAction({ kind: "today" });
+  const owner = ownerNameParts(user.email);
+  const myProfile = await loadMyProfileAction();
 
   return (
     <CajaScreen
@@ -44,10 +49,22 @@ export default async function CajaPage() {
       onLogout={logout}
       actions={{
         loadCaja: loadCajaAction,
-        loadInformes: loadInformesAction,
         markPaid: markPaidAction,
         undoPayment: undoPaymentAction,
       }}
+      ownerName={owner.name}
+      publicPageHref={`/${current.business.slug}`}
+      myProfile={myProfile ?? undefined}
+      myProfileActions={
+        myProfile
+          ? {
+              updateTitle: updateMyTitleAction,
+              createPhotoUpload: createMyPhotoUploadAction,
+              confirmPhotoUpload: confirmMyPhotoUploadAction,
+              deletePhoto: deleteMyPhotoAction,
+            }
+          : undefined
+      }
     />
   );
 }
