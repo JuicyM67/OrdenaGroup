@@ -115,6 +115,17 @@ export function relative(now: Date, start: Date): string {
   return hoy.relativo.enHoras({ h: Math.floor(diff / 60), m: diff % 60 });
 }
 
+/**
+ * WP-57 (UX-genomgång, Hoy: "40 min de atraso syns knappt" → röd chip i stället för grå
+ * text). `null` om bokningen inte är försenad ännu (`now` före `start`) — annars
+ * `hoy.relativo.atrasado`, samma text som `relative()` redan ger, bara isolerad så
+ * `NextClientCard` kan välja chip i stället för vanlig text.
+ */
+export function latenessLabel(now: Date, start: Date): string | null {
+  const diff = Math.round(minutesBetween(now, start));
+  return diff < 0 ? hoy.relativo.atrasado({ n: -diff }) : null;
+}
+
 export type NextChip = {
   tone: "success" | "pending" | "deposit";
   label: string;

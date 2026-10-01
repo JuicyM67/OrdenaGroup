@@ -13,25 +13,25 @@ export type QuickActionsProps = {
 
 export function QuickActions({ links, waitlistCount }: QuickActionsProps) {
   return (
-    <div className="grid grid-cols-3 gap-2.5">
+    <div className="grid grid-cols-3 gap-2">
       <QuickActionTile
         href={links.flash}
         tone="lime"
         label={hoy.accionesRapidas.crearHoraFlash}
-        icon={<Zap aria-hidden="true" className="size-6" strokeWidth={2} />}
+        icon={<Zap aria-hidden="true" className="size-5" strokeWidth={2} />}
       />
       <QuickActionTile
         href={links.waitlist}
         tone="lilac"
         label={hoy.accionesRapidas.listaEspera({ n: waitlistCount })}
-        icon={<List aria-hidden="true" className="size-6" strokeWidth={2} />}
+        icon={<List aria-hidden="true" className="size-5" strokeWidth={2} />}
       />
       <QuickActionTile
         href={links.cobrar}
         tone="peach"
         label={hoy.accionesRapidas.cobrar}
         icon={
-          <CreditCard aria-hidden="true" className="size-6" strokeWidth={2} />
+          <CreditCard aria-hidden="true" className="size-5" strokeWidth={2} />
         }
       />
     </div>

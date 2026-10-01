@@ -17,6 +17,7 @@ import { formatTime, APP_TZ } from "@/lib/format/dates";
 
 import {
   isMemberBooking,
+  latenessLabel,
   nextChip,
   parseInstantOrThrow,
   relative,
@@ -86,6 +87,9 @@ export function NextClientCard({
   const start = parseInstantOrThrow(booking.start);
   const chip = nextChip(booking);
   const bookingId = booking.id;
+  // WP-57: försening är det viktigaste på kortet — en röd chip i stället för grå text
+  // (UX-genomgång, "40 min de atraso syns knappt").
+  const lateness = latenessLabel(now, start);
 
   function handleArrived() {
     if (disabled || handledIdRef.current === bookingId) return;
@@ -111,9 +115,15 @@ export function NextClientCard({
       className={cn("flex flex-col gap-4", FOCUS_RING)}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-13 text-on-dark-muted">
-          {hoy.siguiente({ relativo: relative(now, start) })}
-        </span>
+        {lateness ? (
+          <Chip size="sm" weight="bold" tone="alert">
+            {lateness}
+          </Chip>
+        ) : (
+          <span className="text-13 text-on-dark-muted">
+            {hoy.siguiente({ relativo: relative(now, start) })}
+          </span>
+        )}
         <div className="flex flex-wrap justify-end gap-1.5">
           {isMemberBooking(booking) ? (
             <Chip size="sm" weight="bold" tone="lavender">

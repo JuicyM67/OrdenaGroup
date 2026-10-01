@@ -161,6 +161,17 @@ använder `accent-lime` (redan en Tailwind-genererad klass ur `--color-lime`, sa
 `accent-ink`/`accent-lime` i kryssrutorna) på en vanlig `<input type="range">` i stället för en
 ny komponent — ingen referens kräver en anpassad slider-skin.
 
+### Nya tokens (WP-57, ägarens UX-genomgång: Hoy "40 min de atraso syns knappt")
+
+Ingen `.dc.html`-referens (UX-genomgång av den byggda appen, inte en designyta). `--color-alert`
+(notisprick, nu-linje) saknade en pastellbakgrund till skillnad från `success`/`deposit`/
+`pending` ovan — `Chip tone="alert"` (NextClientCards förseningstext, Hoy) behövde en, i samma
+ljushet/mättnad som de tre andra.
+
+| Token | Värde | Källa |
+|---|---|---|
+| `--color-alert-bg` | `#FBE2D6` | `Chip tone="alert"` — försenad nästa kund (Hoy/Inicio) |
+
 ## 5. Form och luft
 
 - Radier: se tokens (`shell` 32 → `chip` 10). Tumregel: ju större yta, desto större radie. Cirkelformade knappar för ikonknappar (48×48) och avatarer.
@@ -372,6 +383,12 @@ flik i MobileTabBar), vilket bryter mot principen "max en lime primärhandling p
 Referensen (`Hoy.dc.html`) vinner (D-012): Llegó är sidans primärhandling, "Crear hora flash"
 är en pastellruta bland tre likvärdiga snabbåtgärder och den aktiva fliken är
 navigationstillstånd, inte en handling — men färgen är densamma. Undantaget gäller bara Hoy.
+
+**Medveten avvikelse (WP-57, ägarens UX-genomgång):** `QuickActionTile` är inte längre 96 px
+hög med ikon överst/etikett nederst (ovanstående spec) — snabbknapparna väger lika tungt som
+`NextClientCard` annars. Nu en kompakt rad, 52 px hög, ikon + etikett sida vid sida
+(`quick-action-tile.tsx`). Samma pasteller/radie (`rounded-tile`), bara höjden och den interna
+layouten ändrad.
 
 ### Byggt i WP-16
 

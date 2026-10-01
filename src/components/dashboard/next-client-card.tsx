@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
-import { relative } from "@/components/mobile/hoy-view";
+import { latenessLabel, relative } from "@/components/mobile/hoy-view";
 import { hoy, inicio } from "@/i18n";
 import { formatTime, APP_TZ } from "@/lib/format/dates";
 
@@ -62,6 +62,9 @@ export function NextClientCard({
 
   const start = mustParseInstant(booking.start, "NextClientCard");
   const chip = statusChip(booking);
+  // WP-57: försening är det viktigaste på kortet — en röd chip i stället för grå text
+  // (UX-genomgång, Hoy "40 min de atraso syns knappt" — samma princip här).
+  const lateness = latenessLabel(now, start);
 
   return (
     <Card
@@ -73,9 +76,15 @@ export function NextClientCard({
       className={cn("flex flex-col gap-4", FOCUS_RING)}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="text-13 text-on-dark-muted">
-          {hoy.siguiente({ relativo: relative(now, start) })}
-        </span>
+        {lateness ? (
+          <Chip size="sm" weight="bold" tone="alert">
+            {lateness}
+          </Chip>
+        ) : (
+          <span className="text-13 text-on-dark-muted">
+            {hoy.siguiente({ relativo: relative(now, start) })}
+          </span>
+        )}
         <Chip size="sm" weight="bold" tone={chip.tone}>
           {chip.text}
         </Chip>

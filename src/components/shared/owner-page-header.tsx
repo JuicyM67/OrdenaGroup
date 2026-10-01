@@ -11,9 +11,8 @@
 // - `subtitle` (valfri): en kort kontextrad under/ovan titeln (samma roll som `PageHeader`s
 //   `meta`, t.ex. "Jueves 1 de octubre · 3 reservas hoy").
 // - `actions` (valfri): extra innehåll FÖRE klockan och profilmenyn — t.ex. en skärms egen
-//   primärknapp ("+ Nueva reserva"). Renderas som ytterligare syskon i headerns egen
-//   flex-rad (samma `gap` som mellan titel/klocka/profil, se ui/page-header.tsx) — skicka
-//   EN enda nod (ett element eller en `<>…</>` med flera, om flera knappar behövs).
+//   primärknapp ("+ Nueva reserva"). Skicka EN enda nod (ett element eller en `<>…</>` med
+//   flera, om flera knappar behövs).
 //
 // Data (klockans förfrågningar, ägarens namn, "Min profil", `onLogout` …) kommer INTE som
 // props här — de hämtas från `<OwnerChromeProvider>` (owner-chrome.tsx) via kontext, satt av
@@ -21,15 +20,20 @@
 // (Hoy, se mobile/hoy-screen.tsx). Det gör anropet på varje skärm till bara
 // `<OwnerPageHeader title={…} />`.
 //
-// Responsivt: headern renderas två gånger (en `variant="desktop"` dold under `lg`, en
-// `variant="mobile"` dold från `lg`) — samma `hidden lg:…`/`…lg:hidden`-mönster som resten
-// av ägarskalet (t.ex. UserMenus pill/avatar-växling i den gamla inicio-screen.tsx). Den
-// dolda varianten har `display:none` och försvinner därför helt ur tillgänglighetsträdet,
-// så det finns aldrig två hörbara `<h1>`/knappar samtidigt för skärmläsare.
+// Responsivt: EN enda `<header>` (bygger inte på `ui/page-header.tsx` — den används
+// oförändrad av skärmar som inte migrerat än, t.ex. Clientes/Caja/Blixttider/Ajustes, och
+// stödjer inte en gemensam responsiv header utan att dupliceras). Titel/kontextrad byter
+// plats och storlek med `order`/`lg:`-klasser (ingen duplicerad `<h1>`). `NotificationBell`
+// renderas EN gång (den växlar redan själv mellan popover/bottenark via
+// `useCompactViewport`). `UserMenu` renderas två gånger — pill (skrivbordet) och avatar
+// (mobil), dolda med `hidden lg:…`/`…lg:hidden` — samma mönster som den gamla
+// inicio-screen.tsx, och ofarligt i test: de två varianterna har olika tillgängliga namn
+// (pillen visar namnet som text, avataren har `aria-label="Menú de …"`), till skillnad från
+// om klockan hade duplicerats (samma namn två gånger kolliderar i t.ex. `getByRole`).
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
-import { PageHeader } from "@/components/ui/page-header";
+import { cn } from "@/components/ui/cn";
 import { initialsOf } from "@/lib/format/initials";
 
 import { useOwnerChrome } from "./owner-chrome";
@@ -107,37 +111,26 @@ export function OwnerPageHeader({
   }
 
   return (
-    <>
-      <div className="hidden lg:block">
-        <PageHeader
-          variant="desktop"
-          title={title}
-          meta={subtitle}
-          className={className}
-          actions={
-            <>
-              {actions}
-              {bell}
-              {profileMenu("pill")}
-            </>
-          }
-        />
+    <header
+      className={cn(
+        "flex items-center gap-3 lg:h-13 lg:gap-4",
+        className,
+      )}
+    >
+      <div className="flex min-w-0 flex-1 flex-col">
+        {subtitle ? (
+          <div className="order-1 text-13 text-muted lg:order-2 lg:text-14">
+            {subtitle}
+          </div>
+        ) : null}
+        <h1 className="order-2 mt-0.5 font-display text-30 font-semibold tracking-display lg:order-1 lg:mt-0 lg:text-32 lg:font-bold">
+          {title}
+        </h1>
       </div>
-      <div className="lg:hidden">
-        <PageHeader
-          variant="mobile"
-          title={title}
-          meta={subtitle}
-          className={className}
-          actions={
-            <>
-              {actions}
-              {bell}
-              {profileMenu("avatar")}
-            </>
-          }
-        />
-      </div>
-    </>
+      {actions}
+      {bell}
+      <span className="hidden lg:contents">{profileMenu("pill")}</span>
+      <span className="contents lg:hidden">{profileMenu("avatar")}</span>
+    </header>
   );
 }

@@ -16,6 +16,7 @@ import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
+import { listFreeGaps } from "@/server/flash";
 import { listWaitlist } from "@/server/waitlist";
 
 import { memberView, type MemberView } from "./member";
@@ -68,8 +69,22 @@ export async function loadOwnerHoy(
   ownerName: string,
 ): Promise<HoyData & { member: MemberView }> {
   // WP-23: `listWaitlist` (scheduling-engineer) öppnar sin egen
-  // `withOwnerTx` — samma motiv som `loadOwnerInicio`.
-  const waitlistItems = await listWaitlist(userId, businessId, today, now);
+  // `withOwnerTx` — samma motiv som `loadOwnerInicio`. WP-57: `listFreeGaps`
+  // (src/server/flash/gaps.ts) likaså — samma körning som Blixttiders tomma läge.
+  const [waitlistItems, freeGaps] = await Promise.all([
+    listWaitlist(userId, businessId, today, now),
+    listFreeGaps(userId, businessId, now),
+  ]);
+  // WP-57 (punkt 5): bara dagens luckor i "Resto del día" — imorgons hör till Blixttiders
+  // egen tomma-läge-lista (`/app/flash`).
+  const gaps: HoyData["gaps"] = freeGaps
+    .filter((g) => g.date === today)
+    .map((g) => ({
+      staffId: g.staffId,
+      staffName: g.staffName,
+      start: g.start,
+      end: g.end,
+    }));
   return withOwnerTx(userId, async (q) => {
     const member = await loadMember(q, userId, businessId);
     const data = await loadOwnerHoyIn(
@@ -83,6 +98,7 @@ export async function loadOwnerHoy(
     return {
       ...data,
       waitlistCount: waitlistItems.length,
+      gaps: data.closedToday ? [] : gaps,
       member: memberView(member),
     };
   });
@@ -188,6 +204,10 @@ export async function loadOwnerHoyIn(
     dayCount: closedToday ? 0 : bookings.length,
     dayTotalClp: closedToday || !showMoney ? 0 : dayTotalClp,
     waitlistCount: 0,
+    // WP-57: `loadOwnerHoy` (ovan) fyller i de riktiga luckorna efteråt — `listFreeGaps`
+    // (scheduling-engineer) öppnar sin egen transaktion och kan därför inte anropas härifrån
+    // (samma mönster som `waitlistCount`/`listWaitlist`).
+    gaps: [],
     pendingRequests,
     links: LINKS,
   };

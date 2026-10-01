@@ -20,6 +20,9 @@ const chip = cva("inline-flex w-fit items-center justify-center font-bold", {
       // bokningsfråga (tjänster/kategorier den gäller för).
       lavender: "bg-lavender text-on-lilac-soft",
       ink: "bg-ink text-on-dark",
+      // WP-57 (ägarens UX-genomgång, Hoy: "40 min de atraso syns knappt" → röd chip i
+      // stället för grå text). Ny bakgrundston `--color-alert-bg`, se tokens.css.
+      alert: "bg-alert-bg text-alert",
     },
     size: {
       md: "rounded-event px-3 py-1.5 text-12",
