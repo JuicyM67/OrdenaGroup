@@ -21,6 +21,11 @@ export type AjustesBusiness = {
   /** WP-54: `null` = förmånen för socios är avstängd. */
   memberDiscountPct: number | null;
   memberBenefitText: string | null;
+  /** WP-31: `null` = "Te echamos de menos" automático är avstängd. */
+  winbackDays: number | null;
+  winbackMessage: string | null;
+  winbackOfferPct: number | null;
+  winbackOfferDays: number | null;
 };
 
 export type AjustesService = {
@@ -93,6 +98,8 @@ export type AjustesActions = {
   updateHours: (input: unknown) => Promise<MutationResult>;
   /** WP-54: Ajustes → Socios (förmånen, av/på + rabatt + text). */
   updateMemberSettings: (input: unknown) => Promise<MutationResult>;
+  /** WP-31: Ajustes → Socios y envíos ("Te echamos de menos" automático). */
+  updateWinbackSettings: (input: unknown) => Promise<MutationResult>;
 };
 
 // ---------------------------------------------------------------------------

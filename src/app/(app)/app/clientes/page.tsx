@@ -74,6 +74,7 @@ export default async function ClientesPage({
       items={items}
       query={query}
       canViewReports={current.view.perms.can_view_reports}
+      canManageCampaigns={current.view.perms.can_manage_all_bookings}
       onLogout={logout}
     />
   );

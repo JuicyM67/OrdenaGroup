@@ -27,6 +27,7 @@ import {
   ajustesStaffInputSchema,
   businessSettingsInputSchema,
   memberSettingsInputSchema,
+  winbackSettingsInputSchema,
 } from "./ajustes-schemas";
 import {
   authzCode,
@@ -55,6 +56,14 @@ export type AjustesBusiness = {
   memberDiscountPct: number | null;
   /** WP-54: `businesses.member_benefit_text`. `null` = ingen egen text. */
   memberBenefitText: string | null;
+  /** WP-31: `businesses.winback_days`. `null` = "Te echamos de menos" är avstängd. */
+  winbackDays: number | null;
+  /** WP-31: `businesses.winback_message`. `null` = inget eget meddelande. */
+  winbackMessage: string | null;
+  /** WP-31: `businesses.winback_offer_pct`. `null` = ingen rabatt. */
+  winbackOfferPct: number | null;
+  /** WP-31: `businesses.winback_offer_days`. `null` = ingen rabatt. */
+  winbackOfferDays: number | null;
 };
 
 export type AjustesService = {
@@ -143,6 +152,27 @@ function mapDbError(e: unknown): string {
   ) {
     return "member.benefit_too_long";
   }
+  if (code === "23514" && constraint === "businesses_winback_days_check") {
+    return "winback.days_invalid";
+  }
+  if (
+    code === "23514" &&
+    constraint === "businesses_winback_message_length_check"
+  ) {
+    return "winback.message_too_long";
+  }
+  if (
+    code === "23514" &&
+    constraint === "businesses_winback_offer_pct_check"
+  ) {
+    return "winback.offer_pct_invalid";
+  }
+  if (
+    code === "23514" &&
+    constraint === "businesses_winback_offer_days_check"
+  ) {
+    return "winback.offer_days_invalid";
+  }
   return "unknown";
 }
 
@@ -170,6 +200,10 @@ type BusinessRow = {
   cancel_approval: string;
   member_discount_pct: number | null;
   member_benefit_text: string | null;
+  winback_days: number | null;
+  winback_message: string | null;
+  winback_offer_pct: number | null;
+  winback_offer_days: number | null;
 };
 
 type ServiceRow = {
@@ -203,7 +237,8 @@ async function loadBusinessRow(
   const businessRes = await q.query<BusinessRow>(
     `select name, slug, comuna, phone, address, min_notice_minutes, max_days_ahead,
             cancel_window_hours, slot_interval_minutes, auto_confirm_bookings,
-            cancel_approval, member_discount_pct, member_benefit_text
+            cancel_approval, member_discount_pct, member_benefit_text,
+            winback_days, winback_message, winback_offer_pct, winback_offer_days
        from public.businesses
       where id = $1`,
     [businessId],
@@ -224,6 +259,10 @@ async function loadBusinessRow(
     cancelApproval: toCancelApproval(b.cancel_approval),
     memberDiscountPct: b.member_discount_pct,
     memberBenefitText: b.member_benefit_text,
+    winbackDays: b.winback_days,
+    winbackMessage: b.winback_message,
+    winbackOfferPct: b.winback_offer_pct,
+    winbackOfferDays: b.winback_offer_days,
   };
 }
 
@@ -451,6 +490,47 @@ export async function updateMemberSettings(
             set member_discount_pct = $1, member_benefit_text = $2
           where id = $3`,
         [discountPct, benefitText, businessId],
+      );
+      return assertUpdated(r.rowCount) ?? { ok: true };
+    });
+  } catch (e) {
+    return { ok: false, code: mapDbError(e) };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// WP-31: "Te echamos de menos" automático — `businesses.winback_*`.
+// ---------------------------------------------------------------------------
+
+/** `enabled = false` → sparar alltid `null` i alla fyra kolumner (samma
+ * av/på-via-null-regel som `updateMemberSettings`), oavsett vad `days`/
+ * `message`/`offerPct`/`offerDays` råkar innehålla. */
+export async function updateWinbackSettings(
+  userId: string,
+  businessId: string,
+  rawInput: unknown,
+): Promise<MutationResult> {
+  const parsed = winbackSettingsInputSchema.safeParse(rawInput);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      code: parsed.error.issues[0]?.message ?? "invalid_input",
+    };
+  }
+  const input = parsed.data;
+  const days = input.enabled ? (input.days ?? null) : null;
+  const message = input.enabled && input.message ? input.message : null;
+  const offerPct = input.enabled ? (input.offerPct ?? null) : null;
+  const offerDays = input.enabled ? (input.offerDays ?? null) : null;
+  try {
+    return await withOwnerTx(userId, async (q) => {
+      await requireMemberPerm(q, userId, businessId, "can_edit_settings");
+      const r = await q.query(
+        `update public.businesses
+            set winback_days = $1, winback_message = $2,
+                winback_offer_pct = $3, winback_offer_days = $4
+          where id = $5`,
+        [days, message, offerPct, offerDays, businessId],
       );
       return assertUpdated(r.rowCount) ?? { ok: true };
     });

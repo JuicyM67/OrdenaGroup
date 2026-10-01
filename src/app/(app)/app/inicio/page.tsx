@@ -128,6 +128,11 @@ export default async function InicioPage() {
       onDeclineRequest={onDeclineRequest}
       onApproveCancelRequest={onApproveCancelRequest}
       onDeclineCancelRequest={onDeclineCancelRequest}
+      winbackHref={
+        data.member.perms.can_manage_all_bookings
+          ? "/app/clientes/utskick/nytt?audiencia=inactivos"
+          : undefined
+      }
       myProfile={myProfile ?? undefined}
       myProfileActions={
         myProfile

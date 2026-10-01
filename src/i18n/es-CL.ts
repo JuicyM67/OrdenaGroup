@@ -1490,6 +1490,27 @@ export const email = {
       `Aprovecha ${p.servicio} el ${p.fecha} a las ${p.hora} con descuento. Se acaba pronto.`,
     cta: "Reservar ahora",
   },
+  /** WP-31 (F14): campaña de marketing (`/app/clientes/utskick`, mensaje
+   * libre que escribió el dueño, más una oferta opcional). `oferta` arma la
+   * línea "−X % de descuento, válido hasta …" para la caja destacada (solo
+   * si la campaña tiene `offer_pct`); `baja` es el link del pie de página,
+   * siempre presente (hard rule 7 — ninguna campaña sin forma de darse de
+   * baja). */
+  campanaMarketing: {
+    asunto: (p: { negocio: string }): string => `Novedades de ${p.negocio}`,
+    preheader: "Entérate de esta oferta.",
+    titulo: (p: { negocio: string }): string => `Un mensaje de ${p.negocio}`,
+    ofertaLabel: "Oferta",
+    oferta: (p: { pct: number; fecha?: string }): string =>
+      p.fecha
+        ? `−${p.pct}% de descuento, válido hasta ${p.fecha}`
+        : `−${p.pct}% de descuento`,
+    ofertaTextoLabel: "Detalle",
+    cta: "Reservar",
+    baja: "Darme de baja de estas ofertas",
+    porQue: (p: { negocio: string }): string =>
+      `Recibes este correo porque aceptaste recibir ofertas de ${p.negocio}.`,
+  },
   /** Correos de acceso (Supabase Auth, WP-03b paso 2, F1): link mágico y
    * confirmación de cuenta. Piezas separadas (ya no un solo `cuerpo` de
    * texto plano) para que WP-15/WP-16 armen una plantilla HTML con botón:
@@ -2063,8 +2084,10 @@ export const ajustes = {
      * eliminar la cuenta. */
     privacidad: "Privacidad y datos",
     /** Sección nueva (WP-54): el beneficio para clientes marcados como
-     * `is_member` ("socios", ver `estados.socio`). */
-    socios: "Socios",
+     * `is_member` ("socios", ver `estados.socio`). WP-31: renombrada — ahora
+     * también vive acá el recordatorio automático "Te echamos de menos"
+     * (`winback`, mismo criterio de acceso, `can_edit_settings`). */
+    socios: "Socios y envíos",
   },
   /** Sección "Socios" (WP-54): `businesses.member_discount_pct`/
    * `member_benefit_text`. Apagado = `member_discount_pct` es `null`. */
@@ -2077,6 +2100,25 @@ export const ajustes = {
     beneficioLabel: "Texto del beneficio (opcional)",
     beneficioPlaceholder: "Ej: 10 % de descuento en todos los tratamientos",
     beneficioAyuda: "Hasta 140 caracteres.",
+  },
+  /** WP-31 (F14): "Te echamos de menos" automático — un envío por cliente
+   * cuyo último besuco pasó `winback_days` y que no recibió un winback en
+   * los últimos 90 días (lo decide el trabajo diario, no acá). Apagado =
+   * `businesses.winback_days` es `null`, igual que `socios` arriba. */
+  winback: {
+    titulo: "Te echamos de menos (automático)",
+    activar: "Activar recordatorio automático",
+    activarAyuda:
+      "Les escribimos solos a los clientes que no han vuelto, sin que tengas que hacer nada.",
+    diasLabel: "Días sin venir",
+    diasAyuda: "Un número entre 30 y 365.",
+    mensajeLabel: "Mensaje",
+    mensajePlaceholder: "Ej: Te echamos de menos, vuelve pronto",
+    mensajeAyuda: "Hasta 320 caracteres.",
+    ofertaPctLabel: "Descuento (%, opcional)",
+    ofertaPctAyuda: "Un número entre 1 % y 100 %.",
+    ofertaDiasLabel: "Válido por (días)",
+    ofertaDiasAyuda: "Cuántos días dura el descuento desde que se lo enviamos.",
   },
   reglas: {
     minNoticeLabel: "Anticipación mínima",
@@ -2169,6 +2211,10 @@ export const clientes = {
   /** Rubro de `/app/clientes` (WP-24), mismo patrón que `inicio.titulo`/
    * `hoy.titulo`: encabezado visible de la pantalla completa. */
   titulo: "Clientes",
+  /** WP-31 (F14): botón en el encabezado de `/app/clientes` hacia el
+   * historial de campañas (`/app/clientes/utskick`, ver `campanas`). Solo
+   * para quien puede enviarlas (dueño o `can_manage_all_bookings`). */
+  ctaCampanas: "Campañas",
   lista: {
     buscarPlaceholder: "Buscar por nombre o celular",
     columnaUltimaVisita: "Última visita",
@@ -2242,6 +2288,14 @@ export const clientes = {
     ctaSms: "Enviar SMS",
     ctaEmail: "Enviar correo",
     ctaVerFicha: "Ver ficha",
+    /** WP-31 (F14): botón "Enviar oferta" en la ficha del cliente — lleva a
+     * `/app/clientes/utskick/nytt?kunder=<id>` con este cliente ya elegido.
+     * Solo la ve quien puede gestionarla (`CustomerDetail.canManageMembership`,
+     * misma condición "dueño o `can_manage_all_bookings`" que la membresía).
+     * Deshabilitado (con `ofertaSinConsentimiento` al lado) si el cliente no
+     * aceptó recibir ofertas (`consentMarketing.at`). */
+    ctaEnviarOferta: "Enviar oferta",
+    ofertaSinConsentimiento: "Este cliente no aceptó recibir ofertas.",
     /** WP-54: tarjeta "Socio" en la ficha del cliente (kryssrutan "Medlem"
      * del plan). Solo la ve quien puede gestionarla
      * (`CustomerDetail.canManageMembership`). */
@@ -2371,6 +2425,102 @@ export const clientes = {
     confirmarSi: "Sí, anonimizar",
     confirmarNo: "No, mantener",
     error: "No pudimos completar la acción. Inténtalo de nuevo.",
+  },
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// campanas: /app/clientes/utskick (WP-31, F14) — envíos de ofertas a
+// clientes ("campañas") y el recordatorio automático "Te echamos de menos"
+// (configurado en `ajustes.winback`). `channel` reutiliza
+// `public.message_channel` ('email'|'sms'): acá solo las etiquetas, la
+// lógica (a quién le llega, el envío real) vive en
+// `src/server/campaigns/send.ts`. Solo le llega a clientes con
+// `consent_marketing_at` (hard rule 7 — nunca premarcada, nunca a quien no
+// dio su consentimiento), de ahí `soloConsentimiento`/`sinConsentimiento`.
+// ---------------------------------------------------------------------------
+
+export const campanas = {
+  /** Encabezado de `/app/clientes/utskick` (historial de campañas). */
+  titulo: "Campañas",
+  canal: {
+    email: "Correo",
+    sms: "SMS",
+  },
+  historial: {
+    vacio: "Todavía no has enviado ninguna campaña.",
+    columnaCanal: "Canal",
+    columnaFecha: "Fecha",
+    columnaDestinatarios: "Destinatarios",
+    /** Reservas hechas con el link de la oferta (`campaign_recipients.redeemed_booking_id`). */
+    columnaReservas: "Reservas con el link",
+    ctaNueva: "Nuevo envío",
+    /** Toast al volver desde `/app/clientes/utskick/nytt` con `?enviado=1`. */
+    enviadoToast: "Enviamos tu campaña.",
+  },
+  nueva: {
+    titulo: "Nuevo envío",
+    volver: "Volver a Campañas",
+    nombreLabel: "Nombre de la campaña",
+    nombrePlaceholder: "Ej: Vuelve en septiembre",
+    audienciaLabel: "¿A quién le llega?",
+    /** Etiquetas de `CampaignAudience.kind` (`campaigns.audience->>'kind'`). */
+    audiencia: {
+      all: "Todos los que aceptaron ofertas",
+      members: "Socios",
+      regulars: "Habituales",
+      inactive: "Inactivos hace",
+      selected: "Clientes elegidos",
+    },
+    audienciaInactivosDiasLabel: "días",
+    /** "3 clientes elegidos" — cuando la audiencia llega por `?kunder=` (la
+     * ficha del cliente) en vez de elegirse acá. */
+    audienciaSeleccionadosResumen: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "cliente elegido" : "clientes elegidos"}`,
+    canalLabel: "Canal",
+    mensajeLabel: "Mensaje",
+    mensajePlaceholder: "Escribe tu mensaje…",
+    contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    /** Solo SMS (igual que `clientes.ficha.mensaje.segmentosSms`): cuántos
+     * SMS ocupa el texto. */
+    segmentosSms: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "SMS" : "SMS (varios mensajes)"}`,
+    ofertaActivar: "Agregar un descuento",
+    ofertaActivarAyuda:
+      "Opcional: un porcentaje de descuento, con un texto corto y una fecha de vencimiento.",
+    ofertaPctLabel: "Descuento (%)",
+    ofertaPctAyuda: "Un número entre 1 % y 100 %.",
+    ofertaTextoLabel: "Texto del descuento (opcional)",
+    ofertaTextoPlaceholder: "Ej: 15 % de descuento en tu próxima hora",
+    ofertaValidoHastaLabel: "Válido hasta",
+    previsualizacion: {
+      titulo: "Antes de enviar",
+      cargando: "Calculando…",
+      destinatarios: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "cliente va a recibir este mensaje" : "clientes van a recibir este mensaje"}`,
+      sinConsentimiento: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "cliente no lo recibe" : "clientes no lo reciben"} porque no aceptó recibir ofertas.`,
+      sms: (p: { porMensaje: number; total: number }): string =>
+        `${p.porMensaje} SMS por mensaje · ${p.total} SMS en total`,
+      vacio: "Elige a quién le llega para ver cuántos clientes lo recibirán.",
+    },
+    ctaEnviar: "Enviar",
+    enviando: "Enviando…",
+    confirmarTitulo: "¿Enviar esta campaña?",
+    confirmarCuerpo: (p: { n: number }): string =>
+      `Le va a llegar a ${p.n} ${p.n === 1 ? "cliente" : "clientes"} que aceptaron recibir ofertas. No se puede deshacer.`,
+    confirmarSi: "Sí, enviar",
+    confirmarNo: "No, seguir editando",
+    soloConsentimiento:
+      "Solo les llega a los clientes que aceptaron recibir ofertas.",
+    error: {
+      forbidden: "No tienes permiso para enviar campañas.",
+      invalid_input: "Revisa los datos del formulario.",
+      no_recipients: "No hay clientes que reciban este envío.",
+      sms_not_available: "El SMS no está disponible en tu instalación.",
+      rate_limited:
+        "Enviaste muchas campañas. Espera un momento y prueba de nuevo.",
+      unexpected: "No pudimos enviar la campaña. Inténtalo de nuevo.",
+    },
   },
 } as const satisfies Trad;
 
@@ -2784,6 +2934,18 @@ export const sms = {
    * `pie` (no es marketing, no está en `SMS_MARKETING_TEMPLATES`). */
   mensajeLibre: (p: { negocio: string; texto: string }): string =>
     `${p.negocio}: ${p.texto}`,
+  /** WP-31 (F14): campaña de marketing (`/app/clientes/utskick`, mismo
+   * mensaje libre que escribió el dueño, hasta 320 caracteres). `link` =
+   * `/{slug}?o=<token>`, `bajaLink` = `/baja/<token>` — la baja va SIEMPRE
+   * en el propio texto (no vía `pie`/"Responde STOP", pensada para
+   * WhatsApp, ni vía `SMS_MARKETING_TEMPLATES`). */
+  campanaMarketing: (p: {
+    negocio: string;
+    texto: string;
+    link: string;
+    bajaLink: string;
+  }): string =>
+    `${p.negocio}: ${p.texto} Reserva: ${p.link} Baja: ${p.bajaLink}`,
   /** Línea de baja: ver la nota del bloque de arriba sobre cuándo se usa. */
   pie: "Responde STOP para no recibir más.",
 } as const satisfies Trad;
@@ -3422,4 +3584,23 @@ export const redesSociales = {
    * tarjeta de contacto). Instagram reutiliza `perfil.publico.instagramAria`. */
   tiktokAria: (p: { negocio: string }): string => `TikTok de ${p.negocio}`,
   facebookAria: (p: { negocio: string }): string => `Facebook de ${p.negocio}`,
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// baja: `/baja/[token]` (WP-31, F14) — página pública (sin login) a la que
+// llega el link de baja de una campaña de marketing. Bloque nuevo al final
+// del archivo (mismo criterio que `redesSociales`): evita conflictos con
+// otros agentes que tocan `es-CL.ts` en paralelo.
+// ---------------------------------------------------------------------------
+
+export const baja = {
+  titulo: "Darte de baja",
+  cuerpo: (p: { negocio: string }): string =>
+    `Vas a dejar de recibir ofertas y novedades de ${p.negocio} por correo o SMS. Vas a seguir recibiendo los avisos de tus propias reservas.`,
+  cta: "Darme de baja",
+  /** Después de confirmar (o si el link ya se había usado antes). */
+  listo: (p: { negocio: string }): string =>
+    `Listo. Ya no recibirás más ofertas de ${p.negocio}.`,
+  /** Token inválido/desconocido → 404 (`notFound()`), no un mensaje acá. */
+  error: "No pudimos procesar tu solicitud. Inténtalo de nuevo.",
 } as const satisfies Trad;

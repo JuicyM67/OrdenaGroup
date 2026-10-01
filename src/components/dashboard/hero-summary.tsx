@@ -3,12 +3,18 @@
 // egen mallsträng byggs här (hård regel "UI räknar aldrig ut pengar").
 //
 // WP-47: "Ver detalle" (länkade till `#detalle-semana`, ingen sektion med det id:t finns)
-// och "Enviar recordatorio" (`onEnviarRecordatorio`, winback/D-005 saknar backend) döljs
-// tills funktionerna finns — WP-xx: visas när funktionen finns.
-import { List, MessageSquare, Zap } from "lucide-react";
+// döljs tills funktionen finns — WP-xx: visas när funktionen finns.
+//
+// WP-31: "Enviar recordatorio" återinförs som en länk (`winbackHref`, satt av
+// `/app/inicio/page.tsx` till `/app/clientes/utskick/nytt?audiencia=inactivos` — bara om
+// den inloggade kan skicka utskick, `can_manage_all_bookings`/ägare) i stället för den
+// gamla `onClick`-callbacken: ren navigering, ingen dialog att koppla.
+import { ArrowUpRight, List, MessageSquare, Zap } from "lucide-react";
+import Link from "next/link";
 
 import { strokeCard } from "@/components/ui/icons";
 import { Card } from "@/components/ui/card";
+import { IconButton } from "@/components/ui/icon-button";
 import { inicio } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import { formatLocalDate } from "@/lib/format/dates";
@@ -23,12 +29,15 @@ export type HeroSummaryProps = {
   ownerFirstName: string;
   week: InicioData["week"];
   features: InicioData["features"];
+  /** WP-31: `undefined` döljer knappen (ingen behörighet att skicka utskick). */
+  winbackHref?: string;
 };
 
 export function HeroSummary({
   ownerFirstName,
   week,
   features,
+  winbackHref,
 }: HeroSummaryProps) {
   const variant = heroVariant(week);
   const horasText = inicio.hero.horas({ n: week.recoveredHours });
@@ -107,8 +116,29 @@ export function HeroSummary({
           meta={inicio.features.teEchamosDeMenos.resumen({
             n: features.winback.count,
           })}
-          // WP-47: "Enviar recordatorio" döljs (winback/D-005 saknar backend) —
-          // WP-xx: visas när funktionen finns.
+          action={
+            winbackHref ? (
+              <IconButton
+                label={inicio.features.teEchamosDeMenos.enviarRecordatorio}
+                tone="ink"
+                size={34}
+                asChild
+                // Knappen ligger i ett lime FeatureCard, men FeatureCard i sig sitter inuti
+                // hero-kortets `data-surface="dark"` (card.tsx): utan denna override läcker
+                // `on-dark:focus-visible:outline-lime` (icon-button.tsx) igenom och ger lime
+                // fokusring på lime bakgrund (osynlig, QA).
+                className="on-dark:focus-visible:outline-ink"
+              >
+                <Link href={winbackHref} prefetch={false}>
+                  <ArrowUpRight
+                    aria-hidden="true"
+                    className="size-3.75"
+                    strokeWidth={2.4}
+                  />
+                </Link>
+              </IconButton>
+            ) : undefined
+          }
         />
       </div>
     </Card>
