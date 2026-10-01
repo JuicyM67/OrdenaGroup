@@ -18,6 +18,7 @@ import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
+import { appHref } from "@/config/routes";
 import { caja, comun } from "@/i18n";
 import {
   formatDuration,
@@ -116,7 +117,7 @@ export function InformesScreen({
         title={
           <span className="flex items-center gap-3">
             <IconButton label={comun.volver} tone="ghost" size={36} asChild>
-              <Link href="/app/caja">
+              <Link href={appHref("appCaja")}>
                 <ArrowLeft
                   aria-hidden="true"
                   className="size-4.5"

@@ -20,6 +20,7 @@ import type {
   FlashCatalogService,
   FlashStaff,
 } from "@/components/flash/types";
+import { appHref } from "@/config/routes";
 import { parseLocalDate, APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { pgErrorCode } from "@/server/db/errors";
@@ -79,7 +80,7 @@ export default async function AppAgendaPage({
   if (!user) redirect("/login");
 
   const business = await getOwnerBusiness(user.id);
-  if (!business) redirect("/app/onboarding");
+  if (!business) redirect(appHref("appOnboarding"));
 
   const { vista, fecha, cliente } = await searchParams;
   const parsedFecha = fecha ? parseLocalDate(fecha) : null;

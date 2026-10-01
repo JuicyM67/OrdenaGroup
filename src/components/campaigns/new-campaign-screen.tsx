@@ -30,6 +30,7 @@ import { Pill } from "@/components/ui/pill";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { TextField } from "@/components/ui/text-field";
+import { appHref } from "@/config/routes";
 import { campanas } from "@/i18n";
 import { clientSmsLengthInfo } from "@/components/customers/sms-length";
 
@@ -213,7 +214,7 @@ export function NewCampaignScreen({
     const result = await onSend(input);
     if (result.ok) {
       setConfirmOpen(false);
-      router.push("/app/clientes/utskick?enviado=1");
+      router.push(`${appHref("appClientesUtskick")}?enviado=1`);
       return;
     }
     setSendStatus("error");
@@ -253,7 +254,7 @@ export function NewCampaignScreen({
               size={36}
               asChild
             >
-              <Link href="/app/clientes/utskick">
+              <Link href={appHref("appClientesUtskick")}>
                 <ArrowLeft
                   aria-hidden="true"
                   className="size-4.5"

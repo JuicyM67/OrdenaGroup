@@ -7,6 +7,7 @@ import { notFound, redirect } from "next/navigation";
 import { z } from "zod";
 
 import { SolicitudDetailScreen } from "@/components/solicitudes/solicitud-detail-screen";
+import { appHref } from "@/config/routes";
 import { APP_TZ, parseInstant, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
@@ -42,7 +43,7 @@ export default async function SolicitudDetailPage({
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
+  if (!current) redirect(appHref("appOnboarding"));
 
   if (!parsedId.success) notFound();
   const bookingId = parsedId.data;
@@ -56,8 +57,8 @@ export default async function SolicitudDetailPage({
 
   const r = parseInstant(detail.start);
   const agendaHref = r.ok
-    ? `/app/agenda?vista=dia&fecha=${toLocalDate(r.value, APP_TZ)}`
-    : "/app/agenda";
+    ? `${appHref("appAgenda")}?vista=dia&fecha=${toLocalDate(r.value, APP_TZ)}`
+    : appHref("appAgenda");
 
   const onConfirm = async (id: string) => {
     "use server";

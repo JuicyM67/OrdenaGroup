@@ -11,6 +11,7 @@ import { logout } from "@/app/auth/actions";
 import { NewCampaignScreen } from "@/components/campaigns/new-campaign-screen";
 import type { SelectedCustomer } from "@/components/campaigns/types";
 import { market } from "@/config/brand";
+import { appHref } from "@/config/routes";
 import { campanas } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
@@ -50,8 +51,9 @@ export default async function NuevoUtskickPage({
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
-  if (!current.view.perms.can_manage_all_bookings) redirect("/app/clientes");
+  if (!current) redirect(appHref("appOnboarding"));
+  if (!current.view.perms.can_manage_all_bookings)
+    redirect(appHref("appClientes"));
 
   const { kunder, audiencia } = await searchParams;
 

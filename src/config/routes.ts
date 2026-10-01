@@ -102,6 +102,144 @@ export function hrefIndustria(id: IndustriaId): string {
   return `/para/${id}`;
 }
 
+// ---------------------------------------------------------------------------
+// App-rutter (WP-58): samma mönster som ovan, men för ägarytan (`/app/*`) och
+// de publika token-sidorna (`/baja/[token]`). CL-sökvägarna är filsystemets
+// (`src/app/(app)/app/*`, `src/app/(app-public)/app/*`, `src/app/app/*`,
+// `src/app/baja/*`), oförändrade. SE använder svenska slugs, skrivna om i
+// `next.config.ts` (samma `seRouteRewrites`/`seRouteRedirects` som
+// marknadssidorna). `/v/[token]` och `/r/[token]` är redan korta, språklösa
+// koder — de finns INTE i den här tabellen, oförändrade i båda marknaderna.
+export type AppRouteId =
+  | "appInicio"
+  | "appAgenda"
+  | "appHoy"
+  | "appClientes"
+  | "appClienteDetail"
+  | "appClientesUtskick"
+  | "appClientesUtskickNytt"
+  | "appCaja"
+  | "appCajaInformes"
+  | "appFlash"
+  | "appAjustes"
+  | "appAjustesNegocio"
+  | "appAjustesPerfil"
+  | "appAjustesReglas"
+  | "appAjustesServicios"
+  | "appAjustesFormulario"
+  | "appAjustesHorario"
+  | "appAjustesSocios"
+  | "appAjustesEquipo"
+  | "appAjustesPrivacidad"
+  | "appSolicitud"
+  | "appInvitacion"
+  | "appBienvenida"
+  | "appOnboarding"
+  | "baja";
+
+/** Ajustes-flikarna (`AjustesTabKey`, `ajustes-tabs.tsx`) och deras `AppRouteId` — en
+ * nyckel per nyckel, så `ajustesTabHref()` kan återanvända den här tabellen i stället för
+ * att duplicera sökvägarna. */
+export const AJUSTES_TAB_ROUTE_IDS = {
+  negocio: "appAjustesNegocio",
+  perfil: "appAjustesPerfil",
+  reglas: "appAjustesReglas",
+  servicios: "appAjustesServicios",
+  formulario: "appAjustesFormulario",
+  horario: "appAjustesHorario",
+  socios: "appAjustesSocios",
+  equipo: "appAjustesEquipo",
+  privacidad: "appAjustesPrivacidad",
+} as const satisfies Record<string, AppRouteId>;
+
+/** CL-sökvägen (filsystemets), med `[id]`/`[token]` som platshållare för dynamiska
+ * segment (bara ett per rutt). */
+const CL_APP_ROUTES: Record<AppRouteId, string> = {
+  appInicio: "/app/inicio",
+  appAgenda: "/app/agenda",
+  appHoy: "/app/hoy",
+  appClientes: "/app/clientes",
+  appClienteDetail: "/app/clientes/[id]",
+  appClientesUtskick: "/app/clientes/utskick",
+  appClientesUtskickNytt: "/app/clientes/utskick/nytt",
+  appCaja: "/app/caja",
+  appCajaInformes: "/app/caja/informes",
+  appFlash: "/app/flash",
+  appAjustes: "/app/ajustes",
+  appAjustesNegocio: "/app/ajustes/negocio",
+  appAjustesPerfil: "/app/ajustes/perfil",
+  appAjustesReglas: "/app/ajustes/reglas",
+  appAjustesServicios: "/app/ajustes/servicios",
+  appAjustesFormulario: "/app/ajustes/formulario",
+  appAjustesHorario: "/app/ajustes/horario",
+  appAjustesSocios: "/app/ajustes/socios",
+  appAjustesEquipo: "/app/ajustes/equipo",
+  appAjustesPrivacidad: "/app/ajustes/privacidad",
+  appSolicitud: "/app/solicitudes/[id]",
+  appInvitacion: "/app/invitacion/[token]",
+  appBienvenida: "/app/bienvenida/[token]",
+  appOnboarding: "/app/onboarding",
+  baja: "/baja/[token]",
+};
+
+/** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
+const SE_APP_ROUTES: Record<AppRouteId, string> = {
+  appInicio: "/app/start",
+  appAgenda: "/app/kalender",
+  appHoy: "/app/idag",
+  appClientes: "/app/kunder",
+  appClienteDetail: "/app/kunder/[id]",
+  appClientesUtskick: "/app/kunder/utskick",
+  appClientesUtskickNytt: "/app/kunder/utskick/nytt",
+  appCaja: "/app/kassa",
+  appCajaInformes: "/app/kassa/rapporter",
+  appFlash: "/app/blixttider",
+  appAjustes: "/app/installningar",
+  appAjustesNegocio: "/app/installningar/foretag",
+  appAjustesPerfil: "/app/installningar/profil",
+  appAjustesReglas: "/app/installningar/bokningsregler",
+  appAjustesServicios: "/app/installningar/tjanster",
+  appAjustesFormulario: "/app/installningar/bokningsformular",
+  appAjustesHorario: "/app/installningar/oppettider",
+  appAjustesSocios: "/app/installningar/medlemmar",
+  appAjustesEquipo: "/app/installningar/team",
+  appAjustesPrivacidad: "/app/installningar/integritet",
+  appSolicitud: "/app/forfragningar/[id]",
+  appInvitacion: "/app/inbjudan/[token]",
+  appBienvenida: "/app/valkommen/[token]",
+  appOnboarding: "/app/kom-igang",
+  baja: "/avregistrera/[token]",
+};
+
+const APP_ROUTES_BY_MARKET: Record<Market, Record<AppRouteId, string>> = {
+  CL: CL_APP_ROUTES,
+  SE: SE_APP_ROUTES,
+};
+
+/** Länk till en app-rutt, i den här installationens marknad. `param` ersätter ruttens
+ * enda dynamiska segment (`[id]`/`[token]`) om den har ett — hash/query läggs på av
+ * anroparen (t.ex. `` `${appHref("appAgenda")}?vista=dia&fecha=${d}` ``, samma mönster
+ * som innan, se WP-58-planen). */
+export function appHref(id: AppRouteId, param?: string): string {
+  const path = APP_ROUTES_BY_MARKET[market][id];
+  return param === undefined ? path : path.replace(/\[(?:id|token)\]/, param);
+}
+
+function stripDynamicSegment(path: string): string {
+  return path.replace(/\[(?:id|token)\]$/, "");
+}
+
+/** Prefixet (utan själva id/token-delen) för en dynamisk app-rutt, i BÅDA marknadernas
+ * form — oavsett vilken marknad den här installationen kör. `src/proxy.ts` körs före
+ * `next.config.ts`s rewrites/redirects och måste därför känna igen både den spanska och
+ * den svenska sökvägen när den avgör om en rutt är publik. */
+export function appRoutePrefixes(id: AppRouteId): readonly [string, string] {
+  return [
+    stripDynamicSegment(CL_APP_ROUTES[id]),
+    stripDynamicSegment(SE_APP_ROUTES[id]),
+  ];
+}
+
 /** Alla industri-id:n med sin svenska slug, i en fast ordning — används av `next.config.ts`
  * för att bygga SE:s `/for/<slug>`-rewrites utan att duplicera listan. */
 export const SE_INDUSTRIA_SLUG_LIST: readonly {
@@ -111,6 +249,12 @@ export const SE_INDUSTRIA_SLUG_LIST: readonly {
   id,
   slug: SE_INDUSTRIA_SLUGS[id],
 }));
+
+/** `[id]`/`[token]` (våra platshållare) → `:id`/`:token` (path-to-regexp, det
+ * `next.config.ts`s `rewrites`/`redirects` förstår). */
+function toRewritePath(path: string): string {
+  return path.replace(/\[(id|token)\]/, ":$1");
+}
 
 /** `{ source, destination }`-par: svensk slug → befintlig (spansk) sidfilsrutt. Bara SE
  * (`next.config.ts` anropar den här funktionen enbart när `NEXT_PUBLIC_MARKET=SE`). */
@@ -126,7 +270,11 @@ export function seRouteRewrites(): { source: string; destination: string }[] {
     source: `/legal/${slug}`,
     destination: `/legal/${id}`,
   }));
-  return [...rutter, ...industrier, ...legal];
+  const appRutter = (Object.keys(CL_APP_ROUTES) as AppRouteId[]).map((id) => ({
+    source: toRewritePath(SE_APP_ROUTES[id]),
+    destination: toRewritePath(CL_APP_ROUTES[id]),
+  }));
+  return [...rutter, ...industrier, ...legal, ...appRutter];
 }
 
 /** `{ source, destination, permanent }`-par: gamla spanska sökvägar → nya svenska (308),
@@ -153,5 +301,10 @@ export function seRouteRedirects(): {
     destination: `/legal/${slug}`,
     permanent: true as const,
   }));
-  return [...rutter, ...industrier, ...legal];
+  const appRutter = (Object.keys(CL_APP_ROUTES) as AppRouteId[]).map((id) => ({
+    source: toRewritePath(CL_APP_ROUTES[id]),
+    destination: toRewritePath(SE_APP_ROUTES[id]),
+    permanent: true as const,
+  }));
+  return [...rutter, ...industrier, ...legal, ...appRutter];
 }

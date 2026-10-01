@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { addMonths, type YearMonth } from "@/components/ui/mini-calendar/grid";
 import { MiniCalendar } from "@/components/ui/mini-calendar/mini-calendar";
+import { appHref } from "@/config/routes";
 import { calendario, inicio } from "@/i18n";
 import { WEEKDAY_MIN } from "@/lib/format/calendar";
 import { formatLocalDate, type LocalDate } from "@/lib/format/dates";
@@ -65,7 +66,7 @@ export function CalendarCard({
         onSelect={(date) => {
           setSelected(date);
           // WP-47: klick på en dag går till Agendans dagvy för det datumet.
-          router.push(`/app/agenda?vista=dia&fecha=${date}`);
+          router.push(`${appHref("appAgenda")}?vista=dia&fecha=${date}`);
         }}
         onPrevMonth={() => setMonth((m) => addMonths(m, -1))}
         onNextMonth={() => setMonth((m) => addMonths(m, 1))}

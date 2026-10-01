@@ -13,6 +13,7 @@ import {
   type AjustesTabItem,
   type AjustesTabKey,
 } from "@/components/settings/ajustes-tabs";
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getCurrentMember,
@@ -58,8 +59,8 @@ export async function requireAjustesTab(
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
-  if (!ajustesTabVisible(tab, current.view)) redirect("/app/agenda");
+  if (!current) redirect(appHref("appOnboarding"));
+  if (!ajustesTabVisible(tab, current.view)) redirect(appHref("appAgenda"));
 
   const [myProfile, pendingRequests] = await Promise.all([
     loadMyProfileAction(),

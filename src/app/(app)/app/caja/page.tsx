@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { CajaScreen } from "@/components/caja/caja-screen";
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { MANUAL_METHODS } from "@/server/payments/mark-paid";
@@ -34,8 +35,8 @@ export default async function CajaPage() {
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
-  if (!current.view.perms.can_view_reports) redirect("/app/agenda");
+  if (!current) redirect(appHref("appOnboarding"));
+  if (!current.view.perms.can_view_reports) redirect(appHref("appAgenda"));
 
   const initialData = await loadCajaAction({ kind: "today" });
   const owner = ownerNameParts(user.email);

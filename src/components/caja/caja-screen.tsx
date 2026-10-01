@@ -28,6 +28,7 @@ import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField } from "@/components/ui/date-field";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { appHref } from "@/config/routes";
 import { caja, comun } from "@/i18n";
 import {
   APP_TZ,
@@ -253,7 +254,9 @@ export function CajaScreen({
             className="w-fit"
           />
           <Button asChild variant="secondary" size="sm">
-            <Link href="/app/caja/informes">{caja.tabs.informes} →</Link>
+            <Link href={appHref("appCajaInformes")}>
+              {caja.tabs.informes} →
+            </Link>
           </Button>
         </div>
         {periodKind === "range" ? (

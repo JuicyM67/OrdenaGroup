@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 
+import { appHref } from "@/config/routes";
 import { nav, onboarding, perfil, equipo } from "@/i18n";
 
 import { Avatar, type AvatarProps } from "../ui/avatar";
@@ -95,7 +96,7 @@ export function UserMenu({
             {equipo.miPerfil}
           </MenuButtonItem>
         ) : (
-          <MenuLinkItem href="/app/ajustes/perfil" prefetch={false}>
+          <MenuLinkItem href={appHref("appAjustesPerfil")} prefetch={false}>
             <UserRound
               aria-hidden="true"
               className={ICON_CLASS}
@@ -104,7 +105,7 @@ export function UserMenu({
             {perfil.ajustes.titulo}
           </MenuLinkItem>
         )}
-        <MenuLinkItem href="/app/ajustes" prefetch={false}>
+        <MenuLinkItem href={appHref("appAjustes")} prefetch={false}>
           <SlidersHorizontal
             aria-hidden="true"
             className={ICON_CLASS}

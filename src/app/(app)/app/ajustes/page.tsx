@@ -6,6 +6,7 @@
 import { redirect } from "next/navigation";
 
 import { firstAjustesTabHref } from "@/components/settings/ajustes-tabs";
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 
@@ -19,8 +20,8 @@ export default async function AjustesPage() {
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
+  if (!current) redirect(appHref("appOnboarding"));
 
   const href = firstAjustesTabHref(current.view);
-  redirect(href ?? "/app/agenda");
+  redirect(href ?? appHref("appAgenda"));
 }

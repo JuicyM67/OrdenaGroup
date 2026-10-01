@@ -12,6 +12,7 @@ import {
   APP_TZ,
   type LocalDate,
 } from "@/lib/format/dates";
+import { appHref } from "@/config/routes";
 import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
@@ -27,14 +28,14 @@ import { isoOf, listPaidBookingIds, staffColorOf } from "./shared";
  * sidorna (`/app/flash`, väntelistkortet i `/app/agenda`). "Cobrar" pekar på
  * Caja (WP-24) — ingen egen "snabb inkassering"-ruta finns. */
 const LINKS: HoyData["links"] = {
-  flash: "/app/flash",
-  waitlist: "/app/agenda",
-  cobrar: "/app/caja",
+  flash: appHref("appFlash"),
+  waitlist: appHref("appAgenda"),
+  cobrar: appHref("appCaja"),
   tabs: {
-    hoy: "/app/hoy",
-    agenda: "/app/agenda",
-    clientes: "/app/clientes",
-    caja: "/app/caja",
+    hoy: appHref("appHoy"),
+    agenda: appHref("appAgenda"),
+    clientes: appHref("appClientes"),
+    caja: appHref("appCaja"),
   },
 };
 

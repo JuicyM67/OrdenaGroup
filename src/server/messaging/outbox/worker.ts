@@ -1,5 +1,6 @@
 import "server-only";
 
+import { appHref } from "@/config/routes";
 import { formulario } from "@/i18n";
 import {
   APP_LOCALE,
@@ -602,7 +603,7 @@ function manageLink(token: string): string {
 
 /** `${APP_URL}/app/invitacion/${token}` (WP-46 plan, paso 4). */
 function invitationAcceptLink(token: string): string {
-  return `${appUrl()}/app/invitacion/${token}`;
+  return `${appUrl()}${appHref("appInvitacion", token)}`;
 }
 
 function bookAgainLink(slug: string): string {
@@ -610,12 +611,12 @@ function bookAgainLink(slug: string): string {
 }
 
 function agendaLink(): string {
-  return `${appUrl()}/app/agenda`;
+  return `${appUrl()}${appHref("appAgenda")}`;
 }
 
 /** WP-56: `${APP_URL}/app/solicitudes/{bookingId}` (svara med ett tryck). */
 function solicitudLink(bookingId: string): string {
-  return `${appUrl()}/app/solicitudes/${bookingId}`;
+  return `${appUrl()}${appHref("appSolicitud", bookingId)}`;
 }
 
 /** WP-31: `${APP_URL}/{slug}?o=<token>` — erbjudandelänken (gäller som en
@@ -628,7 +629,7 @@ function offerLink(slug: string, token: string): string {
 /** WP-31: `${APP_URL}/baja/<token>` — avregistreringslänken (regel hård 7,
  * alltid med i en kampanj). */
 function bajaLink(token: string): string {
-  return `${appUrl()}/baja/${token}`;
+  return `${appUrl()}${appHref("baja", token)}`;
 }
 
 /** WP-23: `${APP_URL}/v/<token>` — väntelistans erbjudandelänk ("Ta

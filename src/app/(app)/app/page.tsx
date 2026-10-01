@@ -23,6 +23,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getOwnerBusiness,
@@ -59,7 +60,7 @@ export default async function AppIndexPage() {
     } catch {
       // se kommentaren ovan
     }
-    redirect(`/app/invitacion/${pending}`);
+    redirect(appHref("appInvitacion", pending));
   }
 
   const inviteToken = store.get(INVITE_COOKIE_NAME)?.value;
@@ -69,7 +70,7 @@ export default async function AppIndexPage() {
     // Route Handler kan det). Ligger kvar tills den går ut av sig själv (20
     // min) — ett omförsök inom fönstret ger bara "used_or_expired"
     // (idempotent) och fortsätter till det vanliga flödet nedan.
-    if (result.ok) redirect("/app/onboarding");
+    if (result.ok) redirect(appHref("appOnboarding"));
   }
 
   const pendingSolicitud = store.get("pending_solicitud")?.value;
@@ -79,10 +80,11 @@ export default async function AppIndexPage() {
     } catch {
       // se kommentaren vid `pending_invitation` ovan
     }
-    redirect(`/app/solicitudes/${pendingSolicitud}`);
+    redirect(appHref("appSolicitud", pendingSolicitud));
   }
 
   const business = await getOwnerBusiness(user.id);
-  if (!business || isOnboardingDraft(business)) redirect("/app/onboarding");
-  redirect("/app/inicio");
+  if (!business || isOnboardingDraft(business))
+    redirect(appHref("appOnboarding"));
+  redirect(appHref("appInicio"));
 }

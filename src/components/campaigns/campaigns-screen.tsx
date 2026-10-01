@@ -24,6 +24,7 @@ import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
+import { appHref } from "@/config/routes";
 import { campanas, comun } from "@/i18n";
 import { APP_TZ, formatDate, parseInstant } from "@/lib/format/dates";
 
@@ -88,7 +89,7 @@ export function CampaignsScreen({
         title={
           <span className="flex items-center gap-3">
             <IconButton label={comun.volver} tone="ghost" size={36} asChild>
-              <Link href="/app/clientes">
+              <Link href={appHref("appClientes")}>
                 <ArrowLeft
                   aria-hidden="true"
                   className="size-4.5"
@@ -101,7 +102,7 @@ export function CampaignsScreen({
         }
         actions={
           <Button asChild variant="primary" size="lg">
-            <Link href="/app/clientes/utskick/nytt">
+            <Link href={appHref("appClientesUtskickNytt")}>
               {campanas.historial.ctaNueva}
             </Link>
           </Button>

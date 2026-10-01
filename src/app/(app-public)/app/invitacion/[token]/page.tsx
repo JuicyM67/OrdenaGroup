@@ -15,6 +15,7 @@ import { requestMagicLink } from "@/app/(auth)/login/actions";
 import { LoginForm } from "@/components/auth/login-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { appHref } from "@/config/routes";
 import { comun, invitacion } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { acceptInvitation, loadInvitationPreview } from "@/server/team/accept";
@@ -115,10 +116,10 @@ export default async function InvitationPage({
       token,
       new Date(),
     );
-    if (result.ok) redirect("/app/agenda");
+    if (result.ok) redirect(appHref("appAgenda"));
     const qs = new URLSearchParams({ error: result.code });
     if (result.code === "otroCorreo") qs.set("email", result.email);
-    redirect(`/app/invitacion/${token}?${qs.toString()}`);
+    redirect(`${appHref("appInvitacion", token)}?${qs.toString()}`);
   }
 
   if (!preview || preview.status !== "valid") {
