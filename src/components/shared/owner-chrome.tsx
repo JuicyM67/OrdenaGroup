@@ -21,11 +21,11 @@ import { createContext, use, type ReactNode } from "react";
 
 import type { AvatarProps } from "@/components/ui/avatar";
 
+import type { MyProfileActions, MyProfileData } from "./my-profile-dialog";
 import type {
-  MyProfileActions,
-  MyProfileData,
-} from "./my-profile-dialog";
-import type { NotificationBellResult, PendingRequestItem } from "./notification-bell";
+  NotificationBellResult,
+  PendingRequestItem,
+} from "./notification-bell";
 
 export type OwnerChromeValue = {
   /** "Camila Rivas" — initialerna till UserPill/avataren räknas med `initialsOf()`
@@ -76,6 +76,11 @@ export function OwnerChromeProvider({
   children: ReactNode;
 }) {
   return <OwnerChromeContext value={value}>{children}</OwnerChromeContext>;
+}
+
+/** Som useOwnerChrome men null utanför providern (t.ex. mobilens flikrad i AgendaShell). */
+export function useOptionalOwnerChrome(): OwnerChromeValue | null {
+  return use(OwnerChromeContext);
 }
 
 export function useOwnerChrome(): OwnerChromeValue {

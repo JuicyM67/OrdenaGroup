@@ -2835,6 +2835,22 @@ export const vOferta: Widen<typeof Es.vOferta> = {
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
 
+export const uxTextos: Widen<typeof Es.uxTextos> = {
+  etiquetaHabitual: "Stamkund",
+  etiquetaAceptaOfertas: "Tar emot erbjudanden",
+  etiquetas: "Taggar",
+  enviarCampanaN: (p: { n: number }): string => `Skicka utskick (${p.n})`,
+  seleccionarA: (p: { nombre: string }): string => `Välj ${p.nombre}`,
+  seleccionarTodos: "Välj alla",
+  marcarSocio: "Gör till medlem",
+  quitarSocio: "Ta bort som medlem",
+  consentTerminos: "Villkor",
+  consentOfertas: "Utskick och erbjudanden",
+  deReservado: (p: { monto: string }): string => `av ${p.monto} bokat`,
+  minimizarMenu: "Fäll ihop menyn",
+  expandirMenu: "Fäll ut menyn",
+};
+
 const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   comun,
   nav,
@@ -2874,5 +2890,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   flashStory,
   flash,
   vOferta,
+  uxTextos,
 };
 void _check;

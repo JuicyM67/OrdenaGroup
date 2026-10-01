@@ -12,6 +12,7 @@ import { LogoMark } from "./logo-mark";
 import { cn } from "./cn";
 import { IconButton, type IconButtonProps } from "./icon-button";
 import { Tooltip } from "./tooltip";
+import { uxTextos } from "@/i18n";
 
 type NavRailVariant = "bare" | "panel";
 
@@ -207,8 +208,8 @@ export function NavRailSpacer() {
  * TODO_COPY (copywriter-es-cl): `nav.ts` saknar ännu etiketter för att fälla ihop/fälla ut
  * menyn — platshållare nedan, nämnt i rapporten till uppdragsgivaren.
  */
-const COLLAPSE_LABEL_TODO = "Minimizar menú";
-const EXPAND_LABEL_TODO = "Expandir menú";
+const COLLAPSE_LABEL_TODO = uxTextos.minimizarMenu;
+const EXPAND_LABEL_TODO = uxTextos.expandirMenu;
 
 export type NavRailCollapseToggleProps = {
   collapsed: boolean;

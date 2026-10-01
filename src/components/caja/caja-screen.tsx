@@ -48,6 +48,7 @@ import type {
   PagoHoyRow,
   PorCobrarRow,
 } from "./types";
+import { uxTextos } from "@/i18n";
 
 export type CajaScreenProps = {
   initialData: CajaResult;
@@ -377,7 +378,7 @@ export function CajaScreen({
                 {/* TODO_COPY: no hay una frase "de $X reservado" en
                     es-CL.ts — se reutiliza `resumen.reservasCount`
                     (existente) para el conteo de reservas. */}
-                {`TODO_COPY: de ${formatMoney(totalBookedMinor)} reservado`} ·{" "}
+                {uxTextos.deReservado({ monto: formatMoney(totalBookedMinor) })} ·{" "}
                 {caja.resumen.reservasCount({ n: cajaData.summary.bookings })}
               </span>
               <div className="h-1.5 overflow-hidden rounded-full bg-dark-2">

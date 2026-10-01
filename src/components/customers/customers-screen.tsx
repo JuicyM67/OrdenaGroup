@@ -48,6 +48,7 @@ import {
   type CustomerListItem,
   type CustomerListSort,
 } from "./types";
+import { uxTextos } from "@/i18n";
 
 export type CustomersQuery = {
   q: string;
@@ -104,10 +105,10 @@ function tagsOf(c: CustomerListItem): Tag[] {
   const tags: Tag[] = [];
   if (c.isMember) tags.push({ tone: "lavender", label: estados.socio });
   if (c.visitsCount >= HABITUAL_VISITS_THRESHOLD) {
-    tags.push({ tone: "peach", label: "TODO_COPY: Habitual" });
+    tags.push({ tone: "peach", label: uxTextos.etiquetaHabitual });
   }
   if (c.hasMarketingConsent) {
-    tags.push({ tone: "success", label: "TODO_COPY: Acepta ofertas" });
+    tags.push({ tone: "success", label: uxTextos.etiquetaAceptaOfertas });
   }
   return tags;
 }
@@ -285,7 +286,7 @@ export function CustomersScreen({
                 {/* TODO_COPY: no hay un botón "Enviar a N seleccionados" en
                     es-CL.ts — el verbo más cercano es `clientes.ctaCampanas`
                     ("Campañas", sin el conteo). */}
-                {`TODO_COPY: Enviar campaña (${selected.size})`}
+                {uxTextos.enviarCampanaN({ n: selected.size })}
               </Link>
             </Button>
           </div>
@@ -310,7 +311,7 @@ export function CustomersScreen({
                       type="checkbox"
                       checked={selected.has(c.id)}
                       onChange={(e) => toggleOne(c.id, e.target.checked)}
-                      aria-label={`TODO_COPY: Seleccionar a ${c.name}`}
+                      aria-label={uxTextos.seleccionarA({ nombre: c.name })}
                       className="size-4.5 shrink-0 accent-ink"
                     />
                     <Link
@@ -347,7 +348,7 @@ export function CustomersScreen({
                         type="checkbox"
                         checked={allSelected}
                         onChange={(e) => toggleAll(e.target.checked)}
-                        aria-label="TODO_COPY: Seleccionar todos"
+                        aria-label={uxTextos.seleccionarTodos}
                         className="size-4.5 accent-ink"
                       />
                     </th>
@@ -364,7 +365,7 @@ export function CustomersScreen({
                       {clientes.lista.columnaInasistencias}
                     </th>
                     <th className="px-2 py-3 text-11 font-bold tracking-caps text-muted uppercase">
-                      TODO_COPY: Etiquetas
+                      {uxTextos.etiquetas}
                     </th>
                   </tr>
                 </thead>
@@ -379,7 +380,7 @@ export function CustomersScreen({
                           type="checkbox"
                           checked={selected.has(c.id)}
                           onChange={(e) => toggleOne(c.id, e.target.checked)}
-                          aria-label={`TODO_COPY: Seleccionar a ${c.name}`}
+                          aria-label={uxTextos.seleccionarA({ nombre: c.name })}
                           className="size-4.5 accent-ink"
                         />
                       </td>

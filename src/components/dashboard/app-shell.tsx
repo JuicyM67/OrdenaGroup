@@ -90,44 +90,44 @@ export function AppShell({
   className,
 }: AppShellProps) {
   return (
-    <div
-      className={cn(
-        "flex min-h-dvh flex-col bg-canvas lg:h-dvh lg:flex-row lg:gap-4 lg:bg-ink lg:p-4",
-        className,
-      )}
+    <OwnerChromeProvider
+      value={{
+        ownerName: ownerName ?? "",
+        avatarTone,
+        publicPageHref: publicPageHref ?? "/",
+        canViewReports,
+        pendingRequests: pendingRequests ?? [],
+        onConfirmRequest,
+        onDeclineRequest,
+        onApproveCancelRequest,
+        onDeclineCancelRequest,
+        onLogout,
+        myProfile,
+        myProfileActions,
+      }}
     >
-      <div className="hidden lg:contents">{rail}</div>
-      {hideMobileTopBar ? null : (
-        <OwnerMobileTopBar
-          onLogout={onLogout}
-          pendingRequests={pendingRequests}
-          onConfirmRequest={onConfirmRequest}
-          onDeclineRequest={onDeclineRequest}
-          onApproveCancelRequest={onApproveCancelRequest}
-          onDeclineCancelRequest={onDeclineCancelRequest}
-        />
-      )}
-      <main className="relative flex flex-1 flex-col gap-6 px-5 py-5 pb-28 lg:min-h-0 lg:overflow-hidden lg:rounded-shell lg:bg-canvas lg:px-8 lg:py-7 lg:pb-7">
-        <OwnerChromeProvider
-          value={{
-            ownerName: ownerName ?? "",
-            avatarTone,
-            publicPageHref: publicPageHref ?? "/",
-            canViewReports,
-            pendingRequests: pendingRequests ?? [],
-            onConfirmRequest,
-            onDeclineRequest,
-            onApproveCancelRequest,
-            onDeclineCancelRequest,
-            onLogout,
-            myProfile,
-            myProfileActions,
-          }}
-        >
+      <div
+        className={cn(
+          "flex min-h-dvh flex-col bg-canvas lg:h-dvh lg:flex-row lg:gap-4 lg:bg-ink lg:p-4",
+          className,
+        )}
+      >
+        <div className="hidden lg:contents">{rail}</div>
+        {hideMobileTopBar ? null : (
+          <OwnerMobileTopBar
+            onLogout={onLogout}
+            pendingRequests={pendingRequests}
+            onConfirmRequest={onConfirmRequest}
+            onDeclineRequest={onDeclineRequest}
+            onApproveCancelRequest={onApproveCancelRequest}
+            onDeclineCancelRequest={onDeclineCancelRequest}
+          />
+        )}
+        <main className="relative flex flex-1 flex-col gap-6 px-5 py-5 pb-28 lg:min-h-0 lg:overflow-hidden lg:rounded-shell lg:bg-canvas lg:px-8 lg:py-7 lg:pb-7">
           {children}
-        </OwnerChromeProvider>
-      </main>
-      {mobileTabBar}
-    </div>
+        </main>
+        {mobileTabBar}
+      </div>
+    </OwnerChromeProvider>
   );
 }

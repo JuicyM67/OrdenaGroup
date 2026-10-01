@@ -12,7 +12,14 @@
 // anropande skärmar (Caja/Ajustes/Clientes/Campañas/Agenda/Flash) inte behöver ändras —
 // "Mer" tänds i stället lime när den aktiva skärmen är en av dem som nu bor i bottenarket.
 // "use client": lokalt öppet/stängt-läge för bottenarket.
-import { Calendar, Clock, LayoutGrid, MoreHorizontal, Users } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  LayoutGrid,
+  MoreHorizontal,
+  Users,
+} from "lucide-react";
+import { useOptionalOwnerChrome } from "@/components/shared/owner-chrome";
 import { useState } from "react";
 
 import { nav } from "@/i18n";
@@ -90,7 +97,9 @@ export function OwnerMobileTabBar({
   canViewReports,
   onLogout,
 }: OwnerMobileTabBarProps) {
-  const showCaja = canViewReports ?? true;
+  const chrome = useOptionalOwnerChrome();
+  const logout = onLogout ?? chrome?.onLogout;
+  const showCaja = canViewReports ?? chrome?.canViewReports ?? true;
   const [moreOpen, setMoreOpen] = useState(false);
   const merActive = MER_ACTIVE_KEYS.has(active);
   const items: MobileTabItem[] = [
@@ -119,7 +128,7 @@ export function OwnerMobileTabBar({
         open={moreOpen}
         onOpenChange={setMoreOpen}
         showCaja={showCaja}
-        onLogout={onLogout}
+        onLogout={logout}
       />
     </>
   );

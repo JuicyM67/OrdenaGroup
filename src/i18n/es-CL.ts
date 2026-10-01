@@ -3804,3 +3804,22 @@ export const vOferta = {
   linkInvalido: "Este link no es válido.",
   error: "No pudimos confirmar tu hora. Inténtalo de nuevo.",
 } as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// uxTextos: WP-57 (UX-översyn) — etiquetas cortas del nuevo diseño.
+// ---------------------------------------------------------------------------
+export const uxTextos = {
+  etiquetaHabitual: "Habitual",
+  etiquetaAceptaOfertas: "Acepta ofertas",
+  etiquetas: "Etiquetas",
+  enviarCampanaN: (p: { n: number }): string => `Enviar campaña (${p.n})`,
+  seleccionarA: (p: { nombre: string }): string => `Seleccionar a ${p.nombre}`,
+  seleccionarTodos: "Seleccionar todos",
+  marcarSocio: "Marcar como socio",
+  quitarSocio: "Quitar de socios",
+  consentTerminos: "Términos",
+  consentOfertas: "Ofertas y novedades",
+  deReservado: (p: { monto: string }): string => `de ${p.monto} reservado`,
+  minimizarMenu: "Minimizar menú",
+  expandirMenu: "Expandir menú",
+} as const satisfies Trad;

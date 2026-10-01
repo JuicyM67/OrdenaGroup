@@ -70,6 +70,7 @@ import type {
   SendMessageResult,
   SetMemberResult,
 } from "./types";
+import { uxTextos } from "@/i18n";
 
 export type CustomerDetailScreenProps = {
   customer: CustomerDetail;
@@ -159,10 +160,10 @@ function tagsOf(customer: CustomerDetail): Tag[] {
   const tags: Tag[] = [];
   if (customer.isMember) tags.push({ tone: "lavender", label: estados.socio });
   if (customer.stats.visitsCount >= HABITUAL_VISITS_THRESHOLD) {
-    tags.push({ tone: "peach", label: "TODO_COPY: Habitual" });
+    tags.push({ tone: "peach", label: uxTextos.etiquetaHabitual });
   }
   if (customer.consentMarketing.at) {
-    tags.push({ tone: "success", label: "TODO_COPY: Acepta ofertas" });
+    tags.push({ tone: "success", label: uxTextos.etiquetaAceptaOfertas });
   }
   return tags;
 }
@@ -485,8 +486,8 @@ export function CustomerDetailScreen({
                   {/* TODO_COPY: no hay un verbo corto "Marcar/Quitar de socios"
                       en es-CL.ts, solo el sustantivo `estados.socio` ("Socio"). */}
                   {isMember
-                    ? "TODO_COPY: Quitar de socios"
-                    : "TODO_COPY: Marcar como socio"}
+                    ? uxTextos.quitarSocio
+                    : uxTextos.marcarSocio}
                 </MenuButtonItem>
               ) : null}
               {isMember && customer.email && onNotifyMember ? (
@@ -604,9 +605,9 @@ export function CustomerDetailScreen({
             {clientes.ficha.consentimientosTitulo}
           </h2>
           <div className="flex flex-col divide-y divide-line">
-            <ConsentRow label="TODO_COPY: Términos" consent={customer.consentTerms} />
+            <ConsentRow label={uxTextos.consentTerminos} consent={customer.consentTerms} />
             <ConsentRow
-              label="TODO_COPY: Ofertas y novedades"
+              label={uxTextos.consentOfertas}
               consent={customer.consentMarketing}
             />
           </div>
