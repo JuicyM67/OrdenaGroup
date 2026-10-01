@@ -6,10 +6,12 @@
 import type { Metadata } from "next";
 
 import { MfaPanel } from "@/components/admin/mfa-panel";
+import { brand } from "@/config/brand";
 import { requireAdminAnyAal } from "@/server/admin/auth";
 
+// Regel 10: namnet "llena" bara i src/config/brand.ts.
 export const metadata: Metadata = {
-  title: "Tvåstegsverifiering – llena admin",
+  title: `Tvåstegsverifiering – ${brand.name} admin`,
   robots: { index: false, follow: false },
 };
 
