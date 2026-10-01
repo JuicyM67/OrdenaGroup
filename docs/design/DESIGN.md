@@ -172,6 +172,14 @@ ljushet/mättnad som de tre andra.
 |---|---|---|
 | `--color-alert-bg` | `#FBE2D6` | `Chip tone="alert"` — försenad nästa kund (Hoy/Inicio) |
 
+CI-fynd (axe, `color-contrast`): `Chip tone="alert"` återanvände `--color-alert` som text, bara
+3:1 mot `--color-alert-bg` (fet 12px, kräver 4,5:1). Egen `-fg`-ton tillagd, samma mönster som
+`success`/`deposit`/`pending` ovan.
+
+| Token | Värde | Källa |
+|---|---|---|
+| `--color-alert-fg` | `#A33814` | `Chip tone="alert"` — text (~5,4:1 mot `--color-alert-bg`) |
+
 ## 5. Form och luft
 
 - Radier: se tokens (`shell` 32 → `chip` 10). Tumregel: ju större yta, desto större radie. Cirkelformade knappar för ikonknappar (48×48) och avatarer.

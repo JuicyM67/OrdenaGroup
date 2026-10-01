@@ -271,11 +271,16 @@ export function InicioScreen({
           meta={inicio.stats.reservasHoy({ n: data.stats.toConfirm })}
         />
         {canViewReports ? (
+          // CI-fynd: sparklinen är en fast 96 px bred SVG (sparkline.tsx) — i en 2-kolumns
+          // rad vid 390 px (WP-42, "sin scroll horizontal") fick den inte plats bredvid
+          // beloppet (nowrap) och orsakade horisontell scroll på hela sidan. `col-span-2`
+          // bara under `lg` (desktopvyn, 4 kolumner/godkänd skärmdump, är oförändrad).
           <StatTile
             variant="amount"
             value={formatMoney(data.stats.revenueWeekClp)}
             meta={inicio.stats.ingresosSemana}
             series={data.stats.revenueSeries}
+            className="col-span-2 lg:col-span-1"
           />
         ) : null}
         <StatTile

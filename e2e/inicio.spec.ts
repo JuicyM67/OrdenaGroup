@@ -85,10 +85,21 @@ test.describe("tidszon (America/Santiago oavsett webbläsarens tidszon)", () => 
 
       test('visar "Viernes 2 de octubre" och "15:00"', async ({ page }) => {
         await page.goto("/design-lab/main");
+        // WP-57: kalenderkortet togs bort — datumet står nu i headerns meta-rad
+        // (inicio.metaRow, "<fecha> · <negocio>, <comuna>").
         await expect(
           page.getByText("Viernes 2 de octubre").first(),
         ).toBeVisible();
-        await expect(page.getByText("15:00", { exact: true })).toBeVisible();
+        // "15:00" förekommer nu på två ställen (klockslaget i "Próxima reserva" OCH samma
+        // bokning som en rad i "Agenda de hoy") — avgränsa till Próxima reserva-kortets
+        // digitala klocka, som är den som faktiskt bevisar att TIDEN (inte bara datumet)
+        // beräknas i America/Santiago oavsett webbläsarens tidszon.
+        const proximaReserva = page.getByRole("region", {
+          name: "Próxima reserva",
+        });
+        await expect(
+          proximaReserva.getByText("15:00", { exact: true }),
+        ).toBeVisible();
       });
     });
   }
