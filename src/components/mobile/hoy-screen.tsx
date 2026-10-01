@@ -82,6 +82,13 @@ export type HoyScreenProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-56: se `notification-bell.tsx`. */
+  onApproveCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
+  onDeclineCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
   /** WP-46: "Min profil" i kontomenyn. `undefined` döljer menyposten (ägare
    * utan egen personalrad, design lab). */
   myProfile?: MyProfileData;
@@ -104,6 +111,8 @@ export function HoyScreen({
   onLogout,
   onConfirmRequest,
   onDeclineRequest,
+  onApproveCancelRequest,
+  onDeclineCancelRequest,
   myProfile,
   myProfileActions,
   onMarkPaid,
@@ -234,6 +243,26 @@ export function HoyScreen({
                     if (result.ok) router.refresh();
                     return result;
                   }}
+                  onApproveCancel={
+                    onApproveCancelRequest
+                      ? async (bookingId) => {
+                          const result =
+                            await onApproveCancelRequest(bookingId);
+                          if (result.ok) router.refresh();
+                          return result;
+                        }
+                      : undefined
+                  }
+                  onDeclineCancel={
+                    onDeclineCancelRequest
+                      ? async (bookingId) => {
+                          const result =
+                            await onDeclineCancelRequest(bookingId);
+                          if (result.ok) router.refresh();
+                          return result;
+                        }
+                      : undefined
+                  }
                   triggerSize={46}
                 />
               ) : null}

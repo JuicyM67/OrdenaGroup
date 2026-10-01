@@ -11,7 +11,12 @@ import { nav } from "@/i18n";
 import { loadProfileSettings } from "@/server/owner/profile";
 
 import { requireAjustesTab } from "../access";
-import { confirmRequestAction, declineRequestAction } from "../actions";
+import {
+  approveCancelRequestAction,
+  confirmRequestAction,
+  declineCancelRequestAction,
+  declineRequestAction,
+} from "../actions";
 import {
   confirmImageUploadAction,
   createImageUploadAction,
@@ -46,6 +51,8 @@ export default async function AjustesPerfilPage() {
       pendingRequests={ctx.pendingRequests}
       onConfirmRequest={confirmRequestAction}
       onDeclineRequest={declineRequestAction}
+      onApproveCancelRequest={approveCancelRequestAction}
+      onDeclineCancelRequest={declineCancelRequestAction}
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >

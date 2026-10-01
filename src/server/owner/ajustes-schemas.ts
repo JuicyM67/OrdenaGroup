@@ -66,6 +66,11 @@ const slotIntervalMinutesSchema = z.coerce
     }
   });
 
+// WP-56: `businesses_cancel_approval_check` (none|late|all).
+const cancelApprovalSchema = z.enum(["none", "late", "all"], {
+  error: "business.cancel_approval_invalid",
+});
+
 export const businessSettingsInputSchema = z.object({
   name: businessNameSchema,
   slug: slugSchema,
@@ -78,6 +83,8 @@ export const businessSettingsInputSchema = z.object({
   slotIntervalMinutes: slotIntervalMinutesSchema,
   // WP-45 (D-033): "Confirmar reservas automáticamente".
   autoConfirmBookings: z.boolean({ error: "business.auto_confirm_invalid" }),
+  // WP-56: "Cancelaciones del cliente".
+  cancelApproval: cancelApprovalSchema,
 });
 export type BusinessSettingsInput = z.infer<typeof businessSettingsInputSchema>;
 

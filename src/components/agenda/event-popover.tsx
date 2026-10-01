@@ -69,6 +69,15 @@ export type EventPopoverProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-56: "Aprobar cancelación"/"Rechazar" i stället för Confirmar/Rechazar
+   * när `booking.status === "cancel_requested"`. `undefined` döljer
+   * knapparna helt, samma mönster som `onMover`. */
+  onApproveCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
+  onDeclineCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
   /** WP-24 (F10): "Marcar pagada"/"Anular pago" (D-034: egen/alla bokningar
    * eller kassan, `can_view_reports`). `undefined` döljer knapparna — samma
    * mönster som `onMover`. */
@@ -92,6 +101,8 @@ export function EventPopover({
   onAnonymizeCustomer,
   onConfirmRequest,
   onDeclineRequest,
+  onApproveCancelRequest,
+  onDeclineCancelRequest,
   onMarkPaid,
   onUndoPayment,
   manualMethods = [],
@@ -99,10 +110,12 @@ export function EventPopover({
 }: EventPopoverProps) {
   const [confirming, setConfirming] = useState(false);
   const [declineDialogOpen, setDeclineDialogOpen] = useState(false);
+  const [declineCancelDialogOpen, setDeclineCancelDialogOpen] = useState(false);
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [undoOpen, setUndoOpen] = useState(false);
   const [undoError, setUndoError] = useState<string | null>(null);
   const isPending = booking.status === "requested";
+  const isCancelPending = booking.status === "cancel_requested";
   const model = popoverModel(booking, staffName, tz);
   const customerId = booking.customerId;
   // WP-42: `side="left" alignOffset={-49}` (desktopens Agenda.dc.html-placering, 1440 px
@@ -235,6 +248,35 @@ export function EventPopover({
                 {solicitudes.acciones.rechazar}
               </Button>
             </div>
+          ) : isCancelPending &&
+            onApproveCancelRequest &&
+            onDeclineCancelRequest ? (
+            <div className="mt-0.5 grid grid-cols-2 gap-2">
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={confirming}
+                onClick={() => {
+                  setConfirming(true);
+                  onApproveCancelRequest(booking.id)
+                    .then((result) => {
+                      if (result.ok) onOpenChange(false);
+                    })
+                    .finally(() => setConfirming(false));
+                }}
+              >
+                {solicitudes.acciones.aprobarCancelacion}
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setDeclineCancelDialogOpen(true)}
+              >
+                {solicitudes.acciones.rechazar}
+              </Button>
+            </div>
           ) : (
             (() => {
               const count =
@@ -332,6 +374,24 @@ export function EventPopover({
             );
             if (result.ok) {
               setDeclineDialogOpen(false);
+              onOpenChange(false);
+            }
+          }}
+        />
+      ) : null}
+
+      {onDeclineCancelRequest ? (
+        <ConfirmDialog
+          open={declineCancelDialogOpen}
+          onOpenChange={setDeclineCancelDialogOpen}
+          title={solicitudes.rechazarCancelacionDialog.titulo}
+          body={solicitudes.rechazarCancelacionDialog.cuerpo}
+          confirmLabel={solicitudes.rechazarCancelacionDialog.ctaSi}
+          cancelLabel={solicitudes.rechazarCancelacionDialog.ctaNo}
+          onConfirm={async () => {
+            const result = await onDeclineCancelRequest(booking.id);
+            if (result.ok) {
+              setDeclineCancelDialogOpen(false);
               onOpenChange(false);
             }
           }}

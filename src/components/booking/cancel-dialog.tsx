@@ -13,6 +13,10 @@ import { comun, gestion } from "@/i18n";
 export type CancelDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** WP-56: `booking.cancelNeedsApproval` — visar en annan brödtext
+   * (`cuerpoPendiente`): hora frigörs inte direkt, företaget måste godkänna
+   * avbokningen först. */
+  needsApproval?: boolean;
   /** Kastar aldrig: fel hanteras av anroparen (samma kontrakt som
    * `MoveDialog`/`ManualBookingDialog`s `onSubmit`). */
   onConfirm: () => Promise<void>;
@@ -21,6 +25,7 @@ export type CancelDialogProps = {
 export function CancelDialog({
   open,
   onOpenChange,
+  needsApproval = false,
   onConfirm,
 }: CancelDialogProps) {
   const descriptionId = useId();
@@ -55,7 +60,9 @@ export function CancelDialog({
               </Dialog.Close>
             </div>
             <Dialog.Description id={descriptionId} className="text-14 text-ink">
-              {gestion.confirmarCancelacion.cuerpo}
+              {needsApproval
+                ? gestion.confirmarCancelacion.cuerpoPendiente
+                : gestion.confirmarCancelacion.cuerpo}
             </Dialog.Description>
 
             <div className="mt-1 flex justify-end gap-3">

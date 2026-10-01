@@ -21,6 +21,12 @@ export type EventBlockProps = {
    * "Por confirmar" (bara tokens, ingen ny färg: samma taggstil som
    * flash/väntelista-chippen nedan). */
   pending?: boolean;
+  /** WP-56: `status === "cancel_requested"` — eget utseende (streckad kant
+   * `border-alert` + chip "Cancelación pendiente", tono `deposit`), skild
+   * från `pending` (en bokningsförfrågan är inte samma sak som en
+   * avbokningsförfrågan). Exklusivt mot `pending` (en bokning kan bara ha
+   * en status åt gången). */
+  cancelPending?: boolean;
   title: string;
   /** null → `showTime` var falskt (höjden räcker inte, se geometry.ts). */
   meta: string | null;
@@ -42,6 +48,7 @@ export function EventBlock({
   staffColor,
   selected = false,
   pending = false,
+  cancelPending = false,
   title,
   meta,
   showAvatar,
@@ -83,16 +90,23 @@ export function EventBlock({
         !hasLanes && "inset-x-1.25",
         bgClass,
         pending && "border-2 border-dashed border-ink",
+        cancelPending && "border-2 border-dashed border-alert",
         selected && "border-2 border-ink",
       )}
     >
-      {variant !== "staff" || pending ? (
-        <Chip size="tag" tone="ink" className="mb-0.75 self-start">
-          {pending
-            ? estados.porConfirmar
-            : variant === "flash"
-              ? estados.flashConDescuento({ porcentaje: flashPct ?? 0 })
-              : estados.listaDeEspera}
+      {variant !== "staff" || pending || cancelPending ? (
+        <Chip
+          size="tag"
+          tone={cancelPending ? "deposit" : "ink"}
+          className="mb-0.75 self-start"
+        >
+          {cancelPending
+            ? estados.cancelacionPendiente
+            : pending
+              ? estados.porConfirmar
+              : variant === "flash"
+                ? estados.flashConDescuento({ porcentaje: flashPct ?? 0 })
+                : estados.listaDeEspera}
         </Chip>
       ) : null}
       <div className="truncate text-event-title leading-event font-bold">

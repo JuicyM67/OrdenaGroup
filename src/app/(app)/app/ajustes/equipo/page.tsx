@@ -17,8 +17,10 @@ import { loadTeamData } from "@/server/team/members";
 
 import { requireAjustesTab } from "../access";
 import {
+  approveCancelRequestAction,
   confirmRequestAction,
   createStaffAction,
+  declineCancelRequestAction,
   declineRequestAction,
   setStaffActiveAction,
   updateStaffAction,
@@ -74,6 +76,8 @@ export default async function AjustesEquipoPage() {
       pendingRequests={ctx.pendingRequests}
       onConfirmRequest={confirmRequestAction}
       onDeclineRequest={declineRequestAction}
+      onApproveCancelRequest={approveCancelRequestAction}
+      onDeclineCancelRequest={declineCancelRequestAction}
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >

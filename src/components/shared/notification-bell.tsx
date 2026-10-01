@@ -18,6 +18,8 @@ import { Bell, X } from "lucide-react";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconButton, type IconButtonProps } from "@/components/ui/icon-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
@@ -51,6 +53,11 @@ export type NotificationBellProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-56: filas `kind: "cancel"` — "Aprobar cancelación"/"Rechazar" en
+   * lugar de "Confirmar"/"Rechazar". `undefined` oculta los botones de esas
+   * filas (misma convención que `onMover` en `EventPopover`). */
+  onApproveCancel?: (bookingId: string) => Promise<NotificationBellResult>;
+  onDeclineCancel?: (bookingId: string) => Promise<NotificationBellResult>;
   /** Tamaño/tono del `IconButton` disparador — igual que la campana ya
    * dibujada en cada pantalla antes de WP-45. */
   triggerSize?: IconButtonProps["size"];
@@ -83,6 +90,8 @@ export function NotificationBell({
   requests,
   onConfirm,
   onDecline,
+  onApproveCancel,
+  onDeclineCancel,
   triggerSize,
   triggerTone,
   withTooltip = false,
@@ -104,6 +113,11 @@ export function NotificationBell({
   const items = requests.filter((r) => !handledIds.has(r.id));
   const [busyId, setBusyId] = useState<string | null>(null);
   const [decliningId, setDecliningId] = useState<string | null>(null);
+  // WP-56: fila `kind: "cancel"` cuya "Rechazar" está confirmándose
+  // (`ConfirmDialog`, sin motivo — distinto de `decliningId`/`RechazarDialog`).
+  const [decliningCancelId, setDecliningCancelId] = useState<string | null>(
+    null,
+  );
   const [announcement, setAnnouncement] = useState<{
     id: number;
     text: string;
@@ -141,6 +155,35 @@ export function NotificationBell({
     }
   }
 
+  async function handleApproveCancel(bookingId: string) {
+    if (busyId || !onApproveCancel) return;
+    setBusyId(bookingId);
+    try {
+      const result = await onApproveCancel(bookingId);
+      if (result.ok) {
+        setHandledIds((prev) => new Set(prev).add(bookingId));
+        announce(solicitudes.toast.cancelacionAprobada);
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDeclineCancel(bookingId: string) {
+    if (!onDeclineCancel) return;
+    setBusyId(bookingId);
+    try {
+      const result = await onDeclineCancel(bookingId);
+      if (result.ok) {
+        setHandledIds((prev) => new Set(prev).add(bookingId));
+        announce(solicitudes.toast.cancelacionRechazada);
+      }
+    } finally {
+      setBusyId(null);
+      setDecliningCancelId(null);
+    }
+  }
+
   // `useSyncExternalStore` (inte `useState`+`useEffect`, som gav en
   // hydreringskrock här — se use-compact-viewport.ts).
   const compact = useCompactViewport();
@@ -174,27 +217,57 @@ export function NotificationBell({
             key={request.id}
             className="flex flex-col gap-2 border-b border-line-strong px-1 py-3 last:border-b-0"
           >
+            {request.kind === "cancel" ? (
+              <Chip tone="deposit" size="xs" className="self-start">
+                {solicitudes.etiquetaCancelacion}
+              </Chip>
+            ) : null}
             <p className="text-13 font-semibold text-ink">{rowText(request)}</p>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                type="button"
-                variant="primary"
-                size="xs"
-                disabled={busyId === request.id}
-                onClick={() => void handleConfirm(request.id)}
-              >
-                {solicitudes.acciones.confirmar}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="xs"
-                disabled={busyId === request.id}
-                onClick={() => setDecliningId(request.id)}
-              >
-                {solicitudes.acciones.rechazar}
-              </Button>
-            </div>
+            {request.kind === "cancel" ? (
+              onApproveCancel && onDeclineCancel ? (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="xs"
+                    disabled={busyId === request.id}
+                    onClick={() => void handleApproveCancel(request.id)}
+                  >
+                    {solicitudes.acciones.aprobarCancelacion}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="xs"
+                    disabled={busyId === request.id}
+                    onClick={() => setDecliningCancelId(request.id)}
+                  >
+                    {solicitudes.acciones.rechazar}
+                  </Button>
+                </div>
+              ) : null
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="xs"
+                  disabled={busyId === request.id}
+                  onClick={() => void handleConfirm(request.id)}
+                >
+                  {solicitudes.acciones.confirmar}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="xs"
+                  disabled={busyId === request.id}
+                  onClick={() => setDecliningId(request.id)}
+                >
+                  {solicitudes.acciones.rechazar}
+                </Button>
+              </div>
+            )}
           </div>
         ))
       )}
@@ -202,6 +275,8 @@ export function NotificationBell({
   );
 
   const decliningRequest = items.find((r) => r.id === decliningId) ?? null;
+  const decliningCancelRequest =
+    items.find((r) => r.id === decliningCancelId) ?? null;
 
   return (
     <>
@@ -285,6 +360,22 @@ export function NotificationBell({
         onConfirm={async (motivo) => {
           if (decliningRequest)
             await handleDecline(decliningRequest.id, motivo);
+        }}
+      />
+
+      <ConfirmDialog
+        open={decliningCancelRequest != null}
+        onOpenChange={(next) => {
+          if (!next) setDecliningCancelId(null);
+        }}
+        title={solicitudes.rechazarCancelacionDialog.titulo}
+        body={solicitudes.rechazarCancelacionDialog.cuerpo}
+        confirmLabel={solicitudes.rechazarCancelacionDialog.ctaSi}
+        cancelLabel={solicitudes.rechazarCancelacionDialog.ctaNo}
+        onConfirm={async () => {
+          if (decliningCancelRequest) {
+            await handleDeclineCancel(decliningCancelRequest.id);
+          }
         }}
       />
 

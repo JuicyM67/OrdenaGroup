@@ -32,7 +32,9 @@ import {
   saveManualConsent,
 } from "@/server/owner/manual-booking";
 import {
+  approveCancelRequest,
   confirmRequest,
+  declineCancelRequest,
   declineRequest,
   listPendingRequests,
 } from "@/server/owner/requests";
@@ -187,6 +189,28 @@ export default async function AppAgendaPage({
     return { ok: result.ok };
   };
 
+  const onApproveCancelRequest = async (bookingId: string) => {
+    "use server";
+    const result = await approveCancelRequest(
+      user.id,
+      business.id,
+      new Date(),
+      bookingId,
+    );
+    return { ok: result.ok };
+  };
+
+  const onDeclineCancelRequest = async (bookingId: string) => {
+    "use server";
+    const result = await declineCancelRequest(
+      user.id,
+      business.id,
+      new Date(),
+      bookingId,
+    );
+    return { ok: result.ok };
+  };
+
   return (
     <AgendaScreen
       data={data}
@@ -207,6 +231,8 @@ export default async function AppAgendaPage({
       pendingRequests={pendingRequests}
       onConfirmRequest={onConfirmRequest}
       onDeclineRequest={onDeclineRequest}
+      onApproveCancelRequest={onApproveCancelRequest}
+      onDeclineCancelRequest={onDeclineCancelRequest}
       initialManualCustomer={initialManualCustomer ?? undefined}
       onMarkPaid={markPaidAction}
       onUndoPayment={undoPaymentAction}

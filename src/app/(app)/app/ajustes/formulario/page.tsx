@@ -10,7 +10,12 @@ import { FormularioTab } from "@/components/settings/formulario-tab";
 import { nav } from "@/i18n";
 
 import { requireAjustesTab } from "../access";
-import { confirmRequestAction, declineRequestAction } from "../actions";
+import {
+  approveCancelRequestAction,
+  confirmRequestAction,
+  declineCancelRequestAction,
+  declineRequestAction,
+} from "../actions";
 import {
   activatePresetAction,
   createCategoryAction,
@@ -68,6 +73,8 @@ export default async function AjustesFormularioPage() {
       pendingRequests={ctx.pendingRequests}
       onConfirmRequest={confirmRequestAction}
       onDeclineRequest={declineRequestAction}
+      onApproveCancelRequest={approveCancelRequestAction}
+      onDeclineCancelRequest={declineCancelRequestAction}
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >

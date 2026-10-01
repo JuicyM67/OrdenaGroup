@@ -12,8 +12,10 @@ import { loadAjustesServices } from "@/server/owner/ajustes";
 
 import { requireAjustesTab } from "../access";
 import {
+  approveCancelRequestAction,
   confirmRequestAction,
   createServiceAction,
+  declineCancelRequestAction,
   declineRequestAction,
   setServiceActiveAction,
   updateServiceAction,
@@ -78,6 +80,8 @@ export default async function AjustesServiciosPage() {
       pendingRequests={ctx.pendingRequests}
       onConfirmRequest={confirmRequestAction}
       onDeclineRequest={declineRequestAction}
+      onApproveCancelRequest={approveCancelRequestAction}
+      onDeclineCancelRequest={declineCancelRequestAction}
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >

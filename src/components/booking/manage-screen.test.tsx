@@ -32,6 +32,7 @@ function booking(overrides: Partial<ManagedBooking> = {}): ManagedBooking {
     status: "confirmed",
     cancelWindowHours: 3,
     canCancel: true,
+    cancelNeedsApproval: false,
     ...overrides,
   };
 }

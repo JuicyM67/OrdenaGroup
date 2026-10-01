@@ -46,6 +46,8 @@ const KNOWN: Record<string, string> = {
   "business.slot_interval_invalid": comun.algoSalioMal,
   // WP-45 (D-033): typfel bara (växel), ingen egen copy — samma mönster.
   "business.auto_confirm_invalid": comun.algoSalioMal,
+  // WP-56: ett `<select>` begränsar redan värdena i UI:t — samma avvägning.
+  "business.cancel_approval_invalid": comun.algoSalioMal,
   // WP-54 (Ajustes → Socios): samma avvägning, ingen egen copy för dessa
   // sällan träffade valideringsfel (fältens `min`/`max`/`maxLength` i UI:t
   // hindrar normalt att de ens skickas).

@@ -36,6 +36,13 @@ export type AppShellProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-56: se `notification-bell.tsx`. */
+  onApproveCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
+  onDeclineCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
   className?: string;
 };
 
@@ -47,6 +54,8 @@ export function AppShell({
   pendingRequests,
   onConfirmRequest,
   onDeclineRequest,
+  onApproveCancelRequest,
+  onDeclineCancelRequest,
   className,
 }: AppShellProps) {
   return (
@@ -62,6 +71,8 @@ export function AppShell({
         pendingRequests={pendingRequests}
         onConfirmRequest={onConfirmRequest}
         onDeclineRequest={onDeclineRequest}
+        onApproveCancelRequest={onApproveCancelRequest}
+        onDeclineCancelRequest={onDeclineCancelRequest}
       />
       <main className="relative flex flex-1 flex-col gap-6 px-5 py-5 pb-28 lg:min-h-0 lg:overflow-hidden lg:rounded-shell lg:bg-canvas lg:px-8 lg:py-7 lg:pb-7">
         {children}

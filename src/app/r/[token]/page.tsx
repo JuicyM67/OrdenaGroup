@@ -62,9 +62,11 @@ export default async function ManagePage({ params }: { params: Params }) {
     const result = await cancelByToken(token, systemClock());
     if (!result.ok) return { ok: false, code: result.error };
     // WP-16: samma mönster som `[slug]/actions.ts` — bekräftelsen/avin till
-    // ägaren går ut direkt efter svaret, utan att vänta på cron.
+    // ägaren går ut direkt efter svaret, utan att vänta på cron. WP-56: även
+    // när avbokningen blev en förfrågan (`pending`) — företaget ska få sms/
+    // mejlet om den direkt, inte vänta på cron.
     void kickOutbox();
-    return { ok: true };
+    return result.value.pending ? { ok: true, pending: true } : { ok: true };
   }
 
   return (

@@ -37,19 +37,27 @@ export function mustParseInstant(iso: string, fn: string): Date {
 
 /** Serverns svar på avbokningen (`cancelByToken`s `Result`, plattat till en
  * klientsäker form — `BookingError` importeras bara som typ, av samma skäl
- * som `ManagedBooking` ovan). */
+ * som `ManagedBooking` ovan). WP-56: `pending: true` = avbokningen blev en
+ * förfrågan (`cancel_requested`) i stället för en direkt avbokning —
+ * `businesses.cancel_approval` kräver företagets godkännande. */
 export type ManageCancelResult =
-  { readonly ok: true } | { readonly ok: false; readonly code: string };
+  | { readonly ok: true; readonly pending?: boolean }
+  | { readonly ok: false; readonly code: string };
 
 /**
  * `cancelled`/`past` är dödlägen (bara `ctaReservarOtraHora`, WP-16-planen
  * §6). `locked` = fortfarande aktiv men utanför avbokningsfönstret
- * (`gestion.fueraDePlazo`). `cancellable` visar avboka-knappen.
+ * (`gestion.fueraDePlazo`). `cancelPending` (WP-56) = kundens avbokning
+ * väntar på företagets svar (`status === "cancel_requested"`), dödläge precis
+ * som `cancelled`/`past` (ingen knapp, bara väntetexten). `cancellable` visar
+ * avboka-knappen.
  */
-export type ManageState = "cancelled" | "past" | "locked" | "cancellable";
+export type ManageState =
+  "cancelled" | "past" | "locked" | "cancellable" | "cancelPending";
 
 export function manageState(booking: ManagedBooking, now: Date): ManageState {
   if (booking.status === "cancelled") return "cancelled";
+  if (booking.status === "cancel_requested") return "cancelPending";
   const end = mustParseInstant(booking.end, "manageState");
   if (now.getTime() >= end.getTime()) return "past";
   if (!booking.canCancel) return "locked";

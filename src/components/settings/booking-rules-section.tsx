@@ -17,6 +17,8 @@ import { ajustesErrorText } from "./error-text";
 import type { AjustesActions, AjustesBusiness } from "./types";
 
 const SLOT_INTERVALS = [5, 10, 15, 20, 30, 60] as const;
+// WP-56: `businesses_cancel_approval_check`.
+const CANCEL_APPROVALS = ["none", "late", "all"] as const;
 
 type FormState = {
   minNoticeMinutes: string;
@@ -24,6 +26,7 @@ type FormState = {
   cancelWindowHours: string;
   slotIntervalMinutes: string;
   autoConfirmBookings: boolean;
+  cancelApproval: AjustesBusiness["cancelApproval"];
 };
 
 function toFormState(b: AjustesBusiness): FormState {
@@ -33,6 +36,7 @@ function toFormState(b: AjustesBusiness): FormState {
     cancelWindowHours: String(b.cancelWindowHours),
     slotIntervalMinutes: String(b.slotIntervalMinutes),
     autoConfirmBookings: b.autoConfirmBookings,
+    cancelApproval: b.cancelApproval,
   };
 }
 
@@ -76,6 +80,7 @@ export function BookingRulesSection({
         cancelWindowHours: Number(form.cancelWindowHours),
         slotIntervalMinutes: Number(form.slotIntervalMinutes),
         autoConfirmBookings: form.autoConfirmBookings,
+        cancelApproval: form.cancelApproval,
       });
       if (result.ok) {
         setStatus("saved");
@@ -86,6 +91,7 @@ export function BookingRulesSection({
           cancelWindowHours: Number(form.cancelWindowHours),
           slotIntervalMinutes: Number(form.slotIntervalMinutes),
           autoConfirmBookings: form.autoConfirmBookings,
+          cancelApproval: form.cancelApproval,
         });
       } else {
         setStatus("error");
@@ -142,6 +148,35 @@ export function BookingRulesSection({
           onChange={(e) => set("cancelWindowHours", e.target.value)}
           required
         />
+
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="cancel-approval"
+            className="text-13 font-semibold text-ink"
+          >
+            {ajustes.reglas.cancelApprovalLabel}
+          </label>
+          <select
+            id="cancel-approval"
+            value={form.cancelApproval}
+            onChange={(e) =>
+              set(
+                "cancelApproval",
+                e.target.value as AjustesBusiness["cancelApproval"],
+              )
+            }
+            className="h-13 w-full rounded-control border-2 border-transparent bg-field px-4 text-15 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none"
+          >
+            {CANCEL_APPROVALS.map((value) => (
+              <option key={value} value={value}>
+                {ajustes.reglas.cancelApprovalOpciones[value]}
+              </option>
+            ))}
+          </select>
+          <span className="text-13 text-muted">
+            {ajustes.reglas.cancelApprovalAyuda}
+          </span>
+        </div>
 
         <div className="flex flex-col gap-1.5">
           <label

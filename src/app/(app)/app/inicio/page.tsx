@@ -15,7 +15,12 @@ import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import { loadOwnerInicio } from "@/server/owner/inicio";
 import { moveOwnerBooking } from "@/server/owner/manual-booking";
-import { confirmRequest, declineRequest } from "@/server/owner/requests";
+import {
+  approveCancelRequest,
+  confirmRequest,
+  declineCancelRequest,
+  declineRequest,
+} from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
 
 import {
@@ -90,6 +95,28 @@ export default async function InicioPage() {
     return { ok: result.ok };
   };
 
+  const onApproveCancelRequest = async (bookingId: string) => {
+    "use server";
+    const result = await approveCancelRequest(
+      user.id,
+      business.id,
+      new Date(),
+      bookingId,
+    );
+    return { ok: result.ok };
+  };
+
+  const onDeclineCancelRequest = async (bookingId: string) => {
+    "use server";
+    const result = await declineCancelRequest(
+      user.id,
+      business.id,
+      new Date(),
+      bookingId,
+    );
+    return { ok: result.ok };
+  };
+
   return (
     <InicioScreen
       data={data}
@@ -99,6 +126,8 @@ export default async function InicioPage() {
       onLogout={logout}
       onConfirmRequest={onConfirmRequest}
       onDeclineRequest={onDeclineRequest}
+      onApproveCancelRequest={onApproveCancelRequest}
+      onDeclineCancelRequest={onDeclineCancelRequest}
       myProfile={myProfile ?? undefined}
       myProfileActions={
         myProfile

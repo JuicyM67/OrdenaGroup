@@ -34,6 +34,13 @@ export type OwnerMobileTopBarProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-56: se `notification-bell.tsx`. */
+  onApproveCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
+  onDeclineCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
 };
 
 export function OwnerMobileTopBar({
@@ -41,6 +48,8 @@ export function OwnerMobileTopBar({
   pendingRequests = [],
   onConfirmRequest,
   onDeclineRequest,
+  onApproveCancelRequest,
+  onDeclineCancelRequest,
 }: OwnerMobileTopBarProps) {
   return (
     <header
@@ -61,6 +70,8 @@ export function OwnerMobileTopBar({
             requests={pendingRequests}
             onConfirm={onConfirmRequest}
             onDecline={onDeclineRequest}
+            onApproveCancel={onApproveCancelRequest}
+            onDeclineCancel={onDeclineCancelRequest}
             triggerTone="ghost-dark"
             triggerSize={44}
           />
