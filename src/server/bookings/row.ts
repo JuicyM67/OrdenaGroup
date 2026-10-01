@@ -15,8 +15,17 @@ export type LockedBooking = {
   blockedEnd: number;
   priceClp: number;
   cancelWindowHours: number;
+  /** WP-56: `businesses.cancel_approval`. */
+  cancelApproval: CancelApproval;
   businessActive: boolean;
 };
+
+/** WP-56: när kundens avbokning kräver företagets godkännande. */
+export type CancelApproval = "none" | "late" | "all";
+
+export function toCancelApproval(v: string): CancelApproval {
+  return v === "late" || v === "all" ? v : "none";
+}
 
 /**
  * Vilken bokning: ägaren anger id (RLS gäller), kunden bara länkens token.
@@ -34,6 +43,7 @@ type Row = {
   be: number;
   price_clp: number;
   cancel_window_hours: number;
+  cancel_approval: string;
   business_status: string;
 };
 
@@ -56,7 +66,8 @@ export async function lockBooking(
             extract(epoch from lower(bk.period))::float8 * 1000 as s,
             extract(epoch from upper(bk.period))::float8 * 1000 as pe,
             extract(epoch from upper(bk.blocked))::float8 * 1000 as be,
-            b.cancel_window_hours, b.status::text as business_status
+            b.cancel_window_hours, b.cancel_approval,
+            b.status::text as business_status
        from public.bookings bk
        join public.businesses b on b.id = bk.business_id
       where bk.business_id = $1 and b.id = $1 and bk.${column} = $2
@@ -75,6 +86,7 @@ export async function lockBooking(
     blockedEnd: Math.round(x.be),
     priceClp: x.price_clp,
     cancelWindowHours: x.cancel_window_hours,
+    cancelApproval: toCancelApproval(x.cancel_approval),
     businessActive: x.business_status === "active",
   };
 }
@@ -93,3 +105,30 @@ export const CHANGEABLE: readonly BookingStatus[] = [
   "confirmed",
   "pending_payment",
 ];
+
+/** WP-56: statusar kunden kan begära avbokning från. En förfrågan
+ * (`requested`) avbokas som förut utan godkännande. `pending_payment` är
+ * medvetet utanför: `bookings_pending_expires_at_check` kräver att
+ * `pending_expires_at` nollas när statusen lämnar `pending_payment`, och
+ * handpenningen (WP-25) finns inte än — tas med när den landar. */
+export const CANCEL_REQUESTABLE: readonly BookingStatus[] = ["confirmed"];
+
+/**
+ * WP-56: blir kundens avbokning NU en förfrågan (`cancel_requested`) i
+ * stället för en direkt avbokning? `all` = alltid; `late` = när
+ * start − now < cancel_window_hours (alltså utanför det vanliga fönstret).
+ * Aldrig efter start (då finns inget att avboka) och bara från
+ * `CANCEL_REQUESTABLE`. Ren funktion.
+ */
+export function customerCancelNeedsApproval(
+  b: Pick<
+    LockedBooking,
+    "start" | "cancelWindowHours" | "cancelApproval" | "status"
+  >,
+  now: Date,
+): boolean {
+  if (!CANCEL_REQUESTABLE.includes(b.status)) return false;
+  if (now.getTime() >= b.start) return false;
+  if (b.cancelApproval === "all") return true;
+  return b.cancelApproval === "late" && !insideCancelWindow(b, now);
+}

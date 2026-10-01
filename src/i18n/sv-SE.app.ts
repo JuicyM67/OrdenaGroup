@@ -110,6 +110,9 @@ export const estados: Widen<typeof Es.estados> = {
   llego: "Kom",
   noVino: "Kom inte",
   cancelada: "Avbokad",
+  /** WP-56: chip för en bokning `cancel_requested` — kunden vill avboka och
+   * väntar på svar. */
+  cancelacionPendiente: "Avbokning begärd",
   listaDeEspera: "Väntelista",
   desdeLista: "Från väntelistan",
   abono: "Förskott",
@@ -347,9 +350,13 @@ export const gestion: Widen<typeof Es.gestion> = {
   ctaCancelarReserva: "Avboka tiden",
   pendienteAviso:
     "Företaget har inte bekräftat den här tiden än. Vi meddelar dig så fort de gör det.",
+  cancelacionPendienteAviso: (p: { negocio: string }): string =>
+    `Din avbokning väntar på svar från ${p.negocio}. Vi meddelar dig så fort de svarar.`,
   confirmarCancelacion: {
     titulo: "Avboka tiden?",
     cuerpo: "Vi meddelar företaget och släpper tiden till någon annan.",
+    cuerpoPendiente:
+      "Den här gången måste företaget godkänna din avbokning. Tiden gäller fortfarande tills de svarar.",
     ctaSi: "Ja, avboka",
     ctaNo: "Nej, behåll",
   },
@@ -1074,6 +1081,35 @@ export const email: Widen<typeof Es.email> = {
       `${p.cliente} skickade en förfrågan om ${p.servicio} för ${p.fecha} kl. ${p.hora}. Bekräfta eller neka den innan den hinner gå ut.`,
     cta: "Se förfrågan",
   },
+  solicitudCancelacion: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} vill avboka sin tid den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} kl. ${p.hora}. Godkänn eller neka avbokningen.`,
+    titulo: "Du har en avbokningsförfrågan",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} vill avboka sin tid för ${p.servicio} den ${p.fecha} kl. ${p.hora}. Tiden är kvar tills du svarar.`,
+    cta: "Svara",
+  },
+  cancelacionRechazada: {
+    asunto: (p: { negocio: string }): string =>
+      `Din avbokning hos ${p.negocio} godkändes inte`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Din tid den ${p.fecha} kl. ${p.hora} gäller fortfarande.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      telefono?: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nDin avbokning hos ${p.negocio} av tiden den ${p.fecha} kl. ${p.hora} godkändes inte, så tiden gäller fortfarande.\n\n${p.telefono ? `Kontakta ${p.negocio} på ${p.telefono} om du behöver ändra den.` : `Kontakta ${p.negocio} om du behöver ändra den.`}`,
+  },
   solicitudRecibida: {
     asunto: (p: { negocio: string }): string =>
       `Vi tog emot din förfrågan hos ${p.negocio}`,
@@ -1554,6 +1590,14 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     confirmarAutomatico: "Bekräfta bokningar automatiskt",
     confirmarAutomaticoAyuda:
       "Om du stänger av den här väntar varje bokning från din sida tills du bekräftar eller nekar den. Under tiden är tiden blockerad så att ingen annan kan ta den.",
+    cancelApprovalLabel: "Kundens avbokningar",
+    cancelApprovalAyuda:
+      "Gäller tillsammans med fristen ovan: en avbokning inom den fristen (eller alla, beroende på vad du väljer) väntar tills du godkänner eller nekar den, utan att tiden släpps.",
+    cancelApprovalOpciones: {
+      none: "Direkta, utan ditt godkännande",
+      late: "Sena behöver ditt godkännande",
+      all: "Alla behöver ditt godkännande",
+    },
   },
   waitlistMode: {
     sequential: "En i taget, i ordning",
@@ -2024,6 +2068,27 @@ export const sms: Widen<typeof Es.sms> = {
     hora: string;
   }): string =>
     `Ny bokning: ${p.cliente} bokade ${p.servicio} ${p.fecha} kl. ${p.hora}.`,
+  nuevaSolicitudDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Ny bokningsförfrågan: ${p.cliente}, ${p.fecha} kl. ${p.hora} - svara här: ${p.link}`,
+  solicitudCancelacionDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Avbokningsförfrågan: ${p.cliente}, ${p.fecha} kl. ${p.hora} - svara här: ${p.link}`,
+  cancelacionRechazada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    telefono?: string;
+  }): string =>
+    `Din avbokning hos ${p.negocio} ${p.fecha} kl. ${p.hora} godkändes inte - kontakta ${p.negocio}${p.telefono ? ` på ${p.telefono}` : ""}.`,
   codigoAcceso: (p: { codigo: string }): string =>
     `Din inloggningskod är ${p.codigo}. Dela den aldrig med någon.`,
   mensajeLibre: (p: { negocio: string; texto: string }): string =>
@@ -2270,9 +2335,11 @@ export const solicitudes: Widen<typeof Es.solicitudes> = {
     fecha: string;
     hora: string;
   }): string => `${p.cliente} · ${p.servicio} · ${p.fecha}, ${p.hora}`,
+  etiquetaCancelacion: "Vill avboka",
   acciones: {
     confirmar: "Bekräfta",
     rechazar: "Neka",
+    aprobarCancelacion: "Godkänn avbokning",
   },
   rechazarDialog: {
     titulo: "Neka den här förfrågan?",
@@ -2282,9 +2349,37 @@ export const solicitudes: Widen<typeof Es.solicitudes> = {
     ctaSi: "Ja, neka",
     ctaNo: "Nej, behåll",
   },
+  rechazarCancelacionDialog: {
+    titulo: "Neka den här avbokningen?",
+    cuerpo: "Bokningen gäller fortfarande och kunden meddelas.",
+    ctaSi: "Ja, neka",
+    ctaNo: "Nej, behåll",
+  },
   toast: {
     confirmada: "Förfrågan bekräftad.",
     rechazada: "Förfrågan nekad.",
+    cancelacionAprobada: "Avbokning godkänd.",
+    cancelacionRechazada: "Avbokningen nekades.",
+  },
+  detalle: {
+    tituloSolicitud: "Bokningsförfrågan",
+    tituloCancelacion: "Avbokningsförfrågan",
+    campos: {
+      cliente: "Kund",
+      servicio: "Tjänst",
+      profesional: "Medarbetare",
+      hora: "Tid",
+    },
+    noEncontrada: "Den här förfrågan är inte längre tillgänglig.",
+    yaRespondida: "Den här förfrågan har redan besvarats.",
+    verAgenda: "Visa i agendan",
+    resultado: {
+      confirmada: "Du bekräftade förfrågan.",
+      rechazada: "Du nekade förfrågan.",
+      cancelacionAprobada: "Du godkände avbokningen. Tiden är nu ledig.",
+      cancelacionRechazada:
+        "Du nekade avbokningen. Bokningen gäller fortfarande.",
+    },
   },
 };
 

@@ -152,7 +152,7 @@ export type DecisionInput = {
  * `can_cancel_bookings` (se `./authz.ts`). `not_found` om bokningen inte
  * syns alls, `forbidden` om den syns men medlemmen inte får röra den.
  */
-async function authorizeDecision(
+export async function authorizeDecision(
   q: Queryable,
   input: DecisionInput,
 ): Promise<BookingError | null> {
@@ -169,7 +169,7 @@ async function authorizeDecision(
     : "forbidden";
 }
 
-async function currentStatus(
+export async function currentStatus(
   q: Queryable,
   businessId: string,
   bookingId: string,

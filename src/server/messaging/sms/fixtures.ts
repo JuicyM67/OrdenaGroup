@@ -20,6 +20,8 @@ export function smsFixtures(market: Market): {
 } {
   const b = base(market);
   const link = "https://app.example.com/r/abc123";
+  const solicitudLink =
+    "https://app.example.com/app/solicitudes/3f1c2a4e-0000-4000-8000-000000000001";
   return {
     reservaConfirmada: {
       negocio: b.negocio,
@@ -62,6 +64,24 @@ export function smsFixtures(market: Market): {
       servicio: b.servicio,
       fecha: b.fecha,
       hora: b.hora,
+    },
+    nuevaSolicitudDueno: {
+      cliente: b.cliente,
+      fecha: b.fecha,
+      hora: b.hora,
+      link: solicitudLink,
+    },
+    solicitudCancelacionDueno: {
+      cliente: b.cliente,
+      fecha: b.fecha,
+      hora: b.hora,
+      link: solicitudLink,
+    },
+    cancelacionRechazada: {
+      negocio: b.negocio,
+      fecha: b.fecha,
+      hora: b.hora,
+      telefono: market === "SE" ? "+46 70 123 45 67" : "+56 9 1234 5678",
     },
     codigoAcceso: { codigo: "482913" },
     mensajeLibre: {

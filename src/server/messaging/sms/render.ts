@@ -71,6 +71,27 @@ export type SmsTemplateMap = {
     fecha: string;
     hora: string;
   };
+  /** WP-56: till företaget (SE, `businesses.phone` om mobil). `link` =
+   * `/app/solicitudes/{id}`. */
+  readonly nuevaSolicitudDueno: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  };
+  readonly solicitudCancelacionDueno: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  };
+  /** WP-56: till kunden, avbokningen godkändes inte. */
+  readonly cancelacionRechazada: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    telefono?: string;
+  };
   readonly codigoAcceso: { codigo: string };
   /** WP-55: mensaje libre desde la ficha del cliente (`message_outbox`,
    * `recipient_kind = 'customer'`, sin `booking_id`) — ver `worker.ts`
@@ -91,6 +112,9 @@ export const SMS_TEMPLATE_NAMES: readonly SmsTemplateName[] = [
   "listaEsperaCupo",
   "horaFlash",
   "nuevaReservaDueno",
+  "nuevaSolicitudDueno",
+  "solicitudCancelacionDueno",
+  "cancelacionRechazada",
   "codigoAcceso",
   "mensajeLibre",
 ];

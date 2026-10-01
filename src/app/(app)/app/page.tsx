@@ -15,6 +15,11 @@
 // NYTT företag. `/auth/confirm` skickar i båda fallen alltid hit, aldrig
 // till en fri `next`-parameter, så det här är enda stället någon av de två
 // kedjorna kan fortsätta från.
+//
+// WP-56: tredje cookien, samma mönster — `pending_solicitud` (satt av
+// `src/proxy.ts` när en utloggad öppnar /app/solicitudes/[id] via
+// sms/mejl-länken) skickar tillbaka till just den förfrågan i stället för
+// /app/inicio.
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -31,6 +36,7 @@ import {
 export const dynamic = "force-dynamic";
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{20,64}$/;
+const SOLICITUD_ID_RE = /^[0-9a-f-]{36}$/i;
 
 export default async function AppIndexPage() {
   const supabase = await createSupabaseServerClient();
@@ -64,6 +70,16 @@ export default async function AppIndexPage() {
     // min) — ett omförsök inom fönstret ger bara "used_or_expired"
     // (idempotent) och fortsätter till det vanliga flödet nedan.
     if (result.ok) redirect("/app/onboarding");
+  }
+
+  const pendingSolicitud = store.get("pending_solicitud")?.value;
+  if (pendingSolicitud && SOLICITUD_ID_RE.test(pendingSolicitud)) {
+    try {
+      store.delete("pending_solicitud");
+    } catch {
+      // se kommentaren vid `pending_invitation` ovan
+    }
+    redirect(`/app/solicitudes/${pendingSolicitud}`);
   }
 
   const business = await getOwnerBusiness(user.id);

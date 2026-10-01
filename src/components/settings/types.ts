@@ -14,6 +14,10 @@ export type AjustesBusiness = {
   /** WP-45 (D-033): av som standard, även för befintliga företag (Ägarens
    * svar 4). Av → reservas från `/{slug}` blir `requested`. */
   autoConfirmBookings: boolean;
+  /** WP-56: `businesses.cancel_approval` — "none" (kunden avbokar direkt),
+   * "late" (bara avbokningar senare än avbokningsfristen kräver godkännande)
+   * eller "all" (varje avbokning kräver godkännande). */
+  cancelApproval: "none" | "late" | "all";
   /** WP-54: `null` = förmånen för socios är avstängd. */
   memberDiscountPct: number | null;
   memberBenefitText: string | null;

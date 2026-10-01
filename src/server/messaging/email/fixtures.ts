@@ -158,5 +158,21 @@ export function emailFixtures(market: Market): {
       pct: 10,
       linkReserva: "https://app.example.com/barberia-norte",
     },
+    solicitudCancelacion: {
+      negocio: b.negocio,
+      cliente: b.cliente,
+      servicio: b.servicio,
+      fecha: b.fecha,
+      hora: b.hora,
+      agendaUrl:
+        "https://app.example.com/app/solicitudes/3f1c2a4e-0000-4000-8000-000000000001",
+    },
+    cancelacionRechazada: {
+      cliente: b.cliente,
+      negocio: b.negocio,
+      fecha: b.fecha,
+      hora: b.hora,
+      telefono: market === "SE" ? "+46 70 123 45 67" : "+56 9 1234 5678",
+    },
   };
 }

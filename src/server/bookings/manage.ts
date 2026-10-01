@@ -18,7 +18,12 @@ import { manageTokenSchema } from "@/server/scheduling/schemas";
 import type { BookingStatus } from "@/server/scheduling/types";
 
 import { cancelBooking } from "./cancel";
-import { CHANGEABLE, insideCancelWindow } from "./row";
+import {
+  CHANGEABLE,
+  customerCancelNeedsApproval,
+  insideCancelWindow,
+  toCancelApproval,
+} from "./row";
 import { hashManageToken } from "./token";
 import type { BookingError } from "./types";
 
@@ -42,9 +47,20 @@ export type ManagedBooking = {
   priceClp: number;
   status: BookingStatus;
   cancelWindowHours: number;
-  /** Status `confirmed`/`pending_payment` och `now` ≤ start − cancel_window_hours. */
+  /** Status `requested`/`confirmed`/`pending_payment` och `now` ≤ start −
+   * cancel_window_hours, ELLER (WP-56) avbokningen blir en förfrågan
+   * (`cancelNeedsApproval`). */
   canCancel: boolean;
+  /** WP-56: avbokar kunden nu blir det en förfrågan som företaget måste
+   * godkänna (`cancelByToken` svarar då `pending: true`). Sätts alltid av
+   * `loadBookingByToken`; valfri bara för äldre fixturer (saknas = false). */
+  cancelNeedsApproval?: boolean;
 };
+
+/** WP-56: kundens avbokning via länken. `pending: true` = blev en
+ * avbokningsförfrågan (`cancel_requested`), väntar på företagets svar;
+ * saknas = avbokad (eller redan avbokad). */
+export type CustomerCancelOutcome = { bookingId: string; pending?: true };
 
 /** Ogiltigt format → `undefined` utan att fråga databasen. */
 function parseToken(token: string): string | undefined {
@@ -80,6 +96,7 @@ type DetailRow = {
   comuna: string;
   timezone: string;
   cancel_window_hours: number;
+  cancel_approval: string;
 };
 
 /**
@@ -101,7 +118,7 @@ export async function loadBookingByToken(
               extract(epoch from upper(bk.period))::float8 * 1000 as pe,
               sv.name as service_name, st.name as staff_name,
               b.name as business_name, b.slug, b.phone, b.address, b.comuna,
-              b.timezone, b.cancel_window_hours
+              b.timezone, b.cancel_window_hours, b.cancel_approval
          from public.bookings bk
          join public.businesses b on b.id = bk.business_id
          join public.services sv
@@ -114,6 +131,15 @@ export async function loadBookingByToken(
     const x = r.rows[0];
     if (!x) return null;
     const start = Math.round(x.s);
+    const cancelNeedsApproval = customerCancelNeedsApproval(
+      {
+        start,
+        cancelWindowHours: x.cancel_window_hours,
+        cancelApproval: toCancelApproval(x.cancel_approval),
+        status: x.status,
+      },
+      now,
+    );
     return {
       businessId,
       bookingId: x.id,
@@ -133,11 +159,13 @@ export async function loadBookingByToken(
       status: x.status,
       cancelWindowHours: x.cancel_window_hours,
       canCancel:
-        CHANGEABLE.includes(x.status) &&
-        insideCancelWindow(
-          { start, cancelWindowHours: x.cancel_window_hours },
-          now,
-        ),
+        cancelNeedsApproval ||
+        (CHANGEABLE.includes(x.status) &&
+          insideCancelWindow(
+            { start, cancelWindowHours: x.cancel_window_hours },
+            now,
+          )),
+      cancelNeedsApproval,
     };
   });
 }
@@ -151,7 +179,7 @@ export async function loadBookingByToken(
 export async function cancelByToken(
   token: string,
   now: Date,
-): Promise<Result<{ bookingId: string }, BookingError>> {
+): Promise<Result<CustomerCancelOutcome, BookingError>> {
   const t = parseToken(token);
   if (!t) return err("not_found");
   const businessId = await withServiceTx((q) => businessIdForToken(q, t));
@@ -160,5 +188,10 @@ export async function cancelByToken(
     { manageToken: t },
     { businessId, actor: { kind: "customer" }, now },
   );
-  return r.ok ? ok({ bookingId: r.value.bookingId }) : r;
+  if (!r.ok) return r;
+  return ok(
+    r.value.pending
+      ? { bookingId: r.value.bookingId, pending: true }
+      : { bookingId: r.value.bookingId },
+  );
 }

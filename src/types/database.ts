@@ -202,6 +202,8 @@ export type Database = {
           source: Database["public"]["Enums"]["booking_source"];
           staff_id: string;
           status: Database["public"]["Enums"]["booking_status"];
+          status_before_cancel_request:
+            Database["public"]["Enums"]["booking_status"] | null;
           updated_at: string;
         };
         Insert: {
@@ -226,6 +228,8 @@ export type Database = {
           source: Database["public"]["Enums"]["booking_source"];
           staff_id: string;
           status: Database["public"]["Enums"]["booking_status"];
+          status_before_cancel_request?:
+            Database["public"]["Enums"]["booking_status"] | null;
           updated_at?: string;
         };
         Update: {
@@ -250,6 +254,8 @@ export type Database = {
           source?: Database["public"]["Enums"]["booking_source"];
           staff_id?: string;
           status?: Database["public"]["Enums"]["booking_status"];
+          status_before_cancel_request?:
+            Database["public"]["Enums"]["booking_status"] | null;
           updated_at?: string;
         };
         Relationships: [
@@ -359,6 +365,7 @@ export type Database = {
           accent_color: string | null;
           address: string | null;
           auto_confirm_bookings: boolean;
+          cancel_approval: string;
           cancel_window_hours: number;
           category: string;
           comuna: string;
@@ -393,6 +400,7 @@ export type Database = {
           accent_color?: string | null;
           address?: string | null;
           auto_confirm_bookings?: boolean;
+          cancel_approval?: string;
           cancel_window_hours?: number;
           category: string;
           comuna: string;
@@ -427,6 +435,7 @@ export type Database = {
           accent_color?: string | null;
           address?: string | null;
           auto_confirm_bookings?: boolean;
+          cancel_approval?: string;
           cancel_window_hours?: number;
           category?: string;
           comuna?: string;
@@ -1259,6 +1268,7 @@ export type Database = {
         | "confirmed"
         | "completed"
         | "no_show"
+        | "cancel_requested"
         | "cancelled";
       business_plan: "free" | "emprende" | "equipo" | "local";
       business_status: "active" | "frozen";
@@ -1421,6 +1431,7 @@ export const Constants = {
         "confirmed",
         "completed",
         "no_show",
+        "cancel_requested",
         "cancelled",
       ],
       business_plan: ["free", "emprende", "equipo", "local"],

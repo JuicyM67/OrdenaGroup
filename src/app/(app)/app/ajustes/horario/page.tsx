@@ -10,7 +10,9 @@ import { loadAjustesHours } from "@/server/owner/ajustes";
 
 import { requireAjustesTab } from "../access";
 import {
+  approveCancelRequestAction,
   confirmRequestAction,
+  declineCancelRequestAction,
   declineRequestAction,
   updateHoursAction,
 } from "../actions";
@@ -37,6 +39,8 @@ export default async function AjustesHorarioPage() {
       pendingRequests={ctx.pendingRequests}
       onConfirmRequest={confirmRequestAction}
       onDeclineRequest={declineRequestAction}
+      onApproveCancelRequest={approveCancelRequestAction}
+      onDeclineCancelRequest={declineCancelRequestAction}
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >

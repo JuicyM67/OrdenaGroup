@@ -87,13 +87,15 @@ export function sectionAria(desde: LocalDate, hasta: LocalDate): string {
 
 export type StatusChip = {
   readonly label: string;
-  readonly tone: "success" | "neutral" | "pending";
+  readonly tone: "success" | "neutral" | "pending" | "deposit";
 };
 
 /**
  * "Llegó"/"No vino" om popoverns knappar redan satt det lokalt (WP-12 FRÅGA 7, `status`
  * "completed"/"no_show"), "Por confirmar" om bokningen är en väntande förfrågan (WP-45,
- * D-033), annars "Confirmó por WhatsApp" om kunden bekräftat, annars ingen status-chip.
+ * D-033), "Cancelación pendiente" om kunden begärt avbokning och väntar på svar (WP-56,
+ * tono `deposit` — eget utseende, skild från "Por confirmar"), annars "Confirmó por
+ * WhatsApp" om kunden bekräftat, annars ingen status-chip.
  */
 export function statusChip(
   booking: Pick<AgendaBooking, "confirmedByCustomer" | "status">,
@@ -106,6 +108,9 @@ export function statusChip(
   }
   if (booking.status === "requested") {
     return { label: estados.porConfirmar, tone: "pending" };
+  }
+  if (booking.status === "cancel_requested") {
+    return { label: estados.cancelacionPendiente, tone: "deposit" };
   }
   return booking.confirmedByCustomer
     ? { label: estados.confirmoPorWhatsapp, tone: "success" }

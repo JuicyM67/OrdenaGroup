@@ -101,6 +101,7 @@ describe("loadBookingByToken", () => {
       status: "confirmed",
       cancelWindowHours: 3,
       canCancel: true,
+      cancelNeedsApproval: false,
     });
     expect(calls[1]!.values).toEqual([BIZ, hashManageToken(TOKEN)]);
   });

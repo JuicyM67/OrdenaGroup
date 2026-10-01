@@ -31,6 +31,13 @@ export type AgendaShellProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-56: se `notification-bell.tsx`. */
+  onApproveCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
+  onDeclineCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
   className?: string;
 };
 
@@ -43,6 +50,8 @@ export function AgendaShell({
   pendingRequests,
   onConfirmRequest,
   onDeclineRequest,
+  onApproveCancelRequest,
+  onDeclineCancelRequest,
   className,
 }: AgendaShellProps) {
   return (
@@ -58,6 +67,8 @@ export function AgendaShell({
         pendingRequests={pendingRequests}
         onConfirmRequest={onConfirmRequest}
         onDeclineRequest={onDeclineRequest}
+        onApproveCancelRequest={onApproveCancelRequest}
+        onDeclineCancelRequest={onDeclineCancelRequest}
       />
       <div className="hidden lg:flex lg:w-75 lg:shrink-0 lg:flex-col lg:gap-3">
         {aside}

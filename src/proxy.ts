@@ -63,7 +63,26 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.search = "";
-    return NextResponse.redirect(url);
+    const redirect = NextResponse.redirect(url);
+    // WP-56: /app/solicitudes/[id] kräver inloggning (`(app)/layout.tsx`),
+    // till skillnad från /app/invitacion/bienvenida ovan — men ägaren som
+    // öppnar sms/mejl-länken utloggad ska ändå hamna rätt efter inloggning.
+    // `/auth/confirm` stödjer medvetet ingen `?next=` (öppen omdirigering,
+    // D-019), så samma cookie-mönster som `pending_invitation`
+    // (`/app/invitacion/[token]/page.tsx`): ett redan formatvaliderat id,
+    // kort livslängd, `/app` (`src/app/(app)/app/page.tsx`) skickar vidare.
+    const solicitudMatch = /^\/app\/solicitudes\/([0-9a-f-]{36})$/i.exec(
+      pathname,
+    );
+    const solicitudId = solicitudMatch?.[1];
+    if (solicitudId) {
+      redirect.cookies.set("pending_solicitud", solicitudId, {
+        path: "/",
+        maxAge: 60 * 15,
+        sameSite: "lax",
+      });
+    }
+    return redirect;
   }
 
   return response;

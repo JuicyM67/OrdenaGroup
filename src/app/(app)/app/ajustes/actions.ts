@@ -21,7 +21,12 @@ import {
   type MutationResult,
 } from "@/server/owner/ajustes";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
-import { confirmRequest, declineRequest } from "@/server/owner/requests";
+import {
+  approveCancelRequest,
+  confirmRequest,
+  declineCancelRequest,
+  declineRequest,
+} from "@/server/owner/requests";
 
 async function currentOwner(): Promise<
   { userId: string; businessId: string } | { ok: false; code: "unauthorized" }
@@ -148,6 +153,35 @@ export async function declineRequestAction(
     new Date(),
     bookingId,
     reason,
+  );
+  return { ok: result.ok };
+}
+
+// WP-56: "Aprobar cancelación"/"Rechazar" i klockan.
+export async function approveCancelRequestAction(
+  bookingId: string,
+): Promise<{ ok: boolean }> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return { ok: false };
+  const result = await approveCancelRequest(
+    owner.userId,
+    owner.businessId,
+    new Date(),
+    bookingId,
+  );
+  return { ok: result.ok };
+}
+
+export async function declineCancelRequestAction(
+  bookingId: string,
+): Promise<{ ok: boolean }> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return { ok: false };
+  const result = await declineCancelRequest(
+    owner.userId,
+    owner.businessId,
+    new Date(),
+    bookingId,
   );
   return { ok: result.ok };
 }

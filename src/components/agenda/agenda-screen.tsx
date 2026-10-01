@@ -173,6 +173,14 @@ export type AgendaScreenProps = {
     bookingId: string,
     reason?: string,
   ) => Promise<NotificationBellResult>;
+  /** WP-56: "Aprobar cancelación"/"Rechazar" i klockan och popovern, se
+   * `event-popover.tsx`. `undefined` döljer knapparna. */
+  onApproveCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
+  onDeclineCancelRequest?: (
+    bookingId: string,
+  ) => Promise<NotificationBellResult>;
   /** WP-24: kundkortets "Nueva reserva" (`/app/agenda?cliente=…`) — öppnar
    * "Nueva reserva" direkt, förifylld med den befintliga kundens kontakt. */
   initialManualCustomer?: { name: string; phone: string; email: string };
@@ -240,6 +248,8 @@ export function AgendaScreen({
   pendingRequests,
   onConfirmRequest,
   onDeclineRequest,
+  onApproveCancelRequest,
+  onDeclineCancelRequest,
   initialManualCustomer,
   onMarkPaid,
   onUndoPayment,
@@ -517,6 +527,24 @@ export function AgendaScreen({
               }
             : undefined
         }
+        onApproveCancelRequest={
+          onApproveCancelRequest && canActOnBooking
+            ? async (bookingId) => {
+                const result = await onApproveCancelRequest(bookingId);
+                if (result.ok) router.refresh();
+                return result;
+              }
+            : undefined
+        }
+        onDeclineCancelRequest={
+          onDeclineCancelRequest && canActOnBooking
+            ? async (bookingId) => {
+                const result = await onDeclineCancelRequest(bookingId);
+                if (result.ok) router.refresh();
+                return result;
+              }
+            : undefined
+        }
         onMarkPaid={
           onMarkPaid && canPayBooking
             ? async (input) => {
@@ -626,6 +654,7 @@ export function AgendaScreen({
           staffColor={staff?.color ?? 1}
           selected={booking.id === selectedBookingId}
           pending={booking.status === "requested"}
+          cancelPending={booking.status === "cancel_requested"}
           title={booking.clientName}
           meta={meta}
           showAvatar={isAvatarVisible(box.height)}
@@ -694,6 +723,8 @@ export function AgendaScreen({
         pendingRequests={pendingRequests}
         onConfirmRequest={onConfirmRequest}
         onDeclineRequest={onDeclineRequest}
+        onApproveCancelRequest={onApproveCancelRequest}
+        onDeclineCancelRequest={onDeclineCancelRequest}
         rail={
           <AgendaRail
             staff={data.staff}

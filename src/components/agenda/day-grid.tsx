@@ -118,6 +118,7 @@ export function DayGrid({
           staffColor={staff.color}
           selected={booking.id === selectedBookingId}
           pending={booking.status === "requested"}
+          cancelPending={booking.status === "cancel_requested"}
           title={booking.clientName}
           meta={meta}
           showAvatar={false}

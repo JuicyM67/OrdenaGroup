@@ -9,7 +9,12 @@ import { PrivacySection } from "@/components/settings/privacy-section";
 import { nav } from "@/i18n";
 
 import { requireAjustesTab } from "../access";
-import { confirmRequestAction, declineRequestAction } from "../actions";
+import {
+  approveCancelRequestAction,
+  confirmRequestAction,
+  declineCancelRequestAction,
+  declineRequestAction,
+} from "../actions";
 import {
   cancelBusinessDeletionAction,
   exportBusinessAction,
@@ -42,6 +47,8 @@ export default async function AjustesPrivacidadPage() {
       pendingRequests={ctx.pendingRequests}
       onConfirmRequest={confirmRequestAction}
       onDeclineRequest={declineRequestAction}
+      onApproveCancelRequest={approveCancelRequestAction}
+      onDeclineCancelRequest={declineCancelRequestAction}
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >

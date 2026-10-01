@@ -32,8 +32,16 @@ export function todayLabel(now: Date): string {
 
 // WP-45 (D-033): "requested" här också — annars försvinner en väntande förfrågan
 // helt ur "Siguiente"/"Resto del día" (granskningsfynd i WP-45-planen: ett
-// allowlist-filter som `<> 'cancelled'` inte hade missat).
-const OPEN_STATUSES = new Set(["confirmed", "pending_payment", "requested"]);
+// allowlist-filter som `<> 'cancelled'` inte hade missat). WP-56: samma
+// resonemang för "cancel_requested" — tiden är fortfarande blockerad
+// (`BLOCKING_STATUSES`) tills ägaren svarar, och ska synas med sin egen
+// etikett (`rowTag`) i stället för att se ut som en vanlig bekräftad tid.
+const OPEN_STATUSES = new Set([
+  "confirmed",
+  "pending_payment",
+  "requested",
+  "cancel_requested",
+]);
 
 function isEligibleToday(
   b: HoyBooking,
@@ -107,15 +115,22 @@ export function relative(now: Date, start: Date): string {
   return hoy.relativo.enHoras({ h: Math.floor(diff / 60), m: diff % 60 });
 }
 
-export type NextChip = { tone: "success" | "pending"; label: string };
+export type NextChip = {
+  tone: "success" | "pending" | "deposit";
+  label: string;
+};
 
 /** WP-45 (D-033): en väntande förfrågan (`requested`) → "Por confirmar", före
  * kundens egen bekräftelse (annat begrepp, `confirmed_by_customer_at`).
- * Annars: bekräftad av kunden → success ("Confirmó"), annars pending
- * ("Sin confirmar"). */
+ * WP-56: en väntande avbokningsförfrågan (`cancel_requested`) → "Cancelación
+ * pendiente" (tono `deposit`, eget utseende). Annars: bekräftad av kunden →
+ * success ("Confirmó"), annars pending ("Sin confirmar"). */
 export function nextChip(b: HoyBooking): NextChip {
   if (b.status === "requested") {
     return { tone: "pending", label: estados.porConfirmar };
+  }
+  if (b.status === "cancel_requested") {
+    return { tone: "deposit", label: estados.cancelacionPendiente };
   }
   return b.confirmedByCustomer
     ? { tone: "success", label: estados.confirmo }
@@ -123,7 +138,7 @@ export function nextChip(b: HoyBooking): NextChip {
 }
 
 export type RowTag = {
-  tone: "lime" | "peach" | "peach-50" | "pending" | "success";
+  tone: "lime" | "peach" | "peach-50" | "pending" | "success" | "deposit";
   label: string;
 };
 
@@ -134,12 +149,17 @@ export function isMemberBooking(b: HoyBooking): boolean {
   return b.isMember === true;
 }
 
-/** Högst en tagg. WP-45 (D-033): "Por confirmar" (en väntande förfrågan) går
- * före allt annat — annars Flash > Desde lista > Abono > Pagada (WP-24,
- * lägst prioritet: en betald "flash"-bokning visar ändå "Flash" här). */
+/** Högst en tagg. WP-45 (D-033): "Por confirmar" (en väntande förfrågan) och
+ * WP-56: "Cancelación pendiente" (en väntande avbokningsförfrågan, eget
+ * utseende `deposit` — se `event-block.tsx`) går före allt annat — annars
+ * Flash > Desde lista > Abono > Pagada (WP-24, lägst prioritet: en betald
+ * "flash"-bokning visar ändå "Flash" här). */
 export function rowTag(b: HoyBooking): RowTag | undefined {
   if (b.status === "requested") {
     return { tone: "pending", label: estados.porConfirmar };
+  }
+  if (b.status === "cancel_requested") {
+    return { tone: "deposit", label: estados.cancelacionPendiente };
   }
   if (b.source === "flash") return { tone: "lime", label: estados.flash };
   if (b.source === "waitlist")

@@ -33,11 +33,16 @@ export function ManageScreen({
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [justCancelled, setJustCancelled] = useState(false);
+  // WP-56: avbokningen blev precis en förfrågan (`pending: true`) — visas
+  // direkt utan att behöva ladda om länken.
+  const [justRequestedCancel, setJustRequestedCancel] = useState(false);
   const [generalError, setGeneralError] = useState(false);
 
   const state = justCancelled
     ? "cancelled"
-    : manageState(booking, mustParseInstant(now, "ManageScreen"));
+    : justRequestedCancel
+      ? "cancelPending"
+      : manageState(booking, mustParseInstant(now, "ManageScreen"));
   const fields = manageFields(booking);
   const reservarOtraHref = `/${booking.business.slug}`;
 
@@ -45,7 +50,8 @@ export function ManageScreen({
     setGeneralError(false);
     const result = await onCancel();
     if (result.ok) {
-      setJustCancelled(true);
+      if (result.pending) setJustRequestedCancel(true);
+      else setJustCancelled(true);
       setDialogOpen(false);
       return;
     }
@@ -118,6 +124,19 @@ export function ManageScreen({
         </p>
       ) : null}
 
+      {state === "cancelPending" ? (
+        <div className="flex flex-col gap-2">
+          <Chip tone="deposit" size="sm" className="self-start">
+            {estados.cancelacionPendiente}
+          </Chip>
+          <p className="text-13 text-muted">
+            {gestion.cancelacionPendienteAviso({
+              negocio: booking.business.name,
+            })}
+          </p>
+        </div>
+      ) : null}
+
       {state === "cancellable" ? (
         <Button
           type="button"
@@ -140,6 +159,7 @@ export function ManageScreen({
       <CancelDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+        needsApproval={booking.cancelNeedsApproval}
         onConfirm={handleConfirmCancel}
       />
     </div>

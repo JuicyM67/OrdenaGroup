@@ -12,6 +12,8 @@ import type { PendingRequestItem } from "@/components/shared/notification-bell";
 import { RechazarDialog } from "@/components/shared/rechazar-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { inicio, solicitudes } from "@/i18n";
 import {
   APP_TZ,
@@ -27,6 +29,9 @@ export type PendingRequestsCardProps = {
   /** `reason`: ägarens valfria motiv (`RechazarDialog`), se
    * `notification-bell.tsx`. */
   onDecline: (bookingId: string, reason?: string) => Promise<{ ok: boolean }>;
+  /** WP-56: filas `kind: "cancel"`, se `notification-bell.tsx`. */
+  onApproveCancel?: (bookingId: string) => Promise<{ ok: boolean }>;
+  onDeclineCancel?: (bookingId: string) => Promise<{ ok: boolean }>;
 };
 
 function rowText(request: PendingRequestItem): string {
@@ -45,6 +50,8 @@ export function PendingRequestsCard({
   requests,
   onConfirm,
   onDecline,
+  onApproveCancel,
+  onDeclineCancel,
 }: PendingRequestsCardProps) {
   // Bort optimistiskt ur listan (samma `handledIds`-mönster som Llegó/No
   // vino i inicio-screen.tsx): inget `useEffect` — filtret räknas om varje
@@ -53,6 +60,10 @@ export function PendingRequestsCard({
   const items = requests.filter((r) => !handledIds.has(r.id));
   const [busyId, setBusyId] = useState<string | null>(null);
   const [decliningId, setDecliningId] = useState<string | null>(null);
+  // WP-56: ver `notification-bell.tsx`.
+  const [decliningCancelId, setDecliningCancelId] = useState<string | null>(
+    null,
+  );
 
   if (items.length === 0) return null;
 
@@ -78,6 +89,29 @@ export function PendingRequestsCard({
     }
   }
 
+  async function handleApproveCancel(bookingId: string) {
+    if (busyId || !onApproveCancel) return;
+    setBusyId(bookingId);
+    try {
+      const result = await onApproveCancel(bookingId);
+      if (result.ok) setHandledIds((prev) => new Set(prev).add(bookingId));
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDeclineCancel(bookingId: string) {
+    if (!onDeclineCancel) return;
+    setBusyId(bookingId);
+    try {
+      const result = await onDeclineCancel(bookingId);
+      if (result.ok) setHandledIds((prev) => new Set(prev).add(bookingId));
+    } finally {
+      setBusyId(null);
+      setDecliningCancelId(null);
+    }
+  }
+
   return (
     <Card
       as="section"
@@ -93,29 +127,59 @@ export function PendingRequestsCard({
             key={request.id}
             className="flex flex-wrap items-center justify-between gap-3 border-t border-line-strong py-2.5"
           >
-            <span className="text-14 font-semibold text-ink">
-              {rowText(request)}
+            <span className="flex min-w-0 items-center gap-2 text-14 font-semibold text-ink">
+              {request.kind === "cancel" ? (
+                <Chip tone="deposit" size="xs" className="shrink-0">
+                  {solicitudes.etiquetaCancelacion}
+                </Chip>
+              ) : null}
+              <span className="truncate">{rowText(request)}</span>
             </span>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="primary"
-                size="xs"
-                disabled={busyId === request.id}
-                onClick={() => void handleConfirm(request.id)}
-              >
-                {solicitudes.acciones.confirmar}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="xs"
-                disabled={busyId === request.id}
-                onClick={() => setDecliningId(request.id)}
-              >
-                {solicitudes.acciones.rechazar}
-              </Button>
-            </div>
+            {request.kind === "cancel" ? (
+              onApproveCancel && onDeclineCancel ? (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="xs"
+                    disabled={busyId === request.id}
+                    onClick={() => void handleApproveCancel(request.id)}
+                  >
+                    {solicitudes.acciones.aprobarCancelacion}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="xs"
+                    disabled={busyId === request.id}
+                    onClick={() => setDecliningCancelId(request.id)}
+                  >
+                    {solicitudes.acciones.rechazar}
+                  </Button>
+                </div>
+              ) : null
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="xs"
+                  disabled={busyId === request.id}
+                  onClick={() => void handleConfirm(request.id)}
+                >
+                  {solicitudes.acciones.confirmar}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="xs"
+                  disabled={busyId === request.id}
+                  onClick={() => setDecliningId(request.id)}
+                >
+                  {solicitudes.acciones.rechazar}
+                </Button>
+              </div>
+            )}
           </li>
         ))}
       </ul>
@@ -127,6 +191,20 @@ export function PendingRequestsCard({
         }}
         onConfirm={async (motivo) => {
           if (decliningId) await handleDecline(decliningId, motivo);
+        }}
+      />
+
+      <ConfirmDialog
+        open={decliningCancelId != null}
+        onOpenChange={(next) => {
+          if (!next) setDecliningCancelId(null);
+        }}
+        title={solicitudes.rechazarCancelacionDialog.titulo}
+        body={solicitudes.rechazarCancelacionDialog.cuerpo}
+        confirmLabel={solicitudes.rechazarCancelacionDialog.ctaSi}
+        cancelLabel={solicitudes.rechazarCancelacionDialog.ctaNo}
+        onConfirm={async () => {
+          if (decliningCancelId) await handleDeclineCancel(decliningCancelId);
         }}
       />
     </Card>

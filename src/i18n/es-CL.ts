@@ -100,6 +100,12 @@ export const estados = {
   llego: "Llegó",
   noVino: "No vino",
   cancelada: "Cancelada",
+  /** WP-56: chip de una reserva `cancel_requested` — el cliente pidió
+   * cancelar y el negocio todavía no responde (`businesses.cancel_approval`).
+   * Se usa en `/r/[token]`, Agenda, Hoy y el popover; tono propio (`deposit`)
+   * para distinguirla de `porConfirmar` (esa es una reserva nueva, esta es
+   * una cancelación). */
+  cancelacionPendiente: "Cancelación pendiente",
   listaDeEspera: "Lista de espera",
   desdeLista: "Desde lista",
   abono: "Abono",
@@ -451,9 +457,18 @@ export const gestion = {
    * `estados.porConfirmar`; esto es el texto largo debajo del chip. */
   pendienteAviso:
     "El negocio todavía no confirma esta hora. Te avisaremos apenas lo haga.",
+  /** WP-56: aviso bajo el chip `estados.cancelacionPendiente`, cuando el
+   * cliente pidió cancelar y el negocio todavía no responde (la hora sigue
+   * reservada hasta entonces). */
+  cancelacionPendienteAviso: (p: { negocio: string }): string =>
+    `Tu cancelación está esperando la respuesta de ${p.negocio}. Te avisaremos apenas responda.`,
   confirmarCancelacion: {
     titulo: "¿Cancelar tu reserva?",
     cuerpo: "Le avisaremos al negocio y liberaremos tu hora para otra persona.",
+    /** WP-56: cuando `booking.cancelNeedsApproval` — la hora no se libera
+     * de inmediato, el negocio tiene que aprobar la cancelación primero. */
+    cuerpoPendiente:
+      "Esta vez el negocio tiene que aprobar tu cancelación. Mientras tanto, tu hora sigue reservada.",
     ctaSi: "Sí, cancelar",
     ctaNo: "No, mantener",
   },
@@ -1351,6 +1366,40 @@ export const email = {
       `${p.cliente} solicitó ${p.servicio} para el ${p.fecha} a las ${p.hora}. Confírmala o recházala antes de que expire.`,
     cta: "Revisar solicitud",
   },
+  /** WP-56: al dueño, cuando un cliente pide cancelar y el negocio exige
+   * aprobación (`businesses.cancel_approval`). `cta` lleva a
+   * `/app/solicitudes/{id}`. Misma forma que `nuevaSolicitud`. */
+  solicitudCancelacion: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} quiere cancelar su hora del ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} a las ${p.hora}. Acepta o rechaza la cancelación.`,
+    titulo: "Tienes una cancelación por responder",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} pidió cancelar su hora de ${p.servicio} del ${p.fecha} a las ${p.hora}. La hora sigue reservada hasta que respondas.`,
+    cta: "Responder",
+  },
+  /** WP-56: al cliente, cuando el negocio no acepta su cancelación (la hora
+   * sigue en pie). `telefono` es el del negocio, si lo tiene. */
+  cancelacionRechazada: {
+    asunto: (p: { negocio: string }): string =>
+      `${p.negocio} no aceptó tu cancelación`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Tu hora del ${p.fecha} a las ${p.hora} sigue reservada.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      telefono?: string;
+    }): string =>
+      `Hola ${p.cliente}:\n\n${p.negocio} no aceptó la cancelación de tu hora del ${p.fecha} a las ${p.hora}, así que sigue reservada.\n\n${p.telefono ? `Si necesitas cambiarla, contacta a ${p.negocio} al ${p.telefono}.` : `Si necesitas cambiarla, contacta a ${p.negocio}.`}`,
+  },
   /** Al cliente, apenas manda una solicitud desde `/[slug]` cuando el
    * negocio tiene apagada la confirmación automática (WP-45, F7): por ahora
    * solo por correo (CL: hasta que exista la plantilla de WhatsApp de
@@ -2035,6 +2084,15 @@ export const ajustes = {
     confirmarAutomatico: "Confirmar reservas automáticamente",
     confirmarAutomaticoAyuda:
       "Si lo apagas, cada reserva que llega por tu página queda pendiente hasta que tú la confirmes o la rechaces. Mientras tanto, la hora queda bloqueada para que nadie más la tome.",
+    /** WP-56: `businesses.cancel_approval` ("none"/"late"/"all"). */
+    cancelApprovalLabel: "Cancelaciones del cliente",
+    cancelApprovalAyuda:
+      "Se aplica junto con el plazo de arriba: una cancelación dentro de ese plazo (o todas, según lo que elijas) queda pendiente hasta que tú la apruebes o la rechaces, sin liberar la hora.",
+    cancelApprovalOpciones: {
+      none: "Directas, sin tu aprobación",
+      late: "Las que lleguen tarde necesitan tu aprobación",
+      all: "Todas necesitan tu aprobación",
+    },
   },
   waitlistMode: {
     sequential: "Uno por uno, en orden",
@@ -2679,6 +2737,30 @@ export const sms = {
     hora: string;
   }): string =>
     `Nueva reserva: ${p.cliente} reservó ${p.servicio} el ${p.fecha} a las ${p.hora}.`,
+  /** WP-56: al dueño (solo se envía en SE por ahora; acá por paridad de
+   * tipo). `link` = `/app/solicitudes/{id}`. */
+  nuevaSolicitudDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Nueva solicitud: ${p.cliente}, ${p.fecha} a las ${p.hora}. Responde aquí: ${p.link}`,
+  solicitudCancelacionDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Solicitud de cancelación: ${p.cliente}, ${p.fecha} a las ${p.hora}. Responde aquí: ${p.link}`,
+  /** WP-56: al cliente, cancelación no aceptada. */
+  cancelacionRechazada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    telefono?: string;
+  }): string =>
+    `${p.negocio} no aceptó tu cancelación del ${p.fecha} a las ${p.hora}. Contacta a ${p.negocio}${p.telefono ? ` al ${p.telefono}` : ""}.`,
   /** Código de acceso (login sin contraseña): alternativa por SMS al correo
    * de `email.acceso`. */
   codigoAcceso: (p: { codigo: string }): string =>
@@ -3067,11 +3149,19 @@ export const solicitudes = {
     fecha: string;
     hora: string;
   }): string => `${p.cliente} · ${p.servicio} · ${p.fecha}, ${p.hora}`,
+  /** WP-56: etiqueta de una fila `kind: "cancel"` (el cliente pidió
+   * cancelar), para distinguirla de una solicitud de reserva nueva en la
+   * misma lista/campana. */
+  etiquetaCancelacion: "Quiere cancelar",
   /** Botones de Confirmar/Rechazar: mismo texto en la campana, en Inicio y
-   * en el popover de la Agenda. */
+   * en el popover de la Agenda. WP-56: `aprobarCancelacion` es el equivalente
+   * de "Confirmar" para una fila `kind: "cancel"` — "Rechazar" sirve para
+   * las dos (nekar una reserva nueva o nekar la cancelación, nunca
+   * "Cancelar", GUIA §5). */
   acciones: {
     confirmar: "Confirmar",
     rechazar: "Rechazar",
+    aprobarCancelacion: "Aprobar cancelación",
   },
   /** "Rechazar" nunca usa la palabra "Cancelar" (GUIA §5): es una acción
    * distinta de cancelar una reserva ya confirmada. `motivoLabel` es
@@ -3085,11 +3175,46 @@ export const solicitudes = {
     ctaSi: "Sí, rechazar",
     ctaNo: "No, mantener",
   },
+  /** WP-56: nekar la cancelación — la reserva sigue confirmada, sin motivo
+   * (no hay campo `reason` en `declineCancelRequest`). */
+  rechazarCancelacionDialog: {
+    titulo: "¿Rechazar esta cancelación?",
+    cuerpo: "La reserva sigue confirmada y le avisaremos al cliente.",
+    ctaSi: "Sí, rechazar",
+    ctaNo: "No, mantener",
+  },
   /** Feedback después de confirmar/rechazar, desde cualquiera de los tres
    * lugares (campana, Inicio, popover de la Agenda). */
   toast: {
     confirmada: "Solicitud confirmada.",
     rechazada: "Solicitud rechazada.",
+    cancelacionAprobada: "Cancelación aprobada.",
+    cancelacionRechazada: "No se aprobó la cancelación.",
+  },
+  /** WP-56: /app/solicitudes/[id] — se abre desde el sms/correo al negocio. */
+  detalle: {
+    tituloSolicitud: "Solicitud de reserva",
+    tituloCancelacion: "Solicitud de cancelación",
+    campos: {
+      cliente: "Cliente",
+      servicio: "Servicio",
+      profesional: "Profesional",
+      hora: "Hora",
+    },
+    /** La solicitud ya no existe, o la respondió otra persona, o el id no
+     * es válido. */
+    noEncontrada: "Esta solicitud ya no está disponible.",
+    /** Alguien más ya la confirmó/rechazó/respondió antes de que entraras
+     * (otra pestaña, otro miembro del equipo). */
+    yaRespondida: "Esta solicitud ya fue respondida.",
+    verAgenda: "Ver en la agenda",
+    resultado: {
+      confirmada: "Confirmaste la solicitud.",
+      rechazada: "Rechazaste la solicitud.",
+      cancelacionAprobada: "Aprobaste la cancelación. La hora quedó libre.",
+      cancelacionRechazada:
+        "Rechazaste la cancelación. La reserva sigue confirmada.",
+    },
   },
 } as const satisfies Trad;
 

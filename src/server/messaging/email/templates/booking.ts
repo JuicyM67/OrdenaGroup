@@ -326,3 +326,39 @@ export function solicitudVencidaEmail(
   });
   return { subject: asunto, preheader, html, text };
 }
+
+// ---------------------------------------------------------------------------
+// WP-56: avbokning med godkännande — företaget nekade kundens avbokning.
+// ---------------------------------------------------------------------------
+
+export type CancelacionRechazadaData = {
+  readonly cliente: string;
+  readonly negocio: string;
+  readonly fecha: string;
+  readonly hora: string;
+  /** Företagets telefon, redan formaterad (`formatPhone`). Saknas den
+   * hänvisar texten bara till företaget. */
+  readonly telefono?: string;
+};
+
+/** Al cliente, cuando el negocio no acepta su cancelación: la hora sigue
+ * reservada. Solo texto (sin botón: no hay nada que hacer en línea). */
+export function cancelacionRechazadaEmail(
+  market: Market,
+  data: CancelacionRechazadaData,
+): RenderedEmail {
+  const ns = emailNs(market).cancelacionRechazada;
+  const asunto = ns.asunto({ negocio: data.negocio });
+  const preheader = ns.preheader(data);
+  const cuerpo = ns.cuerpo(data);
+  const { html: footHtml, text: footText } = pieFooter(market, data.negocio);
+  const { html, text } = renderLayout({
+    market,
+    preheader,
+    bodyHtml: textToHtmlParagraphs(cuerpo),
+    bodyText: cuerpo,
+    footerHtml: footHtml,
+    footerText: footText,
+  });
+  return { subject: asunto, preheader, html, text };
+}

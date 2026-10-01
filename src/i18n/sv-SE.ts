@@ -86,6 +86,8 @@ export const estados = {
   llego: "Kom",
   noVino: "Kom inte",
   cancelada: "Avbokad",
+  /** Nyckeln finns av typskäl (samma som es-CL, WP-56). */
+  cancelacionPendiente: "Avbokning begärd",
   listaDeEspera: "Väntelista",
   desdeLista: "Från väntelistan",
   abono: "Delbetalning",

@@ -15,6 +15,10 @@ import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
 import { mediaPathFromUrl } from "@/server/bookings/media";
+// WP-56: samma mappning `string → "none"|"late"|"all"` som motorn
+// (`src/server/bookings/row.ts`, scheduling-engineer) använder för
+// `businesses.cancel_approval` — importerad i stället för en egen kopia.
+import { toCancelApproval } from "@/server/bookings/row";
 import { loadMember } from "@/server/db/permissions";
 
 import {
@@ -43,6 +47,10 @@ export type AjustesBusiness = {
   slotIntervalMinutes: number;
   /** WP-45 (D-033): `businesses.auto_confirm_bookings`. */
   autoConfirmBookings: boolean;
+  /** WP-56: `businesses.cancel_approval` ("none"/"late"/"all") — om kundens
+   * avbokning (`/r/[token]`) kräver ägarens godkännande (`cancel_requested`)
+   * innan tiden frigörs. */
+  cancelApproval: "none" | "late" | "all";
   /** WP-54: `businesses.member_discount_pct`. `null` = förmånen är avstängd. */
   memberDiscountPct: number | null;
   /** WP-54: `businesses.member_benefit_text`. `null` = ingen egen text. */
@@ -120,6 +128,9 @@ function mapDbError(e: unknown): string {
   if (code === "23514" && constraint === "business_hours_start_before_end") {
     return "hours.business_hours_start_before_end";
   }
+  if (code === "23514" && constraint === "businesses_cancel_approval_check") {
+    return "business.cancel_approval_invalid";
+  }
   if (
     code === "23514" &&
     constraint === "businesses_member_discount_pct_check"
@@ -156,6 +167,7 @@ type BusinessRow = {
   cancel_window_hours: number;
   slot_interval_minutes: number;
   auto_confirm_bookings: boolean;
+  cancel_approval: string;
   member_discount_pct: number | null;
   member_benefit_text: string | null;
 };
@@ -191,7 +203,7 @@ async function loadBusinessRow(
   const businessRes = await q.query<BusinessRow>(
     `select name, slug, comuna, phone, address, min_notice_minutes, max_days_ahead,
             cancel_window_hours, slot_interval_minutes, auto_confirm_bookings,
-            member_discount_pct, member_benefit_text
+            cancel_approval, member_discount_pct, member_benefit_text
        from public.businesses
       where id = $1`,
     [businessId],
@@ -209,6 +221,7 @@ async function loadBusinessRow(
     cancelWindowHours: b.cancel_window_hours,
     slotIntervalMinutes: b.slot_interval_minutes,
     autoConfirmBookings: b.auto_confirm_bookings,
+    cancelApproval: toCancelApproval(b.cancel_approval),
     memberDiscountPct: b.member_discount_pct,
     memberBenefitText: b.member_benefit_text,
   };
@@ -383,7 +396,7 @@ export async function updateBusinessSettings(
             set name = $1, slug = $2, comuna = $3, phone = $4, address = $5,
                 min_notice_minutes = $6, max_days_ahead = $7,
                 cancel_window_hours = $8, slot_interval_minutes = $9,
-                auto_confirm_bookings = $11
+                auto_confirm_bookings = $11, cancel_approval = $12
           where id = $10`,
         [
           input.name,
@@ -397,6 +410,7 @@ export async function updateBusinessSettings(
           input.slotIntervalMinutes,
           businessId,
           input.autoConfirmBookings,
+          input.cancelApproval,
         ],
       );
       return assertUpdated(r.rowCount) ?? { ok: true };
