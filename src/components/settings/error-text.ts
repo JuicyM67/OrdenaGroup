@@ -8,6 +8,7 @@ import {
   equipo,
   errores,
   horarios,
+  invitacion,
   negocio,
   perfil,
   profesionales,
@@ -108,7 +109,10 @@ const KNOWN: Record<string, string> = {
   "invitation.name_too_long": comun.algoSalioMal,
   staff_not_found: equipo.invitarDialog.errores.profesionalRequerido,
   invitation_pending: equipo.invitarDialog.errores.profesionalYaTieneCuenta,
-  plan_limit_reached: equipo.limiteDelPlan.texto,
+  // UX-granskning (fel 4): `equipo.limiteDelPlan.texto` tar nu ett `{ limit }`-argument
+  // (konton, inte medarbetare) — den här kartan har bara plats för statisk text, så den
+  // generiska varianten (redan använd av /app/invitacion/[token]) återanvänds här.
+  plan_limit_reached: invitacion.errores.limiteDelPlan,
   not_found: comun.algoSalioMal,
   already_accepted: comun.algoSalioMal,
   already_revoked: comun.algoSalioMal,

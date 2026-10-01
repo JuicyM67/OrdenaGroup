@@ -1,37 +1,61 @@
 "use client";
 
-// Ajustes → Equipo: åtkomst till kontot (WP-46 steg 6, D-034; WP-55: egen flik,
-// `/app/ajustes/equipo`, tillsammans med `StaffSection`). Bjud in en personalrad utan
-// konto, hantera väntande inbjudningar (skicka igen/återkalla) och redigera/ta bort
-// åtkomst för befintliga medlemmar. Bara ägaren ser den här sektionen
-// (`src/app/(app)/app/ajustes/equipo/page.tsx` renderar den bara när
-// `view.role === "owner"`, samma villkor som servern kräver i
-// `src/server/team/members.ts`) — renderas direkt under `StaffSection`, ingen egen
-// "Equipo"-rubrik, StaffSections räcker.
-import { useId, useState } from "react";
+// Ajustes → Equipo (WP-46 steg 6, D-034; WP-55: egen flik, `/app/ajustes/equipo`).
+//
+// UX-granskning (ägarens genomgång 2026-10-01, sektionerna "Fel jag hittade" punkt 4 och
+// "Inställningar"): sammanslagen till EN lista, en rad per person — innan låg "Personal"
+// (namn/titel/tjänster/foto, `StaffSection`) och "Åtkomst till kontot" (kontostatus/
+// behörigheter, `TeamSection`) som två separata kort, och rad-knapparna var fyra på en rad.
+// Nu: avatar, namn, titel/antal tjänster, en kontostatus-chip och en "…"-meny (Redigera,
+// Foto, Behörigheter/Bjud in beroende på kontostatus, Inaktivera). "+ Lägg till
+// medarbetare" i huvudet (skapar en ny personalrad — skiljer sig från "Bjud in", som ger en
+// BEFINTLIG personalrad ett konto). Planinfo (fel 4: konton ≠ medarbetare) som ett diskret
+// kort under listan, inte en varning som blockerar.
+//
+// `team` är `null` för alla som inte är ägaren (`AjustesEquipoPage` skickar bara `team`/
+// `teamActions` när `ctx.current.view.role === "owner"`, samma villkor som servern kräver i
+// `src/server/team/members.ts`) — kontochip och kontorelaterade menyrader (Behörigheter/
+// Bjud in/Reenviar/Revocar) döljs då, men Redigera/Foto/Inaktivera finns kvar (styrs av
+// `can_manage_team`, inte `role === "owner"`).
+import { useId, useRef, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { X } from "lucide-react";
+import { Ellipsis, X } from "lucide-react";
 
+import { validateRequired } from "@/components/onboarding/client-validation";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Chip } from "@/components/ui/chip";
+import { cn } from "@/components/ui/cn";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { strokeCard } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
-import { Select } from "@/components/ui/select";
+import { Menu, MenuButtonItem } from "@/components/ui/menu";
+import { Pill } from "@/components/ui/pill";
 import { Switch } from "@/components/ui/switch";
 import { TextField } from "@/components/ui/text-field";
-import { ajustes, comun, equipo } from "@/i18n";
-import { APP_TZ, formatLocalDate, toLocalDate } from "@/lib/format/dates";
+import {
+  ajustes,
+  comun,
+  equipo,
+  nav,
+  perfil,
+  profesionales,
+  servicios,
+} from "@/i18n";
+import { initialsOf } from "@/lib/format/initials";
+import { IMAGE_CONTENT_TYPES, STAFF_TITLE_MAX } from "@/lib/validation/profile";
 
 import { ajustesErrorText } from "./error-text";
-// Typerna speglar `src/server/team/members.ts`/`invitations.ts`, duplicerade
-// i stället för importerade (samma regel som `./types.ts`s filkommentar: en
-// "use client"-fil importerar aldrig något — inte ens bara typer — under
-// `@/server/*`).
+import type { ProfileActions } from "./profile-types";
+import { uploadImage } from "./upload-image";
 import type {
+  AjustesActions,
+  AjustesService,
+  AjustesStaffMember,
   TeamAccount,
   TeamData,
   TeamInviteResult,
-  TeamStaffMember,
 } from "./types";
 
 export type TeamPerms = {
@@ -44,14 +68,59 @@ export type TeamPerms = {
   can_edit_settings: boolean;
 };
 
-type ActiveStaff = TeamStaffMember & {
-  account: Extract<TeamAccount, { status: "active" }>;
-};
-type PendingStaff = TeamStaffMember & {
-  account: Extract<TeamAccount, { status: "pending" }>;
+type MutationResult = { ok: true } | { ok: false; code: string };
+
+export type TeamActions = {
+  onInvite: (input: {
+    email: string;
+    staffId: string;
+    flags: TeamPerms;
+  }) => Promise<TeamInviteResult>;
+  onResend: (invitationId: string) => Promise<MutationResult>;
+  onRevoke: (invitationId: string) => Promise<MutationResult>;
+  onUpdatePerms: (
+    targetUserId: string,
+    perms: TeamPerms,
+  ) => Promise<MutationResult>;
+  onRemoveAccess: (targetUserId: string) => Promise<MutationResult>;
 };
 
-/** Samma ordning som planens steg 1 och `equipo.permisos` (es-CL.ts). */
+/** WP-44: foto, gratis i alla planer. Samma uppladdningsflöde som
+ * omslag/logo (profile-section.tsx → ./upload-image.ts), bara `kind: "staff"`
+ * och `staffId` i stället för `kind: "cover" | "logo"`. */
+type StaffPhotoActions = Pick<
+  ProfileActions,
+  "createImageUpload" | "confirmImageUpload" | "deleteImage"
+>;
+
+export type TeamSectionProps = {
+  staff: AjustesStaffMember[];
+  services: AjustesService[];
+  /** WP-44: `staffId` → foto-URL, bara de som har ett (`ProfileSettings.staffPhotos`). */
+  photos: Record<string, string>;
+  staffActions: {
+    create: AjustesActions["createStaff"];
+    update: AjustesActions["updateStaff"];
+    setActive: AjustesActions["setStaffActive"];
+    /** WP-41: rol, guardado aparte (`src/server/owner/profile.ts`
+     * `updateStaffTitle`, no `updateStaff`). */
+    updateTitle: (
+      id: string,
+      title: string,
+    ) => Promise<{ ok: true } | { ok: false; code: string }>;
+  } & StaffPhotoActions;
+  /** `null` → inte ägaren, se filkommentaren. */
+  team: TeamData | null;
+  teamActions?: TeamActions;
+  /** Refresca `team` tras una mutación de cuenta (server action + reload, mismo patrón que
+   * `reloadAjustesData` en `./actions.ts`). */
+  onReloadTeam?: () => Promise<TeamData | null>;
+};
+
+// ---------------------------------------------------------------------------
+// Permisos (checkbox por bandera) — reutilizado por EditPermsDialog e InviteDialog.
+// ---------------------------------------------------------------------------
+
 const PERM_ROWS: {
   perm: keyof TeamPerms;
   key: keyof typeof equipo.permisos;
@@ -73,23 +142,6 @@ const DEFAULT_PERMS: TeamPerms = {
   can_manage_team: false,
   can_view_reports: false,
   can_edit_settings: false,
-};
-
-type MutationResult = { ok: true } | { ok: false; code: string };
-
-export type TeamActions = {
-  onInvite: (input: {
-    email: string;
-    staffId: string;
-    flags: TeamPerms;
-  }) => Promise<TeamInviteResult>;
-  onResend: (invitationId: string) => Promise<MutationResult>;
-  onRevoke: (invitationId: string) => Promise<MutationResult>;
-  onUpdatePerms: (
-    targetUserId: string,
-    perms: TeamPerms,
-  ) => Promise<MutationResult>;
-  onRemoveAccess: (targetUserId: string) => Promise<MutationResult>;
 };
 
 function PermSwitches({
@@ -127,50 +179,41 @@ function PermSwitches({
 }
 
 // ---------------------------------------------------------------------------
-// Bjud in till kontot
+// Bjud in (en fila, "Bjud in" i "…"-menyn — profesionalen är redan vald)
 // ---------------------------------------------------------------------------
 
 function InviteDialog({
   open,
   onOpenChange,
-  invitable,
+  staffId,
+  staffName,
   onInvite,
   onInvited,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  invitable: readonly TeamStaffMember[];
+  staffId: string;
+  staffName: string;
   onInvite: TeamActions["onInvite"];
   onInvited: () => void;
 }) {
   const descriptionId = useId();
   const [email, setEmail] = useState("");
-  const [staffId, setStaffId] = useState(invitable[0]?.staffId ?? "");
   const [flags, setFlags] = useState<TeamPerms>(DEFAULT_PERMS);
   const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<{
-    email?: string;
-    staffId?: string;
-    general?: string;
-  }>({});
+  const [errors, setErrors] = useState<{ email?: string; general?: string }>(
+    {},
+  );
 
   function reset() {
     setEmail("");
-    setStaffId(invitable[0]?.staffId ?? "");
     setFlags(DEFAULT_PERMS);
     setErrors({});
   }
 
   async function submit() {
-    const nextErrors: typeof errors = {};
     if (email.trim() === "") {
-      nextErrors.email = equipo.invitarDialog.errores.emailInvalido;
-    }
-    if (staffId === "") {
-      nextErrors.staffId = equipo.invitarDialog.errores.profesionalRequerido;
-    }
-    if (Object.keys(nextErrors).length > 0) {
-      setErrors(nextErrors);
+      setErrors({ email: equipo.invitarDialog.errores.emailInvalido });
       return;
     }
     setErrors({});
@@ -183,11 +226,6 @@ function InviteDialog({
         onInvited();
       } else if (result.code === "invitation.email_invalid") {
         setErrors({ email: ajustesErrorText(result.code) });
-      } else if (
-        result.code === "staff_not_found" ||
-        result.code === "invitation_pending"
-      ) {
-        setErrors({ staffId: ajustesErrorText(result.code) });
       } else {
         setErrors({ general: ajustesErrorText(result.code) });
       }
@@ -224,6 +262,11 @@ function InviteDialog({
               {equipo.invitarDialog.titulo}
             </Dialog.Description>
 
+            <p className="text-13 text-muted">
+              {equipo.invitarDialog.profesionalAyuda}
+            </p>
+            <p className="text-15 font-bold text-ink">{staffName}</p>
+
             <TextField
               label={equipo.invitarDialog.emailLabel}
               placeholder={equipo.invitarDialog.emailPlaceholder}
@@ -233,25 +276,6 @@ function InviteDialog({
               error={errors.email}
               maxLength={254}
             />
-
-            <Select
-              label={equipo.invitarDialog.profesionalLabel}
-              hint={
-                errors.staffId
-                  ? undefined
-                  : equipo.invitarDialog.profesionalAyuda
-              }
-              error={errors.staffId}
-              value={staffId}
-              onChange={(e) => setStaffId(e.target.value)}
-            >
-              {invitable.length === 0 ? <option value="" /> : null}
-              {invitable.map((s) => (
-                <option key={s.staffId} value={s.staffId}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
 
             <div className="flex flex-col gap-2">
               <span className="text-15 font-bold text-ink">
@@ -283,7 +307,7 @@ function InviteDialog({
                 type="button"
                 variant="primary"
                 size="lg"
-                disabled={saving || invitable.length === 0}
+                disabled={saving}
                 onClick={() => void submit()}
               >
                 {equipo.invitarDialog.ctaEnviar}
@@ -297,174 +321,34 @@ function InviteDialog({
 }
 
 // ---------------------------------------------------------------------------
-// Väntande inbjudningar
+// Behörigheter (konto redan aktivt)
 // ---------------------------------------------------------------------------
-
-function PendingInvitations({
-  staff,
-  onResend,
-  onRevoke,
-  onChanged,
-}: {
-  staff: readonly PendingStaff[];
-  onResend: TeamActions["onResend"];
-  onRevoke: TeamActions["onRevoke"];
-  onChanged: () => void;
-}) {
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-
-  if (staff.length === 0) return null;
-
-  return (
-    <div className="flex flex-col gap-3">
-      <h3 className="text-15 font-bold text-ink">
-        {equipo.invitaciones.titulo}
-      </h3>
-      {toast ? (
-        <p role="status" className="text-13 text-ink">
-          {toast}
-        </p>
-      ) : null}
-      <div className="flex flex-col gap-2">
-        {staff.map((s) => (
-          <div
-            key={s.staffId}
-            className="flex flex-col gap-2 rounded-tile bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p className="text-14 font-bold text-ink">{s.name}</p>
-              <p className="text-13 text-muted">{s.account.email}</p>
-              <p className="text-13 text-muted">
-                {equipo.invitaciones.enviada({
-                  fecha: formatLocalDate(
-                    toLocalDate(new Date(s.account.sentAt), APP_TZ),
-                    "weekdayDayMonthShort",
-                  ),
-                })}
-              </p>
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                disabled={pendingId === s.account.invitationId}
-                onClick={() => {
-                  const invitationId = s.account.invitationId;
-                  setPendingId(invitationId);
-                  void onResend(invitationId)
-                    .then((r) => {
-                      if (r.ok) {
-                        setToast(equipo.invitaciones.toast.reenviada);
-                        onChanged();
-                      }
-                    })
-                    .finally(() => setPendingId(null));
-                }}
-              >
-                {equipo.invitaciones.ctaReenviar}
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setRevokeTarget(s.account.invitationId)}
-              >
-                {equipo.invitaciones.ctaRevocar}
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <ConfirmDialog
-        open={revokeTarget != null}
-        onOpenChange={(open) => {
-          if (!open) setRevokeTarget(null);
-        }}
-        title={equipo.invitaciones.confirmarRevocar.titulo}
-        body={equipo.invitaciones.confirmarRevocar.cuerpo}
-        confirmLabel={equipo.invitaciones.confirmarRevocar.ctaSi}
-        cancelLabel={equipo.invitaciones.confirmarRevocar.ctaNo}
-        onConfirm={async () => {
-          if (!revokeTarget) return;
-          const result = await onRevoke(revokeTarget);
-          if (result.ok) {
-            setToast(equipo.invitaciones.toast.revocada);
-            onChanged();
-          }
-          setRevokeTarget(null);
-        }}
-      />
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Miembros (cuentas activas)
-// ---------------------------------------------------------------------------
-
-function EditPermsForm({
-  initial,
-  saving,
-  error,
-  onCancel,
-  onSubmit,
-}: {
-  initial: TeamPerms;
-  saving: boolean;
-  error?: string;
-  onCancel: () => void;
-  onSubmit: (next: TeamPerms) => void;
-}) {
-  const [flags, setFlags] = useState<TeamPerms>(initial);
-  return (
-    <>
-      <PermSwitches value={flags} onChange={setFlags} disabled={saving} />
-      {error ? (
-        <p role="alert" className="text-13 text-ink">
-          {error}
-        </p>
-      ) : null}
-      <div className="mt-1 flex justify-end gap-3">
-        <Button type="button" variant="secondary" size="lg" onClick={onCancel}>
-          {ajustes.seguirEditando}
-        </Button>
-        <Button
-          type="button"
-          variant="primary"
-          size="lg"
-          disabled={saving}
-          onClick={() => onSubmit(flags)}
-        >
-          {saving ? ajustes.guardando : ajustes.guardarCambios}
-        </Button>
-      </div>
-    </>
-  );
-}
 
 function EditPermsDialog({
-  member,
+  staffName,
+  initial,
+  open,
   onOpenChange,
   onUpdatePerms,
   onSaved,
 }: {
-  member: ActiveStaff | null;
+  staffName: string;
+  initial: TeamPerms;
+  open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpdatePerms: TeamActions["onUpdatePerms"];
+  onUpdatePerms: (perms: TeamPerms) => Promise<MutationResult>;
   onSaved: () => void;
 }) {
+  const [flags, setFlags] = useState<TeamPerms>(initial);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
   return (
     <Dialog.Root
-      open={member != null}
-      onOpenChange={(open) => {
-        if (!open) onOpenChange(false);
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setFlags(initial);
+        onOpenChange(next);
       }}
     >
       <Dialog.Portal>
@@ -472,7 +356,7 @@ function EditPermsDialog({
           <Dialog.Content className="flex w-full max-w-md flex-col gap-4 rounded-panel bg-surface p-6 shadow-popover">
             <div className="flex items-start justify-between">
               <Dialog.Title className="text-17 font-bold text-ink">
-                {member?.name ?? ""}
+                {staffName}
               </Dialog.Title>
               <Dialog.Close asChild>
                 <IconButton label={comun.cerrar} tone="ghost" size={30}>
@@ -480,21 +364,31 @@ function EditPermsDialog({
                 </IconButton>
               </Dialog.Close>
             </div>
-            {member ? (
-              <EditPermsForm
-                key={member.staffId}
-                initial={member.account.perms}
-                saving={saving}
-                error={error}
-                onCancel={() => onOpenChange(false)}
-                onSubmit={async (next) => {
+            <PermSwitches value={flags} onChange={setFlags} disabled={saving} />
+            {error ? (
+              <p role="alert" className="text-13 text-ink">
+                {error}
+              </p>
+            ) : null}
+            <div className="mt-1 flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                onClick={() => onOpenChange(false)}
+              >
+                {ajustes.seguirEditando}
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="lg"
+                disabled={saving}
+                onClick={async () => {
                   setSaving(true);
                   setError(undefined);
                   try {
-                    const result = await onUpdatePerms(
-                      member.account.userId,
-                      next,
-                    );
+                    const result = await onUpdatePerms(flags);
                     if (result.ok) {
                       onOpenChange(false);
                       onSaved();
@@ -505,8 +399,10 @@ function EditPermsDialog({
                     setSaving(false);
                   }
                 }}
-              />
-            ) : null}
+              >
+                {saving ? ajustes.guardando : ajustes.guardarCambios}
+              </Button>
+            </div>
           </Dialog.Content>
         </Dialog.Overlay>
       </Dialog.Portal>
@@ -514,95 +410,313 @@ function EditPermsDialog({
   );
 }
 
-function Members({
-  staff,
-  onUpdatePerms,
-  onRemoveAccess,
-  onChanged,
-}: {
-  staff: readonly ActiveStaff[];
-  onUpdatePerms: TeamActions["onUpdatePerms"];
-  onRemoveAccess: TeamActions["onRemoveAccess"];
-  onChanged: () => void;
-}) {
-  const [editing, setEditing] = useState<ActiveStaff | null>(null);
-  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+// ---------------------------------------------------------------------------
+// Redigera/Lägg till medarbetare (namn, titel, tjänster)
+// ---------------------------------------------------------------------------
 
-  if (staff.length === 0) return null;
+type RowForm = { name: string; title: string; serviceIds: string[] };
+type RowErrors = { name?: string; title?: string };
+
+function toRowForm(s: AjustesStaffMember): RowForm {
+  return { name: s.name, title: s.title, serviceIds: s.serviceIds };
+}
+
+function StaffDialog({
+  mode,
+  initial,
+  services,
+  open,
+  onOpenChange,
+  onSubmit,
+}: {
+  mode: "new" | "edit";
+  initial: RowForm;
+  services: AjustesService[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (
+    form: RowForm,
+  ) => Promise<{ ok: true } | { ok: false; errors: RowErrors }>;
+}) {
+  const [form, setForm] = useState<RowForm>(initial);
+  const [errors, setErrors] = useState<RowErrors>({});
+  const [saving, setSaving] = useState(false);
+
+  function toggleService(serviceId: string) {
+    const has = form.serviceIds.includes(serviceId);
+    setForm((f) => ({
+      ...f,
+      serviceIds: has
+        ? f.serviceIds.filter((id) => id !== serviceId)
+        : [...f.serviceIds, serviceId],
+    }));
+  }
 
   return (
-    <div className="flex flex-col gap-3">
-      <h3 className="text-15 font-bold text-ink">{equipo.miembros.titulo}</h3>
-      {toast ? (
-        <p role="status" className="text-13 text-ink">
-          {toast}
-        </p>
-      ) : null}
-      <div className="flex flex-col gap-2">
-        {staff.map((s) => (
-          <div
-            key={s.staffId}
-            className="flex flex-col gap-2 rounded-tile bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p className="text-14 font-bold text-ink">{s.name}</p>
-              <p className="text-13 text-muted">{equipo.miembros.rol.staff}</p>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (next) {
+          setForm(initial);
+          setErrors({});
+        }
+        onOpenChange(next);
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-20 flex items-center justify-center overflow-y-auto bg-ink/45 p-4">
+          <Dialog.Content className="flex w-full max-w-md flex-col gap-4 rounded-panel bg-surface p-6 shadow-popover">
+            <div className="flex items-start justify-between">
+              <Dialog.Title className="text-17 font-bold text-ink">
+                {mode === "new"
+                  ? profesionales.ctaAgregar
+                  : form.name || initial.name}
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <IconButton label={comun.cerrar} tone="ghost" size={30}>
+                  <X aria-hidden="true" className="size-4" strokeWidth={2.2} />
+                </IconButton>
+              </Dialog.Close>
             </div>
-            <div className="flex shrink-0 gap-2">
+
+            <TextField
+              label={profesionales.campos.nameLabel}
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              error={errors.name}
+              maxLength={120}
+            />
+            <TextField
+              label={profesionales.campos.tituloLabel}
+              placeholder={profesionales.campos.tituloPlaceholder}
+              hint={errors.title ? undefined : profesionales.campos.tituloAyuda}
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              error={errors.title}
+              maxLength={STAFF_TITLE_MAX}
+            />
+            {services.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                <span className="text-13 font-semibold text-ink">
+                  {profesionales.campos.serviciosLabel}
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  {services.map((svc) => (
+                    <Pill
+                      key={svc.id}
+                      selected={form.serviceIds.includes(svc.id)}
+                      onClick={() => toggleService(svc.id)}
+                    >
+                      {svc.name}
+                    </Pill>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <div className="mt-1 flex justify-end gap-3">
               <Button
                 type="button"
                 variant="secondary"
-                size="sm"
-                onClick={() => setEditing(s)}
+                size="lg"
+                onClick={() => onOpenChange(false)}
               >
-                {equipo.miembros.ctaEditarPermisos}
+                {ajustes.seguirEditando}
               </Button>
               <Button
                 type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => setRemoveTarget(s.account.userId)}
+                variant="primary"
+                size="lg"
+                disabled={saving}
+                onClick={async () => {
+                  const name = validateRequired(form.name, "staff.name_empty");
+                  const title = form.title.trim();
+                  const titleOk = title.length <= STAFF_TITLE_MAX;
+                  const nextErrors: RowErrors = {};
+                  if (!name.ok) nextErrors.name = ajustesErrorText(name.code);
+                  if (!titleOk)
+                    nextErrors.title = ajustesErrorText("staff.title_too_long");
+                  if (Object.keys(nextErrors).length > 0) {
+                    setErrors(nextErrors);
+                    return;
+                  }
+                  setErrors({});
+                  setSaving(true);
+                  try {
+                    const result = await onSubmit({
+                      name: form.name.trim(),
+                      title,
+                      serviceIds: form.serviceIds,
+                    });
+                    if (result.ok) onOpenChange(false);
+                    else setErrors(result.errors);
+                  } finally {
+                    setSaving(false);
+                  }
+                }}
               >
-                {equipo.miembros.ctaQuitarAcceso}
+                {saving ? ajustes.guardando : ajustes.guardarCambios}
               </Button>
             </div>
-          </div>
-        ))}
-      </div>
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
 
-      <EditPermsDialog
-        member={editing}
-        onOpenChange={(open) => {
-          if (!open) setEditing(null);
-        }}
-        onUpdatePerms={onUpdatePerms}
-        onSaved={() => {
-          setToast(equipo.miembros.toast.permisosGuardados);
-          onChanged();
-        }}
-      />
+// ---------------------------------------------------------------------------
+// Foto (dialog runt StaffPhotoButtons — samma uppladdningsflöde som förut)
+// ---------------------------------------------------------------------------
 
-      <ConfirmDialog
-        open={removeTarget != null}
-        onOpenChange={(open) => {
-          if (!open) setRemoveTarget(null);
-        }}
-        title={equipo.miembros.confirmarQuitar.titulo}
-        body={equipo.miembros.confirmarQuitar.cuerpo}
-        confirmLabel={equipo.miembros.confirmarQuitar.ctaSi}
-        cancelLabel={equipo.miembros.confirmarQuitar.ctaNo}
-        onConfirm={async () => {
-          if (!removeTarget) return;
-          const result = await onRemoveAccess(removeTarget);
-          if (result.ok) {
-            setToast(equipo.miembros.toast.accesoQuitado);
-            onChanged();
-          }
-          setRemoveTarget(null);
-        }}
-      />
-    </div>
+function PhotoDialog({
+  staffId,
+  staffName,
+  url,
+  actions,
+  open,
+  onOpenChange,
+  onChange,
+}: {
+  staffId: string;
+  staffName: string;
+  url: string | null;
+  actions: StaffPhotoActions;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChange: (url: string | null) => void;
+}) {
+  const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  async function handleFile(file: File) {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await uploadImage(
+        file,
+        { kind: "staff", staffId },
+        actions,
+      );
+      if ("code" in result) setError(ajustesErrorText(result.code));
+      else onChange(result.url);
+    } finally {
+      setBusy(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  async function handleRemove() {
+    setBusy(true);
+    setError(undefined);
+    try {
+      const result = await actions.deleteImage({ kind: "staff", staffId });
+      if (result.ok) onChange(null);
+      else setError(ajustesErrorText(result.code));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-20 flex items-center justify-center overflow-y-auto bg-ink/45 p-4">
+          <Dialog.Content className="flex w-full max-w-sm flex-col gap-4 rounded-panel bg-surface p-6 shadow-popover">
+            <div className="flex items-start justify-between">
+              <Dialog.Title className="text-17 font-bold text-ink">
+                {staffName}
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <IconButton label={comun.cerrar} tone="ghost" size={30}>
+                  <X aria-hidden="true" className="size-4" strokeWidth={2.2} />
+                </IconButton>
+              </Dialog.Close>
+            </div>
+            <label htmlFor={inputId} className="sr-only">
+              {profesionales.campos.fotoLabel}
+            </label>
+            <div className="flex items-center gap-4">
+              <Avatar
+                initials={initialsOf(staffName)}
+                photoUrl={url}
+                alt={staffName}
+                size={56}
+                tone="peach"
+              />
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="md"
+                  disabled={busy}
+                  onClick={() => inputRef.current?.click()}
+                >
+                  {url
+                    ? perfil.ajustes.botones.cambiar
+                    : perfil.ajustes.botones.subir}
+                </Button>
+                {url ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="md"
+                    disabled={busy}
+                    onClick={() => void handleRemove()}
+                  >
+                    {perfil.ajustes.botones.eliminar}
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+            {error ? (
+              <span role="alert" className="text-13 text-ink">
+                {error}
+              </span>
+            ) : null}
+            <input
+              ref={inputRef}
+              id={inputId}
+              type="file"
+              accept={IMAGE_CONTENT_TYPES.join(",")}
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleFile(file);
+              }}
+            />
+          </Dialog.Content>
+        </Dialog.Overlay>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Kontostatus-chip
+// ---------------------------------------------------------------------------
+
+function AccountChip({ account }: { account: TeamAccount }) {
+  if (account.status === "active") {
+    return (
+      <Chip tone="success" size="sm">
+        {equipo.estadoCuenta.activa}
+      </Chip>
+    );
+  }
+  if (account.status === "pending") {
+    return (
+      <Chip tone="pending" size="sm">
+        {equipo.estadoCuenta.invitada}
+      </Chip>
+    );
+  }
+  return (
+    <Chip tone="neutral" size="sm">
+      {equipo.estadoCuenta.ninguna}
+    </Chip>
   );
 }
 
@@ -610,85 +724,402 @@ function Members({
 // Sección completa
 // ---------------------------------------------------------------------------
 
-export type TeamSectionProps = {
-  data: TeamData;
-  actions: TeamActions;
-  /** Refresca la lista tras una mutación (server action + reload, mismo
-   * patrón que `reloadAjustesData` en `./actions.ts`). */
-  onReload: () => Promise<TeamData | null>;
-};
+const EMPTY_FORM: RowForm = { name: "", title: "", serviceIds: [] };
 
 export function TeamSection({
-  data: initialData,
-  actions,
-  onReload,
+  staff,
+  services,
+  photos,
+  staffActions,
+  team: initialTeam,
+  teamActions,
+  onReloadTeam,
 }: TeamSectionProps) {
-  const [data, setData] = useState(initialData);
-  const [inviteOpen, setInviteOpen] = useState(false);
+  const [list, setList] = useState(staff);
+  const [photoUrls, setPhotoUrls] =
+    useState<Record<string, string | null>>(photos);
+  const [team, setTeam] = useState(initialTeam);
 
-  async function refresh() {
-    const next = await onReload();
-    if (next) setData(next);
+  const [dialogTarget, setDialogTarget] = useState<
+    { mode: "new" } | { mode: "edit"; staffId: string } | null
+  >(null);
+  const [photoTarget, setPhotoTarget] = useState<string | null>(null);
+  const [permsTarget, setPermsTarget] = useState<string | null>(null);
+  const [inviteTarget, setInviteTarget] = useState<string | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  async function refreshTeam() {
+    if (!onReloadTeam) return;
+    const next = await onReloadTeam();
+    if (next) setTeam(next);
   }
 
-  const invitable = data.staff.filter(
-    (s) => s.active && s.account.status === "none",
-  );
-  const pending = data.staff.filter(
-    (s): s is PendingStaff => s.account.status === "pending",
-  );
-  const active = data.staff.filter(
-    (s): s is ActiveStaff => s.account.status === "active",
-  );
-  const isEmpty = pending.length === 0 && active.length === 0;
+  function accountOf(staffId: string): TeamAccount {
+    return (
+      team?.staff.find((t) => t.staffId === staffId)?.account ?? {
+        status: "none",
+      }
+    );
+  }
+
+  async function toggleActive(s: AjustesStaffMember) {
+    setPendingId(s.id);
+    try {
+      const nextActive = !s.active;
+      const result = await staffActions.setActive(s.id, nextActive);
+      if (result.ok) {
+        setList((prev) =>
+          prev.map((x) => (x.id === s.id ? { ...x, active: nextActive } : x)),
+        );
+        // WP-44/Ley 21.719: servern tar bort fotot när personalen
+        // inaktiveras (setStaffActive), så det försvinner härifrån också
+        // i stället för att visa en trasig bild.
+        if (!nextActive) {
+          setPhotoUrls((prev) => ({ ...prev, [s.id]: null }));
+        }
+      }
+    } finally {
+      setPendingId(null);
+    }
+  }
+
+  const dialogStaff =
+    dialogTarget?.mode === "edit"
+      ? (list.find((s) => s.id === dialogTarget.staffId) ?? null)
+      : null;
+  const photoStaff = list.find((s) => s.id === photoTarget) ?? null;
+  const permsStaff = list.find((s) => s.id === permsTarget) ?? null;
+  const permsAccount = permsStaff ? accountOf(permsStaff.id) : null;
+  const inviteStaff = list.find((s) => s.id === inviteTarget) ?? null;
+  const removeStaff = list.find((s) => s.id === removeTarget) ?? null;
 
   return (
     <Card radius="tile" padding="lg" className="flex flex-col gap-4">
-      {!data.planLimitReached && invitable.length > 0 ? (
-        <div className="flex justify-end">
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            onClick={() => setInviteOpen(true)}
-          >
-            {equipo.ctaInvitar}
-          </Button>
-        </div>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-18 font-bold text-ink">
+          {ajustes.secciones.equipo}
+        </h2>
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          onClick={() => setDialogTarget({ mode: "new" })}
+        >
+          {profesionales.ctaAgregar}
+        </Button>
+      </div>
+
+      {toast ? (
+        <p role="status" className="text-13 text-ink">
+          {toast}
+        </p>
       ) : null}
 
-      {data.planLimitReached ? (
+      {list.length === 0 ? (
+        <p className="text-13 text-muted">{profesionales.vacio}</p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {list.map((s) => {
+            const account = accountOf(s.id);
+            const canInvite =
+              team != null && !team.planLimitReached && teamActions != null;
+            return (
+              <div
+                key={s.id}
+                className={cn(
+                  "flex items-center gap-3 rounded-tile bg-canvas p-4",
+                  !s.active && "opacity-50",
+                )}
+              >
+                <Avatar
+                  initials={initialsOf(s.name)}
+                  photoUrl={photoUrls[s.id] ?? null}
+                  alt={s.name}
+                  size={46}
+                  tone="peach"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-15 font-bold text-ink">
+                    {s.name}
+                  </p>
+                  <p className="truncate text-13 text-muted">
+                    {[
+                      s.title || null,
+                      s.serviceIds.length > 0
+                        ? servicios.contador({ n: s.serviceIds.length })
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </p>
+                </div>
+                {team ? <AccountChip account={account} /> : null}
+                <Menu
+                  label={nav.masOpciones}
+                  trigger={
+                    <IconButton
+                      label={nav.masOpciones}
+                      tone="ghost"
+                      size={36}
+                      className="text-muted"
+                    >
+                      <Ellipsis
+                        aria-hidden="true"
+                        className="size-5"
+                        strokeWidth={strokeCard}
+                      />
+                    </IconButton>
+                  }
+                >
+                  <MenuButtonItem
+                    onClick={() =>
+                      setDialogTarget({ mode: "edit", staffId: s.id })
+                    }
+                  >
+                    {comun.editar}
+                  </MenuButtonItem>
+                  <MenuButtonItem onClick={() => setPhotoTarget(s.id)}>
+                    {profesionales.ctaFoto}
+                  </MenuButtonItem>
+                  {team && teamActions && account.status === "active" ? (
+                    <MenuButtonItem onClick={() => setPermsTarget(s.id)}>
+                      {equipo.ctaPermisos}
+                    </MenuButtonItem>
+                  ) : null}
+                  {team &&
+                  teamActions &&
+                  account.status === "none" &&
+                  canInvite ? (
+                    <MenuButtonItem onClick={() => setInviteTarget(s.id)}>
+                      {equipo.ctaInvitar}
+                    </MenuButtonItem>
+                  ) : null}
+                  {team && teamActions && account.status === "pending" ? (
+                    <MenuButtonItem
+                      disabled={pendingId === account.invitationId}
+                      onClick={() => {
+                        const invitationId = account.invitationId;
+                        setPendingId(invitationId);
+                        void teamActions
+                          .onResend(invitationId)
+                          .then((r) => {
+                            if (r.ok) {
+                              setToast(equipo.invitaciones.toast.reenviada);
+                              void refreshTeam();
+                            }
+                          })
+                          .finally(() => setPendingId(null));
+                      }}
+                    >
+                      {equipo.invitaciones.ctaReenviar}
+                    </MenuButtonItem>
+                  ) : null}
+                  {team && teamActions && account.status === "pending" ? (
+                    <MenuButtonItem onClick={() => setRemoveTarget(s.id)}>
+                      {equipo.invitaciones.ctaRevocar}
+                    </MenuButtonItem>
+                  ) : null}
+                  {team && teamActions && account.status === "active" ? (
+                    <MenuButtonItem onClick={() => setRemoveTarget(s.id)}>
+                      {equipo.miembros.ctaQuitarAcceso}
+                    </MenuButtonItem>
+                  ) : null}
+                  <MenuButtonItem
+                    disabled={pendingId === s.id}
+                    onClick={() => void toggleActive(s)}
+                  >
+                    {s.active
+                      ? profesionales.ctaDesactivar
+                      : profesionales.ctaActivar}
+                  </MenuButtonItem>
+                </Menu>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {team ? (
         <div className="flex flex-col gap-1 rounded-tile bg-canvas p-4">
           <p className="text-14 font-bold text-ink">
             {equipo.limiteDelPlan.titulo}
           </p>
-          <p className="text-13 text-muted">{equipo.limiteDelPlan.texto}</p>
+          <p className="text-13 text-muted">
+            {team.planLimitReached
+              ? team.seatLimit <= 1
+                ? equipo.limiteDelPlan.texto({ limit: team.seatLimit })
+                : equipo.infoDelPlan.completo({ limit: team.seatLimit })
+              : equipo.infoDelPlan.conEspacio({
+                  used: team.seatsUsed,
+                  limit: team.seatLimit,
+                })}
+          </p>
         </div>
       ) : null}
 
-      {isEmpty ? <p className="text-13 text-muted">{equipo.vacio}</p> : null}
-
-      <PendingInvitations
-        staff={pending}
-        onResend={actions.onResend}
-        onRevoke={actions.onRevoke}
-        onChanged={() => void refresh()}
+      <StaffDialog
+        mode={dialogTarget?.mode ?? "new"}
+        initial={dialogStaff ? toRowForm(dialogStaff) : EMPTY_FORM}
+        services={services}
+        open={dialogTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setDialogTarget(null);
+        }}
+        onSubmit={async (form) => {
+          const payload = { name: form.name, serviceIds: form.serviceIds };
+          if (dialogTarget?.mode === "edit") {
+            const [result, titleResult] = await Promise.all([
+              staffActions.update(dialogTarget.staffId, payload),
+              staffActions.updateTitle(dialogTarget.staffId, form.title),
+            ]);
+            if (!result.ok) {
+              return {
+                ok: false as const,
+                errors: { name: ajustesErrorText(result.code) },
+              };
+            }
+            setList((prev) =>
+              prev.map((x) =>
+                x.id === dialogTarget.staffId
+                  ? {
+                      ...x,
+                      name: payload.name,
+                      serviceIds: payload.serviceIds,
+                      title: titleResult.ok ? form.title : x.title,
+                    }
+                  : x,
+              ),
+            );
+            if (!titleResult.ok) {
+              return {
+                ok: false as const,
+                errors: { title: ajustesErrorText(titleResult.code) },
+              };
+            }
+            return { ok: true as const };
+          }
+          const result = await staffActions.create(payload);
+          if (!result.ok) {
+            return {
+              ok: false as const,
+              errors: { name: ajustesErrorText(result.code) },
+            };
+          }
+          const titleResult = await staffActions.updateTitle(
+            result.id,
+            form.title,
+          );
+          setList((prev) => [
+            ...prev,
+            {
+              id: result.id,
+              name: payload.name,
+              active: true,
+              serviceIds: payload.serviceIds,
+              title: titleResult.ok ? form.title : "",
+            },
+          ]);
+          return { ok: true as const };
+        }}
       />
 
-      <Members
-        staff={active}
-        onUpdatePerms={actions.onUpdatePerms}
-        onRemoveAccess={actions.onRemoveAccess}
-        onChanged={() => void refresh()}
-      />
+      {photoStaff ? (
+        <PhotoDialog
+          key={photoStaff.id}
+          staffId={photoStaff.id}
+          staffName={photoStaff.name}
+          url={photoUrls[photoStaff.id] ?? null}
+          actions={staffActions}
+          open={photoTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setPhotoTarget(null);
+          }}
+          onChange={(url) =>
+            setPhotoUrls((prev) => ({ ...prev, [photoStaff.id]: url }))
+          }
+        />
+      ) : null}
 
-      <InviteDialog
-        open={inviteOpen}
-        onOpenChange={setInviteOpen}
-        invitable={invitable}
-        onInvite={actions.onInvite}
-        onInvited={() => void refresh()}
-      />
+      {permsStaff && permsAccount?.status === "active" && teamActions ? (
+        <EditPermsDialog
+          key={permsStaff.id}
+          staffName={permsStaff.name}
+          initial={permsAccount.perms}
+          open={permsTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setPermsTarget(null);
+          }}
+          onUpdatePerms={(perms) =>
+            teamActions.onUpdatePerms(permsAccount.userId, perms)
+          }
+          onSaved={() => {
+            setToast(equipo.miembros.toast.permisosGuardados);
+            void refreshTeam();
+          }}
+        />
+      ) : null}
+
+      {inviteStaff && teamActions ? (
+        <InviteDialog
+          key={inviteStaff.id}
+          staffId={inviteStaff.id}
+          staffName={inviteStaff.name}
+          open={inviteTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setInviteTarget(null);
+          }}
+          onInvite={teamActions.onInvite}
+          onInvited={() => void refreshTeam()}
+        />
+      ) : null}
+
+      {removeStaff && teamActions ? (
+        <ConfirmDialog
+          open={removeTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setRemoveTarget(null);
+          }}
+          title={
+            accountOf(removeStaff.id).status === "pending"
+              ? equipo.invitaciones.confirmarRevocar.titulo
+              : equipo.miembros.confirmarQuitar.titulo
+          }
+          body={
+            accountOf(removeStaff.id).status === "pending"
+              ? equipo.invitaciones.confirmarRevocar.cuerpo
+              : equipo.miembros.confirmarQuitar.cuerpo
+          }
+          confirmLabel={
+            accountOf(removeStaff.id).status === "pending"
+              ? equipo.invitaciones.confirmarRevocar.ctaSi
+              : equipo.miembros.confirmarQuitar.ctaSi
+          }
+          cancelLabel={
+            accountOf(removeStaff.id).status === "pending"
+              ? equipo.invitaciones.confirmarRevocar.ctaNo
+              : equipo.miembros.confirmarQuitar.ctaNo
+          }
+          onConfirm={async () => {
+            const account = accountOf(removeStaff.id);
+            if (account.status === "pending") {
+              const result = await teamActions.onRevoke(account.invitationId);
+              if (result.ok) {
+                setToast(equipo.invitaciones.toast.revocada);
+                void refreshTeam();
+              }
+            } else if (account.status === "active") {
+              const result = await teamActions.onRemoveAccess(account.userId);
+              if (result.ok) {
+                setToast(equipo.miembros.toast.accesoQuitado);
+                void refreshTeam();
+              }
+            }
+            setRemoveTarget(null);
+          }}
+        />
+      ) : null}
     </Card>
   );
 }

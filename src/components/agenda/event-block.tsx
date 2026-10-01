@@ -30,6 +30,11 @@ export type EventBlockProps = {
   title: string;
   /** null → `showTime` var falskt (höjden räcker inte, se geometry.ts). */
   meta: string | null;
+  /** UX-granskning (sección "Agenda"): tjänsten som en native `title`-attribut (tooltip)
+   * — alltid satt, oavsett om `meta` redan visar den. Smala block (flera profesionales i
+   * samma kolumn) visar bara klockslaget i `meta` för att undvika avkapad tjänstetext;
+   * tjänsten syns ändå i tooltipen och i popovern. */
+  tooltip?: string;
   showAvatar: boolean;
   avatarInitials?: string;
   top: number;
@@ -51,6 +56,7 @@ export function EventBlock({
   cancelPending = false,
   title,
   meta,
+  tooltip,
   showAvatar,
   avatarInitials,
   top,
@@ -75,6 +81,7 @@ export function EventBlock({
       type="button"
       data-testid="event-block"
       aria-label={ariaLabel}
+      title={tooltip}
       onClick={onClick}
       style={{
         top,

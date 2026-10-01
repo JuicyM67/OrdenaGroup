@@ -151,3 +151,15 @@ export type AgendaData = {
  * form som `AgendaData["dayCounts"]` men för hela månaden. Returneras av
  * `loadOwnerAgendaMonthCounts` (`src/server/owner/agenda.ts`). */
 export type MonthDayCounts = Record<LocalDate, Record<StaffId, number>>;
+
+/** UX-granskning (sektion "Agenda", förslag "Fyllnadsstapel"): bokade minuter per dag,
+ * summerat över alla profesionales (inte uppdelat per profesional — stapeln är en enda
+ * siffra per dag). Returneras tillsammans med `MonthDayCounts` av `loadOwnerAgendaMonthCounts`. */
+export type MonthDayMinutes = Record<LocalDate, number>;
+
+/** `loadOwnerAgendaMonthCounts`s svar: räkningarna (prickarna/antalet) och minuterna
+ * (fyllnadsstapeln) för en hel kalendermånad, i ett enda anrop. */
+export type MonthData = {
+  readonly counts: MonthDayCounts;
+  readonly minutes: MonthDayMinutes;
+};

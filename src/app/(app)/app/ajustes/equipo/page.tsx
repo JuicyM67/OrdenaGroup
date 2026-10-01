@@ -1,14 +1,15 @@
 // /app/ajustes/equipo (WP-55, ägarens feedback 2026-09-30: "Vad hände med inställningar
 // för personal och personalkonto? Jag vill ha en egen flik för att hantera teamet.") —
-// todo lo relacionado al equipo en un solo lugar: lista de personal, sus servicios y foto
-// (`StaffSection`, visible con `can_manage_team`, el dueño la tiene siempre) y, solo para
-// el dueño, acceso a la cuenta (invitar/permisos/revocar, `TeamSection`). Enlazada desde
-// `agenda-rail.tsx` ("+ Agregar profesional").
+// todo lo relacionado al equipo en un solo lugar.
+//
+// UX-granskning (2026-10-01): `StaffSection`/`TeamSection` (listas separadas, personal y
+// cuentas) se fusionaron en una sola `TeamSection` — una fila por persona, ver el
+// comentario de archivo en `team-section.tsx`. `team`/`teamActions` solo para el dueño
+// (`isOwner`), igual que antes.
 import type { Metadata } from "next";
 
 import { logout } from "@/app/auth/actions";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
-import { StaffSection } from "@/components/settings/staff-section";
 import { TeamSection } from "@/components/settings/team-section";
 import { nav } from "@/i18n";
 import { loadAjustesServices, loadAjustesStaff } from "@/server/owner/ajustes";
@@ -81,11 +82,11 @@ export default async function AjustesEquipoPage() {
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >
-      <StaffSection
+      <TeamSection
         staff={staff}
         services={services}
         photos={profile.staffPhotos}
-        actions={{
+        staffActions={{
           create: createStaffAction,
           update: updateStaffAction,
           setActive: setStaffActiveAction,
@@ -94,21 +95,20 @@ export default async function AjustesEquipoPage() {
           confirmImageUpload: confirmImageUploadAction,
           deleteImage: deleteImageAction,
         }}
+        team={isOwner ? (team ?? null) : null}
+        teamActions={
+          isOwner
+            ? {
+                onInvite: inviteStaffAction,
+                onResend: resendInvitationAction,
+                onRevoke: revokeInvitationAction,
+                onUpdatePerms: updateMemberPermsAction,
+                onRemoveAccess: removeMemberAccessAction,
+              }
+            : undefined
+        }
+        onReloadTeam={isOwner ? onReloadTeam : undefined}
       />
-
-      {isOwner && team ? (
-        <TeamSection
-          data={team}
-          actions={{
-            onInvite: inviteStaffAction,
-            onResend: resendInvitationAction,
-            onRevoke: revokeInvitationAction,
-            onUpdatePerms: updateMemberPermsAction,
-            onRemoveAccess: removeMemberAccessAction,
-          }}
-          onReload={onReloadTeam}
-        />
-      ) : null}
     </AjustesShell>
   );
 }

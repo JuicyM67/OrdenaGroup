@@ -8,7 +8,8 @@ import type {
   AgendaStaff,
   BookingSource,
   BookingStatus,
-  MonthDayCounts,
+  MonthData,
+  MonthDayMinutes,
   StaffId,
   TimeOffKind,
 } from "@/components/agenda/types";
@@ -292,43 +293,50 @@ function monthDateRange(month: YearMonth): {
 }
 
 /**
- * Antal bokningar per profesional och dag för en hel kalendermånad (WP-50, agendans
- * månadsvy). Smal jämfört med `loadOwnerAgendaWeek`: ingen kund-/tjänstedata, bara det
- * `MonthGrid` (`src/components/agenda/month-grid.tsx`) faktiskt visar (prickar + antal) —
- * profesionalens färg slås upp av klienten mot den redan laddade `data.staff`.
+ * Antal bokningar per profesional och dag, och bokade minuter per dag (summerat över
+ * alla profesionales), för en hel kalendermånad (WP-50, agendans månadsvy; minuterna:
+ * UX-granskningens fyllnadsstapel). Smal jämfört med `loadOwnerAgendaWeek`: ingen
+ * kund-/tjänstedata, bara det `MonthGrid` (`src/components/agenda/month-grid.tsx`)
+ * faktiskt visar (prickar, antal och stapeln) — profesionalens färg slås upp av klienten
+ * mot den redan laddade `data.staff`.
  */
 export async function loadOwnerAgendaMonthCounts(
   userId: string,
   businessId: string,
   month: YearMonth,
-): Promise<MonthDayCounts> {
+): Promise<MonthData> {
   return withOwnerTx(userId, (q) =>
     loadOwnerAgendaMonthCountsIn(q, businessId, month),
   );
 }
 
-/** `start_ms`: egentligen en sträng vid körning, inte `number` — Postgres (16+) låter
- * `extract(epoch from …)` returnera `numeric` i stället för `double precision`, och
+/** `start_ms`/`end_ms`: egentligen en sträng vid körning, inte `number` — Postgres (16+)
+ * låter `extract(epoch from …)` returnera `numeric` i stället för `double precision`, och
  * `pg` har ingen inbyggd parser för `numeric` (undviker tyst precisionsförlust för stora
  * tal) — den kommer alltså som en strängad siffra, t.ex. `"1791170100000.000000"`.
  * Samma `MonthCountRow`-liknande rader i `loadOwnerAgendaWeekIn` ovan (`isoOf`,
  * `./shared.ts`) klarar sig oskadda av samma anledning som nedan: `Math.round(ms)`
  * (`Number(ms)` här) tvångskonverterar strängen till ett tal innan `new Date(...)`. */
-type MonthCountRow = { staff_id: string; start_ms: number };
+type MonthCountRow = {
+  staff_id: string;
+  start_ms: number;
+  end_ms: number;
+};
 
 /** Inre steg (för tester): kör i anroparens transaktion. */
 export async function loadOwnerAgendaMonthCountsIn(
   q: Queryable,
   businessId: string,
   month: YearMonth,
-): Promise<MonthDayCounts> {
+): Promise<MonthData> {
   const { start, endInclusive } = monthDateRange(month);
   const rangeStart = localDayRange(start, APP_TZ).start;
   const rangeEnd = localDayRange(endInclusive, APP_TZ).end;
 
   const res = await q.query<MonthCountRow>(
     `select bk.staff_id,
-            extract(epoch from lower(bk.period)) * 1000 as start_ms
+            extract(epoch from lower(bk.period)) * 1000 as start_ms,
+            extract(epoch from upper(bk.period)) * 1000 as end_ms
        from public.bookings bk
       where bk.business_id = $1
         and bk.status <> 'cancelled'
@@ -337,6 +345,7 @@ export async function loadOwnerAgendaMonthCountsIn(
   );
 
   const counts: Record<string, Record<StaffId, number>> = {};
+  const minutes: MonthDayMinutes = {};
   for (const row of res.rows) {
     // BUGG (ägarens test, 2026-10-01): `new Date(row.start_ms)` kastade "ogiltig Date"
     // (`toWallClock`) så fort `extract(epoch from …)` kom tillbaka som `numeric` (se
@@ -345,10 +354,13 @@ export async function loadOwnerAgendaMonthCountsIn(
     // kvar på `null`: INGEN dag i månadsvyn visade några tider, trots att vecko-/
     // dagvyn (som går via `isoOf`, redan tålig för samma sak) såg likadan data fint.
     // `Number(...)` här tvångskonverterar — samma skydd som `isoOf` redan hade.
-    const date = toLocalDate(new Date(Number(row.start_ms)), APP_TZ);
+    const startMs = Number(row.start_ms);
+    const date = toLocalDate(new Date(startMs), APP_TZ);
     const byStaff = counts[date] ?? {};
     byStaff[row.staff_id] = (byStaff[row.staff_id] ?? 0) + 1;
     counts[date] = byStaff;
+    const durationMin = Math.round((Number(row.end_ms) - startMs) / 60000);
+    minutes[date] = (minutes[date] ?? 0) + durationMin;
   }
-  return counts;
+  return { counts, minutes };
 }

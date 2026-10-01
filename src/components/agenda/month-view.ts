@@ -11,16 +11,19 @@ import {
 import {
   formatLocalDate,
   isoWeekdayOf,
+  minutesBetween,
   type LocalDate,
+  type LocalTime,
   type TimeZone,
 } from "@/lib/format/dates";
 import { agenda } from "@/i18n";
 
-import { localDateOf } from "./agenda-view";
+import { localDateOf, toInstant } from "./agenda-view";
 import type {
   AgendaBooking,
   AgendaBusinessHours,
   MonthDayCounts,
+  MonthDayMinutes,
   StaffColor,
   StaffId,
 } from "./types";
@@ -118,10 +121,83 @@ export function monthCellAria(
   date: LocalDate,
   closed: boolean,
   count: number,
+  full = false,
 ): string {
   const fecha = formatLocalDate(date, "weekdayDayMonthLong");
   if (closed) return agenda.mes.celdaCerradaAria({ fecha });
+  if (full) return agenda.mes.celdaLlenaAria({ fecha });
   return count > 0
     ? agenda.mes.celdaConReservasAria({ fecha, n: count })
     : agenda.mes.celdaSinReservasAria({ fecha });
+}
+
+/**
+ * Reservfallet när ingen server-loader finns (design lab), motsvarigheten till
+ * `monthCountsFromBookings` fast för fyllnadsstapeln: bokade minuter per dag, summerat
+ * över alla profesionales.
+ */
+export function monthMinutesFromBookings(
+  bookings: readonly AgendaBooking[],
+  month: YearMonth,
+  tz: TimeZone,
+): MonthDayMinutes {
+  const prefix = `${String(month.year).padStart(4, "0")}-${pad2(month.month)}`;
+  const minutes: Record<string, number> = {};
+  for (const b of bookings) {
+    const date = localDateOf(b.start, tz);
+    if (!date.startsWith(prefix)) continue;
+    const dur = minutesBetween(toInstant(b.start), toInstant(b.end));
+    minutes[date] = (minutes[date] ?? 0) + dur;
+  }
+  return minutes;
+}
+
+/** Öppna minuter en given veckodag, summerat över alla intervall (en profesional = en
+ * gång). `0` en stängd dag. */
+function openMinutesPerStaffOfWeekday(
+  weekday: 1 | 2 | 3 | 4 | 5 | 6 | 7,
+  hours: AgendaBusinessHours,
+): number {
+  const ranges = hours[weekday];
+  if (!ranges) return 0;
+  return ranges.reduce((sum, r) => sum + minutesOfRange(r.open, r.close), 0);
+}
+
+function minutesOfRange(open: LocalTime, close: LocalTime): number {
+  const [oh, om] = open.split(":").map(Number);
+  const [ch, cm] = close.split(":").map(Number);
+  return (ch ?? 0) * 60 + (cm ?? 0) - ((oh ?? 0) * 60 + (om ?? 0));
+}
+
+/** UX-granskning (sektion "Agenda"): hur full en dag är, 0–100 (kan gå över 100 om
+ * dubbelbokningar/overbooking skulle förekomma — kapas vid rendering, inte här). `null` =
+ * stängd dag (ingen stapel), `undefined` = dagen är utanför den efterfrågade månaden. */
+export type MonthDayFill = { readonly pct: number; readonly full: boolean };
+
+/**
+ * Fyllnadsstapeln per dag (andel bokad tid av öppen tid): `minutes` (bokade minuter,
+ * summerat över alla profesionales) delat på öppna minuter den dagen gånger antalet
+ * aktiva profesionales (varje profesional har kapacitet för hela öppettiden, samma
+ * förenkling som `isMonthDayClosed` redan gör — bara företagets öppettider, inte
+ * enskilda scheman).
+ */
+export function summarizeMonthFill(
+  minutesByDate: MonthDayMinutes,
+  hours: AgendaBusinessHours,
+  staffCount: number,
+): ReadonlyMap<LocalDate, MonthDayFill> {
+  const result = new Map<LocalDate, MonthDayFill>();
+  for (const [date, minutes] of Object.entries(minutesByDate) as [
+    LocalDate,
+    number,
+  ][]) {
+    if (minutes <= 0) continue;
+    const weekday = isoWeekdayOf(date);
+    const openPerStaff = openMinutesPerStaffOfWeekday(weekday, hours);
+    const capacity = openPerStaff * Math.max(staffCount, 1);
+    if (capacity <= 0) continue;
+    const pct = Math.round((minutes / capacity) * 100);
+    result.set(date, { pct, full: pct >= 95 });
+  }
+  return result;
 }

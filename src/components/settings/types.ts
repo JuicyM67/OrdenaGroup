@@ -137,6 +137,9 @@ export type TeamStaffMember = {
 export type TeamData = {
   staff: TeamStaffMember[];
   planLimitReached: boolean;
+  /** UX-granskning (fel 4): se `src/server/team/members.ts`. */
+  seatLimit: number;
+  seatsUsed: number;
 };
 
 export type TeamInviteResult =

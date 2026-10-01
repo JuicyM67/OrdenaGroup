@@ -55,6 +55,12 @@ export type TeamData = {
    * platserna är fulla enligt `private.plan_staff_limit`/`staff_seat_count`
    * (samma hook som `member_invitations_guard_limit`/`accept_invitation`). */
   planLimitReached: boolean;
+  /** UX-granskning (fel 4): planens kontogräns (1/1/3/10 för free/emprende/equipo/local)
+   * och hur många som faktiskt används (ägaren inräknad, `private.staff_seat_count`) — så
+   * UI:t kan säga "Din plan har N konton" i stället för att blanda ihop konton och
+   * medarbetare i kalendern. */
+  seatLimit: number;
+  seatsUsed: number;
 };
 
 type StaffRow = { id: string; name: string; active: boolean };
@@ -166,7 +172,12 @@ export async function loadTeamData(
         (limitRow.seat_limit !== null && limitRow.used >= limitRow.seat_limit)
       : true;
 
-    return { staff, planLimitReached };
+    return {
+      staff,
+      planLimitReached,
+      seatLimit: limitRow?.seat_limit ?? 1,
+      seatsUsed: limitRow?.used ?? 1,
+    };
   });
 }
 
