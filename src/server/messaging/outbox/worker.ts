@@ -489,7 +489,12 @@ async function processWaitlistCupoRow(
   }
   const offer = result.offer;
   const start = new Date(offer.start);
-  const fecha = formatDate(start, APP_TZ, "weekdayDayMonthLongLower", APP_LOCALE);
+  const fecha = formatDate(
+    start,
+    APP_TZ,
+    "weekdayDayMonthLongLower",
+    APP_LOCALE,
+  );
   const hora = formatTime(start, APP_TZ);
   const minutos = Math.max(
     1,
@@ -1435,7 +1440,10 @@ async function processRow(
     if (row.template === "campanaMarketing") {
       return await processCampaignRow(row);
     }
-    if (row.template === "listaEsperaCupo" || row.template === "listaEsperaTomada") {
+    if (
+      row.template === "listaEsperaCupo" ||
+      row.template === "listaEsperaTomada"
+    ) {
       return await processWaitlistRow(row);
     }
     // `await` explícito (no solo `return processInviteeRow(row)`): un

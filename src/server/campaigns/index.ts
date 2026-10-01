@@ -29,7 +29,4 @@ export { runWinback } from "./winback";
 export type { RunWinbackResult } from "./winback";
 /** WP-30 (F13): "Skicka till kunder" för en horas flash-tid. */
 export { sendFlashCampaign } from "./flash";
-export type {
-  SendFlashCampaignError,
-  SendFlashCampaignResult,
-} from "./flash";
+export type { SendFlashCampaignError, SendFlashCampaignResult } from "./flash";

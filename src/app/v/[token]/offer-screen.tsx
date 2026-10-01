@@ -133,7 +133,9 @@ function OfferForm({
   }
 
   if (confirmed) {
-    return <DeadEnd title={vOferta.confirmada} body={vOferta.confirmadaAviso} />;
+    return (
+      <DeadEnd title={vOferta.confirmada} body={vOferta.confirmadaAviso} />
+    );
   }
   if (failure === "taken") {
     return <DeadEnd title={vOferta.yaTomada} body={vOferta.yaTomadaAviso} />;
@@ -145,9 +147,7 @@ function OfferForm({
   return (
     <div className="flex flex-col gap-6 p-5 pb-10">
       <div>
-        <p className="text-13 font-semibold text-muted">
-          {offer.businessName}
-        </p>
+        <p className="text-13 font-semibold text-muted">{offer.businessName}</p>
         <h1 className="mt-1 font-display text-24 font-semibold tracking-title text-ink">
           {vOferta.titulo}
         </h1>

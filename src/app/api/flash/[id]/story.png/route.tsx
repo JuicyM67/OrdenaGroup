@@ -48,7 +48,9 @@ type StoryData = {
   discountPct: number;
 };
 
-async function loadStoryData(flashSlotId: string): Promise<StoryData | undefined> {
+async function loadStoryData(
+  flashSlotId: string,
+): Promise<StoryData | undefined> {
   return withServiceTx(async (q) => {
     const slot = await q.query<{
       business_id: string;
@@ -139,187 +141,187 @@ export async function GET(
 
   const fonts = await loadStoryFonts();
   const start = new Date(data.start);
-  const dia = capitalize(formatDate(start, APP_TZ, "weekdayDayLong", APP_LOCALE));
+  const dia = capitalize(
+    formatDate(start, APP_TZ, "weekdayDayLong", APP_LOCALE),
+  );
   const hora = formatTime(start, APP_TZ);
   const price = flashPrice(data.priceClp, data.discountPct);
   const link = `${appHost()}/${data.slug}`;
 
   const image = new ImageResponse(
-    (
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: 48,
+        position: "relative",
+        overflow: "hidden",
+        boxSizing: "border-box",
+        padding: "84px 72px 72px",
+        background: LIME,
+        color: INK,
+        fontFamily: '"Plus Jakarta Sans"',
+      }}
+    >
       <div
         style={{
-          width: "100%",
-          height: "100%",
+          position: "absolute",
+          right: -270,
+          top: 450,
+          width: 900,
+          height: 900,
+          borderRadius: 450,
+          background: CIRCLE,
+        }}
+      />
+
+      {/* Header: logo + nombre + comuna */}
+      <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
+        <div
+          style={{
+            width: 132,
+            height: 132,
+            borderRadius: 42,
+            background: INK,
+            color: LIME,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: '"Bricolage Grotesque"',
+            fontSize: 51,
+            fontWeight: 700,
+          }}
+        >
+          {initials(data.negocio)}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <div style={{ fontSize: 45, fontWeight: 700 }}>{data.negocio}</div>
+          <div style={{ fontSize: 36, color: DARK_MUTED }}>{data.comuna}</div>
+        </div>
+      </div>
+
+      {/* Insignia + descuento gigante */}
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 54 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 18,
+            fontSize: 39,
+            fontWeight: 700,
+            padding: "18px 36px",
+            borderRadius: 42,
+            background: INK,
+            color: WHITE,
+            alignSelf: "flex-start",
+          }}
+        >
+          {flashStory.badge}
+        </div>
+        <div
+          style={{
+            fontFamily: '"Bricolage Grotesque"',
+            fontSize: 354,
+            fontWeight: 800,
+            letterSpacing: -0.05,
+            lineHeight: 0.9,
+            marginTop: 48,
+          }}
+        >
+          −{data.discountPct}%
+        </div>
+      </div>
+
+      {/* Tarjeta blanca */}
+      <div
+        style={{
           display: "flex",
           flexDirection: "column",
-          gap: 48,
-          position: "relative",
-          overflow: "hidden",
-          boxSizing: "border-box",
-          padding: "84px 72px 72px",
-          background: LIME,
-          color: INK,
-          fontFamily: '"Plus Jakarta Sans"',
+          gap: 18,
+          marginTop: "auto",
+          background: WHITE,
+          borderRadius: 72,
+          padding: 54,
+        }}
+      >
+        <div style={{ fontSize: 39, color: INK_MUTED }}>
+          {flashStory.soloUnaHora}
+        </div>
+        <div
+          style={{
+            fontFamily: '"Bricolage Grotesque"',
+            fontSize: 84,
+            fontWeight: 600,
+            letterSpacing: -0.02,
+          }}
+        >
+          {dia} · {hora}
+        </div>
+        <div style={{ fontSize: 45, fontWeight: 600 }}>
+          {data.servicio}
+          {data.profesional ? ` con ${data.profesional}` : ""}
+        </div>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 24,
+            marginTop: 12,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: '"Bricolage Grotesque"',
+              fontSize: 78,
+              fontWeight: 700,
+            }}
+          >
+            {formatMoney(price)}
+          </span>
+          <span
+            style={{
+              fontSize: 42,
+              color: INK_MUTED,
+              textDecoration: "line-through",
+            }}
+          >
+            {formatMoney(data.priceClp)}
+          </span>
+        </div>
+      </div>
+
+      {/* Barra inferior: CTA + link */}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 12,
         }}
       >
         <div
           style={{
-            position: "absolute",
-            right: -270,
-            top: 450,
-            width: 900,
-            height: 900,
-            borderRadius: 450,
-            background: CIRCLE,
-          }}
-        />
-
-        {/* Header: logo + nombre + comuna */}
-        <div style={{ display: "flex", alignItems: "center", gap: 30 }}>
-          <div
-            style={{
-              width: 132,
-              height: 132,
-              borderRadius: 42,
-              background: INK,
-              color: LIME,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontFamily: '"Bricolage Grotesque"',
-              fontSize: 51,
-              fontWeight: 700,
-            }}
-          >
-            {initials(data.negocio)}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 45, fontWeight: 700 }}>{data.negocio}</div>
-            <div style={{ fontSize: 36, color: DARK_MUTED }}>{data.comuna}</div>
-          </div>
-        </div>
-
-        {/* Insignia + descuento gigante */}
-        <div style={{ display: "flex", flexDirection: "column", marginTop: 54 }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 18,
-              fontSize: 39,
-              fontWeight: 700,
-              padding: "18px 36px",
-              borderRadius: 42,
-              background: INK,
-              color: WHITE,
-              alignSelf: "flex-start",
-            }}
-          >
-            {flashStory.badge}
-          </div>
-          <div
-            style={{
-              fontFamily: '"Bricolage Grotesque"',
-              fontSize: 354,
-              fontWeight: 800,
-              letterSpacing: -0.05,
-              lineHeight: 0.9,
-              marginTop: 48,
-            }}
-          >
-            −{data.discountPct}%
-          </div>
-        </div>
-
-        {/* Tarjeta blanca */}
-        <div
-          style={{
             display: "flex",
-            flexDirection: "column",
-            gap: 18,
-            marginTop: "auto",
-            background: WHITE,
-            borderRadius: 72,
-            padding: 54,
-          }}
-        >
-          <div style={{ fontSize: 39, color: INK_MUTED }}>
-            {flashStory.soloUnaHora}
-          </div>
-          <div
-            style={{
-              fontFamily: '"Bricolage Grotesque"',
-              fontSize: 84,
-              fontWeight: 600,
-              letterSpacing: -0.02,
-            }}
-          >
-            {dia} · {hora}
-          </div>
-          <div style={{ fontSize: 45, fontWeight: 600 }}>
-            {data.servicio}
-            {data.profesional ? ` con ${data.profesional}` : ""}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "baseline",
-              gap: 24,
-              marginTop: 12,
-            }}
-          >
-            <span
-              style={{
-                fontFamily: '"Bricolage Grotesque"',
-                fontSize: 78,
-                fontWeight: 700,
-              }}
-            >
-              {formatMoney(price)}
-            </span>
-            <span
-              style={{
-                fontSize: 42,
-                color: INK_MUTED,
-                textDecoration: "line-through",
-              }}
-            >
-              {formatMoney(data.priceClp)}
-            </span>
-          </div>
-        </div>
-
-        {/* Barra inferior: CTA + link */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
+            width: "100%",
+            height: 156,
+            borderRadius: 54,
+            background: INK,
+            color: WHITE,
             alignItems: "center",
-            gap: 12,
+            justifyContent: "center",
+            fontSize: 45,
+            fontWeight: 700,
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              width: "100%",
-              height: 156,
-              borderRadius: 54,
-              background: INK,
-              color: WHITE,
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 45,
-              fontWeight: 700,
-            }}
-          >
-            {flashStory.cta}
-          </div>
-          <div style={{ display: "flex", fontSize: 33, color: DARK_MUTED }}>
-            {link}
-          </div>
+          {flashStory.cta}
+        </div>
+        <div style={{ display: "flex", fontSize: 33, color: DARK_MUTED }}>
+          {link}
         </div>
       </div>
-    ),
+    </div>,
     {
       width: WIDTH,
       height: HEIGHT,

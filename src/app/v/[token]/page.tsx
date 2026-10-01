@@ -35,7 +35,9 @@ export async function generateMetadata({
   const { token } = await params;
   const result = await getWaitlistOffer(token, systemClock());
   return {
-    title: result.ok ? `${vOferta.titulo} · ${result.offer.businessName}` : undefined,
+    title: result.ok
+      ? `${vOferta.titulo} · ${result.offer.businessName}`
+      : undefined,
     // Länken är personlig (en gång-erbjudande) — aldrig indexerad.
     robots: { index: false, follow: false },
   };
@@ -57,7 +59,8 @@ export default async function WaitlistOfferPage({
   }
 
   const { offer } = result;
-  const staffName = (await loadStaffName(offer.businessId, offer.staffId)) ?? "";
+  const staffName =
+    (await loadStaffName(offer.businessId, offer.staffId)) ?? "";
 
   async function claimOffer(): Promise<ClaimActionResult> {
     "use server";

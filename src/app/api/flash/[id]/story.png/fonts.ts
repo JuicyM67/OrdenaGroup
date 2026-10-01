@@ -45,9 +45,8 @@ async function fetchFontData(
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
       },
     }).then((r) => r.text());
-    const match = /src: url\(([^)]+)\) format\('(?:woff2|truetype|opentype)'\)/.exec(
-      css,
-    );
+    const match =
+      /src: url\(([^)]+)\) format\('(?:woff2|truetype|opentype)'\)/.exec(css);
     const fontUrl = match?.[1];
     if (!fontUrl) return null;
     const res = await fetch(fontUrl);
@@ -73,13 +72,22 @@ function cached(
 /** Hämtar vikterna som `route.tsx` behöver, parallellt. `null` för en vikt
  * som inte gick att hämta (utelämnas ur `fonts`-listan, se filkommentaren). */
 export async function loadStoryFonts(): Promise<GoogleFont[]> {
-  const specs: readonly { name: string; family: string; weight: FontWeight }[] = [
-    { name: "Bricolage Grotesque", family: "Bricolage Grotesque", weight: 700 },
-    { name: "Bricolage Grotesque", family: "Bricolage Grotesque", weight: 800 },
-    { name: "Plus Jakarta Sans", family: "Plus Jakarta Sans", weight: 400 },
-    { name: "Plus Jakarta Sans", family: "Plus Jakarta Sans", weight: 600 },
-    { name: "Plus Jakarta Sans", family: "Plus Jakarta Sans", weight: 700 },
-  ];
+  const specs: readonly { name: string; family: string; weight: FontWeight }[] =
+    [
+      {
+        name: "Bricolage Grotesque",
+        family: "Bricolage Grotesque",
+        weight: 700,
+      },
+      {
+        name: "Bricolage Grotesque",
+        family: "Bricolage Grotesque",
+        weight: 800,
+      },
+      { name: "Plus Jakarta Sans", family: "Plus Jakarta Sans", weight: 400 },
+      { name: "Plus Jakarta Sans", family: "Plus Jakarta Sans", weight: 600 },
+      { name: "Plus Jakarta Sans", family: "Plus Jakarta Sans", weight: 700 },
+    ];
   const datas = await Promise.all(specs.map((s) => cached(s.family, s.weight)));
   const fonts: GoogleFont[] = [];
   for (const [i, data] of datas.entries()) {

@@ -12,10 +12,7 @@
  * importerar typerna härifrån i stället för direkt från `@/server/waitlist`.
  */
 import { parseInstant } from "@/lib/format/dates";
-import type {
-  ClaimWaitlistResult,
-  WaitlistOfferView,
-} from "@/server/waitlist";
+import type { ClaimWaitlistResult, WaitlistOfferView } from "@/server/waitlist";
 
 export type { ClaimWaitlistResult, WaitlistOfferView };
 
@@ -23,8 +20,7 @@ export type { ClaimWaitlistResult, WaitlistOfferView };
  * `ClaimWaitlistResult`, plus `rate_limited` (pilotblockeraren, satt här —
  * `claimWaitlistOffer` i `@/server/waitlist` känner inte till IP-spärren). */
 export type ClaimActionResult =
-  | ClaimWaitlistResult
-  | { ok: false; code: "rate_limited" };
+  ClaimWaitlistResult | { ok: false; code: "rate_limited" };
 
 /** ISO-sträng (med offset) → Date, kastar på ogiltig instant. Kommer alltid
  * från servern (`page.tsx`), så det här borde aldrig hända. */

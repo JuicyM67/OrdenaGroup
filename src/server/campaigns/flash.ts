@@ -14,10 +14,7 @@ import {
   RATE_LIMIT_MAX_PER_HOUR,
   RATE_LIMIT_WINDOW_SECONDS,
 } from "./send";
-import {
-  flashCampaignInputSchema,
-  type FlashCampaignInput,
-} from "./types";
+import { flashCampaignInputSchema, type FlashCampaignInput } from "./types";
 
 /**
  * WP-30 (F13): "Skicka till kunder" för en horas flash-tid — återanvänder
