@@ -3212,7 +3212,8 @@ export const solicitudes = {
       confirmada: "Confirmaste la solicitud.",
       rechazada: "Rechazaste la solicitud.",
       cancelacionAprobada: "Aprobaste la cancelación. La hora quedó libre.",
-      cancelacionRechazada: "Rechazaste la cancelación. La reserva sigue confirmada.",
+      cancelacionRechazada:
+        "Rechazaste la cancelación. La reserva sigue confirmada.",
     },
   },
 } as const satisfies Trad;

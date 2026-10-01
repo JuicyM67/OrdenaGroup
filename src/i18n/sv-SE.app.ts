@@ -2377,7 +2377,8 @@ export const solicitudes: Widen<typeof Es.solicitudes> = {
       confirmada: "Du bekräftade förfrågan.",
       rechazada: "Du nekade förfrågan.",
       cancelacionAprobada: "Du godkände avbokningen. Tiden är nu ledig.",
-      cancelacionRechazada: "Du nekade avbokningen. Bokningen gäller fortfarande.",
+      cancelacionRechazada:
+        "Du nekade avbokningen. Bokningen gäller fortfarande.",
     },
   },
 };
