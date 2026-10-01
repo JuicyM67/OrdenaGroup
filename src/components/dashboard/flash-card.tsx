@@ -9,6 +9,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { strokeArrow, strokeCard } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
+import { appHref } from "@/config/routes";
 import { hoy, inicio } from "@/i18n";
 import { APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
 
@@ -22,7 +23,7 @@ export type FlashCardProps = {
 function ShareLink({ label }: { label: string }) {
   return (
     <IconButton asChild size={44} tone="surface" label={label}>
-      <Link href="/app/flash" prefetch={false}>
+      <Link href={appHref("appFlash")} prefetch={false}>
         <ArrowUpRight
           aria-hidden="true"
           className="size-4.5"

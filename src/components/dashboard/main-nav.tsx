@@ -45,19 +45,20 @@ import {
   NavRailSpacer,
 } from "@/components/ui/nav-rail";
 import { useNavCollapsed } from "@/components/ui/use-nav-collapsed";
+import { appHref } from "@/config/routes";
 import { nav } from "@/i18n";
 
 export type MainNavKey =
   "inicio" | "agenda" | "hoy" | "clientes" | "horasFlash" | "caja" | "ajustes";
 
 export const DEFAULT_MAIN_NAV_HREFS: Record<MainNavKey, string> = {
-  inicio: "/app/inicio",
-  agenda: "/app/agenda",
-  hoy: "/app/hoy",
-  clientes: "/app/clientes",
-  horasFlash: "/app/flash",
-  caja: "/app/caja",
-  ajustes: "/app/ajustes",
+  inicio: appHref("appInicio"),
+  agenda: appHref("appAgenda"),
+  hoy: appHref("appHoy"),
+  clientes: appHref("appClientes"),
+  horasFlash: appHref("appFlash"),
+  caja: appHref("appCaja"),
+  ajustes: appHref("appAjustes"),
 };
 
 /** WP-23/WP-30: Horas flash återinförd (route/backend finns nu). Caja filtreras
@@ -103,7 +104,7 @@ export function MainNav({
   const [collapsed, setCollapsed] = useNavCollapsed();
   return (
     <NavRail variant="bare" aria-label={nav.principal} collapsed={collapsed}>
-      <NavRailLogo href="/app/inicio" label={nav.volverAlInicio} />
+      <NavRailLogo href={appHref("appInicio")} label={nav.volverAlInicio} />
       {ITEMS.filter(
         ({ key }) => VISIBLE_KEYS.includes(key) && (key !== "caja" || showCaja),
       ).map(({ key, label, icon: Icon }) => (

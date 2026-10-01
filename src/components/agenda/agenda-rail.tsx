@@ -30,6 +30,7 @@ import {
   NavRailSpacer,
 } from "@/components/ui/nav-rail";
 import { strokeArrow, strokeNav } from "@/components/ui/icons";
+import { appHref } from "@/config/routes";
 import { agenda, nav } from "@/i18n";
 
 import { strokeNuevaReserva } from "./icons";
@@ -62,7 +63,7 @@ export function AgendaRail({
   const showCaja = canViewReports ?? true;
   return (
     <NavRail variant="panel" aria-label={nav.principal}>
-      <NavRailLogo href="/app/inicio" label={nav.volverAlInicio} />
+      <NavRailLogo href={appHref("appInicio")} label={nav.volverAlInicio} />
       <NavRailAction
         shape="square"
         label={agenda.nuevaReserva}
@@ -84,7 +85,7 @@ export function AgendaRail({
         />
       ))}
       <NavRailAction label={agenda.agregarProfesional} asChild>
-        <Link href="/app/ajustes/equipo" prefetch={false}>
+        <Link href={appHref("appAjustesEquipo")} prefetch={false}>
           <Plus
             aria-hidden="true"
             className="size-5"
@@ -94,7 +95,7 @@ export function AgendaRail({
       </NavRailAction>
       <NavRailSpacer />
       <NavRailLink
-        href="/app/clientes"
+        href={appHref("appClientes")}
         label={nav.clientes}
         prefetch={false}
         icon={
@@ -106,7 +107,7 @@ export function AgendaRail({
         }
       />
       <NavRailLink
-        href="/app/flash"
+        href={appHref("appFlash")}
         label={nav.horasFlash}
         prefetch={false}
         icon={
@@ -119,7 +120,7 @@ export function AgendaRail({
       />
       {showCaja ? (
         <NavRailLink
-          href="/app/caja"
+          href={appHref("appCaja")}
           label={nav.caja}
           prefetch={false}
           icon={
@@ -132,7 +133,7 @@ export function AgendaRail({
         />
       ) : null}
       <NavRailLink
-        href="/app/ajustes"
+        href={appHref("appAjustes")}
         label={nav.ajustes}
         prefetch={false}
         icon={

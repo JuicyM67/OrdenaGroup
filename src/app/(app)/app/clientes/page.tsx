@@ -13,6 +13,7 @@ import type {
   CustomerListFilter,
   CustomerListSort,
 } from "@/components/customers/types";
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { listCustomers } from "@/server/owner/clientes";
@@ -58,7 +59,7 @@ export default async function ClientesPage({
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
+  if (!current) redirect(appHref("appOnboarding"));
 
   const { q, orden, filtro } = await searchParams;
   const query: CustomersQuery = {

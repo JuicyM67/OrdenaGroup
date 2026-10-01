@@ -4,6 +4,7 @@ import "server-only";
 // `private.business_invitations` och mejlar länken direkt via Resend (inte
 // utkorgen — en engångsåtgärd av en admin, samma resonemang som
 // `sendLoginLink`).
+import { appHref } from "@/config/routes";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail } from "@/server/messaging/email/send";
 
@@ -63,7 +64,7 @@ export async function inviteBusiness(
       template: "invitacionNegocio",
       data: {
         negocio: businessName,
-        aceptarUrl: `${appUrl}/app/bienvenida/${token}`,
+        aceptarUrl: `${appUrl}${appHref("appBienvenida", token)}`,
       },
     });
   } catch {

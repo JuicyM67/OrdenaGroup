@@ -15,6 +15,7 @@ import { logout } from "@/app/auth/actions";
 import type { FlashCatalogService, FlashStaff } from "@/components/flash/types";
 import { FlashScreen } from "@/components/flash/flash-screen";
 import { market } from "@/config/brand";
+import { appHref } from "@/config/routes";
 import { flash as flashCopy } from "@/i18n";
 import { APP_TZ, toLocalDate, toWallClock } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -74,7 +75,7 @@ export default async function FlashPage({
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
+  if (!current) redirect(appHref("appOnboarding"));
 
   const businessId = current.business.id;
   const now = new Date();

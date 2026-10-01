@@ -24,6 +24,7 @@ import { useId, type ReactNode } from "react";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeNav } from "@/components/ui/icons";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
+import { appHref } from "@/config/routes";
 import { campanas, comun, nav } from "@/i18n";
 
 export type MoreSheetProps = {
@@ -80,7 +81,7 @@ export function MoreSheet({
             </Dialog.Description>
 
             <MoreSheetLink
-              href="/app/flash"
+              href={appHref("appFlash")}
               label={nav.horasFlash}
               icon={
                 <Zap
@@ -93,7 +94,7 @@ export function MoreSheet({
             />
             {showCaja ? (
               <MoreSheetLink
-                href="/app/caja"
+                href={appHref("appCaja")}
                 label={nav.caja}
                 icon={
                   <BarChart3
@@ -106,7 +107,7 @@ export function MoreSheet({
               />
             ) : null}
             <MoreSheetLink
-              href="/app/clientes/utskick"
+              href={appHref("appClientesUtskick")}
               label={campanas.titulo}
               icon={
                 <Send
@@ -118,7 +119,7 @@ export function MoreSheet({
               onNavigate={() => onOpenChange(false)}
             />
             <MoreSheetLink
-              href="/app/ajustes"
+              href={appHref("appAjustes")}
               label={nav.ajustes}
               icon={
                 <SlidersHorizontal

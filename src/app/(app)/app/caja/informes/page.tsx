@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { InformesScreen } from "@/components/caja/informes-screen";
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { ownerNameParts } from "@/server/owner/shared";
@@ -34,8 +35,8 @@ export default async function CajaInformesPage() {
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
-  if (!current.view.perms.can_view_reports) redirect("/app/agenda");
+  if (!current) redirect(appHref("appOnboarding"));
+  if (!current.view.perms.can_view_reports) redirect(appHref("appAgenda"));
 
   const owner = ownerNameParts(user.email);
   const myProfile = await loadMyProfileAction();

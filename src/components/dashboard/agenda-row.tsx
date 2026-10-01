@@ -14,6 +14,7 @@ import { Chip } from "@/components/ui/chip";
 import { strokeCard } from "@/components/ui/icons";
 import { IconButton } from "@/components/ui/icon-button";
 import { Menu, MenuButtonItem, MenuLinkItem } from "@/components/ui/menu";
+import { appHref } from "@/config/routes";
 import { agenda, nav, inicio } from "@/i18n";
 import { APP_TZ, formatTime, toLocalDate } from "@/lib/format/dates";
 import { initialsOf } from "@/lib/format/initials";
@@ -38,7 +39,7 @@ export function AgendaRow({
 }: AgendaRowProps) {
   const chip = statusChip(booking);
   const start = mustParseInstant(booking.start, "AgendaRow");
-  const verEnAgendaHref = `/app/agenda?vista=dia&fecha=${toLocalDate(start, APP_TZ)}`;
+  const verEnAgendaHref = `${appHref("appAgenda")}?vista=dia&fecha=${toLocalDate(start, APP_TZ)}`;
   return (
     <li className="flex h-15 items-center gap-4 border-t border-line-strong">
       <span className="w-13 shrink-0 text-15 font-bold">

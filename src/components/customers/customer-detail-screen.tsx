@@ -45,6 +45,7 @@ import { initialsOf } from "@/lib/format/initials";
 import { Menu, MenuButtonItem, MenuLinkItem } from "@/components/ui/menu";
 import { Textarea } from "@/components/ui/textarea";
 import { marketConfig } from "@/config/market";
+import { appHref } from "@/config/routes";
 import { ajustes, clientes, comun, estados, nav } from "@/i18n";
 import {
   APP_TZ,
@@ -313,7 +314,7 @@ export function CustomerDetailScreen({
     const result = await onAnonymizeCustomer(customer.id);
     if (result.ok) {
       setAnonymizeOpen(false);
-      router.push("/app/clientes");
+      router.push(appHref("appClientes"));
     } else {
       setActionError(clientes.privacidad.error);
     }
@@ -378,7 +379,7 @@ export function CustomerDetailScreen({
         title={
           <span className="flex items-center gap-3">
             <IconButton label={comun.volver} tone="ghost" size={36} asChild>
-              <Link href="/app/clientes">
+              <Link href={appHref("appClientes")}>
                 <ArrowLeft
                   aria-hidden="true"
                   className="size-4.5"
@@ -420,7 +421,7 @@ export function CustomerDetailScreen({
 
         <div className="flex flex-wrap gap-2">
           <Button asChild variant="primary" size="lg">
-            <Link href={`/app/agenda?cliente=${customer.id}`}>
+            <Link href={`${appHref("appAgenda")}?cliente=${customer.id}`}>
               {clientes.ficha.ctaNuevaReserva}
             </Link>
           </Button>
@@ -454,7 +455,7 @@ export function CustomerDetailScreen({
           {customer.canManageMembership ? (
             customer.consentMarketing.at ? (
               <Button asChild variant="secondary" size="lg">
-                <Link href={`/app/clientes/utskick/nytt?kunder=${customer.id}`}>
+                <Link href={`${appHref("appClientesUtskickNytt")}?kunder=${customer.id}`}>
                   {clientes.ficha.ctaEnviarOferta}
                 </Link>
               </Button>

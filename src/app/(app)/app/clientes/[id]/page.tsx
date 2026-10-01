@@ -9,6 +9,7 @@ import { z } from "zod";
 import { logout } from "@/app/auth/actions";
 import { CustomerDetailScreen } from "@/components/customers/customer-detail-screen";
 import { market } from "@/config/brand";
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendCustomerMessage } from "@/server/messaging/outbox/customer-message";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
@@ -52,7 +53,7 @@ export default async function ClienteDetallePage({
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
+  if (!current) redirect(appHref("appOnboarding"));
 
   const { id } = await params;
   const parsedId = idSchema.safeParse(id);

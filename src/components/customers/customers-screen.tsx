@@ -36,6 +36,7 @@ import { Card } from "@/components/ui/card";
 import { Chip, type ChipProps } from "@/components/ui/chip";
 import { Pill } from "@/components/ui/pill";
 import { Select } from "@/components/ui/select";
+import { appHref } from "@/config/routes";
 import { campanas, clientes, estados } from "@/i18n";
 import { APP_TZ, formatDate, parseInstant } from "@/lib/format/dates";
 import { formatPhone, isE164 } from "@/lib/format/phone";
@@ -150,7 +151,7 @@ export function CustomersScreen({
     if (merged.sort !== "ultimaVisita") params.set("orden", merged.sort);
     if (merged.filter !== "todos") params.set("filtro", merged.filter);
     const qs = params.toString();
-    router.push(qs ? `/app/clientes?${qs}` : "/app/clientes", {
+    router.push(qs ? `${appHref("appClientes")}?${qs}` : appHref("appClientes"), {
       scroll: false,
     });
   }
@@ -217,7 +218,7 @@ export function CustomersScreen({
           actions={
             canManageCampaigns ? (
               <Button asChild variant="secondary" size="lg">
-                <Link href="/app/clientes/utskick">{clientes.ctaCampanas}</Link>
+                <Link href={appHref("appClientesUtskick")}>{clientes.ctaCampanas}</Link>
               </Button>
             ) : undefined
           }
@@ -279,7 +280,7 @@ export function CustomersScreen({
             </span>
             <Button asChild variant="secondary" size="sm">
               <Link
-                href={`/app/clientes/utskick/nytt?kunder=${selectedIds.join(",")}`}
+                href={`${appHref("appClientesUtskickNytt")}?kunder=${selectedIds.join(",")}`}
               >
                 {/* TODO_COPY: no hay un botón "Enviar a N seleccionados" en
                     es-CL.ts — el verbo más cercano es `clientes.ctaCampanas`
@@ -313,7 +314,7 @@ export function CustomersScreen({
                       className="size-4.5 shrink-0 accent-ink"
                     />
                     <Link
-                      href={`/app/clientes/${c.id}`}
+                      href={appHref("appClienteDetail", c.id)}
                       className="flex min-w-0 flex-1 items-center gap-3 rounded-control focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                     >
                       <Avatar initials={initialsOf(c.name)} tone="lilac-100" />
@@ -385,7 +386,7 @@ export function CustomersScreen({
                       </td>
                       <td className="min-w-0 px-2 py-1.5">
                         <Link
-                          href={`/app/clientes/${c.id}`}
+                          href={appHref("appClienteDetail", c.id)}
                           className="flex min-w-0 items-center gap-2.5 rounded-control py-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                         >
                           <Avatar

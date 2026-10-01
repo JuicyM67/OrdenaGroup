@@ -26,6 +26,7 @@ import {
 import type { ReactNode } from "react";
 
 import { strokeNav } from "@/components/ui/icons";
+import { AJUSTES_TAB_ROUTE_IDS, appHref } from "@/config/routes";
 import { ajustes, perfil } from "@/i18n";
 
 export const AJUSTES_TAB_KEYS = [
@@ -81,7 +82,7 @@ const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
 };
 
 export function ajustesTabHref(key: AjustesTabKey): string {
-  return `/app/ajustes/${key}`;
+  return appHref(AJUSTES_TAB_ROUTE_IDS[key]);
 }
 
 /** Samma regler som tidigare i `ajustes-screen.tsx`: `can_edit_settings` för

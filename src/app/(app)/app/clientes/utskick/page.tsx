@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { CampaignsScreen } from "@/components/campaigns/campaigns-screen";
+import { appHref } from "@/config/routes";
 import { campanas } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
@@ -41,8 +42,8 @@ export default async function UtskickPage({
   if (!user) redirect("/login");
 
   const current = await getCurrentMember(user.id);
-  if (!current) redirect("/app/onboarding");
-  if (!current.view.perms.can_manage_all_bookings) redirect("/app/clientes");
+  if (!current) redirect(appHref("appOnboarding"));
+  if (!current.view.perms.can_manage_all_bookings) redirect(appHref("appClientes"));
 
   const { enviado } = await searchParams;
   const items = await listCampaignsAction();

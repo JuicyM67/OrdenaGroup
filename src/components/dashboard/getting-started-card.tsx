@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ProgressBar } from "@/components/dashboard/progress-bar";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import { appHref } from "@/config/routes";
 import { onboarding, flash } from "@/i18n";
 
 import type { InicioData } from "./types";
@@ -29,31 +30,31 @@ export function GettingStartedCard({ data }: GettingStartedCardProps) {
       key: "services",
       done: data.services,
       label: onboarding.pasos.servicios,
-      href: "/app/ajustes/servicios",
+      href: appHref("appAjustesServicios"),
     },
     {
       key: "hours",
       done: data.hours,
       label: onboarding.pasos.horario,
-      href: "/app/ajustes/horario",
+      href: appHref("appAjustesHorario"),
     },
     {
       key: "profile",
       done: data.profile,
       label: onboarding.pasos.pagina,
-      href: "/app/ajustes/negocio",
+      href: appHref("appAjustesNegocio"),
     },
     {
       key: "flash",
       done: data.flash,
       label: flash.nueva.cta,
-      href: "/app/flash",
+      href: appHref("appFlash"),
     },
     {
       key: "team",
       done: data.team,
       label: onboarding.pasos.equipo,
-      href: "/app/ajustes/equipo",
+      href: appHref("appAjustesEquipo"),
     },
   ];
   const doneCount = steps.filter((s) => s.done).length;

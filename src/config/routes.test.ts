@@ -107,4 +107,124 @@ describe("routes.ts", () => {
       ).toBe(true);
     }
   });
+
+  // WP-58: app-rutterna (/app/*, /baja/[token]) har svenska permalänkar på SE,
+  // oförändrade på CL.
+  it("CL: appHref() ger de spanska (filsystemets) app-sökvägarna, oförändrade", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MARKET", "CL");
+    vi.resetModules();
+    const { appHref } = await import("./routes");
+    expect(appHref("appInicio")).toBe("/app/inicio");
+    expect(appHref("appAgenda")).toBe("/app/agenda");
+    expect(appHref("appHoy")).toBe("/app/hoy");
+    expect(appHref("appClientes")).toBe("/app/clientes");
+    expect(appHref("appClienteDetail", "123")).toBe("/app/clientes/123");
+    expect(appHref("appClientesUtskick")).toBe("/app/clientes/utskick");
+    expect(appHref("appClientesUtskickNytt")).toBe(
+      "/app/clientes/utskick/nytt",
+    );
+    expect(appHref("appCaja")).toBe("/app/caja");
+    expect(appHref("appCajaInformes")).toBe("/app/caja/informes");
+    expect(appHref("appFlash")).toBe("/app/flash");
+    expect(appHref("appAjustes")).toBe("/app/ajustes");
+    expect(appHref("appAjustesNegocio")).toBe("/app/ajustes/negocio");
+    expect(appHref("appAjustesPerfil")).toBe("/app/ajustes/perfil");
+    expect(appHref("appAjustesReglas")).toBe("/app/ajustes/reglas");
+    expect(appHref("appAjustesServicios")).toBe("/app/ajustes/servicios");
+    expect(appHref("appAjustesFormulario")).toBe("/app/ajustes/formulario");
+    expect(appHref("appAjustesHorario")).toBe("/app/ajustes/horario");
+    expect(appHref("appAjustesSocios")).toBe("/app/ajustes/socios");
+    expect(appHref("appAjustesEquipo")).toBe("/app/ajustes/equipo");
+    expect(appHref("appAjustesPrivacidad")).toBe("/app/ajustes/privacidad");
+    expect(appHref("appSolicitud", "abc")).toBe("/app/solicitudes/abc");
+    expect(appHref("appInvitacion", "tok")).toBe("/app/invitacion/tok");
+    expect(appHref("appBienvenida", "tok")).toBe("/app/bienvenida/tok");
+    expect(appHref("appOnboarding")).toBe("/app/onboarding");
+    expect(appHref("baja", "tok")).toBe("/baja/tok");
+  });
+
+  it("SE: appHref() ger de svenska app-sökvägarna", async () => {
+    vi.stubEnv("NEXT_PUBLIC_MARKET", "SE");
+    vi.resetModules();
+    const { appHref } = await import("./routes");
+    expect(appHref("appInicio")).toBe("/app/start");
+    expect(appHref("appAgenda")).toBe("/app/kalender");
+    expect(appHref("appHoy")).toBe("/app/idag");
+    expect(appHref("appClientes")).toBe("/app/kunder");
+    expect(appHref("appClienteDetail", "123")).toBe("/app/kunder/123");
+    expect(appHref("appClientesUtskick")).toBe("/app/kunder/utskick");
+    expect(appHref("appClientesUtskickNytt")).toBe(
+      "/app/kunder/utskick/nytt",
+    );
+    expect(appHref("appCaja")).toBe("/app/kassa");
+    expect(appHref("appCajaInformes")).toBe("/app/kassa/rapporter");
+    expect(appHref("appFlash")).toBe("/app/blixttider");
+    expect(appHref("appAjustes")).toBe("/app/installningar");
+    expect(appHref("appAjustesNegocio")).toBe("/app/installningar/foretag");
+    expect(appHref("appAjustesPerfil")).toBe("/app/installningar/profil");
+    expect(appHref("appAjustesReglas")).toBe(
+      "/app/installningar/bokningsregler",
+    );
+    expect(appHref("appAjustesServicios")).toBe(
+      "/app/installningar/tjanster",
+    );
+    expect(appHref("appAjustesFormulario")).toBe(
+      "/app/installningar/bokningsformular",
+    );
+    expect(appHref("appAjustesHorario")).toBe(
+      "/app/installningar/oppettider",
+    );
+    expect(appHref("appAjustesSocios")).toBe("/app/installningar/medlemmar");
+    expect(appHref("appAjustesEquipo")).toBe("/app/installningar/team");
+    expect(appHref("appAjustesPrivacidad")).toBe(
+      "/app/installningar/integritet",
+    );
+    expect(appHref("appSolicitud", "abc")).toBe("/app/forfragningar/abc");
+    expect(appHref("appInvitacion", "tok")).toBe("/app/inbjudan/tok");
+    expect(appHref("appBienvenida", "tok")).toBe("/app/valkommen/tok");
+    expect(appHref("appOnboarding")).toBe("/app/kom-igang");
+    expect(appHref("baja", "tok")).toBe("/avregistrera/tok");
+  });
+
+  it("appRoutePrefixes(): prefixet (utan id/token) för en dynamisk app-rutt, i båda marknadernas form", async () => {
+    const { appRoutePrefixes } = await import("./routes");
+    expect(appRoutePrefixes("appInvitacion")).toEqual([
+      "/app/invitacion/",
+      "/app/inbjudan/",
+    ]);
+    expect(appRoutePrefixes("appBienvenida")).toEqual([
+      "/app/bienvenida/",
+      "/app/valkommen/",
+    ]);
+    expect(appRoutePrefixes("appSolicitud")).toEqual([
+      "/app/solicitudes/",
+      "/app/forfragningar/",
+    ]);
+  });
+
+  it("seRouteRewrites()/seRouteRedirects(): inkluderar app-rutterna, inkl. dynamiska segment", async () => {
+    const { seRouteRewrites, seRouteRedirects } = await import("./routes");
+    const rewrites = seRouteRewrites();
+    const redirects = seRouteRedirects();
+    const bySource = Object.fromEntries(
+      rewrites.map((r) => [r.source, r.destination]),
+    );
+    expect(bySource["/app/start"]).toBe("/app/inicio");
+    expect(bySource["/app/kalender"]).toBe("/app/agenda");
+    expect(bySource["/app/installningar/team"]).toBe("/app/ajustes/equipo");
+    expect(bySource["/app/kunder/:id"]).toBe("/app/clientes/:id");
+    expect(bySource["/app/forfragningar/:id"]).toBe("/app/solicitudes/:id");
+    expect(bySource["/app/inbjudan/:token"]).toBe("/app/invitacion/:token");
+    expect(bySource["/app/valkommen/:token"]).toBe("/app/bienvenida/:token");
+    expect(bySource["/app/kom-igang"]).toBe("/app/onboarding");
+    expect(bySource["/avregistrera/:token"]).toBe("/baja/:token");
+
+    const redirectsBySource = Object.fromEntries(
+      redirects.map((r) => [r.source, r.destination]),
+    );
+    expect(redirectsBySource["/app/inicio"]).toBe("/app/start");
+    expect(redirectsBySource["/app/clientes/:id"]).toBe("/app/kunder/:id");
+    expect(redirectsBySource["/baja/:token"]).toBe("/avregistrera/:token");
+    expect(redirects.every((r) => r.permanent === true)).toBe(true);
+  });
 });

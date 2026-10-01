@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { HoyScreen } from "@/components/mobile/hoy-screen";
+import { appHref } from "@/config/routes";
 import { hoy } from "@/i18n";
 import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -50,7 +51,7 @@ export default async function HoyPage() {
   if (!user) redirect("/login");
 
   const business = await getOwnerBusiness(user.id);
-  if (!business) redirect("/app/onboarding");
+  if (!business) redirect(appHref("appOnboarding"));
 
   const now = new Date();
   const today = toLocalDate(now, APP_TZ);

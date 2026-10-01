@@ -38,6 +38,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import type { YearMonth } from "@/components/ui/mini-calendar/grid";
 import { Pill } from "@/components/ui/pill";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import { appHref } from "@/config/routes";
 import {
   addLocalDays,
   formatLocalDate,
@@ -994,7 +995,7 @@ export function AgendaScreen({
                 }
                 onSelectBooking={(id) => selectBooking(id, "desktop")}
                 initialScrollHour={scrollHour}
-                onSelectFlashSlot={() => router.push("/app/flash")}
+                onSelectFlashSlot={() => router.push(appHref("appFlash"))}
                 onEmptyClick={
                   onCreateManualBooking && canCreateBooking
                     ? (input) => setEmptySlotTarget({ date: focus, ...input })
@@ -1120,7 +1121,7 @@ export function AgendaScreen({
                   }
                   onSelectBooking={(id) => selectBooking(id, "mobile")}
                   initialScrollHour={scrollHour}
-                  onSelectFlashSlot={() => router.push("/app/flash")}
+                  onSelectFlashSlot={() => router.push(appHref("appFlash"))}
                   onEmptyClick={
                     onCreateManualBooking && canCreateBooking
                       ? (input) => setEmptySlotTarget({ date: focus, ...input })

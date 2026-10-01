@@ -11,6 +11,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { Chip } from "@/components/ui/chip";
+import { appHref } from "@/config/routes";
 import { estados, flash, hoy } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import { formatTime, formatTimeRange, APP_TZ } from "@/lib/format/dates";
@@ -63,7 +64,7 @@ function mergedEntries(
 function GapRow({ gap }: { gap: HoyGap }) {
   const start = parseInstantOrThrow(gap.start);
   const end = parseInstantOrThrow(gap.end);
-  const href = `/app/flash?ny=1&staff=${encodeURIComponent(gap.staffId)}&start=${encodeURIComponent(gap.start)}`;
+  const href = `${appHref("appFlash")}?ny=1&staff=${encodeURIComponent(gap.staffId)}&start=${encodeURIComponent(gap.start)}`;
   return (
     <li className="flex h-14 items-center gap-3 border-t border-line">
       <span className="w-11.5 text-14 font-bold text-muted">

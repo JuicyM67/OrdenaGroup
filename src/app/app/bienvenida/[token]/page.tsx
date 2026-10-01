@@ -8,6 +8,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { invitacionNegocio } from "@/i18n/auth";
 import {
@@ -53,7 +54,7 @@ export default async function BienvenidaInvitacionPage({
 
   if (user) {
     const result = await acceptInvitation(user.id, token);
-    if (result.ok) redirect("/app/onboarding");
+    if (result.ok) redirect(appHref("appOnboarding"));
     return <ErrorScreen code={result.code} />;
   }
 

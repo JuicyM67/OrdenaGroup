@@ -3,6 +3,7 @@ import "server-only";
 import { randomBytes } from "node:crypto";
 
 import { market } from "@/config/brand";
+import { appHref } from "@/config/routes";
 import { hashOfferToken } from "@/server/bookings/offer";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx, withServiceTx } from "@/server/db/tx";
@@ -100,7 +101,7 @@ function smsPreviewParts(
   message: string,
 ): number {
   const reservarUrl = `${appUrl()}/${slug}?o=${PLACEHOLDER_TOKEN}`;
-  const bajaUrl = `${appUrl()}/baja/${PLACEHOLDER_TOKEN}`;
+  const bajaUrl = `${appUrl()}${appHref("baja", PLACEHOLDER_TOKEN)}`;
   const rendered = renderSms("campanaMarketing", market, {
     negocio,
     texto: message,

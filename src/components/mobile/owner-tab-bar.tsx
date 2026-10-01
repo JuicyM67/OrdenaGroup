@@ -22,6 +22,7 @@ import {
 import { useOptionalOwnerChrome } from "@/components/shared/owner-chrome";
 import { useState } from "react";
 
+import { appHref } from "@/config/routes";
 import { nav } from "@/i18n";
 
 import { MobileTabBar, type MobileTabItem } from "./mobile-tab-bar";
@@ -50,7 +51,7 @@ const MER_ACTIVE_KEYS: ReadonlySet<OwnerMobileTab> = new Set([
 const PRIMARY_ITEMS: readonly MobileTabItem[] = [
   {
     key: "inicio",
-    href: "/app/inicio",
+    href: appHref("appInicio"),
     label: nav.inicio,
     icon: (
       <LayoutGrid aria-hidden="true" className={ICON_SIZE} strokeWidth={1.9} />
@@ -58,7 +59,7 @@ const PRIMARY_ITEMS: readonly MobileTabItem[] = [
   },
   {
     key: "agenda",
-    href: "/app/agenda",
+    href: appHref("appAgenda"),
     label: nav.agenda,
     icon: (
       <Calendar aria-hidden="true" className={ICON_SIZE} strokeWidth={1.9} />
@@ -66,13 +67,13 @@ const PRIMARY_ITEMS: readonly MobileTabItem[] = [
   },
   {
     key: "hoy",
-    href: "/app/hoy",
+    href: appHref("appHoy"),
     label: nav.hoy,
     icon: <Clock aria-hidden="true" className={ICON_SIZE} strokeWidth={1.9} />,
   },
   {
     key: "clientes",
-    href: "/app/clientes",
+    href: appHref("appClientes"),
     label: nav.clientes,
     icon: <Users aria-hidden="true" className={ICON_SIZE} strokeWidth={1.9} />,
   },

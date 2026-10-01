@@ -26,6 +26,7 @@ import type {
 import type { NotificationBellResult } from "@/components/shared/notification-bell";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
+import { appHref } from "@/config/routes";
 import { agenda, inicio } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import {
@@ -102,7 +103,7 @@ export type InicioScreenProps = {
   myProfileActions?: MyProfileActions;
 };
 
-const AGENDA_HREF = "/app/agenda";
+const AGENDA_HREF = appHref("appAgenda");
 
 export function InicioScreen({
   data,

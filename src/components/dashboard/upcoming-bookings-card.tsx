@@ -8,6 +8,7 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { TextLink } from "@/components/ui/text-link";
+import { appHref } from "@/config/routes";
 import { inicio } from "@/i18n";
 import {
   APP_TZ,
@@ -30,7 +31,7 @@ function UpcomingBookingRow({ booking }: { booking: TodayBooking }) {
   return (
     <li className="border-t border-line-strong">
       <Link
-        href={`/app/agenda?fecha=${toLocalDate(start, APP_TZ)}`}
+        href={`${appHref("appAgenda")}?fecha=${toLocalDate(start, APP_TZ)}`}
         prefetch={false}
         className="flex items-center gap-3 rounded-tile py-2.5 no-underline transition-colors duration-150 ease-out hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none"
       >

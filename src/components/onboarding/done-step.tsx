@@ -7,6 +7,7 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { appHref } from "@/config/routes";
 import { onboarding } from "@/i18n";
 
 export type DoneStepProps = {
@@ -76,7 +77,7 @@ export function DoneStep({ slug, businessName, hasServices }: DoneStepProps) {
       </Button>
 
       <Button asChild size="xl">
-        <Link href="/app/agenda">{onboarding.listo.ctaIrAgenda}</Link>
+        <Link href={appHref("appAgenda")}>{onboarding.listo.ctaIrAgenda}</Link>
       </Button>
     </div>
   );
