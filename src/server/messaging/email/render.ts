@@ -8,6 +8,7 @@ import {
   type AccesoEmailData,
 } from "./templates/acceso";
 import {
+  cancelacionRechazadaEmail,
   recordatorioEmail,
   reservaCanceladaEmail,
   reservaConfirmadaEmail,
@@ -15,6 +16,7 @@ import {
   solicitudRecibidaEmail,
   solicitudRechazadaEmail,
   solicitudVencidaEmail,
+  type CancelacionRechazadaData,
   type RecordatorioData,
   type ReservaCanceladaData,
   type ReservaConfirmadaData,
@@ -32,6 +34,7 @@ import {
   cancelacionDuenoEmail,
   nuevaReservaDuenoEmail,
   nuevaSolicitudEmail,
+  solicitudCancelacionEmail,
   type DuenoReservaData,
 } from "./templates/dueno";
 import { horaFlashEmail, type HoraFlashData } from "./templates/hora-flash";
@@ -73,6 +76,10 @@ export type EmailTemplateMap = {
   readonly invitacionEquipo: InvitacionEquipoData;
   /** WP-54: al cliente, cuando pasa a ser socio (transaccional). */
   readonly bienvenidaMiembro: BienvenidaMiembroData;
+  /** WP-56: al dueño, avbokningsförfrågan (`cancel_requested`). */
+  readonly solicitudCancelacion: DuenoReservaData;
+  /** WP-56: al cliente, el negocio no aceptó su cancelación. */
+  readonly cancelacionRechazada: CancelacionRechazadaData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -101,6 +108,8 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   // remitente que `magicLink`/`bienvenida` (`EMAIL_FROM_ACCOUNT`).
   invitacionEquipo: "account",
   bienvenidaMiembro: "booking",
+  solicitudCancelacion: "booking",
+  cancelacionRechazada: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -122,6 +131,8 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "solicitudVencida",
   "invitacionEquipo",
   "bienvenidaMiembro",
+  "solicitudCancelacion",
+  "cancelacionRechazada",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -168,6 +179,13 @@ export function renderEmail<T extends EmailTemplateName>(
       return invitacionEquipoEmail(market, data as InvitacionEquipoData);
     case "bienvenidaMiembro":
       return bienvenidaMiembroEmail(market, data as BienvenidaMiembroData);
+    case "solicitudCancelacion":
+      return solicitudCancelacionEmail(market, data as DuenoReservaData);
+    case "cancelacionRechazada":
+      return cancelacionRechazadaEmail(
+        market,
+        data as CancelacionRechazadaData,
+      );
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

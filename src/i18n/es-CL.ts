@@ -1351,6 +1351,40 @@ export const email = {
       `${p.cliente} solicitó ${p.servicio} para el ${p.fecha} a las ${p.hora}. Confírmala o recházala antes de que expire.`,
     cta: "Revisar solicitud",
   },
+  /** WP-56: al dueño, cuando un cliente pide cancelar y el negocio exige
+   * aprobación (`businesses.cancel_approval`). `cta` lleva a
+   * `/app/solicitudes/{id}`. Misma forma que `nuevaSolicitud`. */
+  solicitudCancelacion: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} quiere cancelar su hora del ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} a las ${p.hora}. Acepta o rechaza la cancelación.`,
+    titulo: "Tienes una cancelación por responder",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} pidió cancelar su hora de ${p.servicio} del ${p.fecha} a las ${p.hora}. La hora sigue reservada hasta que respondas.`,
+    cta: "Responder",
+  },
+  /** WP-56: al cliente, cuando el negocio no acepta su cancelación (la hora
+   * sigue en pie). `telefono` es el del negocio, si lo tiene. */
+  cancelacionRechazada: {
+    asunto: (p: { negocio: string }): string =>
+      `${p.negocio} no aceptó tu cancelación`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Tu hora del ${p.fecha} a las ${p.hora} sigue reservada.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      telefono?: string;
+    }): string =>
+      `Hola ${p.cliente}:\n\n${p.negocio} no aceptó la cancelación de tu hora del ${p.fecha} a las ${p.hora}, así que sigue reservada.\n\n${p.telefono ? `Si necesitas cambiarla, contacta a ${p.negocio} al ${p.telefono}.` : `Si necesitas cambiarla, contacta a ${p.negocio}.`}`,
+  },
   /** Al cliente, apenas manda una solicitud desde `/[slug]` cuando el
    * negocio tiene apagada la confirmación automática (WP-45, F7): por ahora
    * solo por correo (CL: hasta que exista la plantilla de WhatsApp de
@@ -2679,6 +2713,30 @@ export const sms = {
     hora: string;
   }): string =>
     `Nueva reserva: ${p.cliente} reservó ${p.servicio} el ${p.fecha} a las ${p.hora}.`,
+  /** WP-56: al dueño (solo se envía en SE por ahora; acá por paridad de
+   * tipo). `link` = `/app/solicitudes/{id}`. */
+  nuevaSolicitudDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Nueva solicitud: ${p.cliente}, ${p.fecha} a las ${p.hora}. Responde aquí: ${p.link}`,
+  solicitudCancelacionDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Solicitud de cancelación: ${p.cliente}, ${p.fecha} a las ${p.hora}. Responde aquí: ${p.link}`,
+  /** WP-56: al cliente, cancelación no aceptada. */
+  cancelacionRechazada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    telefono?: string;
+  }): string =>
+    `${p.negocio} no aceptó tu cancelación del ${p.fecha} a las ${p.hora}. Contacta a ${p.negocio}${p.telefono ? ` al ${p.telefono}` : ""}.`,
   /** Código de acceso (login sin contraseña): alternativa por SMS al correo
    * de `email.acceso`. */
   codigoAcceso: (p: { codigo: string }): string =>

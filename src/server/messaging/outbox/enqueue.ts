@@ -1,6 +1,7 @@
 import "server-only";
 
 import { market } from "@/config/brand";
+import { parsePhoneFor } from "@/lib/format/phone";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 
@@ -16,24 +17,45 @@ import type { BookingEvent, OutboxChannel, OutboxRecipientKind } from "./types";
 
 const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000;
 
-type EnqueueContext = { startMs: number; hasEmail: boolean };
+type EnqueueContext = {
+  startMs: number;
+  hasEmail: boolean;
+  /** WP-56: `businesses.phone` är ett mobilnummer (ägar-sms möjligt). */
+  ownerMobile: boolean;
+};
+
+/** WP-56: ägar-sms bara till ett mobilnummer i installationens land. */
+export function isOwnerMobile(phone: string | null): boolean {
+  if (!phone) return false;
+  return parsePhoneFor(market, phone, { allow: "mobile" }).ok;
+}
 
 async function loadContext(
   q: Queryable,
   businessId: string,
   bookingId: string,
 ): Promise<EnqueueContext | undefined> {
-  const r = await q.query<{ start_ms: number; has_email: boolean }>(
+  const r = await q.query<{
+    start_ms: number;
+    has_email: boolean;
+    business_phone: string | null;
+  }>(
     `select extract(epoch from lower(bk.period))::float8 * 1000 as start_ms,
-            (c.email is not null) as has_email
+            (c.email is not null) as has_email,
+            b.phone as business_phone
        from public.bookings bk
        join public.customers c on c.business_id = bk.business_id and c.id = bk.customer_id
+       join public.businesses b on b.id = bk.business_id
       where bk.business_id = $1 and bk.id = $2`,
     [businessId, bookingId],
   );
   const row = r.rows[0];
   return row
-    ? { startMs: Math.round(row.start_ms), hasEmail: row.has_email }
+    ? {
+        startMs: Math.round(row.start_ms),
+        hasEmail: row.has_email,
+        ownerMobile: isOwnerMobile(row.business_phone),
+      }
     : undefined;
 }
 
@@ -163,6 +185,27 @@ async function queueOwnerMessage(
   });
 }
 
+/** WP-56: ägar-sms (bara SE, ClickSend, till `businesses.phone`) med länk
+ * till `/app/solicitudes/{id}` — köas bara om numret är en mobil, annars
+ * hoppas det tyst över (ägaren får ändå e-posten). Workern slår upp numret
+ * vid sändning (D-029), inget nummer i kön. */
+async function queueOwnerSms(
+  q: Queryable,
+  businessId: string,
+  bookingId: string,
+  startMs: number,
+  template: string,
+  ownerMobile: boolean,
+): Promise<void> {
+  if (market !== "SE" || !ownerMobile) return;
+  await insertRow(q, businessId, bookingId, startMs, {
+    channel: "sms",
+    recipientKind: "owner",
+    template,
+    payload: {},
+  });
+}
+
 /** Hoppas över om starten redan är mindre än 24 h bort (WP-16-planen §5). */
 async function queueReminder(
   q: Queryable,
@@ -209,7 +252,7 @@ export async function enqueueBookingEventIn(
   const ctx = await loadContext(q, e.businessId, e.bookingId);
   // Borde inte hända (anropas efter commit) — inget att köa utan bokningen.
   if (!ctx) return;
-  const { startMs, hasEmail } = ctx;
+  const { startMs, hasEmail, ownerMobile } = ctx;
 
   if (e.type === "created") {
     if (e.status === "requested") {
@@ -233,6 +276,14 @@ export async function enqueueBookingEventIn(
         e.bookingId,
         startMs,
         "nuevaSolicitud",
+      );
+      await queueOwnerSms(
+        q,
+        e.businessId,
+        e.bookingId,
+        startMs,
+        "nuevaSolicitud",
+        ownerMobile,
       );
       return;
     }
@@ -337,6 +388,43 @@ export async function enqueueBookingEventIn(
         payload,
       });
     }
+    return;
+  }
+
+  if (e.type === "cancel_requested") {
+    // WP-56: kunden begärde avbokning — tiden är kvar (påminnelsen också)
+    // tills företaget svarar. Ägaren: e-post (båda marknader) + sms (SE).
+    // dedupe_key bär starttiden: en andra förfrågan för samma tid efter ett
+    // nekande köas inte igen (samma begränsning som övriga mallar).
+    await queueOwnerMessage(
+      q,
+      e.businessId,
+      e.bookingId,
+      startMs,
+      "solicitudCancelacion",
+    );
+    await queueOwnerSms(
+      q,
+      e.businessId,
+      e.bookingId,
+      startMs,
+      "solicitudCancelacion",
+      ownerMobile,
+    );
+    return;
+  }
+
+  if (e.type === "cancel_declined") {
+    // WP-56: avbokningen godkändes inte — kunden: e-post + sms (SE).
+    await queueCustomerMessage(
+      q,
+      e.businessId,
+      e.bookingId,
+      startMs,
+      "cancelacionRechazada",
+      hasEmail,
+      {},
+    );
     return;
   }
 

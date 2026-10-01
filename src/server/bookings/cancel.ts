@@ -18,6 +18,7 @@ import { actorMember, bookingPermOk, visibleButLocked } from "./authz";
 import { emitBookingEvent } from "./events";
 import {
   CHANGEABLE,
+  customerCancelNeedsApproval,
   insideCancelWindow,
   lockBooking,
   type BookingRef,
@@ -30,16 +31,37 @@ type CancelResult = Result<
 >;
 
 /**
+ * WP-56: `cancelBooking`s svar. `pending: true` = kundens avbokning kräver
+ * företagets godkännande (`businesses.cancel_approval`): bokningen är nu
+ * `cancel_requested`, tiden är INTE frigjord (`freed = null`) och
+ * `cancel_requested`-händelsen är köad. Saknas/`false` = som förut
+ * (avbokad, eller redan avbokad).
+ */
+export type CancelBookingValue = {
+  bookingId: string;
+  freed: Freed | null;
+  pending?: true;
+};
+
+/**
  * Avbokar. Kunden identifierar bokningen med länkens token, ägaren med id
  * (`by` följer aktören). Idempotent: redan avbokad → ok med `freed = null`.
  * Kunden bara fram till start − cancel_window_hours (även om företaget är
  * fryst); ägaren alltid. `cancelled_at` är den injicerade klockan.
  * Väntelistan (WP-23) anropas inte här. Köar `cancelled` efter commit (WP-16).
+ *
+ * WP-56: kräver företaget godkännande (`cancel_approval` = `all`, eller
+ * `late` och start − now < cancel_window_hours) blir kundens avbokning av en
+ * `confirmed` i stället `cancel_requested`
+ * (`status_before_cancel_request` sparar statusen, tiden förblir blockerad)
+ * och svaret `pending: true`; `cancel_requested`-händelsen köas en gång.
+ * Ägaren svarar med `approveCancellation`/`declineCancellation`
+ * (`./cancel-request.ts`) eller avbokar direkt.
  */
 export async function cancelBooking(
   request: CancelBookingRequest,
   ctx: EngineContext,
-): Promise<CancelResult> {
+): Promise<Result<CancelBookingValue, BookingError>> {
   const c = parseContext(engineContextSchema, ctx);
   let ref: BookingRef;
   let reason: string | undefined;
@@ -59,7 +81,17 @@ export async function cancelBooking(
     onForbidden: err("forbidden"),
   });
   if (!result.ok) return result;
-  const { bookingId, freed, declined } = result.value;
+  const { bookingId, freed, declined, pending } = result.value;
+  if (pending) {
+    if (pending === "new") {
+      await emitBookingEvent({
+        type: "cancel_requested",
+        bookingId,
+        businessId: c.businessId,
+      });
+    }
+    return ok({ bookingId, freed: null, pending: true });
+  }
   // WP-16: efter commit (enqueueBookingEvent kastar aldrig). En redan
   // avbokad bokning (`freed === null`) köar inget nytt. WP-45: ägarens
   // avbokning av en förfrågan är ett nekande → `declined`
@@ -100,7 +132,8 @@ export async function cancelIn(
   input: CancelInput,
 ): Promise<CancelResult> {
   const r = await cancelDetailedIn(q, input);
-  return r.ok ? ok({ bookingId: r.value.bookingId, freed: r.value.freed }) : r;
+  if (!r.ok) return r;
+  return ok({ bookingId: r.value.bookingId, freed: r.value.freed });
 }
 
 /**
@@ -113,7 +146,14 @@ async function cancelDetailedIn(
   input: CancelInput,
 ): Promise<
   Result<
-    { bookingId: string; freed: Freed | null; declined: boolean },
+    {
+      bookingId: string;
+      freed: Freed | null;
+      declined: boolean;
+      /** WP-56: `"new"` = blev en avbokningsförfrågan nu (köa händelsen),
+       * `"existing"` = var redan en (idempotent, ingen ny händelse). */
+      pending: "new" | "existing" | false;
+    },
     BookingError
   >
 > {
@@ -137,9 +177,47 @@ async function cancelDetailedIn(
     return err("forbidden");
   }
   if (b.status === "cancelled") {
-    return ok({ bookingId: b.id, freed: null, declined: false });
+    return ok({
+      bookingId: b.id,
+      freed: null,
+      declined: false,
+      pending: false,
+    });
   }
-  if (!CHANGEABLE.includes(b.status)) return err("invalid_status");
+  if (input.actor.kind === "customer") {
+    // WP-56: redan begärd → idempotent, ingen ny händelse.
+    if (b.status === "cancel_requested") {
+      return ok({
+        bookingId: b.id,
+        freed: null,
+        declined: false,
+        pending: "existing",
+      });
+    }
+    if (customerCancelNeedsApproval(b, input.now)) {
+      await q.query(
+        `update public.bookings
+            set status = 'cancel_requested',
+                status_before_cancel_request = status
+          where business_id = $1 and id = $2
+            and status = 'confirmed'`,
+        [input.businessId, b.id],
+      );
+      return ok({
+        bookingId: b.id,
+        freed: null,
+        declined: false,
+        pending: "new",
+      });
+    }
+  }
+  // WP-56: ägaren kan avboka en väntande avbokningsförfrågan direkt (samma
+  // som att godkänna den, men med ägarens `by`).
+  const ownerCancelsRequest =
+    input.actor.kind === "owner" && b.status === "cancel_requested";
+  if (!CHANGEABLE.includes(b.status) && !ownerCancelsRequest) {
+    return err("invalid_status");
+  }
   if (input.actor.kind === "customer" && !insideCancelWindow(b, input.now)) {
     return err("outside_cancel_window");
   }
@@ -147,7 +225,7 @@ async function cancelDetailedIn(
   await q.query(
     `update public.bookings
         set status = 'cancelled', cancelled_at = $3, cancel_reason = $4,
-            pending_expires_at = null
+            pending_expires_at = null, status_before_cancel_request = null
       where business_id = $1 and id = $2`,
     [
       input.businessId,
@@ -163,5 +241,6 @@ async function cancelDetailedIn(
       blocked: { start: b.start, end: b.blockedEnd },
     },
     declined,
+    pending: false,
   });
 }

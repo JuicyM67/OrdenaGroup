@@ -71,4 +71,9 @@ export type BookingEvent =
        * ≤ 300 tecken (samma gräns som `ownerDecisionRequestSchema.reason`,
        * `src/server/scheduling/schemas.ts`). */
       message?: string;
-    };
+    }
+  /** WP-56: kunden begärde avbokning (`cancel_requested`), företaget ska
+   * godkänna eller neka (`/app/solicitudes/{bookingId}`). */
+  | { type: "cancel_requested"; bookingId: string; businessId: string }
+  /** WP-56: företaget nekade avbokningen, bokningen gäller igen. */
+  | { type: "cancel_declined"; bookingId: string; businessId: string };

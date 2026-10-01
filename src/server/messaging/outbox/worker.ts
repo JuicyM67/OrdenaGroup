@@ -3,6 +3,7 @@ import "server-only";
 import { formulario } from "@/i18n";
 import { APP_LOCALE, APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
+import { formatPhone, type E164 } from "@/lib/format/phone";
 import type {
   AnswerValue,
   QuestionKind,
@@ -13,6 +14,7 @@ import { withServiceTx } from "@/server/db/tx";
 import { sendEmail, type EmailTemplateMap } from "@/server/messaging/email";
 import { sendSms } from "@/server/messaging/sms";
 
+import { isOwnerMobile } from "./enqueue";
 import { OutboxSendError } from "./errors";
 import type { OutboxChannel, OutboxRecipientKind } from "./types";
 
@@ -111,6 +113,8 @@ type MessageContext = {
   priceClp: number;
   discountClp: number;
   negocio: string;
+  /** WP-56: `businesses.phone` (E.164 eller null). */
+  negocioTelefono: string | null;
   slug: string;
   address: string | null;
   cancelWindowHours: number;
@@ -127,6 +131,7 @@ type RawContextRow = {
   price_clp: number;
   discount_clp: number;
   negocio: string;
+  negocio_telefono: string | null;
   slug: string;
   address: string | null;
   cancel_window_hours: number;
@@ -146,7 +151,8 @@ async function loadContext(
       `select bk.status::text as booking_status,
               extract(epoch from lower(bk.period))::float8 * 1000 as start_ms,
               bk.price_clp, bk.discount_clp,
-              b.name as negocio, b.slug, b.address, b.cancel_window_hours,
+              b.name as negocio, b.phone as negocio_telefono,
+              b.slug, b.address, b.cancel_window_hours,
               c.name as cliente, c.phone_e164, c.email,
               s.name as servicio, st.name as profesional
          from public.bookings bk
@@ -165,6 +171,7 @@ async function loadContext(
       priceClp: row.price_clp,
       discountClp: row.discount_clp,
       negocio: row.negocio,
+      negocioTelefono: row.negocio_telefono,
       slug: row.slug,
       address: row.address,
       cancelWindowHours: row.cancel_window_hours,
@@ -352,6 +359,18 @@ function bookAgainLink(slug: string): string {
 
 function agendaLink(): string {
   return `${appUrl()}/app/agenda`;
+}
+
+/** WP-56: `${APP_URL}/app/solicitudes/{bookingId}` (svara med ett tryck). */
+function solicitudLink(bookingId: string): string {
+  return `${appUrl()}/app/solicitudes/${bookingId}`;
+}
+
+/** WP-56: företagets telefon för "kontakta oss", formaterad. */
+function negocioTelefono(ctx: MessageContext): { telefono?: string } {
+  return ctx.negocioTelefono
+    ? { telefono: formatPhone(ctx.negocioTelefono as E164) }
+    : {};
 }
 
 function fechaHora(ctx: MessageContext): { fecha: string; hora: string } {
@@ -605,6 +624,22 @@ async function sendCustomerEmail(
       });
       return r.id;
     }
+    case "cancelacionRechazada": {
+      const { fecha, hora } = fechaHora(ctx);
+      const r = await sendEmail({
+        to,
+        template: "cancelacionRechazada",
+        data: {
+          cliente: ctx.cliente,
+          negocio: ctx.negocio,
+          fecha,
+          hora,
+          ...negocioTelefono(ctx),
+        },
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
     default:
       throw new OutboxSendError("unknown_template");
   }
@@ -693,37 +728,99 @@ async function sendCustomerSms(
       });
       return r.id;
     }
+    case "cancelacionRechazada": {
+      const r = await sendSms({
+        to,
+        template: "cancelacionRechazada",
+        data: { negocio: ctx.negocio, fecha, hora, ...negocioTelefono(ctx) },
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
     default:
       throw new OutboxSendError("unknown_template");
   }
 }
 
-/** Ägaren får alltid e-post (aldrig sms, utanför scope). Flera ägare i
+/** WP-56: ägar-sms (SE) till `businesses.phone`. Numret läses vid
+ * sändning (D-029); är det inte (längre) en mobil returneras `null` och
+ * raden avbryts tyst (ägaren har ändå e-posten). */
+async function sendOwnerSms(
+  ctx: MessageContext,
+  row: ClaimedRow,
+): Promise<string | null> {
+  if (!row.bookingId) throw new OutboxSendError("no_booking_id");
+  if (!ctx.negocioTelefono || !isOwnerMobile(ctx.negocioTelefono)) return null;
+  const { fecha, hora } = fechaHora(ctx);
+  const data = {
+    cliente: ctx.cliente,
+    fecha,
+    hora,
+    link: solicitudLink(row.bookingId),
+  };
+  switch (row.template) {
+    case "nuevaSolicitud": {
+      const r = await sendSms({
+        to: ctx.negocioTelefono,
+        template: "nuevaSolicitudDueno",
+        data,
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
+    case "solicitudCancelacion": {
+      const r = await sendSms({
+        to: ctx.negocioTelefono,
+        template: "solicitudCancelacionDueno",
+        data,
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
+    default:
+      throw new OutboxSendError("unknown_template");
+  }
+}
+
+type OwnerEmailTemplate =
+  | "nuevaReservaDueno"
+  | "cancelacionDueno"
+  | "nuevaSolicitud"
+  | "solicitudCancelacion";
+
+const OWNER_EMAIL_TEMPLATES: ReadonlySet<string> = new Set<OwnerEmailTemplate>([
+  "nuevaReservaDueno",
+  "cancelacionDueno",
+  "nuevaSolicitud",
+  "solicitudCancelacion",
+]);
+
+/** Ägaren får e-post (sms bara via `sendOwnerSms`, WP-56). Flera ägare i
  * samma företag (sällsynt) får var sin sändning, egna idempotensnycklar
  * (annars kan Resends dedupe råka hoppa över en av dem). */
 async function sendOwner(
   ctx: MessageContext,
   row: ClaimedRow,
 ): Promise<string> {
-  if (
-    row.template !== "nuevaReservaDueno" &&
-    row.template !== "cancelacionDueno" &&
-    row.template !== "nuevaSolicitud"
-  ) {
+  if (!OWNER_EMAIL_TEMPLATES.has(row.template)) {
     throw new OutboxSendError("unknown_template");
   }
-  // Säkert efter kontrollen ovan (bara de här tre mallarna når hit).
-  const template = row.template as
-    "nuevaReservaDueno" | "cancelacionDueno" | "nuevaSolicitud";
+  // Säkert efter kontrollen ovan.
+  const template = row.template as OwnerEmailTemplate;
   const emails = await ownerEmailsFor(row.businessId);
   if (emails.length === 0) throw new OutboxSendError("no_owner_email");
-  // `cancelacionDueno` nunca muestra las respuestas (WP-40); `nuevaSolicitud`
-  // sí, igual que `nuevaReservaDueno` (misma vista de una reserva entrante).
+  // `cancelacionDueno`/`solicitudCancelacion` nunca muestran las respuestas
+  // (WP-40); `nuevaSolicitud` sí, igual que `nuevaReservaDueno`.
   const answers =
-    template === "cancelacionDueno"
+    template === "cancelacionDueno" || template === "solicitudCancelacion"
       ? []
       : await duenoAnswers(row.businessId, row.bookingId);
-  const data = duenoData(ctx, answers);
+  const base = duenoData(ctx, answers);
+  // WP-56: avbokningsförfrågan → knappen går till `/app/solicitudes/{id}`.
+  const data =
+    template === "solicitudCancelacion" && row.bookingId
+      ? { ...base, agendaUrl: solicitudLink(row.bookingId) }
+      : base;
   const ids: string[] = [];
   for (const [i, to] of emails.entries()) {
     const r = await sendEmail({
@@ -765,8 +862,14 @@ async function sendInvitee(
   return r.id;
 }
 
-async function sendRow(ctx: MessageContext, row: ClaimedRow): Promise<string> {
-  if (row.recipientKind === "owner") return sendOwner(ctx, row);
+/** `null` = inget att skicka (WP-56: ägar-sms utan mobilnummer). */
+async function sendRow(
+  ctx: MessageContext,
+  row: ClaimedRow,
+): Promise<string | null> {
+  if (row.recipientKind === "owner") {
+    return row.channel === "sms" ? sendOwnerSms(ctx, row) : sendOwner(ctx, row);
+  }
   const token = typeof row.payload.token === "string" ? row.payload.token : "";
   return row.channel === "email"
     ? sendCustomerEmail(ctx, row, token)
@@ -853,6 +956,13 @@ async function finalizeFailed(
 const REQUEST_ONLY_TEMPLATES: ReadonlySet<string> = new Set([
   "solicitudRecibida",
   "nuevaSolicitud",
+]);
+
+/** WP-56: mallar som bara är meningsfulla i en viss status — avbokningsför-
+ * frågan medan den väntar, "inte godkänd" medan bokningen gäller igen. */
+const STATUS_ONLY_TEMPLATES: ReadonlyMap<string, readonly string[]> = new Map([
+  ["solicitudCancelacion", ["cancel_requested"]],
+  ["cancelacionRechazada", ["confirmed", "pending_payment"]],
 ]);
 
 async function processInviteeRow(
@@ -972,7 +1082,16 @@ async function processRow(
       await finalizeCancelled(row);
       return "cancelled";
     }
+    const onlyIn = STATUS_ONLY_TEMPLATES.get(row.template);
+    if (onlyIn && !onlyIn.includes(ctx.bookingStatus)) {
+      await finalizeCancelled(row);
+      return "cancelled";
+    }
     const providerId = await sendRow(ctx, row);
+    if (providerId === null) {
+      await finalizeCancelled(row);
+      return "cancelled";
+    }
     await finalizeSent(row, providerId);
     return "sent";
   } catch (e) {

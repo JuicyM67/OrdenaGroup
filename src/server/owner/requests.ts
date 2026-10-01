@@ -14,13 +14,22 @@ import "server-only";
  * öppnar ingen egen `withOwnerTx` för dem.
  */
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
 
-import type { PendingRequestItem } from "@/lib/validation/requests";
+import type {
+  PendingRequestItem,
+  PendingRequestKind,
+} from "@/lib/validation/requests";
+import {
+  approveCancellation,
+  declineCancellation,
+} from "@/server/bookings/cancel-request";
 import { confirmBooking, declineBooking } from "@/server/bookings/confirm";
 import type { BookingError } from "@/server/bookings/types";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
+import type { BookingStatus } from "@/server/scheduling/types";
 
 import { isoOf } from "./shared";
 
@@ -34,16 +43,25 @@ function revalidateRequestPages(): void {
   revalidatePath("/app/ajustes");
 }
 
-export type { PendingRequestItem };
+export type { PendingRequestItem, PendingRequestKind };
+
+/** WP-56: `cancel_requested` = avbokningsförfrågan, allt annat räknas som
+ * (en före detta) bokningsförfrågan. */
+function kindOf(status: string): PendingRequestKind {
+  return status === "cancel_requested" ? "cancel" : "booking";
+}
 
 type Row = {
   id: string;
+  status: string;
   client_name: string | null;
   service_name: string;
   start_ms: number;
 };
 
 /**
+ * WP-56: både bokningsförfrågningar (`requested`, `kind: "booking"`) och
+ * avbokningsförfrågningar (`cancel_requested`, `kind: "cancel"`).
  * Väntande förfrågningar, framtida (`lower(period) > now`), sorterade på
  * starttid. En redan passerad förfrågan är svepets jobb (`expireRequests`,
  * steg 6) — den ska inte dyka upp här bara för att svepet inte hunnit köra.
@@ -88,7 +106,8 @@ export async function listPendingRequestsIn(
   const only = member === undefined ? undefined : staffFilter(member);
   if (only !== undefined && only.length === 0) return [];
   const r = await q.query<Row>(
-    `select bk.id, c.name as client_name, sv.name as service_name,
+    `select bk.id, bk.status::text as status,
+            c.name as client_name, sv.name as service_name,
             extract(epoch from lower(bk.period)) * 1000 as start_ms
        from public.bookings bk
        join public.customers c
@@ -96,7 +115,7 @@ export async function listPendingRequestsIn(
        join public.services sv
          on sv.business_id = bk.business_id and sv.id = bk.service_id
       where bk.business_id = $1
-        and bk.status = 'requested'
+        and bk.status in ('requested', 'cancel_requested')
         and lower(bk.period) > $2
         and ($3::uuid[] is null or bk.staff_id = any($3::uuid[]))
       order by lower(bk.period)`,
@@ -104,6 +123,7 @@ export async function listPendingRequestsIn(
   );
   return r.rows.map((x) => ({
     id: x.id,
+    kind: kindOf(x.status),
     clientName: x.client_name ?? "",
     service: x.service_name,
     start: isoOf(x.start_ms),
@@ -147,4 +167,98 @@ export async function declineRequest(
   if (!r.ok) return { ok: false, error: r.error };
   revalidateRequestPages();
   return { ok: true };
+}
+
+/** WP-56: Godkänn kundens avbokningsförfrågan (`/app/solicitudes/[id]`,
+ * klockan, Inicio-listan). */
+export async function approveCancelRequest(
+  userId: string,
+  businessId: string,
+  now: Date,
+  bookingId: string,
+): Promise<RequestActionResult> {
+  const r = await approveCancellation(
+    { bookingId },
+    { businessId, actor: { kind: "owner", userId }, now },
+  );
+  if (!r.ok) return { ok: false, error: r.error };
+  revalidateRequestPages();
+  return { ok: true };
+}
+
+/** WP-56: Neka kundens avbokningsförfrågan (bokningen gäller igen). */
+export async function declineCancelRequest(
+  userId: string,
+  businessId: string,
+  now: Date,
+  bookingId: string,
+): Promise<RequestActionResult> {
+  const r = await declineCancellation(
+    { bookingId },
+    { businessId, actor: { kind: "owner", userId }, now },
+  );
+  if (!r.ok) return { ok: false, error: r.error };
+  revalidateRequestPages();
+  return { ok: true };
+}
+
+/**
+ * WP-56: en förfrågan för `/app/solicitudes/[id]`. `kind` följer statusen
+ * (`cancel_requested` → `cancel`, annars `booking`); förfrågan väntar på
+ * svar bara medan `status` är `requested`/`cancel_requested` — annars är
+ * den redan besvarad (eller avbokad/utgången) och sidan visar bara läget.
+ * `start` är ISO UTC. `null` = finns inte i företaget, eller medlemmen får
+ * inte svara på den (samma regel som listan, `staffFilter`).
+ */
+export type RequestDetail = {
+  kind: PendingRequestKind;
+  customerName: string;
+  serviceName: string;
+  staffName: string;
+  start: string;
+  status: BookingStatus;
+};
+
+export async function getRequestDetail(
+  userId: string,
+  businessId: string,
+  bookingId: string,
+): Promise<RequestDetail | null> {
+  // Id:t kommer från URL:en: ett ogiltigt uuid är "finns inte", inte 22P02.
+  if (!z.guid().safeParse(bookingId).success) return null;
+  return withOwnerTx(userId, async (q) => {
+    const only = staffFilter(await loadMember(q, userId, businessId));
+    if (only !== undefined && only.length === 0) return null;
+    const r = await q.query<{
+      status: BookingStatus;
+      client_name: string | null;
+      service_name: string;
+      staff_name: string;
+      start_ms: number;
+    }>(
+      `select bk.status::text as status, c.name as client_name,
+              sv.name as service_name, st.name as staff_name,
+              extract(epoch from lower(bk.period)) * 1000 as start_ms
+         from public.bookings bk
+         join public.customers c
+           on c.business_id = bk.business_id and c.id = bk.customer_id
+         join public.services sv
+           on sv.business_id = bk.business_id and sv.id = bk.service_id
+         join public.staff st
+           on st.business_id = bk.business_id and st.id = bk.staff_id
+        where bk.business_id = $1 and bk.id = $2
+          and ($3::uuid[] is null or bk.staff_id = any($3::uuid[]))`,
+      [businessId, bookingId, only ?? null],
+    );
+    const x = r.rows[0];
+    if (!x) return null;
+    return {
+      kind: kindOf(x.status),
+      customerName: x.client_name ?? "",
+      serviceName: x.service_name,
+      staffName: x.staff_name,
+      start: isoOf(x.start_ms),
+      status: x.status,
+    };
+  });
 }

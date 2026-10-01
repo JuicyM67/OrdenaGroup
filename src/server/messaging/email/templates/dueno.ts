@@ -101,3 +101,26 @@ export function cancelacionDuenoEmail(
     ],
   });
 }
+
+/** WP-56: al dueño, cuando un cliente pide cancelar y el negocio exige
+ * aprobación (`cancel_requested`). `agendaUrl` es acá el link a
+ * `/app/solicitudes/{id}` (responder con un toque). Sin respuestas. */
+export function solicitudCancelacionEmail(
+  market: Market,
+  data: DuenoReservaData,
+): RenderedEmail {
+  const ns = emailNs(market).solicitudCancelacion;
+  const comun = emailNs(market).comun;
+  return composeSimpleEmail({
+    market,
+    subject: ns.asunto({ cliente: data.cliente, fecha: data.fecha }),
+    preheader: ns.preheader({ servicio: data.servicio, hora: data.hora }),
+    titulo: ns.titulo,
+    paragraphs: [ns.texto(data)],
+    cardRows: cardRows(market, data),
+    cta: { label: ns.cta, href: data.agendaUrl },
+    footerLines: [
+      comun.piePagina({ marca: brand.name, negocio: data.negocio }),
+    ],
+  });
+}

@@ -1074,6 +1074,35 @@ export const email: Widen<typeof Es.email> = {
       `${p.cliente} skickade en förfrågan om ${p.servicio} för ${p.fecha} kl. ${p.hora}. Bekräfta eller neka den innan den hinner gå ut.`,
     cta: "Se förfrågan",
   },
+  solicitudCancelacion: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} vill avboka sin tid den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} kl. ${p.hora}. Godkänn eller neka avbokningen.`,
+    titulo: "Du har en avbokningsförfrågan",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} vill avboka sin tid för ${p.servicio} den ${p.fecha} kl. ${p.hora}. Tiden är kvar tills du svarar.`,
+    cta: "Svara",
+  },
+  cancelacionRechazada: {
+    asunto: (p: { negocio: string }): string =>
+      `Din avbokning hos ${p.negocio} godkändes inte`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Din tid den ${p.fecha} kl. ${p.hora} gäller fortfarande.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      telefono?: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nDin avbokning hos ${p.negocio} av tiden den ${p.fecha} kl. ${p.hora} godkändes inte, så tiden gäller fortfarande.\n\n${p.telefono ? `Kontakta ${p.negocio} på ${p.telefono} om du behöver ändra den.` : `Kontakta ${p.negocio} om du behöver ändra den.`}`,
+  },
   solicitudRecibida: {
     asunto: (p: { negocio: string }): string =>
       `Vi tog emot din förfrågan hos ${p.negocio}`,
@@ -2024,6 +2053,27 @@ export const sms: Widen<typeof Es.sms> = {
     hora: string;
   }): string =>
     `Ny bokning: ${p.cliente} bokade ${p.servicio} ${p.fecha} kl. ${p.hora}.`,
+  nuevaSolicitudDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Ny bokningsförfrågan: ${p.cliente}, ${p.fecha} kl. ${p.hora} - svara här: ${p.link}`,
+  solicitudCancelacionDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Avbokningsförfrågan: ${p.cliente}, ${p.fecha} kl. ${p.hora} - svara här: ${p.link}`,
+  cancelacionRechazada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    telefono?: string;
+  }): string =>
+    `Din avbokning hos ${p.negocio} ${p.fecha} kl. ${p.hora} godkändes inte - kontakta ${p.negocio}${p.telefono ? ` på ${p.telefono}` : ""}.`,
   codigoAcceso: (p: { codigo: string }): string =>
     `Din inloggningskod är ${p.codigo}. Dela den aldrig med någon.`,
   mensajeLibre: (p: { negocio: string; texto: string }): string =>

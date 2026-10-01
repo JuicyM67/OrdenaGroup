@@ -60,14 +60,18 @@ export type BookingStatus =
   | "confirmed"
   | "completed"
   | "no_show"
+  /** WP-56: kunden begärde avbokning, väntar på företagets svar. */
+  | "cancel_requested"
   | "cancelled";
 
-/** Samma som villkoret i no_overlap (WP-01, WP-45: en förfrågan blockerar). */
+/** Samma som villkoret i no_overlap (WP-01, WP-45: en förfrågan blockerar;
+ * WP-56: en väntande avbokningsförfrågan håller tiden tills den godkänns). */
 export const BLOCKING_STATUSES: readonly BookingStatus[] = [
   "requested",
   "pending_payment",
   "confirmed",
   "completed",
+  "cancel_requested",
 ];
 
 export type SnapshotStaff = {
