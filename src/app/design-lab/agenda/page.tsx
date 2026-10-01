@@ -29,6 +29,17 @@ async function demoOk() {
   return { ok: true };
 }
 
+// WP-61: klockan (AgendaToolbar) kräver både onConfirmRequest OCH onDeclineRequest för att
+// visas alls (samma regel som Inicio/Hoy) — unikt från `showRequests` ovan: klockan ska
+// synas i ALLA lägen (precis som i den riktiga appen), inte bara `?estado=solicitudes`-demon.
+// "Nueva reserva" (samma knapp): `onCreateManualBooking` saknades tidigare helt i design lab,
+// vilket (ofarligt innan WP-61) gjorde knappen osynlig i skärmdumpen — syns nu i referensbilden
+// (`docs/design/screens/Agenda.png`), så den måste finnas här för att matcha.
+async function demoCreateBooking() {
+  "use server";
+  return { ok: true as const };
+}
+
 export default async function AgendaDesignLabPage({
   searchParams,
 }: {
@@ -54,8 +65,14 @@ export default async function AgendaDesignLabPage({
         }
         className="h-full"
         autoScrollToNow={false}
-        onConfirmRequest={showRequests ? demoOk : undefined}
-        onDeclineRequest={showRequests ? demoOk : undefined}
+        onConfirmRequest={demoOk}
+        onDeclineRequest={demoOk}
+        onCreateManualBooking={demoCreateBooking}
+        // WP-61: samma persona som övriga design lab-fixturer (design-lab/main/fixtures.ts)
+        // — ett tomt namn gör UserPill-knappen (AgendaToolbar) namnlös för skärmläsare
+        // (axe: "Element does not have inner text …").
+        ownerName="Camila R."
+        publicPageHref="/barberia-norte"
       />
     </div>
   );

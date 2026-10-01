@@ -4,6 +4,11 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-041 · 2026-10-02 · Agendans referens uppdaterad efter ägarens godkända UX-översyn (WP-57/61): klocka + profil i verktygsraden
+**Varför:** WP-57 (Inicio/Hoy) lade klockan (`NotificationBell`) och profilmenyn (`UserMenu`) i ett gemensamt sidhuvud, men Agenda använde fortfarande sin egen `AgendaToolbar`/`OwnerMobileTopBar` utan dem — ägaren godkände att utöka samma mönster till Agenda (WP-61, pilotuppföljning). **Konsekvens:** `AgendaShell` sätter nu `OwnerChromeProvider` (samma data som `AppShell`); `AgendaToolbar` (skrivbordet) och `OwnerMobileTopBar` (mobil, nytt valfritt `ownerName`-läge — bakåtkompatibelt för Clientes/Caja/Ajustes/Horas flash som ännu inte migrerat) visar klockan + profilmenyn längst till höger. `docs/design/screens/Agenda.png` och de tre `agenda-toolbar`-relaterade utsnitten (`crops.json`) är omtagna från den nu godkända skärmen (`npm run visual agenda agenda-dia` → 0,00 %). `main`/`hoy` har sedan tidigare en större, redan accepterad avvikelse (D-035, WP-47 inte klar) — orört här, inte del av det här arbetspaketet.
+
+---
+
 ### D-039 · 2026-09-30 · JS-budget för bokningssidan höjs till 190 kB (ersätter D-032:s 180 kB)
 Sidan låg på gränsen och storleken svänger ~1 kB mellan byggen när andra delar av appen ändras, så leveranser som inte rör `/[slug]` föll. Ägaren valde att höja till 190 kB och optimera separat (WP-53: rendera profilvyn på servern, väntat 15–25 kB). Tidskravet (klickbar inom 3,5 s på 4G + 4x CPU) är oförändrat.
 
