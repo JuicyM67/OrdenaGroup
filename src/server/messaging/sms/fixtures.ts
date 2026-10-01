@@ -91,5 +91,14 @@ export function smsFixtures(market: Market): {
           ? "Vi har öppet imorgon också!"
           : "¡Mañana también abrimos!",
     },
+    campanaMarketing: {
+      negocio: b.negocio,
+      texto:
+        market === "SE"
+          ? "Boka in dig den här veckan och få -20%."
+          : "Reserva esta semana y llévate -20%.",
+      link,
+      bajaLink: "https://app.example.com/baja/abc123",
+    },
   };
 }

@@ -1,7 +1,14 @@
 import "server-only";
 
 import { formulario } from "@/i18n";
-import { APP_LOCALE, APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
+import {
+  APP_LOCALE,
+  APP_TZ,
+  formatDate,
+  formatLocalDate,
+  formatTime,
+  type LocalDate,
+} from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { formatPhone, type E164 } from "@/lib/format/phone";
 import type {
@@ -339,6 +346,74 @@ async function loadFreeMessageContext(
 }
 
 // ---------------------------------------------------------------------------
+// WP-31 (F14): `campanaMarketing` — en kampanjutskick-rad, ingen bokning
+// (`booking_id` null). `payload.campaignRecipientId` + `payload.token`
+// (klartext-token, D-029 — bara hashen finns i `campaign_recipients`, se
+// `src/server/campaigns/send.ts`). Kontrolleras sendbar HÄR, vid
+// sändningstillfället (kunden kan ha svarat BAJA eller blivit anonymiserad
+// mellan köning och sändning) — inte bara när raden köades.
+// ---------------------------------------------------------------------------
+
+type CampaignContext = {
+  sendable: boolean;
+  email: string | null;
+  phone: string | null;
+  negocio: string;
+  slug: string;
+  texto: string;
+  offerPct: number | null;
+  offerText: string | null;
+  /** "YYYY-MM-DD" eller `null`. */
+  offerValidUntil: string | null;
+};
+
+async function loadCampaignContext(
+  businessId: string,
+  campaignRecipientId: string,
+): Promise<CampaignContext | undefined> {
+  return withServiceTx(async (q) => {
+    const r = await q.query<{
+      sendable: boolean;
+      email: string | null;
+      phone_e164: string | null;
+      negocio: string;
+      slug: string;
+      texto: string;
+      offer_pct: number | null;
+      offer_text: string | null;
+      offer_valid_until: string | null;
+    }>(
+      `select (cu.anonymized_at is null and cu.consent_marketing_at is not null) as sendable,
+              cu.email, cu.phone_e164,
+              b.name as negocio, b.slug,
+              c.message as texto, c.offer_pct, c.offer_text,
+              c.offer_valid_until::text as offer_valid_until
+         from public.campaign_recipients cr
+         join public.campaigns c on c.business_id = cr.business_id and c.id = cr.campaign_id
+         join public.businesses b on b.id = cr.business_id
+         join public.customers cu
+           on cu.business_id = cr.business_id and cu.id = cr.customer_id
+        where cr.business_id = $1 and cr.id = $2`,
+      [businessId, campaignRecipientId],
+    );
+    const row = r.rows[0];
+    return row
+      ? {
+          sendable: row.sendable,
+          email: row.email,
+          phone: row.phone_e164,
+          negocio: row.negocio,
+          slug: row.slug,
+          texto: row.texto,
+          offerPct: row.offer_pct,
+          offerText: row.offer_text,
+          offerValidUntil: row.offer_valid_until,
+        }
+      : undefined;
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Länkar och mallars data
 // ---------------------------------------------------------------------------
 
@@ -369,6 +444,19 @@ function agendaLink(): string {
 /** WP-56: `${APP_URL}/app/solicitudes/{bookingId}` (svara med ett tryck). */
 function solicitudLink(bookingId: string): string {
   return `${appUrl()}/app/solicitudes/${bookingId}`;
+}
+
+/** WP-31: `${APP_URL}/{slug}?o=<token>` — erbjudandelänken (gäller som en
+ * vanlig "Reservar"-länk även utan erbjudande, se `offer.ts`: en ogiltig/
+ * icke-rabatterande token bokar bara utan rabatt). */
+function offerLink(slug: string, token: string): string {
+  return `${appUrl()}/${slug}?o=${token}`;
+}
+
+/** WP-31: `${APP_URL}/baja/<token>` — avregistreringslänken (regel hård 7,
+ * alltid med i en kampanj). */
+function bajaLink(token: string): string {
+  return `${appUrl()}/baja/${token}`;
 }
 
 /** WP-56: företagets telefon för "kontakta oss", formaterad. */
@@ -1058,6 +1146,63 @@ async function processFreeMessageRow(
   return "sent";
 }
 
+/** WP-31 (F14): `campanaMarketing` — kampanjutskick, ingen bokning. Kontrollerar
+ * samtycke/anonymisering/adress på nytt vid sändningen (D-029: tiden mellan
+ * köning och sändning kan vara upp till en timme med 50/pass, planen kräver
+ * `max 2000 mottagare`). `payload.token` (klartext) används både för
+ * erbjudandelänken och avregistreringslänken (samma `campaign_recipients`-
+ * token, se `src/server/campaigns/send.ts`). */
+async function processCampaignRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const campaignRecipientId =
+    typeof row.payload.campaignRecipientId === "string"
+      ? row.payload.campaignRecipientId
+      : "";
+  const token = typeof row.payload.token === "string" ? row.payload.token : "";
+  if (!campaignRecipientId || !token) {
+    throw new OutboxSendError("invalid_payload");
+  }
+  const ctx = await loadCampaignContext(row.businessId, campaignRecipientId);
+  if (!ctx) throw new OutboxSendError("no_customer");
+  const channelOk = row.channel === "email" ? !!ctx.email : !!ctx.phone;
+  if (!ctx.sendable || !channelOk) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const reservarUrl = offerLink(ctx.slug, token);
+  const baja = bajaLink(token);
+  const offerValidUntil = ctx.offerValidUntil
+    ? formatLocalDate(ctx.offerValidUntil as LocalDate, "dayMonthLong", APP_LOCALE)
+    : undefined;
+  if (row.channel === "email") {
+    const r = await sendEmail({
+      to: ctx.email as string,
+      template: "campanaMarketing",
+      data: {
+        negocio: ctx.negocio,
+        texto: ctx.texto,
+        ...(ctx.offerPct !== null ? { offerPct: ctx.offerPct } : {}),
+        ...(ctx.offerText ? { offerText: ctx.offerText } : {}),
+        ...(offerValidUntil ? { offerValidUntil } : {}),
+        reservarUrl,
+        bajaUrl: baja,
+      },
+      idempotencyKey: row.dedupeKey,
+    });
+    await finalizeSent(row, r.id);
+    return "sent";
+  }
+  const r = await sendSms({
+    to: ctx.phone as string,
+    template: "campanaMarketing",
+    data: { negocio: ctx.negocio, texto: ctx.texto, link: reservarUrl, bajaLink: baja },
+    idempotencyKey: row.dedupeKey,
+  });
+  await finalizeSent(row, r.id);
+  return "sent";
+}
+
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
@@ -1067,6 +1212,9 @@ async function processRow(
     }
     if (row.template === "mensajeLibre") {
       return await processFreeMessageRow(row);
+    }
+    if (row.template === "campanaMarketing") {
+      return await processCampaignRow(row);
     }
     // `await` explícito (no solo `return processInviteeRow(row)`): un
     // `return <promise>` dentro de un `try` NO deja que el `catch` de abajo

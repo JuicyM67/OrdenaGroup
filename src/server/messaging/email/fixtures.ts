@@ -174,5 +174,16 @@ export function emailFixtures(market: Market): {
       hora: b.hora,
       telefono: market === "SE" ? "+46 70 123 45 67" : "+56 9 1234 5678",
     },
+    campanaMarketing: {
+      negocio: b.negocio,
+      texto:
+        market === "SE"
+          ? "Vi har öppet lite längre den här veckan. Passa på att boka en tid!"
+          : "Tenemos horario extendido esta semana. ¡Aprovecha de reservar!",
+      offerPct: 20,
+      offerValidUntil: market === "SE" ? "31 oktober" : "31 de octubre",
+      reservarUrl: "https://app.example.com/barberia-norte?o=abc123",
+      bajaUrl: "https://app.example.com/baja/abc123",
+    },
   };
 }

@@ -99,6 +99,17 @@ export type SmsTemplateMap = {
    * `recipient_kind = 'customer'`, sin `booking_id`) — ver `worker.ts`
    * `loadFreeMessageContext`/`processFreeMessageRow`. */
   readonly mensajeLibre: { negocio: string; texto: string };
+  /** WP-31: campaña de marketing (texto libre + oferta opcional). El link
+   * de baja va INCLUIDO en el texto (no vía `SMS_MARKETING_TEMPLATES`/
+   * `sms.pie`, que es la línea "Responde STOP" pensada para WhatsApp —
+   * acá la baja es el link web `/baja/[token]`, ver `worker.ts`
+   * `processCampaignRow`). */
+  readonly campanaMarketing: {
+    negocio: string;
+    texto: string;
+    link: string;
+    bajaLink: string;
+  };
 };
 
 export type SmsTemplateName = keyof SmsTemplateMap;
@@ -119,6 +130,7 @@ export const SMS_TEMPLATE_NAMES: readonly SmsTemplateName[] = [
   "cancelacionRechazada",
   "codigoAcceso",
   "mensajeLibre",
+  "campanaMarketing",
 ];
 
 /** `hora_flash` (marketing, INTEGRATIONS.md §1): mallarna som kräver
