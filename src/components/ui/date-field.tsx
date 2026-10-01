@@ -4,13 +4,27 @@
 // i stället för webbläsarens `<input type="date">`, som alltid visade mm/dd/yyyy (efter
 // webbläsarens språk, inte marknadens — granskningsfynd, jfr. `time24-input.tsx` som redan
 // gör samma sak för `type="time"`). Samma value/onChange-kontrakt som fältet hade: en
-// "YYYY-MM-DD"-sträng. Radix Popover (samma mönster som `agenda/event-popover.tsx`) med
-// `MiniCalendar` (`variant="light"`, redan byggd i WP-02/WP-12) för själva valet. `z-30`:
-// högre än `Dialog.Overlay` (`z-20`, manual-booking-dialog.tsx/move-dialog.tsx) — fältet
-// öppnas alltid inuti en redan öppen dialog.
-import * as Popover from "@radix-ui/react-popover";
+// "YYYY-MM-DD"-sträng.
+//
+// Buggrapport (ägarens test, troligen Safari/WebKit): kalendern öppnade sig inte när
+// fältet användes inuti en Radix `Dialog` (flash-slot-dialog.tsx, manual-booking-
+// dialog.tsx, move-dialog.tsx). Tidigare version använde Radix `Popover` + `Portal`
+// (samma mönster som `agenda/event-popover.tsx`) — ett innehåll portalerat till
+// `document.body`, alltså UTANFÖR Dialogens DOM-gren och dess `FocusScope`-fokusfälla.
+// Det är en känd konflikt mellan nästlade Radix-primitiver: Dialogens fokusfälla kan dra
+// tillbaka fokus/stänga Popovern innan klicket hinner registreras, och beteendet skiljer
+// sig mellan webbläsare (fungerade i Chromium, inte för ägaren). Fixen: ingen Portal, inget
+// Popover — kalendern renderas INLINE, direkt i samma DOM-gren som fältet (`MiniCalendar`,
+// `variant="light"`, redan byggd i WP-02/WP-12), och fälls ut under knappen i normalt
+// dokumentflöde i stället för att flyta ovanpå innehållet. Stängs vid val, klick utanför
+// eller Escape (egen `mousedown`/`keydown`-koll — ingen Portal att förlita sig på för det).
+// `col-span-2`: när fältet används i en `grid grid-cols-2`-rad (dag/tid-rader i de tre
+// dialogerna ovan) får den utfällda kalendern hela radens bredd i stället för att klämmas
+// in i halva — CSS grid-auto-flow flyttar automatiskt nästa fält (tiden) till nästa rad,
+// ingen koordinering med anroparen behövs. Utanför grid (t.ex. `caja-screen.tsx`s
+// datumintervall) är klassen en no-op.
 import { AlertCircle, CalendarDays } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { calendario } from "@/i18n";
 import {
@@ -96,6 +110,42 @@ export function DateField({
   const [browsedMonth, setBrowsedMonth] = useState<YearMonth>(() =>
     monthOf(value),
   );
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  function openCalendar() {
+    setBrowsedMonth(monthOf(value));
+    setOpen(true);
+  }
+
+  function closeCalendar(refocus = false) {
+    setOpen(false);
+    if (refocus) buttonRef.current?.focus();
+  }
+
+  // Ingen Portal att förlita sig på för "klick utanför" längre (jfr. filkommentaren ovan)
+  // — vanlig `mousedown`/`keydown`-koll mot roten räcker, eftersom kalendern lever kvar i
+  // samma DOM-gren som fältet (och därmed inuti en eventuell Dialogs `FocusScope`).
+  useEffect(() => {
+    if (!open) return;
+    function handlePointerDown(event: MouseEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeCalendar(true);
+      }
+    }
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [open]);
 
   const labels: MiniCalendarLabels = {
     title: monthTitle(browsedMonth),
@@ -107,58 +157,48 @@ export function DateField({
   };
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
+    <div
+      ref={rootRef}
+      className={cn("flex flex-col gap-1.5", open && "col-span-2", className)}
+    >
       <label htmlFor={fieldId} className="text-13 font-semibold text-ink">
         {label}
       </label>
-      <Popover.Root
-        open={open}
-        onOpenChange={(next) => {
-          if (next) setBrowsedMonth(monthOf(value));
-          setOpen(next);
-        }}
+      <button
+        ref={buttonRef}
+        type="button"
+        id={fieldId}
+        aria-haspopup="grid"
+        aria-expanded={open}
+        aria-describedby={describedBy}
+        onClick={() => (open ? closeCalendar() : openCalendar())}
+        className={cn(
+          "flex h-13 w-full items-center justify-between gap-2 rounded-control border-2 border-transparent bg-field px-4 text-left text-15 font-medium text-ink transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
+          error && "border-alert",
+        )}
       >
-        <Popover.Trigger asChild>
-          <button
-            type="button"
-            id={fieldId}
-            aria-describedby={describedBy}
-            className={cn(
-              "flex h-13 w-full items-center justify-between gap-2 rounded-control border-2 border-transparent bg-surface px-4 text-left text-15 font-medium text-ink transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
-              error && "border-alert",
-            )}
-          >
-            <span>{displayLabel(value)}</span>
-            <CalendarDays
-              aria-hidden="true"
-              className="size-4.5 shrink-0 text-muted"
-              strokeWidth={2}
-            />
-          </button>
-        </Popover.Trigger>
-        <Popover.Portal>
-          <Popover.Content
-            align="start"
-            sideOffset={8}
-            collisionPadding={12}
-            className="z-30 rounded-panel bg-surface p-4 shadow-popover"
-          >
-            <MiniCalendar
-              month={browsedMonth}
-              selected={value || undefined}
-              variant="light"
-              onSelect={(date) => {
-                onChange(date);
-                setOpen(false);
-              }}
-              onPrevMonth={() => setBrowsedMonth((m) => addMonths(m, -1))}
-              onNextMonth={() => setBrowsedMonth((m) => addMonths(m, 1))}
-              labels={labels}
-              className="w-64"
-            />
-          </Popover.Content>
-        </Popover.Portal>
-      </Popover.Root>
+        <span>{displayLabel(value)}</span>
+        <CalendarDays
+          aria-hidden="true"
+          className="size-4.5 shrink-0 text-muted"
+          strokeWidth={2}
+        />
+      </button>
+      {open ? (
+        <MiniCalendar
+          month={browsedMonth}
+          selected={value || undefined}
+          variant="light"
+          onSelect={(date) => {
+            onChange(date);
+            closeCalendar(true);
+          }}
+          onPrevMonth={() => setBrowsedMonth((m) => addMonths(m, -1))}
+          onNextMonth={() => setBrowsedMonth((m) => addMonths(m, 1))}
+          labels={labels}
+          className="w-full rounded-panel bg-surface p-3 shadow-popover"
+        />
+      ) : null}
       {hint ? (
         <span id={hintId} className="text-13 text-muted">
           {hint}
