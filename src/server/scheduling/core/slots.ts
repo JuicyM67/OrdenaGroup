@@ -259,8 +259,20 @@ export function slotsForDay(input: DayInput, limit?: number): AvailableSlot[] {
 export function dayStatus(input: DayInput): DayStatus {
   if (outsideCustomerRange(input)) return "closed";
   const staff = eligibleStaff(input.snapshot, input.staff);
-  const anyWorking = staff.some(
-    (st) => availableWindows(input.snapshot, st, input.date).length > 0,
+  // En dag vars arbetstid redan har passerat (t.ex. idag på kvällen, med
+  // minsta förvarning) är stängd för kunden — inte "full". Annars visas den
+  // som fullbokad och erbjuder väntelista för tider som aldrig kan komma
+  // (pilottestet 2026-10-01).
+  const earliest =
+    input.audience === "customer"
+      ? input.now.getTime() +
+        input.snapshot.minNoticeMinutes * MIN +
+        needMs(input.snapshot)
+      : Number.NEGATIVE_INFINITY;
+  const anyWorking = staff.some((st) =>
+    availableWindows(input.snapshot, st, input.date).some(
+      (w) => w.end >= earliest,
+    ),
   );
   if (!anyWorking) return "closed";
   return allSlotsForDay(input).length > 0 ? "available" : "full";

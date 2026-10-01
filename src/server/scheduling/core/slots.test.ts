@@ -309,8 +309,8 @@ describe("dayStatus", () => {
     expect(status(s, TUE)).toBe("full");
   });
 
-  it("bara passerade tider idag → full (customer)", () => {
-    expect(status(norte(), TUE, { now: nowAt(TUE, "18:30") })).toBe("full");
+  it("bara passerade tider idag → closed (customer), ingen väntelista för en dag som passerat", () => {
+    expect(status(norte(), TUE, { now: nowAt(TUE, "18:30") })).toBe("closed");
   });
 
   it("före idag → closed (customer), available för owner", () => {
