@@ -276,27 +276,28 @@ async function loadGettingStarted(
   q: Queryable,
   businessId: string,
 ): Promise<InicioData["gettingStarted"]> {
-  const [services, hours, team, profileRes] = await Promise.all([
-    countIn(
-      q,
-      `select count(*)::text as n from public.services where business_id = $1`,
-      [businessId],
-    ),
-    countIn(
-      q,
-      `select count(*)::text as n from public.business_hours where business_id = $1`,
-      [businessId],
-    ),
-    countIn(
-      q,
-      `select count(*)::text as n from public.memberships where business_id = $1 and role = 'staff'`,
-      [businessId],
-    ),
-    q.query<{ logo_url: string | null }>(
-      `select logo_url from public.businesses where id = $1`,
-      [businessId],
-    ),
-  ]);
+  // WP-60 fynd: `Promise.all` över flera frågor på samma `q` (en transaktion,
+  // en pg-anslutning) är fel — `pg.Client` stödjer inte samtidiga frågor på
+  // samma anslutning (varnar redan, tas bort i pg 9). Sekventiellt i stället.
+  const services = await countIn(
+    q,
+    `select count(*)::text as n from public.services where business_id = $1`,
+    [businessId],
+  );
+  const hours = await countIn(
+    q,
+    `select count(*)::text as n from public.business_hours where business_id = $1`,
+    [businessId],
+  );
+  const team = await countIn(
+    q,
+    `select count(*)::text as n from public.memberships where business_id = $1 and role = 'staff'`,
+    [businessId],
+  );
+  const profileRes = await q.query<{ logo_url: string | null }>(
+    `select logo_url from public.businesses where id = $1`,
+    [businessId],
+  );
   return {
     services: services > 0,
     hours: hours > 0,

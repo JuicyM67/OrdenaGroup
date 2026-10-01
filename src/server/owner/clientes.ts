@@ -237,10 +237,10 @@ export async function listCustomers(
 ): Promise<CustomersListView> {
   return withOwnerTx(userId, async (q) => {
     const member = await loadMember(q, userId, businessId);
-    const [items, counts] = await Promise.all([
-      listCustomersIn(q, businessId, now, opts),
-      countCustomersByFilterIn(q, businessId, now),
-    ]);
+    // WP-60 fynd: sekventiellt, inte `Promise.all` — samma `q` (en
+    // transaktion/anslutning), se motsvarande fix i src/server/owner/inicio.ts.
+    const items = await listCustomersIn(q, businessId, now, opts);
+    const counts = await countCustomersByFilterIn(q, businessId, now);
     return { member: memberView(member), items, counts };
   });
 }
@@ -435,23 +435,23 @@ export async function getCustomerDetailIn(
         on st.business_id = bk.business_id and st.id = bk.staff_id
      where bk.business_id = $1 and bk.customer_id = $2`;
 
-  const [upcomingRes, historyRes] = await Promise.all([
-    q.query<BookingRow>(
-      `${bookingSelect}
-         and bk.status in ('requested', 'pending_payment', 'confirmed', 'cancel_requested')
-         and lower(bk.period) >= $3
-       order by lower(bk.period)`,
-      [businessId, customerId, now.toISOString()],
-    ),
-    q.query<BookingRow>(
-      `${bookingSelect}
-         and (bk.status in ('completed', 'no_show', 'cancelled')
-              or lower(bk.period) < $3)
-       order by lower(bk.period) desc
-       limit 30`,
-      [businessId, customerId, now.toISOString()],
-    ),
-  ]);
+  // WP-60 fynd: sekventiellt, inte `Promise.all` — samma `q` (en
+  // transaktion/anslutning), se motsvarande fix i src/server/owner/inicio.ts.
+  const upcomingRes = await q.query<BookingRow>(
+    `${bookingSelect}
+       and bk.status in ('requested', 'pending_payment', 'confirmed', 'cancel_requested')
+       and lower(bk.period) >= $3
+     order by lower(bk.period)`,
+    [businessId, customerId, now.toISOString()],
+  );
+  const historyRes = await q.query<BookingRow>(
+    `${bookingSelect}
+       and (bk.status in ('completed', 'no_show', 'cancelled')
+            or lower(bk.period) < $3)
+     order by lower(bk.period) desc
+     limit 30`,
+    [businessId, customerId, now.toISOString()],
+  );
 
   const showMoney = member === undefined || hasPerm(member, "can_view_reports");
   const canEditNotes =
@@ -460,10 +460,10 @@ export async function getCustomerDetailIn(
     hasPerm(member, "can_manage_all_bookings");
   const isOwner = member === undefined || member?.role === "owner";
 
-  const [stats, answers] = await Promise.all([
-    loadCustomerStats(q, businessId, customerId, showMoney),
-    getCustomerAnswersIn(q, businessId, customerId),
-  ]);
+  // WP-60 fynd: sekventiellt, inte `Promise.all` — samma `q` (en
+  // transaktion/anslutning), se motsvarande fix i src/server/owner/inicio.ts.
+  const stats = await loadCustomerStats(q, businessId, customerId, showMoney);
+  const answers = await getCustomerAnswersIn(q, businessId, customerId);
 
   return {
     id: c.id,

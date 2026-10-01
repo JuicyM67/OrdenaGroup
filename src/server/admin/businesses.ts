@@ -165,26 +165,25 @@ export async function getBusinessDetail(
     const business = businessRes.rows[0];
     if (!business) return null;
 
-    const [bookingsCount, staffCount, membersRes, lastActivity] =
-      await Promise.all([
-        q.query<{ n: string }>(
-          `select count(*)::text as n from public.bookings where business_id = $1`,
-          [businessId],
-        ),
-        q.query<{ n: string }>(
-          `select count(*)::text as n from public.staff where business_id = $1`,
-          [businessId],
-        ),
-        q.query<{ user_id: string; role: string }>(
-          `select user_id, role from public.memberships
-            where business_id = $1 order by created_at`,
-          [businessId],
-        ),
-        q.query<{ last_at: string | null }>(
-          `select max(created_at) as last_at from public.bookings where business_id = $1`,
-          [businessId],
-        ),
-      ]);
+    // WP-60 fynd: sekventiellt, inte `Promise.all` — samma `q` (en
+    // transaktion/anslutning), se motsvarande fix i src/server/owner/inicio.ts.
+    const bookingsCount = await q.query<{ n: string }>(
+      `select count(*)::text as n from public.bookings where business_id = $1`,
+      [businessId],
+    );
+    const staffCount = await q.query<{ n: string }>(
+      `select count(*)::text as n from public.staff where business_id = $1`,
+      [businessId],
+    );
+    const membersRes = await q.query<{ user_id: string; role: string }>(
+      `select user_id, role from public.memberships
+        where business_id = $1 order by created_at`,
+      [businessId],
+    );
+    const lastActivity = await q.query<{ last_at: string | null }>(
+      `select max(created_at) as last_at from public.bookings where business_id = $1`,
+      [businessId],
+    );
 
     return {
       business,
