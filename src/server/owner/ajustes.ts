@@ -378,12 +378,12 @@ export async function loadAjustesDataIn(
   userId?: string,
 ): Promise<AjustesData> {
   const member = userId ? await loadMember(q, userId, businessId) : null;
-  const [business, services, staff, hours] = await Promise.all([
-    loadBusinessRow(q, businessId),
-    loadServiceRows(q, businessId),
-    loadStaffRows(q, businessId),
-    loadHoursRows(q, businessId),
-  ]);
+  // WP-60 fynd: sekventiellt, inte `Promise.all` — samma `q` (en
+  // transaktion/anslutning), se motsvarande fix i src/server/owner/inicio.ts.
+  const business = await loadBusinessRow(q, businessId);
+  const services = await loadServiceRows(q, businessId);
+  const staff = await loadStaffRows(q, businessId);
+  const hours = await loadHoursRows(q, businessId);
   return { member: memberView(member), business, services, staff, hours };
 }
 

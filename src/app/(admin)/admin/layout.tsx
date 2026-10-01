@@ -7,8 +7,12 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
+import { brand } from "@/config/brand";
+
+// Regel 10: arbetsnamnet bara i src/config/brand.ts — titeln använder
+// `brand.name` (installationens riktiga namn).
 export const metadata: Metadata = {
-  title: "llena admin",
+  title: `${brand.name} admin`,
   robots: { index: false, follow: false, nocache: true },
 };
 

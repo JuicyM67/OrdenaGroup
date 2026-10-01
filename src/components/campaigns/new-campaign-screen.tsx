@@ -33,6 +33,7 @@ import { TextField } from "@/components/ui/text-field";
 import { appHref } from "@/config/routes";
 import { campanas } from "@/i18n";
 import { clientSmsLengthInfo } from "@/components/customers/sms-length";
+import { addLocalDays, APP_TZ, toLocalDate } from "@/lib/format/dates";
 
 import { campanaErrorText } from "./error-text";
 import type {
@@ -108,7 +109,14 @@ export function NewCampaignScreen({
   const [offerEnabled, setOfferEnabled] = useState(false);
   const [offerPct, setOfferPct] = useState("");
   const [offerText, setOfferText] = useState("");
-  const [offerValidUntil, setOfferValidUntil] = useState("");
+  // WP-60 fynd: `DateField` kräver alltid ett giltigt startvärde (dess eget
+  // kontrakt, se date-field.tsx) — en tom sträng gav `monthOf("")` →
+  // `{year: 0, month: 0}` → `formatLocalDate` kastade ("ogiltigt datum
+  // 0000-00-01") så fort "Agregar un descuento" slogs på. En vecka framåt,
+  // samma standard som andra förvalda datum i appen.
+  const [offerValidUntil, setOfferValidUntil] = useState<string>(() =>
+    addLocalDays(toLocalDate(new Date(), APP_TZ), 7),
+  );
 
   const [preview, setPreview] = useState<PreviewCampaignResult | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);

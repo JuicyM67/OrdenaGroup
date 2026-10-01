@@ -252,6 +252,9 @@ export function CajaScreen({
               { value: "range", label: caja.periodos.rango },
             ]}
             className="w-fit"
+            // WP-60 fynd: 4 opciones a w-24 (96px) no entraban en 390 px
+            // (scroll horizontal) — w-20 angosta sin perder legibilidad.
+            itemClassName="w-20"
           />
           <Button asChild variant="secondary" size="sm">
             <Link href={appHref("appCajaInformes")}>
