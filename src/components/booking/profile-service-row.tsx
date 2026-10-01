@@ -5,28 +5,25 @@
 // botón siga siendo el del servicio — así "Boka" arranca el flujo existente
 // (`onSelect`) sin romper el selector que ya usa `e2e/reserva.spec.ts`
 // (`getByRole("button", { name: /Corte clásico/ })`).
+// WP-53 (D-040): serverkomponent — bara el `<button>` (`ProfileServiceButton`,
+// profile-interactive.tsx) es un cliente, lee el `serviceId` y llama a
+// `bookService` vía `ProfileFlowContext`. Texto/formato siguen en el servidor.
 import { perfil } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import { formatDuration } from "@/lib/format/dates";
 
+import { ProfileServiceButton } from "./profile-interactive";
 import type { BookingService } from "./types";
 
-export function ProfileServiceRow({
-  service,
-  onSelect,
-}: {
-  service: BookingService;
-  onSelect: () => void;
-}) {
+export function ProfileServiceRow({ service }: { service: BookingService }) {
   const detalle = perfil.publico.servicioDetalle({
     duracion: formatDuration(service.durationMin),
     descripcion: service.description ?? undefined,
   });
 
   return (
-    <button
-      type="button"
-      onClick={onSelect}
+    <ProfileServiceButton
+      serviceId={service.id}
       // `aria-label` med namn + varaktighet, INTE hela `detalle` (qa-fynd,
       // e2e/reserva.spec.ts): utan den blir hela radens text — inklusive
       // ägarens fria beskrivningstext — den tillgängliga namnet, och en
@@ -36,7 +33,7 @@ export function ProfileServiceRow({
       // krock som QA-testet fångade). Priset utelämnas här av samma skäl
       // som `ServiceCard` tidigare aldrig visade beskrivningen i sitt namn —
       // det är kvar i `BookingBar` när tjänsten väl är vald.
-      aria-label={`${service.name} · ${formatDuration(service.durationMin)}`}
+      ariaLabel={`${service.name} · ${formatDuration(service.durationMin)}`}
       className="flex w-full items-center gap-4 rounded-icon bg-surface p-3.5 text-left transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none lg:rounded-none lg:border-b lg:border-line-strong lg:bg-transparent lg:p-0 lg:py-4 lg:last:border-b-0"
     >
       <span aria-hidden="true" className="min-w-0 grow">
@@ -54,6 +51,6 @@ export function ProfileServiceRow({
       >
         {perfil.publico.reservar}
       </span>
-    </button>
+    </ProfileServiceButton>
   );
 }

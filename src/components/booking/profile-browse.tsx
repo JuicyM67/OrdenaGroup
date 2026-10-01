@@ -1,22 +1,32 @@
 // ProfileBrowse — vyn innan bokningsflödet startar (WP-41 steg 4):
 // `ProfilDesktop.dc.html` (dator, ≥ lg) och `ProfilMobil.dc.html` (mobil,
 // < lg) i en och samma komponent, växlade med Tailwinds `lg:`-brytpunkt
-// (ingen tidigare skärm har behövt båda bredderna i samma route). Rent
-// presentationslager: all tillstånd (kategoriflik, mobilflik, val av
-// tjänst) ägs av `booking-screen.tsx` och kommer in som props, så
-// komponenten här kan återanvändas oförändrad om profilen någon gång
-// server-renderas separat (planens JS-budgetnot, se booking-screen.tsx).
+// (ingen tidigare skärm har behövt båda bredderna i samma route).
+//
+// WP-53 (D-040): serverkomponent — hela trädet (format-funktioner, i18n-text,
+// markup) renderas på servern och skickas som en färdig `profileContent`-prop
+// till `BookingScreen` (`/[slug]/page.tsx`), i stället för att importeras
+// (och därmed klientbuntas) av den. Bara kategori-/mobilflikarna och
+// "Boka"-knapparna är klientöar (`profile-interactive.tsx`) som läser
+// `ProfileFlowContext` för att nå tillbaka till `BookingScreen`s tillstånd
+// (kategoriflik, mobilflik, vilken tjänst som startar bokningsflödet).
 import type { ReactNode } from "react";
 
-import { Button } from "@/components/ui/button";
-import { perfil } from "@/i18n";
-import { formatMoney } from "@/lib/format/money";
+import { formulario, perfil } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
+import { formatMoney } from "@/lib/format/money";
 
-import type { CategoryTab } from "./categories";
-import { CategoryTabs } from "./category-tabs";
+import { categoryTabs } from "./categories";
 import { ProfileGallery } from "./profile-gallery";
 import { ProfileChipsDesktop, ProfileHeader } from "./profile-header";
+import {
+  ProfileBookNowButton,
+  ProfileCategoryTabs,
+  ProfileMobileTabs,
+  ProfileServiceList,
+  type ProfileServiceRowEntry,
+} from "./profile-interactive";
+import type { MobileTab } from "./profile-flow-context";
 import { ProfileServiceRow } from "./profile-service-row";
 import {
   ContactCard,
@@ -28,7 +38,8 @@ import { ProfileStaff } from "./profile-staff";
 import { nextAvailableChipLabel } from "./profile-view";
 import type { BookingPageData, BookingProfile } from "./types";
 
-export type MobileTab = "servicios" | "personal" | "nosotros" | "info";
+/** Serverrenderade ikonknappar (chips-raden och Kontakt-kortet). */
+export type ProfileSocialSlots = { chips: ReactNode; contact: ReactNode };
 
 const MOBILE_TABS: readonly { id: MobileTab; label: string }[] = [
   { id: "servicios", label: perfil.publico.tabs.servicios },
@@ -37,33 +48,37 @@ const MOBILE_TABS: readonly { id: MobileTab; label: string }[] = [
   { id: "info", label: perfil.publico.tabs.info },
 ];
 
-/** Serverrenderade ikonknappar (chips-raden och Kontakt-kortet). */
-export type ProfileSocialSlots = { chips: ReactNode; contact: ReactNode };
-
 export function ProfileBrowse({
   data,
   profile,
-  tabs,
-  categoryId,
-  onSelectCategory,
-  visibleServices,
-  onBookService,
-  mobileTab,
-  onSelectMobileTab,
   social,
 }: {
-  social?: ProfileSocialSlots;
   data: BookingPageData;
   profile: BookingProfile;
-  tabs: readonly CategoryTab[];
-  categoryId: string;
-  onSelectCategory: (id: string) => void;
-  visibleServices: BookingPageData["services"];
-  onBookService: (serviceId: string) => void;
-  mobileTab: MobileTab;
-  onSelectMobileTab: (tab: MobileTab) => void;
+  social?: ProfileSocialSlots;
 }) {
   const { business, staff } = data;
+  const tabs = categoryTabs(data.categories ?? [], data.services);
+  const rows: ProfileServiceRowEntry[] = data.services.map((service) => ({
+    id: service.id,
+    categoryId: service.categoryId ?? null,
+    node: <ProfileServiceRow key={service.id} service={service} />,
+  }));
+  const hasSocial = Boolean(
+    profile.instagramUrl || profile.tiktokUrl || profile.facebookUrl,
+  );
+
+  const infoPanel = (
+    <div className="flex flex-col gap-3.5">
+      <HoursCard profile={profile} />
+      <MapCard address={profile.address} />
+      <ContactCard
+        phone={profile.phone}
+        hasSocial={hasSocial}
+        social={social?.contact}
+      />
+    </div>
+  );
 
   return (
     <div className="flex flex-1 flex-col">
@@ -86,21 +101,12 @@ export function ProfileBrowse({
             <h2 className="font-display text-28 font-bold text-ink">
               {perfil.publico.secciones.reservarHora}
             </h2>
-            {tabs.length > 0 ? (
-              <CategoryTabs
-                tabs={tabs}
-                selectedId={categoryId}
-                onSelect={onSelectCategory}
-              />
-            ) : null}
+            {tabs.length > 0 ? <ProfileCategoryTabs tabs={tabs} /> : null}
             <div className="rounded-tile bg-surface px-5">
-              {visibleServices.map((service) => (
-                <ProfileServiceRow
-                  key={service.id}
-                  service={service}
-                  onSelect={() => onBookService(service.id)}
-                />
-              ))}
+              <ProfileServiceList
+                rows={rows}
+                emptyLabel={formulario.categorias.vacia}
+              />
             </div>
 
             {staff.length > 0 ? (
@@ -131,17 +137,12 @@ export function ProfileBrowse({
               profile={profile}
               now={data.now}
               services={data.services}
-              onSelect={onBookService}
             />
             <HoursCard profile={profile} />
             <MapCard address={profile.address} />
             <ContactCard
               phone={profile.phone}
-              hasSocial={Boolean(
-                profile.instagramUrl ||
-                profile.tiktokUrl ||
-                profile.facebookUrl,
-              )}
+              hasSocial={hasSocial}
               social={social?.contact}
             />
           </aside>
@@ -150,83 +151,31 @@ export function ProfileBrowse({
 
       {/* Mobil */}
       <div className="flex flex-1 flex-col lg:hidden">
-        <div
-          role="tablist"
-          aria-label={perfil.publico.secciones.reservarHora}
-          className="flex border-b border-border px-4"
-        >
-          {MOBILE_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={mobileTab === tab.id}
-              onClick={() => onSelectMobileTab(tab.id)}
-              className={`border-b-2 px-2.5 py-3 text-14 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none ${
-                mobileTab === tab.id
-                  ? "border-ink font-bold text-ink"
-                  : "border-transparent font-semibold text-muted"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex flex-col gap-3.5 px-4 py-3.5 pb-32">
-          {mobileTab === "servicios" ? (
-            <>
-              {tabs.length > 0 ? (
-                <CategoryTabs
-                  tabs={tabs}
-                  selectedId={categoryId}
-                  onSelect={onSelectCategory}
+        <ProfileMobileTabs
+          tabs={MOBILE_TABS}
+          tablistLabel={perfil.publico.secciones.reservarHora}
+          panels={{
+            servicios: (
+              <>
+                {tabs.length > 0 ? <ProfileCategoryTabs tabs={tabs} /> : null}
+                <ProfileServiceList
+                  rows={rows}
+                  emptyLabel={formulario.categorias.vacia}
+                  className="flex flex-col gap-2.5"
                 />
-              ) : null}
-              <div className="flex flex-col gap-2.5">
-                {visibleServices.map((service) => (
-                  <ProfileServiceRow
-                    key={service.id}
-                    service={service}
-                    onSelect={() => onBookService(service.id)}
-                  />
-                ))}
-              </div>
-            </>
-          ) : null}
-
-          {mobileTab === "personal" ? <ProfileStaff staff={staff} /> : null}
-
-          {mobileTab === "nosotros" ? (
-            profile.about ? (
+              </>
+            ),
+            personal: <ProfileStaff staff={staff} />,
+            nosotros: profile.about ? (
               <p className="text-15 leading-relaxed text-ink-soft">
                 {profile.about}
               </p>
-            ) : null
-          ) : null}
-
-          {mobileTab === "info" ? (
-            <div className="flex flex-col gap-3.5">
-              <HoursCard profile={profile} />
-              <MapCard address={profile.address} />
-              <ContactCard
-                phone={profile.phone}
-                hasSocial={Boolean(
-                  profile.instagramUrl ||
-                  profile.tiktokUrl ||
-                  profile.facebookUrl,
-                )}
-                social={social?.contact}
-              />
-            </div>
-          ) : null}
-        </div>
-
-        <MobileBookBar
-          profile={profile}
-          data={data}
-          onBookService={onBookService}
+            ) : null,
+            info: infoPanel,
+          }}
         />
+
+        <MobileBookBar profile={profile} data={data} />
       </div>
     </div>
   );
@@ -239,11 +188,9 @@ export function ProfileBrowse({
 function MobileBookBar({
   profile,
   data,
-  onBookService,
 }: {
   profile: BookingProfile;
   data: BookingPageData;
-  onBookService: (serviceId: string) => void;
 }) {
   const next = profile.nextAvailable;
   const service = next
@@ -264,16 +211,12 @@ function MobileBookBar({
           </p>
         ) : null}
       </div>
-      <Button
-        variant="accent"
-        size="lg"
+      <ProfileBookNowButton
+        serviceId={next ? next.serviceId : null}
         className="shrink-0"
-        onClick={() => {
-          if (next) onBookService(next.serviceId);
-        }}
       >
         {perfil.publico.reservarAhora}
-      </Button>
+      </ProfileBookNowButton>
     </div>
   );
 }
