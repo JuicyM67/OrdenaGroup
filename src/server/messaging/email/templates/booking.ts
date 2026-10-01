@@ -30,7 +30,10 @@ function reservaConfirmacionTitulo(market: Market): string {
 function precioSocioLine(market: Market, data: BookingCardData): string | null {
   if (!data.precio || !data.descuentoSocio) return null;
   const miembro = emailNs(market).miembro;
-  return `${miembro.precioLabel}: ${miembro.precio({
+  const label = data.descuentoOferta
+    ? miembro.precioOfertaLabel
+    : miembro.precioLabel;
+  return `${label}: ${miembro.precio({
     precio: data.precio,
     descuento: data.descuentoSocio,
   })}`;
@@ -50,7 +53,9 @@ function cardRows(market: Market, data: BookingCardData): BookingCardRow[] {
   if (data.precio && data.descuentoSocio) {
     const miembro = emailNs(market).miembro;
     rows.push({
-      label: miembro.precioLabel,
+      label: data.descuentoOferta
+        ? miembro.precioOfertaLabel
+        : miembro.precioLabel,
       value: miembro.precio({
         precio: data.precio,
         descuento: data.descuentoSocio,

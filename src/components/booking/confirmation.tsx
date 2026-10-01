@@ -18,11 +18,14 @@ export function Confirmation({
   selection,
   day,
   memberDiscountMinor,
+  discountReason,
 }: {
   data: BookingPageData;
   selection: BookingSelection;
   day: DayAvailability | null;
   memberDiscountMinor?: number | null;
+  /** WP-31: erbjudande i stället för medlemsrabatt (servern avgör). */
+  discountReason?: "member" | "offer" | undefined;
 }) {
   // Fokus vid stegbyte (qa-granskning, item 8): h1 får fokus när bekräftelsen
   // monteras.
@@ -67,7 +70,9 @@ export function Confirmation({
           </div>
           {memberDiscountMinor ? (
             <div className="mt-1 text-14 font-semibold text-success-fg">
-              {reserva.confirmacion.descuentoSocio({
+              {(discountReason === "offer"
+                ? reserva.confirmacion.descuentoOferta
+                : reserva.confirmacion.descuentoSocio)({
                 descuento: formatMoney(memberDiscountMinor),
               })}
             </div>

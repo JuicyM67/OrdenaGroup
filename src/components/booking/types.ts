@@ -194,6 +194,8 @@ export interface BookingActionOk {
   readonly ok: true;
   /** WP-54: medlemsrabatt i minor units (servern räknar). */
   readonly memberDiscountMinor?: number;
+  /** WP-31: orsaken till `memberDiscountMinor` (medlem eller erbjudande). */
+  readonly discountReason?: "member" | "offer";
   readonly memberBenefitText?: string | null;
 }
 

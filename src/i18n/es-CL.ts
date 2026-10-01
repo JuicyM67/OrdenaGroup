@@ -413,7 +413,15 @@ export const reserva = {
     avisoWhatsapp: "Te enviamos la confirmación por WhatsApp.",
     descuentoSocio: (p: { descuento: string }): string =>
       `Descuento socio: −${p.descuento}`,
+    /** WP-31: descuento por el link de una oferta (gana el mayor, no se suman). */
+    descuentoOferta: (p: { descuento: string }): string =>
+      `Descuento de tu oferta: −${p.descuento}`,
     verMiReserva: "Ver mi reserva",
+  },
+  /** WP-31: aviso en el flujo cuando la persona llega con `/{slug}?o=…`. */
+  oferta: {
+    aviso: (p: { pct: number }): string =>
+      `Tienes ${p.pct}% de descuento con tu oferta`,
   },
   /** WP-45 (D-033): pantalla de confirmación cuando la reserva nace
    * `requested` (el negocio no confirma automático), en vez de
@@ -1556,6 +1564,8 @@ export const email = {
    * `descuento` ya viene formateado, sin signo. */
   miembro: {
     precioLabel: "Precio socio",
+    /** WP-31: mismo formato, cuando el descuento viene de una oferta. */
+    precioOfertaLabel: "Precio con oferta",
     precio: (p: { precio: string; descuento: string }): string =>
       `${p.precio} (−${p.descuento})`,
   },
@@ -2659,8 +2669,10 @@ export const sms = {
     link: string;
     /** WP-54: "$16.200 (-$1.800)" — con "-" ASCII (GSM-7), no "−". */
     precioSocio?: string;
+    /** WP-31: igual que `precioSocio`, cuando el descuento es de una oferta. */
+    precioOferta?: string;
   }): string =>
-    `Tu hora en ${p.negocio} quedó confirmada: ${p.fecha} a las ${p.hora}.${p.precioSocio ? ` Precio socio: ${p.precioSocio}.` : ""} Detalle: ${p.link}`,
+    `Tu hora en ${p.negocio} quedó confirmada: ${p.fecha} a las ${p.hora}.${p.precioSocio ? ` Precio socio: ${p.precioSocio}.` : ""}${p.precioOferta ? ` Precio con oferta: ${p.precioOferta}.` : ""} Detalle: ${p.link}`,
   /** Recordatorio del día anterior (mismo momento que la plantilla de
    * WhatsApp `recordatorio_24h`). */
   recordatorio: (p: {

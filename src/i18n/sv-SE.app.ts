@@ -312,7 +312,12 @@ export const reserva: Widen<typeof Es.reserva> = {
     avisoWhatsapp: "Vi har skickat bekräftelsen via sms.",
     descuentoSocio: (p: { descuento: string }): string =>
       `Medlemsrabatt: −${p.descuento}`,
+    descuentoOferta: (p: { descuento: string }): string =>
+      `Rabatt via erbjudande: −${p.descuento}`,
     verMiReserva: "Se min bokning",
+  },
+  oferta: {
+    aviso: (p: { pct: number }): string => `${p.pct} % rabatt via erbjudande`,
   },
   confirmacionSolicitud: {
     titulo: "Förfrågan skickad!",
@@ -1225,6 +1230,7 @@ export const email: Widen<typeof Es.email> = {
   },
   miembro: {
     precioLabel: "Medlemspris",
+    precioOfertaLabel: "Erbjudandepris",
     precio: (p: { precio: string; descuento: string }): string =>
       `${p.precio} (−${p.descuento})`,
   },
@@ -2002,8 +2008,9 @@ export const sms: Widen<typeof Es.sms> = {
     hora: string;
     link: string;
     precioSocio?: string;
+    precioOferta?: string;
   }): string =>
-    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}.${p.precioSocio ? ` Medlemspris: ${p.precioSocio}.` : ""} Detaljer: ${p.link}`,
+    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}.${p.precioSocio ? ` Medlemspris: ${p.precioSocio}.` : ""}${p.precioOferta ? ` Erbjudandepris: ${p.precioOferta}.` : ""} Detaljer: ${p.link}`,
   recordatorio: (p: {
     negocio: string;
     fecha: string;

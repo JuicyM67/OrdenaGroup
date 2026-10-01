@@ -112,6 +112,8 @@ type MessageContext = {
   startMs: number;
   priceClp: number;
   discountClp: number;
+  /** WP-31: rabatten kommer från en erbjudandelänk (inte medlemskap). */
+  discountIsOffer: boolean;
   negocio: string;
   /** WP-56: `businesses.phone` (E.164 eller null). */
   negocioTelefono: string | null;
@@ -130,6 +132,7 @@ type RawContextRow = {
   start_ms: number;
   price_clp: number;
   discount_clp: number;
+  discount_is_offer: boolean;
   negocio: string;
   negocio_telefono: string | null;
   slug: string;
@@ -151,6 +154,7 @@ async function loadContext(
       `select bk.status::text as booking_status,
               extract(epoch from lower(bk.period))::float8 * 1000 as start_ms,
               bk.price_clp, bk.discount_clp,
+              bk.campaign_recipient_id is not null as discount_is_offer,
               b.name as negocio, b.phone as negocio_telefono,
               b.slug, b.address, b.cancel_window_hours,
               c.name as cliente, c.phone_e164, c.email,
@@ -170,6 +174,7 @@ async function loadContext(
       startMs: Math.round(row.start_ms),
       priceClp: row.price_clp,
       discountClp: row.discount_clp,
+      discountIsOffer: row.discount_is_offer,
       negocio: row.negocio,
       negocioTelefono: row.negocio_telefono,
       slug: row.slug,
@@ -381,27 +386,33 @@ function fechaHora(ctx: MessageContext): { fecha: string; hora: string } {
   };
 }
 
-/** Priset att betala och (WP-54) medlemsrabatten. `discount_clp` sätts bara
- * av medlemsrabatten vid skapandet (`src/server/bookings/create.ts`), så
- * `discountClp > 0` = "Precio socio" i kortet. */
+/** Priset att betala och rabatten (WP-54 medlem / WP-31 erbjudande, största
+ * vinner i `src/server/bookings/create.ts`). `discountClp > 0` = "Precio
+ * socio" eller (`campaign_recipient_id` satt) "Precio con oferta". */
 function precioFields(ctx: MessageContext): {
   precio: string;
   descuentoSocio?: string;
+  descuentoOferta?: boolean;
 } {
   const precio = formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0));
-  return ctx.discountClp > 0
-    ? { precio, descuentoSocio: formatMoney(ctx.discountClp) }
-    : { precio };
+  if (ctx.discountClp <= 0) return { precio };
+  return {
+    precio,
+    descuentoSocio: formatMoney(ctx.discountClp),
+    ...(ctx.discountIsOffer ? { descuentoOferta: true } : {}),
+  };
 }
 
 /** SMS-varianten: "$16.200 (-$1.800)" med ASCII "-" (GSM-7; "−" skulle
  * tvinga hela sms:et till UCS-2). */
-function precioSocioSms(ctx: MessageContext): { precioSocio?: string } {
+function precioSocioSms(ctx: MessageContext): {
+  precioSocio?: string;
+  precioOferta?: string;
+} {
   if (ctx.discountClp <= 0) return {};
   const precio = formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0));
-  return {
-    precioSocio: `${precio} (-${formatMoney(ctx.discountClp)})`,
-  };
+  const value = `${precio} (-${formatMoney(ctx.discountClp)})`;
+  return ctx.discountIsOffer ? { precioOferta: value } : { precioSocio: value };
 }
 
 function reservaConfirmadaData(

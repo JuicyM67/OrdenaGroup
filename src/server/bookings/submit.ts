@@ -7,6 +7,7 @@ import { recordConsent } from "@/server/privacy/consent";
 import { err, type Result } from "@/server/scheduling/result";
 
 import { createBooking } from "./create";
+import { isOfferTokenShape } from "./offer";
 import type { CreatedBooking, CustomerBookingError } from "./types";
 
 export type CreateCustomerBookingInput = {
@@ -25,6 +26,8 @@ export type CreateCustomerBookingInput = {
   /** WP-40: svar på bokningsfrågorna, `{ [questionId]: värde }`. Valideras
    * av servern mot tjänstens frågor (`createIn`); fel → `invalid_input`. */
   answers?: Record<string, unknown> | undefined;
+  /** WP-31: erbjudandelänkens token. Fel form ignoreras (ingen rabatt). */
+  offerToken?: string | undefined;
   now: Date;
   /** Installationens marknad; injiceras bara i tester. */
   market?: Market | undefined;
@@ -107,6 +110,9 @@ export async function createCustomerBooking(
       },
       idempotencyKey: input.idempotencyKey,
       answers: input.answers ?? {},
+      ...(isOfferTokenShape(input.offerToken)
+        ? { offerToken: input.offerToken }
+        : {}),
     },
     {
       businessId: input.businessId,

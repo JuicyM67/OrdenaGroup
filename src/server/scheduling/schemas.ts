@@ -131,6 +131,9 @@ export const createBookingRequestSchema = z.strictObject({
     .record(z.string().max(64), z.unknown())
     .refine((o) => Object.keys(o).length <= 20)
     .optional(),
+  // WP-31 (F14): erbjudandelänkens klartext-token (`/{slug}?o=`). Bara en
+  // önskan — `createIn` validerar den i transaktionen; ogiltig = ingen rabatt.
+  offerToken: z.string().max(128).optional(),
 });
 
 /** Kundens flytt: bokningen identifieras bara med länkens token. */
