@@ -59,6 +59,9 @@ export default async function WaitlistOfferPage({
   }
 
   const { offer } = result;
+  // Säkerhetsgranskning: tiden kunden ser binds här på servern; claimIn
+  // bokar bara exakt den (annars `taken`).
+  const shownStart = offer.start;
   const staffName =
     (await loadStaffName(offer.businessId, offer.staffId)) ?? "";
 
@@ -72,7 +75,11 @@ export default async function WaitlistOfferPage({
       max: CLAIM_IP_MAX,
     });
     if (!allowed) return { ok: false, code: "rate_limited" };
-    const claimResult = await claimWaitlistOffer(token, systemClock());
+    const claimResult = await claimWaitlistOffer(
+      token,
+      shownStart,
+      systemClock(),
+    );
     if (claimResult.ok) {
       // Bekräftelsen (reservaConfirmada/solicitudRecibida) går ut inom 1 min
       // oberoende av cronen — samma mönster som `/r/[token]`:s

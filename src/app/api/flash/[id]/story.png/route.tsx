@@ -16,6 +16,7 @@ import { APP_LOCALE, APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { flashPrice, isFlashIdShape } from "@/server/flash";
 import { withServiceTx } from "@/server/db/tx";
+import { systemClock } from "@/server/scheduling/clock";
 
 import { loadStoryFonts } from "./fonts";
 
@@ -50,6 +51,7 @@ type StoryData = {
 
 async function loadStoryData(
   flashSlotId: string,
+  now: Date,
 ): Promise<StoryData | undefined> {
   return withServiceTx(async (q) => {
     const slot = await q.query<{
@@ -62,14 +64,15 @@ async function loadStoryData(
       `select business_id, staff_id, service_ids, starts_at::text as starts_at,
               discount_pct::int as discount_pct
          from public.flash_slots
-        where id = $1 and status = 'active'`,
-      [flashSlotId],
+        where id = $1 and status = 'active' and ends_at > $2`,
+      [flashSlotId, now],
     );
     const f = slot.rows[0];
     if (!f) return undefined;
 
     const biz = await q.query<{ name: string; comuna: string; slug: string }>(
-      `select name, comuna, slug from public.businesses where id = $1`,
+      `select name, comuna, slug from public.businesses
+        where id = $1 and status = 'active'`,
       [f.business_id],
     );
     const b = biz.rows[0];
@@ -134,7 +137,8 @@ export async function GET(
   if (!isFlashIdShape(id)) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
-  const data = await loadStoryData(id);
+  // Säkerhetsgranskning: 404 om företaget inte är aktivt eller tiden är slut.
+  const data = await loadStoryData(id, systemClock());
   if (!data) {
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }

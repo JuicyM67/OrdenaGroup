@@ -97,9 +97,11 @@ export async function asService<T>(
   );
   if (r.rows[0]?.role !== "authenticated") return fn();
   await q.query("set local role service_role");
-  const value = await fn();
-  await q.query("set local role authenticated");
-  return value;
+  try {
+    return await fn();
+  } finally {
+    await q.query("set local role authenticated");
+  }
 }
 
 /** Cache av ögonblicksbilder per (tjänst, dag) inom ett anrop. */

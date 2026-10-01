@@ -64,6 +64,9 @@ export type JoinWaitlistResult =
 const IP_WINDOW_SECONDS = 10 * 60;
 const IP_MAX = 10;
 const MAX_ACTIVE_PER_CUSTOMER = 3;
+/** Samma telefon över alla företag (telefonen är inte verifierad). */
+const PHONE_WINDOW_SECONDS = 24 * 60 * 60;
+const PHONE_MAX = 5;
 
 type Parsed = z.output<typeof joinWaitlistSchema>;
 
@@ -157,6 +160,14 @@ export async function joinWaitlist(
     max: IP_MAX,
   });
   if (!ipAllowed) return { ok: false, code: "rate_limited" };
+  // `hitRateLimit` hashar subject (SHA-256) innan det lämnar processen.
+  const phoneAllowed = await hitRateLimit({
+    scope: "waitlist:phone",
+    subject: p.data.phone,
+    windowSeconds: PHONE_WINDOW_SECONDS,
+    max: PHONE_MAX,
+  });
+  if (!phoneAllowed) return { ok: false, code: "rate_limited" };
 
   const business = await resolveBusinessBySlug(slug);
   if (!business) return { ok: false, code: "not_found" };

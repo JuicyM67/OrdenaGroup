@@ -140,6 +140,7 @@ async function claimIn(
   q: Queryable,
   token: string,
   now: Date,
+  expectedStart: number,
   sink: WaitlistEvent[],
 ): Promise<Outcome> {
   sink.length = 0;
@@ -185,6 +186,10 @@ async function claimIn(
     await expireEntryIn(q, businessId, e.id);
     return { kind: "fail", code: "taken" };
   }
+  // Säkerhetsgranskning: aldrig en annan tid än den kunden såg på
+  // `/v/[token]` (`getWaitlistOffer().offer.start`). Posten lämnas orörd —
+  // sidan laddas om och visar den nya tiden (eller "taken").
+  if (slot.start !== expectedStart) return { kind: "fail", code: "taken" };
 
   const created = await createIn(q, {
     businessId,
@@ -225,15 +230,22 @@ async function claimIn(
   };
 }
 
+/**
+ * `start` = tiden kunden såg (`getWaitlistOffer().offer.start`, ISO), bunden
+ * på servern i sidans closure. Bokas bara exakt den tiden, annars `taken`.
+ */
 export async function claimWaitlistOffer(
   token: string,
+  start: string,
   now: Date,
 ): Promise<ClaimWaitlistResult> {
   if (!isWaitlistTokenShape(token)) return { ok: false, code: "invalid" };
+  const expectedStart = new Date(start).getTime();
+  if (!Number.isFinite(expectedStart)) return { ok: false, code: "invalid" };
   const events: WaitlistEvent[] = [];
   const r = await runAs(
     { kind: "customer" },
-    async (q) => ok(await claimIn(q, token, now, events)),
+    async (q) => ok(await claimIn(q, token, now, expectedStart, events)),
     { onConflict: err("taken" as const) },
   );
   if (!r.ok) return { ok: false, code: "taken" };
