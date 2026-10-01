@@ -455,7 +455,9 @@ export function CustomerDetailScreen({
           {customer.canManageMembership ? (
             customer.consentMarketing.at ? (
               <Button asChild variant="secondary" size="lg">
-                <Link href={`${appHref("appClientesUtskickNytt")}?kunder=${customer.id}`}>
+                <Link
+                  href={`${appHref("appClientesUtskickNytt")}?kunder=${customer.id}`}
+                >
                   {clientes.ficha.ctaEnviarOferta}
                 </Link>
               </Button>

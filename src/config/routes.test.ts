@@ -153,9 +153,7 @@ describe("routes.ts", () => {
     expect(appHref("appClientes")).toBe("/app/kunder");
     expect(appHref("appClienteDetail", "123")).toBe("/app/kunder/123");
     expect(appHref("appClientesUtskick")).toBe("/app/kunder/utskick");
-    expect(appHref("appClientesUtskickNytt")).toBe(
-      "/app/kunder/utskick/nytt",
-    );
+    expect(appHref("appClientesUtskickNytt")).toBe("/app/kunder/utskick/nytt");
     expect(appHref("appCaja")).toBe("/app/kassa");
     expect(appHref("appCajaInformes")).toBe("/app/kassa/rapporter");
     expect(appHref("appFlash")).toBe("/app/blixttider");
@@ -165,15 +163,11 @@ describe("routes.ts", () => {
     expect(appHref("appAjustesReglas")).toBe(
       "/app/installningar/bokningsregler",
     );
-    expect(appHref("appAjustesServicios")).toBe(
-      "/app/installningar/tjanster",
-    );
+    expect(appHref("appAjustesServicios")).toBe("/app/installningar/tjanster");
     expect(appHref("appAjustesFormulario")).toBe(
       "/app/installningar/bokningsformular",
     );
-    expect(appHref("appAjustesHorario")).toBe(
-      "/app/installningar/oppettider",
-    );
+    expect(appHref("appAjustesHorario")).toBe("/app/installningar/oppettider");
     expect(appHref("appAjustesSocios")).toBe("/app/installningar/medlemmar");
     expect(appHref("appAjustesEquipo")).toBe("/app/installningar/team");
     expect(appHref("appAjustesPrivacidad")).toBe(

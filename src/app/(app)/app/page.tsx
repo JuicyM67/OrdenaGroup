@@ -84,6 +84,7 @@ export default async function AppIndexPage() {
   }
 
   const business = await getOwnerBusiness(user.id);
-  if (!business || isOnboardingDraft(business)) redirect(appHref("appOnboarding"));
+  if (!business || isOnboardingDraft(business))
+    redirect(appHref("appOnboarding"));
   redirect(appHref("appInicio"));
 }

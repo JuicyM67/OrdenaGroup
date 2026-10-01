@@ -43,7 +43,8 @@ export default async function UtskickPage({
 
   const current = await getCurrentMember(user.id);
   if (!current) redirect(appHref("appOnboarding"));
-  if (!current.view.perms.can_manage_all_bookings) redirect(appHref("appClientes"));
+  if (!current.view.perms.can_manage_all_bookings)
+    redirect(appHref("appClientes"));
 
   const { enviado } = await searchParams;
   const items = await listCampaignsAction();

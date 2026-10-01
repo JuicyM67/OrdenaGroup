@@ -234,7 +234,10 @@ function stripDynamicSegment(path: string): string {
  * `next.config.ts`s rewrites/redirects och måste därför känna igen både den spanska och
  * den svenska sökvägen när den avgör om en rutt är publik. */
 export function appRoutePrefixes(id: AppRouteId): readonly [string, string] {
-  return [stripDynamicSegment(CL_APP_ROUTES[id]), stripDynamicSegment(SE_APP_ROUTES[id])];
+  return [
+    stripDynamicSegment(CL_APP_ROUTES[id]),
+    stripDynamicSegment(SE_APP_ROUTES[id]),
+  ];
 }
 
 /** Alla industri-id:n med sin svenska slug, i en fast ordning — används av `next.config.ts`

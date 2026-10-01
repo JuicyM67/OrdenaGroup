@@ -151,9 +151,12 @@ export function CustomersScreen({
     if (merged.sort !== "ultimaVisita") params.set("orden", merged.sort);
     if (merged.filter !== "todos") params.set("filtro", merged.filter);
     const qs = params.toString();
-    router.push(qs ? `${appHref("appClientes")}?${qs}` : appHref("appClientes"), {
-      scroll: false,
-    });
+    router.push(
+      qs ? `${appHref("appClientes")}?${qs}` : appHref("appClientes"),
+      {
+        scroll: false,
+      },
+    );
   }
 
   function handleSearchChange(value: string) {
@@ -218,7 +221,9 @@ export function CustomersScreen({
           actions={
             canManageCampaigns ? (
               <Button asChild variant="secondary" size="lg">
-                <Link href={appHref("appClientesUtskick")}>{clientes.ctaCampanas}</Link>
+                <Link href={appHref("appClientesUtskick")}>
+                  {clientes.ctaCampanas}
+                </Link>
               </Button>
             ) : undefined
           }

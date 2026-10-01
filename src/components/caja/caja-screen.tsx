@@ -254,7 +254,9 @@ export function CajaScreen({
             className="w-fit"
           />
           <Button asChild variant="secondary" size="sm">
-            <Link href={appHref("appCajaInformes")}>{caja.tabs.informes} →</Link>
+            <Link href={appHref("appCajaInformes")}>
+              {caja.tabs.informes} →
+            </Link>
           </Button>
         </div>
         {periodKind === "range" ? (
