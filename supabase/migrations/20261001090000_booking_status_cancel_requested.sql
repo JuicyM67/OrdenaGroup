@@ -1,0 +1,13 @@
+-- WP-56 · Steg 1 (db-engineer) · Nytt statusvärde 'cancel_requested'
+-- F#: avbokning med godkännande. Plan: docs/tasks/plans/WP-56-avbokning.md.
+--
+-- `alter type ... add value` kan inte användas i samma transaktion som den
+-- körs i (Postgres-begränsning, se 20260930140000_booking_status_requested.sql
+-- för samma mönster) — därför en egen migrationsfil som bara gör det här.
+-- Nästa migration (20261001090100) återskapar `no_overlap` och lägger till
+-- kolumnerna/grants som refererar till `cancel_requested`.
+--
+-- Placeras direkt FÖRE 'cancelled': en avbokningsförfrågan är det sista
+-- steget innan bokningen faktiskt avbokas (eller återgår till sin
+-- föregående status om ägaren nekar).
+alter type public.booking_status add value 'cancel_requested' before 'cancelled';

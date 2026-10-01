@@ -3,7 +3,7 @@
 -- databasens invariant, inte behörigheter (se 040_bookings.test.sql för det).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(28);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -123,6 +123,21 @@ select throws_ok(
   $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp)
      values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000004', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
              tstzrange('2026-11-02 18:00+00', '2026-11-02 18:35+00', '[)'), tstzrange('2026-11-02 18:00+00', '2026-11-02 18:35+00', '[)'), 'confirmed', 'manual', 12000) $$,
+  '23P01'
+);
+
+-- 5b. cancel_requested blockerar också (WP-56): en väntande avboknings-
+-- förfrågan håller tiden upptagen tills ägaren svarar.
+select lives_ok(
+  $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, status_before_cancel_request)
+     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000004', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+             tstzrange('2026-11-02 23:00+00', '2026-11-02 23:35+00', '[)'), tstzrange('2026-11-02 23:00+00', '2026-11-02 23:35+00', '[)'), 'cancel_requested', 'web', 12000, 'confirmed') $$,
+  'en cancel_requested-bokning kl 23:00 skapas'
+);
+select throws_ok(
+  $$ insert into public.bookings (business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp)
+     values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-1000-0000-0000-000000000004', 'aaaaaaaa-2000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001',
+             tstzrange('2026-11-02 23:00+00', '2026-11-02 23:35+00', '[)'), tstzrange('2026-11-02 23:00+00', '2026-11-02 23:35+00', '[)'), 'confirmed', 'manual', 12000) $$,
   '23P01'
 );
 
