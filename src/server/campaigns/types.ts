@@ -65,14 +65,14 @@ export const campaignInputSchema = z
     offerText: z.string().trim().min(1).max(200).nullish(),
     offerValidUntil: z.string().regex(LOCAL_DATE).nullish(),
   })
-  .refine(
-    (v) => (v.channel === "sms" ? v.message.length <= 320 : true),
-    { path: ["message"], message: "message_too_long_sms" },
-  )
-  .refine(
-    (v) => (v.channel === "email" ? v.message.length <= 1000 : true),
-    { path: ["message"], message: "message_too_long_email" },
-  );
+  .refine((v) => (v.channel === "sms" ? v.message.length <= 320 : true), {
+    path: ["message"],
+    message: "message_too_long_sms",
+  })
+  .refine((v) => (v.channel === "email" ? v.message.length <= 1000 : true), {
+    path: ["message"],
+    message: "message_too_long_email",
+  });
 
 export type CampaignListItem = {
   id: string;

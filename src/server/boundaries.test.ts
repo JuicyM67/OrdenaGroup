@@ -388,9 +388,7 @@ describe("src/server gränser", () => {
   });
 
   it(`${WINBACK_SWEEP_EXCEPTION}: den enda frågan utan business_id är svepet över businesses.winback_days`, () => {
-    const f = productionSources.find(
-      (x) => rel(x) === WINBACK_SWEEP_EXCEPTION,
-    );
+    const f = productionSources.find((x) => rel(x) === WINBACK_SWEEP_EXCEPTION);
     expect(f).toBeDefined();
     const offenders = sqlOffenders(read(f!));
     // Undantaget finns (annars behövs det inte) och är bara svepfrågan.

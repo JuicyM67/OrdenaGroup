@@ -55,7 +55,10 @@ export function campanaMarketingEmail(
       : [
           {
             label: ns.ofertaLabel,
-            value: ns.oferta({ pct: data.offerPct, fecha: data.offerValidUntil }),
+            value: ns.oferta({
+              pct: data.offerPct,
+              fecha: data.offerValidUntil,
+            }),
           },
           ...(data.offerText
             ? [{ label: ns.ofertaTextoLabel, value: data.offerText }]

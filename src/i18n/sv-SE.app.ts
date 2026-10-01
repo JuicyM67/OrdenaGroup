@@ -1183,7 +1183,8 @@ export const email: Widen<typeof Es.email> = {
   campanaMarketing: {
     asunto: (p: { negocio: string }): string => `Nyheter från ${p.negocio}`,
     preheader: "Läs om det här erbjudandet.",
-    titulo: (p: { negocio: string }): string => `Ett meddelande från ${p.negocio}`,
+    titulo: (p: { negocio: string }): string =>
+      `Ett meddelande från ${p.negocio}`,
     ofertaLabel: "Erbjudande",
     oferta: (p: { pct: number; fecha?: string }): string =>
       p.fecha
@@ -1734,7 +1735,8 @@ export const clientes: Widen<typeof Es.clientes> = {
     ctaEmail: "Skicka e-post",
     ctaVerFicha: "Se kundkort",
     ctaEnviarOferta: "Skicka erbjudande",
-    ofertaSinConsentimiento: "Den här kunden har inte tackat ja till erbjudanden.",
+    ofertaSinConsentimiento:
+      "Den här kunden har inte tackat ja till erbjudanden.",
     membresiaTitulo: "Medlem",
     socioDesde: (p: { fecha: string }): string => `Medlem sedan ${p.fecha}`,
     socioAyuda:
@@ -2219,8 +2221,7 @@ export const sms: Widen<typeof Es.sms> = {
     texto: string;
     link: string;
     bajaLink: string;
-  }): string =>
-    `${p.negocio}: ${p.texto} Boka: ${p.link} Avreg: ${p.bajaLink}`,
+  }): string => `${p.negocio}: ${p.texto} Boka: ${p.link} Avreg: ${p.bajaLink}`,
   pie: "Svara STOPP för att avsluta.",
 };
 

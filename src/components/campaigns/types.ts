@@ -11,11 +11,7 @@
  * Samma diskriminerade union som `CampaignAudience`
  * (`src/server/campaigns/types.ts`). */
 export type CampaignAudienceKind =
-  | "all"
-  | "members"
-  | "regulars"
-  | "inactive"
-  | "selected";
+  "all" | "members" | "regulars" | "inactive" | "selected";
 
 export type CampaignAudience =
   | { kind: "all" }

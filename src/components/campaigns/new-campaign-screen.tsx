@@ -60,7 +60,12 @@ const DEFAULT_INACTIVE_DAYS = 60;
 function audienceOptions(
   hasSelected: boolean,
 ): readonly CampaignAudienceKind[] {
-  const base: CampaignAudienceKind[] = ["all", "members", "regulars", "inactive"];
+  const base: CampaignAudienceKind[] = [
+    "all",
+    "members",
+    "regulars",
+    "inactive",
+  ];
   return hasSelected ? [...base, "selected"] : base;
 }
 
@@ -124,9 +129,9 @@ export function NewCampaignScreen({
       channel,
       audience,
       message: trimmedMessage,
-      offerPct:
-        offerEnabled && offerPct ? Number(offerPct) : undefined,
-      offerText: offerEnabled && offerText.trim() ? offerText.trim() : undefined,
+      offerPct: offerEnabled && offerPct ? Number(offerPct) : undefined,
+      offerText:
+        offerEnabled && offerText.trim() ? offerText.trim() : undefined,
       offerValidUntil:
         offerEnabled && offerValidUntil ? offerValidUntil : undefined,
     };
@@ -163,7 +168,8 @@ export function NewCampaignScreen({
       });
     }, 350);
     return () => {
-      if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
+      if (debounceRef.current !== null)
+        window.clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -222,7 +228,12 @@ export function NewCampaignScreen({
         variant="desktop"
         title={
           <span className="flex items-center gap-3">
-            <IconButton label={campanas.nueva.volver} tone="ghost" size={36} asChild>
+            <IconButton
+              label={campanas.nueva.volver}
+              tone="ghost"
+              size={36}
+              asChild
+            >
               <Link href="/app/clientes/utskick">
                 <ArrowLeft
                   aria-hidden="true"
@@ -449,7 +460,9 @@ export function NewCampaignScreen({
         title={campanas.nueva.confirmarTitulo}
         body={campanas.nueva.confirmarCuerpo({ n: recipients })}
         confirmLabel={
-          sendStatus === "sending" ? campanas.nueva.enviando : campanas.nueva.confirmarSi
+          sendStatus === "sending"
+            ? campanas.nueva.enviando
+            : campanas.nueva.confirmarSi
         }
         cancelLabel={campanas.nueva.confirmarNo}
         onConfirm={handleConfirmSend}

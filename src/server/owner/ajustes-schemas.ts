@@ -185,20 +185,14 @@ export const winbackSettingsInputSchema = z
     // oferta (mismo criterio que `campaigns_offer_pct_check`, que sí permite
     // un % sin texto, pero acá además pedimos la validez porque no hay un
     // envío manual detrás que la complete).
-    if (
-      ctx.value.offerPct !== undefined &&
-      ctx.value.offerDays === undefined
-    ) {
+    if (ctx.value.offerPct !== undefined && ctx.value.offerDays === undefined) {
       ctx.issues.push({
         code: "custom",
         message: "winback.offer_days_invalid",
         input: ctx.value,
       });
     }
-    if (
-      ctx.value.offerDays !== undefined &&
-      ctx.value.offerPct === undefined
-    ) {
+    if (ctx.value.offerDays !== undefined && ctx.value.offerPct === undefined) {
       ctx.issues.push({
         code: "custom",
         message: "winback.offer_pct_invalid",

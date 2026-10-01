@@ -78,7 +78,8 @@ async function unsubscribeCustomerIn(
   });
 }
 
-export type UnsubscribeResult = { ok: true } | { ok: false; code: "invalid_token" };
+export type UnsubscribeResult =
+  { ok: true } | { ok: false; code: "invalid_token" };
 
 /** Idempotent (en andra POST på samma länk är ett no-op, inte ett fel). */
 export async function unsubscribeByToken(

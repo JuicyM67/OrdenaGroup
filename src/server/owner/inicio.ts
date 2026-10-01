@@ -24,7 +24,11 @@ import { memberView, type MemberView } from "./member";
 import { listPendingRequestsIn } from "./requests";
 import { isoOf } from "./shared";
 
-type BusinessRow = { name: string; comuna: string; winback_days: number | null };
+type BusinessRow = {
+  name: string;
+  comuna: string;
+  winback_days: number | null;
+};
 type BookingRow = {
   id: string;
   client_name: string | null;

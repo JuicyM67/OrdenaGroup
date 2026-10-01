@@ -1173,7 +1173,11 @@ async function processCampaignRow(
   const reservarUrl = offerLink(ctx.slug, token);
   const baja = bajaLink(token);
   const offerValidUntil = ctx.offerValidUntil
-    ? formatLocalDate(ctx.offerValidUntil as LocalDate, "dayMonthLong", APP_LOCALE)
+    ? formatLocalDate(
+        ctx.offerValidUntil as LocalDate,
+        "dayMonthLong",
+        APP_LOCALE,
+      )
     : undefined;
   if (row.channel === "email") {
     const r = await sendEmail({
@@ -1196,7 +1200,12 @@ async function processCampaignRow(
   const r = await sendSms({
     to: ctx.phone as string,
     template: "campanaMarketing",
-    data: { negocio: ctx.negocio, texto: ctx.texto, link: reservarUrl, bajaLink: baja },
+    data: {
+      negocio: ctx.negocio,
+      texto: ctx.texto,
+      link: reservarUrl,
+      bajaLink: baja,
+    },
     idempotencyKey: row.dedupeKey,
   });
   await finalizeSent(row, r.id);

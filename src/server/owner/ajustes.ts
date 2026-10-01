@@ -161,10 +161,7 @@ function mapDbError(e: unknown): string {
   ) {
     return "winback.message_too_long";
   }
-  if (
-    code === "23514" &&
-    constraint === "businesses_winback_offer_pct_check"
-  ) {
+  if (code === "23514" && constraint === "businesses_winback_offer_pct_check") {
     return "winback.offer_pct_invalid";
   }
   if (

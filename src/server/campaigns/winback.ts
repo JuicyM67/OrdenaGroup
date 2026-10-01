@@ -69,7 +69,13 @@ async function eligibleCustomerIdsIn(
         )
       order by c.id
       limit $5`,
-    [businessId, now.toISOString(), WINBACK_REUSE_DAYS, winbackDays, MAX_RECIPIENTS],
+    [
+      businessId,
+      now.toISOString(),
+      WINBACK_REUSE_DAYS,
+      winbackDays,
+      MAX_RECIPIENTS,
+    ],
   );
   return r.rows.map((x) => x.id);
 }
@@ -143,9 +149,7 @@ export async function runWinback(now: Date): Promise<RunWinbackResult> {
         offerText: null,
         offerValidUntil,
       });
-      await withServiceTx((q) =>
-        markWinbackSentIn(q, b.id, customerIds, now),
-      );
+      await withServiceTx((q) => markWinbackSentIn(q, b.id, customerIds, now));
       queued += result.queued;
       sentFor += 1;
     } catch {
