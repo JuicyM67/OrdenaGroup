@@ -14,10 +14,16 @@
 import type { ReactNode } from "react";
 
 import { OwnerMobileTopBar } from "@/components/mobile/owner-top-bar";
+import type { AvatarProps } from "@/components/ui/avatar";
+import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
 import type {
   NotificationBellResult,
   PendingRequestItem,
 } from "@/components/shared/notification-bell";
+import { OwnerChromeProvider } from "@/components/shared/owner-chrome";
 import { cn } from "@/components/ui/cn";
 
 export type AppShellProps = {
@@ -43,6 +49,24 @@ export type AppShellProps = {
   onDeclineCancelRequest?: (
     bookingId: string,
   ) => Promise<NotificationBellResult>;
+  /**
+   * WP-57: data till `<OwnerChromeProvider>` (owner-chrome.tsx), som AppShell nu alltid
+   * sätter runt `children` — skärmar som renderar `<OwnerPageHeader>` (owner-page-header.tsx,
+   * se Inicio) behöver då inte koppla ihop klockan/profilmenyn själva. Skärmar som ännu inte
+   * använder OwnerPageHeader kan strunta i de här propsen helt (providern sätts ändå, men
+   * ingen läser den förrän skärmen byter till `<OwnerPageHeader>`).
+   */
+  ownerName?: string;
+  avatarTone?: AvatarProps["tone"];
+  publicPageHref?: string;
+  canViewReports?: boolean;
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
+  /** WP-57: döljer den mörka `OwnerMobileTopBar` på mobil — för skärmar som själva
+   * renderar en fullständig `<OwnerPageHeader>` (klocka + profilmeny ingår redan där),
+   * så att de inte får utloggning/klocka dubblerat. `undefined`/`false` behåller den
+   * tidigare `OwnerMobileTopBar` för skärmar som inte använder OwnerPageHeader än. */
+  hideMobileTopBar?: boolean;
   className?: string;
 };
 
@@ -56,6 +80,13 @@ export function AppShell({
   onDeclineRequest,
   onApproveCancelRequest,
   onDeclineCancelRequest,
+  ownerName,
+  avatarTone,
+  publicPageHref,
+  canViewReports,
+  myProfile,
+  myProfileActions,
+  hideMobileTopBar = false,
   className,
 }: AppShellProps) {
   return (
@@ -66,16 +97,35 @@ export function AppShell({
       )}
     >
       <div className="hidden lg:contents">{rail}</div>
-      <OwnerMobileTopBar
-        onLogout={onLogout}
-        pendingRequests={pendingRequests}
-        onConfirmRequest={onConfirmRequest}
-        onDeclineRequest={onDeclineRequest}
-        onApproveCancelRequest={onApproveCancelRequest}
-        onDeclineCancelRequest={onDeclineCancelRequest}
-      />
+      {hideMobileTopBar ? null : (
+        <OwnerMobileTopBar
+          onLogout={onLogout}
+          pendingRequests={pendingRequests}
+          onConfirmRequest={onConfirmRequest}
+          onDeclineRequest={onDeclineRequest}
+          onApproveCancelRequest={onApproveCancelRequest}
+          onDeclineCancelRequest={onDeclineCancelRequest}
+        />
+      )}
       <main className="relative flex flex-1 flex-col gap-6 px-5 py-5 pb-28 lg:min-h-0 lg:overflow-hidden lg:rounded-shell lg:bg-canvas lg:px-8 lg:py-7 lg:pb-7">
-        {children}
+        <OwnerChromeProvider
+          value={{
+            ownerName: ownerName ?? "",
+            avatarTone,
+            publicPageHref: publicPageHref ?? "/",
+            canViewReports,
+            pendingRequests: pendingRequests ?? [],
+            onConfirmRequest,
+            onDeclineRequest,
+            onApproveCancelRequest,
+            onDeclineCancelRequest,
+            onLogout,
+            myProfile,
+            myProfileActions,
+          }}
+        >
+          {children}
+        </OwnerChromeProvider>
       </main>
       {mobileTabBar}
     </div>
