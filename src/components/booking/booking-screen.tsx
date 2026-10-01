@@ -142,9 +142,7 @@ export function BookingScreen({
     "member" | "offer" | undefined
   >(undefined);
   // WP-61: kundens egen `/r/[token]`-länk i `Confirmation`.
-  const [manageToken, setManageToken] = useState<string | undefined>(
-    undefined,
-  );
+  const [manageToken, setManageToken] = useState<string | undefined>(undefined);
   function updateContact(patch: Partial<CustomerContact>) {
     setContact((prev) => ({ ...prev, ...patch }));
   }

@@ -121,11 +121,7 @@ export function OwnerMobileTopBar({
               tone="ghost-dark"
               size={44}
             >
-              <LogOut
-                aria-hidden="true"
-                className="size-5"
-                strokeWidth={1.9}
-              />
+              <LogOut aria-hidden="true" className="size-5" strokeWidth={1.9} />
             </IconButton>
           </form>
         )}
