@@ -19,7 +19,11 @@ import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
 import { caja, comun } from "@/i18n";
-import { formatDuration, formatLocalDate, type LocalDate } from "@/lib/format/dates";
+import {
+  formatDuration,
+  formatLocalDate,
+  type LocalDate,
+} from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { ArrowLeft } from "lucide-react";
 

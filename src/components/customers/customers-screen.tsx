@@ -217,9 +217,7 @@ export function CustomersScreen({
           actions={
             canManageCampaigns ? (
               <Button asChild variant="secondary" size="lg">
-                <Link href="/app/clientes/utskick">
-                  {clientes.ctaCampanas}
-                </Link>
+                <Link href="/app/clientes/utskick">{clientes.ctaCampanas}</Link>
               </Button>
             ) : undefined
           }
@@ -324,7 +322,8 @@ export function CustomersScreen({
                           {c.name}
                         </span>
                         <span className="truncate text-13 text-muted">
-                          {phoneLabel(c.phone)} · {lastVisitLabel(c.lastVisitAt)}
+                          {phoneLabel(c.phone)} ·{" "}
+                          {lastVisitLabel(c.lastVisitAt)}
                         </span>
                         <TagList tags={tagsOf(c)} />
                       </span>
@@ -410,9 +409,7 @@ export function CustomersScreen({
                       <td className="px-2 text-13 text-ink">
                         {clientes.ficha.visitas({ n: c.visitsCount })}
                       </td>
-                      <td className="px-2 text-13 text-ink">
-                        {c.noShowCount}
-                      </td>
+                      <td className="px-2 text-13 text-ink">{c.noShowCount}</td>
                       <td className="px-2 py-1.5">
                         <TagList tags={tagsOf(c)} />
                       </td>

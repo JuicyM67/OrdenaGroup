@@ -112,10 +112,7 @@ export function OwnerPageHeader({
 
   return (
     <header
-      className={cn(
-        "flex items-center gap-3 lg:h-13 lg:gap-4",
-        className,
-      )}
+      className={cn("flex items-center gap-3 lg:h-13 lg:gap-4", className)}
     >
       <div className="flex min-w-0 flex-1 flex-col">
         {subtitle ? (

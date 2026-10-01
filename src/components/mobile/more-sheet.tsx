@@ -10,7 +10,14 @@
 // Inga nya texter: etiketterna kommer från `src/i18n/es-CL.ts` (`nav`/`campanas`), samma
 // strängar som redan används i MainNav/AgendaRail/campaigns-screen.
 import * as Dialog from "@radix-ui/react-dialog";
-import { BarChart3, LogOut, Send, SlidersHorizontal, X, Zap } from "lucide-react";
+import {
+  BarChart3,
+  LogOut,
+  Send,
+  SlidersHorizontal,
+  X,
+  Zap,
+} from "lucide-react";
 import Link from "next/link";
 import { useId, type ReactNode } from "react";
 
@@ -75,7 +82,13 @@ export function MoreSheet({
             <MoreSheetLink
               href="/app/flash"
               label={nav.horasFlash}
-              icon={<Zap aria-hidden="true" className={ROW_ICON} strokeWidth={strokeNav} />}
+              icon={
+                <Zap
+                  aria-hidden="true"
+                  className={ROW_ICON}
+                  strokeWidth={strokeNav}
+                />
+              }
               onNavigate={() => onOpenChange(false)}
             />
             {showCaja ? (
@@ -95,7 +108,13 @@ export function MoreSheet({
             <MoreSheetLink
               href="/app/clientes/utskick"
               label={campanas.titulo}
-              icon={<Send aria-hidden="true" className={ROW_ICON} strokeWidth={strokeNav} />}
+              icon={
+                <Send
+                  aria-hidden="true"
+                  className={ROW_ICON}
+                  strokeWidth={strokeNav}
+                />
+              }
               onNavigate={() => onOpenChange(false)}
             />
             <MoreSheetLink
@@ -115,7 +134,11 @@ export function MoreSheet({
                 type="submit"
                 className="flex w-full items-center gap-3 rounded-control px-2 py-3.5 text-left text-15 font-semibold text-ink transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none"
               >
-                <LogOut aria-hidden="true" className={ROW_ICON} strokeWidth={strokeNav} />
+                <LogOut
+                  aria-hidden="true"
+                  className={ROW_ICON}
+                  strokeWidth={strokeNav}
+                />
                 {nav.cerrarSesion}
               </button>
             </form>

@@ -393,7 +393,11 @@ export function CustomerDetailScreen({
 
       <Card radius="tile" padding="lg" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-start gap-4">
-          <Avatar initials={initialsOf(customer.name)} tone="lilac-100" size={56} />
+          <Avatar
+            initials={initialsOf(customer.name)}
+            tone="lilac-100"
+            size={56}
+          />
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="font-display text-24 font-bold tracking-display text-ink">
@@ -406,7 +410,9 @@ export function CustomerDetailScreen({
               ))}
             </div>
             <p className="text-14 text-muted">
-              {clientes.ficha.clienteDesde({ fecha: dateLabel(customer.createdAt) })}
+              {clientes.ficha.clienteDesde({
+                fecha: dateLabel(customer.createdAt),
+              })}
               {phone ? ` · ${formatPhone(phone)}` : ""}
             </p>
           </div>
@@ -466,14 +472,24 @@ export function CustomerDetailScreen({
               label={nav.masOpciones}
               trigger={
                 <IconButton label={nav.masOpciones} tone="surface" size={44}>
-                  <MoreHorizontal aria-hidden="true" className="size-4.5" strokeWidth={strokeArrow} />
+                  <MoreHorizontal
+                    aria-hidden="true"
+                    className="size-4.5"
+                    strokeWidth={strokeArrow}
+                  />
                 </IconButton>
               }
             >
               {customer.email ? (
                 <MenuLinkItem
                   href={`mailto:${customer.email}`}
-                  icon={<Mail aria-hidden="true" className="size-4" strokeWidth={strokeArrow} />}
+                  icon={
+                    <Mail
+                      aria-hidden="true"
+                      className="size-4"
+                      strokeWidth={strokeArrow}
+                    />
+                  }
                 >
                   {clientes.ficha.ctaEmail}
                 </MenuLinkItem>
@@ -485,9 +501,7 @@ export function CustomerDetailScreen({
                 >
                   {/* TODO_COPY: no hay un verbo corto "Marcar/Quitar de socios"
                       en es-CL.ts, solo el sustantivo `estados.socio` ("Socio"). */}
-                  {isMember
-                    ? uxTextos.quitarSocio
-                    : uxTextos.marcarSocio}
+                  {isMember ? uxTextos.quitarSocio : uxTextos.marcarSocio}
                 </MenuButtonItem>
               ) : null}
               {isMember && customer.email && onNotifyMember ? (
@@ -572,7 +586,7 @@ export function CustomerDetailScreen({
           {/* TODO_COPY: no hay un título corto "Tidslinje"/"Timeline" en
               es-CL.ts — se reutilizan los dos títulos existentes como
               subtítulos de la misma lista en vez de inventar uno nuevo. */}
-          <h3 className="text-13 font-bold text-muted uppercase tracking-caps">
+          <h3 className="text-13 font-bold tracking-caps text-muted uppercase">
             {clientes.ficha.proximasTitulo}
           </h3>
           {hasUpcoming ? (
@@ -586,7 +600,7 @@ export function CustomerDetailScreen({
               {clientes.ficha.proximasVacio}
             </p>
           )}
-          <h3 className="text-13 font-bold text-muted uppercase tracking-caps">
+          <h3 className="text-13 font-bold tracking-caps text-muted uppercase">
             {clientes.ficha.historialTitulo}
           </h3>
           {hasHistory ? (
@@ -596,7 +610,9 @@ export function CustomerDetailScreen({
               ))}
             </ul>
           ) : (
-            <p className="text-13 text-muted">{clientes.ficha.historialVacio}</p>
+            <p className="text-13 text-muted">
+              {clientes.ficha.historialVacio}
+            </p>
           )}
         </Card>
 
@@ -605,7 +621,10 @@ export function CustomerDetailScreen({
             {clientes.ficha.consentimientosTitulo}
           </h2>
           <div className="flex flex-col divide-y divide-line">
-            <ConsentRow label={uxTextos.consentTerminos} consent={customer.consentTerms} />
+            <ConsentRow
+              label={uxTextos.consentTerminos}
+              consent={customer.consentTerms}
+            />
             <ConsentRow
               label={uxTextos.consentOfertas}
               consent={customer.consentMarketing}

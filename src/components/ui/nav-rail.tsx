@@ -237,7 +237,11 @@ export function NavRailCollapseToggle({
       )}
     >
       {collapsed ? (
-        <ChevronsRight aria-hidden="true" className="size-5" strokeWidth={1.8} />
+        <ChevronsRight
+          aria-hidden="true"
+          className="size-5"
+          strokeWidth={1.8}
+        />
       ) : (
         <ChevronsLeft aria-hidden="true" className="size-5" strokeWidth={1.8} />
       )}

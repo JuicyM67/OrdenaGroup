@@ -292,9 +292,7 @@ export function InicioScreen({
         />
       </div>
 
-      {showGettingStarted ? (
-        <GettingStartedCard data={gettingStarted} />
-      ) : null}
+      {showGettingStarted ? <GettingStartedCard data={gettingStarted} /> : null}
 
       <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:flex-row">
         <div className="flex flex-col gap-5 lg:min-h-0 lg:min-w-0 lg:flex-1">

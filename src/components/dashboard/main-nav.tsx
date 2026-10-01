@@ -48,13 +48,7 @@ import { useNavCollapsed } from "@/components/ui/use-nav-collapsed";
 import { nav } from "@/i18n";
 
 export type MainNavKey =
-  | "inicio"
-  | "agenda"
-  | "hoy"
-  | "clientes"
-  | "horasFlash"
-  | "caja"
-  | "ajustes";
+  "inicio" | "agenda" | "hoy" | "clientes" | "horasFlash" | "caja" | "ajustes";
 
 export const DEFAULT_MAIN_NAV_HREFS: Record<MainNavKey, string> = {
   inicio: "/app/inicio",

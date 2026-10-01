@@ -453,8 +453,7 @@ export async function getCustomerDetailIn(
     ),
   ]);
 
-  const showMoney =
-    member === undefined || hasPerm(member, "can_view_reports");
+  const showMoney = member === undefined || hasPerm(member, "can_view_reports");
   const canEditNotes =
     member === undefined ||
     member?.role === "owner" ||

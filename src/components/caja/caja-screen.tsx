@@ -378,8 +378,8 @@ export function CajaScreen({
                 {/* TODO_COPY: no hay una frase "de $X reservado" en
                     es-CL.ts — se reutiliza `resumen.reservasCount`
                     (existente) para el conteo de reservas. */}
-                {uxTextos.deReservado({ monto: formatMoney(totalBookedMinor) })} ·{" "}
-                {caja.resumen.reservasCount({ n: cajaData.summary.bookings })}
+                {uxTextos.deReservado({ monto: formatMoney(totalBookedMinor) })}{" "}
+                · {caja.resumen.reservasCount({ n: cajaData.summary.bookings })}
               </span>
               <div className="h-1.5 overflow-hidden rounded-full bg-dark-2">
                 <div
@@ -391,7 +391,11 @@ export function CajaScreen({
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Card radius="card" padding="none" className="flex h-20 flex-col justify-between px-4 py-3">
+            <Card
+              radius="card"
+              padding="none"
+              className="flex h-20 flex-col justify-between px-4 py-3"
+            >
               <span className="font-display text-18 font-semibold tracking-display whitespace-nowrap">
                 {String(cajaData.summary.bookings)}
               </span>
@@ -399,15 +403,25 @@ export function CajaScreen({
                 {caja.resumen.reservasCount({ n: cajaData.summary.bookings })}
               </span>
             </Card>
-            <Card radius="card" padding="none" className="flex h-20 flex-col justify-between px-4 py-3">
+            <Card
+              radius="card"
+              padding="none"
+              className="flex h-20 flex-col justify-between px-4 py-3"
+            >
               <span className="font-display text-18 font-semibold tracking-display whitespace-nowrap">
                 {String(cajaData.summary.noShows)}
               </span>
               <span className="text-12 text-muted">
-                {caja.resumen.inasistenciasCount({ n: cajaData.summary.noShows })}
+                {caja.resumen.inasistenciasCount({
+                  n: cajaData.summary.noShows,
+                })}
               </span>
             </Card>
-            <Card radius="card" padding="none" className="flex h-20 flex-col justify-between px-4 py-3">
+            <Card
+              radius="card"
+              padding="none"
+              className="flex h-20 flex-col justify-between px-4 py-3"
+            >
               <span className="font-display text-18 font-semibold tracking-display whitespace-nowrap">
                 {formatMoney(cajaData.summary.averageMinor)}
               </span>
