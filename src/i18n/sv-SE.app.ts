@@ -489,7 +489,7 @@ const AGREGAR_PROFESIONAL_SV = "Lägg till medarbetare";
 
 const FILTRO_EQUIPO_SV = {
   misReservas: "Mina bokningar",
-  todoElEquipo: "Hela teamet",
+  todoElEquipo: "Hela personalen",
 } as const;
 
 export const agenda: Widen<typeof Es.agenda> = {
@@ -1609,7 +1609,7 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     link: "Din bokningslänk",
     reglas: "Bokningsregler",
     servicios: "Tjänster",
-    equipo: "Team",
+    equipo: "Personal",
     horario: "Öppettider",
     mercadopago: "Betalningar",
     cuenta: "Konto",
@@ -2635,7 +2635,7 @@ export const equipo: Widen<typeof Es.equipo> = {
     confirmarQuitar: {
       titulo: "Ta bort åtkomsten till det här kontot?",
       cuerpo:
-        "Personen kan inte längre logga in på ditt konto. Medarbetarens rad finns kvar i ditt team.",
+        "Personen kan inte längre logga in på ditt konto. Medarbetarens rad finns kvar bland din personal.",
       ctaSi: "Ja, ta bort åtkomst",
       ctaNo: "Nej, behåll",
     },
@@ -2651,7 +2651,7 @@ export const equipo: Widen<typeof Es.equipo> = {
   limiteDelPlan: {
     titulo: "Konton i din plan",
     texto: (p: { limit: number }): string =>
-      `Din plan har ${p.limit} ${p.limit === 1 ? "konto" : "konton"}. Byt till Equipo för att ge personalen egna inloggningar (Equipo 3, Local 10).`,
+      `Din plan har ${p.limit} ${p.limit === 1 ? "konto" : "konton"}. Byt till Team för att ge personalen egna inloggningar (Team 3, Företag 10).`,
     cta: "Byt plan",
   },
   infoDelPlan: {

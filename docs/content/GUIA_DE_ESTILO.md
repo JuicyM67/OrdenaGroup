@@ -51,6 +51,29 @@
 | Cuarto período de Caja, con fecha de inicio y término a elección (WP-24) | **rango** (chip: "Rango"; campos "Desde"/"Hasta") | "personalizado", "intervalo" |
 | Reservas terminadas que todavía no se cobran (Caja, WP-24) | **por cobrar** ("Reservas por cobrar") | "pendientes", "deuda" |
 
+### 2.1 Equivalencias en sueco (sv-SE, mercado Booking Buddy)
+
+`src/i18n/sv-SE.app.ts`, `sv-SE.ts` y `sv-SE.auth.ts` son el espejo sueco de
+este archivo (mismas claves, `Widen<typeof Es....>`, revisión WP-59). La
+siguiente tabla fija, para cada concepto de la fila equivalente de arriba, la
+única palabra sueca que se usa siempre (no es traducción literal palabra por
+palabra, sino el mismo criterio de "una palabra por concepto" aplicado al
+sueco natural, sin traducir desde el español).
+
+| Concepto | Se dice en sueco | No se dice |
+|---|---|---|
+| La cita del cliente (`hora`) | **tid** ("din tid") | "bokning" (esa es `reserva`, la vista del dueño) |
+| La cita en la vista del dueño (`reserva`) | **bokning** | — |
+| Quien atiende, una persona (`profesional`) | **medarbetare** (singular y plural igual: "en medarbetare", "flera medarbetare") | "anställd" (se usa solo en `PLANES`, texto de marketing, no en la app) |
+| El equipo completo como grupo (`equipo`, nombre de sección en Ajustes y en el paso de onboarding, pestaña del perfil público) | **personal** (sustantivo colectivo: "Personal", "din personal", "Personal och scheman") | "team" — esa palabra queda reservada para el nombre propio del plan de precios ("Team", `PLANES`/`PLANES_LANDING`, id `equipo`); nunca se usa como sustantivo común para el equipo, para no mezclar el nombre de un plan con la palabra genérica (WP-59: antes `ajustes.secciones.equipo` decía "Team" mientras `onboarding.pasos.equipo` decía "Personal" para el mismo texto, corregido) |
+| Quien compra (`cliente`) | **kund** | — |
+| Solicitud de una hora que el negocio debe confirmar (`solicitud`, D-033) | **förfrågan** | "ansökan", "begäran" |
+| Cola de espera de un día lleno (`lista de espera`) | **väntelista** | "kölista" |
+| Hora liberada con descuento, por tiempo limitado (`hora flash`) | **flashtid** | "blixttid" (descartado: GUIA sueca usa "flash" directo, ya es un préstamo asentado en el producto) |
+| Cliente frecuente con un beneficio propio (`socio`) | **medlem** | — |
+| Envío de ofertas a clientes (`campaña`, `/app/clientes/utskick`) | **utskick** | "nyhetsbrev", "kampanj" |
+| Marcar un pago como registrado en la base (`cobrar`/`cobrado`) | **betala**/**betald** (p. ej. "Markera som betald") | — |
+
 ## 3. Formato
 
 - Plata: `$18.000` (símbolo `$`, punto como separador de miles, sin
