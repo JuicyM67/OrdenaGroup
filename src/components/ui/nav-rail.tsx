@@ -4,6 +4,7 @@
 // Divider/Spacer. Bredd 80, alltid på mörk yta (data-surface="dark" sätts på <nav>, så
 // children kan använda `on-dark:`-varianten för t.ex. fokusring).
 // "use client": React Context (NavRailVariantContext) kräver en klientkomponent.
+import { ChevronsLeft, ChevronsRight } from "lucide-react";
 import Link from "next/link";
 import { createContext, use, type ReactNode } from "react";
 
@@ -21,6 +22,15 @@ export type NavRailProps = {
   "aria-label": string;
   children: ReactNode;
   className?: string;
+  /**
+   * WP-57 (punkt 2, UX-genomgång "Menyn med etiketter"): `true` (standard, oförändrat
+   * beteende) = bara ikoner, 80 px bred. `false` = etiketter bredvid ikonerna (via
+   * `NavRailLink`/`NavRailFormAction`s egen `collapsed`-prop), ~208 px bred
+   * (`useNavCollapsed`, `use-nav-collapsed.ts`). Bara `MainNav` och `AgendaRail`s
+   * nav-länkar skickar `false` — övrig användning (t.ex. `settings/ajustes-shell.tsx`,
+   * design lab) behåller det gamla, smala läget utan att ändra sin egen kod.
+   */
+  collapsed?: boolean;
 };
 
 export function NavRail({
@@ -28,6 +38,7 @@ export function NavRail({
   "aria-label": ariaLabel,
   children,
   className,
+  collapsed = true,
 }: NavRailProps) {
   return (
     <NavRailVariantContext value={variant}>
@@ -35,7 +46,8 @@ export function NavRail({
         aria-label={ariaLabel}
         data-surface="dark"
         className={cn(
-          "flex w-20 shrink-0 flex-col items-center",
+          "flex shrink-0 flex-col transition-[width] duration-150 ease-out",
+          collapsed ? "w-20 items-center" : "w-52 items-stretch px-2",
           variant === "bare"
             ? "gap-3 py-3"
             : "gap-3.5 rounded-card bg-dark py-3.5",
@@ -83,6 +95,12 @@ export type NavRailLinkProps = {
    * ger ständiga 404-RSC-förfrågningar som aldrig blir "networkidle" i `npm run visual`.
    */
   prefetch?: boolean;
+  /**
+   * WP-57 (punkt 2): `true` (standard) = kvadratisk ikonknapp med hover-tooltip (oförändrat
+   * beteende). `false` = full bredd, etiketten synlig bredvid ikonen i stället för i en
+   * tooltip (texten är redan synlig, ingen tooltip behövs då).
+   */
+  collapsed?: boolean;
 };
 
 export function NavRailLink({
@@ -91,24 +109,30 @@ export function NavRailLink({
   icon,
   active = false,
   prefetch,
+  collapsed = true,
 }: NavRailLinkProps) {
-  return (
-    // WP-47 (tillägg A): tooltip vid hover, samma `label` som aria-label — bara visuellt.
-    <Tooltip label={label}>
-      <Link
-        href={href}
-        prefetch={prefetch}
-        aria-label={label}
-        aria-current={active ? "page" : undefined}
-        className={cn(
-          "flex size-13 items-center justify-center rounded-control transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
-          active ? "bg-dark-2 text-lime" : "text-on-dark-subtle",
-        )}
-      >
-        {icon}
-      </Link>
-    </Tooltip>
+  const link = (
+    <Link
+      href={href}
+      prefetch={prefetch}
+      aria-label={collapsed ? label : undefined}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex items-center rounded-control transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
+        collapsed
+          ? "size-13 justify-center"
+          : "h-13 w-full gap-3 px-3.5 text-14 font-semibold",
+        active ? "bg-dark-2 text-lime" : "text-on-dark-subtle",
+      )}
+    >
+      {icon}
+      {collapsed ? null : <span className="truncate">{label}</span>}
+    </Link>
   );
+  // WP-47 (tillägg A): tooltip vid hover när bara ikonen syns — etiketten är redan
+  // `aria-label` på länken (regel "riktiga knappar"). WP-57: ingen tooltip när etiketten
+  // redan är synlig bredvid ikonen (`collapsed=false`), annars samma text två gånger.
+  return collapsed ? <Tooltip label={label}>{link}</Tooltip> : link;
 }
 
 export type NavRailFormActionProps = {
@@ -117,6 +141,8 @@ export type NavRailFormActionProps = {
   action: () => void | Promise<void>;
   label: string;
   icon: ReactNode;
+  /** WP-57 (punkt 2): se `NavRailLink`. */
+  collapsed?: boolean;
 };
 
 /** Samma yta/beteende som `NavRailLink`, men en formulärknapp i stället för en länk
@@ -125,20 +151,26 @@ export function NavRailFormAction({
   action,
   label,
   icon,
+  collapsed = true,
 }: NavRailFormActionProps) {
-  return (
-    <Tooltip label={label}>
-      <form action={action}>
-        <button
-          type="submit"
-          aria-label={label}
-          className="flex size-13 items-center justify-center rounded-control text-on-dark-subtle transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime"
-        >
-          {icon}
-        </button>
-      </form>
-    </Tooltip>
+  const button = (
+    <form action={action} className={collapsed ? undefined : "w-full"}>
+      <button
+        type="submit"
+        aria-label={collapsed ? label : undefined}
+        className={cn(
+          "flex items-center rounded-control text-on-dark-subtle transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
+          collapsed
+            ? "size-13 justify-center"
+            : "h-13 w-full gap-3 px-3.5 text-14 font-semibold",
+        )}
+      >
+        {icon}
+        {collapsed ? null : <span className="truncate">{label}</span>}
+      </button>
+    </form>
   );
+  return collapsed ? <Tooltip label={label}>{button}</Tooltip> : button;
 }
 
 export type NavRailActionProps = Omit<IconButtonProps, "tone" | "size"> & {
@@ -169,4 +201,47 @@ export function NavRailDivider() {
 
 export function NavRailSpacer() {
   return <div className="flex-1" />;
+}
+
+/**
+ * TODO_COPY (copywriter-es-cl): `nav.ts` saknar ännu etiketter för att fälla ihop/fälla ut
+ * menyn — platshållare nedan, nämnt i rapporten till uppdragsgivaren.
+ */
+const COLLAPSE_LABEL_TODO = "Minimizar menú";
+const EXPAND_LABEL_TODO = "Expandir menú";
+
+export type NavRailCollapseToggleProps = {
+  collapsed: boolean;
+  onToggle: (next: boolean) => void;
+};
+
+/** WP-57 (punkt 2): knappen som fäller ihop/ut `MainNav`/`AgendaRail` (`useNavCollapsed`,
+ * `use-nav-collapsed.ts`). Samma yta som `NavRailLink`, men en knapp i stället för en
+ * länk. */
+export function NavRailCollapseToggle({
+  collapsed,
+  onToggle,
+}: NavRailCollapseToggleProps) {
+  const label = collapsed ? EXPAND_LABEL_TODO : COLLAPSE_LABEL_TODO;
+  const button = (
+    <button
+      type="button"
+      aria-label={collapsed ? label : undefined}
+      onClick={() => onToggle(!collapsed)}
+      className={cn(
+        "flex items-center rounded-control text-on-dark-subtle transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
+        collapsed
+          ? "size-13 justify-center"
+          : "h-13 w-full gap-3 px-3.5 text-14 font-semibold",
+      )}
+    >
+      {collapsed ? (
+        <ChevronsRight aria-hidden="true" className="size-5" strokeWidth={1.8} />
+      ) : (
+        <ChevronsLeft aria-hidden="true" className="size-5" strokeWidth={1.8} />
+      )}
+      {collapsed ? null : <span className="truncate">{label}</span>}
+    </button>
+  );
+  return collapsed ? <Tooltip label={label}>{button}</Tooltip> : button;
 }
