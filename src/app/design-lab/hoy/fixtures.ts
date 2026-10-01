@@ -1,7 +1,7 @@
 // Fixtures för Hoy (Hoy.dc.html renderVals()), se docs/tasks/plans/WP-14.md §4 steg 1 och 5.
 // `buildFixture(estado)` väljer tillstånd via `?estado=` på /design-lab/hoy. Standardläget
 // (utan `estado`) är referensens läge.
-import type { HoyBooking, HoyData } from "@/components/mobile/types";
+import type { HoyBooking, HoyData, HoyGap } from "@/components/mobile/types";
 
 const LINKS: HoyData["links"] = {
   flash: "/app/horas-flash/nueva",
@@ -108,6 +108,17 @@ const baseBookings: HoyBooking[] = [
   },
 ];
 
+// WP-57 (punkt 5): "Resto del día" skriver ut lediga luckor ("Ledigt till 17:00 · Gör till
+// Blixttid") — samma `FreeGap`-form som Blixttiders tomma läge (src/server/flash/gaps.ts).
+const baseGaps: HoyGap[] = [
+  {
+    staffId: "staff-2",
+    staffName: "Matías",
+    start: "2026-10-02T15:35:00-03:00",
+    end: "2026-10-02T16:30:00-03:00",
+  },
+];
+
 export const baseFixture = {
   now: "2026-10-02T14:40:00-03:00",
   owner: { name: "Camila Rojas" },
@@ -120,6 +131,7 @@ export const baseFixture = {
   // `onDeclineRequest` (page.tsx skickar dem bara för `?estado=solicitudes`).
   pendingRequests: [],
   links: LINKS,
+  gaps: baseGaps,
 } satisfies HoyData;
 
 function withBooking(
@@ -254,6 +266,7 @@ export function buildFixture(estado: string | undefined): HoyData {
         dayCount: 0,
         dayTotalClp: 0,
         waitlistCount: 0,
+        gaps: [],
       };
     case "muchas":
       return {

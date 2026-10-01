@@ -16,6 +16,15 @@ import type {
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { listCustomers } from "@/server/owner/clientes";
+import { ownerNameParts } from "@/server/owner/shared";
+
+import {
+  confirmMyPhotoUploadAction,
+  createMyPhotoUploadAction,
+  deleteMyPhotoAction,
+  loadMyProfileAction,
+  updateMyTitleAction,
+} from "../my-profile-actions";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -63,19 +72,40 @@ export default async function ClientesPage({
   };
 
   const now = new Date();
-  const { items } = await listCustomers(user.id, current.business.id, now, {
-    search: query.q || undefined,
-    sort: query.sort,
-    filter: query.filter,
-  });
+  const { items, counts } = await listCustomers(
+    user.id,
+    current.business.id,
+    now,
+    {
+      search: query.q || undefined,
+      sort: query.sort,
+      filter: query.filter,
+    },
+  );
+  const owner = ownerNameParts(user.email);
+  const myProfile = await loadMyProfileAction();
 
   return (
     <CustomersScreen
       items={items}
+      counts={counts}
       query={query}
       canViewReports={current.view.perms.can_view_reports}
       canManageCampaigns={current.view.perms.can_manage_all_bookings}
       onLogout={logout}
+      ownerName={owner.name}
+      publicPageHref={`/${current.business.slug}`}
+      myProfile={myProfile ?? undefined}
+      myProfileActions={
+        myProfile
+          ? {
+              updateTitle: updateMyTitleAction,
+              createPhotoUpload: createMyPhotoUploadAction,
+              confirmPhotoUpload: confirmMyPhotoUploadAction,
+              deletePhoto: deleteMyPhotoAction,
+            }
+          : undefined
+      }
     />
   );
 }

@@ -15,7 +15,6 @@
 // använder bredden (max 4xl, inte en smal centrerad kolumn som förut). Mobil: horisontellt
 // rullande pill-rad överst, innehållet under.
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
@@ -25,17 +24,13 @@ import type {
   MyProfileActions,
   MyProfileData,
 } from "@/components/shared/my-profile-dialog";
-import {
-  NotificationBell,
-  type NotificationBellResult,
-  type PendingRequestItem,
+import type {
+  NotificationBellResult,
+  PendingRequestItem,
 } from "@/components/shared/notification-bell";
-import { TuLinkCard } from "@/components/shared/tu-link-card";
-import { UserMenu } from "@/components/shared/user-menu";
+import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { cn } from "@/components/ui/cn";
-import { PageHeader } from "@/components/ui/page-header";
 import { nav } from "@/i18n";
-import { initialsOf } from "@/lib/format/initials";
 
 import type { AjustesTabItem, AjustesTabKey } from "./ajustes-tabs";
 
@@ -114,7 +109,6 @@ export function AjustesShell({
   myProfileActions,
   children,
 }: AjustesShellProps) {
-  const router = useRouter();
   const publicPageHref = `/${business.slug}`;
 
   return (
@@ -139,73 +133,19 @@ export function AjustesShell({
       onDeclineRequest={onDeclineRequest}
       onApproveCancelRequest={onApproveCancelRequest}
       onDeclineCancelRequest={onDeclineCancelRequest}
+      ownerName={owner.name}
+      publicPageHref={publicPageHref}
+      myProfile={myProfile}
+      myProfileActions={myProfileActions}
+      // UX-granskning (sección "Navigation och struktur"): "Ett gemensamt sidhuvud på alla
+      // flikar" — `OwnerPageHeader` nedan ersätter den gamla manuella PageHeader/
+      // NotificationBell/UserMenu-kopplingen (samma mönster som Inicio/Hoy nu delar via
+      // `OwnerChromeProvider`). Döljer den mörka `OwnerMobileTopBar` på mobil: den fulla
+      // `OwnerPageHeader` har redan klockan OCH profilmenyn (med "Cerrar sesión"), annars
+      // dubblerade.
+      hideMobileTopBar
     >
-      <PageHeader
-        variant="desktop"
-        title={nav.ajustes}
-        actions={
-          <>
-            {onConfirmRequest && onDeclineRequest ? (
-              <NotificationBell
-                requests={pendingRequests ?? []}
-                onConfirm={async (bookingId) => {
-                  const result = await onConfirmRequest(bookingId);
-                  if (result.ok) router.refresh();
-                  return result;
-                }}
-                onDecline={async (bookingId, reason) => {
-                  const result = await onDeclineRequest(bookingId, reason);
-                  if (result.ok) router.refresh();
-                  return result;
-                }}
-                onApproveCancel={
-                  onApproveCancelRequest
-                    ? async (bookingId) => {
-                        const result = await onApproveCancelRequest(bookingId);
-                        if (result.ok) router.refresh();
-                        return result;
-                      }
-                    : undefined
-                }
-                onDeclineCancel={
-                  onDeclineCancelRequest
-                    ? async (bookingId) => {
-                        const result = await onDeclineCancelRequest(bookingId);
-                        if (result.ok) router.refresh();
-                        return result;
-                      }
-                    : undefined
-                }
-                withTooltip
-              />
-            ) : null}
-            <span className="hidden lg:contents">
-              <UserMenu
-                name={owner.name}
-                initials={initialsOf(owner.name)}
-                variant="pill"
-                publicPageHref={publicPageHref}
-                onLogout={onLogout}
-                myProfile={myProfile}
-                myProfileActions={myProfileActions}
-              />
-            </span>
-            <span className="contents lg:hidden">
-              <UserMenu
-                name={owner.name}
-                initials={initialsOf(owner.name)}
-                variant="avatar"
-                publicPageHref={publicPageHref}
-                onLogout={onLogout}
-                myProfile={myProfile}
-                myProfileActions={myProfileActions}
-              />
-            </span>
-          </>
-        }
-      />
-
-      <TuLinkCard slug={business.slug} businessName={business.name} />
+      <OwnerPageHeader title={nav.ajustes} />
 
       <nav
         aria-label={nav.secciones}

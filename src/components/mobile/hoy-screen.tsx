@@ -19,11 +19,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  NotificationBell,
-  type NotificationBellResult,
-} from "@/components/shared/notification-bell";
-import { UserMenu } from "@/components/shared/user-menu";
+import type { NotificationBellResult } from "@/components/shared/notification-bell";
+import { OwnerChromeProvider } from "@/components/shared/owner-chrome";
+import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import type {
   MyProfileActions,
   MyProfileData,
@@ -34,10 +32,8 @@ import type {
   MarkBookingPaidInput,
   MarkBookingPaidResult,
 } from "@/components/caja/types";
-import { PageHeader } from "@/components/ui/page-header";
 import { Pill } from "@/components/ui/pill";
 import { agenda, errores, hoy } from "@/i18n";
-import { initialsOf } from "@/lib/format/initials";
 
 import { OwnerMobileTabBar } from "./owner-tab-bar";
 import {
@@ -163,6 +159,12 @@ export function HoyScreen({
 
   const next = data.closedToday ? undefined : nextBooking(visibleBookings, now);
   const rest = data.closedToday ? [] : restOfDay(visibleBookings, now, next);
+  // WP-57 (punkt 5): samma "Mis reservas"/"Todo el equipo"-filter som bokningarna ovan —
+  // en lucka hos en annan profesional är inte relevant när man bara ser sina egna.
+  const visibleGaps =
+    teamFilter === "propias" && ownStaffId != null
+      ? data.gaps.filter((g) => g.staffId === ownStaffId)
+      : data.gaps;
   // WP-46: samma regel som `bookings`-RLS — Llegó/No vino kräver
   // `can_manage_all_bookings`, eller `can_manage_own_bookings` + egen bokning.
   const canActOnNext =
@@ -221,160 +223,126 @@ export function HoyScreen({
   }
 
   return (
-    <div className="min-h-dvh bg-canvas">
-      {/* WP-47: ingen `OwnerMobileTopBar` här (till skillnad från Inicio/Agenda/Ajustes) —
-          Hoy har redan en egen `PageHeader` med utloggning via `UserMenu`-avataren
-          (samma "Cerrar sesión" som Inicio/Ajustes), och en andra mörk topprad ovanpå den
-          skulle skjuta ner hela sidans innehåll ~64 px och ge en avvikelse mot Hoy.dc.html
-          på över 25 % (`npm run visual hoy`) för en funktion som redan finns. */}
-      <div className="mx-auto flex max-w-120 flex-col gap-3.5 px-5 pt-5 pb-28">
-        <PageHeader
-          variant="mobile"
-          title={hoy.titulo}
-          meta={todayLabel(now)}
-          actions={
-            <>
-              {onConfirmRequest && onDeclineRequest ? (
-                <NotificationBell
-                  requests={data.pendingRequests}
-                  onConfirm={async (bookingId) => {
-                    const result = await onConfirmRequest(bookingId);
-                    if (result.ok) router.refresh();
-                    return result;
-                  }}
-                  onDecline={async (bookingId, reason) => {
-                    const result = await onDeclineRequest(bookingId, reason);
-                    if (result.ok) router.refresh();
-                    return result;
-                  }}
-                  onApproveCancel={
-                    onApproveCancelRequest
-                      ? async (bookingId) => {
-                          const result =
-                            await onApproveCancelRequest(bookingId);
-                          if (result.ok) router.refresh();
-                          return result;
-                        }
-                      : undefined
-                  }
-                  onDeclineCancel={
-                    onDeclineCancelRequest
-                      ? async (bookingId) => {
-                          const result =
-                            await onDeclineCancelRequest(bookingId);
-                          if (result.ok) router.refresh();
-                          return result;
-                        }
-                      : undefined
-                  }
-                  triggerSize={46}
-                />
-              ) : null}
-              <UserMenu
-                name={data.owner.name}
-                initials={initialsOf(data.owner.name)}
-                variant="avatar"
-                publicPageHref={publicPageHref ?? "/"}
-                onLogout={onLogout}
-                myProfile={myProfile}
-                myProfileActions={myProfileActions}
-              />
-            </>
+    <OwnerChromeProvider
+      value={{
+        ownerName: data.owner.name,
+        publicPageHref: publicPageHref ?? "/",
+        pendingRequests: data.pendingRequests,
+        onConfirmRequest,
+        onDeclineRequest,
+        onApproveCancelRequest,
+        onDeclineCancelRequest,
+        onLogout,
+        myProfile,
+        myProfileActions,
+      }}
+    >
+      <div className="min-h-dvh bg-canvas">
+        {/* WP-57: `OwnerPageHeader` täcker klockan och profilmenyn (inkl. utloggning) på
+            mobil — ingen separat `OwnerMobileTopBar` behövs (samma motivering som innan,
+            bara via den delade headern i stället för en egen uppkoppling här). */}
+        <div className="mx-auto flex max-w-120 flex-col gap-3.5 px-5 pt-5 pb-28">
+          <OwnerPageHeader title={hoy.titulo} subtitle={todayLabel(now)} />
+
+          {arrivalError ? (
+            <p role="alert" className="text-13 font-semibold text-ink">
+              {arrivalError}
+            </p>
+          ) : null}
+
+          {canFilterTeam ? (
+            <div className="flex gap-2">
+              <Pill
+                selected={teamFilter === "equipo"}
+                onClick={() => setTeamFilter("equipo")}
+              >
+                {agenda.filtroEquipo.todoElEquipo}
+              </Pill>
+              <Pill
+                selected={teamFilter === "propias"}
+                onClick={() => setTeamFilter("propias")}
+              >
+                {agenda.filtroEquipo.misReservas}
+              </Pill>
+            </div>
+          ) : null}
+
+          <NextClientCard
+            ref={nextCardRef}
+            booking={next}
+            now={now}
+            disabled={pendingId !== null}
+            emptyMessage={
+              data.closedToday ? hoy.restoDia.diaCerrado : undefined
+            }
+            onArrived={
+              canActOnNext
+                ? () =>
+                    next && markStatus(next.id, "completed", agenda.toast.llego)
+                : undefined
+            }
+            onNoShow={
+              canActOnNext
+                ? () =>
+                    next && markStatus(next.id, "no_show", agenda.toast.noVino)
+                : undefined
+            }
+            onMarkPaid={
+              canMarkNextPaid
+                ? () => setMarkPaidBooking(next ?? null)
+                : undefined
+            }
+          />
+
+          <QuickActions links={data.links} waitlistCount={data.waitlistCount} />
+
+          <RestOfDay
+            bookings={rest}
+            gaps={visibleGaps}
+            dayCount={data.dayCount}
+            dayTotalClp={data.dayTotalClp}
+            closedToday={data.closedToday}
+          />
+        </div>
+
+        <OwnerMobileTabBar
+          active="hoy"
+          canViewReports={
+            member === undefined
+              ? undefined
+              : hasHoyPerm(member, "can_view_reports")
           }
+          onLogout={onLogout}
         />
 
-        {arrivalError ? (
-          <p role="alert" className="text-13 font-semibold text-ink">
-            {arrivalError}
-          </p>
-        ) : null}
+        <div role="status" className="sr-only">
+          {announcement ? (
+            <span key={announcement.id}>{announcement.text}</span>
+          ) : null}
+        </div>
 
-        {canFilterTeam ? (
-          <div className="flex gap-2">
-            <Pill
-              selected={teamFilter === "equipo"}
-              onClick={() => setTeamFilter("equipo")}
-            >
-              {agenda.filtroEquipo.todoElEquipo}
-            </Pill>
-            <Pill
-              selected={teamFilter === "propias"}
-              onClick={() => setTeamFilter("propias")}
-            >
-              {agenda.filtroEquipo.misReservas}
-            </Pill>
-          </div>
-        ) : null}
-
-        <NextClientCard
-          ref={nextCardRef}
-          booking={next}
-          now={now}
-          disabled={pendingId !== null}
-          emptyMessage={data.closedToday ? hoy.restoDia.diaCerrado : undefined}
-          onArrived={
-            canActOnNext
-              ? () =>
-                  next && markStatus(next.id, "completed", agenda.toast.llego)
-              : undefined
-          }
-          onNoShow={
-            canActOnNext
-              ? () =>
-                  next && markStatus(next.id, "no_show", agenda.toast.noVino)
-              : undefined
-          }
-          onMarkPaid={
-            canMarkNextPaid ? () => setMarkPaidBooking(next ?? null) : undefined
-          }
-        />
-
-        <QuickActions links={data.links} waitlistCount={data.waitlistCount} />
-
-        <RestOfDay
-          bookings={rest}
-          dayCount={data.dayCount}
-          dayTotalClp={data.dayTotalClp}
-          closedToday={data.closedToday}
-        />
-      </div>
-
-      <OwnerMobileTabBar
-        active="hoy"
-        canViewReports={
-          member === undefined
-            ? undefined
-            : hasHoyPerm(member, "can_view_reports")
-        }
-      />
-
-      <div role="status" className="sr-only">
-        {announcement ? (
-          <span key={announcement.id}>{announcement.text}</span>
+        {markPaidBooking && onMarkPaid ? (
+          <MarkPaidDialog
+            open={markPaidBooking != null}
+            onOpenChange={(open) => {
+              if (!open) setMarkPaidBooking(null);
+            }}
+            bookingId={markPaidBooking.id}
+            dueMinor={Math.max(
+              0,
+              (markPaidBooking.priceClp ?? 0) -
+                (markPaidBooking.discountClp ?? 0) -
+                markPaidBooking.depositPaidClp,
+            )}
+            methods={manualMethods}
+            onSubmit={onMarkPaid}
+            onPaid={() => {
+              setMarkPaidBooking(null);
+              router.refresh();
+            }}
+          />
         ) : null}
       </div>
-
-      {markPaidBooking && onMarkPaid ? (
-        <MarkPaidDialog
-          open={markPaidBooking != null}
-          onOpenChange={(open) => {
-            if (!open) setMarkPaidBooking(null);
-          }}
-          bookingId={markPaidBooking.id}
-          dueMinor={Math.max(
-            0,
-            (markPaidBooking.priceClp ?? 0) -
-              (markPaidBooking.discountClp ?? 0) -
-              markPaidBooking.depositPaidClp,
-          )}
-          methods={manualMethods}
-          onSubmit={onMarkPaid}
-          onPaid={() => {
-            setMarkPaidBooking(null);
-            router.refresh();
-          }}
-        />
-      ) : null}
-    </div>
+    </OwnerChromeProvider>
   );
 }

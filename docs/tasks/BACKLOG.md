@@ -69,6 +69,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-54 | Medlemmar: flagga på kund, medlemsrabatt vid bokning, välkomstmejl | db + scheduling + ui | WP-24 | F6 | ☑ |
 | WP-55 | Inställningar i flikar, Team-flik, meddelandefönster på kundkortet | ui + integrations | WP-24 | – | ☑ |
 | WP-56 | Avbokning med godkännande (val i Inställningar) + SMS till företaget med svarslänk | db + scheduling + ui | WP-45 | F7 | ☑ |
+| WP-57 | UX-översyn: gemensamt sidhuvud, meny med etiketter, mobil Mer-flik, ny Inicio/Hoy, Clientes-tabell, kundkort, Caja, månadsvy med fyllnad, Team-rader, Blixt-luckor | ui-engineer ×3 | – | – | ☑ |
 | WP-45 | Bekräftelse av bokningar + notiser (status `requested`, bekräfta automatiskt i Ajustes, klocka/Inicio/Agenda med Confirmar/Rechazar, mejl "solicitud recibida"/"rechazada", utgång) | db-engineer + scheduling-engineer + integrations-engineer + copywriter-es-cl + ui-engineer | WP-16, WP-21 | F4–F7 | ☑ |
 | WP-46 | Personalkonton och behörigheter (inbjudan via e-post, 7 fasta flaggor på memberships, RLS + serverkontroll, "Mis reservas") | db-engineer + scheduling-engineer + integrations-engineer + copywriter-es-cl + ui-engineer | WP-45 | F1, F3, F6 | ◐ (plan: docs/tasks/plans/WP-46.md) |
 

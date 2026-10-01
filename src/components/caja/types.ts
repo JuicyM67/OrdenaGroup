@@ -123,7 +123,6 @@ export type InformesResult = InformesData | { forbidden: true };
 
 export type CajaActions = {
   loadCaja: (period: CajaPeriod) => Promise<CajaResult>;
-  loadInformes: () => Promise<InformesResult>;
   markPaid: (input: MarkBookingPaidInput) => Promise<MarkBookingPaidResult>;
   undoPayment: (input: UndoPaymentInput) => Promise<UndoPaymentResult>;
 };

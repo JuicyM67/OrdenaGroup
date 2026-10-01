@@ -15,6 +15,7 @@ import {
   validateRequired,
   validateSlug,
 } from "@/components/onboarding/client-validation";
+import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextField } from "@/components/ui/text-field";
@@ -120,84 +121,91 @@ export function BusinessSection({
   const slugChanged = form.slug.trim().toLowerCase() !== business.slug;
 
   return (
-    <form
-      onSubmit={(e) => void handleSubmit(e)}
-      className="flex flex-col gap-6"
-    >
-      <Card radius="tile" padding="lg" className="flex flex-col gap-4">
-        <h2 className="text-18 font-bold text-ink">
-          {ajustes.secciones.negocio}
-        </h2>
+    <div className="flex flex-col gap-6">
+      {/* UX-granskning (sección "Inställningar", fel 4-grannen "Bokningslänk-kortet"):
+          flyttad hit från AjustesShell (toppen av varje flik) — hör hemma på "Tu negocio",
+          inte upprepad på t.ex. Öppettider. */}
+      <TuLinkCard slug={business.slug} businessName={business.name} />
 
-        <TextField
-          label={negocio.campos.nameLabel}
-          value={form.name}
-          onChange={(e) => set("name", e.target.value)}
-          error={errors.name}
-          maxLength={120}
-        />
+      <form
+        onSubmit={(e) => void handleSubmit(e)}
+        className="flex flex-col gap-6"
+      >
+        <Card radius="tile" padding="lg" className="flex flex-col gap-4">
+          <h2 className="text-18 font-bold text-ink">
+            {ajustes.secciones.negocio}
+          </h2>
 
-        <TextField
-          label={negocio.slug.label}
-          hint={
-            errors.slug
-              ? undefined
-              : slugChanged
-                ? ajustes.slugAviso
-                : negocio.slug.ayuda
-          }
-          value={form.slug}
-          onChange={(e) => set("slug", e.target.value)}
-          error={errors.slug}
-          maxLength={40}
-        />
-        {form.slug ? (
-          <p className="-mt-3 text-13 text-muted">
-            {negocio.slug.vistaPrevia({ url: `/${form.slug}` })}
+          <TextField
+            label={negocio.campos.nameLabel}
+            value={form.name}
+            onChange={(e) => set("name", e.target.value)}
+            error={errors.name}
+            maxLength={120}
+          />
+
+          <TextField
+            label={negocio.slug.label}
+            hint={
+              errors.slug
+                ? undefined
+                : slugChanged
+                  ? ajustes.slugAviso
+                  : negocio.slug.ayuda
+            }
+            value={form.slug}
+            onChange={(e) => set("slug", e.target.value)}
+            error={errors.slug}
+            maxLength={40}
+          />
+          {form.slug ? (
+            <p className="-mt-3 text-13 text-muted">
+              {negocio.slug.vistaPrevia({ url: `/${form.slug}` })}
+            </p>
+          ) : null}
+
+          <TextField
+            label={negocio.campos.comunaLabel}
+            value={form.comuna}
+            onChange={(e) => set("comuna", e.target.value)}
+            error={errors.comuna}
+            maxLength={80}
+          />
+
+          <TextField
+            label={negocio.campos.phoneLabel}
+            hint={errors.phone ? undefined : negocio.campos.phoneAyuda}
+            value={form.phone}
+            onChange={(e) => set("phone", e.target.value)}
+            error={errors.phone}
+          />
+
+          <TextField
+            label={negocio.campos.addressLabel}
+            placeholder={negocio.campos.addressPlaceholder}
+            value={form.address}
+            onChange={(e) => set("address", e.target.value)}
+            maxLength={200}
+          />
+        </Card>
+
+        {submitError ? (
+          <p role="alert" className="text-13 font-semibold text-ink">
+            {submitError}
           </p>
         ) : null}
 
-        <TextField
-          label={negocio.campos.comunaLabel}
-          value={form.comuna}
-          onChange={(e) => set("comuna", e.target.value)}
-          error={errors.comuna}
-          maxLength={80}
-        />
-
-        <TextField
-          label={negocio.campos.phoneLabel}
-          hint={errors.phone ? undefined : negocio.campos.phoneAyuda}
-          value={form.phone}
-          onChange={(e) => set("phone", e.target.value)}
-          error={errors.phone}
-        />
-
-        <TextField
-          label={negocio.campos.addressLabel}
-          placeholder={negocio.campos.addressPlaceholder}
-          value={form.address}
-          onChange={(e) => set("address", e.target.value)}
-          maxLength={200}
-        />
-      </Card>
-
-      {submitError ? (
-        <p role="alert" className="text-13 font-semibold text-ink">
-          {submitError}
-        </p>
-      ) : null}
-
-      <div className="flex items-center gap-3">
-        <Button type="submit" size="xl" disabled={status === "saving"}>
-          {status === "saving" ? ajustes.guardando : ajustes.guardarCambios}
-        </Button>
-        {status === "saved" ? (
-          <span role="status" className="text-13 text-muted">
-            {ajustes.cambiosGuardados}
-          </span>
-        ) : null}
-      </div>
-    </form>
+        <div className="flex items-center gap-3">
+          <Button type="submit" size="xl" disabled={status === "saving"}>
+            {status === "saving" ? ajustes.guardando : ajustes.guardarCambios}
+          </Button>
+          {status === "saved" ? (
+            <span role="status" className="text-13 text-muted">
+              {ajustes.cambiosGuardados}
+            </span>
+          ) : null}
+        </div>
+      </form>
+    </div>
   );
 }

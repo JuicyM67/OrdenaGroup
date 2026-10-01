@@ -14,6 +14,7 @@ import {
   isMonthDayClosed,
   monthCellAria,
   monthWeeks,
+  type MonthDayFill,
   type MonthDaySummary,
 } from "./month-view";
 import type { AgendaBusinessHours, StaffColor } from "./types";
@@ -23,6 +24,9 @@ export type MonthGridProps = {
   today: LocalDate;
   hours: AgendaBusinessHours;
   counts: ReadonlyMap<LocalDate, MonthDaySummary>;
+  /** UX-granskning (sección "Agenda"): fyllnadsstapel per dag (andel bokad tid av öppen
+   * tid). Tom karta (design lab utan `onLoadMonthCounts`-minuter) → ingen stapel ritas. */
+  fill: ReadonlyMap<LocalDate, MonthDayFill>;
   onSelectDay: (date: LocalDate) => void;
   /** WP-50: sant medan `onLoadMonthCounts` väntar på svar (`agenda-screen.tsx`) — dämpar
    * rutnätet i stället för att visa ett tomt/felaktigt läge under tiden. */
@@ -35,6 +39,7 @@ export function MonthGrid({
   today,
   hours,
   counts,
+  fill,
   onSelectDay,
   loading = false,
   className,
@@ -63,6 +68,9 @@ export function MonthGrid({
           const summary = cell.inMonth ? counts.get(date) : undefined;
           const closed = cell.inMonth && isMonthDayClosed(date, hours);
           const isToday = cell.inMonth && date === today;
+          // UX-granskning (sección "Agenda"): fyllnadsstapel + "Lleno" i stället för
+          // antalet när dagens kapacitet är copada.
+          const dayFill = cell.inMonth && !closed ? fill.get(date) : undefined;
           return (
             <button
               key={date}
@@ -71,7 +79,12 @@ export function MonthGrid({
               aria-current={isToday ? "date" : undefined}
               aria-label={
                 cell.inMonth
-                  ? monthCellAria(date, closed, summary?.count ?? 0)
+                  ? monthCellAria(
+                      date,
+                      closed,
+                      summary?.count ?? 0,
+                      dayFill?.full,
+                    )
                   : undefined
               }
               onClick={() => onSelectDay(date)}
@@ -80,7 +93,7 @@ export function MonthGrid({
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none",
                 "disabled:cursor-default",
                 cell.inMonth && !closed && "hover:bg-canvas",
-                cell.inMonth && closed && "bg-canvas/60",
+                cell.inMonth && closed && "bg-closed-stripes",
               )}
             >
               <span
@@ -97,21 +110,43 @@ export function MonthGrid({
               >
                 {cell.day}
               </span>
-              {summary && summary.count > 0 ? (
-                <span className="mt-auto flex items-center gap-1.5">
-                  <span
-                    aria-hidden="true"
-                    className="flex items-center gap-0.5"
-                  >
-                    {summary.staffColors.map((color, i) => (
-                      <StaffDot key={i} color={color} />
-                    ))}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className="text-11 font-semibold text-muted"
-                  >
-                    {summary.count}
+              {closed && cell.inMonth ? (
+                <span className="mt-auto text-11 font-semibold text-muted">
+                  {agenda.diaCerrado}
+                </span>
+              ) : summary && summary.count > 0 ? (
+                <span className="mt-auto flex w-full flex-col gap-1">
+                  {dayFill ? (
+                    <span
+                      aria-hidden="true"
+                      className="h-1 w-full overflow-hidden rounded-full bg-canvas"
+                    >
+                      <span
+                        className={cn(
+                          "block h-full rounded-full",
+                          dayFill.full ? "bg-ink" : "bg-violet",
+                        )}
+                        style={{
+                          width: `${Math.min(100, Math.max(4, dayFill.pct))}%`,
+                        }}
+                      />
+                    </span>
+                  ) : null}
+                  <span className="flex items-center gap-1.5">
+                    <span
+                      aria-hidden="true"
+                      className="flex items-center gap-0.5"
+                    >
+                      {summary.staffColors.map((color, i) => (
+                        <StaffDot key={i} color={color} />
+                      ))}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="text-11 font-semibold text-muted"
+                    >
+                      {dayFill?.full ? agenda.mes.lleno : summary.count}
+                    </span>
                   </span>
                 </span>
               ) : null}

@@ -126,11 +126,17 @@ export function DayGrid({
           : booking.source === "waitlist"
             ? "waitlist"
             : "staff";
+      // UX-granskning (sección "Agenda"): block som delar kolumn med andra (lane.lanes >
+      // 1) är för smala för "{hora} · {servicio}" utan att kapa tjänsten — visa bara
+      // klockslaget där, tjänsten finns ändå i tooltipen (`title`-attributet) och popovern.
+      const isNarrow = !!lane && lane.lanes > 1;
       const meta = isTimeVisible(box.height)
-        ? agenda.bloque.meta({
-            hora: formatTime(start, tz),
-            servicio: booking.service,
-          })
+        ? isNarrow
+          ? formatTime(start, tz)
+          : agenda.bloque.meta({
+              hora: formatTime(start, tz),
+              servicio: booking.service,
+            })
         : null;
       const ariaLabel = agenda.bloque.aria({
         cliente: booking.clientName,
@@ -148,6 +154,7 @@ export function DayGrid({
           cancelPending={booking.status === "cancel_requested"}
           title={booking.clientName}
           meta={meta}
+          tooltip={booking.service}
           showAvatar={false}
           top={box.top}
           height={box.height}

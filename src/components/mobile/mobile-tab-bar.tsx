@@ -1,5 +1,8 @@
 // Se docs/design/DESIGN.md §7 "MobileTabBar". Generell för ägarens mobilvyer (props: items,
 // active) — Hoy är den första som använder den (WP-14), Agenda/Clientes/Caja återanvänder den.
+//
+// WP-57 (punkt 3): `item` är antingen en länk (`href`) eller en knapp (`onClick`, t.ex.
+// "Mer" som öppnar ett bottenark i stället för att navigera, se owner-tab-bar.tsx).
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -8,10 +11,12 @@ import { nav } from "@/i18n";
 
 export type MobileTabItem = {
   key: string;
-  href: string;
   label: string;
   icon: ReactNode;
-};
+} & (
+  | { href: string; onClick?: undefined }
+  | { href?: undefined; onClick: () => void }
+);
 
 export type MobileTabBarProps = {
   items: readonly MobileTabItem[];
@@ -49,21 +54,12 @@ export function MobileTabBar({ items, active, className }: MobileTabBarProps) {
     >
       {items.map((item) => {
         const isActive = item.key === active;
-        return (
-          <Link
-            key={item.key}
-            href={item.href}
-            // Agenda/Clientes/Caja byggs i senare WP — utan detta prefetchar Next.js
-            // routerna på varje sidladdning (RSC-fetchar som aldrig blir klara mot en
-            // route som inte finns, vilket bl.a. gör npm run visual (networkidle)
-            // odeterministiskt).
-            prefetch={false}
-            aria-current={isActive ? "page" : undefined}
-            className={cn(
-              "flex h-full flex-col items-center justify-center gap-1 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:transition-none on-dark:focus-visible:outline-lime",
-              isActive ? "text-lime" : "text-on-dark-muted",
-            )}
-          >
+        const itemClassName = cn(
+          "flex h-full flex-col items-center justify-center gap-1 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:transition-none on-dark:focus-visible:outline-lime",
+          isActive ? "text-lime" : "text-on-dark-muted",
+        );
+        const content = (
+          <>
             {item.icon}
             <span
               className={cn(
@@ -73,7 +69,36 @@ export function MobileTabBar({ items, active, className }: MobileTabBarProps) {
             >
               {item.label}
             </span>
-          </Link>
+          </>
+        );
+        if (item.href) {
+          return (
+            <Link
+              key={item.key}
+              href={item.href}
+              // Agenda/Clientes/Caja byggs i senare WP — utan detta prefetchar Next.js
+              // routerna på varje sidladdning (RSC-fetchar som aldrig blir klara mot en
+              // route som inte finns, vilket bl.a. gör npm run visual (networkidle)
+              // odeterministiskt).
+              prefetch={false}
+              aria-current={isActive ? "page" : undefined}
+              className={itemClassName}
+            >
+              {content}
+            </Link>
+          );
+        }
+        // WP-57: "Mer" — öppnar ett bottenark i stället för att navigera.
+        return (
+          <button
+            key={item.key}
+            type="button"
+            onClick={item.onClick}
+            aria-current={isActive ? "page" : undefined}
+            className={itemClassName}
+          >
+            {content}
+          </button>
         );
       })}
     </nav>

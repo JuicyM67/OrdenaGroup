@@ -713,6 +713,10 @@ export const agenda = {
     celdaSinReservasAria: (p: { fecha: string }): string =>
       `${p.fecha}, sin reservas`,
     celdaCerradaAria: (p: { fecha: string }): string => `${p.fecha}, cerrado`,
+    /** UX-granskning (sección "Agenda"): barra de llenado de la celda — "Lleno" cuando la
+     * capacidad del día está copada (≥ 95 %, `summarizeMonthFill`). */
+    lleno: "Lleno",
+    celdaLlenaAria: (p: { fecha: string }): string => `${p.fecha}, lleno`,
     /** Botón (mobile) que alterna entre la vista Día y Mes. */
     verMesAria: "Ver el mes",
     verDiaAria: "Ver el día",
@@ -2038,6 +2042,9 @@ export const profesionales = {
   ctaEliminar: "Eliminar profesional",
   ctaDesactivar: "Desactivar profesional",
   ctaActivar: "Activar profesional",
+  /** UX-granskning (sección "Inställningar"): menú "…" de cada fila en la pestaña Equipo
+   * (team-section.tsx, fila única por persona). */
+  ctaFoto: "Foto",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -3451,6 +3458,16 @@ export const solicitudes = {
 export const equipo = {
   miPerfil: "Mi perfil",
   ctaInvitar: "Invitar a la cuenta",
+  /** UX-granskning (sección "Inställningar"): menú "…" de cada fila en la pestaña Equipo. */
+  ctaPermisos: "Permisos",
+  /** Chip de estado junto a cada fila (fila única por persona, reemplaza las antiguas
+   * secciones separadas "Invitaciones pendientes"/"Miembros"). Solo cuentas `role: 'staff'`
+   * — `loadTeamData` no incluye la propia membresía del dueño (siempre `role: 'owner'`). */
+  estadoCuenta: {
+    ninguna: "Sin cuenta",
+    invitada: "Invitado",
+    activa: "Cuenta · Personal",
+  },
   invitarDialog: {
     titulo: "Invitar a la cuenta",
     emailLabel: "Correo",
@@ -3554,12 +3571,25 @@ export const equipo = {
   vacio: "Todavía no invitaste a nadie a tu cuenta.",
   /** "Ägarens svar" 4: las cuentas de personal siguen la cantidad de
    * profesionales de cada plan (D-009); el plan de un solo profesional no
-   * puede invitar. */
+   * puede invitar.
+   *
+   * UX-granskning (fel 4, sección "Fel jag hittage"): el texto anterior ("Tu plan actual
+   * permite un solo profesional") confundía cuentas con profesionales — un negocio con 3
+   * profesionales y plan Emprende lo veía como un límite de personal, cuando lo que limita
+   * el plan son las CUENTAS (logins), no las fichas de profesional en el calendario. */
   limiteDelPlan: {
-    titulo: "Tu plan no incluye cuentas de personal",
-    texto:
-      "Tu plan actual permite un solo profesional. Cambia de plan para invitar a tu equipo.",
+    titulo: "Cuentas de tu plan",
+    texto: (p: { limit: number }): string =>
+      `Tu plan tiene ${p.limit} ${p.limit === 1 ? "cuenta" : "cuentas"}. Cambia a Equipo para dar accesos propios a tu personal (Equipo 3, Local 10).`,
     cta: "Cambiar de plan",
+  },
+  /** Tarjeta discreta bajo la lista cuando el plan SÍ permite más cuentas (no
+   * `planLimitReached`) — contexto, no una advertencia. */
+  infoDelPlan: {
+    conEspacio: (p: { used: number; limit: number }): string =>
+      `Usas ${p.used} de ${p.limit} cuentas de tu plan.`,
+    completo: (p: { limit: number }): string =>
+      `Usas las ${p.limit} cuentas de tu plan. Cambia a Local para sumar más (hasta 10).`,
   },
 } as const satisfies Trad;
 
@@ -3678,6 +3708,19 @@ export const flash = {
     titulo: "Activas",
     vacio: "No tienes horas flash activas todavía.",
   },
+  /** UX-granskning (sección "Blixttider"): el tomt läge anterior eran solo dos líneas de
+   * texto. Ahora explica qué es una Hora flash y, si hay huecos libres (`listFreeGaps`),
+   * los lista con un botón que abre "Nueva hora flash" ya precargado. */
+  vacio: {
+    explicacion:
+      "Una Hora flash es un hueco libre con descuento. Compártela con un link y una imagen para tu historia, o envíala a los clientes que aceptaron recibir novedades.",
+    huecosTitulo: "Huecos libres hoy y mañana",
+    hoy: "Hoy",
+    manana: "Mañana",
+    hueco: (p: { dia: string; rango: string; profesional: string }): string =>
+      `${p.dia} ${p.rango} · ${p.profesional}`,
+    ctaConvertir: "Convertir en Hora flash",
+  },
   reservadas: {
     titulo: "Reservadas",
     vacio: "No tienes horas flash reservadas todavía.",
@@ -3760,4 +3803,23 @@ export const vOferta = {
   yaReservada: "Ya reservaste esta hora.",
   linkInvalido: "Este link no es válido.",
   error: "No pudimos confirmar tu hora. Inténtalo de nuevo.",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// uxTextos: WP-57 (UX-översyn) — etiquetas cortas del nuevo diseño.
+// ---------------------------------------------------------------------------
+export const uxTextos = {
+  etiquetaHabitual: "Habitual",
+  etiquetaAceptaOfertas: "Acepta ofertas",
+  etiquetas: "Etiquetas",
+  enviarCampanaN: (p: { n: number }): string => `Enviar campaña (${p.n})`,
+  seleccionarA: (p: { nombre: string }): string => `Seleccionar a ${p.nombre}`,
+  seleccionarTodos: "Seleccionar todos",
+  marcarSocio: "Marcar como socio",
+  quitarSocio: "Quitar de socios",
+  consentTerminos: "Términos",
+  consentOfertas: "Ofertas y novedades",
+  deReservado: (p: { monto: string }): string => `de ${p.monto} reservado`,
+  minimizarMenu: "Minimizar menú",
+  expandirMenu: "Expandir menú",
 } as const satisfies Trad;

@@ -47,6 +47,17 @@ export type CreateFlashResult =
 
 export type CancelFlashResult = { ok: true } | { ok: false; code: string };
 
+/** UX-granskning (sección "Blixttider"): speglar `FreeGap`
+ * (`src/server/flash/gaps.ts`), samma dupliceringsmotiv som ovan. */
+export type FlashGapView = {
+  staffId: string;
+  staffName: string;
+  date: LocalDate;
+  /** ISO 8601 (UTC eller med offset). */
+  start: string;
+  end: string;
+};
+
 // ---------------------------------------------------------------------------
 // WP-30 "Enviar a clientes" — speglar `src/server/campaigns/types.ts`/
 // `flash.ts` (integrations-engineer), samma dupliceringsmotiv som ovan.

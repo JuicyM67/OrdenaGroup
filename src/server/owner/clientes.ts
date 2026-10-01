@@ -53,11 +53,20 @@ export type CustomerListItem = {
   lastVisitAt: string | null;
   /** WP-54: `customers.is_member`. */
   isMember: boolean;
+  /** WP-57 (UX, taggen "Samtycke"): `consent_marketing_at is not null`. */
+  hasMarketingConsent: boolean;
 };
+
+/** WP-57 (UX): antal per filter, oberoende av `?filtro=`/`?q=` — "Alla 23 ·
+ * Stamkunder 4 …" i filterknapparna. `todos` räknar alla aktiva kunder
+ * (sökningen filtrerar listan men inte de här totalerna, samma mönster som
+ * rubrikens "23 kunder"). */
+export type CustomerFilterCounts = Record<CustomerListFilter, number>;
 
 export type CustomersListView = {
   member: MemberView;
   items: CustomerListItem[];
+  counts: CustomerFilterCounts;
 };
 
 type ListRow = {
@@ -69,6 +78,7 @@ type ListRow = {
   no_show_count: number;
   last_visit_ms: number | null;
   is_member: boolean;
+  has_marketing_consent: boolean;
 };
 
 const isoOf = (ms: number) => new Date(Math.round(ms)).toISOString();
@@ -121,6 +131,7 @@ export async function listCustomersIn(
 
   const r = await q.query<ListRow>(
     `select c.id, c.name, c.phone_e164, c.email, c.is_member,
+            c.consent_marketing_at is not null as has_marketing_consent,
             coalesce(v.visits_count, 0)::int as visits_count,
             coalesce(n.no_show_count, 0)::int as no_show_count,
             extract(epoch from v.last_visit_at) * 1000 as last_visit_ms
@@ -158,7 +169,60 @@ export async function listCustomersIn(
     noShowCount: row.no_show_count,
     lastVisitAt: row.last_visit_ms == null ? null : isoOf(row.last_visit_ms),
     isMember: row.is_member,
+    hasMarketingConsent: row.has_marketing_consent,
   }));
+}
+
+type CountsRow = {
+  todos: string;
+  habituales: string;
+  inactivos: string;
+  con_inasistencias: string;
+  socios: string;
+};
+
+/** Inre steg (för tester): kör i anroparens transaktion. Oberoende av sök/
+ * filter — samma totaler oavsett vad ägaren skrev i sökfältet (WP-57). */
+export async function countCustomersByFilterIn(
+  q: Queryable,
+  businessId: string,
+  now: Date,
+): Promise<CustomerFilterCounts> {
+  const inactiveCutoff = new Date(
+    now.getTime() - INACTIVE_DAYS_THRESHOLD * 24 * 60 * 60 * 1000,
+  );
+  const r = await q.query<CountsRow>(
+    `select count(*)::text as todos,
+            count(*) filter (where coalesce(v.visits_count, 0) >= $2)::text as habituales,
+            count(*) filter (
+              where v.last_visit_at is null or v.last_visit_at < $3::timestamptz
+            )::text as inactivos,
+            count(*) filter (where coalesce(n.no_show_count, 0) > 0)::text as con_inasistencias,
+            count(*) filter (where c.is_member)::text as socios
+       from public.customers c
+       left join lateral (
+         select count(*)::int as visits_count, max(lower(bk.period)) as last_visit_at
+           from public.bookings bk
+          where bk.business_id = c.business_id and bk.customer_id = c.id
+            and bk.status = 'completed'
+       ) v on true
+       left join lateral (
+         select count(*)::int as no_show_count
+           from public.bookings bk
+          where bk.business_id = c.business_id and bk.customer_id = c.id
+            and bk.status = 'no_show'
+       ) n on true
+      where c.business_id = $1 and c.anonymized_at is null`,
+    [businessId, HABITUAL_VISITS_THRESHOLD, inactiveCutoff.toISOString()],
+  );
+  const row = r.rows[0];
+  return {
+    todos: Number(row?.todos ?? 0),
+    habituales: Number(row?.habituales ?? 0),
+    inactivos: Number(row?.inactivos ?? 0),
+    conInasistencias: Number(row?.con_inasistencias ?? 0),
+    socios: Number(row?.socios ?? 0),
+  };
 }
 
 export async function listCustomers(
@@ -173,8 +237,11 @@ export async function listCustomers(
 ): Promise<CustomersListView> {
   return withOwnerTx(userId, async (q) => {
     const member = await loadMember(q, userId, businessId);
-    const items = await listCustomersIn(q, businessId, now, opts);
-    return { member: memberView(member), items };
+    const [items, counts] = await Promise.all([
+      listCustomersIn(q, businessId, now, opts),
+      countCustomersByFilterIn(q, businessId, now),
+    ]);
+    return { member: memberView(member), items, counts };
   });
 }
 
@@ -220,8 +287,14 @@ export type CustomerDetail = {
   createdAt: string;
   consentTerms: CustomerConsentView;
   consentMarketing: CustomerConsentView;
-  /** `null` = medlemmen saknar `can_view_reports` (döljer statistikkortet). */
-  stats: CustomerStats | null;
+  /** Besök/uteblivna/senaste besök syns för alla medlemmar (planen
+   * §Clientes); bara pengarna (`totalRevenueClp`/`averagePriceClp`) kräver
+   * `can_view_reports` — se `canViewMoney`. `0`/`null` när den saknas
+   * (aldrig det riktiga beloppet till en obehörig medlem). */
+  stats: CustomerStats;
+  /** `can_view_reports` eller ägare — styr om `stats.totalRevenueClp`/
+   * `averagePriceClp` visas (WP-57, kundkortets nyckeltal "Totalt"). */
+  canViewMoney: boolean;
   upcoming: CustomerBookingRow[];
   history: CustomerBookingRow[];
   answers: CustomerAnswersView;
@@ -245,12 +318,17 @@ type CustomerRow = {
   phone_e164: string | null;
   email: string | null;
   notes: string | null;
-  created_at: string;
-  consent_terms_at: string | null;
-  consent_marketing_at: string | null;
+  // `timestamptz`-kolumner: `pg` parsar dem till `Date` (ingen type parser
+  // registrerad, se `src/server/db/pool.ts`), aldrig `string` trots att SQL
+  // inte castar dem — `.toISOString()` nedan, ALDRIG `Date.toString()`/en
+  // mall-sträng med värdet rakt av (WP-57, fel 1: "Thu Oct 01 2026 … GMT+0200"
+  // på kundkortet).
+  created_at: Date;
+  consent_terms_at: Date | null;
+  consent_marketing_at: Date | null;
   consent_channel: ConsentChannel | null;
   is_member: boolean;
-  member_since: string | null;
+  member_since: Date | null;
 };
 
 type StatsRow = {
@@ -258,7 +336,8 @@ type StatsRow = {
   no_show_count: string;
   total_revenue_clp: string;
   average_price_clp: string | null;
-  last_visit_at: string | null;
+  // Se kommentaren vid `CustomerRow` ovan — samma `Date`-fälla.
+  last_visit_at: Date | null;
 };
 
 type BookingRow = {
@@ -285,14 +364,16 @@ function toBookingRow(r: BookingRow): CustomerBookingRow {
   };
 }
 
-/** Bara ägaren/`can_view_reports` (planen §Clientes, samma spärr som
- * `public.customer_stats`) — anropas INNAN funktionen, så en medlem utan
- * behörighet aldrig ens skickar frågan (samma avvägning som `showReports`
- * i `src/server/owner/inicio.ts`). */
+/** "alla medlemmar ser kundregistret" (planen §Clientes): besök/uteblivna/
+ * senaste besök räknas alltid, oavsett behörighet. Bara pengarna
+ * (`totalRevenueClp`/`averagePriceClp`) redigeras bort till 0/`null` här när
+ * `showMoney` är falskt (D-034: obehöriga medlemmar ser aldrig beloppet, inte
+ * ens i nätverkssvaret — döljs inte bara i UI:t). */
 async function loadCustomerStats(
   q: Queryable,
   businessId: string,
   customerId: string,
+  showMoney: boolean,
 ): Promise<CustomerStats> {
   const r = await q.query<StatsRow>(
     `select visits_count, no_show_count, total_revenue_clp, average_price_clp, last_visit_at
@@ -312,10 +393,12 @@ async function loadCustomerStats(
   return {
     visitsCount: Number(row.visits_count),
     noShowCount: Number(row.no_show_count),
-    totalRevenueClp: Number(row.total_revenue_clp),
+    totalRevenueClp: showMoney ? Number(row.total_revenue_clp) : 0,
     averagePriceClp:
-      row.average_price_clp == null ? null : Number(row.average_price_clp),
-    lastVisitAt: row.last_visit_at,
+      showMoney && row.average_price_clp != null
+        ? Number(row.average_price_clp)
+        : null,
+    lastVisitAt: row.last_visit_at ? row.last_visit_at.toISOString() : null,
   };
 }
 
@@ -370,8 +453,7 @@ export async function getCustomerDetailIn(
     ),
   ]);
 
-  const showReports =
-    member === undefined || hasPerm(member, "can_view_reports");
+  const showMoney = member === undefined || hasPerm(member, "can_view_reports");
   const canEditNotes =
     member === undefined ||
     member?.role === "owner" ||
@@ -379,9 +461,7 @@ export async function getCustomerDetailIn(
   const isOwner = member === undefined || member?.role === "owner";
 
   const [stats, answers] = await Promise.all([
-    showReports
-      ? loadCustomerStats(q, businessId, customerId)
-      : Promise.resolve(null),
+    loadCustomerStats(q, businessId, customerId, showMoney),
     getCustomerAnswersIn(q, businessId, customerId),
   ]);
 
@@ -391,20 +471,24 @@ export async function getCustomerDetailIn(
     phone: c.phone_e164,
     email: c.email,
     notes: c.notes,
-    createdAt: c.created_at,
-    consentTerms: { at: c.consent_terms_at, channel: c.consent_channel },
+    createdAt: c.created_at.toISOString(),
+    consentTerms: {
+      at: c.consent_terms_at ? c.consent_terms_at.toISOString() : null,
+      channel: c.consent_channel,
+    },
     consentMarketing: {
-      at: c.consent_marketing_at,
+      at: c.consent_marketing_at ? c.consent_marketing_at.toISOString() : null,
       channel: c.consent_channel,
     },
     stats,
+    canViewMoney: showMoney,
     upcoming: upcomingRes.rows.map(toBookingRow),
     history: historyRes.rows.map(toBookingRow),
     answers,
     canEditNotes,
     isOwner,
     isMember: c.is_member,
-    memberSince: c.member_since,
+    memberSince: c.member_since ? c.member_since.toISOString() : null,
     canManageMembership: canEditNotes,
   };
 }

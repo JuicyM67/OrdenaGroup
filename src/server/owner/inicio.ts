@@ -242,8 +242,70 @@ export async function loadOwnerInicio(
       },
       activeFlash: activeFlashCard,
       member: memberView(member),
+      // WP-57: `flash` kräver listorna ovan (öppnar sin egen transaktion, se
+      // kommentaren i funktionshuvudet) — kan inte räknas i `loadOwnerInicioIn`.
+      gettingStarted: data.gettingStarted
+        ? {
+            ...data.gettingStarted,
+            flash: activeFlashSlots.length > 0 || bookedFlashSlots.length > 0,
+          }
+        : undefined,
     };
   });
+}
+
+type CountRow = { n: string };
+
+/** `select count(*)` som ett tal — Postgres `count()` kommer tillbaka som `text` via `pg`. */
+async function countIn(
+  q: Queryable,
+  sql: string,
+  params: readonly unknown[],
+): Promise<number> {
+  const res = await q.query<CountRow>(sql, params);
+  return Number(res.rows[0]?.n ?? "0");
+}
+
+/**
+ * WP-57 (punkt 4): fem steg härledda ur befintlig data för "Kom igång"-kortet —
+ * tjänster/öppettider/profil/första Blixttid/bjud in teamet. `flash` sätts separat i
+ * `loadOwnerInicio` (ovan): den här funktionen körs i `loadOwnerInicioIn`s transaktion, som
+ * inte har tillgång till `listFlashSlots` (egen transaktion, scheduling-engineer).
+ */
+async function loadGettingStarted(
+  q: Queryable,
+  businessId: string,
+): Promise<InicioData["gettingStarted"]> {
+  const [services, hours, team, profileRes] = await Promise.all([
+    countIn(
+      q,
+      `select count(*)::text as n from public.services where business_id = $1`,
+      [businessId],
+    ),
+    countIn(
+      q,
+      `select count(*)::text as n from public.business_hours where business_id = $1`,
+      [businessId],
+    ),
+    countIn(
+      q,
+      `select count(*)::text as n from public.memberships where business_id = $1 and role = 'staff'`,
+      [businessId],
+    ),
+    q.query<{ logo_url: string | null }>(
+      `select logo_url from public.businesses where id = $1`,
+      [businessId],
+    ),
+  ]);
+  return {
+    services: services > 0,
+    hours: hours > 0,
+    profile: (profileRes.rows[0]?.logo_url ?? null) != null,
+    // Patchas i `loadOwnerInicio` (egen transaktion för flash-listan) — `false` här är bara
+    // startläget.
+    flash: false,
+    team: team > 0,
+  };
 }
 
 /** "Corte de pelo" (en tjänst) eller `flash.todosLosServicios` (`null` =
@@ -380,6 +442,14 @@ export async function loadOwnerInicioIn(
     ? await countInactiveCustomersIn(q, businessId, biz.winback_days ?? 60)
     : 0;
 
+  // WP-57 (punkt 4): "Kom igång"-kortet är en konfigurationsgenväg — bara meningsfull för
+  // den som får ändra inställningar (`can_edit_settings`, ägaren kortsluter redan till true).
+  const canEditSettings =
+    member === undefined || hasPerm(member, "can_edit_settings");
+  const gettingStarted = canEditSettings
+    ? await loadGettingStarted(q, businessId)
+    : undefined;
+
   return {
     now: now.toISOString(),
     business: { name: biz.name, comuna: biz.comuna },
@@ -414,5 +484,6 @@ export async function loadOwnerInicioIn(
       markedDates,
     },
     activeFlash: null,
+    gettingStarted,
   };
 }

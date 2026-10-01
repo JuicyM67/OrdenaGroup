@@ -80,6 +80,16 @@
   --color-deposit-bg: #FBEBD6;  --color-deposit-fg: #7A4A12;   /* Abono pagado */
   --color-pending-bg: #EDE6FD;  --color-pending-fg: #4B3AA8;   /* Sin confirmar */
   --color-alert: #E0592A;                                       /* nu-linje, notisprick */
+  /* WP-57 (ägarens UX-genomgång, Hoy: "40 min de atraso syns knappt"): pastellbakgrund till
+     `--color-alert` (saknade en, till skillnad från success/deposit/pending ovan) — samma
+     ljushet/mättnad som de andra tre, så förseningschippen i NextClientCard läses som en
+     likvärdig status, inte en avvikande färg. */
+  --color-alert-bg: #FBE2D6;                                    /* Atraso (chip-bakgrund) */
+  /* CI-fynd (axe): `Chip tone="alert"` saknade en egen `-fg`, till skillnad från
+     success/deposit/pending ovan, och återanvände `--color-alert` rakt av — bara 3:1 mot
+     `--color-alert-bg` (texten "7 min de atraso" är fet 12px, inte "stor text", kräver
+     4,5:1). Samma mättnad/ton, mörkare för kontrast — mäts till ~5,4:1. */
+  --color-alert-fg: #A33814;                                    /* Atraso (chip-text) */
 
   /* ---------- Personalfärger (befintliga :root-värden, se nedan) ---------- */
   --color-staff-1: var(--staff-1);

@@ -92,8 +92,11 @@ import { MonthCard } from "./month-card";
 import { MonthGrid } from "./month-grid";
 import {
   monthCountsFromBookings,
+  monthMinutesFromBookings,
   monthTitle,
   summarizeMonthCounts,
+  summarizeMonthFill,
+  type MonthDayFill,
   type MonthDaySummary,
 } from "./month-view";
 import { MoveDialog } from "./move-dialog";
@@ -106,7 +109,7 @@ import type {
   AgendaData,
   AgendaMemberView,
   AgendaPerm,
-  MonthDayCounts,
+  MonthData,
   StaffColor,
   StaffId,
 } from "./types";
@@ -171,7 +174,7 @@ export type AgendaScreenProps = {
    * action, samma closure-mönster som `onArrival`). `undefined` i design lab — månadsvyn
    * räknar då bara ur `data.bookings` i stället (`monthCountsFromBookings`), vilket bara
    * täcker den vecka som redan är laddad. */
-  onLoadMonthCounts?: (month: YearMonth) => Promise<MonthDayCounts>;
+  onLoadMonthCounts?: (month: YearMonth) => Promise<MonthData>;
   /** WP-45: klockan i den mobila topprraden (`OwnerMobileTopBar`) och
    * Confirmar/Rechazar i agendans popover (väntande bokningar, `requested`).
    * `undefined` i design lab. */
@@ -429,8 +432,9 @@ export function AgendaScreen({
   // på det ominnehållna `staffById` (skulle annars köra om varje rendering).
   // Utan `onLoadMonthCounts` (design lab) finns inget att hämta asynkront — räkna bara ur
   // den redan laddade veckans bokningar direkt (ren härledning, inget `useEffect`/state).
-  const [fetchedMonthCounts, setFetchedMonthCounts] =
-    useState<MonthDayCounts | null>(null);
+  const [fetchedMonthData, setFetchedMonthData] = useState<MonthData | null>(
+    null,
+  );
   const [monthCountsLoading, setMonthCountsLoading] = useState(false);
   useEffect(() => {
     if (vista !== "mes" || !onLoadMonthCounts) return undefined;
@@ -438,11 +442,11 @@ export function AgendaScreen({
     // Nästlad async-funktion (inte `await` direkt i effektkroppen): `setMonthCountsLoading`
     // ska bara köras som svar på anropet vi själva startar, inte synkront i varje
     // effekt-körning (react-hooks/set-state-in-effect — kaskaderande omrendering).
-    async function run(onLoad: (m: YearMonth) => Promise<MonthDayCounts>) {
+    async function run(onLoad: (m: YearMonth) => Promise<MonthData>) {
       setMonthCountsLoading(true);
       try {
-        const counts = await onLoad(browsedMonth);
-        if (!cancelled) setFetchedMonthCounts(counts);
+        const month = await onLoad(browsedMonth);
+        if (!cancelled) setFetchedMonthData(month);
       } catch (err) {
         // Granskningsfynd (2026-10-01): ett fel i `onLoadMonthCounts` (server action,
         // src/server/owner/agenda.ts) saknade tidigare en `catch` här — `fetchedMonthCounts`
@@ -452,7 +456,7 @@ export function AgendaScreen({
         // här (utanför src/server, samma avvägning som `app/agenda/page.tsx`).
         if (!cancelled) {
           console.error("agenda: kunde inte läsa månadens antal", err);
-          setFetchedMonthCounts({});
+          setFetchedMonthData({ counts: {}, minutes: {} });
         }
       } finally {
         if (!cancelled) setMonthCountsLoading(false);
@@ -467,11 +471,21 @@ export function AgendaScreen({
     data.staff.map((s) => [s.id, s.color]),
   );
   const monthCounts = onLoadMonthCounts
-    ? fetchedMonthCounts
+    ? fetchedMonthData?.counts
     : monthCountsFromBookings(data.bookings, browsedMonth, tz);
+  const monthMinutes = onLoadMonthCounts
+    ? (fetchedMonthData?.minutes ?? {})
+    : monthMinutesFromBookings(data.bookings, browsedMonth, tz);
   const monthSummary: ReadonlyMap<LocalDate, MonthDaySummary> = monthCounts
     ? summarizeMonthCounts(monthCounts, staffColorById)
     : new Map();
+  // UX-granskning (sección "Agenda"): fyllnadsstapel per dag — andel bokad tid av öppen
+  // tid, över alla profesionales (`summarizeMonthFill`, month-view.ts).
+  const monthFill: ReadonlyMap<LocalDate, MonthDayFill> = summarizeMonthFill(
+    monthMinutes,
+    data.business.hours,
+    data.staff.length,
+  );
 
   function bookingWithOverride(booking: AgendaBooking): AgendaBooking {
     const override = arrivalOverrides[booking.id];
@@ -690,11 +704,16 @@ export function AgendaScreen({
           : booking.source === "waitlist"
             ? "waitlist"
             : "staff";
+      // UX-granskning (sección "Agenda"): se motiveringen i day-grid.tsx — smala block
+      // (flera profesionales i samma kolumn) visar bara klockslaget.
+      const isNarrow = !!lane && lane.lanes > 1;
       const meta = isTimeVisible(box.height)
-        ? agenda.bloque.meta({
-            hora: formatTime(start, tz),
-            servicio: booking.service,
-          })
+        ? isNarrow
+          ? formatTime(start, tz)
+          : agenda.bloque.meta({
+              hora: formatTime(start, tz),
+              servicio: booking.service,
+            })
         : null;
       const ariaLabel = agenda.bloque.aria({
         cliente: booking.clientName,
@@ -712,6 +731,7 @@ export function AgendaScreen({
           cancelPending={booking.status === "cancel_requested"}
           title={booking.clientName}
           meta={meta}
+          tooltip={booking.service}
           showAvatar={isAvatarVisible(box.height)}
           avatarInitials={staff?.initials}
           top={box.top}
@@ -811,16 +831,25 @@ export function AgendaScreen({
         }
         aside={
           <>
-            <MonthCard
-              month={browsedMonth}
-              selected={focus}
-              today={today}
-              highlightWeekOf={week[0] as LocalDate}
-              onSelect={(date) => goTo(vista, date)}
-              onPrevMonth={() => setBrowsedMonth(prevMonth)}
-              onNextMonth={() => setBrowsedMonth(nextMonth)}
-            />
-            {canFilterTeam ? (
+            {/* UX-granskning (sección "Agenda"): döljs i månadsvyn — minikalendern
+                upprepade annars samma månad två gånger (huvudrutnätet visar redan hela
+                månaden). Kvar i vecko-/dagvyn, där den fortfarande är den enda vyn över
+                hela månaden. */}
+            {vista !== "mes" ? (
+              <MonthCard
+                month={browsedMonth}
+                selected={focus}
+                today={today}
+                highlightWeekOf={week[0] as LocalDate}
+                onSelect={(date) => goTo(vista, date)}
+                onPrevMonth={() => setBrowsedMonth(prevMonth)}
+                onNextMonth={() => setBrowsedMonth(nextMonth)}
+              />
+            ) : null}
+            {/* UX-granskning: döljs i månadsvyn av samma skäl — `monthSummary` filtrerar
+                inte på synlig personal (hela månaden räknas alltid för alla), så filtret
+                skulle se ut som att det gör något utan att göra det. */}
+            {canFilterTeam && vista !== "mes" ? (
               <Card radius="tile" padding="md" className="flex gap-2">
                 <Pill
                   selected={teamFilter === "equipo"}
@@ -836,7 +865,7 @@ export function AgendaScreen({
                 </Pill>
               </Card>
             ) : null}
-            {teamFilter === "propias" ? null : (
+            {teamFilter === "propias" || vista === "mes" ? null : (
               <StaffFilter
                 staff={data.staff}
                 visibleStaffIds={visibleStaffIds}
@@ -933,6 +962,7 @@ export function AgendaScreen({
                 today={today}
                 hours={data.business.hours}
                 counts={monthSummary}
+                fill={monthFill}
                 loading={monthCountsLoading}
                 onSelectDay={(date) => goTo("dia", date)}
               />
@@ -1063,6 +1093,7 @@ export function AgendaScreen({
                   today={today}
                   hours={data.business.hours}
                   counts={monthSummary}
+                  fill={monthFill}
                   loading={monthCountsLoading}
                   onSelectDay={(date) => goTo("dia", date)}
                   className="mt-0"
@@ -1106,8 +1137,8 @@ export function AgendaScreen({
         <ManualBookingDialog
           key={
             manualDialogDefaults
-              ? `${manualDialogDefaults.date}-${manualDialogDefaults.time}-${manualDialogDefaults.staffId}`
-              : "default"
+              ? `manual-${manualDialogDefaults.date}-${manualDialogDefaults.time}-${manualDialogDefaults.staffId}`
+              : "manual-default"
           }
           open={manualDialogOpen}
           onOpenChange={(open) => {
@@ -1169,8 +1200,8 @@ export function AgendaScreen({
         <FlashSlotDialog
           key={
             flashDialogDefaults
-              ? `${flashDialogDefaults.date}-${flashDialogDefaults.time}-${flashDialogDefaults.staffId}`
-              : "default"
+              ? `flash-${flashDialogDefaults.date}-${flashDialogDefaults.time}-${flashDialogDefaults.staffId}`
+              : "flash-default"
           }
           open={flashDialogOpen}
           onOpenChange={(open) => {

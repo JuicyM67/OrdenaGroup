@@ -53,14 +53,17 @@ async function assertVisibleFocusRing(locator: Locator) {
 }
 
 test.describe("rutter", () => {
-  test('/design-lab/main svarar 200 och har exakt en h1 "Inicio"', async ({
+  // WP-57: Inicios rubrik är nu hälsningen ("Hola, Camila") i stället för "Inicio" —
+  // en reklamyta blev en hälsning + dagens läge (ägarens UX-genomgång, "Inicio som
+  // 'dagens läge', inte en reklamyta").
+  test('/design-lab/main svarar 200 och har exakt en h1 "Hola, Camila"', async ({
     page,
   }) => {
     const response = await page.goto("/design-lab/main");
     expect(response?.status()).toBe(200);
     const h1 = page.getByRole("heading", { level: 1 });
     await expect(h1).toHaveCount(1);
-    await expect(h1).toHaveText("Inicio");
+    await expect(h1).toHaveText("Hola, Camila");
   });
 
   // WP-21: /app/inicio visar riktig data (D-020s grind borttagen, D-024). Den delade
@@ -82,10 +85,21 @@ test.describe("tidszon (America/Santiago oavsett webbläsarens tidszon)", () => 
 
       test('visar "Viernes 2 de octubre" och "15:00"', async ({ page }) => {
         await page.goto("/design-lab/main");
+        // WP-57: kalenderkortet togs bort — datumet står nu i headerns meta-rad
+        // (inicio.metaRow, "<fecha> · <negocio>, <comuna>").
         await expect(
           page.getByText("Viernes 2 de octubre").first(),
         ).toBeVisible();
-        await expect(page.getByText("15:00", { exact: true })).toBeVisible();
+        // "15:00" förekommer nu på två ställen (klockslaget i "Próxima reserva" OCH samma
+        // bokning som en rad i "Agenda de hoy") — avgränsa till Próxima reserva-kortets
+        // digitala klocka, som är den som faktiskt bevisar att TIDEN (inte bara datumet)
+        // beräknas i America/Santiago oavsett webbläsarens tidszon.
+        const proximaReserva = page.getByRole("region", {
+          name: "Próxima reserva",
+        });
+        await expect(
+          proximaReserva.getByText("15:00", { exact: true }),
+        ).toBeVisible();
       });
     });
   }
@@ -128,13 +142,11 @@ test("tangentbord: nav → header → Ver agenda → radernas knappar → kalend
     );
   }
 
-  await tabUntilFocused(
-    page,
-    page.getByRole("button", { name: "Mes anterior" }),
-  );
-  const today = page.getByRole("button", { name: "Viernes 2 de octubre" });
-  await tabUntilFocused(page, today);
-  await assertVisibleFocusRing(today);
+  // WP-57: kalenderkortet (minikalender/"Mes anterior") togs bort från Inicio (ägarens
+  // UX-genomgång) — asidens första kort är nu FlashCard, "Compartir hora flash" i stället.
+  const compartir = page.getByRole("link", { name: "Compartir hora flash" });
+  await tabUntilFocused(page, compartir);
+  await assertVisibleFocusRing(compartir);
 });
 
 // "1280×800 en /app/inicio: sin scroll horizontal y el hero no se recorta": flyttad till
@@ -168,12 +180,14 @@ test('"Agenda de hoy" hace scroll interno con 14 filas (?estado=lleno), la pági
   expect(noPageScroll).toBe(true);
 });
 
-test("?estado=vacio: visar hero.tituloVacio och agendaHoy.vacio", async ({
+// WP-57: hero-ytan (och dess "Esta semana todavía no recuperaste horas"-tomläge) är borta —
+// nästa kund-kortet visar nu `hoy.sinProximaReserva` när dagen är tom, samma tomläge som Hoy.
+test("?estado=vacio: visar hoy.sinProximaReserva och agendaHoy.vacio", async ({
   page,
 }) => {
   await page.goto("/design-lab/main?estado=vacio");
   await expect(
-    page.getByText("Esta semana todavía no recuperaste horas"),
+    page.getByText("No tienes más clientes agendados hoy."),
   ).toBeVisible();
   await expect(
     page.getByText("No tienes reservas para hoy todavía."),
@@ -212,18 +226,15 @@ test.describe("axe (wcag2a, wcag2aa, wcag21aa)", () => {
 });
 
 test.describe("estilos calculados", () => {
-  test("hero: border-radius 28px, altura 272px", async ({ page }) => {
+  // WP-57: HeroSummary (28px/272px) ersattes av NextClientCard ("Próxima reserva") —
+  // samma mörka kortradie (`--radius-hero`), men ingen fast höjd (innehållet styr den).
+  test("Próxima reserva: border-radius 28px", async ({ page }) => {
     await page.goto("/design-lab/main");
-    const hero = page.getByRole("region", { name: "Resumen de la semana" });
-    const styles = await hero.evaluate((el) => {
-      const s = getComputedStyle(el);
-      return {
-        radius: s.borderRadius,
-        height: el.getBoundingClientRect().height,
-      };
-    });
-    expect(styles.radius).toBe("28px");
-    expect(styles.height).toBe(272);
+    const card = page.getByRole("region", { name: "Próxima reserva" });
+    const radius = await card.evaluate(
+      (el) => getComputedStyle(el).borderRadius,
+    );
+    expect(radius).toBe("28px");
   });
 
   test("StatTile: altura 116px", async ({ page }) => {

@@ -20,6 +20,12 @@ const chip = cva("inline-flex w-fit items-center justify-center font-bold", {
       // bokningsfråga (tjänster/kategorier den gäller för).
       lavender: "bg-lavender text-on-lilac-soft",
       ink: "bg-ink text-on-dark",
+      // WP-57 (ägarens UX-genomgång, Hoy: "40 min de atraso syns knappt" → röd chip i
+      // stället för grå text). Ny bakgrundston `--color-alert-bg`, se tokens.css.
+      // CI-fynd (axe, color-contrast): `text-alert` gav bara 3:1 mot `bg-alert-bg` (fet
+      // 12px, inte "stor text", kräver 4,5:1) — `text-alert-fg` är en mörkare, egen -fg-ton
+      // för just chippen (se tokens.css), samma mönster som success/deposit/pending.
+      alert: "bg-alert-bg text-alert-fg",
     },
     size: {
       md: "rounded-event px-3 py-1.5 text-12",

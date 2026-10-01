@@ -27,6 +27,11 @@ export type CustomerListFilter =
   // WP-54: clientes marcados como `is_member` ("socios", ver es-CL.ts).
   | "socios";
 
+/** Duplicat av `HABITUAL_VISITS_THRESHOLD` (`src/server/owner/clientes.ts`):
+ * la etiqueta "Habitual" de la fila/ficha se calcula en el cliente a partir
+ * de `visitsCount`, mismo umbral que el filtro `habituales`. */
+export const HABITUAL_VISITS_THRESHOLD = 3;
+
 export type CustomerListItem = {
   id: string;
   name: string;
@@ -38,7 +43,12 @@ export type CustomerListItem = {
   lastVisitAt: string | null;
   /** WP-54: `customers.is_member`. */
   isMember: boolean;
+  /** WP-57 (UX, taggen "Samtycke"): `consent_marketing_at is not null`. */
+  hasMarketingConsent: boolean;
 };
+
+/** WP-57 (UX): antal per filter, oberoende av `?filtro=`/`?q=`. */
+export type CustomerFilterCounts = Record<CustomerListFilter, number>;
 
 export type CustomerConsentView = {
   /** ISO 8601 UTC, `null` = inget registrerat samtycke. */
@@ -117,8 +127,10 @@ export type CustomerDetail = {
   createdAt: string;
   consentTerms: CustomerConsentView;
   consentMarketing: CustomerConsentView;
-  /** `null` = medlemmen saknar `can_view_reports` (döljer statistikkortet). */
-  stats: CustomerStats | null;
+  /** Besök/uteblivna/senaste besök syns alltid; pengarna är redigerade bort
+   * (0/`null`) på servern om `canViewMoney` är falskt. */
+  stats: CustomerStats;
+  canViewMoney: boolean;
   upcoming: CustomerBookingRow[];
   history: CustomerBookingRow[];
   answers: CustomerAnswersView;

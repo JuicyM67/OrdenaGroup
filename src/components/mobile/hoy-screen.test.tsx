@@ -54,6 +54,7 @@ function makeData(): HoyData {
     dayTotalClp: 20_000,
     waitlistCount: 0,
     pendingRequests: [],
+    gaps: [],
     links: {
       flash: "/app/horas-flash/nueva",
       waitlist: "/app/lista-de-espera",

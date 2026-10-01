@@ -18,7 +18,16 @@ import {
   setCustomerMember,
   updateCustomerNotes,
 } from "@/server/owner/clientes";
+import { ownerNameParts } from "@/server/owner/shared";
 import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
+
+import {
+  confirmMyPhotoUploadAction,
+  createMyPhotoUploadAction,
+  deleteMyPhotoAction,
+  loadMyProfileAction,
+  updateMyTitleAction,
+} from "../../my-profile-actions";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -56,6 +65,9 @@ export default async function ClienteDetallePage({
     new Date(),
   );
   if (!customer) notFound();
+
+  const owner = ownerNameParts(user.email);
+  const myProfile = await loadMyProfileAction();
 
   const onUpdateNotes = async (notes: string) => {
     "use server";
@@ -125,6 +137,19 @@ export default async function ClienteDetallePage({
       onSetMember={onSetMember}
       onNotifyMember={onNotifyMember}
       onSendMessage={market === "SE" ? onSendMessage : undefined}
+      ownerName={owner.name}
+      publicPageHref={`/${current.business.slug}`}
+      myProfile={myProfile ?? undefined}
+      myProfileActions={
+        myProfile
+          ? {
+              updateTitle: updateMyTitleAction,
+              createPhotoUpload: createMyPhotoUploadAction,
+              confirmPhotoUpload: confirmMyPhotoUploadAction,
+              deletePhoto: deleteMyPhotoAction,
+            }
+          : undefined
+      }
     />
   );
 }

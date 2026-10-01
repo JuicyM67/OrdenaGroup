@@ -10,7 +10,15 @@ import { CampaignsScreen } from "@/components/campaigns/campaigns-screen";
 import { campanas } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
+import { ownerNameParts } from "@/server/owner/shared";
 
+import {
+  confirmMyPhotoUploadAction,
+  createMyPhotoUploadAction,
+  deleteMyPhotoAction,
+  loadMyProfileAction,
+  updateMyTitleAction,
+} from "../../my-profile-actions";
 import { listCampaignsAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -38,6 +46,8 @@ export default async function UtskickPage({
 
   const { enviado } = await searchParams;
   const items = await listCampaignsAction();
+  const owner = ownerNameParts(user.email);
+  const myProfile = await loadMyProfileAction();
 
   return (
     <CampaignsScreen
@@ -45,6 +55,19 @@ export default async function UtskickPage({
       canViewReports={current.view.perms.can_view_reports}
       enviado={enviado === "1"}
       onLogout={logout}
+      ownerName={owner.name}
+      publicPageHref={`/${current.business.slug}`}
+      myProfile={myProfile ?? undefined}
+      myProfileActions={
+        myProfile
+          ? {
+              updateTitle: updateMyTitleAction,
+              createPhotoUpload: createMyPhotoUploadAction,
+              confirmPhotoUpload: confirmMyPhotoUploadAction,
+              deletePhoto: deleteMyPhotoAction,
+            }
+          : undefined
+      }
     />
   );
 }

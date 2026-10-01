@@ -537,6 +537,8 @@ export const agenda: Widen<typeof Es.agenda> = {
     celdaSinReservasAria: (p: { fecha: string }): string =>
       `${p.fecha}, inga bokningar`,
     celdaCerradaAria: (p: { fecha: string }): string => `${p.fecha}, stängt`,
+    lleno: "Fullt",
+    celdaLlenaAria: (p: { fecha: string }): string => `${p.fecha}, fullt`,
     verMesAria: "Visa månaden",
     verDiaAria: "Visa dagen",
   },
@@ -1545,6 +1547,7 @@ export const profesionales: Widen<typeof Es.profesionales> = {
   ctaEliminar: "Ta bort medarbetare",
   ctaDesactivar: "Inaktivera medarbetare",
   ctaActivar: "Aktivera medarbetare",
+  ctaFoto: "Foto",
 };
 
 // ---------------------------------------------------------------------------
@@ -2547,6 +2550,12 @@ export const solicitudes: Widen<typeof Es.solicitudes> = {
 export const equipo: Widen<typeof Es.equipo> = {
   miPerfil: "Min profil",
   ctaInvitar: "Bjud in till kontot",
+  ctaPermisos: "Behörigheter",
+  estadoCuenta: {
+    ninguna: "Inget konto",
+    invitada: "Inbjuden",
+    activa: "Konto · Personal",
+  },
   invitarDialog: {
     titulo: "Bjud in till kontot",
     emailLabel: "E-post",
@@ -2636,11 +2645,20 @@ export const equipo: Widen<typeof Es.equipo> = {
     },
   },
   vacio: "Du har inte bjudit in någon till kontot än.",
+  /** UX-granskning (fel 4): "Din plan har 1 konto. Byt till Equipo för att ge personalen
+   * egna inloggningar." i stället för det gamla, missvisande "tillåter bara en
+   * medarbetare" — det som begränsas är antal KONTON, inte medarbetare i kalendern. */
   limiteDelPlan: {
-    titulo: "Din plan inkluderar inte personalkonton",
-    texto:
-      "Din nuvarande plan tillåter bara en medarbetare. Byt plan för att bjuda in ditt team.",
+    titulo: "Konton i din plan",
+    texto: (p: { limit: number }): string =>
+      `Din plan har ${p.limit} ${p.limit === 1 ? "konto" : "konton"}. Byt till Equipo för att ge personalen egna inloggningar (Equipo 3, Local 10).`,
     cta: "Byt plan",
+  },
+  infoDelPlan: {
+    conEspacio: (p: { used: number; limit: number }): string =>
+      `Du använder ${p.used} av ${p.limit} konton i din plan.`,
+    completo: (p: { limit: number }): string =>
+      `Du använder alla ${p.limit} konton i din plan. Byt till Local för fler (upp till 10).`,
   },
 };
 
@@ -2720,6 +2738,16 @@ export const flash: Widen<typeof Es.flash> = {
   activas: {
     titulo: "Aktiva",
     vacio: "Du har inga aktiva flashtider än.",
+  },
+  vacio: {
+    explicacion:
+      "En flashtid är en ledig lucka med rabatt. Dela den med en länk och en bild till din story, eller skicka den till kunder som tackat ja till nyheter.",
+    huecosTitulo: "Lediga luckor idag och imorgon",
+    hoy: "Idag",
+    manana: "Imorgon",
+    hueco: (p: { dia: string; rango: string; profesional: string }): string =>
+      `${p.dia} ${p.rango} · ${p.profesional}`,
+    ctaConvertir: "Gör till flashtid",
   },
   reservadas: {
     titulo: "Bokade",
@@ -2807,6 +2835,22 @@ export const vOferta: Widen<typeof Es.vOferta> = {
 // typfel här (körs av `npm run typecheck`).
 // ---------------------------------------------------------------------------
 
+export const uxTextos: Widen<typeof Es.uxTextos> = {
+  etiquetaHabitual: "Stamkund",
+  etiquetaAceptaOfertas: "Tar emot erbjudanden",
+  etiquetas: "Taggar",
+  enviarCampanaN: (p: { n: number }): string => `Skicka utskick (${p.n})`,
+  seleccionarA: (p: { nombre: string }): string => `Välj ${p.nombre}`,
+  seleccionarTodos: "Välj alla",
+  marcarSocio: "Gör till medlem",
+  quitarSocio: "Ta bort som medlem",
+  consentTerminos: "Villkor",
+  consentOfertas: "Utskick och erbjudanden",
+  deReservado: (p: { monto: string }): string => `av ${p.monto} bokat`,
+  minimizarMenu: "Fäll ihop menyn",
+  expandirMenu: "Fäll ut menyn",
+};
+
 const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   comun,
   nav,
@@ -2846,5 +2890,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   flashStory,
   flash,
   vOferta,
+  uxTextos,
 };
 void _check;

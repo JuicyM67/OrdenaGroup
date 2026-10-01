@@ -92,11 +92,16 @@ test.describe("Hoy — klickytor ≥ 44×44", () => {
   test("flikar, Llegó/No vino och notisknappen", async ({ page }) => {
     await page.goto("/design-lab/hoy?estado=solicitudes");
     // WP-47: den gamla flikraden (Hoy/Agenda/Clientes/Caja, Clientes/Caja 404:ade) byttes
-    // mot OwnerMobileTabBar (Inicio/Agenda/Hoy/Ajustes) — och QuickActions (Crear hora
-    // flash/Lista de espera/Cobrar, ingen av rutterna finns) döljs helt.
-    for (const name of ["Inicio", "Agenda", "Hoy", "Ajustes"]) {
+    // mot OwnerMobileTabBar (Inicio/Agenda/Hoy/Clientes/Más opciones) — och QuickActions
+    // (Crear hora flash/Lista de espera/Cobrar, ingen av rutterna finns) döljs helt.
+    // WP-57: sex mål blev fem — "Mer" ("Más opciones") öppnar ett bottenark i stället för
+    // en egen Ajustes-flik, se owner-tab-bar.tsx.
+    for (const name of ["Inicio", "Agenda", "Hoy", "Clientes"]) {
       await expectMinTapTarget(page.getByRole("link", { name, exact: true }));
     }
+    await expectMinTapTarget(
+      page.getByRole("button", { name: "Más opciones" }),
+    );
     for (const name of ["Llegó", "No vino"]) {
       await expectMinTapTarget(page.getByRole("button", { name }));
     }

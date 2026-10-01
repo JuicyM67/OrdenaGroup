@@ -1,54 +1,54 @@
 "use client";
 
-// CajaScreen — /app/caja (WP-24, F10): flikarna "Caja" (periodens summor,
-// fördelningar, att ta betalt för, dagens betalningar) och "Informes" (fyra
-// enkla grafer, tokens, ingen ny dependency — `charts.tsx`). Samma skal som
+// CajaScreen — /app/caja (WP-24, F10; WP-57 UX-ombyggnad). Samma skal som
 // Inicio/Ajustes/Clientes. Alla summor kommer redan uträknade från servern
-// (`loadCajaAction`/`loadInformesAction`, SQL) — UI:t räknar aldrig pengar.
+// (`loadCajaAction`, SQL) — UI:t räknar aldrig pengar. Informes (fyra
+// enkla grafer) har en egen vy (`/app/caja/informes`, `informes-screen.tsx`)
+// i stället för en andra flikrad (WP-57, fel/observation "Caja": "Två
+// flikrader på varandra gör det svårt att se var man är").
+//
+// WP-57 ("Caja"): "Att ta betalt för" överst med betalmetods-pills direkt på
+// raden (ett tryck = `markPaidAction` med den återstående summan, ingen
+// dialog), ett stort mörkt "Inkasserat"-kort med "de X reservado" och en
+// stapel, en enda periodrad (Idag/Semana/Mes/Rango) och fördelningskorten
+// dolda när perioden inte har några betalningar.
+import Link from "next/link";
 import { useState } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
+import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField } from "@/components/ui/date-field";
-import { PageHeader } from "@/components/ui/page-header";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { caja, comun } from "@/i18n";
 import {
   APP_TZ,
   formatDate,
-  formatDuration,
   formatLocalDate,
   formatTime,
   parseInstant,
-  type LocalDate,
 } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 
-import {
-  ChartCardTitle,
-  ShareBarList,
-  StackedWeekBars,
-  WeekBars,
-  toShareBarRows,
-  type ShareBarRow,
-  type StackedWeekBar,
-  type WeekBar,
-} from "./charts";
-import { MarkPaidDialog } from "./mark-paid-dialog";
+import { ChartCardTitle, ShareBarList, toShareBarRows } from "./charts";
 import type {
   CajaActions,
   CajaData,
   CajaPeriod,
   CajaResult,
-  InformesResult,
   ManualPaymentMethod,
   PagoHoyRow,
   PorCobrarRow,
 } from "./types";
+import { uxTextos } from "@/i18n";
 
 export type CajaScreenProps = {
   initialData: CajaResult;
@@ -58,12 +58,17 @@ export type CajaScreenProps = {
    * navigeringen tar samma prop som övriga skärmar. */
   canViewReports?: boolean;
   onLogout?: () => void | Promise<void>;
+  /** WP-57 punkt 7: `<OwnerPageHeader>` (klocka + profilmeny), samma data
+   * som Inicio skickar till `AppShell` (`owner-chrome.tsx`). */
+  ownerName: string;
+  publicPageHref: string;
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
 };
 
-type Tab = "caja" | "informes";
 type PeriodKind = "today" | "week" | "month" | "range";
 
-function errorText(code: string): string {
+function undoErrorText(code: string): string {
   switch (code) {
     case "same_day_required":
       return caja.errores.same_day_required;
@@ -72,12 +77,20 @@ function errorText(code: string): string {
   }
 }
 
-function shortWeekLabel(weekStart: LocalDate): string {
-  return `${weekStart.slice(8, 10)}/${weekStart.slice(5, 7)}`;
-}
-
-function weekTitle(weekStart: LocalDate): string {
-  return formatLocalDate(weekStart, "dayMonthLong");
+/** Samma mapping som `MarkPaidDialog` (`mark-paid-dialog.tsx`), duplicerad
+ * här eftersom en-tryck-raden inte längre öppnar den dialogen (WP-57). */
+function markPaidErrorText(code: string): string {
+  switch (code) {
+    case "already_paid":
+      return caja.errores.already_paid;
+    case "booking_cancelled":
+      return caja.errores.booking_cancelled;
+    case "invalid_amount":
+    case "invalid_method":
+      return caja.errores.invalid_amount;
+    default:
+      return comun.algoSalioMal;
+  }
 }
 
 function methodLabel(key: string): string {
@@ -102,22 +115,26 @@ export function CajaScreen({
   actions,
   canViewReports,
   onLogout,
+  ownerName,
+  publicPageHref,
+  myProfile,
+  myProfileActions,
 }: CajaScreenProps) {
-  const [tab, setTab] = useState<Tab>("caja");
   const [periodKind, setPeriodKind] = useState<PeriodKind>("today");
   const [rangeFrom, setRangeFrom] = useState("");
   const [rangeTo, setRangeTo] = useState("");
   const [rangeError, setRangeError] = useState<string | null>(null);
   const [data, setData] = useState<CajaResult>(initialData);
   const [loadingCaja, setLoadingCaja] = useState(false);
-  const [informes, setInformes] = useState<InformesResult | null>(null);
-  const [loadingInformes, setLoadingInformes] = useState(false);
 
-  const [markPaidTarget, setMarkPaidTarget] = useState<PorCobrarRow | null>(
-    null,
-  );
   const [undoTarget, setUndoTarget] = useState<PagoHoyRow | null>(null);
   const [undoError, setUndoError] = useState<string | null>(null);
+
+  const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
+  const [payError, setPayError] = useState<{
+    bookingId: string;
+    message: string;
+  } | null>(null);
 
   function currentPeriod(): CajaPeriod {
     return periodKind === "range"
@@ -145,13 +162,6 @@ export function CajaScreen({
     void reloadCaja({ kind: "range", from: rangeFrom, to: rangeTo });
   }
 
-  async function ensureInformes() {
-    if (informes || loadingInformes) return;
-    setLoadingInformes(true);
-    setInformes(await actions.loadInformes());
-    setLoadingInformes(false);
-  }
-
   async function handleUndo() {
     if (!undoTarget) return;
     const result = await actions.undoPayment({
@@ -162,12 +172,45 @@ export function CajaScreen({
       setUndoError(null);
       void reloadCaja(currentPeriod());
     } else {
-      setUndoError(errorText(result.code));
+      setUndoError(undoErrorText(result.code));
+    }
+  }
+
+  async function handleMarkPaidInline(
+    bookingId: string,
+    method: ManualPaymentMethod,
+  ) {
+    if (payingBookingId) return;
+    setPayingBookingId(bookingId);
+    setPayError(null);
+    const result = await actions.markPaid({ bookingId, method });
+    setPayingBookingId(null);
+    if (result.ok) {
+      void reloadCaja(currentPeriod());
+    } else {
+      setPayError({ bookingId, message: markPaidErrorText(result.code) });
     }
   }
 
   const cajaData: CajaData | null =
     data && !("forbidden" in data) && !("invalid" in data) ? data : null;
+
+  const totalBookedMinor = cajaData
+    ? cajaData.summary.revenueMinor + cajaData.summary.expectedMinor
+    : 0;
+  const collectedPct =
+    cajaData && totalBookedMinor > 0
+      ? Math.min(
+          100,
+          Math.round((cajaData.summary.revenueMinor / totalBookedMinor) * 100),
+        )
+      : 0;
+  const hasBreakdown = !!(
+    cajaData &&
+    (cajaData.byMethod.length > 0 ||
+      cajaData.byStaff.length > 0 ||
+      cajaData.byService.length > 0)
+  );
 
   return (
     <AppShell
@@ -186,178 +229,99 @@ export function CajaScreen({
         />
       }
       onLogout={onLogout}
+      ownerName={ownerName}
+      publicPageHref={publicPageHref}
+      canViewReports={canViewReports}
+      myProfile={myProfile}
+      myProfileActions={myProfileActions}
+      hideMobileTopBar
     >
-      <PageHeader variant="desktop" title={caja.tabs.caja} />
+      <OwnerPageHeader title={caja.tabs.caja} />
 
-      <div role="tablist" aria-label={caja.tabs.caja} className="flex gap-1.5">
-        <Button
-          type="button"
-          role="tab"
-          aria-selected={tab === "caja"}
-          variant={tab === "caja" ? "primary" : "secondary"}
-          size="sm"
-          onClick={() => setTab("caja")}
-        >
-          {caja.tabs.caja}
-        </Button>
-        <Button
-          type="button"
-          role="tab"
-          aria-selected={tab === "informes"}
-          variant={tab === "informes" ? "primary" : "secondary"}
-          size="sm"
-          onClick={() => {
-            setTab("informes");
-            void ensureInformes();
-          }}
-        >
-          {caja.tabs.informes}
-        </Button>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SegmentedControl
+            aria-label={caja.tabs.caja}
+            value={periodKind}
+            onValueChange={(v) => handlePeriodChange(v as PeriodKind)}
+            options={[
+              { value: "today", label: caja.periodos.hoy },
+              { value: "week", label: caja.periodos.semana },
+              { value: "month", label: caja.periodos.mes },
+              { value: "range", label: caja.periodos.rango },
+            ]}
+            className="w-fit"
+          />
+          <Button asChild variant="secondary" size="sm">
+            <Link href="/app/caja/informes">{caja.tabs.informes} →</Link>
+          </Button>
+        </div>
+        {periodKind === "range" ? (
+          <div className="flex flex-wrap items-end gap-3">
+            <DateField
+              label={caja.rangoPersonalizado.desdeLabel}
+              value={rangeFrom}
+              onChange={setRangeFrom}
+              className="w-44"
+            />
+            <DateField
+              label={caja.rangoPersonalizado.hastaLabel}
+              value={rangeTo}
+              onChange={setRangeTo}
+              className="w-44"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="lg"
+              onClick={handleApplyRange}
+            >
+              {caja.rangoPersonalizado.ctaAplicar}
+            </Button>
+          </div>
+        ) : null}
+        {rangeError ? (
+          <p role="alert" className="text-13 text-ink">
+            {rangeError}
+          </p>
+        ) : null}
+        {cajaData ? (
+          <p className="text-13 text-muted">
+            {caja.periodo({
+              desde: formatLocalDate(cajaData.period.from, "dayMonthLong"),
+              hasta: formatLocalDate(cajaData.period.to, "dayMonthLong"),
+            })}
+          </p>
+        ) : null}
       </div>
 
-      {tab === "caja" ? (
+      {!cajaData ? (
+        <Card radius="tile" padding="lg" className="text-14 text-muted">
+          {comun.algoSalioMal}
+        </Card>
+      ) : (
         <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-3">
-            <SegmentedControl
-              aria-label={caja.tabs.caja}
-              value={periodKind}
-              onValueChange={(v) => handlePeriodChange(v as PeriodKind)}
-              options={[
-                { value: "today", label: caja.periodos.hoy },
-                { value: "week", label: caja.periodos.semana },
-                { value: "month", label: caja.periodos.mes },
-                { value: "range", label: caja.periodos.rango },
-              ]}
-              className="w-fit"
-            />
-            {periodKind === "range" ? (
-              <div className="flex flex-wrap items-end gap-3">
-                <DateField
-                  label={caja.rangoPersonalizado.desdeLabel}
-                  value={rangeFrom}
-                  onChange={setRangeFrom}
-                  className="w-44"
-                />
-                <DateField
-                  label={caja.rangoPersonalizado.hastaLabel}
-                  value={rangeTo}
-                  onChange={setRangeTo}
-                  className="w-44"
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="lg"
-                  onClick={handleApplyRange}
-                >
-                  {caja.rangoPersonalizado.ctaAplicar}
-                </Button>
-              </div>
-            ) : null}
-            {rangeError ? (
-              <p role="alert" className="text-13 text-ink">
-                {rangeError}
-              </p>
-            ) : null}
-            {cajaData ? (
-              <p className="text-13 text-muted">
-                {caja.periodo({
-                  desde: formatLocalDate(cajaData.period.from, "dayMonthLong"),
-                  hasta: formatLocalDate(cajaData.period.to, "dayMonthLong"),
-                })}
-              </p>
-            ) : null}
-          </div>
-
-          {!cajaData ? (
-            <Card radius="tile" padding="lg" className="text-14 text-muted">
-              {comun.algoSalioMal}
-            </Card>
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
-                <SummaryTile
-                  label={caja.resumen.cobrado}
-                  value={formatMoney(cajaData.summary.revenueMinor)}
-                />
-                <SummaryTile
-                  label={caja.resumen.porCobrar}
-                  value={formatMoney(cajaData.summary.expectedMinor)}
-                />
-                <SummaryTile
-                  label={caja.resumen.reservasCount({
-                    n: cajaData.summary.bookings,
-                  })}
-                  value={String(cajaData.summary.bookings)}
-                />
-                <SummaryTile
-                  label={caja.resumen.inasistenciasCount({
-                    n: cajaData.summary.noShows,
-                  })}
-                  value={String(cajaData.summary.noShows)}
-                />
-                <SummaryTile
-                  label={caja.resumen.ticketPromedio}
-                  value={formatMoney(cajaData.summary.averageMinor)}
-                />
-              </div>
-              <p className="text-12 text-muted">{caja.resumen.explicacion}</p>
-
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-                <Card
-                  radius="tile"
-                  padding="lg"
-                  className="flex flex-col gap-3"
-                >
-                  <ChartCardTitle title={caja.distribucion.porMetodo} />
-                  <ShareBarList
-                    rows={toShareBarRows(
-                      cajaData.byMethod.map((r) => ({
-                        ...r,
-                        label: methodLabel(r.key),
-                      })),
-                      formatMoney,
-                    )}
-                    emptyLabel={caja.vacioPeriodo}
-                  />
-                </Card>
-                <Card
-                  radius="tile"
-                  padding="lg"
-                  className="flex flex-col gap-3"
-                >
-                  <ChartCardTitle title={caja.distribucion.porProfesional} />
-                  <ShareBarList
-                    rows={toShareBarRows(cajaData.byStaff, formatMoney)}
-                    emptyLabel={caja.vacioPeriodo}
-                  />
-                </Card>
-                <Card
-                  radius="tile"
-                  padding="lg"
-                  className="flex flex-col gap-3"
-                >
-                  <ChartCardTitle title={caja.distribucion.porServicio} />
-                  <ShareBarList
-                    rows={toShareBarRows(cajaData.byService, formatMoney)}
-                    emptyLabel={caja.vacioPeriodo}
-                  />
-                </Card>
-              </div>
-
-              <Card radius="tile" padding="lg" className="flex flex-col gap-3">
-                <ChartCardTitle title={caja.porCobrarLista.titulo} />
-                {cajaData.porCobrar.length === 0 ? (
-                  <p className="text-13 text-muted">
-                    {caja.porCobrarLista.vacio}
-                  </p>
-                ) : (
-                  <ul className="flex flex-col">
-                    {cajaData.porCobrar.map((r) => (
-                      <li
-                        key={r.bookingId}
-                        className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-0 last:pb-0"
-                      >
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
+            <Card
+              radius="tile"
+              padding="lg"
+              className="flex flex-col gap-3 lg:col-span-3"
+            >
+              <ChartCardTitle
+                title={`${caja.porCobrarLista.titulo} (${cajaData.porCobrar.length})`}
+              />
+              {cajaData.porCobrar.length === 0 ? (
+                <p className="text-13 text-muted">
+                  {caja.porCobrarLista.vacio}
+                </p>
+              ) : (
+                <ul className="flex flex-col">
+                  {cajaData.porCobrar.map((r: PorCobrarRow) => (
+                    <li
+                      key={r.bookingId}
+                      className="flex flex-col gap-2 border-b border-line py-3 last:border-0 last:pb-0"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex min-w-0 flex-col gap-0.5">
                           <span className="text-14 font-bold text-ink">
                             {r.customerName ?? "—"}
@@ -367,92 +331,185 @@ export function CajaScreen({
                             {rowDateTime(r.start)}
                           </span>
                         </div>
-                        <div className="flex shrink-0 items-center gap-3">
-                          <span className="text-14 font-semibold text-ink">
-                            {formatMoney(r.priceMinor)}
-                          </span>
+                        <span className="text-14 font-semibold text-ink">
+                          {formatMoney(r.priceMinor)}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {manualMethods.map((m) => (
                           <Button
+                            key={m}
                             type="button"
                             variant="secondary"
                             size="sm"
-                            onClick={() => setMarkPaidTarget(r)}
+                            disabled={payingBookingId === r.bookingId}
+                            onClick={() =>
+                              void handleMarkPaidInline(r.bookingId, m)
+                            }
                           >
-                            {caja.marcarPagada.cta}
+                            {methodLabel(m)}
                           </Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </Card>
+                        ))}
+                      </div>
+                      {payError && payError.bookingId === r.bookingId ? (
+                        <p role="alert" className="text-13 text-ink">
+                          {payError.message}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
 
+            <Card
+              radius="tile"
+              padding="lg"
+              tone="dark"
+              className="flex flex-col justify-between gap-3 lg:col-span-2"
+            >
+              <span className="text-13 text-on-dark-soft">
+                {caja.resumen.cobrado}
+              </span>
+              <span className="font-display text-32 font-semibold tracking-display">
+                {formatMoney(cajaData.summary.revenueMinor)}
+              </span>
+              <span className="text-13 text-on-dark-soft">
+                {/* TODO_COPY: no hay una frase "de $X reservado" en
+                    es-CL.ts — se reutiliza `resumen.reservasCount`
+                    (existente) para el conteo de reservas. */}
+                {uxTextos.deReservado({ monto: formatMoney(totalBookedMinor) })}{" "}
+                · {caja.resumen.reservasCount({ n: cajaData.summary.bookings })}
+              </span>
+              <div className="h-1.5 overflow-hidden rounded-full bg-dark-2">
+                <div
+                  className="h-full rounded-full bg-lime"
+                  style={{ width: `${collectedPct}%` }}
+                />
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Card
+              radius="card"
+              padding="none"
+              className="flex h-20 flex-col justify-between px-4 py-3"
+            >
+              <span className="font-display text-18 font-semibold tracking-display whitespace-nowrap">
+                {String(cajaData.summary.bookings)}
+              </span>
+              <span className="text-12 text-muted">
+                {caja.resumen.reservasCount({ n: cajaData.summary.bookings })}
+              </span>
+            </Card>
+            <Card
+              radius="card"
+              padding="none"
+              className="flex h-20 flex-col justify-between px-4 py-3"
+            >
+              <span className="font-display text-18 font-semibold tracking-display whitespace-nowrap">
+                {String(cajaData.summary.noShows)}
+              </span>
+              <span className="text-12 text-muted">
+                {caja.resumen.inasistenciasCount({
+                  n: cajaData.summary.noShows,
+                })}
+              </span>
+            </Card>
+            <Card
+              radius="card"
+              padding="none"
+              className="flex h-20 flex-col justify-between px-4 py-3"
+            >
+              <span className="font-display text-18 font-semibold tracking-display whitespace-nowrap">
+                {formatMoney(cajaData.summary.averageMinor)}
+              </span>
+              <span className="text-12 text-muted">
+                {caja.resumen.ticketPromedio}
+              </span>
+            </Card>
+          </div>
+          <p className="text-12 text-muted">{caja.resumen.explicacion}</p>
+
+          {hasBreakdown ? (
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
               <Card radius="tile" padding="lg" className="flex flex-col gap-3">
-                <ChartCardTitle title={caja.pagosDeHoy.titulo} />
-                {cajaData.pagosHoy.length === 0 ? (
-                  <p className="text-13 text-muted">{caja.pagosDeHoy.vacio}</p>
-                ) : (
-                  <ul className="flex flex-col">
-                    {cajaData.pagosHoy.map((p) => (
-                      <li
-                        key={p.paymentId}
-                        className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-0 last:pb-0"
-                      >
-                        <div className="flex min-w-0 flex-col gap-0.5">
-                          <span className="text-14 font-bold text-ink">
-                            {p.customerName ?? "—"}
-                          </span>
-                          <span className="text-13 text-muted">
-                            {methodLabel(p.method)} · {rowTime(p.paidAt)}
-                          </span>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-3">
-                          <span className="text-14 font-semibold text-ink">
-                            {formatMoney(p.amountMinor)}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => {
-                              setUndoError(null);
-                              setUndoTarget(p);
-                            }}
-                          >
-                            {caja.anular.cta}
-                          </Button>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                <ChartCardTitle title={caja.distribucion.porMetodo} />
+                <ShareBarList
+                  rows={toShareBarRows(
+                    cajaData.byMethod.map((r) => ({
+                      ...r,
+                      label: methodLabel(r.key),
+                    })),
+                    formatMoney,
+                  )}
+                  emptyLabel={caja.vacioPeriodo}
+                />
               </Card>
-            </>
-          )}
-          {loadingCaja ? (
-            <p role="status" className="text-13 text-muted">
-              {comun.cargando}
-            </p>
+              <Card radius="tile" padding="lg" className="flex flex-col gap-3">
+                <ChartCardTitle title={caja.distribucion.porProfesional} />
+                <ShareBarList
+                  rows={toShareBarRows(cajaData.byStaff, formatMoney)}
+                  emptyLabel={caja.vacioPeriodo}
+                />
+              </Card>
+              <Card radius="tile" padding="lg" className="flex flex-col gap-3">
+                <ChartCardTitle title={caja.distribucion.porServicio} />
+                <ShareBarList
+                  rows={toShareBarRows(cajaData.byService, formatMoney)}
+                  emptyLabel={caja.vacioPeriodo}
+                />
+              </Card>
+            </div>
           ) : null}
-        </div>
-      ) : (
-        <InformesTab result={informes} loading={loadingInformes} />
-      )}
 
-      {markPaidTarget ? (
-        <MarkPaidDialog
-          open={markPaidTarget != null}
-          onOpenChange={(open) => {
-            if (!open) setMarkPaidTarget(null);
-          }}
-          bookingId={markPaidTarget.bookingId}
-          dueMinor={markPaidTarget.priceMinor}
-          methods={manualMethods}
-          onSubmit={actions.markPaid}
-          onPaid={() => {
-            setMarkPaidTarget(null);
-            void reloadCaja(currentPeriod());
-          }}
-        />
+          <Card radius="tile" padding="lg" className="flex flex-col gap-3">
+            <ChartCardTitle title={caja.pagosDeHoy.titulo} />
+            {cajaData.pagosHoy.length === 0 ? (
+              <p className="text-13 text-muted">{caja.pagosDeHoy.vacio}</p>
+            ) : (
+              <ul className="flex flex-col">
+                {cajaData.pagosHoy.map((p: PagoHoyRow) => (
+                  <li
+                    key={p.paymentId}
+                    className="flex items-center justify-between gap-3 border-b border-line py-3 last:border-0 last:pb-0"
+                  >
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="text-14 font-bold text-ink">
+                        {p.customerName ?? "—"}
+                      </span>
+                      <span className="text-13 text-muted">
+                        {methodLabel(p.method)} · {rowTime(p.paidAt)}
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="text-14 font-semibold text-ink">
+                        {formatMoney(p.amountMinor)}
+                      </span>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setUndoError(null);
+                          setUndoTarget(p);
+                        }}
+                      >
+                        {caja.anular.cta}
+                      </Button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      )}
+      {loadingCaja ? (
+        <p role="status" className="text-13 text-muted">
+          {comun.cargando}
+        </p>
       ) : null}
 
       <ConfirmDialog
@@ -476,112 +533,5 @@ export function CajaScreen({
         onConfirm={handleUndo}
       />
     </AppShell>
-  );
-}
-
-function SummaryTile({ label, value }: { label: string; value: string }) {
-  return (
-    <Card
-      radius="card"
-      padding="none"
-      className="flex h-24 flex-col justify-between px-4 py-3.5"
-    >
-      <span className="font-display text-22 font-semibold tracking-display whitespace-nowrap">
-        {value}
-      </span>
-      <span className="text-12 text-muted">{label}</span>
-    </Card>
-  );
-}
-
-function InformesTab({
-  result,
-  loading,
-}: {
-  result: InformesResult | null;
-  loading: boolean;
-}) {
-  if (loading || !result) {
-    return (
-      <p role="status" className="text-13 text-muted">
-        {comun.cargando}
-      </p>
-    );
-  }
-  if ("forbidden" in result) {
-    return (
-      <Card radius="tile" padding="lg" className="text-14 text-muted">
-        {comun.algoSalioMal}
-      </Card>
-    );
-  }
-
-  const maxWeekly = Math.max(0, ...result.weekly.map((w) => w.revenueMinor));
-  const weeklyBars: WeekBar[] = result.weekly.map((w) => ({
-    key: w.weekStart,
-    shortLabel: shortWeekLabel(w.weekStart),
-    title: `${weekTitle(w.weekStart)}: ${formatMoney(w.revenueMinor)}`,
-    pct: maxWeekly > 0 ? Math.round((w.revenueMinor / maxWeekly) * 100) : 0,
-  }));
-
-  const noShowBars: WeekBar[] = result.noShowTrend.map((w) => ({
-    key: w.weekStart,
-    shortLabel: shortWeekLabel(w.weekStart),
-    title: `${weekTitle(w.weekStart)}: ${w.pct}%`,
-    pct: w.pct,
-  }));
-
-  const maxNvr = Math.max(
-    1,
-    ...result.newVsReturning.map((w) => w.nuevos + w.recurrentes),
-  );
-  const nvrBars: StackedWeekBar[] = result.newVsReturning.map((w) => ({
-    key: w.weekStart,
-    shortLabel: shortWeekLabel(w.weekStart),
-    title: `${weekTitle(w.weekStart)}: ${w.nuevos} + ${w.recurrentes}`,
-    primaryPct: Math.round((w.nuevos / maxNvr) * 100),
-    secondaryPct: Math.round((w.recurrentes / maxNvr) * 100),
-  }));
-
-  const occupancyRows: ShareBarRow[] = result.occupancyByStaff.map((s) => ({
-    key: s.staffId,
-    label: s.name,
-    trailing: `${formatDuration(s.bookedMinutes)} / ${formatDuration(s.availableMinutes)}`,
-    pct:
-      s.availableMinutes > 0
-        ? Math.min(
-            100,
-            Math.round((s.bookedMinutes / s.availableMinutes) * 100),
-          )
-        : 0,
-  }));
-
-  return (
-    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-      <Card radius="tile" padding="lg" className="flex flex-col gap-3">
-        <ChartCardTitle
-          title={caja.informes.ingresosPorSemana.titulo}
-          subtitle={caja.informes.ingresosPorSemana.subtitulo}
-        />
-        <WeekBars bars={weeklyBars} emptyLabel={caja.informes.vacio} />
-      </Card>
-      <Card radius="tile" padding="lg" className="flex flex-col gap-3">
-        <ChartCardTitle title={caja.informes.ocupacionPorProfesional.titulo} />
-        <ShareBarList rows={occupancyRows} emptyLabel={caja.informes.vacio} />
-      </Card>
-      <Card radius="tile" padding="lg" className="flex flex-col gap-3">
-        <ChartCardTitle title={caja.informes.nuevosVsRecurrentes.titulo} />
-        <StackedWeekBars
-          bars={nvrBars}
-          primaryLabel={caja.informes.nuevosVsRecurrentes.nuevos}
-          secondaryLabel={caja.informes.nuevosVsRecurrentes.recurrentes}
-          emptyLabel={caja.informes.vacio}
-        />
-      </Card>
-      <Card radius="tile" padding="lg" className="flex flex-col gap-3">
-        <ChartCardTitle title={caja.informes.tendenciaInasistencias.titulo} />
-        <WeekBars bars={noShowBars} emptyLabel={caja.informes.vacio} />
-      </Card>
-    </div>
   );
 }

@@ -329,7 +329,11 @@ export async function listCampaigns(
       id: string;
       name: string;
       channel: CampaignChannel;
-      sent_at: string;
+      // `timestamptz`: `pg` parsar till `Date`, inte `string` (ingen type
+      // parser registrerad, se `src/server/db/pool.ts`) — samma fälla som
+      // WP-57 fel 1 i `src/server/owner/clientes.ts`. `.toISOString()`
+      // nedan, aldrig `Date.toString()`.
+      sent_at: Date;
       recipients: string;
       redeemed: string;
     }>(
@@ -348,7 +352,7 @@ export async function listCampaigns(
       id: row.id,
       name: row.name,
       channel: row.channel,
-      sentAt: row.sent_at,
+      sentAt: row.sent_at.toISOString(),
       recipients: Number(row.recipients),
       redeemed: Number(row.redeemed),
     }));

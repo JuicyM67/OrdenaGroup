@@ -1,48 +1,47 @@
 "use client";
 
-// Se DESIGN.md §7 (AppShell, PageHeader, HeroSummary, StatTile, AgendaToday, CalendarCard,
-// FlashCard) och docs/tasks/plans/WP-11.md §4 steg 6. Sätter ihop hela Inicio-skärmen ur en
-// typad vy-modell (`InicioData`). Ingen `new Date()` här — `data.now` är den enda klockan,
-// och parsas en gång.
+// Se DESIGN.md §7 (AppShell, OwnerPageHeader, NextClientCard, StatTile, AgendaToday,
+// FlashCard, GettingStartedCard) och docs/tasks/plans/WP-11.md §4 steg 6, ombyggd i WP-57
+// (ägarens UX-genomgång, "Inicio som 'dagens läge', inte en reklamyta"): den stora mörka
+// hero-ytan (HeroSummary/FeatureCard/CalendarCard) är borta. Överst är nu det som kräver
+// handling idag (nästa kund + förfrågningar som väntar), en kompakt KPI-rad och ett
+// "Kom igång"-kort som döljs när allt är klart. Ingen `new Date()` här — `data.now` är den
+// enda klockan, och parsas en gång.
 //
 // WP-47: "use client" (tidigare en ren servrad komposition) — Llegó/No vino/Mover från
-// "…"-menyn (agenda-row.tsx) och profilmenyn (UserMenu) behöver lokalt tillstånd/
-// `useRouter`, samma mönster som agenda-screen.tsx.
+// "…"-menyn (agenda-row.tsx) och klockan (OwnerPageHeader, via OwnerChromeProvider) behöver
+// lokalt tillstånd/`useRouter`, samma mönster som agenda-screen.tsx.
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { MoveDialog } from "@/components/agenda/move-dialog";
 import type { AgendaActionResult } from "@/components/agenda/agenda-screen";
-import { PageHeader } from "@/components/ui/page-header";
-import {
-  NotificationBell,
-  type NotificationBellResult,
-} from "@/components/shared/notification-bell";
+import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { TuLinkCard } from "@/components/shared/tu-link-card";
-import { UserMenu } from "@/components/shared/user-menu";
 import type {
   MyProfileActions,
   MyProfileData,
 } from "@/components/shared/my-profile-dialog";
-import { inicio } from "@/i18n";
+import type { NotificationBellResult } from "@/components/shared/notification-bell";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/components/ui/cn";
+import { agenda, inicio } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import {
   APP_TZ,
-  toLocalDate,
   toWallClock,
   type LocalDate,
   type LocalTime,
 } from "@/lib/format/dates";
-import { initialsOf } from "@/lib/format/initials";
 import { formatPercent } from "@/lib/format/percent";
 
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 
 import { AgendaToday } from "./agenda-today";
 import { AppShell } from "./app-shell";
-import { CalendarCard } from "./calendar-card";
 import { FlashCard } from "./flash-card";
-import { HeroSummary } from "./hero-summary";
+import { GettingStartedCard } from "./getting-started-card";
 import {
   mustParseInstant,
   noShowTrendLabel,
@@ -50,6 +49,7 @@ import {
   upcomingToday,
 } from "./inicio-view";
 import { MainNav } from "./main-nav";
+import { NextClientCard } from "./next-client-card";
 import { PendingRequestsCard } from "./pending-requests-card";
 import { StatTile } from "./stat-tile";
 import type { InicioData, TodayBooking } from "./types";
@@ -65,8 +65,7 @@ export type InicioScreenProps = {
   shellClassName?: string;
   /**
    * Slug/nombre para la tarjeta "Tu link de reservas" (aside). Solo se pasa desde la
-   * página real /app/inicio — el design lab (fixtures) no lo incluye, así que
-   * `npm run visual main` sigue comparando exactamente el mismo árbol que hoy.
+   * página real /app/inicio — el design lab (fixtures) no lo incluye.
    */
   bookingLink?: { slug: string; businessName: string };
   /** WP-47: Llegó/No vino (server action, `markArrival`). `undefined` i design lab. */
@@ -83,8 +82,8 @@ export type InicioScreenProps = {
   }) => Promise<AgendaActionResult>;
   /** WP-47: `logout` (server action). `undefined` i design lab. */
   onLogout?: () => void | Promise<void>;
-  /** WP-45 (D-033): klockan (topprad) + listan "Att bekräfta" (överst i
-   * spalten). `undefined` i design lab — döljer båda. */
+  /** WP-45 (D-033): klockan + listan "Att bekräfta" (överst). `undefined` i design lab —
+   * döljer båda. */
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
   onDeclineRequest?: (
     bookingId: string,
@@ -101,9 +100,6 @@ export type InicioScreenProps = {
    * utan egen personalrad, design lab). */
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
-  /** WP-31: "Enviar recordatorio" i "Te echamos de menos"-kortet. `undefined`
-   * döljer knappen (ingen behörighet att skicka utskick). */
-  winbackHref?: string;
 };
 
 const AGENDA_HREF = "/app/agenda";
@@ -121,26 +117,51 @@ export function InicioScreen({
   onDeclineCancelRequest,
   myProfile,
   myProfileActions,
-  winbackHref,
 }: InicioScreenProps) {
   const router = useRouter();
   const now = mustParseInstant(data.now, "InicioScreen");
   const publicPageHref = bookingLink ? `/${bookingLink.slug}` : "/";
+  const canViewReports = data.member?.perms.can_view_reports ?? true;
 
-  // WP-47: Llegó/No vino från "…"-menyn (agenda-row.tsx) tar bort raden optimistiskt ur
-  // "Agenda de hoy" (den är inte längre "kommande") i stället för att bara byta chip — samma
-  // status filtreras redan bort av `upcomingToday` när servern skickar den på nytt.
+  // WP-47: Llegó/No vino från "…"-menyn (agenda-row.tsx) och nästa kund-kortet tar bort
+  // raden optimistiskt ur "Agenda de hoy" (den är inte längre "kommande") i stället för att
+  // bara byta chip — samma status filtreras redan bort av `upcomingToday` när servern
+  // skickar den på nytt.
   const [handledIds, setHandledIds] = useState<ReadonlySet<string>>(new Set());
   const [movingBooking, setMovingBooking] = useState<TodayBooking | null>(null);
+  const [nextBusy, setNextBusy] = useState(false);
 
   const bookings = upcomingToday(data.today, now).filter(
     (b) => !handledIds.has(b.id),
   );
+  const nextClient = bookings[0];
 
   function handleArrival(bookingId: string, status: "completed" | "no_show") {
     setHandledIds((prev) => new Set(prev).add(bookingId));
     void Promise.resolve(onArrival?.(bookingId, status)).catch(() => undefined);
   }
+
+  function handleNextArrival(status: "completed" | "no_show") {
+    if (!nextClient || nextBusy) return;
+    setNextBusy(true);
+    handleArrival(nextClient.id, status);
+    window.setTimeout(() => setNextBusy(false), 400);
+  }
+
+  const showPending =
+    Boolean(onConfirmRequest && onDeclineRequest) &&
+    data.notifications.items.length > 0;
+
+  const gettingStarted = data.gettingStarted;
+  const showGettingStarted =
+    gettingStarted != null &&
+    !(
+      gettingStarted.services &&
+      gettingStarted.hours &&
+      gettingStarted.profile &&
+      gettingStarted.flash &&
+      gettingStarted.team
+    );
 
   return (
     <AppShell
@@ -156,147 +177,130 @@ export function InicioScreen({
           active="inicio"
           className="lg:hidden"
           canViewReports={data.member?.perms.can_view_reports}
+          onLogout={onLogout}
         />
       }
       onLogout={onLogout}
+      ownerName={data.owner.name}
+      publicPageHref={publicPageHref}
+      canViewReports={data.member?.perms.can_view_reports}
+      myProfile={myProfile}
+      myProfileActions={myProfileActions}
+      pendingRequests={data.notifications.items}
+      onConfirmRequest={onConfirmRequest}
+      onDeclineRequest={onDeclineRequest}
+      onApproveCancelRequest={onApproveCancelRequest}
+      onDeclineCancelRequest={onDeclineCancelRequest}
+      hideMobileTopBar
       className={shellClassName}
     >
-      <PageHeader
-        variant="desktop"
-        title={inicio.titulo}
-        meta={inicio.metaRow({
+      <OwnerPageHeader
+        title={inicio.hola({ nombre: data.owner.firstName })}
+        subtitle={inicio.metaRow({
           fecha: todayLabel(now),
           negocio: data.business.name,
           comuna: data.business.comuna,
         })}
         actions={
-          <>
-            {/* WP-47: sökikonen döljs tills sök finns (WP-xx: visas när funktionen finns) —
-                ledde till en 404, ingen route lyssnar på sökningar än. */}
-            {onConfirmRequest && onDeclineRequest ? (
-              <NotificationBell
-                requests={data.notifications.items}
-                onConfirm={async (bookingId) => {
-                  const result = await onConfirmRequest(bookingId);
-                  if (result.ok) router.refresh();
-                  return result;
-                }}
-                onDecline={async (bookingId, reason) => {
-                  const result = await onDeclineRequest(bookingId, reason);
-                  if (result.ok) router.refresh();
-                  return result;
-                }}
-                onApproveCancel={
-                  onApproveCancelRequest
-                    ? async (bookingId) => {
-                        const result = await onApproveCancelRequest(bookingId);
-                        if (result.ok) router.refresh();
-                        return result;
-                      }
-                    : undefined
-                }
-                onDeclineCancel={
-                  onDeclineCancelRequest
-                    ? async (bookingId) => {
-                        const result = await onDeclineCancelRequest(bookingId);
-                        if (result.ok) router.refresh();
-                        return result;
-                      }
-                    : undefined
-                }
-                withTooltip
-              />
-            ) : null}
-            <span className="hidden lg:contents">
-              <UserMenu
-                name={data.owner.name}
-                initials={initialsOf(data.owner.name)}
-                variant="pill"
-                publicPageHref={publicPageHref}
-                onLogout={onLogout}
-                myProfile={myProfile}
-                myProfileActions={myProfileActions}
-              />
-            </span>
-            <span className="contents lg:hidden">
-              <UserMenu
-                name={data.owner.name}
-                initials={initialsOf(data.owner.name)}
-                variant="avatar"
-                publicPageHref={publicPageHref}
-                onLogout={onLogout}
-                myProfile={myProfile}
-                myProfileActions={myProfileActions}
-              />
-            </span>
-          </>
+          <Button variant="primary" size="lg" asChild>
+            <Link href={AGENDA_HREF} prefetch={false}>
+              {agenda.nuevaReserva}
+            </Link>
+          </Button>
         }
       />
 
-      <HeroSummary
-        ownerFirstName={data.owner.firstName}
-        week={data.week}
-        features={data.features}
-        winbackHref={winbackHref}
-      />
+      <div
+        className={cn(
+          "grid gap-4",
+          showPending ? "lg:grid-cols-3" : "lg:grid-cols-1",
+        )}
+      >
+        <div className={showPending ? "lg:col-span-2" : undefined}>
+          <NextClientCard
+            booking={nextClient}
+            now={now}
+            disabled={nextBusy}
+            onArrived={
+              onArrival ? () => handleNextArrival("completed") : undefined
+            }
+            onNoShow={
+              onArrival ? () => handleNextArrival("no_show") : undefined
+            }
+          />
+        </div>
+        {showPending && onConfirmRequest && onDeclineRequest ? (
+          <PendingRequestsCard
+            requests={data.notifications.items}
+            onConfirm={async (bookingId) => {
+              const result = await onConfirmRequest(bookingId);
+              if (result.ok) router.refresh();
+              return result;
+            }}
+            onDecline={async (bookingId, reason) => {
+              const result = await onDeclineRequest(bookingId, reason);
+              if (result.ok) router.refresh();
+              return result;
+            }}
+            onApproveCancel={
+              onApproveCancelRequest
+                ? async (bookingId) => {
+                    const result = await onApproveCancelRequest(bookingId);
+                    if (result.ok) router.refresh();
+                    return result;
+                  }
+                : undefined
+            }
+            onDeclineCancel={
+              onDeclineCancelRequest
+                ? async (bookingId) => {
+                    const result = await onDeclineCancelRequest(bookingId);
+                    if (result.ok) router.refresh();
+                    return result;
+                  }
+                : undefined
+            }
+          />
+        ) : null}
+      </div>
 
-      {onConfirmRequest && onDeclineRequest ? (
-        <PendingRequestsCard
-          requests={data.notifications.items}
-          onConfirm={async (bookingId) => {
-            const result = await onConfirmRequest(bookingId);
-            if (result.ok) router.refresh();
-            return result;
-          }}
-          onDecline={async (bookingId, reason) => {
-            const result = await onDeclineRequest(bookingId, reason);
-            if (result.ok) router.refresh();
-            return result;
-          }}
-          onApproveCancel={
-            onApproveCancelRequest
-              ? async (bookingId) => {
-                  const result = await onApproveCancelRequest(bookingId);
-                  if (result.ok) router.refresh();
-                  return result;
-                }
-              : undefined
-          }
-          onDeclineCancel={
-            onDeclineCancelRequest
-              ? async (bookingId) => {
-                  const result = await onDeclineCancelRequest(bookingId);
-                  if (result.ok) router.refresh();
-                  return result;
-                }
-              : undefined
-          }
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatTile
+          variant="number"
+          value={data.stats.bookingsToday}
+          meta={inicio.stats.reservasHoy({ n: data.stats.toConfirm })}
         />
-      ) : null}
+        {canViewReports ? (
+          // CI-fynd: sparklinen är en fast 96 px bred SVG (sparkline.tsx) — i en 2-kolumns
+          // rad vid 390 px (WP-42, "sin scroll horizontal") fick den inte plats bredvid
+          // beloppet (nowrap) och orsakade horisontell scroll på hela sidan. `col-span-2`
+          // bara under `lg` (desktopvyn, 4 kolumner/godkänd skärmdump, är oförändrad).
+          <StatTile
+            variant="amount"
+            value={formatMoney(data.stats.revenueWeekClp)}
+            meta={inicio.stats.ingresosSemana}
+            series={data.stats.revenueSeries}
+            className="col-span-2 lg:col-span-1"
+          />
+        ) : null}
+        <StatTile
+          variant="percent"
+          value={formatPercent(data.stats.noShowPct)}
+          meta={inicio.stats.inasistencias}
+          trend={data.stats.noShowTrend}
+          trendLabel={noShowTrendLabel(data.stats.noShowTrend)}
+        />
+        <StatTile
+          variant="number"
+          value={data.features.waitlist.count}
+          meta={inicio.features.listaEspera.titulo}
+        />
+      </div>
+
+      {showGettingStarted ? <GettingStartedCard data={gettingStarted} /> : null}
 
       <div className="flex flex-col gap-6 lg:min-h-0 lg:flex-1 lg:flex-row">
         <div className="flex flex-col gap-5 lg:min-h-0 lg:min-w-0 lg:flex-1">
-          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <StatTile
-              variant="number"
-              value={data.stats.bookingsToday}
-              meta={inicio.stats.reservasHoy({ n: data.stats.toConfirm })}
-            />
-            <StatTile
-              variant="amount"
-              value={formatMoney(data.stats.revenueWeekClp)}
-              meta={inicio.stats.ingresosSemana}
-              series={data.stats.revenueSeries}
-            />
-            <StatTile
-              variant="percent"
-              value={formatPercent(data.stats.noShowPct)}
-              meta={inicio.stats.inasistencias}
-              trend={data.stats.noShowTrend}
-              trendLabel={noShowTrendLabel(data.stats.noShowTrend)}
-            />
-          </div>
-
           <AgendaToday
             bookings={bookings}
             href={AGENDA_HREF}
@@ -306,11 +310,6 @@ export function InicioScreen({
         </div>
 
         <aside className="flex w-full flex-col gap-4 lg:w-90 lg:shrink-0 lg:overflow-y-auto">
-          <CalendarCard
-            month={data.calendar.month}
-            today={toLocalDate(now, APP_TZ)}
-            markedDates={data.calendar.markedDates}
-          />
           <FlashCard activeFlash={data.activeFlash} />
           <UpcomingBookingsCard bookings={data.upcoming} href={AGENDA_HREF} />
           {bookingLink ? (

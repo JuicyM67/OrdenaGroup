@@ -14,12 +14,16 @@ import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import type {
+  MyProfileActions,
+  MyProfileData,
+} from "@/components/shared/my-profile-dialog";
+import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
-import { PageHeader } from "@/components/ui/page-header";
 import { campanas, comun } from "@/i18n";
 import { APP_TZ, formatDate, parseInstant } from "@/lib/format/dates";
 
@@ -32,6 +36,12 @@ export type CampaignsScreenProps = {
   /** `?enviado=1` efter `/app/clientes/utskick/nytt` — toast kort banner. */
   enviado?: boolean;
   onLogout?: () => void | Promise<void>;
+  /** WP-57 punkt 7: `<OwnerPageHeader>` (klocka + profilmeny), samma data
+   * som Inicio skickar till `AppShell` (`owner-chrome.tsx`). */
+  ownerName: string;
+  publicPageHref: string;
+  myProfile?: MyProfileData;
+  myProfileActions?: MyProfileActions;
 };
 
 function sentAtLabel(iso: string): string {
@@ -45,6 +55,10 @@ export function CampaignsScreen({
   canViewReports,
   enviado,
   onLogout,
+  ownerName,
+  publicPageHref,
+  myProfile,
+  myProfileActions,
 }: CampaignsScreenProps) {
   return (
     <AppShell
@@ -63,9 +77,14 @@ export function CampaignsScreen({
         />
       }
       onLogout={onLogout}
+      ownerName={ownerName}
+      publicPageHref={publicPageHref}
+      canViewReports={canViewReports}
+      myProfile={myProfile}
+      myProfileActions={myProfileActions}
+      hideMobileTopBar
     >
-      <PageHeader
-        variant="desktop"
+      <OwnerPageHeader
         title={
           <span className="flex items-center gap-3">
             <IconButton label={comun.volver} tone="ghost" size={36} asChild>

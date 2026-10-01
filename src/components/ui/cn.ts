@@ -77,6 +77,7 @@ const colors = [
   "pending-bg",
   "pending-fg",
   "alert",
+  "alert-bg",
   "staff-1",
   "staff-2",
   "staff-3",

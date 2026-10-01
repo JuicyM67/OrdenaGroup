@@ -15,7 +15,15 @@ import { campanas } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { getCustomerContact } from "@/server/owner/clientes";
+import { ownerNameParts } from "@/server/owner/shared";
 
+import {
+  confirmMyPhotoUploadAction,
+  createMyPhotoUploadAction,
+  deleteMyPhotoAction,
+  loadMyProfileAction,
+  updateMyTitleAction,
+} from "../../../my-profile-actions";
 import { previewCampaignAction, sendCampaignAction } from "../actions";
 
 export const metadata: Metadata = {
@@ -58,6 +66,9 @@ export default async function NuevoUtskickPage({
     if (contact?.name) selectedCustomers.push({ id, name: contact.name });
   }
 
+  const owner = ownerNameParts(user.email);
+  const myProfile = await loadMyProfileAction();
+
   return (
     <NewCampaignScreen
       smsAvailable={market === "SE"}
@@ -69,6 +80,19 @@ export default async function NuevoUtskickPage({
       onLogout={logout}
       onPreview={previewCampaignAction}
       onSend={sendCampaignAction}
+      ownerName={owner.name}
+      publicPageHref={`/${current.business.slug}`}
+      myProfile={myProfile ?? undefined}
+      myProfileActions={
+        myProfile
+          ? {
+              updateTitle: updateMyTitleAction,
+              createPhotoUpload: createMyPhotoUploadAction,
+              confirmPhotoUpload: confirmMyPhotoUploadAction,
+              deletePhoto: deleteMyPhotoAction,
+            }
+          : undefined
+      }
     />
   );
 }

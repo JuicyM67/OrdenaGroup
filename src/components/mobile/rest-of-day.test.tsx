@@ -27,6 +27,7 @@ describe("RestOfDay", () => {
     render(
       <RestOfDay
         bookings={rows}
+        gaps={[]}
         dayCount={6}
         dayTotalClp={84_000}
         closedToday={false}
@@ -37,7 +38,13 @@ describe("RestOfDay", () => {
 
   it("diaCerrado ersätter listan när closedToday är sant", () => {
     render(
-      <RestOfDay bookings={[]} dayCount={0} dayTotalClp={0} closedToday />,
+      <RestOfDay
+        bookings={[]}
+        gaps={[]}
+        dayCount={0}
+        dayTotalClp={0}
+        closedToday
+      />,
     );
     expect(screen.getByText("Hoy no atiendes.")).toBeInTheDocument();
   });
@@ -46,6 +53,7 @@ describe("RestOfDay", () => {
     render(
       <RestOfDay
         bookings={[]}
+        gaps={[]}
         dayCount={0}
         dayTotalClp={0}
         closedToday={false}
@@ -58,6 +66,7 @@ describe("RestOfDay", () => {
     render(
       <RestOfDay
         bookings={rows}
+        gaps={[]}
         dayCount={6}
         dayTotalClp={84_000}
         closedToday={false}

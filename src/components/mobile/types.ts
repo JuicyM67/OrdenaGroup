@@ -87,6 +87,21 @@ export type HoyMemberView = {
   perms: Record<HoyPerm, boolean>;
 };
 
+/**
+ * WP-57 (punkt 5, UX-genomgång "Resten av dagen kan få luckor utskrivna"): en ledig lucka
+ * idag, lika lång som profesionalens kortaste tjänst — samma `FreeGap`
+ * (`src/server/flash/gaps.ts`, scheduling-engineer) som Blixttiders tomma läge redan
+ * använder, bara återanvänd här. "Gör till Blixttid" länkar till
+ * `/app/flash?ny=1&staff=<staffId>&start=<ISO>`.
+ */
+export type HoyGap = {
+  staffId: string;
+  staffName: string;
+  /** ISO 8601 (UTC). */
+  start: string;
+  end: string;
+};
+
 export type HoyData = {
   /** Instant, ISO 8601 med offset. Aldrig `new Date()` i komponenten. */
   now: string;
@@ -102,6 +117,9 @@ export type HoyData = {
   /** Summa för hela dagen, heltal CLP. */
   dayTotalClp: number;
   waitlistCount: number;
+  /** WP-57: dagens lediga luckor (redan klippta till `now`, se `listFreeGaps`). `[]` i
+   * design lab/äldre fixturer — "Resto del día" visar då bara bokningarna, som förut. */
+  gaps: HoyGap[];
   /** WP-45 (D-033): solicitudes (`requested`) pendientes de confirmar —
    * fuente de la campana (`NotificationBell`), reemplaza al antiguo contador
    * `unreadNotifications`. */
