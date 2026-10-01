@@ -21,6 +21,11 @@ export type SegmentedControlProps = {
   onValueChange: (value: string) => void;
   options: readonly SegmentedControlOption[];
   className?: string;
+  /** WP-60 fynd: cada opción mide `w-24` (96px) por defecto — con 4
+   * opciones (p. ej. Caja: Hoy/Semana/Mes/Rango) el control no cabe en
+   * 390 px y causaba scroll horizontal. Los llamadores con más de 3
+   * opciones pueden angostar cada ítem acá (p. ej. "w-20"). */
+  itemClassName?: string;
 };
 
 export function SegmentedControl({
@@ -29,6 +34,7 @@ export function SegmentedControl({
   onValueChange,
   options,
   className,
+  itemClassName,
 }: SegmentedControlProps) {
   return (
     <ToggleGroup.Root
@@ -52,6 +58,7 @@ export function SegmentedControl({
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none on-dark:focus-visible:outline-lime",
             "toggle-on:bg-surface toggle-on:font-bold",
             "disabled:pointer-events-none disabled:opacity-40",
+            itemClassName,
           )}
         >
           {option.label}
