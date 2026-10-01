@@ -9,9 +9,8 @@ import type { ReactNode } from "react";
 
 import { brand } from "@/config/brand";
 
-// Regel 10: namnet "llena" bara i src/config/brand.ts — titeln använder
-// `brand.name` (installationens riktiga namn, "Ordena Calendar"/"Booking
-// Buddy"), inte arbetsnamnet.
+// Regel 10: arbetsnamnet bara i src/config/brand.ts — titeln använder
+// `brand.name` (installationens riktiga namn).
 export const metadata: Metadata = {
   title: `${brand.name} admin`,
   robots: { index: false, follow: false, nocache: true },
