@@ -355,7 +355,7 @@ export async function getCustomerDetailIn(
   const [upcomingRes, historyRes] = await Promise.all([
     q.query<BookingRow>(
       `${bookingSelect}
-         and bk.status in ('requested', 'pending_payment', 'confirmed')
+         and bk.status in ('requested', 'pending_payment', 'confirmed', 'cancel_requested')
          and lower(bk.period) >= $3
        order by lower(bk.period)`,
       [businessId, customerId, now.toISOString()],
