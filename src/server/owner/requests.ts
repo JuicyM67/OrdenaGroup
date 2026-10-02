@@ -27,6 +27,7 @@ import {
 import { confirmBooking, declineBooking } from "@/server/bookings/confirm";
 import type { BookingError } from "@/server/bookings/types";
 import { hasPerm, loadMember, type Member } from "@/server/db/permissions";
+import { kickOutbox } from "@/server/messaging/outbox";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 import type { BookingStatus } from "@/server/scheduling/types";
@@ -146,6 +147,7 @@ export async function confirmRequest(
   );
   if (!r.ok) return { ok: false, error: r.error };
   revalidateRequestPages();
+  void kickOutbox(); // meddelandet till kunden direkt, inte vid nästa cron
   return { ok: true };
 }
 
@@ -166,6 +168,7 @@ export async function declineRequest(
   );
   if (!r.ok) return { ok: false, error: r.error };
   revalidateRequestPages();
+  void kickOutbox(); // meddelandet till kunden direkt, inte vid nästa cron
   return { ok: true };
 }
 
@@ -183,6 +186,7 @@ export async function approveCancelRequest(
   );
   if (!r.ok) return { ok: false, error: r.error };
   revalidateRequestPages();
+  void kickOutbox(); // meddelandet till kunden direkt, inte vid nästa cron
   return { ok: true };
 }
 
@@ -199,6 +203,7 @@ export async function declineCancelRequest(
   );
   if (!r.ok) return { ok: false, error: r.error };
   revalidateRequestPages();
+  void kickOutbox(); // meddelandet till kunden direkt, inte vid nästa cron
   return { ok: true };
 }
 
