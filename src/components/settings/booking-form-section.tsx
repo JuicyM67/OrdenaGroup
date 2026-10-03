@@ -4,6 +4,17 @@
 // WP-40 steg 6, D-031): låst rad, branschförslag, hela frågekatalogen och en
 // förhandsvisning för en vald tjänst. Mobil först: förhandsvisningen hamnar
 // under listan på smala skärmar (ingen `lg:`-brytpunkt döljer den).
+//
+// WP-62 (ägarens feedback 2026-10-02, D-042, skärm ~2000 px): frågeeditorn
+// expanderade tidigare inline under listan, med "Gäller för" som ett eget
+// inbäddat kort med egen spara-knapp under den — två spara-knappar staplat på
+// höjden. Nu: lista till vänster, redigeraren till höger (`lg:sticky`) i en
+// egen kolumn i stället för att växa listans höjd; "Gäller för" är inbäddat i
+// `QuestionEditor` (en "Spara fråga"-knapp, se dess filkommentar). Klicket på
+// "Gäller för"-chippen i `QuestionRow` öppnar nu samma redigerare i stället
+// för en separat panel. Mobil (< lg): oförändrad stapling, redigeraren hamnar
+// efter hela listan i stället för mitt i den (samma DOM-nod kan inte stå på
+// två ställen samtidigt utan att dubblera formuläret, se rapporten).
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -11,14 +22,12 @@ import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { ajustes, formulario } from "@/i18n";
 
-import { AppliesToPanel } from "./applies-to-panel";
 import { bookingFormErrorText } from "./booking-form-error-text";
 import { industryForBusinessCategory } from "./booking-form-industry";
 import { questionsApplyingToService } from "./booking-form-resolve";
 import type {
   BookingFormActions,
   BookingFormSettings,
-  MutationResult,
   Targets,
 } from "./booking-form-types";
 import { BookingSuggestionsBanner } from "./booking-suggestions-banner";
@@ -48,7 +57,6 @@ export function BookingFormSection({
   );
   const [newQuestionOpen, setNewQuestionOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [targetsId, setTargetsId] = useState<string | null>(null);
   const [error, setError] = useState<string | undefined>();
 
   const industry = industryForBusinessCategory(businessCategory);
@@ -87,8 +95,7 @@ export function BookingFormSection({
 
   const editingQuestion =
     settings.questions.find((q) => q.id === editingId) ?? null;
-  const targetsQuestion =
-    settings.questions.find((q) => q.id === targetsId) ?? null;
+  const detailOpen = newQuestionOpen || editingQuestion !== null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -127,11 +134,14 @@ export function BookingFormSection({
         />
       ) : null}
 
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start">
+      {/* WP-62/D-042: lista till vänster, redigeraren till höger i en sticky kolumn (lg+) i
+          stället för att expandera listans höjd — se filkommentaren. Under lg: oförändrad
+          stapling (redigeraren hamnar efter hela listan). */}
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-list-editor lg:items-start">
         <Card
           radius="tile"
           padding="lg"
-          className="flex min-w-0 flex-1 flex-col gap-1"
+          className="flex min-w-0 flex-col gap-1"
         >
           <p className="text-12 font-bold tracking-caps text-muted uppercase">
             {formulario.preguntasContador({
@@ -151,7 +161,7 @@ export function BookingFormSection({
                   void withReload(() => actions.setQuestionActive(q.id, active))
                 }
                 onEdit={() => setEditingId(q.id)}
-                onEditTargets={() => setTargetsId(q.id)}
+                onEditTargets={() => setEditingId(q.id)}
                 onMoveUp={() => void move(q.id, -1)}
                 onMoveDown={() => void move(q.id, 1)}
                 canMoveUp={settings.questions.indexOf(q) > 0}
@@ -173,7 +183,7 @@ export function BookingFormSection({
             </p>
           ) : null}
 
-          {!newQuestionOpen ? (
+          {!detailOpen ? (
             <Button
               type="button"
               variant="secondary"
@@ -182,86 +192,89 @@ export function BookingFormSection({
             >
               {formulario.ctaNuevaPregunta}
             </Button>
-          ) : (
+          ) : null}
+        </Card>
+
+        <div className="flex flex-col gap-3 lg:sticky lg:top-0">
+          {newQuestionOpen ? (
             <QuestionEditor
               onCancel={() => setNewQuestionOpen(false)}
               onSubmit={(fields) =>
-                withReload(() =>
-                  actions.createQuestion({
-                    question: fields,
-                    targets: { appliesTo: "all" },
-                  }),
-                )
+                actions.createQuestion({
+                  question: fields,
+                  targets: { appliesTo: "all" },
+                })
               }
+              targets={{
+                categories: settings.categories,
+                services: settings.services,
+                initial: { appliesTo: "all" },
+              }}
+              onSaveTargets={(id, targets) =>
+                actions.setQuestionTargets(id, targets)
+              }
+              onSaved={onReload}
             />
-          )}
-
-          {editingQuestion ? (
+          ) : editingQuestion ? (
             <QuestionEditor
+              key={editingQuestion.id}
               initial={toEditorInitial(editingQuestion)}
+              questionId={editingQuestion.id}
               onCancel={() => setEditingId(null)}
               onSubmit={(fields) =>
-                withReload(() =>
-                  actions.updateQuestion(editingQuestion.id, fields),
-                )
+                actions.updateQuestion(editingQuestion.id, fields)
               }
               onDelete={() =>
                 withReload(() => actions.deleteQuestion(editingQuestion.id))
               }
-            />
-          ) : null}
-
-          {targetsQuestion ? (
-            <AppliesToPanel
-              questionLabel={targetsQuestion.label}
-              categories={settings.categories}
-              services={settings.services}
-              initial={toTargets(targetsQuestion)}
-              onCancel={() => setTargetsId(null)}
-              onSave={(targets) =>
-                withReload<MutationResult>(() =>
-                  actions.setQuestionTargets(targetsQuestion.id, targets),
-                )
+              targets={{
+                categories: settings.categories,
+                services: settings.services,
+                initial: toTargets(editingQuestion),
+              }}
+              onSaveTargets={(id, targets) =>
+                actions.setQuestionTargets(id, targets)
               }
+              onSaved={onReload}
             />
-          ) : null}
-        </Card>
-
-        <aside
-          aria-label={formulario.preview.titulo({
-            servicio: previewService?.name ?? "",
-          })}
-          className="flex flex-col gap-3 lg:w-80 lg:shrink-0"
-        >
-          {activeServices.length > 1 ? (
-            <select
-              aria-label={ajustes.secciones.servicios}
-              value={previewServiceId ?? ""}
-              onChange={(e) => setPreviewServiceId(e.target.value || null)}
-              className="h-11 w-full rounded-control border-2 border-transparent bg-field px-3.5 text-13 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          ) : (
+            <aside
+              aria-label={formulario.preview.titulo({
+                servicio: previewService?.name ?? "",
+              })}
+              className="flex flex-col gap-3"
             >
-              {activeServices.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          {previewService ? (
-            <QuestionPreview
-              serviceName={previewService.name}
-              questions={previewQuestions.map((q) => ({
-                id: q.id,
-                label: q.label,
-                help: q.help,
-                kind: q.kind,
-                options: q.options,
-                required: q.required,
-                saveToCustomer: q.saveToCustomer,
-              }))}
-            />
-          ) : null}
-        </aside>
+              {activeServices.length > 1 ? (
+                <select
+                  aria-label={ajustes.secciones.servicios}
+                  value={previewServiceId ?? ""}
+                  onChange={(e) => setPreviewServiceId(e.target.value || null)}
+                  className="h-11 w-full rounded-control border-2 border-transparent bg-field px-3.5 text-13 font-medium text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                >
+                  {activeServices.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+              {previewService ? (
+                <QuestionPreview
+                  serviceName={previewService.name}
+                  questions={previewQuestions.map((q) => ({
+                    id: q.id,
+                    label: q.label,
+                    help: q.help,
+                    kind: q.kind,
+                    options: q.options,
+                    required: q.required,
+                    saveToCustomer: q.saveToCustomer,
+                  }))}
+                />
+              ) : null}
+            </aside>
+          )}
+        </div>
       </div>
     </div>
   );

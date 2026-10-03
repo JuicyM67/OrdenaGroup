@@ -7,6 +7,18 @@
 // frågan automatiskt (`formulario.aplicaA.autoNuevosServicios`), det finns
 // inget sätt att stänga av det (ingen egen kolumn i schemat) — texten är en
 // upplysning, inte en egen växel.
+//
+// WP-62 (ägarens feedback 2026-10-02, D-042): "Gäller för" visades som ett eget
+// inbäddat kort med egen "Guardar"-knapp UNDER frågeeditorn — två spara-knappar
+// staplat på höjden, "inte super användarvänligt". `useAppliesToState`/
+// `AppliesToFields` nedan är det delade state/UI:t, utan egen kant/skugga eller
+// spara-knapp: `QuestionEditor` (vy A) återanvänder dem i stället för hela den
+// här filens `<AppliesToPanel>` för att rendera "Gäller för" som en vanlig del
+// av samma formulär (en "Spara fråga"-knapp). `AppliesToPanel` (fristående kort
+// med egna knappar) finns kvar oförändrad i sitt publika API — vy B
+// (`service-questions-tab.tsx`) använder den fortfarande för "använd även i
+// andra tjänster" efter att frågan redan är skapad (inget frågeformulär öppet
+// då att bädda in den i).
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -20,16 +32,6 @@ import type {
   MutationResult,
   Targets,
 } from "./booking-form-types";
-
-export type AppliesToPanelProps = {
-  questionLabel: string;
-  categories: BookingFormCategory[];
-  services: BookingFormService[];
-  initial: Targets;
-  onCancel: () => void;
-  onSave: (targets: Targets) => Promise<MutationResult>;
-  className?: string;
-};
 
 type Group = {
   category: BookingFormCategory | null;
@@ -51,15 +53,28 @@ function groupByCategory(
   return groups;
 }
 
-export function AppliesToPanel({
-  questionLabel,
-  categories,
-  services,
-  initial,
-  onCancel,
-  onSave,
-  className,
-}: AppliesToPanelProps) {
+export type AppliesToState = {
+  mode: "all" | "targets";
+  setMode: (mode: "all" | "targets") => void;
+  query: string;
+  setQuery: (query: string) => void;
+  groups: Group[];
+  isChecked: (service: BookingFormService) => boolean;
+  toggleWholeCategory: (categoryId: string) => void;
+  toggleService: (service: BookingFormService) => void;
+  wholeCategories: Set<string>;
+  selectedCount: number;
+  computeTargets: () => Targets;
+};
+
+/** Delat state för "Gäller för" (alla/valda tjänster, kategori- och
+ * tjänstval): används av både `AppliesToFields` (inbäddad, utan egna
+ * knappar) och `AppliesToPanel` (fristående kort). */
+export function useAppliesToState(
+  categories: BookingFormCategory[],
+  services: BookingFormService[],
+  initial: Targets,
+): AppliesToState {
   const [mode, setMode] = useState<"all" | "targets">(initial.appliesTo);
   const [wholeCategories, setWholeCategories] = useState<Set<string>>(
     () => new Set(initial.appliesTo === "targets" ? initial.categoryIds : []),
@@ -68,8 +83,6 @@ export function AppliesToPanel({
     () => new Set(initial.appliesTo === "targets" ? initial.serviceIds : []),
   );
   const [query, setQuery] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | undefined>();
 
   const groups = useMemo(
     () => groupByCategory(categories, services),
@@ -93,8 +106,9 @@ export function AppliesToPanel({
     });
   }
 
-  function toggleService(service: BookingFormService, group: Group) {
+  function toggleService(service: BookingFormService) {
     const categoryId = service.categoryId;
+    const siblings = services.filter((s) => s.categoryId === categoryId);
     if (categoryId !== null && wholeCategories.has(categoryId)) {
       // Un service avmarkerat medan hela kategorin är vald: gör om till en
       // uttrycklig lista (alla utom den här).
@@ -105,7 +119,7 @@ export function AppliesToPanel({
       });
       setIndividualServices((prev) => {
         const next = new Set(prev);
-        for (const s of group.services) next.add(s.id);
+        for (const s of siblings) next.add(s.id);
         next.delete(service.id);
         return next;
       });
@@ -121,86 +135,79 @@ export function AppliesToPanel({
 
   const selectedCount = services.filter(isChecked).length;
 
-  async function handleSave() {
-    setSaving(true);
-    setError(undefined);
-    try {
-      const targets: Targets =
-        mode === "all"
-          ? { appliesTo: "all" }
-          : {
-              appliesTo: "targets",
-              categoryIds: [...wholeCategories],
-              serviceIds: [...individualServices].filter((id) => {
-                const s = services.find((x) => x.id === id);
-                return (
-                  !s ||
-                  s.categoryId === null ||
-                  !wholeCategories.has(s.categoryId)
-                );
-              }),
-            };
-      const result = await onSave(targets);
-      if (!result.ok) {
-        setError(bookingFormErrorText(result.code));
-      }
-    } finally {
-      setSaving(false);
-    }
+  function computeTargets(): Targets {
+    if (mode === "all") return { appliesTo: "all" };
+    return {
+      appliesTo: "targets",
+      categoryIds: [...wholeCategories],
+      serviceIds: [...individualServices].filter((id) => {
+        const s = services.find((x) => x.id === id);
+        return (
+          !s || s.categoryId === null || !wholeCategories.has(s.categoryId)
+        );
+      }),
+    };
   }
 
-  const q = query.trim().toLowerCase();
+  return {
+    mode,
+    setMode,
+    query,
+    setQuery,
+    groups,
+    isChecked,
+    toggleWholeCategory,
+    toggleService,
+    wholeCategories,
+    selectedCount,
+    computeTargets,
+  };
+}
+
+/** Bara fälten (mode-knappar, sökfält, grupperad checkboxlista, auto-besked)
+ * — ingen rubrik, kant eller spara/avbryt-knapp. Byggd för att bäddas in i
+ * ett större formulär (`QuestionEditor`); `AppliesToPanel` nedan lägger på
+ * resten för de ställen som fortfarande behöver en fristående panel. */
+export function AppliesToFields({ state }: { state: AppliesToState }) {
+  const q = state.query.trim().toLowerCase();
   const matches = (name: string) => q === "" || name.toLowerCase().includes(q);
 
   return (
-    <section
-      aria-label={formulario.aplicaA.titulo}
-      className={cn(
-        "flex flex-col gap-3 rounded-card bg-surface p-4.5 shadow-popover fields-on-surface",
-        className,
-      )}
-    >
-      <div>
-        <p className="text-12 font-semibold text-muted">
-          {formulario.aplicaA.titulo}
-        </p>
-        <p className="text-16 font-bold text-ink">{questionLabel}</p>
-      </div>
-
+    <div className="flex flex-col gap-3">
       <div className="flex gap-1.5">
         <Button
           type="button"
-          variant={mode === "all" ? "primary" : "secondary"}
+          variant={state.mode === "all" ? "primary" : "secondary"}
           size="sm"
-          aria-pressed={mode === "all"}
-          onClick={() => setMode("all")}
+          aria-pressed={state.mode === "all"}
+          onClick={() => state.setMode("all")}
         >
           {formulario.aplicaA.todos}
         </Button>
         <Button
           type="button"
-          variant={mode === "targets" ? "primary" : "secondary"}
+          variant={state.mode === "targets" ? "primary" : "secondary"}
           size="sm"
-          aria-pressed={mode === "targets"}
-          onClick={() => setMode("targets")}
+          aria-pressed={state.mode === "targets"}
+          onClick={() => state.setMode("targets")}
         >
           {formulario.aplicaA.elegidos}
         </Button>
       </div>
 
-      {mode === "targets" ? (
+      {state.mode === "targets" ? (
         <>
           <input
             type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={state.query}
+            onChange={(e) => state.setQuery(e.target.value)}
             placeholder={formulario.aplicaA.buscarPlaceholder}
             aria-label={formulario.aplicaA.buscarPlaceholder}
             className="h-11 w-full rounded-control border-2 border-transparent bg-canvas px-3.5 text-13 font-medium text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           />
 
           <div className="flex max-h-96 flex-col gap-3 overflow-y-auto">
-            {groups.map((group) => {
+            {state.groups.map((group) => {
               const visibleServices = group.services.filter((s) =>
                 matches(s.name),
               );
@@ -212,7 +219,7 @@ export function AppliesToPanel({
                 return null;
               }
               const total = group.services.length;
-              const selected = group.services.filter(isChecked).length;
+              const selected = group.services.filter(state.isChecked).length;
               return (
                 <div
                   key={group.category?.id ?? "sin-categoria"}
@@ -222,8 +229,10 @@ export function AppliesToPanel({
                     <label className="flex items-center gap-2 text-14 font-bold text-ink">
                       <input
                         type="checkbox"
-                        checked={wholeCategories.has(group.category.id)}
-                        onChange={() => toggleWholeCategory(group.category!.id)}
+                        checked={state.wholeCategories.has(group.category.id)}
+                        onChange={() =>
+                          state.toggleWholeCategory(group.category!.id)
+                        }
                         className="size-4 accent-ink"
                       />
                       {formulario.aplicaA.todaLaCategoria({
@@ -249,8 +258,8 @@ export function AppliesToPanel({
                       >
                         <input
                           type="checkbox"
-                          checked={isChecked(s)}
-                          onChange={() => toggleService(s, group)}
+                          checked={state.isChecked(s)}
+                          onChange={() => state.toggleService(s)}
                           className="size-4 accent-ink"
                         />
                         {s.name}
@@ -262,13 +271,69 @@ export function AppliesToPanel({
             })}
           </div>
 
-          {wholeCategories.size > 0 ? (
+          {state.wholeCategories.size > 0 ? (
             <p className="rounded-event bg-lime-50 px-2.5 py-2 text-12 text-ink">
               {formulario.aplicaA.autoNuevosServicios}
             </p>
           ) : null}
         </>
       ) : null}
+    </div>
+  );
+}
+
+export type AppliesToPanelProps = {
+  questionLabel: string;
+  categories: BookingFormCategory[];
+  services: BookingFormService[];
+  initial: Targets;
+  onCancel: () => void;
+  onSave: (targets: Targets) => Promise<MutationResult>;
+  className?: string;
+};
+
+export function AppliesToPanel({
+  questionLabel,
+  categories,
+  services,
+  initial,
+  onCancel,
+  onSave,
+  className,
+}: AppliesToPanelProps) {
+  const state = useAppliesToState(categories, services, initial);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | undefined>();
+
+  async function handleSave() {
+    setSaving(true);
+    setError(undefined);
+    try {
+      const result = await onSave(state.computeTargets());
+      if (!result.ok) {
+        setError(bookingFormErrorText(result.code));
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <section
+      aria-label={formulario.aplicaA.titulo}
+      className={cn(
+        "flex flex-col gap-3 rounded-card bg-surface p-4.5 shadow-popover fields-on-surface",
+        className,
+      )}
+    >
+      <div>
+        <p className="text-12 font-semibold text-muted">
+          {formulario.aplicaA.titulo}
+        </p>
+        <p className="text-16 font-bold text-ink">{questionLabel}</p>
+      </div>
+
+      <AppliesToFields state={state} />
 
       {error ? (
         <p role="alert" className="text-13 font-semibold text-ink">
@@ -286,7 +351,7 @@ export function AppliesToPanel({
           disabled={saving}
           onClick={() => void handleSave()}
         >
-          {formulario.aplicaA.ctaGuardar({ n: selectedCount })}
+          {formulario.aplicaA.ctaGuardar({ n: state.selectedCount })}
         </Button>
       </div>
     </section>
