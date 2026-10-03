@@ -144,49 +144,55 @@ export function BusinessSection({
             maxLength={120}
           />
 
-          <TextField
-            label={negocio.slug.label}
-            hint={
-              errors.slug
-                ? undefined
-                : slugChanged
-                  ? ajustes.slugAviso
-                  : negocio.slug.ayuda
-            }
-            value={form.slug}
-            onChange={(e) => set("slug", e.target.value)}
-            error={errors.slug}
-            maxLength={40}
-          />
-          {form.slug ? (
-            <p className="-mt-3 text-13 text-muted">
-              {negocio.slug.vistaPrevia({ url: `/${form.slug}` })}
-            </p>
-          ) : null}
+          {/* WP-62 (D-042): fälten kortare än en rad parar ihop i en 2-kolumnsgrid på
+              desktop i stället för att staplas en och en — mindre scroll på breda skärmar. */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="flex flex-col gap-1.5">
+              <TextField
+                label={negocio.slug.label}
+                hint={
+                  errors.slug
+                    ? undefined
+                    : slugChanged
+                      ? ajustes.slugAviso
+                      : negocio.slug.ayuda
+                }
+                value={form.slug}
+                onChange={(e) => set("slug", e.target.value)}
+                error={errors.slug}
+                maxLength={40}
+              />
+              {form.slug ? (
+                <p className="text-13 text-muted">
+                  {negocio.slug.vistaPrevia({ url: `/${form.slug}` })}
+                </p>
+              ) : null}
+            </div>
 
-          <TextField
-            label={negocio.campos.comunaLabel}
-            value={form.comuna}
-            onChange={(e) => set("comuna", e.target.value)}
-            error={errors.comuna}
-            maxLength={80}
-          />
+            <TextField
+              label={negocio.campos.comunaLabel}
+              value={form.comuna}
+              onChange={(e) => set("comuna", e.target.value)}
+              error={errors.comuna}
+              maxLength={80}
+            />
 
-          <TextField
-            label={negocio.campos.phoneLabel}
-            hint={errors.phone ? undefined : negocio.campos.phoneAyuda}
-            value={form.phone}
-            onChange={(e) => set("phone", e.target.value)}
-            error={errors.phone}
-          />
+            <TextField
+              label={negocio.campos.phoneLabel}
+              hint={errors.phone ? undefined : negocio.campos.phoneAyuda}
+              value={form.phone}
+              onChange={(e) => set("phone", e.target.value)}
+              error={errors.phone}
+            />
 
-          <TextField
-            label={negocio.campos.addressLabel}
-            placeholder={negocio.campos.addressPlaceholder}
-            value={form.address}
-            onChange={(e) => set("address", e.target.value)}
-            maxLength={200}
-          />
+            <TextField
+              label={negocio.campos.addressLabel}
+              placeholder={negocio.campos.addressPlaceholder}
+              value={form.address}
+              onChange={(e) => set("address", e.target.value)}
+              maxLength={200}
+            />
+          </div>
         </Card>
 
         {submitError ? (
@@ -195,7 +201,7 @@ export function BusinessSection({
           </p>
         ) : null}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 lg:sticky lg:bottom-0 lg:z-10 lg:bg-canvas lg:py-3">
           <Button type="submit" size="xl" disabled={status === "saving"}>
             {status === "saving" ? ajustes.guardando : ajustes.guardarCambios}
           </Button>

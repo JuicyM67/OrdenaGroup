@@ -5,6 +5,14 @@
 // (samma fält som `falt-B` redan ritar) i stället för den svävande
 // typ-panelen i `falt-A` — en select är mer tillgänglig och räcker för sju
 // alternativ (se rapporten för motiveringen).
+//
+// WP-62 (ägarens feedback 2026-10-02, D-042): "Gäller för" (`targets`, frivillig)
+// renderas nu som en vanlig del av samma formulär i stället för ett eget
+// inbäddat kort med egen spara-knapp — `handleSubmit` sparar frågans fält OCH
+// (om `targets`/`onSaveTargets` finns) vilka tjänster den gäller, i följd,
+// bakom EN "Spara fråga"-knapp. Servern har kvar två separata actions
+// (`updateQuestion`/`createQuestion` respektive `setQuestionTargets`) — ingen
+// databasändring, bara två anrop efter varandra härifrån (se rapporten).
 import { useId, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -14,14 +22,18 @@ import { Switch } from "@/components/ui/switch";
 import { TextField } from "@/components/ui/text-field";
 import { ajustes, formulario } from "@/i18n";
 
+import { AppliesToFields, useAppliesToState } from "./applies-to-panel";
 import { bookingFormErrorText } from "./booking-form-error-text";
 import {
   isChoiceKind,
   QUESTION_KINDS,
+  type BookingFormCategory,
+  type BookingFormService,
   type CreateResult,
   type MutationResult,
   type QuestionFieldsInput,
   type QuestionKind,
+  type Targets,
 } from "./booking-form-types";
 
 export type QuestionEditorInitial = {
@@ -42,13 +54,31 @@ const EMPTY: QuestionEditorInitial = {
   saveToCustomer: false,
 };
 
+/** "Gäller för" inbäddat i formuläret (vy A, D-042) i stället för en egen
+ * panel: `questionId` saknas vid skapande (`onSaveTargets` får då `id` från
+ * `onSubmit`s `CreateResult`). */
+export type QuestionEditorTargets = {
+  categories: BookingFormCategory[];
+  services: BookingFormService[];
+  initial: Targets;
+};
+
 export type QuestionEditorProps = {
   initial?: QuestionEditorInitial;
+  /** Frågans id, bara känt vid redigering (skapande får sitt id från
+   * `onSubmit`s `CreateResult`, se `handleSubmit`). */
+  questionId?: string;
   onCancel: () => void;
   onSubmit: (
     fields: QuestionFieldsInput,
   ) => Promise<MutationResult | CreateResult>;
   onDelete?: () => Promise<MutationResult>;
+  /** "Gäller för", inbäddat (D-042): bara vy A skickar den här. */
+  targets?: QuestionEditorTargets;
+  onSaveTargets?: (id: string, targets: Targets) => Promise<MutationResult>;
+  /** Körs efter en lyckad `onSubmit` (+ `onSaveTargets` om den finns) — vy A
+   * laddar om listan en enda gång i stället för en gång per anrop. */
+  onSaved?: () => Promise<void>;
   /** Rad extra: t.ex. "Använd frågan även i andra tjänster" (vy B). */
   footer?: ReactNode;
   className?: string;
@@ -56,12 +86,21 @@ export type QuestionEditorProps = {
 
 export function QuestionEditor({
   initial,
+  questionId,
   onCancel,
   onSubmit,
   onDelete,
+  targets,
+  onSaveTargets,
+  onSaved,
   footer,
   className,
 }: QuestionEditorProps) {
+  const targetsState = useAppliesToState(
+    targets?.categories ?? [],
+    targets?.services ?? [],
+    targets?.initial ?? { appliesTo: "all" },
+  );
   const [label, setLabel] = useState(initial?.label ?? EMPTY.label);
   const [help, setHelp] = useState(initial?.help ?? "");
   const [kind, setKind] = useState<QuestionKind>(initial?.kind ?? EMPTY.kind);
@@ -122,7 +161,20 @@ export function QuestionEditor({
       const result = await onSubmit(fields);
       if (!result.ok) {
         setSubmitError(bookingFormErrorText(result.code));
+        return;
       }
+      const id = questionId ?? ("id" in result ? result.id : undefined);
+      if (targets && onSaveTargets && id) {
+        const targetsResult = await onSaveTargets(
+          id,
+          targetsState.computeTargets(),
+        );
+        if (!targetsResult.ok) {
+          setSubmitError(bookingFormErrorText(targetsResult.code));
+          return;
+        }
+      }
+      if (onSaved) await onSaved();
     } finally {
       setSaving(false);
     }
@@ -258,6 +310,15 @@ export function QuestionEditor({
         />
         {formulario.guardaEnFicha}
       </label>
+
+      {targets ? (
+        <div className="flex flex-col gap-2 border-t border-line-strong pt-3">
+          <span className="text-13 font-semibold text-ink">
+            {formulario.aplicaA.titulo}
+          </span>
+          <AppliesToFields state={targetsState} />
+        </div>
+      ) : null}
 
       {footer}
 

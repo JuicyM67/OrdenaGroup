@@ -12,7 +12,8 @@
 // enda widgets tillstånd.
 //
 // Dator (≥ lg): vänsterkolumn (ikon + namn, aktiv = `bg-ink`/`text-on-dark`), innehållet
-// använder bredden (max 4xl, inte en smal centrerad kolumn som förut). Mobil: horisontellt
+// använder bredden (max 6xl, inte en smal centrerad kolumn som förut — ägarens feedback
+// 2026-10-02, D-042: höger halva av skärmen stod tom på breda skärmar). Mobil: horisontellt
 // rullande pill-rad överst, innehållet under.
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -176,7 +177,7 @@ export function AjustesShell({
           ))}
         </nav>
 
-        <div className="relative flex w-full max-w-4xl flex-col gap-6 lg:min-h-0 lg:flex-1 lg:self-stretch lg:overflow-y-auto lg:pb-2">
+        <div className="relative flex w-full max-w-6xl flex-col gap-6 lg:min-h-0 lg:flex-1 lg:self-stretch lg:overflow-y-auto lg:pb-2">
           {children}
         </div>
       </div>

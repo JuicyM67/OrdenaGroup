@@ -4,6 +4,12 @@
 // precio, buffer) y activar/desactivar. Sin eliminar (la base de datos bloquea borrar un
 // servicio con reservas; en vez de manejar ese error, esta pantalla no ofrece borrar —
 // ver `docs/tasks/plans/WP-15b.md`). Un solo formulario abierto a la vez (nuevo o editar).
+//
+// WP-62 (ägarens feedback 2026-10-02, D-042): samma master–detail-mönster som
+// `booking-form-section.tsx` — listan stannar till vänster (raden som redigeras
+// försvinner inte ur listan längre), `ServiceForm` flyttas till en `lg:sticky`
+// kolumn till höger i stället för att ersätta raden och växa listans höjd. Under
+// lg: oförändrad stapling, formuläret hamnar efter hela listan.
 import { useState } from "react";
 import { comun } from "@/i18n";
 
@@ -363,35 +369,24 @@ export function ServicesSection({
   }
 
   return (
-    <Card radius="tile" padding="lg" className="flex flex-col gap-4">
-      <h2 className="text-18 font-bold text-ink">
-        {ajustes.secciones.servicios}
-      </h2>
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-list-editor lg:items-start">
+      <Card radius="tile" padding="lg" className="flex min-w-0 flex-col gap-4">
+        <h2 className="text-18 font-bold text-ink">
+          {ajustes.secciones.servicios}
+        </h2>
 
-      {list.length === 0 && editingId !== "new" ? (
-        <p className="text-13 text-muted">{servicios.vacio}</p>
-      ) : null}
+        {list.length === 0 ? (
+          <p className="text-13 text-muted">{servicios.vacio}</p>
+        ) : null}
 
-      <div className="flex flex-col gap-3">
-        {list.map((s) =>
-          editingId === s.id ? (
-            <ServiceForm
-              key={s.id}
-              form={form}
-              errors={errors}
-              saving={saving}
-              onChange={setForm}
-              onCancel={cancel}
-              onSubmit={() => void submit()}
-              serviceId={s.id}
-              bookingForm={bookingForm}
-            />
-          ) : (
+        <div className="flex flex-col gap-3">
+          {list.map((s) => (
             <div
               key={s.id}
               data-testid="service-row"
               className={cn(
-                "flex flex-col items-start gap-3 rounded-tile bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between",
+                "flex flex-col items-start gap-3 rounded-tile border-2 bg-canvas p-4 sm:flex-row sm:items-center sm:justify-between",
+                editingId === s.id ? "border-ink" : "border-transparent",
                 !s.active && "opacity-50",
               )}
             >
@@ -421,26 +416,36 @@ export function ServicesSection({
                 </Button>
               </div>
             </div>
-          ),
-        )}
+          ))}
+        </div>
 
-        {editingId === "new" ? (
+        {editingId === null ? (
+          <Button
+            type="button"
+            variant="secondary"
+            size="lg"
+            onClick={startNew}
+          >
+            {servicios.ctaAgregar}
+          </Button>
+        ) : null}
+      </Card>
+
+      {editingId !== null ? (
+        <div className="flex flex-col gap-3 lg:sticky lg:top-0">
           <ServiceForm
+            key={editingId}
             form={form}
             errors={errors}
             saving={saving}
             onChange={setForm}
             onCancel={cancel}
             onSubmit={() => void submit()}
+            serviceId={editingId === "new" ? undefined : editingId}
+            bookingForm={bookingForm}
           />
-        ) : null}
-      </div>
-
-      {editingId === null ? (
-        <Button type="button" variant="secondary" size="lg" onClick={startNew}>
-          {servicios.ctaAgregar}
-        </Button>
+        </div>
       ) : null}
-    </Card>
+    </div>
   );
 }

@@ -4,6 +4,11 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-042 · 2026-10-03 · Inställningar: bredare desktop-layout, lista + redigerare sida vid sida (WP-62)
+**Varför:** Ägarens feedback 2026-10-02: innehållet satt i en smal spalt (max-w-4xl), höger halva av breda skärmar stod tom, och frågeeditorn + ett inbäddat "Gäller för"-kort med egen spara-knapp gav mycket scroll. **Konsekvens:** Innehållet får max-w-6xl. Bokningsformulär och Tjänster visar listan till vänster och redigeraren i en sticky högerkolumn (`grid-cols-list-editor`, ny utility i tokens.css). "Gäller för" ingår i frågeformuläret bakom EN "Spara fråga"-knapp (två serveranrop i följd, ingen DB-ändring). Korta fält i Företag ligger i 2 kolumner, och spara-raden är sticky på desktop. Mobil är oförändrad. Visuell avvikelse mot äldre ajustes-referenser accepteras tills referenserna tas om.
+
+---
+
 ### D-041 · 2026-10-02 · Agendans referens uppdaterad efter ägarens godkända UX-översyn (WP-57/61): klocka + profil i verktygsraden
 **Varför:** WP-57 (Inicio/Hoy) lade klockan (`NotificationBell`) och profilmenyn (`UserMenu`) i ett gemensamt sidhuvud, men Agenda använde fortfarande sin egen `AgendaToolbar`/`OwnerMobileTopBar` utan dem — ägaren godkände att utöka samma mönster till Agenda (WP-61, pilotuppföljning). **Konsekvens:** `AgendaShell` sätter nu `OwnerChromeProvider` (samma data som `AppShell`); `AgendaToolbar` (skrivbordet) och `OwnerMobileTopBar` (mobil, nytt valfritt `ownerName`-läge — bakåtkompatibelt för Clientes/Caja/Ajustes/Horas flash som ännu inte migrerat) visar klockan + profilmenyn längst till höger. `docs/design/screens/Agenda.png` och de tre `agenda-toolbar`-relaterade utsnitten (`crops.json`) är omtagna från den nu godkända skärmen (`npm run visual agenda agenda-dia` → 0,00 %). `main`/`hoy` har sedan tidigare en större, redan accepterad avvikelse (D-035, WP-47 inte klar) — orört här, inte del av det här arbetspaketet.
 

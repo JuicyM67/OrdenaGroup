@@ -832,3 +832,8 @@
 @utility fields-on-surface {
   --field-bg: var(--color-canvas);
 }
+
+/* Inställningar (WP-62/D-042): lista + redigerare sida vid sida på desktop. */
+@utility grid-cols-list-editor {
+  grid-template-columns: minmax(0, 1fr) 380px;
+}

@@ -316,7 +316,7 @@ export function CategorySection({
         </p>
       ) : null}
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:items-start lg:gap-3">
         {groups.map((group, groupIndex) => (
           <div
             key={group.category?.id ?? "sin-categoria"}
