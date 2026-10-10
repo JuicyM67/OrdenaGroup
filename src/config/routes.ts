@@ -452,6 +452,65 @@ export function appRoutePrefixes(id: AppRouteId): readonly [string, string] {
   ];
 }
 
+// ---------------------------------------------------------------------------
+// Kundkonton (WP-67, D-054): konsumentens egna sidor. CL-sökvägarna är
+// filsystemets (`src/app/(consumer)/cuenta/*`); SE får svenska slugs via samma
+// rewrites/redirects som app-rutterna. Finns i båda marknaderna (till skillnad
+// från marknadsplatsen, WP-68, som är dold i CL).
+// ---------------------------------------------------------------------------
+export type CuentaRouteId =
+  | "cuenta"
+  | "cuentaIngresar"
+  | "cuentaReservas"
+  | "cuentaFavoritos"
+  | "cuentaPrivacidad"
+  | "cuentaResena";
+
+const CL_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
+  cuenta: "/cuenta",
+  cuentaIngresar: "/cuenta/ingresar",
+  cuentaReservas: "/cuenta/reservas",
+  cuentaFavoritos: "/cuenta/favoritos",
+  cuentaPrivacidad: "/cuenta/privacidad",
+  cuentaResena: "/cuenta/resena/[id]",
+};
+
+const SE_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
+  cuenta: "/konto",
+  cuentaIngresar: "/konto/logga-in",
+  cuentaReservas: "/konto/bokningar",
+  cuentaFavoritos: "/konto/favoriter",
+  cuentaPrivacidad: "/konto/integritet",
+  cuentaResena: "/konto/recension/[id]",
+};
+
+/** Länk till en kontosida, i den här installationens marknad. `param` ersätter
+ * `[id]` (bara `cuentaResena`). */
+export function cuentaHref(id: CuentaRouteId, param?: string): string {
+  const path = (market === "SE" ? SE_CUENTA_ROUTES : CL_CUENTA_ROUTES)[id];
+  return param === undefined ? path : path.replace("[id]", param);
+}
+
+/** Kontots rotprefix i BÅDA marknadernas form (`/cuenta`, `/konto`) —
+ * `src/proxy.ts` körs före rewrites och måste känna igen båda. */
+export const CUENTA_ROOTS: readonly [string, string] = [
+  CL_CUENTA_ROUTES.cuenta,
+  SE_CUENTA_ROUTES.cuenta,
+];
+
+/** Inloggningssidan för konton i båda marknadernas form. */
+export const CUENTA_INGRESAR_PATHS: readonly [string, string] = [
+  CL_CUENTA_ROUTES.cuentaIngresar,
+  SE_CUENTA_ROUTES.cuentaIngresar,
+];
+
+function cuentaPairs(): { source: string; destination: string }[] {
+  return (Object.keys(CL_CUENTA_ROUTES) as CuentaRouteId[]).map((id) => ({
+    source: SE_CUENTA_ROUTES[id].replace("[id]", ":id"),
+    destination: CL_CUENTA_ROUTES[id].replace("[id]", ":id"),
+  }));
+}
+
 /** `[id]`/`[token]` (våra platshållare) → `:id`/`:token` (path-to-regexp, det
  * `next.config.ts`s `rewrites`/`redirects` förstår). */
 function toRewritePath(path: string): string {
@@ -557,6 +616,7 @@ export function seRouteRewrites(): { source: string; destination: string }[] {
     ...legal,
     ...appRutter,
     ...seMarketplacePairs(),
+    ...cuentaPairs(),
   ];
 }
 
@@ -596,12 +656,18 @@ export function seRouteRedirects(): {
     destination: source,
     permanent: true as const,
   }));
+  const cuenta = cuentaPairs().map(({ source, destination }) => ({
+    source: destination,
+    destination: source,
+    permanent: true as const,
+  }));
   return [
     ...rutter,
     ...marknadsSidor,
     ...legal,
     ...appRutter,
     ...marknadsplats,
+    ...cuenta,
   ];
 }
 

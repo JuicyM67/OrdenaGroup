@@ -110,6 +110,8 @@ export interface BookingScreenProps {
   initialMobileTab?: MobileTab;
   /** WP-72: starta den guidade visningen (bara demoföretaget). */
   tour?: boolean;
+  /** WP-67: inloggad med kundkonto — namn/e-post förifyllda (bara värden). */
+  initialContact?: CustomerContact;
 }
 
 export function BookingScreen({
@@ -125,6 +127,7 @@ export function BookingScreen({
   offerNotice,
   initialMobileTab,
   tour,
+  initialContact = NO_CONTACT,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
@@ -146,7 +149,7 @@ export function BookingScreen({
   // (CustomerForm avmonteras när steget går tillbaka till "seleccion").
   // Samtyckena bor kvar lokalt i CustomerForm och nollställs alltså varje gång
   // den monteras igen — de är aldrig förkryssade.
-  const [contact, setContact] = useState<CustomerContact>(NO_CONTACT);
+  const [contact, setContact] = useState<CustomerContact>(initialContact);
   const [memberDiscount, setMemberDiscount] = useState<number | null>(null);
   const [discountReason, setDiscountReason] = useState<
     "member" | "offer" | undefined
@@ -212,7 +215,7 @@ export function BookingScreen({
       // för att öppna valen med den redan bokade tiden.
       if (state.step === "confirmacion") {
         dispatch({ type: "reset" });
-        setContact(NO_CONTACT);
+        setContact(initialContact);
       } else {
         dispatch({ type: "go_back" });
       }
@@ -221,7 +224,7 @@ export function BookingScreen({
     return () => {
       window.removeEventListener("popstate", onPopState);
     };
-  }, [state.step]);
+  }, [state.step, initialContact]);
 
   if (data.business.status === "frozen") {
     return (

@@ -83,6 +83,34 @@ export async function cancelBooking(
     ref = { bookingId: p.data.bookingId };
     reason = p.data.reason;
   }
+  return runCancel(c, ref, reason);
+}
+
+/**
+ * WP-67 (D-054): kundens avbokning från sitt kundkonto. Anroparen
+ * (`src/server/accounts/bookings.ts`) har redan bevisat i kundens egen
+ * session (`private.my_booking_ref`) att bokningen hör till en kundrad som
+ * kontot är kopplat till — `businessId` är därför betrodd. Samma regler som
+ * länken `/r/[token]` (aktör `customer`: fönstret, WP-56-förfrågan,
+ * idempotens, händelser efter commit).
+ */
+export async function cancelBookingForAccount(
+  ref: { businessId: string; bookingId: string },
+  now: Date,
+): Promise<Result<CancelBookingValue, BookingError>> {
+  const c = parseContext(engineContextSchema, {
+    businessId: ref.businessId,
+    actor: { kind: "customer" },
+    now,
+  });
+  return runCancel(c, { bookingId: ref.bookingId }, undefined);
+}
+
+async function runCancel(
+  c: EngineContext,
+  ref: BookingRef,
+  reason: string | undefined,
+): Promise<Result<CancelBookingValue, BookingError>> {
   const input = { ...c, ref, reason };
   const waitlist: WaitlistEvent[] = [];
   const result = await runAs(

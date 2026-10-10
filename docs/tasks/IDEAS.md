@@ -142,3 +142,6 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Betald exponering ("utvalt erbjudande") som intäktskälla.
 - Push-notiser till konsumenter (nya erbjudanden från favoriter) — kräver samtycke.
 - PostGIS om antalet företag växer så att haversine + bounding box blir långsamt.
+
+- 2026-10-11 (WP-67): Snabbtaggar i recensionen ("Trevligt bemötande", "Punktlig" … i `Recension.dc.html`) — finns inte i D-045, inte byggt. Dessutom: "Visas som Elin K.." (dubbel punkt när visningsnamnet slutar på initial-punkt, `resenas`-texten från WP-65).
+- 2026-10-11 (WP-67): Hjärtat (favorit) på `/[slug]` för utloggade besökare (länk till Skapa konto) — i v1 visas det bara för inloggade med kundkonto, så `/[slug]`-referenserna inte ändras.

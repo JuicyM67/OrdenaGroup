@@ -1,13 +1,15 @@
 // SSR-flödet (D-019: token_hash + type, inte PKCE-code). Mallarna i supabase/templates/
 // bygger länken mot `{{ .SiteURL }}/auth/confirm?token_hash=…&type=…` (se
 // docs/tasks/plans/WP-15.md). Utan egna mallar kommer Supabases standardlänk
-// tillbaka med `?code=` (PKCE) i stället. Efter verifiering går vi alltid till `/app`: ingen
-// `next`-parameter, så rutten kan inte användas för öppen redirect.
+// tillbaka med `?code=` (PKCE) i stället. Ingen `next`-parameter, så rutten kan inte
+// användas för öppen redirect: målet väljs av cookien `auth_intent` (WP-67, D-054,
+// `finishSignIn`) — kundkontot eller `/app` som förut.
 import type { EmailOtpType } from "@supabase/supabase-js";
-import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+import { failSignIn, finishSignIn } from "../finish";
 
 export const dynamic = "force-dynamic";
 
@@ -27,8 +29,8 @@ export async function GET(request: NextRequest) {
   if (code) {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) redirect("/app");
-    redirect("/login?error=otp_expired");
+    if (!error) await finishSignIn(supabase);
+    await failSignIn("otp_expired");
   }
 
   if (tokenHash && type) {
@@ -37,8 +39,8 @@ export async function GET(request: NextRequest) {
       type,
       token_hash: tokenHash,
     });
-    if (!error) redirect("/app");
+    if (!error) await finishSignIn(supabase);
   }
 
-  redirect("/login?error=otp_expired");
+  await failSignIn("otp_expired");
 }

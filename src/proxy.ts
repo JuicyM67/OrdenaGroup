@@ -31,7 +31,12 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isDesignLabEnabled } from "@/app/design-lab/gate";
-import { appRoutePrefixes } from "@/config/routes";
+import {
+  appRoutePrefixes,
+  CUENTA_INGRESAR_PATHS,
+  CUENTA_ROOTS,
+  cuentaHref,
+} from "@/config/routes";
 import { refreshSupabaseSession } from "@/lib/supabase/proxy";
 
 const [INVITACION_CL, INVITACION_SE] = appRoutePrefixes("appInvitacion");
@@ -102,6 +107,22 @@ export async function proxy(request: NextRequest) {
     return redirect;
   }
 
+  // WP-67 (D-054): kundkontots sidor (`/cuenta/*`, SE `/konto/*`, båda
+  // formerna — proxy körs före rewrites) kräver inloggning, utom själva
+  // inloggningssidan. Utloggad → kontots inloggning, inte företagens `/login`.
+  const isCuenta = CUENTA_ROOTS.some(
+    (root) => pathname === root || pathname.startsWith(`${root}/`),
+  );
+  const isCuentaIngresar = CUENTA_INGRESAR_PATHS.some(
+    (p) => pathname === p || pathname.startsWith(`${p}/`),
+  );
+  if (isCuenta && !isCuentaIngresar && userId === null) {
+    const url = request.nextUrl.clone();
+    url.pathname = cuentaHref("cuentaIngresar");
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
   return response;
 }
 
@@ -112,5 +133,7 @@ export const config = {
     "/admin/:path*",
     "/login",
     "/auth/:path*",
+    "/cuenta/:path*",
+    "/konto/:path*",
   ],
 };

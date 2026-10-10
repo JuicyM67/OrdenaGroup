@@ -4163,6 +4163,7 @@ export const importar = {
 export { visita } from "./es-CL.visita";
 export { smsCreditos } from "./es-CL.sms-creditos";
 export { descubre } from "./es-CL.descubre";
+export { cuenta } from "./es-CL.cuenta";
 
 // ---------------------------------------------------------------------------
 // planes (WP-73, D-048): nombres de plan, bloqueos con "Ver planes", resumen de

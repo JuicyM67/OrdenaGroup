@@ -37,6 +37,9 @@ const RESERVED_SLUGS = new Set([
   "upptack",
   "oferta",
   "erbjudande",
+  // WP-67: kundkonton (CL /cuenta, SE /konto).
+  "cuenta",
+  "konto",
 ]);
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;
