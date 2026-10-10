@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; email?: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -27,7 +27,12 @@ export default async function LoginPage({
   } = await supabase.auth.getUser();
   if (user) redirect("/app");
 
-  const { error } = await searchParams;
+  const { error, email } = await searchParams;
+  // Förifyll bara något som ser ut som en e-postadress (kommer från startsidans fält).
+  const initialEmail =
+    email && email.length <= 254 && /^[^\s@]+@[^\s@]+$/.test(email)
+      ? email
+      : undefined;
 
   return (
     <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
@@ -35,6 +40,7 @@ export default async function LoginPage({
         <LoginForm
           onRequestMagicLink={requestMagicLink}
           initialErrorCode={error}
+          initialEmail={initialEmail}
         />
       </div>
     </main>

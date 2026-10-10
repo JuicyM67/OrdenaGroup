@@ -1550,3 +1550,421 @@ export const SITIO_RUBROS_MARQUEE: readonly {
   { emoji: "💄", nombre: "Maquillaje" },
   { emoji: "🦶", nombre: "Podología" },
 ];
+
+// ---------------------------------------------------------------------------
+// home: nueva portada "Foto-historia" (WP-71). Misma forma que `home` en
+// sv-SE.ts. En Chile todavía no hay pago online al reservar (Mercado Pago
+// viene después): nada de tarjetas ni comisiones por pago. El nombre del
+// producto nunca se escribe acá (regla dura 10).
+// ---------------------------------------------------------------------------
+
+const TARIFA = {
+  valor: "$0",
+  texto: "de comisión por reserva. Nunca cobramos por tus reservas.",
+  textoLargo:
+    "de comisión por cada reserva que recibes. Pagas tu plan mensual y nada más – nunca un porcentaje por reserva.",
+  faq: "No. Pagas tu plan mensual y no cobramos comisión por ninguna reserva que recibas.",
+} as const;
+
+const HOME_CONFIANZA = [
+  { id: "pago", texto: "Cuenta gratis, sin tarjeta" },
+  { id: "datos", texto: "Datos protegidos" },
+  { id: "soporte", texto: "Soporte en español" },
+] as const;
+
+export const home = {
+  tarifa: TARIFA,
+  confianza: HOME_CONFIANZA,
+  demo: {
+    nombre: "Estudio Brisa",
+    rubro: "Peluquería y barbería · Providencia, Santiago",
+    zona: "Providencia",
+    nota: "4,9",
+    resenas: "128",
+    logoAlt: "Logo de Estudio Brisa",
+    servicios: [
+      { nombre: "Corte de pelo", duracion: "45 min", precio: "$15.000" },
+      { nombre: "Color + corte", duracion: "2 h", precio: "$45.000" },
+      { nombre: "Barba y fade", duracion: "30 min", precio: "$12.000" },
+      { nombre: "Perfilado de cejas", duracion: "20 min", precio: "$8.000" },
+    ],
+    flash: "Hoy 16:30 · −25 %",
+    cita: "“Justo el corte que quería.”",
+    autor: "Sara L. · Verificada",
+    equipoMas: "+2",
+    reservar: "Reservar hora",
+    boka: "Reservar",
+  },
+  hero: {
+    fotoAlt: "Mujer en bata y toalla toma té en una sala de tratamientos",
+    prefijo: "El sistema de reservas para",
+    industrias: [
+      "peluquerías",
+      "barberías",
+      "salones de uñas",
+      "esteticistas",
+      "masajistas",
+      "entrenadores",
+      "tatuadores",
+      "peluquerías caninas",
+    ],
+    tituloLinea1: "Tu propia página de reservas.",
+    tituloPre: "Lista en",
+    tituloMarca: "5 minutos.",
+    texto:
+      "Deja que tus clientes reserven a cualquier hora. Los recordatorios, las reseñas y las horas flash se hacen solos.",
+    emailLabel: "Tu correo",
+    emailPlaceholder: "Tu correo electrónico",
+    cta: "Crear cuenta gratis",
+    marqueeAria: (p: { nombre: string }): string => `Esto incluye ${p.nombre}`,
+    cardA: [
+      {
+        eyebrow: "NUEVA RESERVA",
+        title: "Elisa · Tinte, jue 14:30",
+        chip: "Confirmada",
+      },
+      {
+        eyebrow: "NUEVA RESERVA",
+        title: "Amir · Barba, vie 10:00",
+        chip: "Confirmada",
+      },
+      {
+        eyebrow: "RESERVADA A LAS 23:14",
+        title: "Sara · Gelish, sáb 12:00",
+        chip: "Mientras dormías",
+      },
+      {
+        eyebrow: "NUEVA RESERVA",
+        title: "Jorge · Masaje 50 min",
+        chip: "Confirmada",
+      },
+    ],
+    cardB: [
+      { big: "4,9", sub: "reseñas verificadas" },
+      { big: "+3", sub: "reseñas nuevas hoy" },
+      { big: "5,0", sub: "“¡Vuelvo seguro!” – Sara L." },
+    ],
+    cardC: [
+      {
+        eyebrow: "HORA FLASH",
+        title: "Hoy 16:30 · −25 %",
+        sub: "Enviada a 12 en lista de espera",
+      },
+      {
+        eyebrow: "HORA FLASH",
+        title: "Hoy 16:30 · ¡reservada!",
+        sub: "María la tomó en 4 minutos",
+      },
+      {
+        eyebrow: "HORA FLASH",
+        title: "Mañana 09:15 · −30 %",
+        sub: "Un hueco vacío se llenó",
+      },
+      {
+        eyebrow: "LISTA DE ESPERA",
+        title: "Sábado lleno",
+        sub: "3 esperan una anulación",
+      },
+    ],
+    usps: [
+      {
+        id: "reserva",
+        titulo: "Reservas online 24/7",
+        texto: "Tus clientes reservan solos, incluso a las 23:00.",
+      },
+      {
+        id: "pago",
+        titulo: "Tu link de reservas",
+        texto: "Un solo link para Instagram y WhatsApp.",
+      },
+      {
+        id: "resenas",
+        titulo: "Reseñas verificadas",
+        texto: "Solo clientes reales pueden opinar.",
+      },
+      {
+        id: "flash",
+        titulo: "Horas flash",
+        texto: "Llena huecos con un descuento en un clic.",
+      },
+      {
+        id: "espera",
+        titulo: "Lista de espera",
+        texto: "Una hora anulada pasa al siguiente de la lista.",
+      },
+      {
+        id: "recordatorios",
+        titulo: "Recordatorios",
+        texto: "Menos plantones, todo automático por WhatsApp.",
+      },
+      {
+        id: "flytt",
+        titulo: "Cambio sin dolor",
+        texto: "Traemos tus datos desde tu sistema anterior.",
+      },
+      {
+        id: "pagina",
+        titulo: "Página propia",
+        texto: "Fotos, equipo y redes sociales.",
+      },
+      {
+        id: "volver",
+        titulo: "Te echamos de menos",
+        texto: "Reactiva a clientes que no vuelven hace tiempo.",
+      },
+      {
+        id: "caja",
+        titulo: "Caja e informes",
+        texto: "Ingresos y ocupación al instante.",
+      },
+      {
+        id: "equipo",
+        titulo: "Agenda por profesional",
+        texto: "Horarios propios para cada persona del equipo.",
+      },
+      {
+        id: "clientes",
+        titulo: "Ficha de clientes",
+        texto: "El historial de cada cliente a mano.",
+      },
+    ],
+  },
+  flytt: {
+    etiqueta: "CAMBIO SIN DOLOR",
+    tituloPre: "Cambia de sistema sin",
+    tituloMarca: "partir de cero.",
+    texto:
+      "¿Ya tienes una página de reservas en otro lado? Pega el link y traemos tus servicios, precios, horarios y equipo por ti.",
+    pasos: [
+      { titulo: "Pega el link", texto: "De tu página de reservas actual" },
+      { titulo: "Leemos todo", texto: "Listo en un par de minutos" },
+      {
+        titulo: "Elige qué quieres traer",
+        texto: "Tú apruebas todo antes de que se guarde",
+      },
+      {
+        titulo: "Listo, ya estás en marcha",
+        texto: "Tu nueva página de reservas está lista",
+      },
+    ],
+    cta: "Traer mi página gratis",
+    nota: "Sin contraseñas · Sin datos de clientes",
+    ventana: (p: { nombre: string }): string => `Importar a ${p.nombre}`,
+    pasoDe: (p: { n: number }): string => `Paso ${p.n} de 4`,
+    linkLabel: "Link de tu página de reservas actual",
+    urlEjemplo: "https://www.tureserva.cl/estudio-brisa",
+    hamta: "Traer",
+    pegado: "Link pegado",
+    compat: "Funciona con los sistemas de reservas más comunes.",
+    leyendo: "Estamos leyendo tu página …",
+    hallazgos: [
+      { at: 0.18, label: "Servicios y precios", count: "8" },
+      { at: 0.38, label: "Horarios", count: "lun–sáb" },
+      { at: 0.58, label: "Equipo", count: "4" },
+      { at: 0.78, label: "Perfil y redes sociales", count: "✓" },
+    ],
+    elegir: "Elige qué quieres traer",
+    opciones: [
+      { at: 0.1, label: "Servicios y precios", count: "8" },
+      { at: 0.25, label: "Categorías", count: "3" },
+      { at: 0.4, label: "Horarios", count: "lun–sáb" },
+      { at: 0.55, label: "Equipo", count: "4" },
+      { at: 0.7, label: "Descripción y redes sociales", count: "" },
+    ],
+    importar: "Importar lo elegido",
+    listo: "¡Listo, ya estás en marcha!",
+    omdomen: "reseñas",
+  },
+  showcase: {
+    etiqueta: "TU PÁGINA DE RESERVAS",
+    tituloPre: "Linda desde",
+    tituloMarca: "el primer día.",
+    texto:
+      "Fotos, servicios, equipo, reseñas y redes sociales en tu propio link. Tus clientes reservan en menos de un minuto, desde el celular o el computador.",
+    chips: [
+      "Tu propio link",
+      "Instagram, TikTok y Facebook",
+      "Horas flash a la vista",
+      "Reseñas de clientes reales",
+    ],
+    cta: "Ver la página de ejemplo",
+    tabs: ["Servicios", "Equipo", "Reseñas"],
+    omdomenRad: (p: { n: string; zona: string }): string =>
+      `${p.n} reseñas verificadas · ${p.zona}`,
+    team: "NUESTRO EQUIPO",
+    redes: ["Instagram", "TikTok"],
+  },
+  bento: {
+    etiqueta: "FUNCIONES",
+    tituloPre: "Todo lo que llena tu agenda.",
+    tituloMarca: "Nada de más.",
+    texto:
+      "Todo viene incluido desde el inicio. Pagas por más profesionales y por los recordatorios, nunca por funciones.",
+    grande: {
+      etiqueta: "RECORDATORIOS",
+      titulo: "Menos plantones.",
+      texto:
+        "Tus clientes reciben un recordatorio por WhatsApp antes de su hora, sin que tú hagas nada.",
+      ejemploLinea: "Corte de pelo · jue 14:30",
+      ejemploValor: "Mañana 14:30",
+      ejemploEstado: "Confirmó",
+      cajaEtiqueta: "Recordatorio",
+      cajaValor: "24 h",
+      cajaTexto: "antes de cada hora, automático por WhatsApp.",
+    },
+    resenas: {
+      etiqueta: "RESEÑAS VERIFICADAS",
+      nota: "4,9",
+      texto:
+        "Solo clientes con una reserva realizada pueden opinar. Tú respondes en público y las reseñas se ven en tu página.",
+    },
+    flash: {
+      etiqueta: "HORAS FLASH Y LISTA DE ESPERA",
+      chip: "Hoy 16:30 · −25 %",
+      texto:
+        "Una anulación se vuelve una nueva reserva: la lista de espera recibe el aviso al tiro y los huecos se llenan con descuento.",
+    },
+    pequenas: [
+      {
+        etiqueta: "TU LINK DE RESERVAS",
+        titulo: "Un link para todo",
+        texto: "Compártelo en Instagram, WhatsApp o Google.",
+      },
+      {
+        etiqueta: "CAJA E INFORMES",
+        titulo: "Tus números claros",
+        texto: "Ingresos, ocupación e informes en un solo lugar.",
+      },
+      {
+        etiqueta: "TE ECHAMOS DE MENOS",
+        titulo: "Clientes que vuelven",
+        texto: "Un aviso automático a quienes llevan tiempo sin reservar.",
+      },
+    ],
+  },
+  como: {
+    etiqueta: "ASÍ RESERVAN TUS CLIENTES",
+    tituloPre: "Reservado en",
+    tituloMarca: "menos de un minuto.",
+    texto:
+      "Sin apps, sin cuentas, sin llamadas. El cliente abre tu link – desde Instagram, Google o WhatsApp – y listo.",
+    pasos: [
+      { titulo: "Elige el servicio", texto: "Con foto, precio y duración" },
+      { titulo: "Elige la hora", texto: "Solo horas realmente disponibles" },
+      {
+        titulo: "Pone sus datos",
+        texto: "Nombre y celular – sin crear cuenta",
+      },
+      {
+        titulo: "Reservado",
+        texto: "Confirmación al tiro por WhatsApp y correo",
+      },
+    ],
+    movil: {
+      paso: "PASO 3 DE 4",
+      titulo: "Tus datos",
+      resumenTop: "Corte de pelo · jue 16 oct",
+      resumen: "14:30 con Ida · $15.000",
+      nombreLabel: "Nombre",
+      nombre: "Elisa Fuentes",
+      telLabel: "Celular",
+      tel: "+56 9 1234 5678",
+      nota: "Te enviamos una confirmación y un recordatorio el día antes.",
+      boton: "Reservar mi hora",
+      confirmada: "Confirmación enviada",
+    },
+  },
+  para: {
+    etiqueta: "PARA QUIÉN",
+    tituloPre: "Para todos los que",
+    tituloMarca: "trabajan con horas.",
+    texto:
+      "Desde una peluquera independiente hasta una clínica con varios profesionales. El mismo sistema simple, adaptado a tu rubro.",
+    rubros: [
+      { id: "frisor", label: "Peluquería" },
+      { id: "barberare", label: "Barbería" },
+      { id: "naglar", label: "Uñas" },
+      { id: "fransar", label: "Pestañas y cejas" },
+      { id: "hudvard", label: "Cuidado de la piel" },
+      { id: "massage", label: "Masajes" },
+      { id: "naprapat", label: "Kinesiología" },
+      { id: "yoga", label: "Yoga y pilates" },
+      { id: "tatuering", label: "Tatuajes" },
+      { id: "hundtrim", label: "Peluquería canina" },
+      { id: "pt", label: "Entrenamiento personal" },
+      { id: "makeup", label: "Maquillaje" },
+    ],
+  },
+  precios: {
+    etiqueta: "PRECIOS",
+    tituloPre: "Precios simples.",
+    tituloMarca: "Sin comisión.",
+    mes: "/mes",
+    nota: {
+      valor: TARIFA.valor,
+      texto: TARIFA.textoLargo,
+    },
+    fundador: {
+      valor: "½",
+      negrita: "Plan Fundador:",
+      texto: "los primeros negocios que se suman pagan la mitad para siempre.",
+    },
+  },
+  faq: {
+    etiqueta: "PREGUNTAS",
+    titulo: "Bueno saber.",
+    texto:
+      "¿No encuentras la respuesta? Escríbenos, te respondemos en español.",
+    items: [
+      { pregunta: "¿Cobran comisión por reserva?", respuesta: TARIFA.faq },
+      {
+        pregunta: "¿Cómo me cambio desde mi sistema actual?",
+        respuesta:
+          "Pega el link de tu página de reservas actual y leemos tus servicios, precios, horarios y equipo. Tú revisas e importas: toma un par de minutos.",
+      },
+      {
+        pregunta: "¿Dónde se guardan mis datos y los de mis clientes?",
+        respuesta:
+          "Tus datos están protegidos y puedes exportarlos o borrarlos cuando quieras. Tus clientes también pueden pedir sus datos.",
+      },
+      {
+        pregunta: "¿Hay permanencia?",
+        respuesta: "No. Puedes cambiar de plan o cancelar cuando quieras.",
+      },
+      {
+        pregunta: "¿Cómo funcionan las reseñas?",
+        respuesta:
+          "Después de cada reserva realizada, el cliente recibe un link y puede calificar la visita. Solo clientes reales pueden opinar y tú puedes responder en público.",
+      },
+      {
+        pregunta: "¿Tengo que instalar algo?",
+        respuesta:
+          "No. Todo funciona en el navegador, en el celular y en el computador.",
+      },
+      {
+        pregunta: "¿Me ayudan a partir?",
+        respuesta:
+          "Sí. Con la importación estás en marcha en minutos, y siempre puedes escribirnos en español.",
+      },
+    ],
+  },
+  cta: {
+    tituloPre: "¿Listo para llenar",
+    tituloMarca: "tu agenda?",
+    texto:
+      "Crea tu página de reservas en cinco minutos – gratis para una persona, sin tarjeta.",
+  },
+  footer: {
+    producto: "Producto",
+    rubros: "Rubros",
+    empresa: "Empresa",
+    contacto: "Contacto",
+    flytt: "Cambio sin dolor",
+    flash: "Horas flash",
+    ejemplo: "Página de ejemplo",
+    partnerEtiqueta: "PARTNER",
+    partnerTexto: "tarjeta de sellos digital para tus clientes frecuentes",
+    pie: (p: { anio: number; nombre: string }): string =>
+      `© ${p.anio} ${p.nombre}`,
+  },
+};

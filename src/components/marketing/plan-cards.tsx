@@ -27,7 +27,15 @@ const PLAN_STYLE: Record<
   local: { tone: "peach", card: "", cta: "secondary" },
 };
 
-export function PlanCards({ ctaHref }: { ctaHref: string }) {
+/** "foto": startsidans rena kort (WP-71) — vita kort, mörkt Team-kort, ingen pastell. */
+export function PlanCards({
+  ctaHref,
+  variant = "bento",
+}: {
+  ctaHref: string;
+  variant?: "bento" | "foto";
+}) {
+  if (variant === "foto") return <PlanCardsFoto ctaHref={ctaHref} />;
   return (
     <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {copy.PLANES.map((plan) => {
@@ -90,6 +98,70 @@ export function PlanCards({ ctaHref }: { ctaHref: string }) {
               <Link href={ctaHref}>{plan.cta}</Link>
             </Button>
           </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+function PlanCardsFoto({ ctaHref }: { ctaHref: string }) {
+  return (
+    <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {copy.PLANES.map((plan) => {
+        const dark = plan.id === "equipo";
+        return (
+          <div
+            key={plan.id}
+            className={cn(
+              "relative flex flex-col gap-4.5 rounded-hero p-7",
+              dark
+                ? "bg-ink text-on-dark shadow-float-lg"
+                : "border border-line-strong bg-surface text-ink",
+            )}
+          >
+            {dark ? (
+              <span className="absolute -top-3 right-5 rotate-3 rounded-chip bg-lime px-2.5 py-1.25 text-12 font-bold text-ink">
+                {copy.sitio.precios.masElegido}
+              </span>
+            ) : null}
+            <h3 className="text-18 font-bold">{plan.nombre}</h3>
+            <p className="flex items-baseline gap-1.5">
+              <b
+                className={cn(
+                  "font-display text-44 leading-none",
+                  dark ? "text-lime" : "text-ink",
+                )}
+              >
+                {formatPrecioPlan(plan.id)}
+              </b>
+              <span className="text-14 opacity-70">
+                {copy.home.precios.mes}
+              </span>
+            </p>
+            <ul className="flex flex-col gap-2.5 text-14">
+              {plan.puntos.map((punto) => (
+                <li key={punto} className="flex items-center gap-2.5">
+                  <Check
+                    aria-hidden="true"
+                    className={cn("size-4 shrink-0", dark ? "text-lime" : "")}
+                    strokeWidth={2.6}
+                  />
+                  {punto}
+                </li>
+              ))}
+            </ul>
+            <Button
+              asChild
+              variant={dark ? "accent" : "secondary"}
+              size="2xl"
+              className={cn(
+                "mt-auto w-full rounded-control",
+                dark ? "" : "border-0 bg-canvas",
+              )}
+            >
+              <Link href={ctaHref}>{plan.cta}</Link>
+            </Button>
+          </div>
         );
       })}
     </div>

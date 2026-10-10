@@ -1545,12 +1545,428 @@ export const PLANES: readonly PlanTexto[] = [
 ];
 
 // ---------------------------------------------------------------------------
+// home: ny startsida "Foto-berättelse" (WP-71). Samma form som `home` i
+// es-CL.marketing.ts. Avgiftstexten för kortbetalning (Stripe) finns på ETT
+// ställe, `TARIFA`, så den är lätt att ändra (ägaren funderar på avgiften för
+// Företag-planen). Namnet på produkten skrivs aldrig här (regel 10).
+// ---------------------------------------------------------------------------
+
+const TARIFA = {
+  valor: "1 %",
+  texto: "per kortbetalning + Stripes avgift. Ingen provision på bokningar.",
+  textoLargo:
+    "per kortbetalning + Stripes avgift när kunden betalar online. Ingen provision på bokningar – någonsin.",
+  faq: "Vi tar ingen provision på bokningar. Om du väljer att ta betalt med kort online tar vi 1 % per betalning och Stripe sin vanliga avgift. Pengarna går direkt till ditt eget Stripe-konto.",
+} as const;
+
+const HOME_CONFIANZA = [
+  { id: "pago", texto: "Betalningar via Stripe" },
+  { id: "datos", texto: "Data lagras i EU" },
+  { id: "soporte", texto: "Support på svenska" },
+] as const;
+
+export const home = {
+  tarifa: TARIFA,
+  confianza: HOME_CONFIANZA,
+  demo: {
+    nombre: "Salong Norrsken",
+    rubro: "Frisör · Södermalm, Stockholm",
+    zona: "Södermalm",
+    nota: "4,9",
+    resenas: "128",
+    logoAlt: "Salong Norrsken logotyp",
+    servicios: [
+      { nombre: "Klippning dam", duracion: "45 min", precio: "650 kr" },
+      { nombre: "Färgning + klipp", duracion: "2 h", precio: "1 290 kr" },
+      { nombre: "Skägg & fade", duracion: "30 min", precio: "395 kr" },
+      { nombre: "Gellack", duracion: "60 min", precio: "495 kr" },
+    ],
+    flash: "Idag 16:30 · −25 %",
+    cita: "”Precis den klippning jag ville ha.”",
+    autor: "Sara L. · Verifierad",
+    equipoMas: "+2",
+    reservar: "Boka tid",
+    boka: "Boka",
+  },
+  hero: {
+    fotoAlt: "Kvinna i morgonrock och handduk dricker te i ett behandlingsrum",
+    prefijo: "Bokningssystemet för",
+    industrias: [
+      "frisörer",
+      "barberare",
+      "nagelstudios",
+      "hudterapeuter",
+      "massörer",
+      "PT",
+      "tatuerare",
+      "hundfrisörer",
+    ],
+    tituloLinea1: "Din egen bokningssida.",
+    tituloPre: "Klar på",
+    tituloMarca: "5 minuter.",
+    texto:
+      "Låt kunderna boka dygnet runt. Påminnelser, omdömen och blixttider sköter sig själva.",
+    emailLabel: "Din e-post",
+    emailPlaceholder: "Din e-postadress",
+    cta: "Skapa gratis konto",
+    marqueeAria: (p: { nombre: string }): string =>
+      `Det här ingår i ${p.nombre}`,
+    cardA: [
+      {
+        eyebrow: "NY BOKNING",
+        title: "Elin · Färgning, tor 14:30",
+        chip: "Betald online",
+      },
+      {
+        eyebrow: "NY BOKNING",
+        title: "Amir · Skägg, fre 10:00",
+        chip: "Betald online",
+      },
+      {
+        eyebrow: "BOKAD KL. 23:14",
+        title: "Sara · Gellack, lör 12:00",
+        chip: "Medan du sov",
+      },
+      {
+        eyebrow: "NY BOKNING",
+        title: "Jonas · Massage 50 min",
+        chip: "Betald online",
+      },
+    ],
+    cardB: [
+      { big: "4,9", sub: "verifierade omdömen" },
+      { big: "+3", sub: "nya omdömen idag" },
+      { big: "5,0", sub: "”Kommer tillbaka!” – Sara L." },
+    ],
+    cardC: [
+      {
+        eyebrow: "BLIXTTID",
+        title: "Idag 16:30 · −25 %",
+        sub: "Skickad till 12 på väntelistan",
+      },
+      {
+        eyebrow: "BLIXTTID",
+        title: "Idag 16:30 · bokad!",
+        sub: "Maja tog tiden på 4 minuter",
+      },
+      {
+        eyebrow: "BLIXTTID",
+        title: "I morgon 09:15 · −30 %",
+        sub: "Tom lucka blev en bokning",
+      },
+      {
+        eyebrow: "VÄNTELISTA",
+        title: "Fullbokat lördag",
+        sub: "3 väntar på en avbokning",
+      },
+    ],
+    usps: [
+      {
+        id: "reserva",
+        titulo: "Onlinebokning dygnet runt",
+        texto: "Kunderna bokar själva – även kl. 23.",
+      },
+      {
+        id: "pago",
+        titulo: "Betalning vid bokning",
+        texto: "Kort och Apple Pay, direkt till ditt konto.",
+      },
+      {
+        id: "resenas",
+        titulo: "Verifierade omdömen",
+        texto: "Bara riktiga kunder kan recensera.",
+      },
+      {
+        id: "flash",
+        titulo: "Blixttider",
+        texto: "Fyll tomma luckor med rabatt på ett klick.",
+      },
+      {
+        id: "espera",
+        titulo: "Väntelista",
+        texto: "En avbokad tid går direkt till nästa i kön.",
+      },
+      {
+        id: "recordatorios",
+        titulo: "SMS-påminnelser",
+        texto: "Färre uteblivna besök, helt automatiskt.",
+      },
+      {
+        id: "flytt",
+        titulo: "Smärtfri flytt",
+        texto: "Vi importerar från ditt gamla system.",
+      },
+      {
+        id: "pagina",
+        titulo: "Egen bokningssida",
+        texto: "Bilder, personal och sociala medier.",
+      },
+      {
+        id: "volver",
+        titulo: "Vi saknar dig-påminnelser",
+        texto: "Väck kunder som inte bokat på länge.",
+      },
+      {
+        id: "caja",
+        titulo: "Kassa & statistik",
+        texto: "Intäkter och beläggning i realtid.",
+      },
+      {
+        id: "equipo",
+        titulo: "Kalender per anställd",
+        texto: "Egna tider för varje person i teamet.",
+      },
+      {
+        id: "clientes",
+        titulo: "Kundregister",
+        texto: "Varje kunds historik, till hands.",
+      },
+    ],
+  },
+  flytt: {
+    etiqueta: "SMÄRTFRI FLYTT",
+    tituloPre: "Byt system utan att",
+    tituloMarca: "börja om.",
+    texto:
+      "Har du redan en bokningssida någon annanstans? Klistra in länken – vi flyttar över tjänster, priser, öppettider och personal åt dig.",
+    pasos: [
+      { titulo: "Klistra in länken", texto: "Till din nuvarande bokningssida" },
+      { titulo: "Vi läser in allt", texto: "Klart på ett par minuter" },
+      {
+        titulo: "Välj vad du vill ha med",
+        texto: "Du godkänner allt innan något sparas",
+      },
+      { titulo: "Klart – du är igång", texto: "Din nya bokningssida är redo" },
+    ],
+    cta: "Flytta hit gratis",
+    nota: "Inga lösenord · Inga kunduppgifter",
+    ventana: (p: { nombre: string }): string => `Importera till ${p.nombre}`,
+    pasoDe: (p: { n: number }): string => `Steg ${p.n} av 4`,
+    linkLabel: "Länk till din nuvarande bokningssida",
+    urlEjemplo: "https://www.dinbokning.se/salong-norrsken",
+    hamta: "Hämta",
+    pegado: "Länk inklistrad",
+    compat: "Fungerar med de vanligaste bokningssystemen.",
+    leyendo: "Vi läser in din sida …",
+    hallazgos: [
+      { at: 0.18, label: "Tjänster och priser", count: "8" },
+      { at: 0.38, label: "Öppettider", count: "mån–lör" },
+      { at: 0.58, label: "Personal", count: "4" },
+      { at: 0.78, label: "Profil och sociala medier", count: "✓" },
+    ],
+    elegir: "Välj vad du vill ha med",
+    opciones: [
+      { at: 0.1, label: "Tjänster och priser", count: "8 st" },
+      { at: 0.25, label: "Kategorier", count: "3 st" },
+      { at: 0.4, label: "Öppettider", count: "mån–lör" },
+      { at: 0.55, label: "Personal", count: "4 st" },
+      { at: 0.7, label: "Profiltext och sociala medier", count: "" },
+    ],
+    importar: "Importera valda",
+    listo: "Klart – du är igång!",
+    omdomen: "omdömen",
+  },
+  showcase: {
+    etiqueta: "DIN BOKNINGSSIDA",
+    tituloPre: "Snygg från",
+    tituloMarca: "första dagen.",
+    texto:
+      "Bilder, tjänster, personal, omdömen och sociala medier på din egen adress. Kunderna bokar – och betalar, om du vill – på under en minut, från mobilen eller datorn.",
+    chips: [
+      "Din egen adress",
+      "Instagram, TikTok & Facebook",
+      "Blixttider syns direkt",
+      "Omdömen från riktiga kunder",
+    ],
+    cta: "Se exempelsidan",
+    tabs: ["Tjänster", "Personal", "Omdömen"],
+    omdomenRad: (p: { n: string; zona: string }): string =>
+      `${p.n} verifierade omdömen · ${p.zona}`,
+    team: "VÅRT TEAM",
+    redes: ["Instagram", "TikTok"],
+  },
+  bento: {
+    etiqueta: "FUNKTIONER",
+    tituloPre: "Allt som fyller kalendern.",
+    tituloMarca: "Inget onödigt.",
+    texto:
+      "Allt ingår från start. Du betalar för fler anställda och SMS – aldrig för funktioner.",
+    grande: {
+      etiqueta: "BETALNING VID BOKNING",
+      titulo: "Kunden betalar när hen bokar.",
+      texto:
+        "Kort eller Apple Pay – pengarna går direkt till ditt konto. Vid avbokning återbetalas allt automatiskt.",
+      ejemploLinea: "Klippning dam · tor 14:30",
+      ejemploValor: "650 kr",
+      ejemploEstado: "Betald",
+      cajaEtiqueta: "Vår avgift",
+      cajaValor: TARIFA.valor,
+      cajaTexto: TARIFA.texto,
+    },
+    resenas: {
+      etiqueta: "VERIFIERADE OMDÖMEN",
+      nota: "4,9",
+      texto:
+        "Bara kunder med en genomförd bokning kan recensera. Du svarar offentligt – omdömena syns på din sida.",
+    },
+    flash: {
+      etiqueta: "BLIXTTIDER & VÄNTELISTA",
+      chip: "Idag 16:30 · −25 %",
+      texto:
+        "En avbokning blir en ny bokning: väntelistan får besked direkt och tomma luckor fylls med rabatt.",
+    },
+    pequenas: [
+      {
+        etiqueta: "PÅMINNELSER",
+        titulo: "Färre uteblivna besök",
+        texto: "SMS och e-post 24 h innan – automatiskt.",
+      },
+      {
+        etiqueta: "KASSA & STATISTIK",
+        titulo: "Koll på intäkterna",
+        texto: "Betalningar, beläggning och rapporter i realtid.",
+      },
+      {
+        etiqueta: "VI SAKNAR DIG",
+        titulo: "Kunder som kommer tillbaka",
+        texto: "Påminn kunder som inte bokat på länge – automatiskt.",
+      },
+    ],
+  },
+  como: {
+    etiqueta: "SÅ BOKAR DINA KUNDER",
+    tituloPre: "Bokat på",
+    tituloMarca: "under en minut.",
+    texto:
+      "Inga appar, inga konton, inga samtal. Kunden klickar på din länk – från Instagram, Google eller ett SMS – och är klar.",
+    pasos: [
+      { titulo: "Väljer tjänst", texto: "Med bild, pris och längd" },
+      { titulo: "Väljer tid", texto: "Bara tider som faktiskt är lediga" },
+      {
+        titulo: "Fyller i uppgifter",
+        texto: "Namn och telefon – inget konto krävs",
+      },
+      {
+        titulo: "Betalar och är bokad",
+        texto: "Bekräftelse direkt via SMS och e-post",
+      },
+    ],
+    movil: {
+      paso: "STEG 3 AV 4",
+      titulo: "Dina uppgifter",
+      resumenTop: "Klippning dam · tor 16 okt",
+      resumen: "14:30 med Ida · 650 kr",
+      nombreLabel: "Namn",
+      nombre: "Elsa Lindqvist",
+      telLabel: "Mobilnummer",
+      tel: "070-123 45 67",
+      nota: "Vi skickar en bekräftelse och en påminnelse dagen innan.",
+      boton: "Betala 650 kr och boka",
+      confirmada: "Bekräftelse skickad",
+    },
+  },
+  para: {
+    etiqueta: "FÖR VEM",
+    tituloPre: "För alla som",
+    tituloMarca: "jobbar med tider.",
+    texto:
+      "Från ensam frisör till klinik med flera behandlare. Samma enkla system – anpassat efter din bransch.",
+    rubros: [
+      { id: "frisor", label: "Frisör" },
+      { id: "barberare", label: "Barberare" },
+      { id: "naglar", label: "Naglar" },
+      { id: "fransar", label: "Fransar & bryn" },
+      { id: "hudvard", label: "Hudvård" },
+      { id: "massage", label: "Massage" },
+      { id: "naprapat", label: "Naprapat & fysio" },
+      { id: "yoga", label: "Yoga & pilates" },
+      { id: "tatuering", label: "Tatuering" },
+      { id: "hundtrim", label: "Hundtrim" },
+      { id: "pt", label: "Personlig träning" },
+      { id: "makeup", label: "Makeup" },
+    ],
+  },
+  precios: {
+    etiqueta: "PRISER",
+    tituloPre: "Enkla priser.",
+    tituloMarca: "Ingen provision.",
+    mes: "/mån",
+    nota: {
+      valor: TARIFA.valor,
+      texto: TARIFA.textoLargo,
+    },
+    fundador: {
+      valor: "½",
+      negrita: "Grundarplanen:",
+      texto:
+        "de första företagen som ansluter sig betalar halva priset – för alltid.",
+    },
+  },
+  faq: {
+    etiqueta: "FRÅGOR & SVAR",
+    titulo: "Bra att veta.",
+    texto: "Hittar du inte svaret? Skriv till oss – vi svarar på svenska.",
+    items: [
+      { pregunta: "Vad kostar kortbetalningar?", respuesta: TARIFA.faq },
+      {
+        pregunta: "Hur flyttar jag från mitt nuvarande system?",
+        respuesta:
+          "Klistra in länken till din nuvarande bokningssida, så läser vi in tjänster, priser, öppettider och personal. Du granskar och importerar – det tar ett par minuter.",
+      },
+      {
+        pregunta: "Var lagras min och mina kunders data?",
+        respuesta:
+          "Inom EU. Du kan exportera eller radera data när du vill, och kunderna kan själva begära sina uppgifter.",
+      },
+      {
+        pregunta: "Finns det bindningstid?",
+        respuesta: "Nej. Du kan byta plan eller avsluta när du vill.",
+      },
+      {
+        pregunta: "Hur fungerar omdömena?",
+        respuesta:
+          "Efter varje genomförd bokning får kunden en länk och kan betygsätta besöket. Bara riktiga kunder kan recensera, och du kan svara offentligt.",
+      },
+      {
+        pregunta: "Behöver jag installera något?",
+        respuesta: "Nej. Allt fungerar i webbläsaren, på mobilen och datorn.",
+      },
+      {
+        pregunta: "Hjälper ni mig att komma igång?",
+        respuesta:
+          "Ja – med importen är du igång på några minuter, och du kan alltid skriva till oss på svenska.",
+      },
+    ],
+  },
+  cta: {
+    tituloPre: "Redo att fylla",
+    tituloMarca: "kalendern?",
+    texto:
+      "Skapa din bokningssida på fem minuter – gratis för en person, utan kort.",
+  },
+  footer: {
+    producto: "Produkt",
+    rubros: "Branscher",
+    empresa: "Företaget",
+    contacto: "Kontakt",
+    flytt: "Smärtfri flytt",
+    flash: "Blixttider",
+    ejemplo: "Exempelsida",
+    partnerEtiqueta: "PARTNER",
+    partnerTexto: "digitalt stämpelkort för dina stamkunder",
+    pie: (p: { anio: number; nombre: string }): string =>
+      `© ${p.anio} ${p.nombre}`,
+  },
+};
+
+// ---------------------------------------------------------------------------
 // svSE: hela formen, kontrollerad mot `MarketingCopy` (`./marketing.ts`).
 // `import type` ovan gör att cirkeln bara finns i typvärlden, inte i
 // runtime-koden (`marketing.ts` importerar den här filen som värde).
 // ---------------------------------------------------------------------------
 
 export const svSE = {
+  home,
   nav,
   estados,
   hoy,

@@ -30,6 +30,7 @@ export type MarketingCopy = Widen<
   { nav: typeof nav; estados: typeof estados; hoy: typeof hoy } & Pick<
     typeof esCLSitio,
     | "landing"
+    | "home"
     | "sitio"
     | "SITIO_FUNCIONALIDADES"
     | "SITIO_PRECIOS_TABLA"

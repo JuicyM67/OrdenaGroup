@@ -28,18 +28,21 @@ export type LoginFormProps = {
   onRequestMagicLink: (email: string) => Promise<RequestMagicLinkResult>;
   /** Fel från `/auth/confirm` (link/código vencido), lästa via `?error=` (WP-15). */
   initialErrorCode?: string;
+  /** E-post förifylld från startsidan (`/login?email=`, WP-71). */
+  initialEmail?: string;
 };
 
 export function LoginForm({
   onRequestMagicLink,
   initialErrorCode,
+  initialEmail,
 }: LoginFormProps) {
   const [estado, setEstado] = useState<Estado>(
     initialErrorCode
       ? { fase: "error", email: "", code: initialErrorCode }
       : { fase: "form" },
   );
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail ?? "");
   const emailId = useId();
 
   if (estado.fase === "enviado") {
