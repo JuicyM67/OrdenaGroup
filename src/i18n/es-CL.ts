@@ -4162,6 +4162,7 @@ export const importar = {
 // WP-72: recorrido guiado.
 export { visita } from "./es-CL.visita";
 export { smsCreditos } from "./es-CL.sms-creditos";
+export { descubre } from "./es-CL.descubre";
 
 // ---------------------------------------------------------------------------
 // planes (WP-73, D-048): nombres de plan, bloqueos con "Ver planes", resumen de
