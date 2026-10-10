@@ -10,6 +10,7 @@
 // nuevos.
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
@@ -43,6 +44,8 @@ export type CampaignsScreenProps = {
   publicPageHref: string;
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-73 (D-048): uppgraderingsrutan — historiken visas, "Nytt utskick" döljs. */
+  planNotice?: ReactNode;
 };
 
 function sentAtLabel(iso: string): string {
@@ -60,6 +63,7 @@ export function CampaignsScreen({
   publicPageHref,
   myProfile,
   myProfileActions,
+  planNotice,
 }: CampaignsScreenProps) {
   return (
     <AppShell
@@ -101,13 +105,17 @@ export function CampaignsScreen({
           </span>
         }
         actions={
-          <Button asChild variant="primary" size="lg">
-            <Link href={appHref("appClientesUtskickNytt")}>
-              {campanas.historial.ctaNueva}
-            </Link>
-          </Button>
+          planNotice ? null : (
+            <Button asChild variant="primary" size="lg">
+              <Link href={appHref("appClientesUtskickNytt")}>
+                {campanas.historial.ctaNueva}
+              </Link>
+            </Button>
+          )
         }
       />
+
+      {planNotice}
 
       {enviado ? (
         <p

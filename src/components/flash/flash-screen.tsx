@@ -13,7 +13,7 @@
 // `useSearchParams()` här, som annars kräver en egen Suspense-gräns). Punkt 6 (gemensamt
 // sidhuvud): `OwnerPageHeader` i stället för den gamla manuella PageHeader-kopplingen.
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
@@ -53,6 +53,9 @@ import type {
 } from "./types";
 
 export type FlashScreenProps = {
+  /** WP-73 (D-048): uppgraderingsrutan när planen saknar blixttider —
+   * befintliga tider visas, men "Ny blixttid" döljs. */
+  planNotice?: ReactNode;
   active: readonly FlashSlotView[];
   past: readonly FlashSlotView[];
   staff: readonly FlashStaff[];
@@ -141,6 +144,7 @@ export function FlashScreen({
   onApproveCancelRequest,
   onDeclineCancelRequest,
   initialDialogDefaults = null,
+  planNotice,
 }: FlashScreenProps) {
   const router = useRouter();
   // A länkar hit från Hoy med `?ny=1&staff=<id>&start=<ISO>` (en ledig lucka hen redan ser
@@ -183,7 +187,7 @@ export function FlashScreen({
       <OwnerPageHeader
         title={flash.titulo}
         actions={
-          staff.length > 0 ? (
+          staff.length > 0 && !planNotice ? (
             <Button
               type="button"
               variant="primary"
@@ -198,6 +202,8 @@ export function FlashScreen({
           ) : null
         }
       />
+
+      {planNotice}
 
       <section
         aria-label={flash.activas.titulo}

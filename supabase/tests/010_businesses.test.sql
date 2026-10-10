@@ -7,6 +7,10 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(55);
 \ir _helpers.psql
+-- WP-73 (D-048): medlemsrabatt kräver Team (businesses_guard_campaign_settings);
+-- de här testerna gäller grants/RLS/check, inte planen.
+update public.businesses set plan = 'equipo'
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 
 -- 1. ownerA ser bara A (en rad), aldrig B.
 select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);

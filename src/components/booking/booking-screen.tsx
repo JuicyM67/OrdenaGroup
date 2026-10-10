@@ -9,11 +9,14 @@ import {
   useEffect,
   useId,
   useReducer,
+  useCallback,
   useState,
   useSyncExternalStore,
 } from "react";
 
 import { comun, formulario, reserva } from "@/i18n";
+
+import { TourLoader } from "@/components/tour/tour-loader";
 
 import { BookingBar } from "./booking-bar";
 import { BusinessHeader } from "./business-header";
@@ -105,6 +108,8 @@ export interface BookingScreenProps {
   forceOffline?: boolean;
   /** WP-65: `?resenas=N` (Ver más reseñas) öppnar mobilens Reseñas-flik. */
   initialMobileTab?: MobileTab;
+  /** WP-72: starta den guidade visningen (bara demoföretaget). */
+  tour?: boolean;
 }
 
 export function BookingScreen({
@@ -119,6 +124,7 @@ export function BookingScreen({
   profileContent,
   offerNotice,
   initialMobileTab,
+  tour,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
@@ -176,6 +182,11 @@ export function BookingScreen({
   const [mobileTab, setMobileTab] = useState<MobileTab>(
     initialMobileTab ?? "servicios",
   );
+  // Visningen byter mobilflik så att målet finns i DOM:en (personal ligger i en egen flik).
+  const onTourStep = useCallback((id: string | null) => {
+    if (id === "equipo") setMobileTab("personal");
+    else if (id !== null) setMobileTab("servicios");
+  }, []);
   function bookService(serviceId: string) {
     selectService(serviceId);
     setViewMode("picker");
@@ -234,7 +245,9 @@ export function BookingScreen({
 
   const { selection } = state;
   const day = findDay(data, selection, selection.date);
-  const dayIsFull = day?.state === "full";
+  // WP-73 (D-048): utan väntelista i planen visas bara "dagen är full".
+  const waitlistOn = data.business.waitlist !== false;
+  const dayIsFull = day?.state === "full" && waitlistOn;
   const barVisible = canContinue(selection, dayIsFull);
 
   // Ingen fallback till "any" (qa-granskning, item 13): annars visas
@@ -482,6 +495,7 @@ export function BookingScreen({
                     date={day.date}
                     joined={state.waitlistJoined}
                     duplicate={state.errorCode === "waitlist_duplicate"}
+                    waitlist={waitlistOn}
                   />
                 ) : (
                   <>
@@ -568,6 +582,12 @@ export function BookingScreen({
           ctaLabel={ctaLabel}
           ctaDisabled={ctaDisabled}
           formId={formId}
+        />
+      ) : null}
+      {tour && isProfileBrowse ? (
+        <TourLoader
+          coverUrl={data.profile?.coverUrl ?? null}
+          onStepChange={onTourStep}
         />
       ) : null}
     </div>

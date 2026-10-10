@@ -20,6 +20,11 @@ import { mediaPathFromUrl } from "@/server/bookings/media";
 // `businesses.cancel_approval` — importerad i stället för en egen kopia.
 import { toCancelApproval } from "@/server/bookings/row";
 import { loadMember } from "@/server/db/permissions";
+import {
+  canAddActiveServiceIn,
+  requireFeatureIn,
+  PlanLockedError,
+} from "@/server/plans/entitlements";
 
 import {
   ajustesHoursInputSchema,
@@ -127,10 +132,15 @@ function pgConstraint(e: unknown): string | undefined {
 
 /** Samma mönster som complete-onboarding.ts: bara SQLSTATE/constraint, aldrig detail. */
 export function mapDbError(e: unknown): string {
+  if (e instanceof PlanLockedError) return e.code;
   const authz = authzCode(e);
   if (authz) return authz;
   const code = pgErrorCode(e);
   const constraint = pgConstraint(e);
+  // WP-73 (D-048): databasens spärr (trigger) om förkontrollen hann passeras.
+  if (code === "23514" && constraint === "plan_limit_services") {
+    return "plan_limit_services";
+  }
   if (code === "42501") return "unauthorized";
   if (code === "23505" && constraint === "businesses_slug_key") {
     return "business.slug_taken";
@@ -513,6 +523,8 @@ export async function updateMemberSettings(
   try {
     return await withOwnerTx(userId, async (q) => {
       await requireMemberPerm(q, userId, businessId, "can_edit_settings");
+      // WP-73 (D-048): medlemsrabatter ingår i Team+. Att stänga av går alltid.
+      if (input.enabled) await requireFeatureIn(q, businessId, "campaigns");
       const r = await q.query(
         `update public.businesses
             set member_discount_pct = $1, member_benefit_text = $2
@@ -558,6 +570,8 @@ export async function updateWinbackSettings(
   try {
     return await withOwnerTx(userId, async (q) => {
       await requireMemberPerm(q, userId, businessId, "can_manage_all_bookings");
+      // WP-73 (D-048): "Vi saknar dig" ingår i Team+. Att stänga av går alltid.
+      if (input.enabled) await requireFeatureIn(q, businessId, "campaigns");
       const r = await q.query(
         `update public.businesses
             set winback_days = $1, winback_message = $2,
@@ -592,6 +606,7 @@ export async function updateWaitlistSettings(
   try {
     return await withOwnerTx(userId, async (q) => {
       await requireMemberPerm(q, userId, businessId, "can_edit_settings");
+      await requireFeatureIn(q, businessId, "waitlist");
       const r = await q.query(
         `update public.businesses
             set waitlist_mode = $1, waitlist_hold_minutes = $2
@@ -627,11 +642,12 @@ export async function insertServiceIn(
   q: Queryable,
   businessId: string,
   input: AjustesServiceInput,
+  active = true,
 ): Promise<string | undefined> {
   const sort = await nextSort(q, "services", businessId);
   const r = await q.query<{ id: string }>(
-    `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort, description)
-     values ($1, $2, $3, $4, $5, $6, $7) returning id`,
+    `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort, description, active)
+     values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
     [
       businessId,
       input.name,
@@ -640,6 +656,7 @@ export async function insertServiceIn(
       input.bufferAfterMin,
       sort,
       input.description ?? null,
+      active,
     ],
   );
   return r.rows[0]?.id;
@@ -661,6 +678,10 @@ export async function createService(
   try {
     return await withOwnerTx(userId, async (q) => {
       await requireMemberPerm(q, userId, businessId, "can_edit_catalog");
+      // WP-73 (D-048): planens gräns för aktiva tjänster.
+      if (!(await canAddActiveServiceIn(q, businessId))) {
+        return { ok: false, code: "plan_limit_services" };
+      }
       const id = await insertServiceIn(q, businessId, input);
       if (!id) return { ok: false, code: "unauthorized" };
       return { ok: true, id };
@@ -720,6 +741,20 @@ export async function setServiceActive(
   try {
     return await withOwnerTx(userId, async (q) => {
       await requireMemberPerm(q, userId, businessId, "can_edit_catalog");
+      // WP-73 (D-048): att aktivera en tjänst räknas mot gränsen; redan
+      // aktiva tjänster över gränsen (nedgradering) får vara kvar.
+      if (active) {
+        const cur = await q.query<{ active: boolean }>(
+          `select active from public.services where id = $1 and business_id = $2`,
+          [serviceId, businessId],
+        );
+        if (
+          cur.rows[0]?.active === false &&
+          !(await canAddActiveServiceIn(q, businessId))
+        ) {
+          return { ok: false, code: "plan_limit_services" };
+        }
+      }
       const r = await q.query(
         `update public.services set active = $1 where id = $2 and business_id = $3`,
         [active, serviceId, businessId],

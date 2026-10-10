@@ -9,12 +9,15 @@
 import type { Metadata } from "next";
 
 import { logout } from "@/app/auth/actions";
+import { UpgradeNotice } from "@/components/plans/upgrade-notice";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { TeamSection } from "@/components/settings/team-section";
 import { nav } from "@/i18n";
 import { loadAjustesServices, loadAjustesStaff } from "@/server/owner/ajustes";
 import { loadProfileSettings } from "@/server/owner/profile";
 import { loadTeamData } from "@/server/team/members";
+
+import { planCan } from "@/server/plans/entitlements";
 
 import { requireAjustesTab } from "../access";
 import {
@@ -82,6 +85,9 @@ export default async function AjustesEquipoPage() {
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >
+      {planCan(ctx.plan, "staff_accounts") ? null : (
+        <UpgradeNotice feature="staff_accounts" linkHref={ctx.plansHref} />
+      )}
       <TeamSection
         staff={staff}
         services={services}

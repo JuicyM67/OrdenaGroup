@@ -53,6 +53,7 @@ export function FastestTimesCard({
       radius="tile"
       padding="lg"
       className="flex flex-col gap-3"
+      data-tour="flash"
     >
       <p className="text-16 font-semibold">{perfil.publico.masRapido}</p>
       <ProfileServiceButton

@@ -33,6 +33,9 @@ export interface BookingService {
   /** WP-41: tjänstens beskrivning på profilen (≤ 500 tecken). Frivilligt
    * (saknas/`null` = ingen beskrivning). */
   readonly description?: string | null;
+  /** WP-72: vilka i teamet som utför tjänsten (`staff_services`), för
+   * initialcirklarna på profilens tjänsterad. Frivilligt (saknas = inga). */
+  readonly staffIds?: readonly string[];
 }
 
 /** Tjänstekategori (WP-40, D-031): egna rader i `service_categories`, bara
@@ -96,6 +99,10 @@ export interface BookingBusiness {
   /** WP-64 (D-044): betalning online vid bokning. Frivilligt (saknas = "off");
    * servern sätter "off" när Stripe saknas eller kontot inte kan ta betalt. */
   readonly onlinePayment?: "off" | "optional" | "required";
+  /** WP-73 (D-048): planen har väntelista. Saknas = `true`. */
+  readonly waitlist?: boolean;
+  /** WP-73 (D-048): "Skapad med …"-märkning (plan Gratis). Saknas = `false`. */
+  readonly branded?: boolean;
 }
 
 /** WP-41: en rad i `business_hours` (väggtid, `end` får vara "24:00"). */

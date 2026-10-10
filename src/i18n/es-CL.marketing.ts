@@ -228,9 +228,10 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
     precioClp: 0,
     puntos: [
       "1 profesional",
-      "Tu link de reservas",
-      "Calendario",
-      "Recordatorios por correo",
+      "Hasta 3 servicios",
+      "Tu página y link de reservas",
+      "Confirmaciones y recordatorios por correo",
+      "Reseñas verificadas",
     ],
     cta: "Elegir Gratis",
   },
@@ -240,9 +241,9 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
     precioClp: 9990,
     puntos: [
       "1 profesional",
-      "Recordatorios por correo",
+      "Servicios ilimitados",
+      "Tu página de reservas sin nuestra marca",
       "Lista de espera",
-      "Abono para reservar (próximamente)",
     ],
     cta: "Elegir Emprende",
   },
@@ -252,10 +253,11 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
     precioClp: 19990,
     puntos: [
       "Hasta 3 profesionales",
-      "Recordatorios por correo",
       "Horas flash",
-      "Te echamos de menos",
-      "Informes",
+      "Envíos y Te echamos de menos",
+      "Beneficio para socios",
+      "Caja e informes completos",
+      "Cuentas para tu equipo con permisos",
     ],
     cta: "Elegir Equipo",
   },
@@ -265,7 +267,7 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
     precioClp: 34990,
     puntos: [
       "Hasta 10 profesionales",
-      "Recordatorios por correo",
+      "Todo lo de Equipo",
       "Soporte prioritario",
     ],
     cta: "Elegir Local",
@@ -682,6 +684,15 @@ export const sitio = {
     masElegido: "Más elegido",
     compararTitulo: "Compara los planes",
     fundador: landing.precios.fundador,
+    /** WP-73 (D-048): plan "A medida" (cotización), banda bajo las tarjetas. */
+    aMedida: {
+      nombre: "A medida",
+      titulo: "Para cadenas y negocios grandes",
+      texto:
+        "Más de 10 profesionales, varias sucursales, tu propio volumen de mensajes, factura y una puesta en marcha con alguien de nuestro equipo.",
+      precio: "Cotización",
+      cta: "Contáctanos",
+    },
     /** Textos cortos extra para darle más vida a la página de Precios
      * (arreglo `copywriter-es-cl`): un contador de "cuánto cuesta por
      * profesional" (1 a 10), la lista de cosas que nunca se cobran, y un
@@ -1241,7 +1252,25 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     },
   },
   {
-    funcion: "Recordatorios",
+    funcion: "Servicios activos",
+    valores: {
+      gratis: "Hasta 3",
+      emprende: "Ilimitados",
+      equipo: "Ilimitados",
+      local: "Ilimitados",
+    },
+  },
+  {
+    funcion: "Página y link de reservas",
+    valores: {
+      gratis: "Con nuestra marca",
+      emprende: "Sin marca",
+      equipo: "Sin marca",
+      local: "Sin marca",
+    },
+  },
+  {
+    funcion: "Confirmaciones y recordatorios",
     valores: {
       gratis: "Por correo",
       emprende: "Por correo",
@@ -1250,11 +1279,11 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     },
   },
   {
-    funcion: "Lista de espera",
-    valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
+    funcion: "Reseñas verificadas",
+    valores: { gratis: "✓", emprende: "✓", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Abono con Mercado Pago (próximamente)",
+    funcion: "Lista de espera",
     valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
   },
   {
@@ -1262,19 +1291,28 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     valores: { gratis: "—", emprende: "—", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Te echamos de menos",
+    funcion: "Envíos, Te echamos de menos y socios",
     valores: { gratis: "—", emprende: "—", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Informes",
+    funcion: "Caja e informes",
+    valores: {
+      gratis: "Resumen simple",
+      emprende: "Resumen simple",
+      equipo: "Completos",
+      local: "Completos",
+    },
+  },
+  {
+    funcion: "Cuentas para tu equipo con permisos",
     valores: { gratis: "—", emprende: "—", equipo: "✓", local: "✓" },
   },
   {
     funcion: "Soporte",
     valores: {
       gratis: "Por correo",
-      emprende: "Por WhatsApp",
-      equipo: "Por WhatsApp",
+      emprende: "Por correo",
+      equipo: "Por correo",
       local: "Prioritario",
     },
   },

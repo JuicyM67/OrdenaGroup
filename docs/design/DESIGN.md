@@ -570,3 +570,12 @@ Booking Buddys märke: gement **b** med kraftig stam och en rundel som tjock rin
 - **Minsta storlek:** 16 px favicon (`bb-favicon.svg`), 24 px på skärm (märket), ordmärket minst 19 px text.
 - **Ikoner:** `public/brand/` (favicon 16/32, apple 180 utan rundade hörn, 192/512, maskable 512 med säkerhetsmarginal) genereras med `node scripts/gen-brand-icons.mjs`.
 - **Mejl:** märket som PNG (`bb-mark-email.png`, hostad på marknadens domän) + ordet som text; alla mallar delar `renderLayout`.
+
+## 15. Guidad visning (WP-72)
+
+Referens: `docs/design/reference/visning/{Main,Mobil,Foretag}.dc.html`. Varm brons/kräm liquid glass.
+Nya tokens i `tokens.css`: färgerna `bronze`, `bronze-mid`, `bronze-light`, `tour-ink`, `tour-soft`; skuggorna `spotlight` (enorm box-shadow som dimmar resten) och `row-open` (utfälld tjänsterad); animationerna `tour-in` och `tour-ring`; utilities `tour-glass` (kräm-glas), `tour-bronze`/`tour-bronze-soft` (brons-gradient), `tour-scrim`, `tour-spot` (spotlightens glid via left/top/width/height), `tour-spot-still`, `tour-note` (syns bara när `html[data-tour-on]`), `grid-cols-agenda-demo`.
+
+- `components/tour/guided-tour.tsx`: generisk motor. Mål pekas ut med `data-tour="<namn>"` på riktiga element och mäts med getBoundingClientRect (fixed spotlight, fokusfälla, Esc, pil-tangenter, `aria-modal`). Steg utan mål på sidan hoppas över. Laddas alltid lazy (`tour-loader.tsx` / `next/dynamic`) så /[slug] inte växer (D-039).
+- Kundvy: bara på `brand.demoSlug`. Företagsvy: `/ejemplo/negocio` (SE `/exempel/foretag`), statisk mockup (`business-demo.tsx`). Steget "Betalt direkt" (Stripe) finns bara i SE.
+- Tjänsterad = accordion (`ProfileServiceList`): namn + längd, initialcirklar för personalen, pris, chevron; utfälld visas beskrivning + "Välj tid". Alla rader börjar hopfällda (referensen visar första raden utfälld som exempeltillstånd).

@@ -14,8 +14,9 @@ import { z } from "zod";
 import { logout } from "@/app/auth/actions";
 import type { FlashCatalogService, FlashStaff } from "@/components/flash/types";
 import { FlashScreen } from "@/components/flash/flash-screen";
+import { UpgradeNotice } from "@/components/plans/upgrade-notice";
 import { market } from "@/config/brand";
-import { appHref } from "@/config/routes";
+import { appHref, href } from "@/config/routes";
 import { flash as flashCopy } from "@/i18n";
 import { APP_TZ, toLocalDate, toWallClock } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -30,6 +31,7 @@ import {
   listPendingRequests,
 } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
+import { loadBusinessPlan, planCan } from "@/server/plans/entitlements";
 
 import {
   confirmMyPhotoUploadAction,
@@ -187,8 +189,17 @@ export default async function FlashPage({
     return { ok: result.ok };
   };
 
+  const plan = await loadBusinessPlan(businessId);
+  const planNotice = planCan(plan, "flash") ? undefined : (
+    <UpgradeNotice
+      feature="flash"
+      linkHref={current.view.role === "owner" ? undefined : href("precios")}
+    />
+  );
+
   return (
     <FlashScreen
+      planNotice={planNotice}
       active={views.filter((v) => v.status === "active")}
       past={views.filter((v) => v.status === "booked")}
       staff={staff}

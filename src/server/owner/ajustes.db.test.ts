@@ -42,6 +42,11 @@ beforeAll(async () => {
   assertLocalDatabase();
   biz = await createTestBusiness();
   other = await createTestBusiness();
+  // WP-73 (D-048): Gratis har max 3 aktiva tjänster — testerna gäller CRUD.
+  await adminQuery(
+    `update public.businesses set plan = 'equipo' where id = $1`,
+    [biz.id],
+  );
 });
 
 afterAll(async () => {

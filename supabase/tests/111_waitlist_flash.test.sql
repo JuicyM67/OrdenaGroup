@@ -8,6 +8,10 @@ begin;
 create extension if not exists pgtap with schema extensions;
 select plan(34);
 \ir _helpers.psql
+-- WP-73 (D-048): blixttider kräver Team (flash_slots_guard_plan); det här
+-- testet gäller behörigheter, inte planen.
+update public.businesses set plan = 'equipo'
+ where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 
 -- Personal, tjänster, kunder, en bokning per företag (för flash_slots.booking_id
 -- och bookings.flash_slot_id/waitlist_entry_id-FK-testerna).

@@ -17,8 +17,10 @@ import {
   ClipboardList,
   Clock,
   CreditCard,
+  Gauge,
   Gift,
   Image as ImageIcon,
+  Lock,
   Scissors,
   Shield,
   Users,
@@ -29,7 +31,7 @@ import type { ReactNode } from "react";
 import { strokeNav } from "@/components/ui/icons";
 import { market } from "@/config/brand";
 import { AJUSTES_TAB_ROUTE_IDS, appHref } from "@/config/routes";
-import { ajustes, perfil } from "@/i18n";
+import { ajustes, perfil, planes } from "@/i18n";
 
 export const AJUSTES_TAB_KEYS = [
   "negocio",
@@ -41,6 +43,7 @@ export const AJUSTES_TAB_KEYS = [
   "socios",
   "equipo",
   "pagos",
+  "plan",
   "privacidad",
 ] as const;
 
@@ -70,6 +73,7 @@ const AJUSTES_TAB_LABEL: Record<AjustesTabKey, string> = {
   socios: ajustes.secciones.socios,
   equipo: ajustes.secciones.equipo,
   pagos: ajustes.secciones.pagos,
+  plan: planes.ajustes.titulo,
   privacidad: ajustes.secciones.privacidad,
 };
 
@@ -83,6 +87,7 @@ const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
   socios: Gift,
   equipo: Users,
   pagos: CreditCard,
+  plan: Gauge,
   privacidad: Shield,
 };
 
@@ -113,6 +118,7 @@ export function ajustesTabVisible(
     case "pagos":
       // WP-64 (D-044): bara SE-installationen med Stripe på, och bara ägaren (utbetalningskonto).
       return access.role === "owner" && market === "SE";
+    case "plan":
     case "privacidad":
       return access.role === "owner";
   }
@@ -126,10 +132,14 @@ export type AjustesTabItem = {
 };
 
 /** Flikarna den inloggade får se, i fast ordning — skickas till `AjustesShell`. */
-export function buildAjustesTabs(access: AjustesTabAccess): AjustesTabItem[] {
+export function buildAjustesTabs(
+  access: AjustesTabAccess,
+  /** WP-73 (D-048): flikar vars funktion planen saknar visas med låsikon. */
+  locked: ReadonlySet<AjustesTabKey> = new Set(),
+): AjustesTabItem[] {
   return AJUSTES_TAB_KEYS.filter((key) => ajustesTabVisible(key, access)).map(
     (key) => {
-      const Icon = AJUSTES_TAB_ICON[key];
+      const Icon = locked.has(key) ? Lock : AJUSTES_TAB_ICON[key];
       return {
         key,
         href: ajustesTabHref(key),

@@ -16,7 +16,8 @@ export type RouteId =
   | "horasFlash"
   | "ventajas"
   | "preguntas"
-  | "contacto";
+  | "contacto"
+  | "ejemploNegocio";
 
 /** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts` / `sv-SE.ts`). */
 export type IndustriaId =
@@ -37,6 +38,7 @@ const CL_ROUTES: Record<RouteId, string> = {
   ventajas: "/ventajas",
   preguntas: "/preguntas",
   contacto: "/contacto",
+  ejemploNegocio: "/ejemplo/negocio",
 };
 
 /** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
@@ -48,6 +50,7 @@ const SE_ROUTES: Record<RouteId, string> = {
   ventajas: "/fordelar",
   preguntas: "/vanliga-fragor",
   contacto: "/kontakt",
+  ejemploNegocio: "/exempel/foretag",
 };
 
 const ROUTES_BY_MARKET: Record<Market, Record<RouteId, string>> = {
@@ -326,6 +329,7 @@ export type AppRouteId =
   | "appAjustesEquipo"
   | "appAjustesPrivacidad"
   | "appAjustesPagos"
+  | "appAjustesPlan"
   | "appSolicitud"
   | "appInvitacion"
   | "appBienvenida"
@@ -347,6 +351,7 @@ export const AJUSTES_TAB_ROUTE_IDS = {
   equipo: "appAjustesEquipo",
   privacidad: "appAjustesPrivacidad",
   pagos: "appAjustesPagos",
+  plan: "appAjustesPlan",
 } as const satisfies Record<string, AppRouteId>;
 
 /** CL-sökvägen (filsystemets), med `[id]`/`[token]` som platshållare för dynamiska
@@ -376,6 +381,7 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesEquipo: "/app/ajustes/equipo",
   appAjustesPrivacidad: "/app/ajustes/privacidad",
   appAjustesPagos: "/app/ajustes/pagos",
+  appAjustesPlan: "/app/ajustes/plan",
   appSolicitud: "/app/solicitudes/[id]",
   appInvitacion: "/app/invitacion/[token]",
   appBienvenida: "/app/bienvenida/[token]",
@@ -408,6 +414,7 @@ const SE_APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesEquipo: "/app/installningar/team",
   appAjustesPrivacidad: "/app/installningar/integritet",
   appAjustesPagos: "/app/installningar/betalningar",
+  appAjustesPlan: "/app/installningar/plan",
   appSolicitud: "/app/forfragningar/[id]",
   appInvitacion: "/app/inbjudan/[token]",
   appBienvenida: "/app/valkommen/[token]",

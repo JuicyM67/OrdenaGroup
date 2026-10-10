@@ -45,6 +45,23 @@ import type {
 import type { Trad } from "./index";
 
 // ---------------------------------------------------------------------------
+// TARIFA: plattformens avgift — ETT ställe för alla svenska påståenden om
+// provision/avgift (D-047/D-048). Aldrig "ingen provision" utan förbehållet om
+// kortbetalning. `resumen` är den ärliga standardmeningen.
+// ---------------------------------------------------------------------------
+
+const TARIFA = {
+  valor: "1 %",
+  resumen:
+    "Ingen avgift per bokning. När kunden betalar med kort tar vi 1 % + Stripes avgift.",
+  texto: "per kortbetalning + Stripes avgift. Ingen avgift per bokning.",
+  textoLargo:
+    "per kortbetalning + Stripes avgift när kunden betalar med kort. Ingen avgift per bokning.",
+  faq: "Ingen avgift per bokning. När kunden betalar med kort tar vi 1 % + Stripes avgift. Pengarna går direkt till ditt eget Stripe-konto.",
+  kort: "Kortbetalning: 1 % + Stripes avgift",
+} as const;
+
+// ---------------------------------------------------------------------------
 // nav: delad navigering/aria-label (samma nycklar som es-CL.nav)
 // ---------------------------------------------------------------------------
 
@@ -187,7 +204,7 @@ export const landing = {
     },
     comision: {
       valor: "0 kr",
-      etiqueta: "Vi tar ingen provision på dina bokningar.",
+      etiqueta: TARIFA.resumen,
     },
     texto:
       "Bokningar dygnet runt, utan samtal eller sms fram och tillbaka. Du ser varje tid ordnad i din kalender.",
@@ -488,8 +505,8 @@ export const sitio = {
       },
       /** `titulo`/`pie` är fasta; beloppet kommer från demodata. */
       comision: {
-        titulo: "Provision",
-        pie: "på bokningar",
+        titulo: "Avgift per bokning",
+        pie: TARIFA.kort,
       },
     },
     /** Samma nycklar och funktionssignaturer som `es-CL.sitio.inicio.intro`
@@ -500,7 +517,7 @@ export const sitio = {
       stats: {
         disponible: { valor: "24/7", pie: "onlinebokning" },
         minutos: { valor: "10 min", pie: "för att komma igång" },
-        comision: { valor: "0 kr", pie: "provision på bokningar" },
+        comision: { valor: "0 kr", pie: "avgift per bokning (kort: 1 %)" },
       },
     },
     /** Samma nycklar och funktionssignaturer som `es-CL.sitio.inicio.porQue`
@@ -568,11 +585,10 @@ export const sitio = {
       },
       precioUnico: {
         titulo: "Ett pris för hela ditt företag",
-        texto:
-          "Du betalar ett enda pris för ditt företag, oavsett hur stort teamet är. Ingen avgift per anställd och ingen provision på bokningar.",
+        texto: `Du betalar ett enda pris för ditt företag, oavsett hur stort teamet är. Ingen avgift per anställd. ${TARIFA.resumen}`,
         puntos: {
           punto1: "Ingen avgift för varje anställd du lägger till",
-          punto2: "Ingen provision på bokningar",
+          punto2: TARIFA.resumen,
           punto3: "Gratisplan för att komma igång med en anställd",
         },
       },
@@ -664,7 +680,7 @@ export const sitio = {
     meta: {
       titulo: (p: { nombre: string }): string => `Funktioner — ${p.nombre}`,
       descripcion: (p: { nombre: string }): string =>
-        `Allt som ingår i ${p.nombre}: bokningslänk, kalender per anställd, Idag i mobilen och sms-påminnelser.`,
+        `Funktionerna i ${p.nombre}: bokningslänk, kalender per anställd, Idag i mobilen och påminnelser via mejl och sms.`,
     },
     hero: {
       titulo: "Allt du behöver för att fylla din kalender",
@@ -691,10 +707,18 @@ export const sitio = {
     masElegido: "Mest vald",
     compararTitulo: "Jämför planerna",
     fundador: landing.precios.fundador,
+    /** WP-73 (D-048): planen Skräddarsytt (offert), bandet under korten. */
+    aMedida: {
+      nombre: "Skräddarsytt",
+      titulo: "För kedjor och stora verksamheter",
+      texto:
+        "Fler än 10 anställda, flera adresser, egen sms-volym, faktura och dedikerad onboarding.",
+      precio: "Offert",
+      cta: "Kontakta oss",
+    },
     /** Samma nycklar som `es-CL.sitio.precios.extra`. */
     extra: {
-      pagoOnline:
-        "Onlinebetalning: 1 % per kortbetalning + Stripes avgift. Ingen provision på bokningar.",
+      pagoOnline: TARIFA.resumen,
       raknare: {
         titulo: "Så mycket kostar det per anställd",
         texto: (p: { n: number }): string =>
@@ -704,7 +728,7 @@ export const sitio = {
       ingaAvgifter: {
         titulo: "Inga överraskningar på fakturan",
         items: {
-          a: "Ingen provision på bokningar",
+          a: "Ingen avgift per bokning (kort: 1 %)",
           b: "Inga startavgifter",
           c: "Ingen bindningstid",
           d: "Avsluta när du vill",
@@ -727,9 +751,9 @@ export const sitio = {
           "Ja. Du uppgraderar eller nedgraderar när du vill, utan extra kostnad eller bindningstid.",
       },
       masWhatsapp: {
-        pregunta: "Vad händer om sms-kvoten tar slut?",
+        pregunta: "Vad händer om jag når sms-kvoten?",
         respuesta:
-          "Du kan köpa ett extra sms-paket på 100 sms för 69 kr exkl. moms, eller uppgradera till en plan med fler sms ingående.",
+          "Då skickas bekräftelser och påminnelser via mejl i stället resten av månaden (till kunder som har lämnat en e-postadress). Kvoten börjar om den 1:a varje månad. Behöver du fler sms kan du uppgradera, eller kontakta oss om en egen volym.",
       },
       permanencia: {
         pregunta: landing.preguntas.items.permanencia.pregunta,
@@ -853,9 +877,8 @@ export const sitio = {
     },
     items: {
       a: {
-        titulo: "Ingen provision på bokningar",
-        texto:
-          "Du betalar din månadsplan och vi tar ingen provision på bokningarna. Väljer du att ta betalt med kort online tillkommer 1 % per betalning och Stripes avgift.",
+        titulo: "Ingen avgift per bokning",
+        texto: `Du betalar din månadsplan. ${TARIFA.resumen}`,
       },
       b: {
         titulo: "Ett pris för hela ditt företag",
@@ -908,9 +931,8 @@ export const sitio = {
             "Du delar din egen bokningslänk: dina kunder ser bara ditt företag, aldrig en lista med konkurrenter.",
         },
         b: {
-          titulo: "Inga provisioner eller dolda avgifter",
-          texto:
-            "Du betalar din månadsplan och vi tar ingen provision på bokningar. Onlinebetalning med kort är valfritt: 1 % per betalning och Stripes avgift.",
+          titulo: "Inga dolda avgifter",
+          texto: `Du betalar din månadsplan. ${TARIFA.resumen}`,
         },
         c: {
           titulo: "Blixttider fyller luckorna",
@@ -1227,13 +1249,43 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     },
   },
   {
-    funcion: "Påminnelser",
+    funcion: "Aktiva tjänster",
     valores: {
-      gratis: "Via mejl",
-      emprende: "Sms, 50/månad",
-      equipo: "Sms, 150/månad",
-      local: "Sms, 300/månad",
+      gratis: "Upp till 3",
+      emprende: "Obegränsat",
+      equipo: "Obegränsat",
+      local: "Obegränsat",
     },
+  },
+  {
+    funcion: "Bokningssida och onlinebokning",
+    valores: {
+      gratis: "Med vår märkning",
+      emprende: "Utan märkning",
+      equipo: "Utan märkning",
+      local: "Utan märkning",
+    },
+  },
+  {
+    funcion: "Bekräftelser och påminnelser via mejl",
+    valores: { gratis: "✓", emprende: "✓", equipo: "✓", local: "✓" },
+  },
+  {
+    funcion: "Sms (bekräftelse och påminnelse)",
+    valores: {
+      gratis: "–",
+      emprende: "50/månad",
+      equipo: "150/månad",
+      local: "300/månad",
+    },
+  },
+  {
+    funcion: "Betalning vid bokning (1 %)",
+    valores: { gratis: "–", emprende: "✓", equipo: "✓", local: "✓" },
+  },
+  {
+    funcion: "Verifierade omdömen",
+    valores: { gratis: "✓", emprende: "✓", equipo: "✓", local: "✓" },
   },
   {
     funcion: "Väntelista",
@@ -1244,11 +1296,20 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     valores: { gratis: "–", emprende: "–", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Vi saknar dig-påminnelser",
+    funcion: "Utskick, Vi saknar dig och medlemsrabatter",
     valores: { gratis: "–", emprende: "–", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Rapporter",
+    funcion: "Kassa och rapporter",
+    valores: {
+      gratis: "Enkel översikt",
+      emprende: "Enkel översikt",
+      equipo: "Full",
+      local: "Full",
+    },
+  },
+  {
+    funcion: "Personalkonton med behörigheter",
     valores: { gratis: "–", emprende: "–", equipo: "✓", local: "✓" },
   },
   {
@@ -1512,16 +1573,24 @@ export const PLANES: readonly PlanTexto[] = [
     nombre: "Gratis",
     puntos: [
       "1 anställd",
-      "Din bokningslänk",
-      "Kalender",
-      "Påminnelser via mejl",
+      "Upp till 3 tjänster",
+      "Bokningssida och onlinebokning",
+      "Bekräftelser och påminnelser via mejl",
+      "Verifierade omdömen",
     ],
     cta: "Välj Gratis",
   },
   {
     id: "emprende",
     nombre: "Starta",
-    puntos: ["1 anställd", "Sms-påminnelser (50/månad)", "Väntelista"],
+    puntos: [
+      "1 anställd",
+      "Obegränsat med tjänster",
+      "Bokningssida utan vår märkning",
+      "50 sms/månad",
+      "Betalning vid bokning",
+      "Väntelista",
+    ],
     cta: "Välj Starta",
   },
   {
@@ -1531,15 +1600,22 @@ export const PLANES: readonly PlanTexto[] = [
       "Upp till 3 anställda",
       "150 sms/månad",
       "Blixttider",
-      "Vi saknar dig-påminnelser",
-      "Rapporter",
+      "Utskick och Vi saknar dig",
+      "Medlemsrabatter",
+      "Full kassa och rapporter",
+      "Personalkonton med behörigheter",
     ],
     cta: "Välj Team",
   },
   {
     id: "local",
     nombre: "Företag",
-    puntos: ["Upp till 10 anställda", "300 sms/månad", "Prioriterad support"],
+    puntos: [
+      "Upp till 10 anställda",
+      "300 sms/månad",
+      "Allt i Team",
+      "Prioriterad support",
+    ],
     cta: "Välj Företag",
   },
 ];
@@ -1547,17 +1623,8 @@ export const PLANES: readonly PlanTexto[] = [
 // ---------------------------------------------------------------------------
 // home: ny startsida "Foto-berättelse" (WP-71). Samma form som `home` i
 // es-CL.marketing.ts. Avgiftstexten för kortbetalning (Stripe) finns på ETT
-// ställe, `TARIFA`, så den är lätt att ändra (ägaren funderar på avgiften för
-// Företag-planen). Namnet på produkten skrivs aldrig här (regel 10).
+// ställe, `TARIFA` (överst i filen). Namnet på produkten skrivs aldrig här (regel 10).
 // ---------------------------------------------------------------------------
-
-const TARIFA = {
-  valor: "1 %",
-  texto: "per kortbetalning + Stripes avgift. Ingen provision på bokningar.",
-  textoLargo:
-    "per kortbetalning + Stripes avgift när kunden betalar online. Ingen provision på bokningar – någonsin.",
-  faq: "Vi tar ingen provision på bokningar. Om du väljer att ta betalt med kort online tar vi 1 % per betalning och Stripe sin vanliga avgift. Pengarna går direkt till ditt eget Stripe-konto.",
-} as const;
 
 const HOME_CONFIANZA = [
   { id: "pago", texto: "Betalningar via Stripe" },
@@ -1790,7 +1857,7 @@ export const home = {
     tituloPre: "Allt som fyller kalendern.",
     tituloMarca: "Inget onödigt.",
     texto:
-      "Allt ingår från start. Du betalar för fler anställda och SMS – aldrig för funktioner.",
+      "Börja gratis och lägg till mer när du växer: fler anställda, fler sms och funktionerna som fyller luckorna.",
     grande: {
       etiqueta: "BETALNING VID BOKNING",
       titulo: "Kunden betalar när hen bokar.",
@@ -1889,7 +1956,7 @@ export const home = {
   precios: {
     etiqueta: "PRISER",
     tituloPre: "Enkla priser.",
-    tituloMarca: "Ingen provision.",
+    tituloMarca: "Inga överraskningar.",
     mes: "/mån",
     nota: {
       valor: TARIFA.valor,

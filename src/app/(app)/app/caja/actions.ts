@@ -24,6 +24,7 @@ import {
   type InformesResult,
 } from "@/server/reports/caja";
 import { systemClock } from "@/server/scheduling/clock";
+import { businessCan } from "@/server/plans/entitlements";
 
 async function currentMember(): Promise<{
   userId: string;
@@ -84,5 +85,10 @@ export async function loadCajaAction(period: CajaPeriod): Promise<CajaResult> {
 export async function loadInformesAction(): Promise<InformesResult> {
   const ctx = await currentMember();
   if (!ctx) return { forbidden: true };
+  // WP-73 (D-048): rapporterna (full kassa & rapporter) ingår från Team;
+  // Gratis/Starta har bara Caja-översikten.
+  if (!(await businessCan(ctx.businessId, "full_reports"))) {
+    return { forbidden: true };
+  }
   return loadInformes(ctx.userId, ctx.businessId, systemClock());
 }

@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Företagsvy – guidad visning</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}
+.tg{background:linear-gradient(140deg,rgba(255,251,246,.92) 0%,rgba(247,238,227,.78) 100%);-webkit-backdrop-filter:blur(22px) saturate(160%);backdrop-filter:blur(22px) saturate(160%);border:1px solid rgba(255,255,255,.78);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 30px 70px rgba(43,32,24,.3);color:#2B2420}
+.bronze{background:linear-gradient(135deg,#8A6A50 0%,#B48C69 55%,#CBA77F 100%);color:#FFFFFF}
+@keyframes f-in{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+.f-in{animation:f-in .45s cubic-bezier(.2,.7,.2,1) both}
+.spot{position:absolute;transition:left .6s cubic-bezier(.4,0,.2,1),top .6s cubic-bezier(.4,0,.2,1),width .6s cubic-bezier(.4,0,.2,1),height .6s cubic-bezier(.4,0,.2,1),border-radius .6s;box-shadow:0 0 0 9999px rgba(36,28,22,.58);pointer-events:none}
+.pill{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:16px;font-size:12.5px;font-weight:600;border:0;background:linear-gradient(135deg,#8A6A50,#B48C69);color:#FFFFFF}
+@media (prefers-reduced-motion: reduce){.f-in{animation:none}.spot{transition:none}}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; overflow: hidden; background: #F4F4F0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #16161A">
+
+<aside aria-label="Meny" style="position: absolute; left: 0; top: 0; bottom: 0; width: 220px; background: #16161A; color: #FFFFFF; padding: 22px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px; padding: 0 8px 18px">Booking <span style="background: #E3F36B; color: #16161A; border-radius: 7px; padding: 0 5px">Buddy</span></span>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="7"><span style="height: 42px; border-radius: 13px; padding: 0 12px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; background: {{n.bg}}; color: {{n.fg}}"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{n.dot}}"></span>{{n.label}}</span></sc-for>
+<span style="margin-top: auto; padding: 12px; border-radius: 16px; background: #2A2A31; font-size: 12px; color: #D2D2D9">Salong Norrsken<br><b style="color: #FFFFFF">Team-planen</b></span>
+</aside>
+
+<header style="position: absolute; left: 240px; right: 20px; top: 20px; height: 56px; display: flex; align-items: center; justify-content: space-between">
+<span style="display: flex; flex-direction: column"><b style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 26px">Agenda</b><span style="font-size: 12px; color: #5E5E66">Vecka 42 · 13–17 okt</span></span>
+<span style="display: flex; align-items: center; gap: 10px">
+<span style="height: 44px; padding: 0 16px; border-radius: 14px; background: #16161A; color: #FFFFFF; font-size: 14px; font-weight: 700; display: flex; align-items: center">+ Ny bokning</span>
+<span style="position: relative; width: 44px; height: 44px; border-radius: 14px; background: #FFFFFF; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16161A" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"></path></svg><span style="position: absolute; top: 6px; right: 6px; min-width: 16px; height: 16px; border-radius: 8px; background: #E0592A; color: #FFFFFF; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center">2</span></span>
+<span style="width: 44px; height: 44px; border-radius: 14px; background: #E6E0F8; font-weight: 700; display: flex; align-items: center; justify-content: center">I</span>
+</span>
+</header>
+
+<div style="position: absolute; left: 240px; top: 100px; width: 770px; height: 780px; border-radius: 24px; background: #FFFFFF; overflow: hidden">
+<div style="position: absolute; left: 70px; right: 0; top: 0; height: 44px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); font-size: 12px; font-weight: 700; color: #5E5E66"><span style="display: flex; align-items: center; justify-content: center">Mån 13</span><span style="display: flex; align-items: center; justify-content: center">Tis 14</span><span style="display: flex; align-items: center; justify-content: center; color: #7B61E0">Ons 15</span><span style="display: flex; align-items: center; justify-content: center">Tor 16</span><span style="display: flex; align-items: center; justify-content: center">Fre 17</span></div>
+<sc-for list="{{hours}}" as="h" hint-placeholder-count="10"><span style="position: absolute; left: 0; width: 70px; top: {{h.y}}px; font-size: 11px; color: #A3A3AB; text-align: center">{{h.label}}</span><span style="position: absolute; left: 70px; right: 0; top: {{h.y}}px; height: 1px; background: #F1F1EE"></span></sc-for>
+<sc-for list="{{bookings}}" as="b" hint-placeholder-count="12"><div style="position: absolute; left: {{b.x}}px; top: {{b.y}}px; width: 132px; height: {{b.h}}px; border-radius: 12px; background: {{b.bg}}; padding: 7px 9px; box-sizing: border-box; overflow: hidden; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 12px">{{b.name}}</b><span style="font-size: 11px; color: #3E3E46">{{b.svc}}</span><sc-if value="{{b.paid}}" hint-placeholder-val="{{ false }}"><span style="align-self: flex-start; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 6px; background: #D5EEDC; color: #1F6B3A">Betald</span></sc-if></div></sc-for>
+<div style="position: absolute; left: {{flash.x}}px; top: {{flash.y}}px; width: 132px; height: 72px; border-radius: 12px; border: 2px dashed {{flash.border}}; background: {{flash.bg}}; box-sizing: border-box; padding: 7px 9px; display: flex; flex-direction: column; gap: 2px; transition: background .4s"><b style="font-size: 12px; color: #2F3310">{{flash.title}}</b><span style="font-size: 11px; color: #3E3E46">{{flash.sub}}</span></div>
+</div>
+
+<div style="position: absolute; left: 1030px; top: 100px; width: 390px; height: 160px; border-radius: 22px; background: #16161A; color: #FFFFFF; padding: 18px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; color: #B9B9C2"><span>BETALNINGAR IDAG</span><span>via Stripe</span></span>
+<b style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 36px; color: #E3F36B">3 250 kr</b>
+<span style="font-size: 12.5px; color: #D2D2D9">5 kortbetalningar · utbetalning till ditt konto i morgon</span>
+</div>
+<div style="position: absolute; left: 1030px; top: 276px; width: 390px; height: 140px; border-radius: 22px; background: #FFFFFF; padding: 18px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 8px">
+<span style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 14px">Omdömen</b><span style="font-size: 13px; font-weight: 700"><span style="color: #C77A1E">★</span> 4,9 · 3 nya</span></span>
+<span style="font-size: 13px; color: #3E3E46">"Precis den klippning jag ville ha!" – Sara L.</span>
+<span style="align-self: flex-start; height: 32px; padding: 0 12px; border-radius: 10px; background: #F4F4F0; font-size: 12px; font-weight: 700; display: flex; align-items: center">Svara</span>
+</div>
+<div style="position: absolute; left: 1030px; top: 432px; width: 390px; height: 190px; border-radius: 22px; background: #FFFFFF; padding: 18px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+<span style="display: flex; justify-content: space-between"><b style="font-size: 14px">Kassa & beläggning</b><span style="font-size: 12px; color: #5E5E66">denna vecka</span></span>
+<span style="display: flex; gap: 18px"><span><b style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px">18 400 kr</b><span style="display: block; font-size: 11px; color: #5E5E66">intäkter</span></span><span><b style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px">86 %</b><span style="display: block; font-size: 11px; color: #5E5E66">bokat</span></span></span>
+<div style="flex: 1; display: flex; align-items: flex-end; gap: 8px" role="img" aria-label="Beläggning per dag"><span style="flex: 1; height: 55%; border-radius: 6px; background: #E6E0F8"></span><span style="flex: 1; height: 70%; border-radius: 6px; background: #E6E0F8"></span><span style="flex: 1; height: 92%; border-radius: 6px; background: #16161A"></span><span style="flex: 1; height: 84%; border-radius: 6px; background: #E6E0F8"></span><span style="flex: 1; height: 100%; border-radius: 6px; background: #E3F36B"></span></div>
+</div>
+<div style="position: absolute; left: 1030px; top: 638px; width: 390px; height: 242px; border-radius: 22px; background: #FFFFFF; padding: 18px 20px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+<b style="font-size: 14px">Idag</b>
+<span style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: #F4F4F0; font-size: 13px"><span><b>10:00</b> Amir · Skägg</span><span style="color: #1F6B3A; font-weight: 700">Betald</span></span>
+<span style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: #F4F4F0; font-size: 13px"><span><b>13:00</b> Elin · Färgning</span><span style="color: #5E5E66">Betalar på plats</span></span>
+<span style="display: flex; justify-content: space-between; padding: 10px 12px; border-radius: 12px; background: #F4F4F0; font-size: 13px"><span><b>16:30</b> Blixttid</span><span style="color: #9DB017; font-weight: 700">−25 %</span></span>
+</div>
+
+<sc-if value="{{showBell}}" hint-placeholder-val="{{ false }}">
+<div class="f-in" style="position: absolute; left: 1040px; top: 84px; width: 360px; border-radius: 22px; background: #FFFFFF; box-shadow: 0 24px 60px rgba(22,22,26,.2); padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+<b style="font-size: 14px">Väntar på dig (2)</b>
+<div style="padding: 12px; border-radius: 14px; background: #F4F4F0; display: flex; flex-direction: column; gap: 8px"><span style="font-size: 13px"><b>Sara L.</b> vill boka Gellack · lör 12:00</span><span style="display: flex; gap: 6px"><span style="flex: 1; height: 34px; border-radius: 10px; background: #16161A; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">Bekräfta</span><span style="flex: 1; height: 34px; border-radius: 10px; background: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center">Neka</span></span></div>
+<div style="padding: 12px; border-radius: 14px; background: #F4F4F0; font-size: 13px"><b>Jonas K.</b> vill avboka tor 10:00 · <span style="color: #4B3AA8; font-weight: 700">Godkänn?</span></div>
+</div>
+</sc-if>
+
+<div aria-hidden="true" class="spot" style="left: {{spot.x}}px; top: {{spot.y}}px; width: {{spot.w}}px; height: {{spot.h}}px; border-radius: {{spot.r}}px"></div>
+
+<sc-if value="{{isWelcome}}" hint-placeholder-val="{{ true }}">
+<div role="dialog" aria-label="Välkommen" class="tg f-in" style="position: absolute; left: 470px; top: 200px; width: 500px; border-radius: 32px; padding: 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; align-items: center; text-align: center">
+<span class="bronze" style="width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="3"></rect><path d="M3 9h18M9 4v17"></path></svg></span>
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; line-height: 1.1; font-weight: 600">Så här ser det ut för dig</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #6E5440">Det här är Salong Norrskens vy i Booking Buddy – kalendern, betalningarna och omdömena. Vi visar de viktigaste delarna på en minut.</p>
+<div style="display: flex; gap: 10px; align-items: center"><button onClick="{{skip}}" style="height: 48px; padding: 0 18px; border: 0; border-radius: 24px; background: transparent; color: #6E5440; font: inherit; font-weight: 700; cursor: pointer">Titta själv</button><button onClick="{{next}}" class="bronze" style="height: 52px; padding: 0 8px 0 22px; border: 0; border-radius: 26px; font: inherit; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 12px; cursor: pointer">Visa mig runt<span style="width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,.22); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isStep}}" hint-placeholder-val="{{ false }}">
+<div role="dialog" aria-label="{{step.title}}" class="tg f-in" style="position: absolute; left: {{step.tx}}px; top: {{step.ty}}px; width: 380px; border-radius: 28px; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between"><span style="font-size: 12px; font-weight: 700; letter-spacing: .06em; color: #8A6A50">{{step.counter}}</span><button onClick="{{skip}}" style="border: 0; background: transparent; font: inherit; font-size: 13px; font-weight: 600; color: #8A6A50; cursor: pointer">Hoppa över</button></div>
+<div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px"><sc-for list="{{bars}}" as="b" hint-placeholder-count="6"><span style="height: 5px; border-radius: 3px; background: {{b.bg}}"></span></sc-for></div>
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 24px; line-height: 1.15; font-weight: 600">{{step.title}}</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.55; color: #6E5440">{{step.text}}</p>
+<div style="display: flex; flex-wrap: wrap; gap: 6px"><sc-for list="{{step.chips}}" as="c" hint-placeholder-count="2"><span class="pill"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>{{c}}</span></sc-for></div>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px">
+<button onClick="{{back}}" style="height: 44px; padding: 0 16px; border: 1.5px solid rgba(138,106,80,.35); border-radius: 22px; background: rgba(255,255,255,.55); color: #6E5440; font: inherit; font-weight: 700; cursor: pointer">Tillbaka</button>
+<button onClick="{{next}}" aria-label="Nästa" class="bronze" style="width: 52px; height: 52px; border: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 10px 24px rgba(138,106,80,.35)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<div role="dialog" aria-label="Ska vi bli buddies?" class="tg f-in" style="position: absolute; left: 470px; top: 220px; width: 500px; border-radius: 32px; padding: 30px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<span class="bronze" style="align-self: flex-start; padding: 7px 14px; border-radius: 12px; font-size: 13px; font-weight: 700">Klart på 5 minuter</span>
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; line-height: 1.1; font-weight: 600">Ska vi bli buddies?</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #6E5440">Din egen kalender på fem minuter – gratis för en person, utan kort. Har du redan ett system flyttar vi över allt åt dig.</p>
+<div style="display: flex; gap: 10px"><a href="#" style="flex: 1; height: 54px; border-radius: 27px; background: #16161A; color: #FFFFFF; font-weight: 700; text-decoration: none; display: flex; align-items: center; justify-content: center">Ja, skapa min kalender</a><button onClick="{{skip}}" style="height: 54px; padding: 0 18px; border: 1.5px solid rgba(138,106,80,.35); border-radius: 27px; background: rgba(255,255,255,.55); color: #6E5440; font: inherit; font-weight: 700; cursor: pointer">Titta mer</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isOff}}" hint-placeholder-val="{{ false }}">
+<button onClick="{{restart}}" class="tg f-in" style="position: absolute; left: 240px; bottom: 16px; height: 46px; padding: 0 16px; border-radius: 23px; font: inherit; font-weight: 700; display: flex; align-items: center; gap: 8px; cursor: pointer"><span class="bronze" style="width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px">?</span>Visa mig runt igen</button>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { s: 0 }; }
+renderVals() {
+const s = this.state.s;
+const X0 = 70 + 4, COL = 140, Y0 = 52, ROW = 72;
+const hours = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18].map((h, i) => ({ label: h + ':00', y: Y0 + i * ROW }));
+const tones = ['#E6E0F8', '#FBEBD6', '#D3E3EE', '#BFE3D0'];
+const raw = [
+[0, 0, 1, 'Amir', 'Skägg', 0, true], [0, 2, 1.5, 'Lisa', 'Klippning', 1, false], [0, 6, 1, 'Noah', 'Herrklipp', 2, true],
+[1, 1, 2, 'Elin', 'Färgning', 3, true], [1, 4.5, 1, 'Moa', 'Gellack', 0, false],
+[2, 0, 1, 'Ali', 'Fade', 2, true], [2, 3, 1, 'Ebba', 'Lash lift', 1, true], [2, 5, 2, 'Sofia', 'Slingor', 3, false],
+[3, 1, 1, 'Jonas', 'Massage', 0, true], [3, 3.5, 1.5, 'Vera', 'Ansikte', 1, false],
+[4, 0.5, 1, 'Leo', 'Skägg', 2, true], [4, 2, 2, 'Maja', 'Färgning', 3, true], [4, 6, 1, 'Ida', 'Klippning', 0, false],
+];
+const bookings = raw.map(([d, st, dur, name, svc, t, paid]) => ({ x: X0 + d * COL, y: Y0 + st * ROW + 2, h: dur * ROW - 4, name, svc, bg: tones[t], paid }));
+const flashTaken = s >= 4;
+const flash = { x: X0 + 3 * COL, y: Y0 + 7.5 * ROW + 2, title: flashTaken ? 'Blixttid · bokad!' : 'Blixttid 16:30', sub: flashTaken ? 'Maja från väntelistan' : '−25 % · 12 i kön', bg: flashTaken ? '#E3F36B' : '#EEF6C4', border: flashTaken ? '#9DB017' : '#C6D66A' };
+const navLabels = ['Idag', 'Agenda', 'Kunder', 'Kassa', 'Blixttider', 'Omdömen', 'Inställningar'];
+const nav = navLabels.map((label) => ({ label, bg: label === 'Agenda' ? '#E3F36B' : 'transparent', fg: label === 'Agenda' ? '#16161A' : '#D2D2D9', dot: label === 'Agenda' ? '#16161A' : '#3A3A42' }));
+const steps = [
+{ spot: { x: 236, y: 96, w: 778, h: 788, r: 26 }, tx: 1030, ty: 300, title: 'Hela veckan på en blick', text: 'Alla bokningar, för hela teamet, på ett ställe. Klicka för att flytta, se vem som betalt och lägg in egna bokningar.', chips: ['Alla medarbetare', 'Dator och mobil'] },
+{ spot: { x: 1036, y: 78, w: 372, h: 230, r: 24 }, tx: 620, ty: 90, title: 'Förfrågningar och avbokningar', text: 'Du bestämmer: bekräfta eller neka nya bokningar och avbokningar med ett klick – kunden får besked direkt.', chips: ['Notis på mobilen', 'SMS till kunden'] },
+{ spot: { x: 728, y: 688, w: 144, h: 84, r: 16 }, tx: 300, ty: 420, title: 'Blixttider fyller luckorna', text: 'En tid blev ledig? Släpp den med rabatt – väntelistan får ett SMS och den som är snabbast bokar.', chips: ['Rabatt du väljer', 'Väntelista'] },
+{ spot: { x: 1026, y: 96, w: 398, h: 168, r: 24 }, tx: 620, ty: 120, title: 'Betalt innan kunden kommer', text: 'Kunderna betalar med kort eller Apple Pay när de bokar. Pengarna går direkt till ditt konto via Stripe – vi tar bara 1 %, ingen provision på bokningar.', chips: ['Färre uteblivna besök', 'Automatisk återbetalning'] },
+{ spot: { x: 1026, y: 272, w: 398, h: 148, r: 24 }, tx: 620, ty: 260, title: 'Omdömen som säljer åt dig', text: 'Efter varje besök ber vi kunden om ett omdöme. Svara direkt härifrån – betyget syns på din sida.', chips: ['Bara riktiga kunder', 'Svara offentligt'] },
+{ spot: { x: 1026, y: 428, w: 398, h: 198, r: 24 }, tx: 620, ty: 420, title: 'Kassa och statistik', text: 'Se intäkter, beläggning och vem som är din bästa kund – utan Excel.', chips: ['Rapporter', 'Kundkort'] },
+];
+const isWelcome = s === 0, isDone = s === 7, isOff = s === 8, isStep = s >= 1 && s <= 6;
+const st = isStep ? steps[s - 1] : null;
+const spot = isStep ? st.spot : (isOff ? { x: -40, y: -40, w: 1520, h: 980, r: 0 } : { x: 720, y: 450, w: 0, h: 0, r: 24 });
+return {
+hours, bookings, flash, nav, spot, isWelcome, isDone, isOff, isStep, showBell: s === 2,
+step: st ? { ...st, counter: 'STEG ' + s + ' AV 6' } : { title: '', text: '', chips: [], counter: '', tx: 0, ty: 0 },
+bars: [1, 2, 3, 4, 5, 6].map((n) => ({ bg: n <= s ? '#8A6A50' : 'rgba(138,106,80,.18)' })),
+next: () => this.setState({ s: Math.min(7, s + 1) }),
+back: () => this.setState({ s: Math.max(0, s - 1) }),
+skip: () => this.setState({ s: 8 }),
+restart: () => this.setState({ s: 0 }),
+};
+}
+}
+</script>
+</body>
+</html>

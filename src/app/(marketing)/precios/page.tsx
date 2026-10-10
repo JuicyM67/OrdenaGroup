@@ -20,7 +20,7 @@ import { strokeCard } from "@/components/ui/icons";
 import { TextLink } from "@/components/ui/text-link";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
-import { PlanCards } from "@/components/marketing/plan-cards";
+import { PlanCards, PlanCustomBand } from "@/components/marketing/plan-cards";
 import { SmsCreditos } from "@/components/marketing/sms-creditos";
 import { PrecioCalculadora } from "@/components/marketing/precio-calculadora";
 import { SectionHeading } from "@/components/marketing/section-heading";
@@ -69,6 +69,7 @@ export default function PreciosPage() {
 
         <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-8">
           <PlanCards ctaHref="/login" />
+          <PlanCustomBand />
           <Card
             tone="lime"
             radius="tile"

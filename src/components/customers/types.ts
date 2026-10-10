@@ -167,5 +167,11 @@ export type SendMessageResult =
   | { ok: true }
   | {
       ok: false;
-      code: "forbidden" | "no_phone" | "empty" | "too_long" | "rate_limited";
+      code:
+        | "forbidden"
+        | "no_phone"
+        | "empty"
+        | "too_long"
+        | "rate_limited"
+        | "sms_quota";
     };
