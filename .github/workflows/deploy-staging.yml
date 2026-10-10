@@ -114,7 +114,7 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
-        run: npx supabase db push --yes
+        run: npx supabase db push --include-all --yes
 
       # Bara vid manuell körning med reseed=true: nollställer hela
       # databasen (kör om alla migrationer och laddar seed.sql från noll).
