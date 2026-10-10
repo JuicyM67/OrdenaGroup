@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 import {
+  clLegacyRedirects,
   seLegacyRedirects,
   seRouteRedirects,
   seRouteRewrites,
@@ -23,7 +24,7 @@ const nextConfig: NextConfig = {
   async redirects() {
     return MARKET === "SE"
       ? [...seRouteRedirects(), ...seLegacyRedirects()]
-      : [];
+      : clLegacyRedirects();
   },
   // WP-27: grundläggande säkerhetsheaders (ingen inbäddning → ingen clickjacking
   // av /app eller avbokningen i /r/[token]). Full CSP med img-src kommer senare (IDEAS).

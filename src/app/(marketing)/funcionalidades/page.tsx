@@ -33,15 +33,21 @@ import { CtaBand } from "@/components/marketing/cta-band";
 import { FeaturePreview } from "@/components/marketing/feature-preview";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
-import { brand } from "@/config/brand";
+import {
+  FuncionesIndexTop,
+  funcionesIndexMigas,
+} from "@/components/marketing/paginas/indices";
+import { BreadcrumbJsonLd } from "@/components/marketing/paginas/json-ld";
+import { pageMetadata } from "@/components/marketing/paginas/metadata";
+import { href } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
+import { paginas } from "@/i18n/paginas";
 
-export const metadata: Metadata = {
-  title: copy.sitio.funcionalidades.meta.titulo({ nombre: brand.name }),
-  description: copy.sitio.funcionalidades.meta.descripcion({
-    nombre: brand.name,
-  }),
-};
+export const metadata: Metadata = pageMetadata({
+  titulo: paginas.indiceFunciones.meta.titulo,
+  descripcion: paginas.indiceFunciones.meta.descripcion,
+  path: href("funcionalidades"),
+});
 
 const ICONS: Record<string, LucideIcon> = {
   "link-reservas": Link2,
@@ -87,19 +93,13 @@ const DEFAULT_STYLE: {
 export default function FuncionalidadesPage() {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas">
-      <SiteHeader />
+      <BreadcrumbJsonLd migas={funcionesIndexMigas()} />
+      <SiteHeader className="mt-10" />
 
       <main className="flex-1">
-        <section className="mx-auto max-w-3xl px-4 py-14 text-center sm:px-8 sm:py-18">
-          <h1 className="font-display text-30 font-bold tracking-display text-ink sm:text-40">
-            {copy.sitio.funcionalidades.hero.titulo}
-          </h1>
-          <p className="mt-4 text-16 leading-relaxed text-muted">
-            {copy.sitio.funcionalidades.hero.texto}
-          </p>
-        </section>
+        <FuncionesIndexTop />
 
-        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 pb-14 sm:px-8">
+        <div className="mx-auto flex max-w-6xl flex-col gap-5 px-4 pt-8 pb-14 sm:px-8">
           {copy.SITIO_FUNCIONALIDADES.map((seccion, i) => {
             const Icon = ICONS[seccion.id] ?? Link2;
             const style = SECTION_STYLE[seccion.id] ?? DEFAULT_STYLE;

@@ -940,3 +940,8 @@
 @utility object-hero-mobile {
   object-position: 65% 50%;
 }
+
+/* WP-75: hero-foton på funktions- och branschsidorna ligger i porträtt; fokus på övre delen. */
+@utility object-photo-top {
+  object-position: 50% 30%;
+}

@@ -1,216 +1,90 @@
-// Header delad av alla sidor på sitio-webben (WP-hemsida, utökad i WP-hemsida v2 med en
-// megameny; retro 2026-09-28 punkt 2 bytte skalet mot ett flytande "liquid glass"-nav, se
-// `.visual-diff/ref/nav-ref.png` — halvtransparent yta, `backdrop-blur-glass`, tunn ljus
-// kant och `--shadow-glass`; ägarens val "Nav A", wp/WP-43-nav-a, bytte innehållet mot
-// `.visual-diff/ref/NavA.dc.html`, glaskänslan i skalet är oförändrad): logga, nav (exakt
-// fyra ord — "Producto", "Para quién", "Precios", "Por qué elegirnos" — bara "Producto"
-// öppnar en panel: en kolumn med sex ikon+text-punkter under rubriken
-// `megamenu.titulo`, plus ett mörkt destacado-kort för Horas flash), "Entrar" (vanlig
-// textlänk, ingen glasknapp längre) och CTA (ink). Radix NavigationMenu på skrivbord
-// (tangentbord: Enter/klick öppnar triggern, Escape stänger, klick utanför stänger — allt
-// Radix förvalt, ingen egen hantering behövs). Ingen Viewport-komponent: med en enda
-// trigger renderas Content in-place, positionerad mot den (relativa) headern. Root körs
-// kontrollerad (`value`/`onValueChange`) bara för att kunna ge den öppna triggerns "inre
-// pill" ett eget utseende i JS — CSS-attributvarianter (`data-[state=open]:…`) räknas som
-// ett godtyckligt Tailwind-värde och är förbjudna (D-015, `no-restricted-syntax`, se
-// globals.css-kommentaren vid `toggle-on`). Mobilmenyn (Radix Dialog) speglar samma
-// struktur: "Producto" är en expanderbar grupp (native `<details>`/`<summary>`, samma
-// mönster som `FaqAccordion`, tangentbord gratis), de tre andra orden är platta länkar.
+// Header delad av alla sidor på sitio-webben. Flytande "liquid glass"-nav (halvtransparent
+// yta, `backdrop-blur-glass`, tunn ljus kant och `--shadow-glass`). WP-75 bytte innehållet
+// mot den nya megamenyn (`docs/design/reference/undersidor/Main.dc.html`, `Branscher.dc.html`,
+// `Mobil.dc.html`): "Funktioner" och "Branscher" öppnar var sin glaspanel (se `mega-menu.tsx`),
+// "Priser" och "Exempelsida" är vanliga länkar. Radix NavigationMenu ger tangentbordet
+// (Enter/mellanslag öppnar, pil ned går in i panelen, Tab fortsätter genom den, Escape stänger
+// och flyttar tillbaka fokus till triggern), `aria-expanded`/`aria-controls` och hover-intent
+// (`delayDuration`). Panelen är `fixed` och placeras under sidhuvudet med uppmätt `top`
+// (headern ligger på olika höjd före och efter scroll). Mobil: helskärms-glaspanel (Radix
+// Dialog) med native `<details>` för "Funktioner" och "Branscher". Root körs kontrollerad
+// bara för att kunna ge den öppna triggern en egen pill (CSS-attributvarianter är
+// förbjudna, D-015).
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
-import {
-  ArrowUpRight,
-  Bell,
-  Calendar,
-  ChartLine,
-  ChevronDown,
-  ClipboardCheck,
-  Link2,
-  List,
-  Menu,
-  X,
-  type LucideIcon,
-} from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Chip } from "@/components/ui/chip";
 import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/icon-button";
-import { strokeArrow, strokeCard, strokeNav } from "@/components/ui/icons";
-import { href } from "@/config/routes";
+import { strokeNav } from "@/components/ui/icons";
+import { brand } from "@/config/brand";
+import {
+  funcionesDisponibles,
+  href,
+  hrefFuncion,
+  hrefRubro,
+  hrefRubros,
+  RUBRO_IDS,
+} from "@/config/routes";
 import { copy } from "@/i18n/marketing";
+import { paginas } from "@/i18n/paginas";
 
 import { BrandLogo } from "./brand-logo";
+import { FuncionesPanel, RubrosPanel } from "./mega-menu";
+import { FUNCION_UI, TONE_CLASS } from "./paginas/registry";
 
-/** `tone` → färgruta bakom ikonen (WP-43 "Nav A"): samma tokens som resten av
- * designsystemet (`docs/design/DESIGN.md` §4), en färg per punkt. */
-const ICON_TONE_CLASS: Record<string, string> = {
-  lime: "bg-lime",
-  lavender: "bg-lavender",
-  peach: "bg-peach",
-  sky: "bg-sky",
-  mint: "bg-mint",
-  canvas: "bg-canvas",
-};
+const t = paginas.nav;
 
-/** De sex punkterna i panelen "Producto" (WP-43 "Nav A"), i samma ordning som
- * `.visual-diff/ref/NavA.dc.html`: Reservas, Agenda, Recordatorios, Lista de espera,
- * Preguntas (de tu rubro) och Ver todas. `preguntas` länkar a `ventajas` (mismo contenido
- * que `ventajas.diferencias.items.d`, sin sección/ancla propia en `funcionalidades` todavía);
- * los demás van a su ancla en `funcionalidades`. Horas flash ya no vive acá — se mudó a la
- * tarjeta destacada. */
-const PRODUCTO_ITEMS: readonly {
-  id: string;
-  href: string;
-  icon: LucideIcon;
-  tone: string;
-  titulo: string;
-  texto: string;
-  /** Solo el último ítem ("Ver todas las funcionalidades") lleva la flecha del diseño. */
-  flecha?: boolean;
-}[] = [
-  {
-    id: "reservas",
-    href: href("funcionalidades", "link-reservas"),
-    icon: Link2,
-    tone: "lime",
-    ...copy.sitio.megamenu.items.reservas,
-  },
-  {
-    id: "agenda",
-    href: href("funcionalidades", "agenda"),
-    icon: Calendar,
-    tone: "lavender",
-    ...copy.sitio.megamenu.items.agenda,
-  },
-  {
-    id: "recordatorios",
-    href: href("funcionalidades", "recordatorios"),
-    icon: Bell,
-    tone: "peach",
-    ...copy.sitio.megamenu.items.recordatorios,
-  },
-  {
-    id: "lista-espera",
-    href: href("funcionalidades", "lista-espera"),
-    icon: List,
-    tone: "sky",
-    ...copy.sitio.megamenu.items.listaEspera,
-  },
-  {
-    id: "preguntas",
-    href: href("ventajas"),
-    icon: ClipboardCheck,
-    tone: "mint",
-    ...copy.sitio.megamenu.items.preguntas,
-  },
-  {
-    id: "ver-todas",
-    href: href("funcionalidades"),
-    icon: ChartLine,
-    tone: "canvas",
-    ...copy.sitio.megamenu.items.verTodas,
-    flecha: true,
-  },
-];
-
-// Länken/triggerns "inre pill" (glas-knapp) vid hover — och, för triggerna, när den egna
-// panelen är öppen (se `isOpen` i `SiteHeader`, aldrig via CSS-attributvarianter). Samma
-// klass på länkar och triggers, så alla nav-punkter känns likadana.
+// Länkens/triggerns "inre pill" vid hover — och, för triggerna, när den egna panelen är
+// öppen. Samma klass på länkar och triggers, så alla nav-punkter känns likadana.
 const navLinkClass =
   "rounded-full px-3 py-1.75 text-14 font-semibold text-ink transition-colors duration-150 ease-out hover:bg-surface/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 const navLinkOpenClass = "bg-surface/70 shadow-popover";
 
-const productoItemClass =
-  "group flex items-start gap-3 rounded-avatar p-2.5 transition-colors duration-150 ease-out hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+const mobileRowClass =
+  "border-t border-ink/10 py-3.5 text-18 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
-/** Panelen som öppnas av den enda triggern "Producto" (WP-43 "Nav A"): en kolumn med
- * sex ikon+text-punkter under rubriken `megamenu.titulo`, plus ett mörkt destacado-kort
- * för Horas flash till höger (`w-55` = 220 px, samma bredd som i referensen). */
-function ProductoMenuPanel() {
-  return (
-    <div className="flex w-180 gap-4 rounded-card border border-line bg-surface p-5.5 shadow-popover">
-      <div className="flex flex-1 flex-col gap-1.5">
-        <span className="px-2.5 pb-1.5 text-12 font-bold tracking-caps text-muted uppercase">
-          {copy.sitio.megamenu.titulo}
-        </span>
-        <div className="grid grid-cols-2 gap-1.5">
-          {PRODUCTO_ITEMS.map((item) => (
-            <NavigationMenu.Link key={item.id} asChild>
-              <Link href={item.href} className={productoItemClass}>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-chip text-ink",
-                    ICON_TONE_CLASS[item.tone],
-                  )}
-                >
-                  <item.icon className="size-4" strokeWidth={strokeCard} />
-                </span>
-                <span className="flex flex-col gap-0.5">
-                  <span className="text-14 font-bold text-ink">
-                    {item.titulo}
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-12 text-muted">
-                    {item.texto}
-                    {item.flecha ? (
-                      <ArrowUpRight
-                        aria-hidden="true"
-                        className="size-3.5 shrink-0"
-                        strokeWidth={strokeArrow}
-                      />
-                    ) : null}
-                  </span>
-                </span>
-              </Link>
-            </NavigationMenu.Link>
-          ))}
-        </div>
-      </div>
+const mobileSummaryClass =
+  "flex cursor-pointer list-none items-center justify-between rounded-event py-3.5 text-18 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
-      <NavigationMenu.Link asChild>
-        <Link
-          href={href("horasFlash")}
-          className="group flex w-55 shrink-0 flex-col justify-between rounded-icon bg-dark p-4.5 text-on-dark transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
-        >
-          <Chip tone="lime" size="xs" className="self-start">
-            {copy.sitio.megamenu.destacado.etiqueta}
-          </Chip>
-          <div className="flex flex-col gap-1.5">
-            <span className="text-17 font-bold">
-              {copy.sitio.megamenu.destacado.titulo}
-            </span>
-            <span className="text-13 text-on-dark-soft">
-              {copy.sitio.megamenu.destacado.texto}
-            </span>
-          </div>
-          <span className="inline-flex items-center gap-1.5 text-13 font-bold text-lime">
-            {copy.sitio.megamenu.destacado.cta}
-            <ArrowUpRight
-              aria-hidden="true"
-              className="size-4 transition-transform duration-150 ease-out group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
-              strokeWidth={strokeArrow}
-            />
-          </span>
-        </Link>
-      </NavigationMenu.Link>
-    </div>
-  );
-}
+const PANELS = [
+  ["funciones", t.funciones, FuncionesPanel],
+  ["rubros", t.rubros, RubrosPanel],
+] as const;
 
 export function SiteHeader({ className }: { className?: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  // Kontrollerat värde, bara för triggerns "öppen"-pill (se filkommentaren ovan om
-  // varför inte `data-[state=open]:…`).
   const [menuValue, setMenuValue] = useState("");
+  const [panelTop, setPanelTop] = useState(0);
+  const headerRef = useRef<HTMLElement>(null);
+
+  // Panelen följer headerns underkant (headern är sticky och ligger lägre före scroll).
+  useEffect(() => {
+    if (!menuValue) return;
+    const place = () => {
+      const r = headerRef.current?.getBoundingClientRect();
+      if (r) setPanelTop(Math.round(r.bottom) - 6);
+    };
+    place();
+    window.addEventListener("scroll", place, { passive: true });
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place);
+      window.removeEventListener("resize", place);
+    };
+  }, [menuValue]);
 
   return (
-    <header className={cn("sticky top-4 z-40 px-4 sm:px-8", className)}>
+    <header
+      ref={headerRef}
+      className={cn("sticky top-4 z-40 px-4 sm:px-8", className)}
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 rounded-full border border-surface/60 bg-surface/70 px-3 shadow-glass backdrop-blur-glass backdrop-saturate-150 sm:px-5">
         <Link
           href={href("inicio")}
@@ -222,65 +96,53 @@ export function SiteHeader({ className }: { className?: string }) {
         <NavigationMenu.Root
           aria-label={copy.nav.principal}
           className="hidden lg:block"
-          delayDuration={100}
+          delayDuration={150}
+          skipDelayDuration={300}
           value={menuValue}
           onValueChange={setMenuValue}
         >
           <NavigationMenu.List className="flex items-center gap-2">
-            <NavigationMenu.Item value="producto">
-              <NavigationMenu.Trigger
-                className={cn(
-                  navLinkClass,
-                  "flex items-center gap-1 outline-none",
-                  menuValue === "producto" ? navLinkOpenClass : "",
-                )}
-              >
-                {copy.sitio.nav.producto}
-                <ChevronDown
-                  aria-hidden="true"
-                  className="size-4"
-                  strokeWidth={strokeNav}
-                />
-              </NavigationMenu.Trigger>
-              <NavigationMenu.Content
-                // `fixed` i stället för `absolute`: Radix lägger en egen
-                // `position: relative`-wrapper runt <List> (bredd = navraden, inte hela
-                // headern), så en `absolute`/`w-full` här skulle bara bli lika bred som
-                // navraden. `fixed` + `inset-x-0` gör panelen oberoende av det, och
-                // `mx-auto max-w-6xl` inuti återskapar samma breddram som resten av sidan
-                // — panelen själv (`w-180`) fyller inte den bredden, den hamnar bara kvar
-                // till vänster i den (samma x-position som referensens `left:220px`).
-                // `top-22`: navets höjd (glas-pillen är `h-16` med `top-4` marginal, + 8px
-                // luft).
-                className="fixed inset-x-0 top-22 z-40"
-              >
-                <div className="mx-auto max-w-6xl px-4 sm:px-8">
-                  <ProductoMenuPanel />
-                </div>
-              </NavigationMenu.Content>
-            </NavigationMenu.Item>
+            {PANELS.map(([value, label, Panel]) => (
+              <NavigationMenu.Item key={value} value={value}>
+                <NavigationMenu.Trigger
+                  className={cn(
+                    navLinkClass,
+                    "flex items-center gap-1",
+                    menuValue === value ? navLinkOpenClass : "",
+                  )}
+                >
+                  {label}
+                  <ChevronDown
+                    aria-hidden="true"
+                    className={cn(
+                      "size-4 transition-transform duration-200 ease-out",
+                      menuValue === value ? "rotate-180" : "",
+                    )}
+                    strokeWidth={strokeNav}
+                  />
+                </NavigationMenu.Trigger>
+                <NavigationMenu.Content
+                  className="fixed inset-x-0 z-40 px-4 sm:px-8"
+                  style={{ top: panelTop }}
+                >
+                  <div className="mx-auto max-w-6xl rounded-shell border border-surface/80 bg-surface/92 p-5.5 shadow-popover backdrop-blur-glass backdrop-saturate-150">
+                    <Panel />
+                  </div>
+                </NavigationMenu.Content>
+              </NavigationMenu.Item>
+            ))}
 
             <NavigationMenu.Item>
               <NavigationMenu.Link asChild>
-                <Link
-                  href={href("inicio", "para-quien")}
-                  className={navLinkClass}
-                >
-                  {copy.sitio.nav.paraQuien}
-                </Link>
-              </NavigationMenu.Link>
-            </NavigationMenu.Item>
-            <NavigationMenu.Item>
-              <NavigationMenu.Link asChild>
                 <Link href={href("precios")} className={navLinkClass}>
-                  {copy.sitio.nav.precios}
+                  {t.precios}
                 </Link>
               </NavigationMenu.Link>
             </NavigationMenu.Item>
             <NavigationMenu.Item>
               <NavigationMenu.Link asChild>
-                <Link href={href("ventajas")} className={navLinkClass}>
-                  {copy.sitio.nav.porQue}
+                <Link href={`/${brand.demoSlug}`} className={navLinkClass}>
+                  {t.ejemplo}
                 </Link>
               </NavigationMenu.Link>
             </NavigationMenu.Item>
@@ -292,7 +154,7 @@ export function SiteHeader({ className }: { className?: string }) {
             href="/login"
             className={cn(navLinkClass, "hidden sm:inline-flex")}
           >
-            {copy.sitio.nav.entrar}
+            {t.entrar}
           </Link>
           <Button
             asChild
@@ -306,7 +168,7 @@ export function SiteHeader({ className }: { className?: string }) {
           <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
             <Dialog.Trigger asChild>
               <IconButton
-                label={copy.nav.secciones}
+                label={t.abrirMenu}
                 tone="ghost"
                 className="hover:bg-surface/70 lg:hidden"
               >
@@ -318,20 +180,20 @@ export function SiteHeader({ className }: { className?: string }) {
               </IconButton>
             </Dialog.Trigger>
             <Dialog.Portal>
-              <Dialog.Overlay className="fixed inset-0 z-50 bg-dark" />
+              <Dialog.Overlay className="fixed inset-0 z-50 bg-dark/70 backdrop-blur-glass" />
               <Dialog.Content
                 aria-label={copy.nav.secciones}
-                data-surface="dark"
-                className="fixed inset-0 z-50 flex animate-fade-up flex-col gap-8 overflow-y-auto bg-dark px-6 pt-6 pb-8 text-on-dark"
+                aria-describedby={undefined}
+                className="fixed inset-2.5 z-50 flex animate-fade-up flex-col gap-1 overflow-y-auto rounded-shell border border-surface/80 bg-surface/92 p-4.5 shadow-popover"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pb-2">
                   <Dialog.Title asChild>
                     <span>
                       <BrandLogo size="sm" decorative />
                     </span>
                   </Dialog.Title>
                   <Dialog.Close asChild>
-                    <IconButton label={copy.sitio.nav.cerrar} tone="dark-2">
+                    <IconButton label={t.cerrarMenu} tone="ghost">
                       <X
                         aria-hidden="true"
                         className="size-5"
@@ -343,79 +205,129 @@ export function SiteHeader({ className }: { className?: string }) {
 
                 <nav
                   aria-label={copy.nav.principal}
-                  className="flex flex-1 flex-col gap-1"
+                  className="flex flex-1 flex-col"
                 >
-                  {/* "Producto" som expanderbar grupp (WP-43 "Nav A"): native
-                      <details>/<summary>, samma mönster som FaqAccordion — tangentbord
-                      (Enter/mellanslag öppnar/stänger) och skärmläsarstöd gratis, ingen
-                      egen JS-status behövs. */}
-                  <details className="group">
-                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-event px-3 py-2.5 font-display text-24 font-semibold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime">
-                      {copy.sitio.nav.producto}
+                  <details className="group border-t border-ink/10">
+                    <summary className={mobileSummaryClass}>
+                      {t.funciones}
                       <ChevronDown
                         aria-hidden="true"
-                        className="size-5 shrink-0 text-on-dark-muted transition-transform duration-150 ease-out group-open:rotate-180"
+                        className="size-4.5 transition-transform duration-300 group-open:rotate-180"
                         strokeWidth={strokeNav}
                       />
                     </summary>
-                    <div className="flex flex-col gap-1 py-1">
-                      {PRODUCTO_ITEMS.map((item) => (
-                        <Dialog.Close key={item.id} asChild>
+                    <ul className="flex flex-col pb-2">
+                      {funcionesDisponibles().map((id) => {
+                        const ft = paginas.funciones[id]!;
+                        const ui = FUNCION_UI[id];
+                        return (
+                          <li key={id}>
+                            <Dialog.Close asChild>
+                              <Link
+                                href={hrefFuncion(id)}
+                                className="flex items-center gap-3 rounded-event px-1 py-2.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                              >
+                                <span
+                                  aria-hidden="true"
+                                  className={`flex size-9.5 shrink-0 items-center justify-center rounded-event ${TONE_CLASS[ui.tone]}`}
+                                >
+                                  <ui.icon
+                                    className="size-4.5"
+                                    strokeWidth={2}
+                                  />
+                                </span>
+                                <span className="flex flex-col">
+                                  <b className="text-14">{ft.nombre}</b>
+                                  <span className="text-12 text-muted">
+                                    {ft.resumen}
+                                  </span>
+                                </span>
+                              </Link>
+                            </Dialog.Close>
+                          </li>
+                        );
+                      })}
+                      <li>
+                        <Dialog.Close asChild>
                           <Link
-                            href={item.href}
-                            className="flex items-center gap-3 rounded-event py-2 pr-3 pl-6 text-18 font-semibold text-on-dark-soft hover:bg-dark-2 hover:text-on-dark"
+                            href={href("funcionalidades")}
+                            className="block rounded-event px-1 py-2.5 text-14 font-bold underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                           >
-                            <item.icon
-                              aria-hidden="true"
-                              className="size-4.5 shrink-0 text-lime"
-                              strokeWidth={strokeCard}
-                            />
-                            {item.titulo}
+                            {t.menuFunciones.verTodas}
                           </Link>
                         </Dialog.Close>
+                      </li>
+                    </ul>
+                  </details>
+
+                  <details className="group border-t border-ink/10">
+                    <summary className={mobileSummaryClass}>
+                      {t.rubros}
+                      <ChevronDown
+                        aria-hidden="true"
+                        className="size-4.5 transition-transform duration-300 group-open:rotate-180"
+                        strokeWidth={strokeNav}
+                      />
+                    </summary>
+                    <ul className="flex flex-wrap gap-1.5 pb-3">
+                      {RUBRO_IDS.map((id) => (
+                        <li key={id}>
+                          <Dialog.Close asChild>
+                            <Link
+                              href={hrefRubro(id)}
+                              className="inline-flex rounded-event bg-ink/6 px-3 py-2 text-13 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                            >
+                              {paginas.rubros[id].nombre}
+                            </Link>
+                          </Dialog.Close>
+                        </li>
                       ))}
-                    </div>
+                      <li>
+                        <Dialog.Close asChild>
+                          <Link
+                            href={hrefRubros()}
+                            className="inline-flex rounded-event bg-ink px-3 py-2 text-13 font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                          >
+                            {t.menuRubros.todas}
+                          </Link>
+                        </Dialog.Close>
+                      </li>
+                    </ul>
                   </details>
 
                   <Dialog.Close asChild>
-                    <Link
-                      href={href("inicio", "para-quien")}
-                      className="rounded-event px-3 py-2.5 font-display text-24 font-semibold text-on-dark hover:bg-dark-2"
-                    >
-                      {copy.sitio.nav.paraQuien}
+                    <Link href={href("precios")} className={mobileRowClass}>
+                      {t.precios}
                     </Link>
                   </Dialog.Close>
                   <Dialog.Close asChild>
                     <Link
-                      href={href("precios")}
-                      className="rounded-event px-3 py-2.5 font-display text-24 font-semibold text-on-dark hover:bg-dark-2"
+                      href={`/${brand.demoSlug}`}
+                      className={mobileRowClass}
                     >
-                      {copy.sitio.nav.precios}
-                    </Link>
-                  </Dialog.Close>
-                  <Dialog.Close asChild>
-                    <Link
-                      href={href("ventajas")}
-                      className="rounded-event px-3 py-2.5 font-display text-24 font-semibold text-on-dark hover:bg-dark-2"
-                    >
-                      {copy.sitio.nav.porQue}
+                      {t.ejemplo}
                     </Link>
                   </Dialog.Close>
                 </nav>
 
-                <div className="flex flex-col gap-3">
+                <div className="mt-4 flex flex-col gap-2">
+                  <Dialog.Close asChild>
+                    <Button
+                      asChild
+                      variant="primary"
+                      size="2xl"
+                      className="h-13 rounded-full"
+                    >
+                      <Link href="/login">{t.crearGratis}</Link>
+                    </Button>
+                  </Dialog.Close>
                   <Dialog.Close asChild>
                     <Link
                       href="/login"
-                      className="text-center text-16 font-semibold text-on-dark underline"
+                      className="flex h-12 items-center justify-center rounded-full bg-ink/6 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                     >
-                      {copy.sitio.nav.entrar}
+                      {t.entrar}
                     </Link>
-                  </Dialog.Close>
-                  <Dialog.Close asChild>
-                    <Button asChild variant="accent" size="xl">
-                      <Link href="/login">{copy.sitio.nav.ctaCrearAgenda}</Link>
-                    </Button>
                   </Dialog.Close>
                 </div>
               </Dialog.Content>

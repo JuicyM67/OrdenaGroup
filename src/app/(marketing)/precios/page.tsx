@@ -21,6 +21,7 @@ import { TextLink } from "@/components/ui/text-link";
 import { CtaBand } from "@/components/marketing/cta-band";
 import { FaqAccordion } from "@/components/marketing/faq-accordion";
 import { PlanCards } from "@/components/marketing/plan-cards";
+import { SmsCreditos } from "@/components/marketing/sms-creditos";
 import { PrecioCalculadora } from "@/components/marketing/precio-calculadora";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
@@ -28,6 +29,7 @@ import { SiteHeader } from "@/components/marketing/site-header";
 import { brand } from "@/config/brand";
 import { href } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
+import { paginas } from "@/i18n/paginas";
 
 export const metadata: Metadata = {
   title: copy.sitio.precios.meta.titulo({ nombre: brand.name }),
@@ -40,6 +42,7 @@ const PRECIOS_FAQ = [
   copy.sitio.precios.faq.masWhatsapp,
   copy.sitio.precios.faq.permanencia,
   copy.sitio.precios.faq.fundador,
+  ...(paginas.sms ? [paginas.sms.faq] : []),
 ] as const;
 
 const SIN_COMISIONES_ITEMS = [
@@ -112,6 +115,8 @@ export default function PreciosPage() {
             </div>
           </Card>
         </section>
+
+        <SmsCreditos />
 
         <section
           id={anchor("comparar")}
