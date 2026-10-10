@@ -110,7 +110,7 @@ function DatosFrame() {
         {DEMO.kund}
       </div>
       <div className="flex h-9 items-center rounded-control bg-dark-2 px-3.5 text-14 font-semibold text-on-dark-soft">
-        +56 9 …
+        {DEMO.telefono}
       </div>
     </div>
   );

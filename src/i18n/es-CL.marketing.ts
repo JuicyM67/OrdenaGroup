@@ -117,7 +117,7 @@ export const landing = {
       recordatorios: {
         titulo: "Recordatorios automáticos",
         texto:
-          "Por WhatsApp en los planes pagados, por correo en el plan gratis. Menos olvidos, menos horas vacías.",
+          "Por correo, con WhatsApp próximamente en los planes pagados. Menos olvidos, menos horas vacías.",
       },
       listaDeEspera: {
         titulo: "Lista de espera",
@@ -127,7 +127,7 @@ export const landing = {
       abono: {
         titulo: "Abono para reducir inasistencias",
         texto:
-          "Pide un abono al reservar. La plata llega directo a tu propia cuenta de Mercado Pago.",
+          "Próximamente: pide un abono al reservar. La plata llegará directo a tu propia cuenta de Mercado Pago.",
       },
       precioUnico: {
         titulo: "Un precio para todo tu local",
@@ -192,7 +192,7 @@ export const landing = {
   ctaFinal: {
     titulo: "¿Lista para dejar de perder horas?",
     texto:
-      "Crea tu cuenta gratis, sin tarjeta de crédito. Si quieres WhatsApp y lista de espera, tienes 30 días de prueba en los planes pagados.",
+      "Crea tu cuenta gratis, sin tarjeta de crédito. Si quieres lista de espera y los demás extras, tienes 30 días de prueba en los planes pagados.",
     boton: LANDING_CTA_CREAR_GRATIS,
   },
   footer: {
@@ -240,9 +240,9 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
     precioClp: 9990,
     puntos: [
       "1 profesional",
-      "Recordatorios por WhatsApp (~150 al mes)",
+      "Recordatorios por correo",
       "Lista de espera",
-      "Abono para reservar",
+      "Abono para reservar (próximamente)",
     ],
     cta: "Elegir Emprende",
   },
@@ -251,8 +251,8 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
     nombre: "Equipo",
     precioClp: 19990,
     puntos: [
-      "Hasta 5 profesionales",
-      "~600 WhatsApp al mes",
+      "Hasta 3 profesionales",
+      "Recordatorios por correo",
       "Horas flash",
       "Te echamos de menos",
       "Informes",
@@ -264,8 +264,8 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
     nombre: "Local",
     precioClp: 34990,
     puntos: [
-      "Hasta 12 profesionales",
-      "Más WhatsApp incluido",
+      "Hasta 10 profesionales",
+      "Recordatorios por correo",
       "Soporte prioritario",
     ],
     cta: "Elegir Local",
@@ -339,7 +339,7 @@ export const sitio = {
       },
       recordatorios: {
         titulo: "Recordatorios",
-        texto: "Recordatorios automáticos por WhatsApp.",
+        texto: "Recordatorios automáticos por correo.",
       },
       listaEspera: {
         titulo: "Lista de espera",
@@ -464,11 +464,10 @@ export const sitio = {
         valor: "24/7",
         pie: "de día o de noche",
       },
-      /** `titulo`/`pie` son fijos; los porcentajes que van rotando
-       * (15 %, 10 %, 5 %, $0) los arma el componente, no `es-CL.ts`. */
+      /** `titulo`/`pie` son fijos; el monto sale de los datos demo. */
       comision: {
         titulo: "Comisión",
-        pie: "por reserva, siempre",
+        pie: "por reserva",
       },
     },
     /** Franja de cifras justo bajo el hero de la portada (WP-hemsida,
@@ -480,7 +479,7 @@ export const sitio = {
       titulo: "Todo lo que tu local necesita,",
       tituloDestacado: "nada que sobre.",
       stats: {
-        disponible: { valor: "24/7", pie: "reservas abiertas" },
+        disponible: { valor: "24/7", pie: "reservas online" },
         minutos: { valor: "10 min", pie: "para empezar" },
         comision: { valor: "$0", pie: "comisión" },
       },
@@ -542,11 +541,11 @@ export const sitio = {
       menosInasistencias: {
         titulo: "Menos inasistencias",
         texto:
-          "Marca quién llegó y quién no vino desde tu celular. Los recordatorios automáticos por WhatsApp llegan próximamente.",
+          "Marca quién llegó y quién no vino desde tu celular. Los recordatorios automáticos llegan por correo.",
         puntos: {
           punto1: "Llegó y No vino con un toque",
-          punto2: `Recordatorios por WhatsApp — ${SITIO_PROXIMAMENTE}`,
-          punto3: `Historial de inasistencias por cliente — ${SITIO_PROXIMAMENTE}`,
+          punto2: "Recordatorios por correo antes de la hora",
+          punto3: "Historial de inasistencias por cliente",
         },
       },
       precioUnico: {
@@ -578,7 +577,7 @@ export const sitio = {
         "Cuando te queda una hora libre a último minuto, la ofreces con descuento a tus clientes. La primera persona en reservar se la queda.",
       puntos: {
         punto1: "Tú eliges el descuento y por cuánto tiempo dura",
-        punto2: "Se las avisamos por WhatsApp a tus clientes",
+        punto2: "Se las avisamos por correo a tus clientes",
         punto3: "Apenas alguien reserva, se cierra para los demás",
       },
       mock: {
@@ -653,7 +652,7 @@ export const sitio = {
       titulo: (p: { nombre: string }): string =>
         `Funcionalidades — ${p.nombre}`,
       descripcion: (p: { nombre: string }): string =>
-        `Todo lo que incluye ${p.nombre}: link de reservas, agenda por profesional, Hoy en el celular y recordatorios por WhatsApp.`,
+        `Todo lo que incluye ${p.nombre}: link de reservas, agenda por profesional, Hoy en el celular y recordatorios por correo.`,
     },
     hero: {
       titulo: "Todo lo que necesitas para llenar tu agenda",
@@ -685,9 +684,11 @@ export const sitio = {
     fundador: landing.precios.fundador,
     /** Textos cortos extra para darle más vida a la página de Precios
      * (arreglo `copywriter-es-cl`): un contador de "cuánto cuesta por
-     * profesional" (1 a 12), la lista de cosas que nunca se cobran, y un
+     * profesional" (1 a 10), la lista de cosas que nunca se cobran, y un
      * link corto hacia `ventajas` (comparación honesta). */
     extra: {
+      /** Chile: sin pago online todavía (Mercado Pago llega después), solo la garantía de cero comisión. */
+      pagoOnline: "No cobramos comisión por tus reservas.",
       raknare: {
         titulo: "Cuánto cuesta por profesional",
         texto: (p: { n: number }): string =>
@@ -722,7 +723,7 @@ export const sitio = {
       masWhatsapp: {
         pregunta: "¿Qué pasa si se me acaba el WhatsApp incluido?",
         respuesta:
-          "Puedes agregar un paquete extra de WhatsApp o subir a un plan con más cantidad incluida.",
+          "Hoy los recordatorios salen por correo y no tienen tope. Cuando lleguen los avisos por WhatsApp, podrás sumar un paquete extra o subir de plan.",
       },
       permanencia: {
         pregunta: landing.preguntas.items.permanencia.pregunta,
@@ -1151,20 +1152,20 @@ export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
   },
   {
     id: "recordatorios",
-    etiqueta: SITIO_PROXIMAMENTE,
-    titulo: "Recordatorios automáticos por WhatsApp",
+    etiqueta: "Menos inasistencias",
+    titulo: "Recordatorios automáticos por correo",
     texto:
-      "Menos olvidos: tus clientes reciben un recordatorio antes de su hora, y pueden confirmar o avisar que necesitan cambiarla.",
+      "Menos olvidos: tus clientes reciben un recordatorio antes de su hora, con un link para ver, mover o cancelar.",
     puntos: [
       "Confirmación apenas reservan",
       "Recordatorio antes de la hora, con la fecha exacta",
-      "Aviso por correo si el WhatsApp falla",
+      "Link para mover o cancelar la hora",
     ],
-    proximamente: true,
+    proximamente: false,
   },
   {
     id: "lista-espera",
-    etiqueta: SITIO_PROXIMAMENTE,
+    etiqueta: "Lista de espera",
     titulo: "Cuando alguien cancela, esa hora se ocupa sola",
     texto:
       "Si un día está lleno, tus clientes se anotan en la lista de espera. Apenas se libera una hora, les avisamos automáticamente.",
@@ -1173,7 +1174,7 @@ export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
       "Aviso automático apenas hay una cancelación",
       "La primera persona en responder se queda con la hora",
     ],
-    proximamente: true,
+    proximamente: false,
   },
   {
     id: "abono",
@@ -1190,7 +1191,7 @@ export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
   },
   {
     id: "fichas-clientes",
-    etiqueta: SITIO_PROXIMAMENTE,
+    etiqueta: "Fichas",
     titulo: "Historial de cada cliente, a mano",
     texto:
       "Cuántas veces ha venido, si ha faltado antes y tus propias notas, todo en una ficha por cliente.",
@@ -1199,20 +1200,20 @@ export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
       "Notas privadas de tu equipo",
       "Búsqueda rápida por nombre o teléfono",
     ],
-    proximamente: true,
+    proximamente: false,
   },
   {
     id: "reportes",
-    etiqueta: SITIO_PROXIMAMENTE,
+    etiqueta: "Caja e informes",
     titulo: "Cuánto vendiste y cómo te fue",
     texto:
-      "Ingresos del día, la semana y el mes, más un resumen de las horas que recuperaste gracias a la lista de espera.",
+      "Ingresos del día, la semana y el mes, más estadísticas de ocupación, clientes nuevos y recurrentes e inasistencias.",
     puntos: [
       "Ingresos por día, semana y mes",
-      "Inasistencias de los últimos 30 días",
-      "Resumen semanal de horas recuperadas",
+      "Ocupación por profesional",
+      "Clientes nuevos y recurrentes, tendencia de inasistencias",
     ],
-    proximamente: true,
+    proximamente: false,
   },
 ];
 
@@ -1235,17 +1236,17 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     valores: {
       gratis: "1",
       emprende: "1",
-      equipo: "Hasta 5",
-      local: "Hasta 12",
+      equipo: "Hasta 3",
+      local: "Hasta 10",
     },
   },
   {
     funcion: "Recordatorios",
     valores: {
       gratis: "Por correo",
-      emprende: "WhatsApp, ~150 al mes",
-      equipo: "WhatsApp, ~600 al mes",
-      local: "WhatsApp, más cantidad",
+      emprende: "Por correo",
+      equipo: "Por correo",
+      local: "Por correo",
     },
   },
   {
@@ -1253,7 +1254,7 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Abono con Mercado Pago",
+    funcion: "Abono con Mercado Pago (próximamente)",
     valores: { gratis: "—", emprende: "✓", equipo: "✓", local: "✓" },
   },
   {
@@ -1312,7 +1313,7 @@ export const SITIO_COMPARACION: SitioComparacion = {
     },
     {
       aspecto: "Perfiles incluidos en el precio",
-      nosotros: "1 a 12 profesionales, según tu plan",
+      nosotros: "1 a 10 profesionales, según tu plan",
       valores: ["1 profesional en el plan Individual"],
     },
     {

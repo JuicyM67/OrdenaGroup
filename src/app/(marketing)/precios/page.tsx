@@ -79,9 +79,14 @@ export default function PreciosPage() {
             />
             {copy.sitio.precios.fundador}
           </Card>
+          {copy.sitio.precios.extra.pagoOnline ? (
+            <p className="mt-4 text-center text-14 text-muted">
+              {copy.sitio.precios.extra.pagoOnline}
+            </p>
+          ) : null}
         </section>
 
-        {/* Räknare "kostnad per anställd" (sitio-v3): reglage 1–12, precio por profesional
+        {/* Räknare "kostnad per anställd" (sitio-v3): reglage 1–10, precio por profesional
             para Equipo/Local. */}
         <section className="mx-auto max-w-3xl px-4 pb-14 sm:px-8">
           <PrecioCalculadora />

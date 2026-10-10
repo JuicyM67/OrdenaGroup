@@ -1,10 +1,6 @@
 // Sektionen direkt under heron (WP-hemsida, mappad från
 // `.visual-diff/ref/sida-v2-morka-band.html`, första sektionen): stor rubrik till vänster
-// + tre statsrutor till höger. Den första rutan rullar 0→8→16→24/7 innan den landar på det
-// riktiga värdet (`copy.sitio.inicio.intro.stats.disponible.valor`) — samma teknik som
-// hero-bento.tsx:s "Comisión"-ruta (`animate-hero-comision`, fyra rader, samma animation
-// återanvänd här i stället för en ny token), de tre mellanstegen är dekorativa siffror
-// (språkoberoende), inte text som behöver översättas.
+// + tre statsrutor till höger (statiska värden, inga rullande siffror).
 import { cn } from "@/components/ui/cn";
 import { copy } from "@/i18n/marketing";
 
@@ -13,13 +9,8 @@ const INTRO = copy.sitio.inicio.intro;
 function DisponibleStat() {
   return (
     <div className="flex flex-col gap-1 rounded-card bg-surface p-4.5">
-      <div className="h-11.5 overflow-hidden">
-        <div className="flex animate-hero-comision flex-col font-display text-40 leading-11.5 font-bold text-ink">
-          <span>0</span>
-          <span>8</span>
-          <span>16</span>
-          <span>{INTRO.stats.disponible.valor}</span>
-        </div>
+      <div className="font-display text-40 leading-11.5 font-bold text-ink">
+        {INTRO.stats.disponible.valor}
       </div>
       <span className="text-12 text-muted">{INTRO.stats.disponible.pie}</span>
     </div>

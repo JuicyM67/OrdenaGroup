@@ -1,7 +1,7 @@
 "use client";
-// Räknare "kostnad per anställd" (/precios, sitio-v3): ett reglage 1–12 anställda som visar
+// Räknare "kostnad per anställd" (/precios, sitio-v3): ett reglage 1–10 anställda som visar
 // priset per anställd för Equipo eller Local — vilken av de två beror på hur många som ryms
-// (SITIO_PRECIOS_TABLA "Profesionales": Equipo "Hasta 5", Local "Hasta 12"). Priset rullar
+// (SITIO_PRECIOS_TABLA "Profesionales": Equipo "Hasta 3", Local "Hasta 10"). Priset rullar
 // (räknar upp/ned) när reglaget flyttas i stället för att bara byta text i ett hopp, samma
 // känsla som de dekorativa "rullande siffrorna" i hero-bento/por-que-bento, fast här styrd av
 // användaren, så den bygger på `requestAnimationFrame` i stället för en CSS-loop (ingen
@@ -14,10 +14,10 @@ import { copy } from "@/i18n/marketing";
 
 const EXTRA = copy.sitio.precios.extra.raknare;
 
-/** SITIO_PRECIOS_TABLA "Profesionales": Equipo llega hasta 5, Local hasta 12 — la tabla no
+/** SITIO_PRECIOS_TABLA "Profesionales": Equipo llega hasta 3, Local hasta 10 — la tabla no
  * expone el número como dato tipado (son celdas de texto), así que el límite vive acá,
  * junto al único lugar que lo necesita para elegir el plan. */
-const EQUIPO_MAX_PROFESIONALES = 5;
+const EQUIPO_MAX_PROFESIONALES = 3;
 
 function prefersReducedMotion(): boolean {
   if (typeof window === "undefined") return false;
@@ -57,7 +57,7 @@ function useRollingValue(target: number, duration = 350): number {
 }
 
 export function PrecioCalculadora() {
-  const [n, setN] = useState(3);
+  const [n, setN] = useState(2);
   const planId = n <= EQUIPO_MAX_PROFESIONALES ? "equipo" : "local";
   const porEmpleado = useRollingValue(Math.round(precioPlan(planId) / n));
 
@@ -84,7 +84,7 @@ export function PrecioCalculadora() {
           id="precio-raknare"
           type="range"
           min={1}
-          max={12}
+          max={10}
           step={1}
           value={n}
           onChange={(e) => setN(Number(e.target.value))}
@@ -92,7 +92,7 @@ export function PrecioCalculadora() {
         />
         <div className="flex justify-between text-11 font-semibold text-muted">
           <span>1</span>
-          <span>12</span>
+          <span>10</span>
         </div>
       </div>
     </div>

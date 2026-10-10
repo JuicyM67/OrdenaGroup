@@ -243,14 +243,12 @@ describe("SITIO_FUNCIONALIDADES", () => {
       "hoy",
       "reservas-manuales",
       "ajustes",
-    ];
-    const proximas = [
       "recordatorios",
       "lista-espera",
-      "abono",
       "fichas-clientes",
       "reportes",
     ];
+    const proximas = ["abono"];
     for (const seccion of SITIO_FUNCIONALIDADES) {
       if (disponibles.includes(seccion.id)) {
         expect(seccion.proximamente, seccion.id).toBe(false);
