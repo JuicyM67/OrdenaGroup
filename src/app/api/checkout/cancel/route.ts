@@ -2,6 +2,7 @@
 // slumpmässig uuid som bara finns i den länken (se `abandonCheckout`).
 import { NextResponse, type NextRequest } from "next/server";
 
+import { queryString } from "@/config/url-params";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { abandonCheckout } from "@/server/payments/stripe/reconcile";
 import { systemClock } from "@/server/scheduling/clock";
@@ -24,6 +25,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   if (!result) return NextResponse.redirect(new URL("/", request.url));
   const flag = result.released ? "liberada" : "cancelado";
   return NextResponse.redirect(
-    new URL(`/${result.slug}?pago=${flag}`, request.url),
+    new URL(`/${result.slug}${queryString("pago", flag)}`, request.url),
   );
 }

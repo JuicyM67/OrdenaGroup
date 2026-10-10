@@ -56,9 +56,9 @@ export async function generateMetadata({
 }
 
 function pagoNoticeText(
-  raw: string | string[] | undefined,
+  sp: Record<string, string | string[] | undefined>,
 ): string | undefined {
-  switch (raw) {
+  switch (readParam(sp, "pago")) {
     case "ok":
       return reserva.pago.okAviso;
     case "cancelado":
@@ -140,7 +140,7 @@ export default async function ReservaPage({
   ) : undefined;
 
   // WP-64 (D-044): tillbaka från Stripe Checkout (`?pago=ok|cancelado|liberada`).
-  const pagoText = pagoNoticeText(sp.pago);
+  const pagoText = pagoNoticeText(sp);
   const pagoNotice = pagoText ? (
     <p
       role="status"

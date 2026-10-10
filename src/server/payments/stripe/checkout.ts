@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { marketConfig } from "@/config/market";
+import { queryString } from "@/config/url-params";
 import {
   ONLINE_PAYMENT_MIN_MINOR,
   platformFeeMinor,
@@ -193,7 +194,7 @@ export async function createCheckoutForBooking(input: {
           },
           metadata: { booking_id: bookingId, business_id: businessId },
           expires_at: sessionExpiresAt(input.now),
-          success_url: `${base}/${b.slug}?pago=ok`,
+          success_url: `${base}/${b.slug}${queryString("pago", "ok")}`,
           cancel_url: `${base}/api/checkout/cancel?c=${checkoutId}`,
         },
         {
