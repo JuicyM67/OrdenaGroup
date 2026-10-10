@@ -36,7 +36,7 @@ export function EmailForm({
         type="email"
         autoComplete="email"
         placeholder={t.emailPlaceholder}
-        className="h-13 min-w-0 flex-1 rounded-bar bg-surface px-5 text-16 text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
+        className="h-13 min-w-0 rounded-bar bg-surface px-5 text-16 text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime sm:flex-1"
       />
       <button
         type="submit"

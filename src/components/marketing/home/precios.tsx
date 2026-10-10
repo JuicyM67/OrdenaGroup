@@ -25,15 +25,17 @@ export function Precios() {
           </p>
         </div>
         <PlanCards ctaHref="/login" variant="foto" />
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex items-center gap-4 rounded-tile border border-line-strong bg-surface px-6 py-5">
-            <b className="font-display text-30">{t.nota.valor}</b>
+            <b className="shrink-0 font-display text-30 whitespace-nowrap">
+              {t.nota.valor}
+            </b>
             <span className="text-14 leading-body text-muted">
               {t.nota.texto}
             </span>
           </div>
           <div className="flex items-center gap-4 rounded-tile bg-lime px-6 py-5 text-ink">
-            <b className="font-display text-30">{t.fundador.valor}</b>
+            <b className="shrink-0 font-display text-30">{t.fundador.valor}</b>
             <span className="text-14 leading-body">
               <b>{t.fundador.negrita}</b> {t.fundador.texto}
             </span>

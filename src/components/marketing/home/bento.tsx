@@ -35,7 +35,7 @@ export function Bento() {
           </p>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-12">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
           <div className={`${glass} min-h-95 lg:col-span-6`}>
             <span className={label}>{t.grande.etiqueta}</span>
             <h3 className="font-display text-30 leading-snug font-semibold">
@@ -73,7 +73,7 @@ export function Bento() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:col-span-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-6">
             <div className={glass}>
               <span className={label}>{t.resenas.etiqueta}</span>
               <span className="flex items-baseline gap-2.5">

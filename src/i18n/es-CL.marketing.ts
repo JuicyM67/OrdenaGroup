@@ -1769,7 +1769,7 @@ export const home = {
       { at: 0.25, label: "Categorías", count: "3" },
       { at: 0.4, label: "Horarios", count: "lun–sáb" },
       { at: 0.55, label: "Equipo", count: "4" },
-      { at: 0.7, label: "Descripción y redes sociales", count: "" },
+      { at: 0.7, label: "Descripción y redes sociales", count: "✓" },
     ],
     importar: "Importar lo elegido",
     listo: "¡Listo, ya estás en marcha!",

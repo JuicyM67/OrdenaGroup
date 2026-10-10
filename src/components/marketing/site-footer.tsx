@@ -115,7 +115,7 @@ export function SiteFooter() {
               <a
                 href={`mailto:${legal.contactEmail}`}
                 aria-label={copy.sitio.footer2.contacto.correoAria}
-                className={linkClass}
+                className={`${linkClass} break-all`}
               >
                 {legal.contactEmail}
               </a>

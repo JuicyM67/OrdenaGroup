@@ -106,7 +106,7 @@ export function FlyttDemo(props: FlyttProps) {
     <section
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
-      className="mx-auto grid max-w-360 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-2 lg:items-center lg:gap-18 lg:px-22 lg:py-20"
+      className="mx-auto grid max-w-360 grid-cols-1 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-2 lg:items-center lg:gap-18 lg:px-22 lg:py-20"
     >
       <div className="flex flex-col gap-6.5">
         <HomeHeading
@@ -132,7 +132,7 @@ export function FlyttDemo(props: FlyttProps) {
                 aria-current={k === i ? "step" : undefined}
                 className={cn(
                   "flex w-full cursor-pointer flex-col gap-2.5 rounded-panel px-4 py-3.5 text-left text-ink transition-all duration-500 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
-                  k === i ? "bg-surface opacity-100 shadow-soft" : "opacity-60",
+                  k === i ? "bg-surface shadow-soft" : "text-ink-soft",
                 )}
               >
                 <span className="flex items-center gap-3.5">

@@ -49,7 +49,7 @@ export function HomeHero() {
           fill
           priority
           sizes="100vw"
-          className="object-cover object-right lg:object-center"
+          className="object-cover object-hero-mobile lg:object-center"
         />
         <div
           aria-hidden="true"
@@ -62,7 +62,7 @@ export function HomeHero() {
             {t.tituloLinea1}
             <br />
             {t.tituloPre}{" "}
-            <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
+            <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 whitespace-nowrap text-ink">
               {t.tituloMarca}
             </span>
           </h1>

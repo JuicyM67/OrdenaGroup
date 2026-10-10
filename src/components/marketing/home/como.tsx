@@ -12,7 +12,7 @@ const m = t.movil;
 export function Como() {
   return (
     <section className="bg-canvas">
-      <div className="mx-auto grid max-w-360 gap-12 px-4 py-16 sm:px-8 lg:grid-cols-2 lg:items-center lg:gap-20 lg:px-22 lg:py-30">
+      <div className="mx-auto grid max-w-360 grid-cols-1 gap-12 px-4 py-16 sm:px-8 lg:grid-cols-2 lg:items-center lg:gap-20 lg:px-22 lg:py-30">
         <div className="flex flex-col gap-5.5">
           <HomeHeading
             etiqueta={t.etiqueta}

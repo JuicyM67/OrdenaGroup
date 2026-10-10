@@ -17,7 +17,7 @@ export function CtaFinal() {
           alt=""
           fill
           sizes="(min-width: 1440px) 1360px, 100vw"
-          className="object-cover object-right"
+          className="object-cover object-hero-mobile lg:object-center"
         />
         <div
           aria-hidden="true"

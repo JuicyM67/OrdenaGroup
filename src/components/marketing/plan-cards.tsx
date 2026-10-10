@@ -106,7 +106,7 @@ export function PlanCards({
 
 function PlanCardsFoto({ ctaHref }: { ctaHref: string }) {
   return (
-    <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {copy.PLANES.map((plan) => {
         const dark = plan.id === "equipo";
         return (

@@ -1760,7 +1760,7 @@ export const home = {
       { at: 0.25, label: "Kategorier", count: "3 st" },
       { at: 0.4, label: "Öppettider", count: "mån–lör" },
       { at: 0.55, label: "Personal", count: "4 st" },
-      { at: 0.7, label: "Profiltext och sociala medier", count: "" },
+      { at: 0.7, label: "Profiltext och sociala medier", count: "✓" },
     ],
     importar: "Importera valda",
     listo: "Klart – du är igång!",
