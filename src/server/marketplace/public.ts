@@ -364,21 +364,6 @@ export function loadDiscover(
   });
 }
 
-/** Kartan: samma urval som listan, bara erbjudanden med koordinater. */
-export function loadMapOffers(f: OfferFilters): Promise<OfferCard[]> {
-  return withServiceTx(async (q) => {
-    const page = await listOffersIn(
-      q,
-      { ...f, page: 1 },
-      // Kartan visar ett rimligt tak; fler ger inget på en mobilskärm.
-      200,
-    );
-    return page.items.filter(
-      (o) => o.business.lat !== null && o.business.lng !== null,
-    );
-  });
-}
-
 // ---------------------------------------------------------------------------
 // Erbjudandesidan
 // ---------------------------------------------------------------------------
@@ -452,7 +437,7 @@ export async function loadOffer(
          from public.reviews
         where business_id = $1 and hidden_at is null
           and comment is not null and rating >= 4
-        order by (reply is not null) desc, created_at desc
+        order by rating desc, (reply is not null) desc, created_at desc
         limit 1`,
       [row.business_id],
     );
