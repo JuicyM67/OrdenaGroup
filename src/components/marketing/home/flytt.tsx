@@ -36,7 +36,7 @@ export function FlyttSection() {
         importar={t.importar}
         listo={t.listo}
         preview={{
-          cover: <DemoCover sizes="470px" />,
+          cover: <DemoCover sizes="470px" loading="eager" />,
           logo: <DemoLogo />,
           staffA: (
             <DemoStaff
