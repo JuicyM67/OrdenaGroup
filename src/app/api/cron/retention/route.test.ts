@@ -79,6 +79,7 @@ describe("POST /api/cron/retention", () => {
       skippedBusinesses: 0,
       winbackBusinesses: 0,
       winbackQueued: 0,
+      demoRolled: true,
     });
   });
 });

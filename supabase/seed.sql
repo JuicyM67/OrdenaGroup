@@ -330,3 +330,9 @@ insert into auth.identities (
 
 insert into public.memberships (business_id, user_id, role)
 values ('b0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000900001', 'owner');
+
+-- WP-63 (D-043): demoföretagen som marknadssidan länkar till (brand.demoSlug).
+-- Lokalt delar CL och SE samma databas, så båda skapas här. I staging/prod
+-- skapas bara den egna marknadens demo (deploy-staging.yml, /api/cron/retention).
+select private.seed_demo('CL');
+select private.seed_demo('SE');

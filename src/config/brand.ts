@@ -9,6 +9,9 @@ const brands = {
     name: "Ordena Calendar",
     tagline: "Tu agenda se llena sola.",
     domain: null,
+    // WP-63 (D-043): demoföretaget som marknadssidan länkar till. Skapas och
+    // rullas av `private.seed_demo('CL')`.
+    demoSlug: "estudio-brisa",
     supportWhatsapp: null,
     // TODO: fylls i före lansering (WP-26, "Ägarens svar" 2026-09-30) — samma
     // platshållarvärden som `src/i18n/legal/entity.ts` (PLACEHOLDER_ENTITY_CL),
@@ -24,6 +27,7 @@ const brands = {
     name: "Booking Buddy",
     tagline: "Kalendern som fyller sig själv.",
     domain: "bookingbuddy.se",
+    demoSlug: "salong-norrsken",
     supportWhatsapp: null,
     // TODO: fylls i före lansering — samma platshållarvärden som
     // `src/i18n/legal/entity.ts` (PLACEHOLDER_ENTITY_SE).
@@ -53,6 +57,8 @@ export type Brand = {
   readonly name: string;
   readonly tagline: string;
   readonly domain: string | null;
+  /** Sluggen för marknadens demoföretag (`/{demoSlug}`). */
+  readonly demoSlug: string;
   readonly supportWhatsapp: string | null;
   readonly legal: LegalEntity;
 };

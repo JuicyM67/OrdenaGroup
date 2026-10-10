@@ -404,7 +404,7 @@ export function HeroSection() {
             <Link href="/login">{copy.landing.hero.ctaPrimario}</Link>
           </Button>
           <Button asChild variant="secondary" size="xl">
-            <Link href="/barberia-norte">
+            <Link href={`/${brand.demoSlug}`}>
               {copy.landing.hero.ctaSecundario}
             </Link>
           </Button>
