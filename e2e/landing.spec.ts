@@ -65,12 +65,19 @@ test("el formulario del hero lleva a /login con el correo", async ({
 }) => {
   await page.goto("/");
   await page.locator("#hero-email").fill("ana@example.com");
+  // Inloggade projekt omdirigeras vidare från /login – kontrollera själva
+  // navigeringen dit i stället för slutadressen.
+  const navigated = page.waitForRequest(
+    (r) =>
+      r.isNavigationRequest() &&
+      r.url().includes("/login?email=ana%40example.com"),
+  );
   await page
     .getByRole("main")
     .getByRole("button", { name: home.hero.cta })
     .first()
     .click();
-  await page.waitForURL("**/login?email=*");
+  await navigated;
 });
 
 test("360 px de ancho: sin scroll horizontal", async ({ page }) => {
