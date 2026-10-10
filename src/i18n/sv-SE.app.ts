@@ -32,6 +32,9 @@ import {
 } from "./sv-SE.auth";
 
 import type * as Es from "./es-CL";
+import { visita } from "./sv-SE.visita";
+
+export { visita };
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för
  * literaler, och med stöd för readonly-listor (CAJA_METODOS_MANUALES,
@@ -2529,6 +2532,8 @@ export const perfil: Widen<typeof Es.perfil> = {
     },
     reservar: reserva.bookingBar.ctaReservar,
     reservarAhora: "Boka nu",
+    elegirHora: "Välj tid",
+    haceElServicio: (p: { nombre: string }): string => `Utförs av: ${p.nombre}`,
     servicioDetalle: (p: { duracion: string; descripcion?: string }): string =>
       p.descripcion ? `${p.duracion} · ${p.descripcion}` : p.duracion,
     masRapido: "Snabbast in",
@@ -3245,6 +3250,7 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   vOferta,
   uxTextos,
   importar,
+  visita,
   planes,
 };
 void _check;

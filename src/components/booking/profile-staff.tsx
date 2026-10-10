@@ -20,7 +20,10 @@ export function ProfileStaff({
   staff: readonly BookingStaffMember[];
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4">
+    <div
+      data-tour="staff"
+      className="grid grid-cols-2 gap-3.5 sm:grid-cols-3 lg:grid-cols-4"
+    >
       {staff.map((member, i) => (
         <div
           key={member.id}

@@ -220,6 +220,7 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
     page.getByRole("heading", { name: "Barbería Norte" }),
   ).toBeVisible();
   await page.getByRole("button", { name: /Corte clásico/ }).click();
+  await page.getByRole("button", { name: "Elegir hora", exact: true }).click();
   await pickFirstFreeSlot(page);
   await page
     .getByRole("button", { name: reserva.bookingBar.ctaReservar })

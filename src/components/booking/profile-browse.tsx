@@ -18,6 +18,8 @@ import {
   ReviewsSection,
   type PublicReviewsView,
 } from "@/components/reviews/public-reviews";
+import { CreditCard, Lock } from "lucide-react";
+
 import { formulario, perfil, resenas } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
@@ -33,7 +35,7 @@ import {
   type ProfileServiceRowEntry,
 } from "./profile-interactive";
 import type { MobileTab } from "./profile-flow-context";
-import { ProfileServiceRow } from "./profile-service-row";
+import { ProfileServiceHeader } from "./profile-service-row";
 import {
   ContactCard,
   FastestTimesCard,
@@ -62,8 +64,11 @@ export function ProfileBrowse({
   social,
   reviews,
   reviewsMoreHref,
+  paymentNote,
 }: {
   data: BookingPageData;
+  /** WP-72: info-raden "Betala direkt …" som bara syns i visningsläget (SE-demon). */
+  paymentNote?: { texto: string; via: string };
   profile: BookingProfile;
   social?: ProfileSocialSlots;
   /** WP-65 (D-045): `undefined` = inga recensioner, allt om dem döljs. */
@@ -76,11 +81,16 @@ export function ProfileBrowse({
   const rows: ProfileServiceRowEntry[] = data.services.map((service) => ({
     id: service.id,
     categoryId: service.categoryId ?? null,
-    node: <ProfileServiceRow key={service.id} service={service} />,
+    header: <ProfileServiceHeader service={service} staff={staff} />,
+    description: service.description ?? null,
+    ariaLabel: `${service.name} · ${formatDuration(service.durationMin)}`,
+    cta: perfil.publico.elegirHora,
   }));
   const hasSocial = Boolean(
     profile.instagramUrl || profile.tiktokUrl || profile.facebookUrl,
   );
+
+  const payNote = paymentNote ? <PaymentNote {...paymentNote} /> : null;
 
   const infoPanel = (
     <div className="flex flex-col gap-3.5">
@@ -105,7 +115,13 @@ export function ProfileBrowse({
         profile={profile}
         now={data.now}
         social={social?.chips}
-        rating={reviews ? <RatingChip reviews={reviews} /> : undefined}
+        rating={
+          reviews ? (
+            <span data-tour="rating" className="inline-flex">
+              <RatingChip reviews={reviews} />
+            </span>
+          ) : undefined
+        }
       />
 
       {/* Dator */}
@@ -118,10 +134,12 @@ export function ProfileBrowse({
               social={social?.chips}
               rating={
                 reviews ? (
-                  <RatingChip
-                    reviews={reviews}
-                    href={`#${anchor("resenas")}`}
-                  />
+                  <span data-tour="rating" className="inline-flex">
+                    <RatingChip
+                      reviews={reviews}
+                      href={`#${anchor("resenas")}`}
+                    />
+                  </span>
                 ) : undefined
               }
             />
@@ -129,12 +147,12 @@ export function ProfileBrowse({
               {perfil.publico.secciones.reservarHora}
             </h2>
             {tabs.length > 0 ? <ProfileCategoryTabs tabs={tabs} /> : null}
-            <div className="rounded-tile bg-surface px-5">
-              <ProfileServiceList
-                rows={rows}
-                emptyLabel={formulario.categorias.vacia}
-              />
-            </div>
+            {payNote}
+            <ProfileServiceList
+              rows={rows}
+              emptyLabel={formulario.categorias.vacia}
+              tour="services"
+            />
 
             {staff.length > 0 ? (
               <>
@@ -194,10 +212,11 @@ export function ProfileBrowse({
             servicios: (
               <>
                 {tabs.length > 0 ? <ProfileCategoryTabs tabs={tabs} /> : null}
+                {payNote}
                 <ProfileServiceList
                   rows={rows}
                   emptyLabel={formulario.categorias.vacia}
-                  className="flex flex-col gap-2.5"
+                  tour="services"
                 />
               </>
             ),
@@ -244,7 +263,10 @@ function MobileBookBar({
   const label = nextAvailableChipLabel(data.now, profile.nextAvailable);
 
   return (
-    <div className="fixed inset-x-3 bottom-3.5 z-10 flex items-center justify-between gap-3 rounded-panel bg-ink px-3.5 py-3 text-on-dark shadow-popover">
+    <div
+      data-tour="book-bar"
+      className="fixed inset-x-3 bottom-3.5 z-10 flex items-center justify-between gap-3 rounded-panel bg-ink px-3.5 py-3 text-on-dark shadow-popover"
+    >
       <div className="min-w-0">
         {label ? (
           <p className="truncate text-12 text-on-dark-muted">{label}</p>
@@ -263,5 +285,24 @@ function MobileBookBar({
         {perfil.publico.reservarAhora}
       </ProfileBookNowButton>
     </div>
+  );
+}
+
+/** Info-rad nära Boka-knappen, bara synlig i visningsläget (`tour-note`, tokens.css). */
+function PaymentNote({ texto, via }: { texto: string; via: string }) {
+  return (
+    <p
+      data-tour="payment"
+      className="tour-note items-center justify-between gap-3 rounded-event bg-surface px-3 py-2.5 text-12 font-semibold text-ink"
+    >
+      <span className="flex items-center gap-2">
+        <CreditCard aria-hidden="true" className="size-4" strokeWidth={2} />
+        {texto}
+      </span>
+      <span className="flex items-center gap-1 text-11 font-normal text-muted">
+        <Lock aria-hidden="true" className="size-2.75" strokeWidth={2.5} />
+        {via}
+      </span>
+    </p>
   );
 }
