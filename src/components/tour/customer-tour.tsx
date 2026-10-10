@@ -40,7 +40,7 @@ function buildSteps(): TourStep[] {
 const STEPS = buildSteps();
 
 const BTN_GHOST =
-  "flex h-13.5 items-center justify-center rounded-full border-2 border-bronze/35 bg-surface/55 px-4.5 font-bold text-tour-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze";
+  "flex h-13.5 items-center justify-center rounded-full border-2 border-ink/15 bg-surface/60 px-4.5 font-bold text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 export default function CustomerTour({
   coverUrl,
@@ -103,9 +103,9 @@ export default function CustomerTour({
                 />
                 <b className="min-w-0 flex-1 truncate text-15 tracking-title sm:text-20">
                   {prefix}
-                  <span className="text-bronze">{slug}</span>
+                  <span className="text-muted">{slug}</span>
                 </b>
-                <span className="flex h-9 items-center rounded-avatar px-3.5 text-13 font-bold tour-bronze sm:h-10.5">
+                <span className="flex h-9 items-center rounded-avatar bg-ink px-3.5 text-13 font-bold text-on-dark sm:h-10.5">
                   {c.final.live}
                 </span>
               </div>
@@ -114,7 +114,7 @@ export default function CustomerTour({
               <h2 className="font-display text-24 leading-snug font-semibold sm:text-32">
                 {c.final.titulo}
               </h2>
-              <p className="text-14 leading-relaxed text-tour-soft sm:text-15">
+              <p className="text-14 leading-relaxed text-muted sm:text-15">
                 <span className="sm:hidden">{c.final.corto}</span>
                 <span className="hidden sm:inline">{c.final.texto}</span>
               </p>
@@ -122,12 +122,12 @@ export default function CustomerTour({
                 <Link
                   href="/login"
                   data-autofocus
-                  className="flex h-13 shrink-0 items-center justify-center gap-2.5 rounded-full bg-ink font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze sm:h-13.5 sm:flex-1"
+                  className="flex h-13 shrink-0 items-center justify-center gap-2.5 rounded-full bg-lilac font-bold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:h-13.5 sm:flex-1"
                 >
                   {c.final.cta}
                   <ArrowRight
                     aria-hidden="true"
-                    className="size-4.5 text-lime"
+                    className="size-4.5 text-ink"
                     strokeWidth={2.5}
                   />
                 </Link>
@@ -137,7 +137,7 @@ export default function CustomerTour({
               </div>
               <Link
                 href={href("ejemploNegocio")}
-                className="self-center text-13 font-semibold text-bronze underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+                className="self-center text-13 font-semibold text-muted underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 {c.final.negocio}
               </Link>
