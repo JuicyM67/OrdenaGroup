@@ -15,6 +15,7 @@ import {
   LogOut,
   Send,
   SlidersHorizontal,
+  Star,
   X,
   Zap,
 } from "lucide-react";
@@ -25,7 +26,7 @@ import { IconButton } from "@/components/ui/icon-button";
 import { strokeNav } from "@/components/ui/icons";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
 import { appHref } from "@/config/routes";
-import { campanas, comun, nav } from "@/i18n";
+import { campanas, comun, nav, resenas } from "@/i18n";
 
 export type MoreSheetProps = {
   open: boolean;
@@ -111,6 +112,18 @@ export function MoreSheet({
               label={campanas.titulo}
               icon={
                 <Send
+                  aria-hidden="true"
+                  className={ROW_ICON}
+                  strokeWidth={strokeNav}
+                />
+              }
+              onNavigate={() => onOpenChange(false)}
+            />
+            <MoreSheetLink
+              href={appHref("appClientesResenas")}
+              label={resenas.panel.titulo}
+              icon={
+                <Star
                   aria-hidden="true"
                   className={ROW_ICON}
                   strokeWidth={strokeNav}

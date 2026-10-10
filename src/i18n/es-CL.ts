@@ -1642,6 +1642,21 @@ export const email = {
       `${p.pct} % de descuento en tus reservas`,
     cta: "Reservar hora",
   },
+  /** WP-65 (D-045): al cliente, 2 h después de una cita realizada. */
+  solicitudResena: {
+    asunto: (p: { negocio: string }): string => `¿Cómo te fue en ${p.negocio}?`,
+    preheader: "Cuéntanos en un minuto. Tu opinión ayuda a otros a elegir.",
+    titulo: "¿Cómo te fue?",
+    texto: (p: {
+      cliente: string;
+      negocio: string;
+      servicio: string;
+    }): string =>
+      `Hola ${p.cliente}: gracias por visitar ${p.negocio}. ¿Qué te pareció tu ${p.servicio}?`,
+    ayuda:
+      "Tu reseña se publica en su página de reservas solo con tu nombre y la inicial de tu apellido. Puedes editarla durante 7 días.",
+    cta: "Dejar mi reseña",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -2981,6 +2996,9 @@ export const sms = {
    * `pie` (no es marketing, no está en `SMS_MARKETING_TEMPLATES`). */
   mensajeLibre: (p: { negocio: string; texto: string }): string =>
     `${p.negocio}: ${p.texto}`,
+  /** WP-65 (D-045): reseña después de una cita realizada. */
+  solicitudResena: (p: { negocio: string; link: string }): string =>
+    `¿Cómo te fue en ${p.negocio}? Deja tu reseña: ${p.link}`,
   /** WP-31 (F14): campaña de marketing (`/app/clientes/utskick`, mismo
    * mensaje libre que escribió el dueño, hasta 320 caracteres). `link` =
    * `/{slug}?o=<token>`, `bajaLink` = `/baja/<token>` — la baja va SIEMPRE
@@ -3822,4 +3840,90 @@ export const uxTextos = {
   deReservado: (p: { monto: string }): string => `de ${p.monto} reservado`,
   minimizarMenu: "Minimizar menú",
   expandirMenu: "Expandir menú",
+} as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// resenas (WP-65, D-045): reseñas verificadas — página del cliente
+// (`/resena/[token]`), página pública (`/[slug]`), panel del negocio
+// (`/app/clientes/resenas`) y Ajustes → Reglas.
+// ---------------------------------------------------------------------------
+
+export const resenas = {
+  formulario: {
+    titulo: "¿Cómo te fue?",
+    notaLabel: "Tu nota",
+    estrella: (p: { n: number }): string =>
+      p.n === 1 ? "1 estrella" : `${p.n} estrellas`,
+    notaRequerida: "Elige de 1 a 5 estrellas.",
+    comentarioLabel: "Cuéntanos más (opcional)",
+    comentarioPlaceholder: "¿Qué te gustó? ¿Qué podríamos mejorar?",
+    contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    publicaComo: (p: { nombre: string }): string =>
+      `Se publica como ${p.nombre}.`,
+    enviar: "Publicar reseña",
+    guardar: "Guardar cambios",
+    enviando: "Guardando…",
+    gracias: "¡Gracias por tu reseña!",
+    graciasTexto: (p: { negocio: string }): string =>
+      `Ya aparece en la página de ${p.negocio}. Puedes editarla durante 7 días con este mismo link.`,
+    editar: "Editar mi reseña",
+    cerrada:
+      "Gracias por tu reseña. Ya pasaron 7 días, así que no se puede editar.",
+    error: "No pudimos guardar tu reseña. Inténtalo de nuevo.",
+    verPagina: "Ver la página",
+    noEncontrada: "Este link de reseña no es válido o ya no está disponible.",
+  },
+  publico: {
+    titulo: "Reseñas",
+    cantidad: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "reseña" : "reseñas"}`,
+    notaAria: (p: { nota: string; n: number }): string =>
+      `Nota ${p.nota} de 5, ${p.n} ${p.n === 1 ? "reseña" : "reseñas"}`,
+    estrellasAria: (p: { n: number }): string => `${p.n} de 5 estrellas`,
+    verificadas: "Solo opinan clientes que tuvieron una cita.",
+    anonimo: "Cliente",
+    respuesta: (p: { negocio: string }): string => `Respuesta de ${p.negocio}`,
+    verMas: "Ver más reseñas",
+  },
+  panel: {
+    titulo: "Reseñas",
+    filtrosLabel: "Filtrar reseñas",
+    filtros: {
+      todas: "Todas",
+      sinResponder: "Sin responder",
+      bajas: "Notas bajas",
+    },
+    vacio:
+      "Aún no tienes reseñas. Después de cada cita le pedimos su opinión al cliente.",
+    vacioFiltro: "No hay reseñas con este filtro.",
+    sinComentario: "Sin comentario.",
+    responder: "Responder",
+    editarRespuesta: "Editar respuesta",
+    respuestaLabel: "Respuesta pública",
+    respuestaAyuda: "Se muestra bajo la reseña en tu página.",
+    publicarRespuesta: "Publicar respuesta",
+    cancelar: "Cancelar",
+    reportar: "Reportar",
+    reportada: "Reportada",
+    oculta: "Oculta por moderación",
+    reportarTitulo: "Reportar reseña",
+    reportarTexto:
+      "La revisamos y, si no cumple las reglas, la ocultamos. Las reseñas no se pueden borrar.",
+    motivoLabel: "Motivo",
+    motivos: {
+      offensive: "Lenguaje ofensivo",
+      false: "Información falsa",
+      personal_data: "Datos personales",
+      not_customer: "No fue nuestro cliente",
+      other: "Otro motivo",
+    },
+    detalleLabel: "Detalle (opcional)",
+    enviarReporte: "Enviar reporte",
+    error: "No pudimos guardar. Inténtalo de nuevo.",
+  },
+  ajustes: {
+    pedirResena: "Pedir reseña después de la cita",
+    pedirResenaAyuda:
+      "Enviamos un mensaje 2 horas después de cada cita. Solo opina quien tuvo una cita contigo.",
+  },
 } as const satisfies Trad;

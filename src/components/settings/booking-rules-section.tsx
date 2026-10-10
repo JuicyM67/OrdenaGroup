@@ -12,10 +12,10 @@ import { Card } from "@/components/ui/card";
 import { Pill } from "@/components/ui/pill";
 import { Switch } from "@/components/ui/switch";
 import { TextField } from "@/components/ui/text-field";
-import { ajustes, estados } from "@/i18n";
+import { ajustes, estados, resenas } from "@/i18n";
 
 import { ajustesErrorText } from "./error-text";
-import type { AjustesActions, AjustesBusiness } from "./types";
+import type { AjustesActions, AjustesBusiness, MutationResult } from "./types";
 
 const WAITLIST_MODES = ["sequential", "broadcast"] as const;
 
@@ -48,6 +48,7 @@ export function BookingRulesSection({
   onSaved,
   action,
   waitlistAction,
+  reviewRequestsAction,
 }: {
   business: AjustesBusiness;
   /** Utan onSaved laddas sidan om (flikarna i WP-55 är egna rutter). */
@@ -56,6 +57,9 @@ export function BookingRulesSection({
   /** WP-23: lista de espera (modo + hålltid). `undefined` döljer kortet
    * (design lab/äldre sidor utan den actionen). */
   waitlistAction?: AjustesActions["updateWaitlistSettings"];
+  /** WP-65 (D-045): "Pedir reseña después de la cita" — sparas direkt
+   * vid växling. `undefined` döljer kortet (saknar `can_edit_settings`). */
+  reviewRequestsAction?: (enabled: boolean) => Promise<MutationResult>;
 }) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>(() => toFormState(business));
@@ -111,6 +115,29 @@ export function BookingRulesSection({
   }
 
   const maxDaysAheadN = Number(form.maxDaysAhead) || 0;
+
+  // WP-65 (D-045): eget kort, sparas direkt (bara en kolumn).
+  const [reviewRequests, setReviewRequests] = useState(
+    business.reviewRequestsEnabled ?? true,
+  );
+  const [reviewError, setReviewError] = useState<string | undefined>();
+
+  async function handleReviewToggle(checked: boolean) {
+    if (!reviewRequestsAction) return;
+    const previous = reviewRequests;
+    setReviewRequests(checked);
+    setReviewError(undefined);
+    try {
+      const result = await reviewRequestsAction(checked);
+      if (!result.ok) {
+        setReviewRequests(previous);
+        setReviewError(ajustesErrorText(result.code));
+      }
+    } catch {
+      setReviewRequests(previous);
+      setReviewError(ajustesErrorText("unknown"));
+    }
+  }
 
   // WP-23: lista de espera (modo + hålltid) — eget kort, eget formulär och
   // egen spar-knapp (`updateWaitlistSettings` skriver bara de två
@@ -342,6 +369,33 @@ export function BookingRulesSection({
             ) : null}
           </div>
         </form>
+      ) : null}
+
+      {reviewRequestsAction ? (
+        <Card radius="tile" padding="lg" className="flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="text-14 font-semibold text-ink">
+                {resenas.ajustes.pedirResena}
+              </p>
+              <p className="mt-0.5 text-12 text-muted">
+                {resenas.ajustes.pedirResenaAyuda}
+              </p>
+            </div>
+            <Switch
+              checked={reviewRequests}
+              onChange={(checked) => {
+                void handleReviewToggle(checked);
+              }}
+              label={resenas.ajustes.pedirResena}
+            />
+          </div>
+          {reviewError ? (
+            <p role="alert" className="text-13 font-semibold text-ink">
+              {reviewError}
+            </p>
+          ) : null}
+        </Card>
       ) : null}
     </div>
   );

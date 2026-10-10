@@ -20,6 +20,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { expireRequests } from "@/server/bookings/confirm";
 import { pgErrorCode } from "@/server/db/errors";
 import { processOutbox } from "@/server/messaging/outbox";
+import { queueReviewRequests } from "@/server/reviews/requests";
 import { systemClock } from "@/server/scheduling/clock";
 import { expireWaitlistOffers } from "@/server/waitlist";
 
@@ -75,10 +76,30 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
+  // WP-65 (D-045): recensionsförfrågningar för bokningar som slutade för
+  // 2 h–3 dygn sedan — köas före utkorgen töms, samma felhantering.
+  let reviewRequests = 0;
+  try {
+    reviewRequests = await queueReviewRequests(systemClock());
+  } catch (e) {
+    console.error("outbox: queueReviewRequests misslyckades", {
+      code: pgErrorCode(e) ?? "unknown",
+    });
+  }
   const result = await processOutbox({ limit: CRON_LIMIT });
   // Bara räknare (regel hård 8: ingen persondata i loggar).
-  console.log("outbox: pass klart", { expired, waitlistExpired, ...result });
-  return NextResponse.json({ ...result, expired, waitlistExpired });
+  console.log("outbox: pass klart", {
+    expired,
+    waitlistExpired,
+    reviewRequests,
+    ...result,
+  });
+  return NextResponse.json({
+    ...result,
+    expired,
+    waitlistExpired,
+    reviewRequests,
+  });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {

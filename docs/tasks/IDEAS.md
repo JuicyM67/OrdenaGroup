@@ -114,3 +114,4 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Flera ägare och överlåtelse av ägarskap.
 - WP-45: nekadialogens anropare (notification-bell, pending-requests-card, event-popover) ska returnera `error` och bara stänga vid ok, så att `invalid_input` visas i dialogen; egen text för motivfältet (copywriter).
 - WP-24 (säkerhet, kan vänta): trigger på payments så att authenticated bara kan ändra approved→refunded (låser belopp/paid_at, stänger sidovägen förbi "ångra samma dag"); bekräfta att can_manage_all_bookings får läsa betalningsrader utan can_view_reports (D-034).
+- WP-65 (recensioner): notis i klockan vid ny recension; recensioner i företagsexporten (`src/server/privacy/business.ts`); `aggregateRating` (schema.org) på `/[slug]` när sidan blir indexerbar; reservera `resena`/`recension` som slug (`RESERVED_SLUGS`, som `baja`/`v` idag inte heller är).

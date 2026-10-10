@@ -65,6 +65,17 @@ export type CustomerExportData = {
     granted: boolean;
     createdAt: string;
   }>;
+  /** WP-65 (D-045): kundens recensioner, med företagets svar. */
+  reviews: Array<{
+    bookingId: string;
+    rating: number;
+    comment: string | null;
+    displayName: string | null;
+    reply: string | null;
+    hidden: boolean;
+    createdAt: string;
+    updatedAt: string;
+  }>;
   /** "meddelandestatus utan payload" (planen, steg 2): aldrig `payload`. */
   messages: Array<{
     id: string;
@@ -172,6 +183,24 @@ export async function exportCustomer(
       [businessId, customerId],
     );
 
+    const reviewsRes = await q.query<{
+      booking_id: string;
+      rating: number;
+      comment: string | null;
+      display_name: string | null;
+      reply: string | null;
+      hidden: boolean;
+      created_at: string;
+      updated_at: string;
+    }>(
+      `select booking_id, rating, comment, display_name, reply,
+              (hidden_at is not null) as hidden, created_at, updated_at
+         from public.reviews
+        where business_id = $1 and customer_id = $2
+        order by created_at`,
+      [businessId, customerId],
+    );
+
     const messagesRes = await q.query<{
       id: string;
       channel: string;
@@ -234,6 +263,16 @@ export async function exportCustomer(
           granted: e.granted,
           createdAt: e.created_at,
         })),
+        reviews: reviewsRes.rows.map((r) => ({
+          bookingId: r.booking_id,
+          rating: r.rating,
+          comment: r.comment,
+          displayName: r.display_name,
+          reply: r.reply,
+          hidden: r.hidden,
+          createdAt: r.created_at,
+          updatedAt: r.updated_at,
+        })),
         messages: messagesRes.rows.map((m) => ({
           id: m.id,
           channel: m.channel,
@@ -258,6 +297,9 @@ export async function exportCustomer(
  * tömmer deras payload, rensar `manage_token_hash` på kundens bokningar och
  * kopplar loss `consent_events` (behålls utan koppling till kunden, D-033).
  * Väntande förfrågningar (`requested`, WP-45) avbokas utan utskick.
+ * Recensioner (WP-65, D-045): triggern `customers_anonymize_reviews`
+ * nollar namn/text/svar och raderar inbjudningarna när `anonymized_at`
+ * sätts här (och i `private.run_retention`) — betyget blir kvar anonymt.
  * Bokningar och belopp (payments) behålls oförändrade — Caja ska kunna visa
  * historik utan persondata.
  */

@@ -67,6 +67,8 @@ export type AjustesBusiness = {
   winbackOfferDays: number | null;
   /** WP-23: `businesses.waitlist_mode` ("sequential"/"broadcast"). */
   waitlistMode: "sequential" | "broadcast";
+  /** WP-65 (D-045): `businesses.review_requests_enabled`. */
+  reviewRequestsEnabled: boolean;
   /** WP-23: `businesses.waitlist_hold_minutes` (5–240). */
   waitlistHoldMinutes: number;
 };
@@ -214,6 +216,7 @@ type BusinessRow = {
   winback_offer_days: number | null;
   waitlist_mode: string;
   waitlist_hold_minutes: number;
+  review_requests_enabled: boolean;
 };
 
 /** Samma försvarsmönster som `toCancelApproval` (`src/server/bookings/row.ts`)
@@ -256,7 +259,8 @@ async function loadBusinessRow(
             cancel_window_hours, slot_interval_minutes, auto_confirm_bookings,
             cancel_approval, member_discount_pct, member_benefit_text,
             winback_days, winback_message, winback_offer_pct, winback_offer_days,
-            waitlist_mode::text as waitlist_mode, waitlist_hold_minutes
+            waitlist_mode::text as waitlist_mode, waitlist_hold_minutes,
+            review_requests_enabled
        from public.businesses
       where id = $1`,
     [businessId],
@@ -279,6 +283,7 @@ async function loadBusinessRow(
     memberBenefitText: b.member_benefit_text,
     waitlistMode: toWaitlistMode(b.waitlist_mode),
     waitlistHoldMinutes: b.waitlist_hold_minutes,
+    reviewRequestsEnabled: b.review_requests_enabled,
     winbackDays: b.winback_days,
     winbackMessage: b.winback_message,
     winbackOfferPct: b.winback_offer_pct,

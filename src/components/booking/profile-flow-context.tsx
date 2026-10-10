@@ -10,7 +10,8 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 
-export type MobileTab = "servicios" | "personal" | "nosotros" | "info";
+export type MobileTab =
+  "servicios" | "personal" | "nosotros" | "resenas" | "info";
 
 export interface ProfileFlowValue {
   readonly categoryId: string;

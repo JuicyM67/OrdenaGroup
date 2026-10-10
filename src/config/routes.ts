@@ -118,6 +118,7 @@ export type AppRouteId =
   | "appClienteDetail"
   | "appClientesUtskick"
   | "appClientesUtskickNytt"
+  | "appClientesResenas"
   | "appCaja"
   | "appCajaInformes"
   | "appFlash"
@@ -135,7 +136,8 @@ export type AppRouteId =
   | "appInvitacion"
   | "appBienvenida"
   | "appOnboarding"
-  | "baja";
+  | "baja"
+  | "resena";
 
 /** Ajustes-flikarna (`AjustesTabKey`, `ajustes-tabs.tsx`) och deras `AppRouteId` — en
  * nyckel per nyckel, så `ajustesTabHref()` kan återanvända den här tabellen i stället för
@@ -159,6 +161,9 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appAgenda: "/app/agenda",
   appHoy: "/app/hoy",
   appClientes: "/app/clientes",
+  // WP-65: före `appClienteDetail` — rewrites/redirects byggs i nyckelordning,
+  // och `/app/kunder/:id` skulle annars fånga `/app/kunder/omdomen` först.
+  appClientesResenas: "/app/clientes/resenas",
   appClienteDetail: "/app/clientes/[id]",
   appClientesUtskick: "/app/clientes/utskick",
   appClientesUtskickNytt: "/app/clientes/utskick/nytt",
@@ -180,6 +185,7 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appBienvenida: "/app/bienvenida/[token]",
   appOnboarding: "/app/onboarding",
   baja: "/baja/[token]",
+  resena: "/resena/[token]",
 };
 
 /** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
@@ -191,6 +197,7 @@ const SE_APP_ROUTES: Record<AppRouteId, string> = {
   appClienteDetail: "/app/kunder/[id]",
   appClientesUtskick: "/app/kunder/utskick",
   appClientesUtskickNytt: "/app/kunder/utskick/nytt",
+  appClientesResenas: "/app/kunder/omdomen",
   appCaja: "/app/kassa",
   appCajaInformes: "/app/kassa/rapporter",
   appFlash: "/app/blixttider",
@@ -209,6 +216,7 @@ const SE_APP_ROUTES: Record<AppRouteId, string> = {
   appBienvenida: "/app/valkommen/[token]",
   appOnboarding: "/app/kom-igang",
   baja: "/avregistrera/[token]",
+  resena: "/recension/[token]",
 };
 
 const APP_ROUTES_BY_MARKET: Record<Market, Record<AppRouteId, string>> = {

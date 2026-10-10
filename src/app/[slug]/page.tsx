@@ -20,6 +20,11 @@ import {
   loadActiveFlashSlotsIn,
 } from "@/server/flash/public";
 import { loadReservaPageData } from "@/server/bookings/page-data";
+import {
+  loadPublicReviewsIn,
+  PUBLIC_REVIEWS_MAX,
+  PUBLIC_REVIEWS_PAGE,
+} from "@/server/reviews/public";
 import { withServiceTx } from "@/server/db/tx";
 import { systemClock } from "@/server/scheduling/clock";
 
@@ -72,8 +77,15 @@ export default async function ReservaPage({
   // WP-30: `?flash=<id>` förväljer flash-tiden (tjänst, profesional, tid).
   // Okänd/avbruten/bokad tid = sidan som vanligt.
   const flashId = isFlashIdShape(sp.flash) ? sp.flash : undefined;
+  // WP-65 (D-045): `?resenas=N` — "Ver más reseñas" (server-paginering,
+  // ingen klient-JS). Okänt värde = första sidan.
+  const rawResenas = typeof sp.resenas === "string" ? Number(sp.resenas) : NaN;
+  const reviewsExpanded = Number.isInteger(rawResenas) && rawResenas > 0;
+  const reviewsLimit = reviewsExpanded
+    ? Math.min(rawResenas, PUBLIC_REVIEWS_MAX)
+    : PUBLIC_REVIEWS_PAGE;
   const now = systemClock();
-  const [data, offer, flash] = await withServiceTx(async (q) => {
+  const [data, offer, flash, reviews] = await withServiceTx(async (q) => {
     const d = await loadReservaPageData(q, {
       businessId: business.id,
       slug,
@@ -91,7 +103,8 @@ export default async function ReservaPage({
           (x) => x.id === flashId,
         )
       : undefined;
-    return [d, o, f] as const;
+    const r = await loadPublicReviewsIn(q, business.id, reviewsLimit);
+    return [d, o, f, r] as const;
   });
   // Bara en skyddsnät mot en race (företaget togs bort mellan de två
   // frågorna ovan) — `resolveBusinessBySlug` hittade det just innan.
@@ -160,8 +173,18 @@ export default async function ReservaPage({
   // WP-53 (D-040): profilvyn renderas här, på servern — `BookingScreen` tar
   // bara emot det färdiga trädet (`profileContent`), ingen av
   // `ProfileBrowse`s markup/text/formatering hamnar i klientbunten.
+  const reviewsMoreHref =
+    reviews?.hasMore && reviews.items.length < PUBLIC_REVIEWS_MAX
+      ? `?resenas=${reviews.items.length + PUBLIC_REVIEWS_PAGE * 4}#resenas`
+      : undefined;
   const profileContent = p ? (
-    <ProfileBrowse data={data} profile={p} social={social} />
+    <ProfileBrowse
+      data={data}
+      profile={p}
+      social={social}
+      reviews={reviews}
+      reviewsMoreHref={reviewsMoreHref}
+    />
   ) : undefined;
 
   return (
@@ -172,6 +195,7 @@ export default async function ReservaPage({
       initialSelection={initialSelection}
       submitBooking={submitBooking}
       joinWaitlist={submitWaitlist}
+      initialMobileTab={reviews && reviewsExpanded ? "resenas" : undefined}
     />
   );
 }

@@ -102,6 +102,8 @@ export interface BookingScreenProps {
   };
   /** Bara till design lab (`?estado=sin-conexion`): tvingar offline-raden. */
   forceOffline?: boolean;
+  /** WP-65: `?resenas=N` (Ver más reseñas) öppnar mobilens Reseñas-flik. */
+  initialMobileTab?: MobileTab;
 }
 
 export function BookingScreen({
@@ -115,6 +117,7 @@ export function BookingScreen({
   forceOffline,
   profileContent,
   offerNotice,
+  initialMobileTab,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
@@ -169,7 +172,9 @@ export function BookingScreen({
   const [viewMode, setViewMode] = useState<"profile" | "picker">(
     profileContent && !initialSelection ? "profile" : "picker",
   );
-  const [mobileTab, setMobileTab] = useState<MobileTab>("servicios");
+  const [mobileTab, setMobileTab] = useState<MobileTab>(
+    initialMobileTab ?? "servicios",
+  );
   function bookService(serviceId: string) {
     selectService(serviceId);
     setViewMode("picker");

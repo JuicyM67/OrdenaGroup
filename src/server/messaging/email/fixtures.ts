@@ -190,5 +190,11 @@ export function emailFixtures(market: Market): {
       reservarUrl: "https://app.example.com/barberia-norte?o=abc123",
       bajaUrl: "https://app.example.com/baja/abc123",
     },
+    solicitudResena: {
+      cliente: b.cliente,
+      negocio: b.negocio,
+      servicio: b.servicio,
+      resenaUrl: "https://app.example.com/resena/abc123",
+    },
   };
 }
