@@ -4013,3 +4013,109 @@ export const resenas = {
       "Enviamos un mensaje 2 horas después de cada cita. Solo opina quien tuvo una cita contigo.",
   },
 } as const satisfies Trad;
+
+// ---------------------------------------------------------------------------
+// importar: WP-66 (D-046) — "Trae tus datos desde tu sistema anterior"
+// (onboarding + Ajustes → Negocio). Tú, corto y cálido.
+// ---------------------------------------------------------------------------
+export const importar = {
+  titulo: "¿Ya tienes una página de reservas?",
+  intro:
+    "Pega el link y traemos tus servicios, precios, horario y equipo. Tú revisas todo antes de guardar.",
+  tituloAjustes: "Trae tus datos desde otro sistema",
+  introAjustes:
+    "Pega el link de tu página de reservas anterior y traemos servicios, horario y equipo. Revisas todo antes de guardar.",
+  ctaAbrir: "Traer mis datos",
+  linkLabel: "Link de tu página de reservas",
+  linkPlaceholder: "https://agendapro.com/…",
+  plataformas: (p: { lista: string }): string => `Funciona con ${p.lista}.`,
+  ctaLeer: "Traer mis datos",
+  ctaPegarTexto: "Prefiero pegar el texto",
+  ctaUsarLink: "Mejor uso el link",
+  textoLabel: "Pega aquí la info de tu página",
+  textoAyuda:
+    "Abre tu página, copia todo el texto (servicios, precios, horario) y pégalo acá.",
+  progreso: {
+    leyendo: "Leyendo tu página…",
+    servicios: "Buscando tus servicios…",
+    precios: "Ordenando precios y horario…",
+    casi: "Casi listo…",
+  },
+  aviso: "Puede tardar hasta un minuto. Quédate tranquilo en esta pantalla.",
+  ctaCancelar: "Cancelar",
+  revisarTitulo: "Revisa lo que encontramos",
+  revisarIntro:
+    "Desmarca lo que no quieras traer. Puedes cambiar precios y duraciones.",
+  desde: (p: { plataforma: string }): string => `Desde ${p.plataforma}`,
+  grupos: {
+    perfil: "Perfil",
+    horario: "Horario",
+    servicios: "Categorías y servicios",
+    equipo: "Equipo",
+  },
+  campos: {
+    nombre: "Nombre",
+    sobre: "Sobre nosotros",
+    direccion: "Dirección",
+    comuna: "Comuna",
+    telefono: "Teléfono",
+    email: "Correo",
+    web: "Sitio web",
+    instagram: "Instagram",
+    tiktok: "TikTok",
+    facebook: "Facebook",
+    rubro: "Rubro",
+    duracion: "Duración (min)",
+    precio: "Precio",
+  },
+  cerrado: "Cerrado",
+  todoElHorario: "Usar este horario",
+  precioDesde: "Precio “desde”: revisa el monto",
+  yaExiste: "Ya existe, no se toca",
+  faltaDuracion: "Falta la duración",
+  faltaPrecio: "Falta el precio",
+  categoria: (p: { nombre: string }): string => `Categoría: ${p.nombre}`,
+  soloInfo: "Solo informativo, no se guarda.",
+  imagenes: "El logo y la portada no se importan: súbelos tú en Perfil.",
+  verLogo: "Ver logo",
+  verPortada: "Ver portada",
+  notasTitulo: "Lo que no encontramos",
+  confianzaBaja:
+    "Tu página tenía poca información: revisa todo con calma antes de guardar.",
+  ctaImportar: (p: { n: number }): string =>
+    `Importar lo seleccionado (${p.n})`,
+  ctaUsar: "Usar estos datos",
+  ctaDescartar: "Descartar",
+  importando: "Importando…",
+  listo: (p: { servicios: number; equipo: number }): string =>
+    `Listo: importamos ${p.servicios} servicios y ${p.equipo} personas.`,
+  omitidos: (p: { lista: string }): string =>
+    `Ya existían y no los tocamos: ${p.lista}.`,
+  listoOnboarding:
+    "Listo, llenamos los pasos con tus datos. Revísalos antes de seguir.",
+  ningunoSeleccionado: "Marca al menos una cosa para importar.",
+  errorEn: (p: { item: string; motivo: string }): string =>
+    `“${p.item}”: ${p.motivo}`,
+  errores: {
+    url_invalid: "Ese link no se ve bien. Cópialo directo desde el navegador.",
+    platform_unsupported:
+      "Todavía no leemos esa plataforma. Pega el texto de tu página y lo hacemos igual.",
+    text_too_short:
+      "Pega un poco más de texto: con tus servicios y precios basta.",
+    text_too_long:
+      "Es demasiado texto. Pega solo servicios, precios y horario.",
+    daily_limit: "Ya hiciste 3 importaciones hoy. Inténtalo de nuevo mañana.",
+    paused:
+      "La importación está en pausa por ahora. Puedes agregar tus servicios a mano.",
+    unavailable: "La importación no está disponible.",
+    fetch_failed:
+      "No pudimos abrir tu página. Pega el texto y lo hacemos igual.",
+    empty:
+      "No encontramos datos del negocio ahí. Revisa el link o pega el texto.",
+    refused:
+      "No pudimos leer esa página. Pega el texto y lo intentamos de nuevo.",
+    busy: "Hay mucha demanda ahora. Inténtalo en un par de minutos.",
+    failed: "Algo falló al leer tu página. Inténtalo de nuevo.",
+    cancelled: "Cancelaste la importación.",
+  },
+} as const satisfies Trad;

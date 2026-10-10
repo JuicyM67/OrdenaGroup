@@ -16,6 +16,10 @@ import {
   moneyInputSchema,
   phoneInputSchema,
 } from "@/lib/format/schemas";
+import {
+  serviceDescriptionSchema,
+  staffTitleSchema,
+} from "@/lib/validation/profile";
 
 // Samma regex som `businesses_slug_format` (supabase/migrations/…businesses_memberships.sql):
 // 3–40 tecken, gemener/siffror/bindestreck, börjar och slutar med gemen/siffra.
@@ -126,10 +130,23 @@ export const staffNameSchema = z
   .min(1, { error: "staff.name_empty" })
   .max(120, { error: "staff.name_too_long" });
 
+// WP-66: beskrivning och kategori följer med när onboarding fylls från en
+// import (frivilliga — det vanliga formuläret skickar dem inte).
+const onboardingServiceInputSchema = serviceInputSchema.extend({
+  description: serviceDescriptionSchema.optional(),
+  category: z
+    .string({ error: "services.category_invalid" })
+    .trim()
+    .max(60, { error: "services.category_invalid" })
+    .optional(),
+});
+
 const staffInputSchema = z.object({
   name: staffNameSchema,
   // Index in i `services` (samma array som skickas i samma anrop).
   serviceIndexes: z.array(z.number().int().nonnegative()).max(200),
+  // WP-66: titel från importen (frivillig).
+  title: staffTitleSchema.optional(),
 });
 
 export const hoursInputSchema = z
@@ -184,7 +201,7 @@ export const acceptedTermsSchema = z.literal(true, {
 export const onboardingInputSchema = z
   .object({
     business: businessInputSchema,
-    services: z.array(serviceInputSchema).max(50),
+    services: z.array(onboardingServiceInputSchema).max(50),
     staff: z.array(staffInputSchema).max(30),
     hours: z.array(hoursInputSchema).max(7),
     // Sist: övriga fel (steg 1–3) visas före villkorsrutan (sista steget).

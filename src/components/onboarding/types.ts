@@ -29,11 +29,25 @@ export type WizardService = {
   name: string;
   durationMin: string;
   priceClp: string;
+  /** WP-66: bara när tjänsten kom från en import. */
+  description?: string;
+  category?: string;
 };
 
 export type WizardStaff = {
   name: string;
   serviceIndexes: number[];
+  /** WP-66: bara när personen kom från en import. */
+  title?: string;
+};
+
+/** WP-66: profiltexter från en import, förifyllda i steget "Tu página". */
+export type WizardPageDefaults = {
+  about: string;
+  address: string;
+  instagram: string;
+  tiktok: string;
+  facebook: string;
 };
 
 export type WizardHours = {

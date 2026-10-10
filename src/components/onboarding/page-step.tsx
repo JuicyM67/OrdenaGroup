@@ -22,7 +22,7 @@ import { TextField } from "@/components/ui/text-field";
 import { negocio, onboarding, perfil, redesSociales } from "@/i18n";
 
 import { onboardingErrorText } from "./error-text";
-import type { PageStepActions } from "./types";
+import type { PageStepActions, WizardPageDefaults } from "./types";
 
 export type PageStepProps = {
   /** Del paso "business" (ya guardado): se reenvía tal cual para no
@@ -30,6 +30,8 @@ export type PageStepProps = {
    * cuatro columnas (about/instagram/address/phone) juntas. */
   phone: string;
   actions: PageStepActions;
+  /** WP-66: förifyllt från en import. */
+  initial?: WizardPageDefaults;
   onContinue: () => void;
   onSkip: () => void;
 };
@@ -37,15 +39,16 @@ export type PageStepProps = {
 export function PageStep({
   phone,
   actions,
+  initial,
   onContinue,
   onSkip,
 }: PageStepProps) {
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [address, setAddress] = useState("");
-  const [instagram, setInstagram] = useState("");
-  const [tiktok, setTiktok] = useState("");
-  const [facebook, setFacebook] = useState("");
+  const [address, setAddress] = useState(initial?.address ?? "");
+  const [instagram, setInstagram] = useState(initial?.instagram ?? "");
+  const [tiktok, setTiktok] = useState(initial?.tiktok ?? "");
+  const [facebook, setFacebook] = useState(initial?.facebook ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -55,7 +58,7 @@ export function PageStep({
     setError(undefined);
     try {
       const result = await actions.updateProfile({
-        about: "",
+        about: initial?.about ?? "",
         instagram,
         tiktok,
         facebook,

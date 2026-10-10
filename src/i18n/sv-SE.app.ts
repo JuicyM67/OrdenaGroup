@@ -3029,6 +3029,109 @@ export const resenas: Widen<typeof Es.resenas> = {
   },
 };
 
+export const importar: Widen<typeof Es.importar> = {
+  titulo: "Har du redan en bokningssida?",
+  intro:
+    "Klistra in länken så flyttar vi över tjänster, priser, öppettider och personal. Du granskar allt innan något sparas.",
+  tituloAjustes: "Flytta hit från ditt nuvarande bokningssystem",
+  introAjustes:
+    "Klistra in länken till din gamla bokningssida så hämtar vi tjänster, öppettider och personal. Du granskar allt innan något sparas.",
+  ctaAbrir: "Flytta över mina uppgifter",
+  linkLabel: "Länk till din bokningssida",
+  linkPlaceholder: "https://www.bokadirekt.se/places/…",
+  plataformas: (p: { lista: string }): string => `Fungerar med ${p.lista}.`,
+  ctaLeer: "Hämta mina uppgifter",
+  ctaPegarTexto: "Jag klistrar hellre in texten",
+  ctaUsarLink: "Jag använder länken i stället",
+  textoLabel: "Klistra in texten från din sida här",
+  textoAyuda:
+    "Öppna din sida, kopiera all text (tjänster, priser, öppettider) och klistra in den här.",
+  progreso: {
+    leyendo: "Läser din sida…",
+    servicios: "Hittar dina tjänster…",
+    precios: "Sorterar priser och öppettider…",
+    casi: "Snart klart…",
+  },
+  aviso: "Det kan ta upp till en minut. Stanna gärna kvar här.",
+  ctaCancelar: "Avbryt",
+  revisarTitulo: "Granska det vi hittade",
+  revisarIntro:
+    "Bocka ur det du inte vill ta med. Du kan ändra priser och längder.",
+  desde: (p: { plataforma: string }): string => `Från ${p.plataforma}`,
+  grupos: {
+    perfil: "Profil",
+    horario: "Öppettider",
+    servicios: "Kategorier och tjänster",
+    equipo: "Personal",
+  },
+  campos: {
+    nombre: "Namn",
+    sobre: "Om oss",
+    direccion: "Adress",
+    comuna: "Område",
+    telefono: "Telefon",
+    email: "E-post",
+    web: "Webbplats",
+    instagram: "Instagram",
+    tiktok: "TikTok",
+    facebook: "Facebook",
+    rubro: "Bransch",
+    duracion: "Längd (min)",
+    precio: "Pris",
+  },
+  cerrado: "Stängt",
+  todoElHorario: "Använd de här öppettiderna",
+  precioDesde: "”Från”-pris: kontrollera beloppet",
+  yaExiste: "Finns redan, rörs inte",
+  faltaDuracion: "Längd saknas",
+  faltaPrecio: "Pris saknas",
+  categoria: (p: { nombre: string }): string => `Kategori: ${p.nombre}`,
+  soloInfo: "Bara för info, sparas inte.",
+  imagenes:
+    "Logga och omslag importeras inte: ladda upp dem själv under Profil.",
+  verLogo: "Visa logga",
+  verPortada: "Visa omslag",
+  notasTitulo: "Det här hittade vi inte",
+  confianzaBaja:
+    "Din sida hade lite information: granska allt i lugn och ro innan du sparar.",
+  ctaImportar: (p: { n: number }): string => `Importera valda (${p.n})`,
+  ctaUsar: "Använd de här uppgifterna",
+  ctaDescartar: "Släng",
+  importando: "Importerar…",
+  listo: (p: { servicios: number; equipo: number }): string =>
+    `Klart: vi importerade ${p.servicios} tjänster och ${p.equipo} personer.`,
+  omitidos: (p: { lista: string }): string =>
+    `Fanns redan och rördes inte: ${p.lista}.`,
+  listoOnboarding:
+    "Klart, vi har fyllt i stegen med dina uppgifter. Kolla igenom dem innan du går vidare.",
+  ningunoSeleccionado: "Bocka i minst en sak att importera.",
+  errorEn: (p: { item: string; motivo: string }): string =>
+    `”${p.item}”: ${p.motivo}`,
+  errores: {
+    url_invalid:
+      "Länken ser inte rätt ut. Kopiera den direkt från webbläsaren.",
+    platform_unsupported:
+      "Vi kan inte läsa den plattformen än. Klistra in texten från din sida så fixar vi det ändå.",
+    text_too_short:
+      "Klistra in lite mer text: dina tjänster och priser räcker.",
+    text_too_long:
+      "Det är för mycket text. Klistra bara in tjänster, priser och öppettider.",
+    daily_limit: "Du har redan gjort 3 importer i dag. Försök igen i morgon.",
+    paused:
+      "Importen är pausad just nu. Du kan lägga in dina tjänster för hand.",
+    unavailable: "Importen är inte tillgänglig.",
+    fetch_failed:
+      "Vi kunde inte öppna din sida. Klistra in texten så fixar vi det ändå.",
+    empty:
+      "Vi hittade inga företagsuppgifter där. Kolla länken eller klistra in texten.",
+    refused:
+      "Vi kunde inte läsa den sidan. Klistra in texten så försöker vi igen.",
+    busy: "Det är hög belastning just nu. Försök igen om ett par minuter.",
+    failed: "Något gick fel när vi läste din sida. Försök igen.",
+    cancelled: "Du avbröt importen.",
+  },
+};
+
 const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   resenas,
   comun,
@@ -3070,5 +3173,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   flash,
   vOferta,
   uxTextos,
+  importar,
 };
 void _check;

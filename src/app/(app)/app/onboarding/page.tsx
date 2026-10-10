@@ -13,6 +13,9 @@ import {
   isOnboardingDraft,
 } from "@/server/onboarding/owner-business";
 import { onboarding } from "@/i18n";
+import { market } from "@/config/brand";
+import { platformNamesFor } from "@/server/import/platforms";
+import { isImportEnabled, isImportPaused } from "@/server/import/runs";
 
 import {
   confirmPageImageUploadAction,
@@ -42,6 +45,12 @@ export default async function OnboardingPage() {
   const business = await getOwnerBusiness(user.id);
   if (business && !isOnboardingDraft(business)) redirect(appHref("appInicio"));
 
+  // WP-66 (D-035): bara när importen finns och inte är pausad (månadstaket).
+  const importer =
+    isImportEnabled() && !(await isImportPaused())
+      ? { platformNames: platformNamesFor(market) }
+      : undefined;
+
   return (
     <main className="min-h-dvh bg-canvas px-4 py-8">
       <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
@@ -54,6 +63,7 @@ export default async function OnboardingPage() {
             deleteImage: deletePageImageAction,
             updateProfile: updatePageProfileAction,
           }}
+          importer={importer}
         />
       </div>
     </main>
