@@ -1130,6 +1130,7 @@ export type Database = {
           next_attempt_at: string;
           payload: NonNullable<Json>;
           provider_message_id: string | null;
+          quota_reserved_at: string | null;
           recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at: string | null;
           status: Database["public"]["Enums"]["message_outbox_status"];
@@ -1149,6 +1150,7 @@ export type Database = {
           next_attempt_at?: string;
           payload?: NonNullable<Json>;
           provider_message_id?: string | null;
+          quota_reserved_at?: string | null;
           recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at?: string | null;
           status?: Database["public"]["Enums"]["message_outbox_status"];
@@ -1168,6 +1170,7 @@ export type Database = {
           next_attempt_at?: string;
           payload?: NonNullable<Json>;
           provider_message_id?: string | null;
+          quota_reserved_at?: string | null;
           recipient_kind?: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at?: string | null;
           status?: Database["public"]["Enums"]["message_outbox_status"];

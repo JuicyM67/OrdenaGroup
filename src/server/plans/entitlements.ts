@@ -104,17 +104,6 @@ export async function smsSentThisMonthIn(
   return r.rows[0]?.n ?? 0;
 }
 
-/** Workern (service role): får företaget skicka ett sms till? */
-export async function smsAllowedIn(
-  q: Queryable,
-  businessId: string,
-): Promise<boolean> {
-  const max = planLimit(await loadPlanIn(q, businessId), "sms");
-  if (max === null) return true;
-  if (max <= 0) return false;
-  return (await smsSentThisMonthIn(q, businessId)) < max;
-}
-
 export type PlanUsage = PlanInfo & {
   staff: { used: number; limit: number | null };
   services: { used: number; limit: number | null };
@@ -190,4 +179,40 @@ export function businessCan(
 /** Sidor (serverkomponenter): företagets plan i en egen transaktion. */
 export function loadBusinessPlan(businessId: string): Promise<PlanInfo> {
   return withServiceTx((q) => loadPlanIn(q, businessId));
+}
+
+/**
+ * Outbox-workern (service role), WP-73 säkerhetsgranskning: reserverar en
+ * plats i månadens sms-kvot för raden `outboxId` ATOMISKT. Advisory lock per
+ * företag serialiserar parallella pass; räknar skickade sms + rader i
+ * `sending` som redan reserverat (`quota_reserved_at`), utom raden själv.
+ * `false` = kvoten är slut (eller planen saknar sms).
+ */
+export async function reserveSmsQuotaIn(
+  q: Queryable,
+  businessId: string,
+  outboxId: string,
+): Promise<boolean> {
+  const max = planLimit(await loadPlanIn(q, businessId), "sms");
+  if (max === null) return true;
+  if (max <= 0) return false;
+  await q.query(`select pg_advisory_xact_lock(hashtext('sms:' || $1::text))`, [
+    businessId,
+  ]);
+  const r = await q.query<{ n: number }>(
+    `select count(*)::int as n from public.message_outbox
+      where business_id = $1 and channel = 'sms' and id <> $2
+        and (status = 'sent'
+             or (status = 'sending' and quota_reserved_at is not null))
+        and coalesce(sent_at, quota_reserved_at)
+            >= (date_trunc('month', now() at time zone $3) at time zone $3)`,
+    [businessId, outboxId, APP_TZ],
+  );
+  if ((r.rows[0]?.n ?? 0) >= max) return false;
+  await q.query(
+    `update public.message_outbox set quota_reserved_at = now()
+      where id = $1 and business_id = $2`,
+    [outboxId, businessId],
+  );
+  return true;
 }

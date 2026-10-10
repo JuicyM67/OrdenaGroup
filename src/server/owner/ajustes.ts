@@ -137,6 +137,10 @@ export function mapDbError(e: unknown): string {
   if (authz) return authz;
   const code = pgErrorCode(e);
   const constraint = pgConstraint(e);
+  // WP-73 (D-048): databasens spärr (trigger) om förkontrollen hann passeras.
+  if (code === "23514" && constraint === "plan_limit_services") {
+    return "plan_limit_services";
+  }
   if (code === "42501") return "unauthorized";
   if (code === "23505" && constraint === "businesses_slug_key") {
     return "business.slug_taken";

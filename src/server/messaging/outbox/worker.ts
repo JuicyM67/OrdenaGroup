@@ -21,7 +21,7 @@ import { pgErrorCode } from "@/server/db/errors";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail, type EmailTemplateMap } from "@/server/messaging/email";
 import { sendSms } from "@/server/messaging/sms";
-import { smsAllowedIn } from "@/server/plans/entitlements";
+import { reserveSmsQuotaIn } from "@/server/plans/entitlements";
 
 import { isOwnerMobile } from "./enqueue";
 import { OutboxSendError } from "./errors";
@@ -1480,10 +1480,13 @@ async function processCampaignRow(
 /** WP-73 (D-048): sms-kvoten per plan och kalendermånad. Över kvoten (eller
  * en plan utan sms) avbryts raden med `error = 'sms_quota'` — kunden får
  * ändå e-postraden som köades parallellt (om kunden har e-post), så e-post
- * blir reserven. Räknas på skickade sms i `message_outbox`. */
+ * blir reserven. Raden reserverar sin plats under ett advisory lock per
+ * företag (`reserveSmsQuotaIn`), så parallella pass inte överskrider kvoten. */
 async function smsBlockedByPlan(row: ClaimedRow): Promise<boolean> {
   if (row.channel !== "sms") return false;
-  return !(await withServiceTx((q) => smsAllowedIn(q, row.businessId)));
+  return !(await withServiceTx((q) =>
+    reserveSmsQuotaIn(q, row.businessId, row.id),
+  ));
 }
 
 async function finalizeQuotaCancelled(row: ClaimedRow): Promise<void> {
