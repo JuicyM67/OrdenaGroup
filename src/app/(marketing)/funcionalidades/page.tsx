@@ -8,6 +8,7 @@
 // sektion saknas helt (t.ex. `abono` försvinner i SE när stämpelkortet tas bort): koden
 // itererar bara över det `copy.SITIO_FUNCIONALIDADES` faktiskt innehåller, ingen fast
 // referens till något specifikt id.
+import { anchor } from "@/config/url-params";
 import type { Metadata } from "next";
 import {
   BarChart3,
@@ -108,7 +109,7 @@ export default function FuncionalidadesPage() {
             return (
               <Card
                 key={seccion.id}
-                id={seccion.id}
+                id={anchor(seccion.id)}
                 tone={style.tone}
                 radius="tile"
                 padding="xl"

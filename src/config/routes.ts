@@ -7,6 +7,7 @@
 // aldrig hårdkodade `/precios`-strängar — annars pekar SE-installationen på fel sida.
 // `/login` är undantaget (auth-route, rörs inte här).
 import { market, type Market } from "./brand";
+import { anchor } from "./url-params";
 
 export type RouteId =
   | "inicio"
@@ -76,7 +77,7 @@ const SE_LEGAL_SLUGS: Record<LegalDocId, string> = {
  * på SE, `/funcionalidades#agenda` på CL). */
 export function href(id: RouteId, hash?: string): string {
   const path = ROUTES_BY_MARKET[market][id];
-  return hash ? `${path}#${hash}` : path;
+  return hash ? `${path}#${anchor(hash)}` : path;
 }
 
 /** Länk till en policysida (`/legal/[doc]`), i den här installationens marknad. */

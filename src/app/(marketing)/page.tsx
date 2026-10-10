@@ -14,6 +14,7 @@
 // Reservar en un minuto (flujo) → Horas flash (fotoband) → Marquee (rubros) → Precios →
 // Preguntas → CTA. Tar bort: usp-showcase.tsx, bento-grid.tsx och den gamla tvåradiga
 // rubros-marquee (ersatta).
+import { anchor } from "@/config/url-params";
 import type { Metadata } from "next";
 
 import { CtaBand } from "@/components/marketing/cta-band";
@@ -25,6 +26,7 @@ import {
 } from "@/components/marketing/flujo-mockup";
 import { HeroSection } from "@/components/marketing/hero-bento";
 import { IntroBand } from "@/components/marketing/intro-band";
+import { MigracionSection } from "@/components/marketing/migracion-section";
 import { PartnerStampello } from "@/components/marketing/partner-stampello";
 import { PlanCards } from "@/components/marketing/plan-cards";
 import { PorQueBento } from "@/components/marketing/por-que-bento";
@@ -66,7 +68,7 @@ export default function LandingPage() {
             en un panel lavender a la derecha (WP-hemsida, mappad från sida-v2, sektion
             "Reservar toma menos de un minuto" + sida-v1:s lavender-panel). */}
         <section
-          id="como-funciona"
+          id={anchor("como-funciona")}
           className="mx-auto max-w-6xl scroll-mt-24 px-4 py-10 sm:px-8 sm:py-14"
         >
           <div className="flex flex-col items-center gap-10 lg:flex-row">
@@ -92,7 +94,10 @@ export default function LandingPage() {
 
         {/* Para quién: banner con todos los rubros, en bucle (id="para-quien": enlazado
             desde el megamenú y el footer de site-header.tsx). */}
-        <section id="para-quien" className="scroll-mt-24 py-10 sm:py-14">
+        <section
+          id={anchor("para-quien")}
+          className="scroll-mt-24 py-10 sm:py-14"
+        >
           <SectionHeading
             title={copy.sitio.inicio.marquee.titulo}
             className="mx-auto max-w-6xl items-center px-4 text-center sm:px-8"
@@ -102,9 +107,12 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Smärtfri flytt: AI-import från annat bokningssystem (WP-70/WP-66). */}
+        <MigracionSection />
+
         {/* Precios */}
         <section
-          id="precios"
+          id={anchor("precios")}
           className="mx-auto max-w-6xl scroll-mt-24 px-4 py-10 sm:px-8 sm:py-14"
         >
           <h2 className="text-center font-display text-32 leading-hero font-semibold tracking-display text-ink sm:text-40">
@@ -136,7 +144,7 @@ export default function LandingPage() {
 
         {/* Preguntas */}
         <section
-          id="preguntas"
+          id={anchor("preguntas")}
           className="mx-auto max-w-6xl scroll-mt-24 px-4 py-10 sm:px-8 sm:py-14"
         >
           <SectionHeading title={copy.landing.preguntas.titulo} />

@@ -10,6 +10,7 @@
 // om de ännu inte finns i `es-CL.marketing.ts` när det här körs (copywriter-es-cl skriver
 // samtidigt) misslyckas typecheck på just den delen — se PR-rapporten, inget påhittat i
 // stället.
+import { anchor } from "@/config/url-params";
 import type { Metadata } from "next";
 import { Sparkles } from "lucide-react";
 
@@ -108,7 +109,7 @@ export default function PreciosPage() {
         </section>
 
         <section
-          id="comparar"
+          id={anchor("comparar")}
           className="mx-auto max-w-6xl scroll-mt-24 px-4 pb-14 sm:px-8"
         >
           <SectionHeading

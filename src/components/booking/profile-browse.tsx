@@ -10,6 +10,7 @@
 // "Boka"-knapparna är klientöar (`profile-interactive.tsx`) som läser
 // `ProfileFlowContext` för att nå tillbaka till `BookingScreen`s tillstånd
 // (kategoriflik, mobilflik, vilken tjänst som startar bokningsflödet).
+import { anchor } from "@/config/url-params";
 import type { ReactNode } from "react";
 
 import {
@@ -117,7 +118,10 @@ export function ProfileBrowse({
               social={social?.chips}
               rating={
                 reviews ? (
-                  <RatingChip reviews={reviews} href="#resenas" />
+                  <RatingChip
+                    reviews={reviews}
+                    href={`#${anchor("resenas")}`}
+                  />
                 ) : undefined
               }
             />
@@ -205,7 +209,7 @@ export function ProfileBrowse({
             ) : null,
             resenas: reviews ? (
               <ReviewsSection
-                id="resenas-movil"
+                id={anchor("resenas-movil")}
                 reviews={reviews}
                 negocio={business.name}
                 moreHref={reviewsMoreHref}

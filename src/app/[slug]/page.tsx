@@ -1,5 +1,6 @@
 // Publik bokningssida (F5). Riktig data sedan WP-20 (D-020s grind för
 // `/[slug]` togs bort i samma PR, se docs/decisions/DECISIONS.md).
+import { readParam, queryString, anchor } from "@/config/url-params";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -55,9 +56,9 @@ export async function generateMetadata({
 }
 
 function pagoNoticeText(
-  raw: string | string[] | undefined,
+  sp: Record<string, string | string[] | undefined>,
 ): string | undefined {
-  switch (raw) {
+  switch (readParam(sp, "pago")) {
     case "ok":
       return reserva.pago.okAviso;
     case "cancelado":
@@ -94,7 +95,8 @@ export default async function ReservaPage({
   const flashId = isFlashIdShape(sp.flash) ? sp.flash : undefined;
   // WP-65 (D-045): `?resenas=N` — "Ver más reseñas" (server-paginering,
   // ingen klient-JS). Okänt värde = första sidan.
-  const rawResenas = typeof sp.resenas === "string" ? Number(sp.resenas) : NaN;
+  const rawResenasStr = readParam(sp, "resenas");
+  const rawResenas = rawResenasStr !== undefined ? Number(rawResenasStr) : NaN;
   const reviewsExpanded = Number.isInteger(rawResenas) && rawResenas > 0;
   const reviewsLimit = reviewsExpanded
     ? Math.min(rawResenas, PUBLIC_REVIEWS_MAX)
@@ -138,7 +140,7 @@ export default async function ReservaPage({
   ) : undefined;
 
   // WP-64 (D-044): tillbaka från Stripe Checkout (`?pago=ok|cancelado|liberada`).
-  const pagoText = pagoNoticeText(sp.pago);
+  const pagoText = pagoNoticeText(sp);
   const pagoNotice = pagoText ? (
     <p
       role="status"
@@ -201,7 +203,7 @@ export default async function ReservaPage({
   // `ProfileBrowse`s markup/text/formatering hamnar i klientbunten.
   const reviewsMoreHref =
     reviews?.hasMore && reviews.items.length < PUBLIC_REVIEWS_MAX
-      ? `?resenas=${reviews.items.length + PUBLIC_REVIEWS_PAGE * 4}#resenas`
+      ? `${queryString("resenas", reviews.items.length + PUBLIC_REVIEWS_PAGE * 4)}#${anchor("resenas")}`
       : undefined;
   const profileContent = p ? (
     <ProfileBrowse
