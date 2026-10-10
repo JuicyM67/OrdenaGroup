@@ -462,7 +462,7 @@ export function SmsCreditsSection({
       {data.returnState?.kind === "cancelled" ? (
         <p
           role="status"
-          className="rounded-tile bg-canvas px-4 py-3.5 text-14 text-ink lg:bg-surface"
+          className="rounded-tile bg-surface px-4 py-3.5 text-14 text-ink"
         >
           {t.cancelado}
         </p>
