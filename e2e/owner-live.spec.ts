@@ -19,6 +19,7 @@ import pg from "pg";
 
 import { agenda, comun, inicio, reserva, solicitudes } from "../src/i18n";
 import { waitForConfirmLink } from "./helpers/mailpit";
+import { pickFirstFreeSlot } from "./helpers/pick-slot";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 test.skip(
@@ -219,14 +220,7 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
     page.getByRole("heading", { name: "Barbería Norte" }),
   ).toBeVisible();
   await page.getByRole("button", { name: /Corte clásico/ }).click();
-  const daySection = page.locator('[aria-labelledby="paso-dia-hora"]');
-  await daySection.getByRole("button").first().waitFor();
-  await daySection.getByRole("button").first().click();
-  const firstTime = page
-    .getByRole("button", { name: /Elegir la hora/ })
-    .first();
-  await firstTime.waitFor();
-  await firstTime.click();
+  await pickFirstFreeSlot(page);
   await page
     .getByRole("button", { name: reserva.bookingBar.ctaReservar })
     .click();
