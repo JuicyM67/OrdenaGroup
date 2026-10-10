@@ -139,7 +139,7 @@ export function ProfileMobileTabs({
       <div
         role="tablist"
         aria-label={tablistLabel}
-        className="flex border-b border-border px-4"
+        className="flex overflow-x-auto border-b border-border px-4"
       >
         {tabs.map((tab) => (
           <button
@@ -150,7 +150,7 @@ export function ProfileMobileTabs({
             onClick={() => {
               onSelectMobileTab(tab.id);
             }}
-            className={`border-b-2 px-2.5 py-3 text-14 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none ${
+            className={`shrink-0 border-b-2 px-2.5 py-3 text-14 transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none ${
               mobileTab === tab.id
                 ? "border-ink font-bold text-ink"
                 : "border-transparent font-semibold text-muted"
