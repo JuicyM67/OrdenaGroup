@@ -6,6 +6,7 @@ import {
   type LocalDate,
   type TimeZone,
 } from "@/lib/format/dates";
+import { can } from "@/config/plans";
 import type { Queryable } from "@/server/db/pool";
 import { staffOffersService } from "@/server/scheduling/availability";
 import type { Interval } from "@/server/scheduling/core/intervals";
@@ -52,6 +53,7 @@ type BusinessRow = {
   status: string;
   mode: string;
   hold: number;
+  plan: string;
 };
 
 export type WaitlistBusiness = {
@@ -67,7 +69,7 @@ export async function loadWaitlistBusiness(
 ): Promise<WaitlistBusiness | undefined> {
   const r = await q.query<BusinessRow>(
     `select timezone, status::text as status, waitlist_mode::text as mode,
-            waitlist_hold_minutes::int as hold
+            waitlist_hold_minutes::int as hold, plan::text as plan
        from public.businesses where id = $1`,
     [businessId],
   );
@@ -77,7 +79,9 @@ export async function loadWaitlistBusiness(
   if (!tz.ok) return undefined;
   return {
     tz: tz.value,
-    active: row.status === "active",
+    // WP-73 (D-048): väntelistan pausas (inga erbjudanden) när planen
+    // saknar den; befintliga anmälningar ligger kvar.
+    active: row.status === "active" && can(row.plan, "waitlist"),
     mode: row.mode === "broadcast" ? "broadcast" : "sequential",
     holdMinutes: row.hold,
   };

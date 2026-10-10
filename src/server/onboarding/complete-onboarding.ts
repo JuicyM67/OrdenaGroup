@@ -14,6 +14,7 @@ import { LEGAL_VERSION } from "@/i18n/legal/types";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
+import { loadPlanIn, planLimit } from "@/server/plans/entitlements";
 import { recordConsent } from "@/server/privacy/consent";
 
 import { onboardingInputSchema, type OnboardingInput } from "./schemas";
@@ -72,12 +73,15 @@ async function insertServices(
   services: OnboardingInput["services"],
 ): Promise<string[]> {
   const ids: string[] = [];
+  // WP-73 (D-048): tjänster utöver planens gräns för aktiva tjänster sparas
+  // inaktiva (inget går förlorat; de kan aktiveras efter en uppgradering).
+  const maxActive = planLimit(await loadPlanIn(q, businessId), "services");
   // WP-66: kategorier från en import (namn → id, skapas i ordning).
   const categories = new Map<string, string>();
   for (const [i, s] of services.entries()) {
     const r = await q.query<{ id: string }>(
-      `insert into public.services (business_id, name, duration_min, price_clp, sort, description)
-       values ($1, $2, $3, $4, $5, $6) returning id`,
+      `insert into public.services (business_id, name, duration_min, price_clp, sort, description, active)
+       values ($1, $2, $3, $4, $5, $6, $7) returning id`,
       [
         businessId,
         s.name,
@@ -85,6 +89,7 @@ async function insertServices(
         s.priceClp,
         i + 1,
         s.description ?? null,
+        maxActive === null || i < maxActive,
       ],
     );
     const serviceId = r.rows[0]!.id;

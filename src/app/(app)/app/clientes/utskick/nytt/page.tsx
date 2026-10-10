@@ -17,6 +17,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { getCustomerContact } from "@/server/owner/clientes";
 import { ownerNameParts } from "@/server/owner/shared";
+import { loadBusinessPlan, planCan } from "@/server/plans/entitlements";
 
 import {
   confirmMyPhotoUploadAction,
@@ -54,6 +55,10 @@ export default async function NuevoUtskickPage({
   if (!current) redirect(appHref("appOnboarding"));
   if (!current.view.perms.can_manage_all_bookings)
     redirect(appHref("appClientes"));
+  // WP-73 (D-048): utan utskick i planen → listan med uppgraderingsrutan.
+  if (!planCan(await loadBusinessPlan(current.business.id), "campaigns")) {
+    redirect(appHref("appClientesUtskick"));
+  }
 
   const { kunder, audiencia } = await searchParams;
 

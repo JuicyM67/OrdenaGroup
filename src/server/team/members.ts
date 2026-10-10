@@ -19,6 +19,7 @@ import "server-only";
  * security-definer-funktion — samma resultat, mindre yta med det befintliga
  * mönstret).
  */
+import { can } from "@/config/plans";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 import { isOwner } from "@/server/privacy/authz";
@@ -52,7 +53,7 @@ export type TeamStaffMember = {
 export type TeamData = {
   staff: TeamStaffMember[];
   /** "Ägarens svar" 4: free/emprende (1 plats, redan ägarens egen) eller
-   * platserna är fulla enligt `private.plan_staff_limit`/`staff_seat_count`
+   * platserna är fulla enligt `private.business_staff_limit`/`staff_seat_count`
    * (samma hook som `member_invitations_guard_limit`/`accept_invitation`). */
   planLimitReached: boolean;
   /** UX-granskning (fel 4): planens kontogräns (1/1/3/10 för free/emprende/equipo/local)
@@ -125,12 +126,12 @@ export async function loadTeamData(
       [businessId],
     );
     const limitRes = await q.query<{
-      plan: "free" | "emprende" | "equipo" | "local";
+      plan: string;
       seat_limit: number | null;
       used: number;
     }>(
-      `select b.plan,
-              private.plan_staff_limit(b.plan) as seat_limit,
+      `select b.plan::text as plan,
+              private.business_staff_limit(b.id) as seat_limit,
               private.staff_seat_count(b.id) as used
          from public.businesses b
         where b.id = $1`,
@@ -167,8 +168,7 @@ export async function loadTeamData(
 
     const limitRow = limitRes.rows[0];
     const planLimitReached = limitRow
-      ? limitRow.plan === "free" ||
-        limitRow.plan === "emprende" ||
+      ? !can(limitRow.plan, "staff_accounts") ||
         (limitRow.seat_limit !== null && limitRow.used >= limitRow.seat_limit)
       : true;
 

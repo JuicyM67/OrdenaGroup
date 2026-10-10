@@ -9,13 +9,19 @@ import "server-only";
 // role) — `service_role` saknar SELECT-grant direkt på `auth.users` (se
 // 20260930080200_business_deletion_lifecycle.sql), så all e-postuppslagning
 // går via `getStorageAdminClient().auth.admin.*` i stället för SQL.
+import {
+  isBusinessPlan,
+  parseCustomLimits,
+  type BusinessPlan,
+  type CustomLimits,
+} from "@/config/plans";
 import { getStorageAdminClient } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail } from "@/server/messaging/email/send";
 
 import { writeAuditLog } from "./audit";
 
-export type BusinessPlan = "free" | "emprende" | "equipo" | "local";
+export type { BusinessPlan } from "@/config/plans";
 export type BusinessStatus = "active" | "frozen";
 
 export type BusinessListItem = {
@@ -129,6 +135,8 @@ export type BusinessDetail = {
   readonly category: string;
   readonly plan: BusinessPlan;
   readonly planOverrideUntil: string | null;
+  /** WP-73 (D-048): avtalade gränser för plan `custom`. */
+  readonly customLimits: CustomLimits;
   readonly status: BusinessStatus;
   readonly deletionRequestedAt: string | null;
   readonly createdAt: string;
@@ -153,11 +161,12 @@ export async function getBusinessDetail(
       category: string;
       plan: BusinessPlan;
       plan_override_until: string | null;
+      custom_limits: unknown;
       status: BusinessStatus;
       deletion_requested_at: string | null;
       created_at: string;
     }>(
-      `select id, name, slug, comuna, category, plan, plan_override_until,
+      `select id, name, slug, comuna, category, plan, plan_override_until, custom_limits,
               status, deletion_requested_at, created_at
          from public.businesses where id = $1`,
       [businessId],
@@ -205,6 +214,7 @@ export async function getBusinessDetail(
     category: data.business.category,
     plan: data.business.plan,
     planOverrideUntil: data.business.plan_override_until,
+    customLimits: parseCustomLimits(data.business.custom_limits),
     status: data.business.status,
     deletionRequestedAt: data.business.deletion_requested_at,
     createdAt: data.business.created_at,
@@ -229,18 +239,44 @@ export async function setPlan(
   businessId: string,
   plan: BusinessPlan,
   overrideUntil: string | null,
+  rawCustomLimits: unknown = null,
 ): Promise<AdminActionResult> {
+  if (!isBusinessPlan(plan)) return { ok: false, code: "invalid_input" };
+  // WP-73 (D-048): bara `custom` sparar avtalade gränser; för andra planer
+  // lämnas kolumnen orörd (ignoreras ändå av `src/config/plans.ts`).
+  const customLimits =
+    plan === "custom" ? parseCustomLimits(rawCustomLimits) : null;
+  if (
+    customLimits &&
+    ((customLimits.staff !== undefined &&
+      (customLimits.staff < 1 || customLimits.staff > 10000)) ||
+      (customLimits.sms !== undefined && customLimits.sms > 1000000))
+  ) {
+    return { ok: false, code: "invalid_input" };
+  }
   return withServiceTx(async (q) => {
     const r = await q.query(
-      `update public.businesses set plan = $2, plan_override_until = $3 where id = $1`,
-      [businessId, plan, overrideUntil],
+      `update public.businesses
+          set plan = $2, plan_override_until = $3,
+              custom_limits = coalesce($4::jsonb, custom_limits)
+        where id = $1`,
+      [
+        businessId,
+        plan,
+        overrideUntil,
+        customLimits ? JSON.stringify(customLimits) : null,
+      ],
     );
     if (!r.rowCount) return { ok: false, code: "not_found" };
     await writeAuditLog(q, {
       adminUserId,
       action: "set_plan",
       businessId,
-      details: { plan, override_until: overrideUntil },
+      details: {
+        plan,
+        override_until: overrideUntil,
+        ...(customLimits ? { custom_limits: customLimits } : {}),
+      },
     });
     return { ok: true };
   });

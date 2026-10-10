@@ -11,6 +11,8 @@ import { findOrCreateCustomer } from "@/server/bookings/customers";
 import { customerEmailRequired } from "@/server/bookings/submit";
 import type { Queryable } from "@/server/db/pool";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
+import { withServiceTx } from "@/server/db/tx";
+import { loadPlanIn, planCan } from "@/server/plans/entitlements";
 import { recordConsent } from "@/server/privacy/consent";
 import { staffOffersService } from "@/server/scheduling/availability";
 import { systemClock } from "@/server/scheduling/clock";
@@ -171,6 +173,11 @@ export async function joinWaitlist(
 
   const business = await resolveBusinessBySlug(slug);
   if (!business) return { ok: false, code: "not_found" };
+  // WP-73 (D-048): väntelistan ingår från Starta.
+  const plan = await withServiceTx((q) => loadPlanIn(q, business.id));
+  if (!planCan(plan, "waitlist")) {
+    return { ok: false, code: "business_unavailable" };
+  }
 
   // Första gången nyckeln ses → en ny anmälan; annars ett omförsök (svaret
   // tappades) som ska få samma `ok` i stället för `waitlist_duplicate`.

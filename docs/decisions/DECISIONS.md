@@ -4,6 +4,17 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-048 · 2026-10-11 · Planspärrar per plan + planen Skräddarsytt/A medida (`custom`) (WP-73)
+**Varför:** ägaren har godkänt vad varje plan innehåller (Gratis/Starta/Team/Företag, CL Gratis/Emprende/Equipo/Local) och vill ha ett offertalternativ för kedjor. **Konsekvens:**
+- **En matris:** `src/config/plans.ts` (`can(plan, feature)`, `limit(plan, 'staff'|'services'|'sms')`). Gratis: 1 konto, max 3 aktiva tjänster, 0 sms, märkning "Skapad med …" på bokningssidan, ingen väntelista/betalning. Starta (`emprende`): 1 konto, 50 sms/mån, utan märkning, betalning vid bokning (SE), väntelista. Team (`equipo`): 3 konton, 150 sms, + blixttider, utskick/Vi saknar dig/medlemsrabatter, full kassa & rapporter, personalkonton. Företag (`local`): 10 konton, 300 sms, + prioriterad support. `custom`: allt, gränser från `businesses.custom_limits` (standard 10 konton/300 sms), sätts bara av plattformsadmin i `/admin` (loggas i `admin_audit_log`). Konton räknas som i D-037; `private.business_staff_limit(uuid)` ersätter `plan_staff_limit` i spärren.
+- **Spärrarna sitter på servern** (actions, route handlers, cron, outbox-workern) via `src/server/plans/entitlements.ts`; UI:t visar bara lås/uppgraderingsruta. Felkoder: `plan_locked`, `plan_limit_services`, `sms_quota`.
+- **Sms-kvoten** räknas på skickade sms-rader i `message_outbox` per kalendermånad i installationens tidszon, alla mottagare (kund, ägare, utskick). Över kvoten avbryts sms-raden (`error = 'sms_quota'`); e-postraden som redan köas parallellt blir reserven. Utskick via sms nekas om mottagarna inte ryms i resterande kvot.
+- **Nedgradering raderar aldrig data:** aktiva tjänster över gränsen får vara kvar (nya/återaktiverade nekas), aktiva blixttider går ut av sig själva, winback-cronen och väntelistans erbjudanden pausas, betalningsläget ignoreras (bokningssidan ser "off"), inställningar ligger kvar och gäller igen efter uppgradering. Rapportsidan visar uppgraderingsrutan i stället för rapporterna.
+- **Byte av plan** (Stripe Billing/Flow) finns inte än: Inställningar → Plan visar plan och användning, "Byt plan" går till prissidan och "Kontakta oss" till kontaktsidan (IDEAS). Skräddarsytt visas som ett band under plankorten med "Kontakta oss".
+- **Avgiftstexter (SE):** inga påståenden om "ingen provision"/"0 kr provision" utan förbehållet; standardmeningen `TARIFA.resumen` i `sv-SE.ts`: "Ingen avgift per bokning. När kunden betalar med kort tar vi 1 % + Stripes avgift." CL (ingen onlinebetalning) behåller "0 provisión por reserva".
+
+---
+
 ### D-047 · 2026-10-10 · Plattformsavgift 1 % på alla planer (ersätter D-044:s 0 % på Företag)
 **Varför:** ägarens beslut — samma enkla regel för alla: 1 % per onlinebetalning, oavsett plan. **Konsekvens:** `PLATFORM_FEE_BPS` i `src/config/platform-fee.ts` är 100 bps för alla planer, även `local` (Företag), som tidigare var 0. Inga texter får påstå att Företag är avgiftsfri. Övrigt i D-044 gäller oförändrat.
 

@@ -10,10 +10,13 @@ export function WaitlistCard({
   date,
   joined,
   duplicate,
+  waitlist = true,
 }: {
   date: LocalDate;
   joined: boolean;
   duplicate?: boolean;
+  /** WP-73 (D-048): `false` när företagets plan saknar väntelista. */
+  waitlist?: boolean;
 }) {
   const dia = formatLocalDate(date, "weekdayLongLower");
 
@@ -27,9 +30,11 @@ export function WaitlistCard({
       <div className="text-16 font-bold text-ink">
         {reserva.waitlist.diaLleno({ dia })}
       </div>
-      <div className="text-14 leading-body text-on-peach-soft">
-        {reserva.waitlist.cuerpo}
-      </div>
+      {waitlist ? (
+        <div className="text-14 leading-body text-on-peach-soft">
+          {reserva.waitlist.cuerpo}
+        </div>
+      ) : null}
       {joined ? (
         <div
           role="status"

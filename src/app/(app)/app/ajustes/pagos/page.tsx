@@ -4,11 +4,14 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
+import { UpgradeNotice } from "@/components/plans/upgrade-notice";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { PaymentsSection } from "@/components/settings/payments-section";
 import { appHref } from "@/config/routes";
 import { nav } from "@/i18n";
 import { loadPaymentSettings } from "@/server/payments/stripe/settings";
+
+import { planCan } from "@/server/plans/entitlements";
 
 import { requireAjustesTab } from "../access";
 import {
@@ -69,6 +72,9 @@ export default async function AjustesPagosPage({
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >
+      {planCan(ctx.plan, "online_payment") ? null : (
+        <UpgradeNotice feature="online_payment" linkHref={ctx.plansHref} />
+      )}
       <PaymentsSection
         status={status}
         canCharge={state.canCharge}

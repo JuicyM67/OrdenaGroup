@@ -43,7 +43,11 @@ export type CreateFlashSlotInput = {
 
 export type CreateFlashResult =
   | { ok: true; id: string }
-  | { ok: false; code: "forbidden" | "not_free" | "overlap" | "invalid_input" };
+  | {
+      ok: false;
+      code:
+        "forbidden" | "not_free" | "overlap" | "invalid_input" | "plan_locked";
+    };
 
 export type CancelFlashResult = { ok: true } | { ok: false; code: string };
 

@@ -1,7 +1,7 @@
 // Sektion 7: Priser (WP-71, SidaP3.dc.html). Planer och planpunkter kommer från
 // `copy.PLANES` (samma som /precios), priserna från `src/config/pricing.ts`. Avgiftsrutan
 // använder `copy.home.precios.nota` (en enda i18n-nyckel per marknad).
-import { PlanCards } from "@/components/marketing/plan-cards";
+import { PlanCards, PlanCustomBand } from "@/components/marketing/plan-cards";
 import { anchor } from "@/config/url-params";
 import { copy } from "@/i18n/marketing";
 
@@ -24,7 +24,10 @@ export function Precios() {
             {copy.landing.precios.subtitulo}
           </p>
         </div>
-        <PlanCards ctaHref="/login" variant="foto" />
+        <div>
+          <PlanCards ctaHref="/login" variant="foto" />
+          <PlanCustomBand />
+        </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex items-center gap-4 rounded-tile border border-line-strong bg-surface px-6 py-5">
             <b className="shrink-0 font-display text-30 whitespace-nowrap">

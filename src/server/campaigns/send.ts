@@ -10,6 +10,7 @@ import { withOwnerTx, withServiceTx } from "@/server/db/tx";
 import { hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
 import { renderSms } from "@/server/messaging/sms";
+import { checkCampaignPlan } from "@/server/plans/entitlements";
 
 import { audienceStatsIn, resolveAudienceIn } from "./audience";
 import {
@@ -57,6 +58,8 @@ export type SendCampaignError =
   | "no_recipients"
   | "sms_not_available"
   | "rate_limited"
+  | "plan_locked"
+  | "sms_quota"
   | "unexpected";
 
 export type SendCampaignResult =
@@ -294,6 +297,14 @@ export async function sendCampaign(
   if (customerIds.length > MAX_RECIPIENTS) {
     return { ok: false, code: "rate_limited" };
   }
+  // WP-73 (D-048): planspärr + sms-kvot.
+  const planBlock = await checkCampaignPlan(
+    businessId,
+    "campaigns",
+    parsed.data.channel,
+    customerIds.length,
+  );
+  if (planBlock) return { ok: false, code: planBlock };
 
   try {
     const { campaignId, queued } = await writeCampaign({

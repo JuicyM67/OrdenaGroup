@@ -3,8 +3,10 @@ import "server-only";
 import { z } from "zod";
 
 import { platformFeeBps } from "@/config/platform-fee";
+import { can } from "@/config/plans";
 import { hasPerm, loadMember } from "@/server/db/permissions";
 import { withOwnerTx, withServiceTx } from "@/server/db/tx";
+import { businessCan } from "@/server/plans/entitlements";
 
 import {
   createDashboardLink,
@@ -27,6 +29,8 @@ export type PaymentSettings = {
   mode: OnlinePaymentMode;
   /** Plattformens avgift i baspunkter för företagets plan. */
   feeBps: number;
+  /** WP-73 (D-048): planen saknar betalning vid bokning (Gratis). */
+  planLocked: boolean;
 };
 
 export type PaymentSettingsResult =
@@ -68,12 +72,18 @@ export async function loadPaymentSettings(
       state,
       mode: row?.online_payment ?? "off",
       feeBps: platformFeeBps(row?.plan ?? "free"),
+      planLocked: !can(row?.plan ?? "free", "online_payment"),
     },
   };
 }
 
 export type PaymentActionError =
-  "forbidden" | "unavailable" | "failed" | "needs_account" | "invalid_input";
+  | "forbidden"
+  | "unavailable"
+  | "failed"
+  | "needs_account"
+  | "invalid_input"
+  | "plan_locked";
 
 const modeSchema = z.enum(["off", "optional", "required"]);
 
@@ -90,6 +100,10 @@ export async function setOnlinePaymentMode(
     return { ok: false, code: "forbidden" };
   }
   if (parsed.data !== "off") {
+    // WP-73 (D-048): betalning vid bokning ingår från Starta.
+    if (!(await businessCan(businessId, "online_payment"))) {
+      return { ok: false, code: "plan_locked" };
+    }
     const state = await loadConnectState(businessId);
     if (!state.canCharge) return { ok: false, code: "needs_account" };
   }
@@ -113,6 +127,9 @@ export async function beginStripeOnboarding(
 > {
   if (!(await isOwner(userId, businessId))) {
     return { ok: false, code: "forbidden" };
+  }
+  if (!(await businessCan(businessId, "online_payment"))) {
+    return { ok: false, code: "plan_locked" };
   }
   return startOnboarding(businessId, businessName);
 }

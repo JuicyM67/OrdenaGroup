@@ -134,6 +134,7 @@ export type AppRouteId =
   | "appAjustesEquipo"
   | "appAjustesPrivacidad"
   | "appAjustesPagos"
+  | "appAjustesPlan"
   | "appSolicitud"
   | "appInvitacion"
   | "appBienvenida"
@@ -155,6 +156,7 @@ export const AJUSTES_TAB_ROUTE_IDS = {
   equipo: "appAjustesEquipo",
   privacidad: "appAjustesPrivacidad",
   pagos: "appAjustesPagos",
+  plan: "appAjustesPlan",
 } as const satisfies Record<string, AppRouteId>;
 
 /** CL-sökvägen (filsystemets), med `[id]`/`[token]` som platshållare för dynamiska
@@ -184,6 +186,7 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesEquipo: "/app/ajustes/equipo",
   appAjustesPrivacidad: "/app/ajustes/privacidad",
   appAjustesPagos: "/app/ajustes/pagos",
+  appAjustesPlan: "/app/ajustes/plan",
   appSolicitud: "/app/solicitudes/[id]",
   appInvitacion: "/app/invitacion/[token]",
   appBienvenida: "/app/bienvenida/[token]",
@@ -216,6 +219,7 @@ const SE_APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesEquipo: "/app/installningar/team",
   appAjustesPrivacidad: "/app/installningar/integritet",
   appAjustesPagos: "/app/installningar/betalningar",
+  appAjustesPlan: "/app/installningar/plan",
   appSolicitud: "/app/forfragningar/[id]",
   appInvitacion: "/app/inbjudan/[token]",
   appBienvenida: "/app/valkommen/[token]",

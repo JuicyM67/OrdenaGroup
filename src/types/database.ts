@@ -462,6 +462,7 @@ export type Database = {
           created_at: string;
           deletion_requested_at: string | null;
           facebook: string | null;
+          custom_limits: Json;
           id: string;
           instagram: string | null;
           logo_url: string | null;
@@ -504,6 +505,7 @@ export type Database = {
           created_at?: string;
           deletion_requested_at?: string | null;
           facebook?: string | null;
+          custom_limits?: Json;
           id?: string;
           instagram?: string | null;
           logo_url?: string | null;
@@ -546,6 +548,7 @@ export type Database = {
           created_at?: string;
           deletion_requested_at?: string | null;
           facebook?: string | null;
+          custom_limits?: Json;
           id?: string;
           instagram?: string | null;
           logo_url?: string | null;
@@ -1900,7 +1903,7 @@ export type Database = {
         | "no_show"
         | "cancel_requested"
         | "cancelled";
-      business_plan: "free" | "emprende" | "equipo" | "local";
+      business_plan: "free" | "emprende" | "equipo" | "local" | "custom";
       business_status: "active" | "frozen";
       campaign_status: "draft" | "sent";
       consent_channel: "web" | "whatsapp" | "manual";
@@ -2072,7 +2075,7 @@ export const Constants = {
         "cancel_requested",
         "cancelled",
       ],
-      business_plan: ["free", "emprende", "equipo", "local"],
+      business_plan: ["free", "emprende", "equipo", "local", "custom"],
       business_status: ["active", "frozen"],
       campaign_status: ["draft", "sent"],
       consent_channel: ["web", "whatsapp", "manual"],
