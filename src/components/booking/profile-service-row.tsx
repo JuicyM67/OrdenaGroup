@@ -1,56 +1,84 @@
-// ProfileServiceRow — una fila de "Boka tid" (`ProfilDesktop.dc.html` rad 34–37,
-// `ProfilMobil.dc.html` rad 30–33). Toda la fila es el control accesible (un
-// solo `<button>`, mismo patrón que `service-card.tsx`): el pill "Boka" de la
-// referencia es decorativo (`aria-hidden`) para que el nombre accesible del
-// botón siga siendo el del servicio — así "Boka" arranca el flujo existente
-// (`onSelect`) sin romper el selector que ya usa `e2e/reserva.spec.ts`
-// (`getByRole("button", { name: /Corte clásico/ })`).
-// WP-53 (D-040): serverkomponent — bara el `<button>` (`ProfileServiceButton`,
-// profile-interactive.tsx) es un cliente, lee el `serviceId` y llama a
-// `bookService` vía `ProfileFlowContext`. Texto/formato siguen en el servidor.
+// ProfileServiceHeader — huvudet på en tjänsterad (accordion, WP-72, `Main.dc.html`
+// "Frisör"-listan): namn + längd, små cirklar med initialer för dem som utför tjänsten,
+// pris och chevron. Serverkomponent (WP-53/D-040): all text och formatering renderas på
+// servern; accordionen själv (`ProfileServiceList`, profile-interactive.tsx) är klientön.
+import { ChevronDown } from "lucide-react";
+
 import { perfil } from "@/i18n";
-import { formatMoney } from "@/lib/format/money";
 import { formatDuration } from "@/lib/format/dates";
+import { formatMoney } from "@/lib/format/money";
+import { initialsOf } from "@/lib/format/initials";
 
-import { ProfileServiceButton } from "./profile-interactive";
-import type { BookingService } from "./types";
+import { staffTone, type StaffTone } from "./profile-view";
+import type { BookingService, BookingStaffMember } from "./types";
 
-export function ProfileServiceRow({ service }: { service: BookingService }) {
-  const detalle = perfil.publico.servicioDetalle({
-    duracion: formatDuration(service.durationMin),
-    descripcion: service.description ?? undefined,
-  });
+const TONE_BG: Record<StaffTone, string> = {
+  lilac: "bg-lilac",
+  peach: "bg-peach",
+  sky: "bg-sky",
+};
+
+const MAX_CIRCLES = 4;
+
+export function ProfileServiceHeader({
+  service,
+  staff,
+}: {
+  service: BookingService;
+  staff: readonly BookingStaffMember[];
+}) {
+  const ids = new Set(service.staffIds ?? []);
+  const doing = staff
+    .map((member, i) => ({ member, tone: staffTone(i) }))
+    .filter(({ member }) => ids.has(member.id));
+  const shown = doing.slice(0, MAX_CIRCLES);
+  const extra = doing.length - shown.length;
 
   return (
-    <ProfileServiceButton
-      serviceId={service.id}
-      // `aria-label` med namn + varaktighet, INTE hela `detalle` (qa-fynd,
-      // e2e/reserva.spec.ts): utan den blir hela radens text — inklusive
-      // ägarens fria beskrivningstext — den tillgängliga namnet, och en
-      // beskrivning som råkar nämna en annan tjänsts namn ("Corte + barba:
-      // incluye un corte clásico y arreglo de barba") gör då
-      // `getByRole("button", { name: /Corte clásico/ })` tvetydig (samma
-      // krock som QA-testet fångade). Priset utelämnas här av samma skäl
-      // som `ServiceCard` tidigare aldrig visade beskrivningen i sitt namn —
-      // det är kvar i `BookingBar` när tjänsten väl är vald.
-      ariaLabel={`${service.name} · ${formatDuration(service.durationMin)}`}
-      className="flex w-full items-center gap-4 rounded-icon bg-surface p-3.5 text-left transition-colors duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink focus-visible:transition-none lg:rounded-none lg:border-b lg:border-line-strong lg:bg-transparent lg:p-0 lg:py-4 lg:last:border-b-0"
-    >
-      <span aria-hidden="true" className="min-w-0 grow">
+    <>
+      <span className="min-w-0 flex-1">
         <span className="block text-15 font-bold text-ink">{service.name}</span>
-        <span className="mt-0.5 block truncate text-13 text-muted">
-          {detalle}
+        <span className="mt-0.5 block text-12 text-muted">
+          {formatDuration(service.durationMin)}
         </span>
       </span>
-      <span className="hidden shrink-0 text-15 font-bold text-ink lg:inline">
+      {doing.length > 0 ? (
+        <span
+          role="img"
+          aria-label={perfil.publico.haceElServicio({
+            nombre: doing.map(({ member }) => member.name).join(", "),
+          })}
+          className="flex shrink-0 pl-1.5"
+        >
+          {shown.map(({ member, tone }) => (
+            <span
+              key={member.id}
+              aria-hidden="true"
+              title={member.name}
+              className={`-ml-1.5 flex size-7 items-center justify-center rounded-full border-2 border-surface text-11 font-bold text-ink ${TONE_BG[tone]}`}
+            >
+              {initialsOf(member.name).slice(0, 1)}
+            </span>
+          ))}
+          {extra > 0 ? (
+            <span
+              aria-hidden="true"
+              className="-ml-1.5 flex size-7 items-center justify-center rounded-full border-2 border-surface bg-canvas text-11 font-bold text-ink"
+            >
+              +{extra}
+            </span>
+          ) : null}
+        </span>
+      ) : null}
+      <span className="w-18.5 shrink-0 text-right text-15 font-bold text-ink">
         {formatMoney(service.priceClp)}
       </span>
       <span
         aria-hidden="true"
-        className="shrink-0 rounded-icon bg-lime px-4 py-2.5 text-13 font-bold text-ink"
+        className="flex size-7.5 shrink-0 items-center justify-center rounded-chip bg-canvas transition-transform duration-300 ease-out group-aria-expanded:rotate-180"
       >
-        {perfil.publico.reservar}
+        <ChevronDown className="size-3.5 text-ink" strokeWidth={2.5} />
       </span>
-    </ProfileServiceButton>
+    </>
   );
 }

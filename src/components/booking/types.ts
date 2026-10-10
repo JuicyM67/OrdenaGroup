@@ -33,6 +33,9 @@ export interface BookingService {
   /** WP-41: tjänstens beskrivning på profilen (≤ 500 tecken). Frivilligt
    * (saknas/`null` = ingen beskrivning). */
   readonly description?: string | null;
+  /** WP-72: vilka i teamet som utför tjänsten (`staff_services`), för
+   * initialcirklarna på profilens tjänsterad. Frivilligt (saknas = inga). */
+  readonly staffIds?: readonly string[];
 }
 
 /** Tjänstekategori (WP-40, D-031): egna rader i `service_categories`, bara

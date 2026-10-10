@@ -559,3 +559,12 @@ måste läggas till i motsvarande lista i `cn.ts` i samma PR.
 Referenser: `docs/design/reference/startsida/` (Konv1 = hero, Flytt = smärtfri flytt, SidaP3 + genpages.py = övriga sektioner). Komponenter i `src/components/marketing/home/`.
 Nya tokens i `tokens.css` (finns bara för startsidan): textstorlekar 20/34/52/54/56/60/68, `tracking-hero|headline|label`, `leading-display`, radier `device`, `device-sm`, `screen`, `cta`, `form`, `highlight`, skuggor `float-lg|float-md|soft`, blur `photo|layer`, animationer `marquee-slow`, `drift-1..3`, `pulse-ring`, samt utilities `glass-light`, `glass-dark`, `glass-nav` (liquid glass på foton), `bg-hero-tint(-mobile)`, `bg-cta-tint(-mobile)`, `bg-scrim-bottom`, `bg-flytt-stage`, `object-hero-mobile`.
 Foton: `public/marketing/` (Unsplash, se CREDITS.md). Text på foto ligger alltid på en toning (min. 4,5:1).
+
+## 14. Guidad visning (WP-72)
+
+Referens: `docs/design/reference/visning/{Main,Mobil,Foretag}.dc.html`. Varm brons/kräm liquid glass.
+Nya tokens i `tokens.css`: färgerna `bronze`, `bronze-mid`, `bronze-light`, `tour-ink`, `tour-soft`; skuggorna `spotlight` (enorm box-shadow som dimmar resten) och `row-open` (utfälld tjänsterad); animationerna `tour-in` och `tour-ring`; utilities `tour-glass` (kräm-glas), `tour-bronze`/`tour-bronze-soft` (brons-gradient), `tour-scrim`, `tour-spot` (spotlightens glid via left/top/width/height), `tour-spot-still`, `tour-note` (syns bara när `html[data-tour-on]`), `grid-cols-agenda-demo`.
+
+- `components/tour/guided-tour.tsx`: generisk motor. Mål pekas ut med `data-tour="<namn>"` på riktiga element och mäts med getBoundingClientRect (fixed spotlight, fokusfälla, Esc, pil-tangenter, `aria-modal`). Steg utan mål på sidan hoppas över. Laddas alltid lazy (`tour-loader.tsx` / `next/dynamic`) så /[slug] inte växer (D-039).
+- Kundvy: bara på `brand.demoSlug`. Företagsvy: `/ejemplo/negocio` (SE `/exempel/foretag`), statisk mockup (`business-demo.tsx`). Steget "Betalt direkt" (Stripe) finns bara i SE.
+- Tjänsterad = accordion (`ProfileServiceList`): namn + längd, initialcirklar för personalen, pris, chevron; utfälld visas beskrivning + "Välj tid". Alla rader börjar hopfällda (referensen visar första raden utfälld som exempeltillstånd).

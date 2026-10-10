@@ -3381,6 +3381,10 @@ export const perfil = {
      * `reserva.bookingBar.ctaReservar`, reutilizado para que nunca se
      * desalineen. */
     reservar: reserva.bookingBar.ctaReservar,
+    /** WP-72: botón dentro del servicio desplegado ("Välj tid" en el diseño). */
+    elegirHora: "Elegir hora",
+    /** WP-72: nombre accesible del grupo de iniciales de quién hace el servicio. */
+    haceElServicio: (p: { nombre: string }): string => `Lo hace: ${p.nombre}`,
     /** Botón fijo del "booking bar" mobile ("Boka nu" en el diseño). */
     reservarAhora: "Reservar ahora",
     /** "60 min · Tvätt, klippning och föning" en el diseño: `duracion` ya
@@ -4119,3 +4123,6 @@ export const importar = {
     cancelled: "Cancelaste la importación.",
   },
 } as const satisfies Trad;
+
+// WP-72: recorrido guiado.
+export { visita } from "./es-CL.visita";

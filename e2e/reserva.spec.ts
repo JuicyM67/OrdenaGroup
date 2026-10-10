@@ -22,7 +22,11 @@ test.describe("Reserva (riktig data) — /barberia-norte", () => {
       page.getByRole("heading", { name: "Barbería Norte" }),
     ).toBeVisible();
 
+    // WP-72: tjänsteraden är en accordion — fäll ut och välj tid.
     await page.getByRole("button", { name: /Corte clásico/ }).click();
+    await page
+      .getByRole("button", { name: "Elegir hora", exact: true })
+      .click();
     await expect(
       page.getByRole("button", { name: /Corte clásico/ }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -165,6 +169,9 @@ test.describe("Reserva (riktig data) — prestanda (FRÅGA 7)", () => {
     await page.goto("/barberia-norte", { waitUntil: "load" });
     const service = page.getByRole("button", { name: /Corte clásico/ });
     await service.click();
+    await page
+      .getByRole("button", { name: "Elegir hora", exact: true })
+      .click();
     await expect(service).toHaveAttribute("aria-pressed", "true");
     const elapsedMs = Date.now() - start;
 

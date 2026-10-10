@@ -7,7 +7,7 @@
 // med i klientbunten (JS-budgeten).
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -37,22 +37,32 @@ export function ProfileCategoryTabs({
 export interface ProfileServiceRowEntry {
   readonly id: string;
   readonly categoryId: string | null;
-  /** Hela raden (`ProfileServiceRow`), färdigrenderad av servern. */
-  readonly node: ReactNode;
+  /** Radens synliga huvud (namn, längd, personal, pris, chevron), färdigrenderat av
+   * servern (`ProfileServiceHeader`). */
+  readonly header: ReactNode;
+  /** Tjänstens beskrivning (visas utfälld). */
+  readonly description: string | null;
+  /** Namn + längd, nytt tillgängligt namn på raden (e2e: `name: /Corte clásico/`). */
+  readonly ariaLabel: string;
+  /** "Välj tid" (färdig text från servern). */
+  readonly cta: string;
 }
 
-/** Tjänstelistan: raderna är redan formaterade av servern, filtret efter
- * vald kategoriflik körs bara mot id:n här (ingen text/formatering i klienten). */
+/** Tjänstelistan som accordion (WP-72, Main.dc.html): raden fälls ut och visar
+ * beskrivningen + "Välj tid", som startar bokningsflödet. Raderna är redan
+ * formaterade av servern, filtret efter vald kategoriflik körs bara mot id:n här. */
 export function ProfileServiceList({
   rows,
   emptyLabel,
-  className,
+  tour,
 }: {
   rows: readonly ProfileServiceRowEntry[];
   emptyLabel: string;
-  className?: string;
+  /** `data-tour`-namn på listan (visningen). */
+  tour?: string;
 }) {
-  const { categoryId } = useProfileFlow();
+  const { categoryId, bookService } = useProfileFlow();
+  const [openId, setOpenId] = useState<string | null>(null);
   const visible =
     categoryId === ALL_CATEGORY_ID
       ? rows
@@ -63,10 +73,52 @@ export function ProfileServiceList({
   if (visible.length === 0) {
     return <p className="text-14 text-muted">{emptyLabel}</p>;
   }
-  // Ingen extra wrapper-`<div>` när anroparen inte skickar en `className`
-  // (datorns `rounded-tile bg-surface px-5`-yta äger redan radernas behållare).
-  if (!className) return <>{visible.map((r) => r.node)}</>;
-  return <div className={className}>{visible.map((r) => r.node)}</div>;
+  return (
+    <div data-tour={tour} className="flex flex-col gap-2">
+      {visible.map((r, i) => {
+        const open = openId === r.id;
+        return (
+          <div
+            key={r.id}
+            data-tour={i === 0 ? "book" : undefined}
+            className={`overflow-hidden rounded-icon bg-surface transition-shadow duration-300 ease-out ${open ? "shadow-row-open" : ""}`}
+          >
+            <button
+              type="button"
+              aria-expanded={open}
+              aria-controls={`svc-${r.id}`}
+              aria-label={r.ariaLabel}
+              onClick={() => {
+                setOpenId(open ? null : r.id);
+              }}
+              className="group flex min-h-15 w-full items-center gap-3.5 px-4 py-2.5 text-left -outline-offset-2 focus-visible:outline-2 focus-visible:outline-ink"
+            >
+              {r.header}
+            </button>
+            {open ? (
+              <div
+                id={`svc-${r.id}`}
+                className="flex flex-col gap-3 px-4 pb-4 sm:flex-row sm:items-end sm:gap-4"
+              >
+                <p className="flex-1 text-14 leading-relaxed text-ink-soft">
+                  {r.description}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    bookService(r.id);
+                  }}
+                  className="h-10 shrink-0 rounded-event bg-ink px-4.5 text-13 font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                >
+                  {r.cta}
+                </button>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+    </div>
+  );
 }
 
 /** Mobilens fyra flikar (Tjänster/Personal/Om oss/Info) — panelerna är redan
@@ -109,7 +161,7 @@ export function ProfileMobileTabs({
         ))}
       </div>
 
-      <div className="flex flex-col gap-3.5 px-4 py-3.5 pb-32">
+      <div className="flex flex-col gap-3.5 overflow-x-clip px-4 py-3.5 pb-32">
         {panels[mobileTab]}
       </div>
     </>

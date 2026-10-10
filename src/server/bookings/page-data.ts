@@ -345,6 +345,22 @@ export async function loadReservaPageData(
     }
   }
 
+  // WP-72: vem som utför vilken tjänst (initialcirklarna på tjänsteraden).
+  const staffServiceRows = await q.query<{
+    staff_id: string;
+    service_id: string;
+  }>(
+    `select staff_id, service_id from public.staff_services
+      where business_id = $1`,
+    [businessId],
+  );
+  const staffIdsByService = new Map<string, string[]>();
+  for (const r of staffServiceRows.rows) {
+    const list = staffIdsByService.get(r.service_id) ?? [];
+    list.push(r.staff_id);
+    staffIdsByService.set(r.service_id, list);
+  }
+
   const services: BookingService[] = serviceRows.rows.map((s, i) => ({
     id: s.id,
     name: s.name,
@@ -353,6 +369,7 @@ export async function loadReservaPageData(
     tint: TINTS[i % TINTS.length]!,
     categoryId: s.category_id,
     description: s.description,
+    staffIds: staffIdsByService.get(s.id) ?? [],
   }));
   const staff: BookingStaffMember[] = staffRows.rows.map((s) => ({
     id: s.id,

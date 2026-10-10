@@ -16,7 +16,8 @@ export type RouteId =
   | "horasFlash"
   | "ventajas"
   | "preguntas"
-  | "contacto";
+  | "contacto"
+  | "ejemploNegocio";
 
 /** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts` / `sv-SE.ts`). */
 export type IndustriaId =
@@ -37,6 +38,7 @@ const CL_ROUTES: Record<RouteId, string> = {
   ventajas: "/ventajas",
   preguntas: "/preguntas",
   contacto: "/contacto",
+  ejemploNegocio: "/ejemplo/negocio",
 };
 
 /** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
@@ -48,6 +50,7 @@ const SE_ROUTES: Record<RouteId, string> = {
   ventajas: "/fordelar",
   preguntas: "/vanliga-fragor",
   contacto: "/kontakt",
+  ejemploNegocio: "/exempel/foretag",
 };
 
 const ROUTES_BY_MARKET: Record<Market, Record<RouteId, string>> = {

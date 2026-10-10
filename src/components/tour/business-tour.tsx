@@ -1,0 +1,98 @@
+// Guidad visning av företagsvyns mockup (WP-72, Foretag.dc.html). Lazy chunk.
+"use client";
+
+import { ArrowRight } from "lucide-react";
+import Link from "next/link";
+
+import { market } from "@/config/brand";
+import { visita } from "@/i18n";
+
+import { GuidedTour, type TourStep } from "./guided-tour";
+
+const v = visita;
+const n = v.negocio;
+
+function step(
+  id: string,
+  targets: string[],
+  s: { titulo: string; texto: string; chips: readonly string[] },
+): TourStep {
+  return { id, targets, title: s.titulo, text: s.texto, chips: s.chips };
+}
+
+const STEPS: TourStep[] = [
+  step("semana", ["week"], n.pasos.semana),
+  step("solicitudes", ["requests"], n.pasos.solicitudes),
+  step("flash", ["flash"], n.pasos.flash),
+  // Kortbetalning via Stripe finns bara i SE (steget hoppas över i CL).
+  ...(market === "SE" ? [step("pagos", ["payments"], n.pasos.pagos)] : []),
+  step("resenas", ["reviews"], n.pasos.resenas),
+  step("caja", ["caja"], n.pasos.caja),
+];
+
+export default function BusinessTour({
+  nombre,
+  onStepChange,
+}: {
+  nombre: string;
+  onStepChange: (id: string | null) => void;
+}) {
+  return (
+    <GuidedTour
+      steps={STEPS}
+      storageKey="tour-negocio"
+      doneAria={n.final.aria}
+      onStepChange={onStepChange}
+      restartClassName="bottom-4 left-4 xl:left-64"
+      copy={{
+        skip: v.comun.saltar,
+        back: v.comun.atras,
+        next: v.comun.siguiente,
+        restart: v.comun.reiniciar,
+        progress: v.comun.progreso,
+        counter: (i, total) => v.comun.contador({ n: i, total }),
+      }}
+      welcome={{
+        aria: n.aria,
+        title: n.bienvenida.titulo,
+        text: n.bienvenida.texto({ negocio: n.nombre, nombre }),
+        start: n.bienvenida.empezar,
+        skip: n.bienvenida.saltar,
+      }}
+      renderDone={({ close }) => (
+        <div className="flex flex-col gap-3.5 rounded-shell p-6 tour-glass sm:p-7.5">
+          <span className="self-start rounded-event px-3.5 py-1.75 text-13 font-bold tour-bronze">
+            {n.final.etiqueta}
+          </span>
+          <h2 className="font-display text-30 leading-snug font-semibold">
+            {n.final.titulo}
+          </h2>
+          <p className="text-15 leading-relaxed text-tour-soft">
+            {n.final.texto}
+          </p>
+          <div className="flex flex-col gap-2.5 sm:flex-row">
+            <Link
+              href="/login"
+              data-autofocus
+              className="flex h-13.5 shrink-0 items-center justify-center gap-2.5 rounded-full bg-ink font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze sm:flex-1"
+            >
+              {n.final.cta}
+              <ArrowRight
+                aria-hidden="true"
+                className="size-4.5 text-lime"
+                strokeWidth={2.5}
+              />
+            </Link>
+            <button
+              type="button"
+              onClick={close}
+              className="flex h-13.5 items-center justify-center rounded-full border-2 border-bronze/35 bg-surface/55 px-4.5 font-bold text-tour-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+            >
+              {n.final.seguir}
+            </button>
+          </div>
+        </div>
+      )}
+    />
+  );
+}
