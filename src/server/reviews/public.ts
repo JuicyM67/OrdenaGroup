@@ -29,6 +29,9 @@ export type ReviewInvitePage = {
   negocio: string;
   slug: string;
   servicio: string;
+  profesional: string;
+  /** Företagets tidszon (visning av datumet). */
+  timezone: string;
   /** ISO, bokningens start. */
   startsAt: string;
   /** Visningsnamnet recensionen publiceras med ("Ana P."). */
@@ -93,44 +96,61 @@ export async function loadReviewInvite(
   return withServiceTx(async (q) => {
     const invite = await findInvite(q, token);
     if (!invite) return undefined;
-    const r = await q.query<{
-      negocio: string;
-      slug: string;
-      servicio: string;
-      starts_at: string;
-      cliente: string | null;
-      anonymized: boolean;
-      rating: number | null;
-      comment: string | null;
-      review_created_at: string | null;
-    }>(
-      `select b.name as negocio, b.slug, s.name as servicio,
-              lower(bk.period) as starts_at,
-              c.name as cliente, (c.anonymized_at is not null) as anonymized,
-              rv.rating, rv.comment, rv.created_at as review_created_at
-         from public.bookings bk
-         join public.businesses b on b.id = bk.business_id
-         join public.services s on s.business_id = bk.business_id and s.id = bk.service_id
-         join public.customers c on c.business_id = bk.business_id and c.id = bk.customer_id
-         left join public.reviews rv on rv.business_id = bk.business_id and rv.booking_id = bk.id
-        where bk.business_id = $1 and bk.id = $2`,
-      [invite.business_id, invite.booking_id],
-    );
-    const row = r.rows[0];
-    if (!row || row.anonymized) return undefined;
-    return {
-      negocio: row.negocio,
-      slug: row.slug,
-      servicio: row.servicio,
-      startsAt: new Date(row.starts_at).toISOString(),
-      displayName: reviewDisplayName(row.cliente),
-      existing:
-        row.rating !== null
-          ? { rating: row.rating, comment: row.comment ?? "" }
-          : null,
-      editable: isEditable(row.review_created_at, now),
-    };
+    return loadReviewPageIn(q, invite.business_id, invite.booking_id, now);
   });
+}
+
+/** Sidans data för en (redan auktoriserad) bokning — delas av tokenlänken och
+ * kontot (WP-67, D-054). */
+async function loadReviewPageIn(
+  q: Queryable,
+  businessId: string,
+  bookingId: string,
+  now: Date,
+): Promise<ReviewInvitePage | undefined> {
+  const r = await q.query<{
+    negocio: string;
+    slug: string;
+    servicio: string;
+    profesional: string;
+    timezone: string;
+    starts_at: string;
+    cliente: string | null;
+    anonymized: boolean;
+    rating: number | null;
+    comment: string | null;
+    review_created_at: string | null;
+  }>(
+    `select b.name as negocio, b.slug, s.name as servicio,
+            st.name as profesional, b.timezone,
+            lower(bk.period) as starts_at,
+            c.name as cliente, (c.anonymized_at is not null) as anonymized,
+            rv.rating, rv.comment, rv.created_at as review_created_at
+       from public.bookings bk
+       join public.businesses b on b.id = bk.business_id
+       join public.services s on s.business_id = bk.business_id and s.id = bk.service_id
+       join public.staff st on st.business_id = bk.business_id and st.id = bk.staff_id
+       join public.customers c on c.business_id = bk.business_id and c.id = bk.customer_id
+       left join public.reviews rv on rv.business_id = bk.business_id and rv.booking_id = bk.id
+      where bk.business_id = $1 and bk.id = $2`,
+    [businessId, bookingId],
+  );
+  const row = r.rows[0];
+  if (!row || row.anonymized) return undefined;
+  return {
+    negocio: row.negocio,
+    slug: row.slug,
+    servicio: row.servicio,
+    profesional: row.profesional,
+    timezone: row.timezone,
+    startsAt: new Date(row.starts_at).toISOString(),
+    displayName: reviewDisplayName(row.cliente),
+    existing:
+      row.rating !== null
+        ? { rating: row.rating, comment: row.comment ?? "" }
+        : null,
+    editable: isEditable(row.review_created_at, now),
+  };
 }
 
 export const reviewInputSchema = z.object({
@@ -150,55 +170,143 @@ export async function submitReview(
 ): Promise<SubmitReviewResult> {
   const parsed = reviewInputSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
-  const input = parsed.data;
-  const comment = input.comment === "" ? null : input.comment;
   return withServiceTx(async (q) => {
     const invite = await findInvite(q, token);
     if (!invite) return { ok: false, code: "not_found" } as const;
-    const c = await q.query<{ name: string | null; anonymized: boolean }>(
-      `select name, (anonymized_at is not null) as anonymized
-         from public.customers
-        where business_id = $1 and id = $2`,
-      [invite.business_id, invite.customer_id],
-    );
-    const customer = c.rows[0];
-    if (!customer || customer.anonymized) {
-      return { ok: false, code: "not_found" } as const;
-    }
-    const existing = await q.query<{ id: string; created_at: string }>(
-      `select id, created_at from public.reviews
-        where business_id = $1 and booking_id = $2
-        for update`,
-      [invite.business_id, invite.booking_id],
-    );
-    const prev = existing.rows[0];
-    if (prev) {
-      if (!isEditable(prev.created_at, now)) {
-        return { ok: false, code: "closed" } as const;
-      }
-      await q.query(
-        `update public.reviews
-            set rating = $3, comment = $4
-          where business_id = $1 and id = $2`,
-        [invite.business_id, prev.id, input.rating, comment],
-      );
-      return { ok: true } as const;
+    return writeReviewIn(q, invite, parsed.data, now);
+  });
+}
+
+type ReviewTarget = {
+  business_id: string;
+  booking_id: string;
+  customer_id: string;
+};
+
+/** Själva skrivningen, samma regler oavsett väg (D-045): en per bokning,
+ * ändringsbar i 7 dagar, aldrig för en anonymiserad kund. */
+async function writeReviewIn(
+  q: Queryable,
+  target: ReviewTarget,
+  input: ReviewInput,
+  now: Date,
+): Promise<SubmitReviewResult> {
+  const comment = input.comment === "" ? null : input.comment;
+  const c = await q.query<{ name: string | null; anonymized: boolean }>(
+    `select name, (anonymized_at is not null) as anonymized
+       from public.customers
+      where business_id = $1 and id = $2`,
+    [target.business_id, target.customer_id],
+  );
+  const customer = c.rows[0];
+  if (!customer || customer.anonymized) {
+    return { ok: false, code: "not_found" };
+  }
+  const existing = await q.query<{ id: string; created_at: string }>(
+    `select id, created_at from public.reviews
+      where business_id = $1 and booking_id = $2
+      for update`,
+    [target.business_id, target.booking_id],
+  );
+  const prev = existing.rows[0];
+  if (prev) {
+    if (!isEditable(prev.created_at, now)) {
+      return { ok: false, code: "closed" };
     }
     await q.query(
-      `insert into public.reviews
-         (business_id, booking_id, customer_id, rating, comment, display_name)
-       values ($1, $2, $3, $4, $5, $6)
-       on conflict (booking_id) do nothing`,
-      [
-        invite.business_id,
-        invite.booking_id,
-        invite.customer_id,
-        input.rating,
-        comment,
-        reviewDisplayName(customer.name),
-      ],
+      `update public.reviews
+          set rating = $3, comment = $4
+        where business_id = $1 and id = $2`,
+      [target.business_id, prev.id, input.rating, comment],
     );
-    return { ok: true } as const;
+    return { ok: true };
+  }
+  await q.query(
+    `insert into public.reviews
+       (business_id, booking_id, customer_id, rating, comment, display_name)
+     values ($1, $2, $3, $4, $5, $6)
+     on conflict (booking_id) do nothing`,
+    [
+      target.business_id,
+      target.booking_id,
+      target.customer_id,
+      input.rating,
+      comment,
+      reviewDisplayName(customer.name),
+    ],
+  );
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Från kundkontot (WP-67, D-054/D-045): samma regler som tokenlänken, men
+// auktoriserat via en kopplad bokning (`AccountBookingRef`, som anroparen
+// fått från `private.my_booking_ref()` i kundens egen session). Fönstret är
+// 60 dagar från bokningens start i stället för från förfrågan.
+// ---------------------------------------------------------------------------
+
+/** En bokning som kundkontot bevisligen är kopplat till. */
+export type AccountBookingRef = {
+  businessId: string;
+  customerId: string;
+  bookingId: string;
+};
+
+/** `businessId`/`customerId` är betrodda (från `my_booking_ref`); bokningen
+ * måste ändå vara genomförd och inom 60 dagar. */
+async function accountTargetIn(
+  q: Queryable,
+  ref: AccountBookingRef,
+  now: Date,
+): Promise<ReviewTarget | undefined> {
+  const r = await q.query<{ status: string; ended: boolean; recent: boolean }>(
+    `select status::text as status,
+            upper(period) <= $3 as ended,
+            lower(period) > $3::timestamptz - make_interval(days => $4::int) as recent
+       from public.bookings
+      where business_id = $1 and id = $2 and customer_id = $5`,
+    [
+      ref.businessId,
+      ref.bookingId,
+      now.toISOString(),
+      INVITE_VALID_DAYS,
+      ref.customerId,
+    ],
+  );
+  const b = r.rows[0];
+  if (!b || !b.recent) return undefined;
+  const done =
+    b.status === "completed" || (b.status === "confirmed" && b.ended);
+  if (!done) return undefined;
+  return {
+    business_id: ref.businessId,
+    booking_id: ref.bookingId,
+    customer_id: ref.customerId,
+  };
+}
+
+export async function loadAccountReview(
+  ref: AccountBookingRef,
+  now: Date,
+): Promise<ReviewInvitePage | undefined> {
+  return withServiceTx(async (q) => {
+    const target = await accountTargetIn(q, ref, now);
+    if (!target) return undefined;
+    return loadReviewPageIn(q, target.business_id, target.booking_id, now);
+  });
+}
+
+export async function submitReviewForAccount(
+  ref: AccountBookingRef,
+  raw: unknown,
+  now: Date,
+): Promise<SubmitReviewResult> {
+  const parsed = reviewInputSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, code: "invalid_input" };
+  return withServiceTx(async (q) => {
+    const target = await accountTargetIn(q, ref, now);
+    if (!target) return { ok: false, code: "not_found" } as const;
+    return writeReviewIn(q, target, parsed.data, now);
   });
 }
 

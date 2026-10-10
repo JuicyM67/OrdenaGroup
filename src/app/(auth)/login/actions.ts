@@ -3,6 +3,12 @@
 // Server action: magisk länk via e-post (F1). Svarar likadant oavsett om kontot redan
 // finns (`signInWithOtp` skapar kontot i farten om det inte finns — `enable_signup`
 // är på, se docs/tech/SUPABASE_CONFIG.md), så UI:t kan aldrig läcka om ett konto finns.
+import { cookies } from "next/headers";
+
+import {
+  AUTH_INTENT_COOKIE,
+  authIntentCookieOptions,
+} from "@/lib/supabase/intent";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 
@@ -66,6 +72,14 @@ export async function requestMagicLink(
     max: LOGIN_EMAIL_MAX,
   });
   if (!emailAllowed) return { ok: false, code: "over_email_send_rate_limit" };
+
+  // WP-67 (D-054): den här sidan loggar in FÖRETAG — skriv över en ev.
+  // kvarglömd kundavsikt från `/cuenta/ingresar` så att länken landar i `/app`.
+  (await cookies()).set(
+    AUTH_INTENT_COOKIE,
+    "business",
+    authIntentCookieOptions,
+  );
 
   try {
     const supabase = await createSupabaseServerClient();
