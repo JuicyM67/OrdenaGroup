@@ -41,22 +41,22 @@ export function TrustRow({ className }: { className?: string }) {
 
 export function HomeHero() {
   return (
-    <section className="-mt-26 p-4">
-      <div className="relative flex flex-col overflow-hidden rounded-shell bg-dark text-on-dark lg:min-h-217">
-        <Image
-          src="/marketing/hero.webp"
-          alt={t.fotoAlt}
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-hero-mobile lg:object-center"
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-hero-tint-mobile lg:bg-hero-tint"
-        />
+    <section className="relative -mt-26 flex flex-col overflow-hidden bg-dark text-on-dark lg:min-h-217">
+      <Image
+        src="/marketing/hero.webp"
+        alt={t.fotoAlt}
+        fill
+        priority
+        sizes="100vw"
+        className="object-cover object-hero-mobile lg:object-center"
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-photo-tint-mobile lg:bg-photo-tint"
+      />
 
-        <div className="relative flex flex-1 flex-col gap-5.5 px-6 pt-32 pb-8 sm:px-10 lg:max-w-175 lg:gap-5.5 lg:px-16 lg:pt-36 lg:pb-56">
+      <div className="relative mx-auto flex w-full max-w-360 flex-1 flex-col px-4 pt-32 pb-8 sm:px-8 lg:px-22 lg:pt-36 lg:pb-56">
+        <div className="flex flex-col gap-5.5 lg:max-w-175">
           <WordPill prefijo={t.prefijo} palabras={t.industrias} />
           <h1 className="font-display text-44 leading-display font-semibold tracking-hero text-balance sm:text-56 lg:text-68">
             {t.tituloLinea1}
@@ -75,13 +75,13 @@ export function HomeHero() {
             <FloatCards variant="mobile" />
           </div>
         </div>
-
-        <div className="hidden lg:block">
-          <FloatCards variant="desktop" />
-        </div>
-
-        <UspMarquee className="relative pb-6 lg:absolute lg:inset-x-0 lg:bottom-6 lg:pb-0" />
       </div>
+
+      <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-360 lg:block">
+        <FloatCards variant="desktop" />
+      </div>
+
+      <UspMarquee className="relative pb-6 lg:absolute lg:inset-x-0 lg:bottom-6 lg:pb-0" />
     </section>
   );
 }

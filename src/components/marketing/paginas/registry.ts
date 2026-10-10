@@ -57,15 +57,15 @@ export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
   reservas: {
     icon: CalendarDays,
     tone: "lavender",
-    foto: "hero",
-    fotoPos: "object-center",
+    foto: "reservas",
+    fotoPos: "object-top",
     beneficios: [Clock, Globe, ShieldCheck],
     relacionadas: ["recordatorios", "listaEspera", "pagos"],
   },
   pagos: {
     icon: CreditCard,
     tone: "mint",
-    foto: "hudterapeut",
+    foto: "pagos",
     fotoPos: "object-center",
     beneficios: [UserCheck, Banknote, Repeat],
     relacionadas: ["resenas", "horasFlash", "recordatorios"],
@@ -73,7 +73,7 @@ export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
   resenas: {
     icon: Star,
     tone: "peach",
-    foto: "naglar",
+    foto: "resenas",
     fotoPos: "object-top",
     beneficios: [BadgeCheck, MessageSquareReply, TrendingUp],
     relacionadas: ["reservas", "recordatorios", "caja"],
@@ -81,7 +81,7 @@ export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
   horasFlash: {
     icon: Zap,
     tone: "lime",
-    foto: "yoga",
+    foto: "horasflash",
     fotoPos: "object-center",
     beneficios: [Wallet, Layers, Lock],
     relacionadas: ["listaEspera", "recordatorios", "reservas"],
@@ -89,7 +89,7 @@ export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
   listaEspera: {
     icon: ListChecks,
     tone: "sky",
-    foto: "barberare",
+    foto: "listaespera",
     fotoPos: "object-top",
     beneficios: [CalendarCheck, UserCheck, Zap],
     relacionadas: ["horasFlash", "recordatorios", "agenda"],
@@ -97,7 +97,7 @@ export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
   recordatorios: {
     icon: Bell,
     tone: "lavender",
-    foto: "frisor",
+    foto: "recordatorios",
     fotoPos: "object-top",
     beneficios: [BellRing, Repeat, Package],
     relacionadas: ["listaEspera", "reservas", "agenda"],
@@ -105,15 +105,15 @@ export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
   agenda: {
     icon: Users,
     tone: "peach",
-    foto: "naprapat",
-    fotoPos: "object-top",
+    foto: "agenda",
+    fotoPos: "object-center",
     beneficios: [Users, Smartphone, CalendarCheck],
     relacionadas: ["reservas", "caja", "recordatorios"],
   },
   caja: {
     icon: ChartLine,
     tone: "mint",
-    foto: "massage",
+    foto: "caja",
     fotoPos: "object-center",
     beneficios: [Wallet, CreditCard, TrendingUp],
     relacionadas: ["agenda", "resenas", "reservas"],
@@ -121,7 +121,7 @@ export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
   migracion: {
     icon: Replace,
     tone: "lime",
-    foto: "tatuering",
+    foto: "migracion",
     fotoPos: "object-center",
     beneficios: [Package, ShieldCheck, Lock],
     relacionadas: ["reservas", "agenda", "recordatorios"],

@@ -1,5 +1,5 @@
 // Foto-hero för funktions- och branschsidorna (WP-75, Funktion.dc.html / Bransch.dc.html):
-// helbildsfoto med varm toning, brödsmulor, rubrik med lime-markering och glaskort. Den
+// full-bleed helbildsfoto (kant i kant) med varm toning, brödsmulor, rubrik med lime-markering och glaskort. Den
 // delade headern (`SiteHeader`) ligger ovanpå fotot (se sidornas `className="mt-10"`).
 import Image from "next/image";
 import Link from "next/link";
@@ -78,22 +78,22 @@ export function FotoHero({
   tarjeta?: ReactNode;
 }) {
   return (
-    <section className="-mt-26 p-4">
-      <div className="relative flex flex-col overflow-hidden rounded-shell bg-dark text-on-dark lg:min-h-180">
-        <Image
-          src={`/marketing/${foto}.webp`}
-          alt={fotoAlt}
-          fill
-          priority
-          sizes="(min-width: 1440px) 1408px, 100vw"
-          className={cn("object-cover", fotoPos)}
-        />
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-hero-tint-mobile lg:bg-cta-tint"
-        />
+    <section className="relative -mt-26 flex flex-col overflow-hidden bg-dark text-on-dark lg:min-h-180">
+      <Image
+        src={`/marketing/${foto}.webp`}
+        alt={fotoAlt}
+        fill
+        priority
+        sizes="100vw"
+        className={cn("object-cover", fotoPos)}
+      />
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-photo-tint-mobile lg:bg-photo-tint"
+      />
 
-        <div className="relative flex flex-col gap-5 px-6 pt-32 pb-10 sm:px-10 lg:max-w-170 lg:px-16 lg:pt-40 lg:pb-24">
+      <div className="relative mx-auto flex w-full max-w-360 flex-1 flex-col px-4 pt-32 pb-10 sm:px-8 lg:px-22 lg:pt-40 lg:pb-24">
+        <div className="flex flex-col gap-5 lg:max-w-170">
           <Brodsmulor migas={migas} label={migasLabel} />
           {etiqueta ? (
             <span className="w-fit rounded-event px-3 py-1.75 text-13 font-bold glass-nav">
@@ -113,13 +113,15 @@ export function FotoHero({
           <div className="flex flex-wrap gap-2.5">{acciones}</div>
           {tarjeta ? <div className="mt-2 lg:hidden">{tarjeta}</div> : null}
         </div>
+      </div>
 
-        {tarjeta ? (
-          <div className="absolute right-18 bottom-18 hidden w-82.5 lg:block">
+      {tarjeta ? (
+        <div className="pointer-events-none absolute inset-0 mx-auto hidden max-w-360 lg:block">
+          <div className="pointer-events-auto absolute right-22 bottom-18 w-82.5">
             {tarjeta}
           </div>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </section>
   );
 }

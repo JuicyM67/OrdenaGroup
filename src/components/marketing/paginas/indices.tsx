@@ -45,7 +45,7 @@ export function FuncionesIndexTop() {
   return (
     <>
       <FotoHero
-        foto="hudterapeut"
+        foto="funciones"
         fotoAlt={t.fotoAlt}
         migas={migas}
         migasLabel={c.migas}
@@ -105,8 +105,7 @@ export function RubrosIndexPage() {
       <SiteHeader className="mt-10" />
       <main className="flex-1">
         <FotoHero
-          foto="frisor"
-          fotoPos="object-photo-top"
+          foto="rubros"
           fotoAlt={t.fotoAlt}
           migas={migas}
           migasLabel={c.migas}
