@@ -414,6 +414,7 @@ export type Database = {
           phone: string | null;
           plan: Database["public"]["Enums"]["business_plan"];
           plan_override_until: string | null;
+          review_requests_enabled: boolean;
           slot_interval_minutes: number;
           slug: string;
           status: Database["public"]["Enums"]["business_status"];
@@ -454,6 +455,7 @@ export type Database = {
           phone?: string | null;
           plan?: Database["public"]["Enums"]["business_plan"];
           plan_override_until?: string | null;
+          review_requests_enabled?: boolean;
           slot_interval_minutes?: number;
           slug: string;
           status?: Database["public"]["Enums"]["business_status"];
@@ -494,6 +496,7 @@ export type Database = {
           phone?: string | null;
           plan?: Database["public"]["Enums"]["business_plan"];
           plan_override_until?: string | null;
+          review_requests_enabled?: boolean;
           slot_interval_minutes?: number;
           slug?: string;
           status?: Database["public"]["Enums"]["business_status"];
@@ -1149,6 +1152,121 @@ export type Database = {
           },
           {
             foreignKeyName: "payments_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      review_invites: {
+        Row: {
+          booking_id: string;
+          business_id: string;
+          created_at: string;
+          id: string;
+          token_hash: string;
+        };
+        Insert: {
+          booking_id: string;
+          business_id: string;
+          created_at?: string;
+          id?: string;
+          token_hash: string;
+        };
+        Update: {
+          booking_id?: string;
+          business_id?: string;
+          created_at?: string;
+          id?: string;
+          token_hash?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "review_invites_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "review_invites_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      reviews: {
+        Row: {
+          booking_id: string;
+          business_id: string;
+          comment: string | null;
+          created_at: string;
+          customer_id: string;
+          display_name: string | null;
+          hidden_at: string | null;
+          id: string;
+          rating: number;
+          replied_at: string | null;
+          reply: string | null;
+          report_note: string | null;
+          report_reason: string | null;
+          reported_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          booking_id: string;
+          business_id: string;
+          comment?: string | null;
+          created_at?: string;
+          customer_id: string;
+          display_name?: string | null;
+          hidden_at?: string | null;
+          id?: string;
+          rating: number;
+          replied_at?: string | null;
+          reply?: string | null;
+          report_note?: string | null;
+          report_reason?: string | null;
+          reported_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          booking_id?: string;
+          business_id?: string;
+          comment?: string | null;
+          created_at?: string;
+          customer_id?: string;
+          display_name?: string | null;
+          hidden_at?: string | null;
+          id?: string;
+          rating?: number;
+          replied_at?: string | null;
+          reply?: string | null;
+          report_note?: string | null;
+          report_reason?: string | null;
+          reported_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reviews_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "reviews_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "reviews_business_id_fkey";
             columns: ["business_id"];
             isOneToOne: false;
             referencedRelation: "businesses";

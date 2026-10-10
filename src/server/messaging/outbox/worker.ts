@@ -632,6 +632,11 @@ function bajaLink(token: string): string {
   return `${appUrl()}${appHref("baja", token)}`;
 }
 
+/** WP-65 (D-045): `${APP_URL}/resena/<token>` (SE `/recension/<token>`). */
+function reviewLink(token: string): string {
+  return `${appUrl()}${appHref("resena", token)}`;
+}
+
 /** WP-23: `${APP_URL}/v/<token>` — väntelistans erbjudandelänk ("Ta
  * tiden", `claimWaitlistOffer`). */
 function waitlistOfferLink(token: string): string {
@@ -910,6 +915,20 @@ async function sendCustomerEmail(
       });
       return r.id;
     }
+    case "solicitudResena": {
+      const r = await sendEmail({
+        to,
+        template: "solicitudResena",
+        data: {
+          cliente: ctx.cliente,
+          negocio: ctx.negocio,
+          servicio: ctx.servicio,
+          resenaUrl: reviewLink(token),
+        },
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
     case "cancelacionRechazada": {
       const { fecha, hora } = fechaHora(ctx);
       const r = await sendEmail({
@@ -1010,6 +1029,15 @@ async function sendCustomerSms(
           hora,
           link: bookAgainLink(ctx.slug),
         },
+        idempotencyKey: row.dedupeKey,
+      });
+      return r.id;
+    }
+    case "solicitudResena": {
+      const r = await sendSms({
+        to,
+        template: "solicitudResena",
+        data: { negocio: ctx.negocio, link: reviewLink(token) },
         idempotencyKey: row.dedupeKey,
       });
       return r.id;
@@ -1249,6 +1277,8 @@ const REQUEST_ONLY_TEMPLATES: ReadonlySet<string> = new Set([
 const STATUS_ONLY_TEMPLATES: ReadonlyMap<string, readonly string[]> = new Map([
   ["solicitudCancelacion", ["cancel_requested"]],
   ["cancelacionRechazada", ["confirmed", "pending_payment"]],
+  // WP-65 (D-045): bara en genomförd bokning (inte No vino/avbokad).
+  ["solicitudResena", ["confirmed", "completed"]],
 ]);
 
 async function processInviteeRow(

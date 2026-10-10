@@ -101,5 +101,6 @@ export function smsFixtures(market: Market): {
       link,
       bajaLink: "https://app.example.com/baja/abc123",
     },
+    solicitudResena: { negocio: b.negocio, link },
   };
 }

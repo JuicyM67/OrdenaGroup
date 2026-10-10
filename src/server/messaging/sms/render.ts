@@ -112,6 +112,8 @@ export type SmsTemplateMap = {
     link: string;
     bajaLink: string;
   };
+  /** WP-65 (D-045): pedir reseña después de una cita realizada. */
+  readonly solicitudResena: { negocio: string; link: string };
 };
 
 export type SmsTemplateName = keyof SmsTemplateMap;
@@ -134,6 +136,7 @@ export const SMS_TEMPLATE_NAMES: readonly SmsTemplateName[] = [
   "codigoAcceso",
   "mensajeLibre",
   "campanaMarketing",
+  "solicitudResena",
 ];
 
 /** `hora_flash` (marketing, INTEGRATIONS.md §1): mallarna som kräver

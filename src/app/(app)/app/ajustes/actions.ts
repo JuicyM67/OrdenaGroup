@@ -29,6 +29,7 @@ import {
   declineCancelRequest,
   declineRequest,
 } from "@/server/owner/requests";
+import { setReviewRequestsEnabled } from "@/server/reviews/owner";
 
 async function currentOwner(): Promise<
   { userId: string; businessId: string } | { ok: false; code: "unauthorized" }
@@ -142,6 +143,15 @@ export async function updateWaitlistSettingsAction(
   const owner = await currentOwner();
   if ("ok" in owner) return owner;
   return updateWaitlistSettings(owner.userId, owner.businessId, input);
+}
+
+// WP-65 (D-045): "Pedir reseña después de la cita".
+export async function updateReviewRequestsAction(
+  enabled: boolean,
+): Promise<MutationResult> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return owner;
+  return setReviewRequestsEnabled(owner.userId, owner.businessId, enabled);
 }
 
 // WP-45 (D-033): klockan i Ajustes topprad.

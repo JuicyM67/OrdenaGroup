@@ -32,6 +32,12 @@ export default async function AdminBusinessesPage({
         <h1 className="text-22 font-bold text-ink">Företag</h1>
         <div className="flex gap-3">
           <Link
+            href="/admin/resenas"
+            className="text-13 font-semibold text-ink underline"
+          >
+            Recensioner
+          </Link>
+          <Link
             href="/admin/actividad"
             className="text-13 font-semibold text-ink underline"
           >

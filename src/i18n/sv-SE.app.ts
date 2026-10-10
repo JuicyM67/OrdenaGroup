@@ -1289,6 +1289,21 @@ export const email: Widen<typeof Es.email> = {
       `${p.pct} % rabatt på dina bokningar`,
     cta: "Boka tid",
   },
+  solicitudResena: {
+    asunto: (p: { negocio: string }): string =>
+      `Hur var ditt besök hos ${p.negocio}?`,
+    preheader: "Berätta på en minut. Ditt omdöme hjälper andra att välja.",
+    titulo: "Hur var det?",
+    texto: (p: {
+      cliente: string;
+      negocio: string;
+      servicio: string;
+    }): string =>
+      `Hej ${p.cliente}! Tack för besöket hos ${p.negocio}. Vad tyckte du om din ${p.servicio}?`,
+    ayuda:
+      "Ditt omdöme visas på bokningssidan med bara ditt förnamn och första bokstaven i efternamnet. Du kan ändra det i 7 dagar.",
+    cta: "Lämna omdöme",
+  },
 };
 
 // ---------------------------------------------------------------------------
@@ -2246,6 +2261,8 @@ export const sms: Widen<typeof Es.sms> = {
     `Din inloggningskod är ${p.codigo}. Dela den aldrig med någon.`,
   mensajeLibre: (p: { negocio: string; texto: string }): string =>
     `${p.negocio}: ${p.texto}`,
+  solicitudResena: (p: { negocio: string; link: string }): string =>
+    `Hur var ditt besök hos ${p.negocio}? Lämna ett omdöme: ${p.link}`,
   campanaMarketing: (p: {
     negocio: string;
     texto: string;
@@ -2851,7 +2868,87 @@ export const uxTextos: Widen<typeof Es.uxTextos> = {
   expandirMenu: "Fäll ut menyn",
 };
 
+export const resenas: Widen<typeof Es.resenas> = {
+  formulario: {
+    titulo: "Hur var det?",
+    notaLabel: "Ditt betyg",
+    estrella: (p: { n: number }): string =>
+      p.n === 1 ? "1 stjärna" : `${p.n} stjärnor`,
+    notaRequerida: "Välj 1 till 5 stjärnor.",
+    comentarioLabel: "Berätta mer (valfritt)",
+    comentarioPlaceholder: "Vad var bra? Vad kan bli bättre?",
+    contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    publicaComo: (p: { nombre: string }): string => `Visas som ${p.nombre}.`,
+    enviar: "Publicera omdöme",
+    guardar: "Spara ändringar",
+    enviando: "Sparar…",
+    gracias: "Tack för ditt omdöme!",
+    graciasTexto: (p: { negocio: string }): string =>
+      `Det syns nu på ${p.negocio}s sida. Du kan ändra det i 7 dagar via samma länk.`,
+    editar: "Ändra mitt omdöme",
+    cerrada:
+      "Tack för ditt omdöme. Det har gått 7 dagar, så det kan inte längre ändras.",
+    error: "Vi kunde inte spara ditt omdöme. Försök igen.",
+    verPagina: "Visa sidan",
+    noEncontrada: "Länken är inte giltig eller inte längre tillgänglig.",
+  },
+  publico: {
+    titulo: "Omdömen",
+    cantidad: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "omdöme" : "omdömen"}`,
+    notaAria: (p: { nota: string; n: number }): string =>
+      `Betyg ${p.nota} av 5, ${p.n} ${p.n === 1 ? "omdöme" : "omdömen"}`,
+    estrellasAria: (p: { n: number }): string => `${p.n} av 5 stjärnor`,
+    verificadas: "Bara kunder som haft en bokad tid kan lämna omdöme.",
+    anonimo: "Kund",
+    respuesta: (p: { negocio: string }): string => `Svar från ${p.negocio}`,
+    verMas: "Visa fler omdömen",
+  },
+  panel: {
+    titulo: "Omdömen",
+    filtrosLabel: "Filtrera omdömen",
+    filtros: {
+      todas: "Alla",
+      sinResponder: "Obesvarade",
+      bajas: "Låga betyg",
+    },
+    vacio:
+      "Du har inga omdömen än. Efter varje besök ber vi kunden om ett omdöme.",
+    vacioFiltro: "Inga omdömen med det här filtret.",
+    sinComentario: "Ingen kommentar.",
+    responder: "Svara",
+    editarRespuesta: "Ändra svar",
+    respuestaLabel: "Offentligt svar",
+    respuestaAyuda: "Visas under omdömet på din sida.",
+    publicarRespuesta: "Publicera svar",
+    cancelar: "Avbryt",
+    reportar: "Anmäl",
+    reportada: "Anmäld",
+    oculta: "Dold efter granskning",
+    reportarTitulo: "Anmäl omdöme",
+    reportarTexto:
+      "Vi granskar det och döljer det om det bryter mot reglerna. Omdömen kan inte raderas.",
+    motivoLabel: "Anledning",
+    motivos: {
+      offensive: "Kränkande språk",
+      false: "Felaktig information",
+      personal_data: "Personuppgifter",
+      not_customer: "Inte vår kund",
+      other: "Annat",
+    },
+    detalleLabel: "Detaljer (valfritt)",
+    enviarReporte: "Skicka anmälan",
+    error: "Vi kunde inte spara. Försök igen.",
+  },
+  ajustes: {
+    pedirResena: "Be om omdöme efter besöket",
+    pedirResenaAyuda:
+      "Vi skickar ett meddelande 2 timmar efter varje besök. Bara den som haft en tid hos dig kan lämna omdöme.",
+  },
+};
+
 const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
+  resenas,
   comun,
   nav,
   estados,

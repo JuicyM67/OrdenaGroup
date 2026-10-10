@@ -30,6 +30,8 @@ export type AjustesBusiness = {
   waitlistMode: "sequential" | "broadcast";
   /** WP-23: `businesses.waitlist_hold_minutes` (5–240). */
   waitlistHoldMinutes: number;
+  /** WP-65 (D-045): "Pedir reseña después de la cita". Saknas = på. */
+  reviewRequestsEnabled?: boolean;
 };
 
 export type AjustesService = {

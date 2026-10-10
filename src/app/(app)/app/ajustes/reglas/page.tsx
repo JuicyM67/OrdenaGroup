@@ -17,6 +17,7 @@ import {
   declineCancelRequestAction,
   declineRequestAction,
   updateBusinessSettingsAction,
+  updateReviewRequestsAction,
   updateWaitlistSettingsAction,
 } from "../actions";
 
@@ -56,6 +57,11 @@ export default async function AjustesReglasPage() {
         waitlistAction={
           ctx.current.view.perms.can_edit_settings
             ? updateWaitlistSettingsAction
+            : undefined
+        }
+        reviewRequestsAction={
+          ctx.current.view.perms.can_edit_settings
+            ? updateReviewRequestsAction
             : undefined
         }
       />

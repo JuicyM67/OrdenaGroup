@@ -43,6 +43,10 @@ import {
 } from "./templates/dueno";
 import { horaFlashEmail, type HoraFlashData } from "./templates/hora-flash";
 import {
+  solicitudResenaEmail,
+  type SolicitudResenaData,
+} from "./templates/solicitud-resena";
+import {
   invitacionEquipoEmail,
   type InvitacionEquipoData,
 } from "./templates/invitacion-equipo";
@@ -90,6 +94,8 @@ export type EmailTemplateMap = {
   readonly cancelacionRechazada: CancelacionRechazadaData;
   /** WP-31 (F14): campaña de marketing (`/app/clientes/utskick`). */
   readonly campanaMarketing: CampanaMarketingData;
+  /** WP-65 (D-045): al cliente, pedir reseña después de la cita. */
+  readonly solicitudResena: SolicitudResenaData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -122,6 +128,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   solicitudCancelacion: "booking",
   cancelacionRechazada: "booking",
   campanaMarketing: "booking",
+  solicitudResena: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -147,6 +154,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "solicitudCancelacion",
   "cancelacionRechazada",
   "campanaMarketing",
+  "solicitudResena",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -204,6 +212,8 @@ export function renderEmail<T extends EmailTemplateName>(
       );
     case "campanaMarketing":
       return campanaMarketingEmail(market, data as CampanaMarketingData);
+    case "solicitudResena":
+      return solicitudResenaEmail(market, data as SolicitudResenaData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

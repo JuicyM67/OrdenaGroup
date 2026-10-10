@@ -23,11 +23,14 @@ export function ProfileHeader({
   profile,
   now,
   social,
+  rating,
 }: {
   business: BookingBusiness;
   profile: BookingProfile;
   now: IsoInstant;
   social?: ReactNode;
+  /** WP-65: snittbetyget (`RatingChip`), serverrenderat. */
+  rating?: ReactNode;
 }) {
   const initials = initialsOf(business.name);
   const proximaHora = nextAvailableChipLabel(now, profile.nextAvailable);
@@ -84,6 +87,7 @@ export function ProfileHeader({
         <Chip tone="success" size="sm">
           {openChipLabel(profile.openNow)}
         </Chip>
+        {rating}
         {proximaHora ? (
           <Chip tone="neutral" size="sm">
             {proximaHora}
@@ -136,10 +140,13 @@ export function ProfileChipsDesktop({
   profile,
   now,
   social,
+  rating,
 }: {
   profile: BookingProfile;
   now: IsoInstant;
   social?: ReactNode;
+  /** WP-65: snittbetyget (`RatingChip` med länk till sektionen). */
+  rating?: ReactNode;
 }) {
   const proximaHora = nextAvailableChipLabel(now, profile.nextAvailable);
   return (
@@ -147,6 +154,7 @@ export function ProfileChipsDesktop({
       <Chip tone="success" size="sm">
         {openChipLabel(profile.openNow)}
       </Chip>
+      {rating}
       {proximaHora ? (
         <Chip tone="neutral" size="sm">
           {proximaHora}

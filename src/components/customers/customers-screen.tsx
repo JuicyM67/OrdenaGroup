@@ -37,7 +37,7 @@ import { Chip, type ChipProps } from "@/components/ui/chip";
 import { Pill } from "@/components/ui/pill";
 import { Select } from "@/components/ui/select";
 import { appHref } from "@/config/routes";
-import { campanas, clientes, estados } from "@/i18n";
+import { campanas, clientes, estados, resenas } from "@/i18n";
 import { APP_TZ, formatDate, parseInstant } from "@/lib/format/dates";
 import { formatPhone, isE164 } from "@/lib/format/phone";
 import { initialsOf } from "@/lib/format/initials";
@@ -219,13 +219,21 @@ export function CustomersScreen({
         <OwnerPageHeader
           title={clientes.titulo}
           actions={
-            canManageCampaigns ? (
+            <div className="flex flex-wrap gap-2">
+              {/* WP-65 (D-045): Reseñas — hela teamet läser. */}
               <Button asChild variant="secondary" size="lg">
-                <Link href={appHref("appClientesUtskick")}>
-                  {clientes.ctaCampanas}
+                <Link href={appHref("appClientesResenas")}>
+                  {resenas.panel.titulo}
                 </Link>
               </Button>
-            ) : undefined
+              {canManageCampaigns ? (
+                <Button asChild variant="secondary" size="lg">
+                  <Link href={appHref("appClientesUtskick")}>
+                    {clientes.ctaCampanas}
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
           }
         />
 
