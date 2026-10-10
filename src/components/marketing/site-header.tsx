@@ -160,7 +160,7 @@ export function SiteHeader({ className }: { className?: string }) {
             asChild
             variant="primary"
             size="sm"
-            className="hidden sm:inline-flex"
+            className="hidden rounded-full bg-lilac text-ink hover:bg-lilac/85 sm:inline-flex"
           >
             <Link href="/login">{copy.sitio.nav.ctaCrearAgenda}</Link>
           </Button>
@@ -316,7 +316,7 @@ export function SiteHeader({ className }: { className?: string }) {
                       asChild
                       variant="primary"
                       size="2xl"
-                      className="h-13 rounded-full"
+                      className="h-13 rounded-full bg-lilac text-ink hover:bg-lilac/85"
                     >
                       <Link href="/login">{t.crearGratis}</Link>
                     </Button>
