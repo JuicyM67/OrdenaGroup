@@ -13,9 +13,9 @@ export const DEMO = {
     pris2: formatClp(18_000),
     kund: "Joaquín Rivas",
     lank: "tunegocio.cl/reservar",
-    // Sista siffran i hero-bentogridets rullande "Comisión"-ruta (WP-hemsida v2,
-    // retro 2026-09-28, punkt 2): 15 %/10 %/5 % är dekor, det fasta priset formateras
-    // per marknad precis som alla andra belopp (regel dura 5).
+    telefono: "+56 9 …",
+    onsdag: "MIÉ",
+    // Beloppet i hero-bentogridets "Comisión"-ruta, formaterat per marknad (regel dura 5).
     comisionFinal: formatClp(0),
     // Mockup del "wallet" en `partner-stampello.tsx` (WP-fixar-sv): nombre del negocio y
     // premio de ejemplo para la tarjeta de sellos, decoración, no UI-text real.
@@ -31,6 +31,8 @@ export const DEMO = {
     pris2: "895 kr",
     kund: "Elsa Lindqvist",
     lank: "dittforetag.se/boka",
+    telefono: "+46 70 …",
+    onsdag: "ONS",
     comisionFinal: "0 kr",
     walletNegocio: "Salong Nova",
     walletPremio: "Gratis kaffe",

@@ -7,6 +7,8 @@
 // "Nya tokens (WP-hemsida, startsidan efter heron + footer)". `animate-float` (redan i
 // tokens.css, används annars i hero-bento.tsx) ger svävningen; skuggellipsen använder den
 // nya `animate-shadow-pulse` i samma takt (6s).
+import { DEMO } from "./demo-data";
+
 export function Calendar3D({ className }: { className?: string }) {
   return (
     <div className={className}>
@@ -65,7 +67,7 @@ export function Calendar3D({ className }: { className?: string }) {
             letterSpacing={2}
             className="fill-violet font-sans"
           >
-            MIÉ
+            {DEMO.onsdag}
           </text>
           {/* Metallringar. */}
           <rect

@@ -348,13 +348,8 @@ function ComisionTile() {
       <span className="text-11 font-bold text-lime">
         {BENTO.comision.titulo}
       </span>
-      <div className="h-10 overflow-hidden">
-        <div className="flex animate-hero-comision flex-col font-display text-32 leading-10 font-bold">
-          <span>15%</span>
-          <span>10%</span>
-          <span>5%</span>
-          <span>{DEMO.comisionFinal}</span>
-        </div>
+      <div className="font-display text-32 leading-10 font-bold">
+        {DEMO.comisionFinal}
       </div>
       <span className="text-10 text-on-dark-muted">{BENTO.comision.pie}</span>
     </Card>

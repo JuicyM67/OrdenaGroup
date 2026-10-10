@@ -187,7 +187,7 @@ export const landing = {
     },
     comision: {
       valor: "0 kr",
-      etiqueta: "Vi tar ingen avgift per bokning du får in.",
+      etiqueta: "Vi tar ingen provision på dina bokningar.",
     },
     texto:
       "Bokningar dygnet runt, utan samtal eller sms fram och tillbaka. Du ser varje tid ordnad i din kalender.",
@@ -486,11 +486,10 @@ export const sitio = {
         valor: "24/7",
         pie: "dag som natt",
       },
-      /** `titulo`/`pie` är fasta; de procentsatser som rullar (15 %, 10 %,
-       * 5 %, 0 kr) byggs av komponenten, inte här. */
+      /** `titulo`/`pie` är fasta; beloppet kommer från demodata. */
       comision: {
         titulo: "Provision",
-        pie: "per bokning, alltid",
+        pie: "på bokningar",
       },
     },
     /** Samma nycklar och funktionssignaturer som `es-CL.sitio.inicio.intro`
@@ -499,9 +498,9 @@ export const sitio = {
       titulo: "Allt ditt företag behöver,",
       tituloDestacado: "inget onödigt.",
       stats: {
-        disponible: { valor: "24/7", pie: "öppna bokningar" },
+        disponible: { valor: "24/7", pie: "onlinebokning" },
         minutos: { valor: "10 min", pie: "för att komma igång" },
-        comision: { valor: "0 kr", pie: "i provision" },
+        comision: { valor: "0 kr", pie: "provision på bokningar" },
       },
     },
     /** Samma nycklar och funktionssignaturer som `es-CL.sitio.inicio.porQue`
@@ -560,20 +559,20 @@ export const sitio = {
       menosInasistencias: {
         titulo: "Färre uteblivna besök",
         texto:
-          "Markera vem som kom och vem som inte dök upp, direkt i mobilen. Automatiska sms-påminnelser kommer snart.",
+          "Markera vem som kom och vem som inte dök upp, direkt i mobilen. Automatiska påminnelser går ut via sms och mejl.",
         puntos: {
           punto1: '"Kom" och "Kom inte" med en knapptryckning',
-          punto2: `Sms-påminnelser — ${SITIO_KOMMER_SNART}`,
-          punto3: `Historik över uteblivna besök per kund — ${SITIO_KOMMER_SNART}`,
+          punto2: "Sms-påminnelser innan tiden",
+          punto3: "Historik över uteblivna besök per kund",
         },
       },
       precioUnico: {
         titulo: "Ett pris för hela ditt företag",
         texto:
-          "Du betalar ett enda pris för ditt företag, oavsett hur stort teamet är. Ingen avgift per anställd eller bokning.",
+          "Du betalar ett enda pris för ditt företag, oavsett hur stort teamet är. Ingen avgift per anställd och ingen provision på bokningar.",
         puntos: {
           punto1: "Ingen avgift för varje anställd du lägger till",
-          punto2: "Ingen avgift per bokning",
+          punto2: "Ingen provision på bokningar",
           punto3: "Gratisplan för att komma igång med en anställd",
         },
       },
@@ -694,6 +693,8 @@ export const sitio = {
     fundador: landing.precios.fundador,
     /** Samma nycklar som `es-CL.sitio.precios.extra`. */
     extra: {
+      pagoOnline:
+        "Onlinebetalning: 1 % per kortbetalning + Stripes avgift. Ingen provision på bokningar.",
       raknare: {
         titulo: "Så mycket kostar det per anställd",
         texto: (p: { n: number }): string =>
@@ -703,7 +704,7 @@ export const sitio = {
       ingaAvgifter: {
         titulo: "Inga överraskningar på fakturan",
         items: {
-          a: "Inga avgifter per bokning",
+          a: "Ingen provision på bokningar",
           b: "Inga startavgifter",
           c: "Ingen bindningstid",
           d: "Avsluta när du vill",
@@ -852,9 +853,9 @@ export const sitio = {
     },
     items: {
       a: {
-        titulo: "Ingen avgift per bokning",
+        titulo: "Ingen provision på bokningar",
         texto:
-          "Du betalar din månadsplan och inget mer. Vi tar aldrig en procentsats för varje tid dina kunder bokar.",
+          "Du betalar din månadsplan och vi tar ingen provision på bokningarna. Väljer du att ta betalt med kort online tillkommer 1 % per betalning och Stripes avgift.",
       },
       b: {
         titulo: "Ett pris för hela ditt företag",
@@ -909,7 +910,7 @@ export const sitio = {
         b: {
           titulo: "Inga provisioner eller dolda avgifter",
           texto:
-            "Du betalar din månadsplan och inget mer. Vi tar aldrig en procentsats per bokning.",
+            "Du betalar din månadsplan och vi tar ingen provision på bokningar. Onlinebetalning med kort är valfritt: 1 % per betalning och Stripes avgift.",
         },
         c: {
           titulo: "Flashtider fyller luckorna",
@@ -1146,20 +1147,20 @@ export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
   },
   {
     id: "recordatorios",
-    etiqueta: SITIO_KOMMER_SNART,
+    etiqueta: "Färre uteblivna",
     titulo: "Automatiska påminnelser via sms",
     texto:
-      "Färre glömda tider: dina kunder får en påminnelse innan sin tid, och kan bekräfta eller säga till att de behöver boka om.",
+      "Färre glömda tider: dina kunder får en påminnelse innan sin tid, med en länk för att se, flytta eller avboka.",
     puntos: [
       "Bekräftelse direkt vid bokning",
-      "Påminnelse innan tiden, med exakt datum",
-      "Mejl som backup om sms:et inte går fram",
+      "Påminnelse dagen innan, med exakt datum",
+      "Länk för att flytta eller avboka",
     ],
-    proximamente: true,
+    proximamente: false,
   },
   {
     id: "lista-espera",
-    etiqueta: SITIO_KOMMER_SNART,
+    etiqueta: "Väntelista",
     titulo: "När någon avbokar fylls tiden av sig själv",
     texto:
       "Om en dag är fullbokad ställer sig dina kunder i väntelistan. Så fort en tid blir ledig får de automatiskt besked.",
@@ -1168,24 +1169,24 @@ export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
       "Automatiskt besked så fort någon avbokar",
       "Den som svarar först får tiden",
     ],
-    proximamente: true,
+    proximamente: false,
   },
   {
     id: "abono",
-    etiqueta: SITIO_KOMMER_SNART,
+    etiqueta: "Återaktivera kunder",
     titulo: "Vi saknar dig-påminnelser till kunder som uteblivit",
     texto:
       "Kunder som inte har bokat på ett tag får ett automatiskt meddelande som påminner dem om att boka igen.",
     puntos: [
-      "Du väljer efter hur många veckor påminnelsen skickas",
+      "Du väljer efter hur många dagar påminnelsen skickas",
       "Skickas bara till kunder som gett sitt samtycke",
       "Max en påminnelse per period, ingen spam",
     ],
-    proximamente: true,
+    proximamente: false,
   },
   {
     id: "fichas-clientes",
-    etiqueta: SITIO_KOMMER_SNART,
+    etiqueta: "Kundkort",
     titulo: "Varje kunds historik, till hands",
     texto:
       "Hur många gånger de har varit hos dig, om de har uteblivit tidigare och dina egna anteckningar, allt på ett kundkort.",
@@ -1194,20 +1195,20 @@ export const SITIO_FUNCIONALIDADES: readonly SitioFuncionalidadSeccion[] = [
       "Privata anteckningar för ditt team",
       "Snabb sökning på namn eller telefonnummer",
     ],
-    proximamente: true,
+    proximamente: false,
   },
   {
     id: "reportes",
-    etiqueta: SITIO_KOMMER_SNART,
+    etiqueta: "Kassa och rapporter",
     titulo: "Hur det går för dig, i siffror",
     texto:
-      "Intäkter för dagen, veckan och månaden, plus en sammanfattning av tiderna du fått in tack vare väntelistan.",
+      "Intäkter för dagen, veckan och månaden, plus statistik över beläggning, nya och återkommande kunder och uteblivna besök.",
     puntos: [
       "Intäkter per dag, vecka och månad",
-      "Uteblivna besök de senaste 30 dagarna",
-      "Veckovis sammanfattning av återfyllda tider",
+      "Beläggning per medarbetare",
+      "Nya och återkommande kunder, trend för uteblivna besök",
     ],
-    proximamente: true,
+    proximamente: false,
   },
 ];
 
@@ -1221,8 +1222,8 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     valores: {
       gratis: "1",
       emprende: "1",
-      equipo: "Upp till 5",
-      local: "Upp till 12",
+      equipo: "Upp till 3",
+      local: "Upp till 10",
     },
   },
   {
@@ -1279,7 +1280,7 @@ export const SITIO_COMPARACION: SitioComparacion = {
     },
     {
       aspecto: "Användare i priset",
-      nosotros: "Hela företaget (upp till 5/12 i Team/Företag)",
+      nosotros: "Hela företaget (upp till 3/10 i Team/Företag)",
       valores: ["1 användare per paket"],
     },
     {
@@ -1527,7 +1528,7 @@ export const PLANES: readonly PlanTexto[] = [
     id: "equipo",
     nombre: "Team",
     puntos: [
-      "Upp till 5 anställda",
+      "Upp till 3 anställda",
       "150 sms/månad",
       "Flashtider",
       "Vi saknar dig-påminnelser",
@@ -1538,7 +1539,7 @@ export const PLANES: readonly PlanTexto[] = [
   {
     id: "local",
     nombre: "Företag",
-    puntos: ["Upp till 12 anställda", "300 sms/månad", "Prioriterad support"],
+    puntos: ["Upp till 10 anställda", "300 sms/månad", "Prioriterad support"],
     cta: "Välj Företag",
   },
 ];
