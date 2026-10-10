@@ -15,6 +15,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { market } from "@/config/brand";
 import { runWinback } from "@/server/campaigns";
 import { withServiceTx } from "@/server/db/tx";
 import { purgeBusiness } from "@/server/privacy/business";
@@ -108,6 +109,20 @@ async function runWinbackSafely(): Promise<{
   }
 }
 
+/** WP-63 (D-043): rulla marknadens demoföretag (`brand.demoSlug`) så att
+ * bokningar och horas flash alltid ligger kring dagens datum. Funktionen rör
+ * bara demoföretagets fasta id. Ett fel stoppar aldrig resten av passet. */
+async function rollDemoSafely(): Promise<{ demoRolled: boolean }> {
+  try {
+    await withServiceTx((q) =>
+      q.query(`select private.seed_demo($1)`, [market]),
+    );
+    return { demoRolled: true };
+  } catch {
+    return { demoRolled: false };
+  }
+}
+
 async function handle(request: NextRequest): Promise<NextResponse> {
   if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -115,7 +130,8 @@ async function handle(request: NextRequest): Promise<NextResponse> {
   const retention = await runRetention();
   const businesses = await purgeOverdueBusinesses();
   const winback = await runWinbackSafely();
-  const result = { ...retention, ...businesses, ...winback };
+  const demo = await rollDemoSafely();
+  const result = { ...retention, ...businesses, ...winback, ...demo };
   // Bara räknare (regel 8: ingen persondata i loggar).
   console.log("retention: pass klart", result);
   return NextResponse.json(result);

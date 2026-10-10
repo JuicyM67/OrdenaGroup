@@ -50,7 +50,7 @@ import {
   type HoursRow as EngineHoursRow,
 } from "@/server/scheduling/types";
 
-import { mediaPathFromUrl, publicMediaUrl } from "./media";
+import { isDemoAssetUrl, publicImageUrl, publicMediaUrl } from "./media";
 
 /**
  * Sidans data för `/{slug}` (WP-20). Läser `businessId` (redan slug→id-
@@ -229,9 +229,15 @@ async function loadGallery(
   // Bara filer som servern själv laddat upp i företagets mapp (säkerhetsgranskning
   // WP-41: rader kan skrivas direkt via Data API, så sökvägen litas inte på blint).
   const own = new RegExp(`^${businessId}/[0-9a-f-]{36}\\.(jpg|png|webp)$`);
-  return r.rows
-    .filter((x) => own.test(x.path))
-    .map((x) => publicMediaUrl(x.path));
+  // WP-63: demoföretagens galleri pekar på statiska filer (`<id>/demo/...`).
+  const demoPrefix = `${businessId}/`;
+  return r.rows.flatMap((x) => {
+    if (own.test(x.path)) return [publicMediaUrl(x.path)];
+    const rest = x.path.startsWith(demoPrefix)
+      ? `/${x.path.slice(demoPrefix.length)}`
+      : "";
+    return isDemoAssetUrl(rest) ? [rest] : [];
+  });
 }
 
 export async function loadReservaPageData(
@@ -257,14 +263,8 @@ export async function loadReservaPageData(
     about: biz.about,
     // Bara bilder i vår bucket och företagets egen mapp visas publikt (ingen extern
     // URL eller localhost, säkerhetsgranskning WP-41).
-    coverUrl:
-      biz.cover_url && mediaPathFromUrl(biz.cover_url, businessId)
-        ? biz.cover_url
-        : null,
-    logoUrl:
-      biz.logo_url && mediaPathFromUrl(biz.logo_url, businessId)
-        ? biz.logo_url
-        : null,
+    coverUrl: publicImageUrl(biz.cover_url, businessId),
+    logoUrl: publicImageUrl(biz.logo_url, businessId),
     instagram: biz.instagram,
     tiktok: biz.tiktok,
     facebook: biz.facebook,
@@ -357,10 +357,7 @@ export async function loadReservaPageData(
     title: s.title,
     // WP-44: bara bilder i vår bucket och företagets egen mapp (samma regel
     // som cover_url/logo_url ovan).
-    photoUrl:
-      s.photo_url && mediaPathFromUrl(s.photo_url, businessId)
-        ? s.photo_url
-        : null,
+    photoUrl: publicImageUrl(s.photo_url, businessId),
   }));
   let nextFree: { start: number; serviceId: string } | null = null;
 

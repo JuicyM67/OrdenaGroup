@@ -4,6 +4,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { brand } from "../src/config/brand";
 import { landing, sitio } from "../src/i18n/es-CL.marketing";
 
 test("renderar med rubrik, nav och CTA:er", async ({ page, isMobile }) => {
@@ -54,12 +55,12 @@ test('"Entrar" lleva a /login', async ({ page, isMobile }) => {
   await page.waitForURL("**/login");
 });
 
-test('el CTA secundario ("Ver una agenda de ejemplo") lleva a /barberia-norte', async ({
+test('el CTA secundario ("Ver una agenda de ejemplo") lleva al negocio de demo (brand.demoSlug)', async ({
   page,
 }) => {
   await page.goto("/");
   await page.getByRole("link", { name: landing.hero.ctaSecundario }).click();
-  await page.waitForURL("**/barberia-norte");
+  await page.waitForURL(`**/${brand.demoSlug}`);
 });
 
 test("el CTA primario del hero lleva a /login", async ({ page }) => {

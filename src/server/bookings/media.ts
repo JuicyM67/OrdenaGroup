@@ -58,3 +58,26 @@ export function mediaPathFromUrl(
     ? path
     : null;
 }
+
+/**
+ * WP-63 (D-043): demoföretagens bilder är våra egna statiska filer i
+ * `public/demo/<cl|se>/`, inte objekt i bucketen. Samma vitlista som
+ * CHECK-reglerna i 20261010120000_demo_businesses.sql — bara en relativ
+ * sökväg till de filerna, aldrig en extern domän.
+ */
+const DEMO_ASSET_RE = /^\/demo\/(cl|se)\/[a-z0-9-]+\.(webp|jpg|png|svg)$/;
+
+export function isDemoAssetUrl(url: string): boolean {
+  return DEMO_ASSET_RE.test(url);
+}
+
+/** Bild-URL som får visas publikt: vår bucket i företagets egen mapp, eller
+ * en statisk demobild. Annars `null`. */
+export function publicImageUrl(
+  url: string | null,
+  businessId: string,
+): string | null {
+  if (!url) return null;
+  if (isDemoAssetUrl(url)) return url;
+  return mediaPathFromUrl(url, businessId) ? url : null;
+}

@@ -72,6 +72,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-57 | UX-översyn: gemensamt sidhuvud, meny med etiketter, mobil Mer-flik, ny Inicio/Hoy, Clientes-tabell, kundkort, Caja, månadsvy med fyllnad, Team-rader, Blixt-luckor | ui-engineer ×3 | – | – | ☑ |
 | WP-45 | Bekräftelse av bokningar + notiser (status `requested`, bekräfta automatiskt i Ajustes, klocka/Inicio/Agenda med Confirmar/Rechazar, mejl "solicitud recibida"/"rechazada", utgång) | db-engineer + scheduling-engineer + integrations-engineer + copywriter-es-cl + ui-engineer | WP-16, WP-21 | F4–F7 | ☑ |
 | WP-46 | Personalkonton och behörigheter (inbjudan via e-post, 7 fasta flaggor på memberships, RLS + serverkontroll, "Mis reservas") | db-engineer + scheduling-engineer + integrations-engineer + copywriter-es-cl + ui-engineer | WP-45 | F1, F3, F6 | ◐ (plan: docs/tasks/plans/WP-46.md) |
+| WP-63 | Demoföretag per marknad (`brand.demoSlug`: CL `estudio-brisa`, SE `salong-norrsken`) med full profil, rullande bokningar och horas flash via `private.seed_demo` (D-043) | db-engineer + ui-engineer | WP-41, WP-30 | F5, F13 | ☑ |
 
 ## Parallellisering — förslag
 - **Dag 1:** WP-00 (en agent). Samtidigt: WP-03 (copywriter).
