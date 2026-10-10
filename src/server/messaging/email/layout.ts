@@ -110,7 +110,12 @@ function wordmarkHtml(market: Market): string {
     const words = brand.name.toLowerCase().split(" ");
     const first = words[0] ?? brand.name;
     const rest = words.slice(1).join(" ");
-    const src = `https://${brand.domain ?? ""}/brand/bb-mark-email.png`;
+    // Basen är installationens APP_URL (samma som övriga mejllänkar); domänen är bara
+    // reserv, eftersom den kan vara okopplad (staging kör på vercel.app).
+    const base = (
+      process.env.NEXT_PUBLIC_APP_URL ?? `https://${brand.domain ?? ""}`
+    ).replace(/\/$/, "");
+    const src = `${base}/brand/bb-mark-email.png`;
     return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.canvas}">
       <tr>
