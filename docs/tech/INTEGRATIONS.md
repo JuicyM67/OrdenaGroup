@@ -45,6 +45,12 @@
 - Provperiod 30 dagar → `past_due` → varning dag −3 och −1 → 7 dagars grace → `frozen` (bokningssidan offline, appen läsläge).
 - Factura electrónica via OpenFactura (fas 2).
 
+## 3b. Stripe Connect (kundbetalning online, bara SE, D-044)
+
+- Express-konton, Stripe-värd onboarding; direct charge via Stripe Checkout med `application_fee_amount` (`src/config/platform-fee.ts`); kortet reserveras och dras när bokningen är bekräftad, släpps eller återbetalas vid nekad/utgången/avbokad (`src/server/payments/stripe/reconcile.ts`).
+- Webhook `/api/webhooks/stripe` (signatur över rå body, `inbound_events` för idempotens). Händelser: `account.updated`, `checkout.session.completed`/`expired`/`async_payment_succeeded`, `payment_intent.succeeded`/`canceled`/`amount_capturable_updated`, `charge.refunded`.
+- Env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CONNECT_WEBHOOK_SECRET` (valfri). Saknas nyckeln är funktionen avstängd och dold.
+
 ## 4. E-post
 - Resend. Samma mallar som WhatsApp som reserv, samt inloggningslänkar.
 

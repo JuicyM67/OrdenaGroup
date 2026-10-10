@@ -20,6 +20,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { expireRequests } from "@/server/bookings/confirm";
 import { pgErrorCode } from "@/server/db/errors";
 import { processOutbox } from "@/server/messaging/outbox";
+import { runStripeSweep } from "@/server/payments/stripe/reconcile";
 import { queueReviewRequests } from "@/server/reviews/requests";
 import { systemClock } from "@/server/scheduling/clock";
 import { expireWaitlistOffers } from "@/server/waitlist";
@@ -76,6 +77,16 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
+  // WP-64 (D-044): stäm av Stripe-betalningar (dra / släpp / återbetala) efter
+  // att förfrågningar gått ut. Ett fel här stoppar aldrig utkorgen.
+  let stripe = { reconciled: 0, sessions: 0 };
+  try {
+    stripe = await runStripeSweep(systemClock());
+  } catch (e) {
+    console.error("outbox: runStripeSweep misslyckades", {
+      code: pgErrorCode(e) ?? "unknown",
+    });
+  }
   // WP-65 (D-045): recensionsförfrågningar för bokningar som slutade för
   // 2 h–3 dygn sedan — köas före utkorgen töms, samma felhantering.
   let reviewRequests = 0;
@@ -92,6 +103,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     expired,
     waitlistExpired,
     reviewRequests,
+    stripe,
     ...result,
   });
   return NextResponse.json({
@@ -99,6 +111,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     expired,
     waitlistExpired,
     reviewRequests,
+    stripe,
   });
 }
 

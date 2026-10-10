@@ -208,7 +208,11 @@ export async function undoPayment(
       );
       const row = r.rows[0];
       if (!row) return { ok: false, code: "not_found" } as const;
-      if (!canPay(member, row.staff_id) || row.method === "mercadopago") {
+      if (
+        !canPay(member, row.staff_id) ||
+        row.method === "mercadopago" ||
+        row.method === "stripe"
+      ) {
         return { ok: false, code: "forbidden" } as const;
       }
       if (row.status === "refunded") return { ok: true } as const; // idempotent

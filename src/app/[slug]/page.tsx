@@ -54,6 +54,21 @@ export async function generateMetadata({
   };
 }
 
+function pagoNoticeText(
+  raw: string | string[] | undefined,
+): string | undefined {
+  switch (raw) {
+    case "ok":
+      return reserva.pago.okAviso;
+    case "cancelado":
+      return reserva.pago.canceladoAviso;
+    case "liberada":
+      return reserva.pago.liberadaAviso;
+    default:
+      return undefined;
+  }
+}
+
 export default async function ReservaPage({
   params,
   searchParams,
@@ -119,6 +134,17 @@ export default async function ReservaPage({
     >
       <span>{reserva.oferta.aviso({ pct: offer.pct })}</span>
       {offer.text ? <span className="font-normal">{offer.text}</span> : null}
+    </p>
+  ) : undefined;
+
+  // WP-64 (D-044): tillbaka från Stripe Checkout (`?pago=ok|cancelado|liberada`).
+  const pagoText = pagoNoticeText(sp.pago);
+  const pagoNotice = pagoText ? (
+    <p
+      role="status"
+      className="self-start rounded-control bg-lime px-3 py-2 text-13 font-semibold text-ink"
+    >
+      {pagoText}
     </p>
   ) : undefined;
 
@@ -190,7 +216,7 @@ export default async function ReservaPage({
   return (
     <BookingScreen
       profileContent={profileContent}
-      offerNotice={offerNotice}
+      offerNotice={pagoNotice ?? offerNotice}
       data={data}
       initialSelection={initialSelection}
       submitBooking={submitBooking}

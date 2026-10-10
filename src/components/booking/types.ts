@@ -93,6 +93,9 @@ export interface BookingBusiness {
    * solicitud" (`reserva.antesDeConfirmar.ctaEnviarSolicitud`,
    * `reserva.confirmacionSolicitud`). */
   readonly autoConfirmBookings: boolean;
+  /** WP-64 (D-044): betalning online vid bokning. Frivilligt (saknas = "off");
+   * servern sätter "off" när Stripe saknas eller kontot inte kan ta betalt. */
+  readonly onlinePayment?: "off" | "optional" | "required";
 }
 
 /** WP-41: en rad i `business_hours` (väggtid, `end` får vara "24:00"). */
@@ -179,7 +182,8 @@ export type BookingServerErrorCode =
   | Exclude<BookingError, "forbidden">
   | "network"
   | "waitlist_duplicate"
-  | "rate_limited";
+  | "rate_limited"
+  | "payment_unavailable";
 
 /** Kundens uppgifter i datasteget — vanlig typ (ingen Zod), så att
  * `customer-form.tsx`/`booking-screen.tsx` kan importera den utan att dra in
@@ -202,6 +206,8 @@ export interface BookingActionOk {
    * idempotent omförsök (`src/app/[slug]/actions.ts`) eller när anroparen
    * (t.ex. väntelistan) inte har någon bokning att länka till. */
   readonly manageToken?: string;
+  /** WP-64 (D-044): kunden ska vidare till Stripe Checkout (hostad sida). */
+  readonly checkoutUrl?: string;
 }
 
 export interface BookingActionErr {

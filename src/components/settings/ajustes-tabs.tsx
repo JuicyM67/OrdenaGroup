@@ -16,6 +16,7 @@ import {
   CalendarClock,
   ClipboardList,
   Clock,
+  CreditCard,
   Gift,
   Image as ImageIcon,
   Scissors,
@@ -26,6 +27,7 @@ import {
 import type { ReactNode } from "react";
 
 import { strokeNav } from "@/components/ui/icons";
+import { market } from "@/config/brand";
 import { AJUSTES_TAB_ROUTE_IDS, appHref } from "@/config/routes";
 import { ajustes, perfil } from "@/i18n";
 
@@ -38,6 +40,7 @@ export const AJUSTES_TAB_KEYS = [
   "horario",
   "socios",
   "equipo",
+  "pagos",
   "privacidad",
 ] as const;
 
@@ -66,6 +69,7 @@ const AJUSTES_TAB_LABEL: Record<AjustesTabKey, string> = {
   horario: ajustes.secciones.horario,
   socios: ajustes.secciones.socios,
   equipo: ajustes.secciones.equipo,
+  pagos: ajustes.secciones.pagos,
   privacidad: ajustes.secciones.privacidad,
 };
 
@@ -78,6 +82,7 @@ const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
   horario: CalendarClock,
   socios: Gift,
   equipo: Users,
+  pagos: CreditCard,
   privacidad: Shield,
 };
 
@@ -105,6 +110,9 @@ export function ajustesTabVisible(
       return access.perms.can_edit_catalog;
     case "equipo":
       return access.perms.can_manage_team;
+    case "pagos":
+      // WP-64 (D-044): bara SE-installationen med Stripe på, och bara ägaren (utbetalningskonto).
+      return access.role === "owner" && market === "SE";
     case "privacidad":
       return access.role === "owner";
   }

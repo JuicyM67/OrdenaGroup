@@ -411,6 +411,7 @@ export type Database = {
           member_discount_pct: number | null;
           min_notice_minutes: number;
           name: string;
+          online_payment: string;
           phone: string | null;
           plan: Database["public"]["Enums"]["business_plan"];
           plan_override_until: string | null;
@@ -452,6 +453,7 @@ export type Database = {
           member_discount_pct?: number | null;
           min_notice_minutes?: number;
           name: string;
+          online_payment?: string;
           phone?: string | null;
           plan?: Database["public"]["Enums"]["business_plan"];
           plan_override_until?: string | null;
@@ -493,6 +495,7 @@ export type Database = {
           member_discount_pct?: number | null;
           min_notice_minutes?: number;
           name?: string;
+          online_payment?: string;
           phone?: string | null;
           plan?: Database["public"]["Enums"]["business_plan"];
           plan_override_until?: string | null;
@@ -885,6 +888,30 @@ export type Database = {
             referencedColumns: ["business_id", "id"];
           },
         ];
+      };
+      inbound_events: {
+        Row: {
+          event_id: string;
+          payload: NonNullable<Json>;
+          processed_at: string | null;
+          provider: string;
+          received_at: string;
+        };
+        Insert: {
+          event_id: string;
+          payload?: NonNullable<Json>;
+          processed_at?: string | null;
+          provider: string;
+          received_at?: string;
+        };
+        Update: {
+          event_id?: string;
+          payload?: NonNullable<Json>;
+          processed_at?: string | null;
+          provider?: string;
+          received_at?: string;
+        };
+        Relationships: [];
       };
       member_invitations: {
         Row: {
@@ -1516,6 +1543,107 @@ export type Database = {
           },
         ];
       };
+      stripe_accounts: {
+        Row: {
+          business_id: string;
+          charges_enabled: boolean;
+          created_at: string;
+          details_submitted: boolean;
+          payouts_enabled: boolean;
+          requirements_due: boolean;
+          stripe_account_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          business_id: string;
+          charges_enabled?: boolean;
+          created_at?: string;
+          details_submitted?: boolean;
+          payouts_enabled?: boolean;
+          requirements_due?: boolean;
+          stripe_account_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          business_id?: string;
+          charges_enabled?: boolean;
+          created_at?: string;
+          details_submitted?: boolean;
+          payouts_enabled?: boolean;
+          requirements_due?: boolean;
+          stripe_account_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "stripe_accounts_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: true;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      stripe_checkouts: {
+        Row: {
+          amount_minor: number;
+          booking_id: string;
+          business_id: string;
+          created_at: string;
+          currency: string;
+          fee_minor: number;
+          id: string;
+          payment_intent_id: string | null;
+          session_id: string;
+          status: string;
+          stripe_account_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          amount_minor: number;
+          booking_id: string;
+          business_id: string;
+          created_at?: string;
+          currency: string;
+          fee_minor?: number;
+          id?: string;
+          payment_intent_id?: string | null;
+          session_id: string;
+          status?: string;
+          stripe_account_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          amount_minor?: number;
+          booking_id?: string;
+          business_id?: string;
+          created_at?: string;
+          currency?: string;
+          fee_minor?: number;
+          id?: string;
+          payment_intent_id?: string | null;
+          session_id?: string;
+          status?: string;
+          stripe_account_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "stripe_checkouts_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "stripe_checkouts_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       time_off: {
         Row: {
           business_id: string;
@@ -1720,7 +1848,12 @@ export type Database = {
       message_recipient_kind: "customer" | "owner" | "invitee";
       payment_kind: "deposit" | "balance" | "full";
       payment_method:
-        "cash" | "card_terminal" | "transfer" | "swish" | "mercadopago";
+        | "cash"
+        | "card_terminal"
+        | "transfer"
+        | "swish"
+        | "stripe"
+        | "mercadopago";
       payment_status: "pending" | "approved" | "rejected" | "refunded";
       question_kind:
         | "short_text"
@@ -1897,6 +2030,7 @@ export const Constants = {
         "card_terminal",
         "transfer",
         "swish",
+        "stripe",
         "mercadopago",
       ],
       payment_status: ["pending", "approved", "rejected", "refunded"],

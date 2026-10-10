@@ -113,6 +113,9 @@ export function CustomerForm({
 
   const [terms, setTerms] = useState(false);
   const [marketing, setMarketing] = useState(false);
+  // WP-64 (D-044): "Valfri" betalning online. Servern avgör vad som gäller.
+  const onlinePayment = data.business.onlinePayment ?? "off";
+  const [payOnline, setPayOnline] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>(initialErrors ?? {});
   const [idempotencyKey] = useState(randomId);
 
@@ -235,6 +238,7 @@ export function CustomerForm({
       email: emailResult.value ?? "",
       termsAccepted: true as const,
       marketing,
+      ...(onlinePayment === "optional" && payOnline ? { payOnline: true } : {}),
       idempotencyKey,
       serviceId: selection.serviceId!,
       staffId: selection.staffId,
@@ -439,6 +443,20 @@ export function CustomerForm({
             {reserva.consentimientos.marketing({ negocio: data.business.name })}
           </ConsentCheckbox>
         </div>
+
+        {!isWaitlist && onlinePayment === "optional" ? (
+          <div className="flex flex-col gap-1">
+            <ConsentCheckbox checked={payOnline} onChange={setPayOnline}>
+              {reserva.pago.opcionalLabel}
+            </ConsentCheckbox>
+            <p className="text-12 text-muted">{reserva.pago.opcionalAyuda}</p>
+          </div>
+        ) : null}
+        {!isWaitlist && onlinePayment === "required" ? (
+          <p className="text-13 font-semibold text-ink">
+            {reserva.pago.obligatorioAviso}
+          </p>
+        ) : null}
 
         <p className="text-12 text-muted">
           {reserva.meta.vendidoPor({ negocio: data.business.name })}

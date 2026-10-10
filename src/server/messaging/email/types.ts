@@ -33,6 +33,8 @@ export type BookingCardData = {
   /** WP-31: rabatten (`descuentoSocio`) kommer från en erbjudandelänk →
    * etiketten "Precio con oferta" i stället för "Precio socio". */
   readonly descuentoOferta?: boolean;
+  /** WP-64 (D-044): betalning online. Visas som raden "Pago" i kortet. */
+  readonly pago?: "reservado" | "pagado" | "reembolso";
 };
 
 export type EmailTemplateMeta = {

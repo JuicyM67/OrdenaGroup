@@ -133,6 +133,8 @@ type MessageContext = {
   email: string | null;
   servicio: string;
   profesional: string;
+  /** WP-64 (D-044): betalning online som kunden ser den. */
+  pago: "reservado" | "pagado" | "reembolso" | null;
 };
 
 type RawContextRow = {
@@ -151,6 +153,7 @@ type RawContextRow = {
   email: string | null;
   servicio: string;
   profesional: string;
+  pago: "reservado" | "pagado" | "reembolso" | null;
 };
 
 async function loadContext(
@@ -166,7 +169,17 @@ async function loadContext(
               b.name as negocio, b.phone as negocio_telefono,
               b.slug, b.address, b.cancel_window_hours,
               c.name as cliente, c.phone_e164, c.email,
-              s.name as servicio, st.name as profesional
+              s.name as servicio, st.name as profesional,
+              (select case
+                 when bk.status::text = 'cancelled' then 'reembolso'
+                 when sc.status in ('voided', 'refunded') then 'reembolso'
+                 when bk.status::text = 'requested' and sc.status = 'authorized' then 'reservado'
+                 else 'pagado'
+               end
+                 from public.stripe_checkouts sc
+                where sc.business_id = bk.business_id and sc.booking_id = bk.id
+                  and sc.status in ('authorized', 'captured', 'voided', 'refunded')
+                order by sc.created_at desc limit 1) as pago
          from public.bookings bk
          join public.businesses b on b.id = bk.business_id
          join public.customers c on c.business_id = bk.business_id and c.id = bk.customer_id
@@ -193,6 +206,7 @@ async function loadContext(
       email: row.email,
       servicio: row.servicio,
       profesional: row.profesional,
+      pago: row.pago,
     };
   });
 }
@@ -673,13 +687,16 @@ function precioFields(ctx: MessageContext): {
   precio: string;
   descuentoSocio?: string;
   descuentoOferta?: boolean;
+  pago?: "reservado" | "pagado" | "reembolso";
 } {
   const precio = formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0));
-  if (ctx.discountClp <= 0) return { precio };
+  const pago = ctx.pago ? { pago: ctx.pago } : {};
+  if (ctx.discountClp <= 0) return { precio, ...pago };
   return {
     precio,
     descuentoSocio: formatMoney(ctx.discountClp),
     ...(ctx.discountIsOffer ? { descuentoOferta: true } : {}),
+    ...pago,
   };
 }
 
@@ -755,6 +772,7 @@ function reservaCanceladaData(
     fecha,
     hora,
     linkNuevaReserva: bookAgainLink(ctx.slug),
+    ...(ctx.pago === "reembolso" ? { reembolso: true as const } : {}),
   };
 }
 

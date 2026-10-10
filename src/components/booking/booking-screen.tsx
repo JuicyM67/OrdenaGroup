@@ -276,6 +276,12 @@ export function BookingScreen({
     dispatch({ type: "submit_start" });
     try {
       const result = await submitBooking(input);
+      if (result.ok && result.checkoutUrl) {
+        // WP-64 (D-044): vidare till Stripes hostade betalsida. `submitting`
+        // står kvar så att knappen inte kan tryckas igen under omdirigeringen.
+        window.location.assign(result.checkoutUrl);
+        return;
+      }
       if (result.ok) {
         setMemberDiscount(result.memberDiscountMinor ?? null);
         setDiscountReason(result.discountReason);

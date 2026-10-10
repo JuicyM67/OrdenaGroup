@@ -4,6 +4,8 @@ import {
   enqueueBookingEvent,
   type BookingEvent,
 } from "@/server/messaging/outbox";
+import { reconcileSoon } from "@/server/payments/stripe/reconcile";
+import { systemClock } from "@/server/scheduling/clock";
 
 /**
  * WP-45: motorns händelser efter commit. Typen är exakt `BookingEvent` från
@@ -28,4 +30,14 @@ export async function emitBookingEvent(
   e: BookingLifecycleEvent,
 ): Promise<void> {
   await enqueueBookingEvent(e);
+  // WP-64 (D-044): en betalning online följer bokningens utfall — bekräftad →
+  // dra kortet, nekad/utgången/avbokad → släpp reservationen eller återbetala.
+  // Best effort; cron-passet (`runStripeSweep`) fångar det som missas.
+  if (
+    e.type === "confirmed" ||
+    e.type === "declined" ||
+    e.type === "cancelled"
+  ) {
+    reconcileSoon(e.businessId, e.bookingId, systemClock());
+  }
 }

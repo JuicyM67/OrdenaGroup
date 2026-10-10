@@ -19,6 +19,7 @@ import {
   getCurrentMember,
   type CurrentMember,
 } from "@/server/onboarding/owner-business";
+import { stripeEnabled } from "@/server/payments/stripe/client";
 import {
   listPendingRequests,
   type PendingRequestItem,
@@ -61,6 +62,8 @@ export async function requireAjustesTab(
   const current = await getCurrentMember(user.id);
   if (!current) redirect(appHref("appOnboarding"));
   if (!ajustesTabVisible(tab, current.view)) redirect(appHref("appAgenda"));
+  // WP-64 (D-044): Betalningar finns bara när Stripe är konfigurerat.
+  if (tab === "pagos" && !stripeEnabled()) redirect(appHref("appAgenda"));
 
   const [myProfile, pendingRequests] = await Promise.all([
     loadMyProfileAction(),
@@ -81,6 +84,8 @@ export async function requireAjustesTab(
         }
       : undefined,
     pendingRequests,
-    tabs: buildAjustesTabs(current.view),
+    tabs: buildAjustesTabs(current.view).filter(
+      (t) => t.key !== "pagos" || stripeEnabled(),
+    ),
   };
 }
