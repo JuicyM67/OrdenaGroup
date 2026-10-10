@@ -608,6 +608,27 @@ export const sitio = {
         confirmada: "¡Confirmada!",
       },
     },
+    /** Sección "Cambio sin dolor" (importación con IA, WP-66) de la portada. */
+    migracion: {
+      etiqueta: "Cambio sin dolor",
+      titulo: "¿Ya tienes otra agenda? Te cambias en minutos",
+      texto:
+        "Pega el link de tu página de reservas actual. Leemos tus servicios, precios, horarios, equipo y perfil; tú revisas y lo importas con un clic. No necesitamos datos de tus clientes ni contraseñas, y funciona con los sistemas de reserva más usados.",
+      pasos: {
+        pegar: "Pega el link",
+        leer: "Lo leemos por ti",
+        revisar: "Revisa e importa",
+      },
+      visual: {
+        link: "tubarberia.ejemplo.cl",
+        leyendo: "Leyendo tu página…",
+        listo: "Listo para importar",
+        item1: "Corte de pelo",
+        item2: "Corte y barba",
+        item3: "Arreglo de barba",
+      },
+      cta: "Cámbiate gratis",
+    },
     /** Título de la sección con todas las funcionalidades en un vistazo
      * (bento grid) de la portada (WP-hemsida). No reemplaza
      * `funcionalidades.hero` de abajo, que sigue igual. */

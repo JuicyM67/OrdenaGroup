@@ -34,7 +34,7 @@ describe("routes.ts", () => {
     expect(href("inicio")).toBe("/");
     expect(href("precios")).toBe("/priser");
     expect(href("funcionalidades")).toBe("/funktioner");
-    expect(href("funcionalidades", "agenda")).toBe("/funktioner#agenda");
+    expect(href("funcionalidades", "agenda")).toBe("/funktioner#kalender");
     expect(href("horasFlash")).toBe("/flashtider");
     expect(href("ventajas")).toBe("/fordelar");
     expect(href("preguntas")).toBe("/vanliga-fragor");

@@ -3,6 +3,7 @@
 // priser eller lediga tider räknas ut här (hård regel 2).
 "use client";
 
+import { queryString } from "@/config/url-params";
 import {
   type ReactNode,
   useEffect,
@@ -185,8 +186,9 @@ export function BookingScreen({
   // ersätter posten (replaceState), så att bakåt inte skickar formuläret igen.
   useEffect(() => {
     if (state.step === "datos") {
-      if (window.location.search !== "?paso=datos") {
-        window.history.pushState({ paso: "datos" }, "", "?paso=datos");
+      const datosQuery = queryString("paso", "datos");
+      if (window.location.search !== datosQuery) {
+        window.history.pushState({ paso: "datos" }, "", datosQuery);
       }
     } else if (state.step === "confirmacion") {
       window.history.replaceState({}, "", window.location.pathname);

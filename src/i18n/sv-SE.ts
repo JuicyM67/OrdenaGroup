@@ -623,6 +623,27 @@ export const sitio = {
         confirmada: "Bokad!",
       },
     },
+    /** Sektionen "Smärtfri flytt" (AI-import, WP-66) på startsidan. */
+    migracion: {
+      etiqueta: "Smärtfri flytt",
+      titulo: "Har du redan ett bokningssystem? Flytta på några minuter",
+      texto:
+        "Klistra in länken till din nuvarande bokningssida. Vi läser in dina tjänster, priser, öppettider, personal och profil, och du granskar och importerar med ett klick. Inga kunduppgifter eller lösenord behövs, och det fungerar från de vanligaste bokningssystemen.",
+      pasos: {
+        pegar: "Klistra in länken",
+        leer: "Vi läser in åt dig",
+        revisar: "Granska och importera",
+      },
+      visual: {
+        link: "dinsalong.exempel.se",
+        leyendo: "Läser in din sida…",
+        listo: "Klart att importera",
+        item1: "Herrklippning",
+        item2: "Klippning och skägg",
+        item3: "Skäggtrimning",
+      },
+      cta: "Flytta hit gratis",
+    },
     /** Titel för sektionen med alla funktioner i en överblick (bento grid)
      * på startsidan (wp/hemsida). Ersätter inte `funcionalidades.hero` här
      * nedanför, som är oförändrad. */
