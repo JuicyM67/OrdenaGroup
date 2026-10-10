@@ -35,7 +35,7 @@ describe("routes.ts", () => {
     expect(href("precios")).toBe("/priser");
     expect(href("funcionalidades")).toBe("/funktioner");
     expect(href("funcionalidades", "agenda")).toBe("/funktioner#kalender");
-    expect(href("horasFlash")).toBe("/flashtider");
+    expect(href("horasFlash")).toBe("/blixttider");
     expect(href("ventajas")).toBe("/fordelar");
     expect(href("preguntas")).toBe("/vanliga-fragor");
     expect(href("contacto")).toBe("/kontakt");
@@ -56,7 +56,7 @@ describe("routes.ts", () => {
     );
     expect(bySource["/priser"]).toBe("/precios");
     expect(bySource["/funktioner"]).toBe("/funcionalidades");
-    expect(bySource["/flashtider"]).toBe("/horas-flash");
+    expect(bySource["/blixttider"]).toBe("/horas-flash");
     expect(bySource["/fordelar"]).toBe("/ventajas");
     expect(bySource["/vanliga-fragor"]).toBe("/preguntas");
     expect(bySource["/kontakt"]).toBe("/contacto");
@@ -79,7 +79,7 @@ describe("routes.ts", () => {
     );
     expect(bySource["/precios"]).toBe("/priser");
     expect(bySource["/funcionalidades"]).toBe("/funktioner");
-    expect(bySource["/horas-flash"]).toBe("/flashtider");
+    expect(bySource["/horas-flash"]).toBe("/blixttider");
     expect(bySource["/ventajas"]).toBe("/fordelar");
     expect(bySource["/preguntas"]).toBe("/vanliga-fragor");
     expect(bySource["/contacto"]).toBe("/kontakt");

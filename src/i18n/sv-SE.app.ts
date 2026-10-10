@@ -80,7 +80,7 @@ export const nav: Widen<typeof Es.nav> = {
   hoy: "Idag",
   agenda: "Kalender",
   clientes: "Kunder",
-  horasFlash: "Flashtider",
+  horasFlash: "Blixttider",
   cajaEInformes: "Kassa och rapporter",
   caja: "Kassa",
   ajustes: "Inställningar",
@@ -116,9 +116,9 @@ export const estados: Widen<typeof Es.estados> = {
   listaDeEspera: "Väntelista",
   desdeLista: "Från väntelistan",
   abono: "Förskott",
-  flash: "Flash",
+  flash: "Blixt",
   flashConDescuento: (p: { porcentaje: number }): string =>
-    `Flash −${p.porcentaje}%`,
+    `Blixt −${p.porcentaje}%`,
   pendientePago: "Väntar på förskott",
   /** WP-54: kund markerad som medlem med egen rabatt/förmån. */
   socio: "Medlem",
@@ -236,7 +236,7 @@ export const reserva: Widen<typeof Es.reserva> = {
   },
   dia: {
     llenoOculto: "Fullbokad dag",
-    flashOculto: "Har flashtid",
+    flashOculto: "Har blixttid",
   },
   horaAria: (p: { hora: string }): string => `Välj tiden ${p.hora}`,
   descuento: (p: { porcentaje: number }): string => `−${p.porcentaje}%`,
@@ -420,9 +420,9 @@ export const inicio: Widen<typeof Es.inicio> = {
       `${p.n} ${p.n === 1 ? "timme" : "timmar"}`,
     destacado: heroDestacadoSv,
     resumen: (p: { horas: string; monto: string }): string =>
-      `Du fyllde ${heroDestacadoSv(p)} med väntelistan och flashtiderna.`,
+      `Du fyllde ${heroDestacadoSv(p)} med väntelistan och blixttiderna.`,
     resumenVacio:
-      "Aktivera väntelistan och flashtider för att börja fylla lediga tider.",
+      "Aktivera väntelistan och blixttider för att börja fylla lediga tider.",
     verDetalle: "SE DETALJER",
   },
   features: {
@@ -432,7 +432,7 @@ export const inicio: Widen<typeof Es.inicio> = {
         `${p.n} ${p.n === 1 ? "person" : "personer"} · ${p.dia}`,
     },
     horasFlash: {
-      titulo: "Flashtider",
+      titulo: "Blixttider",
       resumen: (p: { activas: number; reservadas: number }): string =>
         `${p.activas} ${p.activas === 1 ? "aktiv" : "aktiva"} · ${p.reservadas} ${p.reservadas === 1 ? "bokad" : "bokade"}`,
     },
@@ -473,9 +473,9 @@ export const inicio: Widen<typeof Es.inicio> = {
     titulo: "Förfrågningar att bekräfta",
   },
   flashCard: {
-    titulo: "Aktiv flashtid",
-    vacio: "Du har ingen aktiv flashtid än.",
-    compartir: "Dela flashtid",
+    titulo: "Aktiv blixttid",
+    vacio: "Du har ingen aktiv blixttid än.",
+    compartir: "Dela blixttid",
     detalle: (p: { servicio: string; profesional: string }): string =>
       `${p.servicio} med ${p.profesional}`,
     fechaHoraDescuento: (p: {
@@ -523,7 +523,7 @@ export const agenda: Widen<typeof Es.agenda> = {
       `${p.n} ${p.n === 1 ? "bokning" : "bokningar"}`,
     mostrarAria: "Visa i kalendern",
     mostrar: "Visa",
-    horasFlash: "Flashtider",
+    horasFlash: "Blixttider",
     desdeListaDeEspera: "Från väntelistan",
     bloqueosYAlmuerzo: "Blockeringar och lunch",
     esperanEl: (p: { n: number; dia: string }): string =>
@@ -539,13 +539,13 @@ export const agenda: Widen<typeof Es.agenda> = {
     horaFlashDisponibleAria: (p: {
       hora: string;
       porcentaje: number;
-    }): string => `Flashtid tillgänglig kl. ${p.hora}, −${p.porcentaje}%`,
+    }): string => `Blixttid tillgänglig kl. ${p.hora}, −${p.porcentaje}%`,
   },
   nuevaReserva: "Ny bokning",
   celdaVacia: {
     menuAria: "Skapa vid den här tiden",
     nuevaReserva: "Ny bokning",
-    horaFlash: "Flashtid",
+    horaFlash: "Blixttid",
   },
   agregarProfesional: AGREGAR_PROFESIONAL_SV,
   verAgendaDe: (p: { nombre: string }): string => `Se ${p.nombre}s kalender`,
@@ -665,7 +665,7 @@ export const hoy: Widen<typeof Es.hoy> = {
     noVino: "Kom inte",
   },
   accionesRapidas: {
-    crearHoraFlash: "Skapa flashtid",
+    crearHoraFlash: "Skapa blixttid",
     listaEspera: (p: { n: number }): string => `Väntelista · ${p.n}`,
     cobrar: "Ta betalt",
   },
@@ -1220,7 +1220,7 @@ export const email: Widen<typeof Es.email> = {
   },
   horaFlash: {
     asunto: (p: { negocio: string; pct: number }): string =>
-      `Flashtid hos ${p.negocio}: −${p.pct}%`,
+      `Blixttid hos ${p.negocio}: −${p.pct}%`,
     preheader: "Det är ont om tid att utnyttja den.",
     titulo: (p: { pct: number }): string => `−${p.pct}% under en begränsad tid`,
     texto: (p: { servicio: string; fecha: string; hora: string }): string =>
@@ -2310,7 +2310,7 @@ export const sms: Widen<typeof Es.sms> = {
     pct: number;
     link: string;
   }): string =>
-    `Flashtid hos ${p.negocio}: -${p.pct}% om du bokar idag kl. ${p.hora}. ${p.link}`,
+    `Blixttid hos ${p.negocio}: -${p.pct}% om du bokar idag kl. ${p.hora}. ${p.link}`,
   nuevaReservaDueno: (p: {
     cliente: string;
     servicio: string;
@@ -2820,41 +2820,41 @@ export const baja: Widen<typeof Es.baja> = {
 };
 
 export const flashStory: Widen<typeof Es.flashStory> = {
-  badge: "Flashtid",
+  badge: "Blixttid",
   soloUnaHora: "Bara en tid",
   cta: "Boka via länken i bion",
 };
 
 // ---------------------------------------------------------------------------
 // flash: `/app/flash` (WP-30, F13) — ägarens skärm: aktiva och tidigare
-// flashtider, dialogen "Ny flashtid", kortet för varje tid (storybild,
+// blixttider, dialogen "Ny blixttid", kortet för varje tid (storybild,
 // kopiera länk, skicka till kunder, avbryt).
 // ---------------------------------------------------------------------------
 
 export const flash: Widen<typeof Es.flash> = {
-  titulo: "Flashtider",
+  titulo: "Blixttider",
   todosLosServicios: "Alla tjänster",
   activas: {
     titulo: "Aktiva",
-    vacio: "Du har inga aktiva flashtider än.",
+    vacio: "Du har inga aktiva blixttider än.",
   },
   vacio: {
     explicacion:
-      "En flashtid är en ledig lucka med rabatt. Dela den med en länk och en bild till din story, eller skicka den till kunder som tackat ja till nyheter.",
+      "En blixttid är en ledig lucka med rabatt. Dela den med en länk och en bild till din story, eller skicka den till kunder som tackat ja till nyheter.",
     huecosTitulo: "Lediga luckor idag och imorgon",
     hoy: "Idag",
     manana: "Imorgon",
     hueco: (p: { dia: string; rango: string; profesional: string }): string =>
       `${p.dia} ${p.rango} · ${p.profesional}`,
-    ctaConvertir: "Gör till flashtid",
+    ctaConvertir: "Gör till blixttid",
   },
   reservadas: {
     titulo: "Bokade",
-    vacio: "Du har inga bokade flashtider än.",
+    vacio: "Du har inga bokade blixttider än.",
   },
   nueva: {
-    cta: "Ny flashtid",
-    titulo: "Ny flashtid",
+    cta: "Ny blixttid",
+    titulo: "Ny blixttid",
     campos: {
       profesional: "Medarbetare",
       dia: "Dag",
@@ -2866,18 +2866,18 @@ export const flash: Widen<typeof Es.flash> = {
       serviciosLabel: "Tjänster",
       descuentoLabel: "Rabatt (%)",
     },
-    ctaGuardar: "Skapa flashtid",
+    ctaGuardar: "Skapa blixttid",
     errores: {
       profesionalRequerido: "Välj en medarbetare.",
       servicioRequerido: "Välj minst en tjänst.",
       descuentoInvalido: "Ett tal mellan 1 % och 90 %.",
       forbidden:
-        "Du har inte behörighet att skapa flashtider för den medarbetaren.",
+        "Du har inte behörighet att skapa blixttider för den medarbetaren.",
       not_free: "Den tiden är inte ledig i medarbetarens schema.",
       overlap:
-        "Det finns redan en annan aktiv flashtid som krockar med den tiden.",
+        "Det finns redan en annan aktiv blixttid som krockar med den tiden.",
       invalid_input: "Kontrollera uppgifterna och försök igen.",
-      unknown: "Vi kunde inte skapa flashtiden. Försök igen.",
+      unknown: "Vi kunde inte skapa blixttiden. Försök igen.",
     },
   },
   tarjeta: {
@@ -2890,14 +2890,14 @@ export const flash: Widen<typeof Es.flash> = {
     errorCopiar: "Vi kunde inte kopiera länken.",
     enviarAClientes: "Skicka till kunder",
     enviarErrorNoActiva:
-      "Den här flashtiden är inte längre aktiv, så den går inte att skicka.",
+      "Den här blixttiden är inte längre aktiv, så den går inte att skicka.",
     cancelar: "Avbryt",
-    cancelarDialogTitulo: "Avbryta den här flashtiden?",
+    cancelarDialogTitulo: "Avbryta den här blixttiden?",
     cancelarDialogCuerpo:
       "Tiden blir tillgänglig igen utan rabatt. Det går inte att ångra.",
     cancelarConfirmarSi: "Ja, avbryt",
     cancelarConfirmarNo: "Nej, behåll",
-    errorCancelar: "Vi kunde inte avbryta flashtiden. Försök igen.",
+    errorCancelar: "Vi kunde inte avbryta blixttiden. Försök igen.",
   },
 };
 
