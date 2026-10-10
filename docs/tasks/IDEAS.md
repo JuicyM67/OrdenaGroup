@@ -130,3 +130,15 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Varning till ägaren (e-post/klocka) när 80 % av månadens sms-kvot är använd.
 - Kontaktformulär för Skräddarsytt (via outbox till plattformsägaren) i stället för länk till kontaktsidan.
 - Plan-texterna i `planes` (es-CL/sv-SE) granskas av copywriter-es-cl.
+
+## Uppskjutet från planerna WP-67–69 (marknadsplats och kundkonton, 2026-10-10)
+- Apple-inloggning för kundkonton (kräver Apple Developer-konto, 99 USD/år).
+- Google-inloggning även för företagsägare.
+- Flytta bokning direkt från kundkontot (v1: se + avboka).
+- Telefonverifiering i CL (när WhatsApp/SMS finns där).
+- Marknadsplatsköp i CL via Mercado Pago (värdebevis).
+- Presentkort med fritt belopp/saldo och delinlösen; köp som gåva till annan mottagare; QR-kod på värdebeviset.
+- Fritextsök med rankning/synonymer och personliga rekommendationer på Upptäck.
+- Betald exponering ("utvalt erbjudande") som intäktskälla.
+- Push-notiser till konsumenter (nya erbjudanden från favoriter) — kräver samtycke.
+- PostGIS om antalet företag växer så att haversine + bounding box blir långsamt.
