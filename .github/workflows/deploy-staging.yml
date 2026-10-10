@@ -126,6 +126,15 @@ jobs:
           SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
         run: npx supabase db reset --linked --yes
 
+      # D-043: demoföretaget för marknaden (idempotent, rör bara demo-id:t).
+      - name: Demoföretag (private.seed_demo)
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.STAGING_SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
+          DEMO_MARKET: ${{ matrix.env == 'staging-se' && 'SE' || 'CL' }}
+        run: npx supabase db query --linked "select private.seed_demo('$DEMO_MARKET')"
+
       # Schemavakten och pgTAP-isoleringstesterna körs på nytt mot molnet,
       # eftersom pg_default_acl sätts av plattformen per projekt och kan
       # skilja sig från den lokala containern (se SUPABASE_CONFIG.md,
