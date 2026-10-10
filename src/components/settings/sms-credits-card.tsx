@@ -19,7 +19,7 @@ import {
   SMS_QUOTA_WARN_RATIO,
   smsCreditPrice,
 } from "@/config/sms-credits";
-import { planes } from "@/i18n";
+import { smsCreditos } from "@/i18n";
 import { formatSek } from "@/lib/format/money";
 
 import {
@@ -28,7 +28,7 @@ import {
   SmsUpgradeDialog,
 } from "./sms-credits-dialog";
 
-const t = planes.smsCreditos;
+const t = smsCreditos;
 
 /** "1 000" med hårt mellanslag (samma gruppering som `formatSek`). */
 function groupInt(n: number): string {

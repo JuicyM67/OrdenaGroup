@@ -15,9 +15,9 @@ import { useId, useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
-import { comun, planes } from "@/i18n";
+import { comun, planes, smsCreditos } from "@/i18n";
 
-const t = planes.smsCreditos;
+const t = smsCreditos;
 
 function Shell({
   open,

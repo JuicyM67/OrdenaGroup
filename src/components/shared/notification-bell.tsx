@@ -25,7 +25,7 @@ import { IconButton, type IconButtonProps } from "@/components/ui/icon-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
 import { appHref } from "@/config/routes";
-import { comun, nav, planes, solicitudes } from "@/i18n";
+import { comun, nav, smsCreditos, solicitudes } from "@/i18n";
 import {
   APP_TZ,
   formatLocalDate,
@@ -219,12 +219,12 @@ export function NotificationBell({
     >
       <p className="text-13 font-semibold text-ink">
         {n.kind === "smsAgotados"
-          ? planes.smsCreditos.campana.agotados
-          : planes.smsCreditos.campana.cuota80}
+          ? smsCreditos.campana.agotados
+          : smsCreditos.campana.cuota80}
       </p>
       <Button asChild variant="primary" size="xs" className="self-start">
         <Link href={appHref("appAjustesPlan")} onClick={() => setOpen(false)}>
-          {planes.smsCreditos.campana.cta}
+          {smsCreditos.campana.cta}
         </Link>
       </Button>
     </div>

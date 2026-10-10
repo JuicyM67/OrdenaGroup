@@ -18,7 +18,7 @@ import { brand } from "@/config/brand";
 import { can, minPlanFor } from "@/config/plans";
 import { appHref, href } from "@/config/routes";
 import { SMS_CREDIT_VALIDITY_MONTHS } from "@/config/sms-credits";
-import { nav, planes } from "@/i18n";
+import { nav, planes, smsCreditos } from "@/i18n";
 import {
   APP_TZ,
   formatLocalDate,
@@ -53,7 +53,7 @@ export const dynamic = "force-dynamic";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
-const t = planes.smsCreditos;
+const t = smsCreditos;
 
 /** "12 augusti 2027" (dag, månad, år; installationens tidszon). */
 function longDate(d: LocalDate): string {
