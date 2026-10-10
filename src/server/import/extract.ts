@@ -24,9 +24,7 @@ export const TEXT_MAX = 30_000;
 export type ExtractRequest =
   { source: "url"; url: string } | { source: "text"; text: string };
 
-function parseRequest(
-  raw: unknown,
-):
+function parseRequest(raw: unknown):
   | {
       ok: true;
       req: ExtractRequest;
