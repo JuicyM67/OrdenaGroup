@@ -1822,6 +1822,15 @@ export const acceso = {
     enviando: "Enviando…",
     sinContrasena: "No necesitas contraseña.",
     cuentaNueva: "Si es tu primera vez, creamos tu cuenta al tiro.",
+    /** Botón de vuelta a la página de inicio (arriba a la izquierda). */
+    volver: "Volver al inicio",
+    /** Texto grande del panel con foto. */
+    bienvenida: "Qué bueno verte de nuevo",
+    bienvenidaTexto: "Tus clientes reservan solos, y tú te dedicas a lo tuyo.",
+    /** Título y bajada de la tarjeta (el h1 de la página). */
+    cardTitulo: "Entra a tu agenda",
+    cardTexto:
+      "Te enviamos un link a tu correo: no hay contraseña que recordar.",
   },
   enviado: {
     titulo: "Revisa tu correo",
@@ -1832,6 +1841,11 @@ export const acceso = {
       `Reenviar en ${p.segundos} s`,
     reenviar: "Reenviar",
     usarOtroCorreo: "Usar otro correo",
+    /** Título de la tarjeta cuando el link ya salió. */
+    tituloBandeja: "Revisa tu bandeja de entrada",
+    sinCorreo: "¿No te llegó el correo?",
+    sinCorreoAyuda: "Mira también en spam. A veces tarda un minuto.",
+    reenviado: "Listo, te lo enviamos de nuevo.",
   },
   /** Nombres propuestos por copywriter (R2 del plan de WP-03b): WP-15
    * confirma la lista real de códigos de Supabase Auth y ajusta las claves

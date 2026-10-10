@@ -26,6 +26,13 @@ export const acceso: AccesoCopy = {
     enviando: "Skickar…",
     sinContrasena: "Du behöver inget lösenord.",
     cuentaNueva: "Är det första gången skapar vi ditt konto direkt.",
+    volver: "Till startsidan",
+    bienvenida: "Välkommen tillbaka",
+    bienvenidaTexto:
+      "Dina kunder bokar själva, så kan du fokusera på det du gör bäst.",
+    cardTitulo: "Logga in på din kalender",
+    cardTexto:
+      "Vi skickar en inloggningslänk till din e-post – inget lösenord att komma ihåg.",
   },
   enviado: {
     titulo: "Kolla din e-post",
@@ -36,6 +43,10 @@ export const acceso: AccesoCopy = {
       `Skicka igen om ${p.segundos} s`,
     reenviar: "Skicka igen",
     usarOtroCorreo: "Använd en annan e-post",
+    tituloBandeja: "Kolla din inkorg",
+    sinCorreo: "Fick du inget mejl?",
+    sinCorreoAyuda: "Titta även i skräpposten. Ibland tar det en minut.",
+    reenviado: "Klart, vi har skickat länken igen.",
   },
   errores: {
     invalid_email: "Skriv en giltig e-postadress.",
