@@ -4,6 +4,7 @@
 // länk till erbjudandesidan; inga köpknappar förrän WP-69 (D-035).
 import { Star } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { cn } from "@/components/ui/cn";
 import { hrefMarketplace } from "@/config/routes";
@@ -96,11 +97,14 @@ export function OfferCard({
   variant = "grid",
   priority = false,
   id,
+  favorite,
 }: {
   offer: OfferCardData;
   variant?: "grid" | "hero" | "row" | "compact";
   priority?: boolean;
   id?: string;
+  /** Favorit-hjärtat (WP-67) — ligger utanför länken (inga formulär i en länk). */
+  favorite?: ReactNode;
 }) {
   const href = hrefMarketplace("oferta", offer.slug);
   const alt = offer.business.name;
@@ -142,43 +146,48 @@ export function OfferCard({
   }
 
   return (
-    <Link
-      id={id}
-      href={href}
-      className={cn(
-        "group flex h-full flex-col overflow-hidden rounded-card bg-surface transition-shadow duration-150 ease-out hover:shadow-soft",
-        linkFocus,
-      )}
-    >
-      <div
+    <div className="relative h-full">
+      <Link
+        id={id}
+        href={href}
         className={cn(
-          "relative overflow-hidden",
-          variant === "hero" ? "h-48" : "h-44",
+          "group flex h-full flex-col overflow-hidden rounded-card bg-surface transition-shadow duration-150 ease-out hover:shadow-soft",
+          linkFocus,
         )}
       >
-        <OfferImage
-          src={offer.imageUrl}
-          alt={alt}
-          sizes="(min-width: 1024px) 320px, 100vw"
-          priority={priority}
-          className="transition-transform duration-300 ease-out group-hover:scale-102"
-        />
-        <div className="absolute top-3 left-3">
-          <Badge offer={offer} />
+        <div
+          className={cn(
+            "relative overflow-hidden",
+            variant === "hero" ? "h-48" : "h-44",
+          )}
+        >
+          <OfferImage
+            src={offer.imageUrl}
+            alt={alt}
+            sizes="(min-width: 1024px) 320px, 100vw"
+            priority={priority}
+            className="transition-transform duration-300 ease-out group-hover:scale-102"
+          />
+          <div className="absolute top-3 left-3">
+            <Badge offer={offer} />
+          </div>
         </div>
-      </div>
-      <div className="flex flex-1 flex-col gap-1.5 p-4">
-        <h3 className="text-16 leading-snug font-bold">{offer.title}</h3>
-        <MetaLine offer={offer} />
-        <div className="mt-auto flex items-end justify-between gap-3 pt-2">
-          <PriceLine offer={offer} />
-          {variant === "hero" ? (
-            <span className="flex h-11 items-center rounded-control bg-ink px-4.5 text-14 font-bold text-on-dark">
-              {t.lista.ver}
-            </span>
-          ) : null}
+        <div className="flex flex-1 flex-col gap-1.5 p-4">
+          <h3 className="text-16 leading-snug font-bold">{offer.title}</h3>
+          <MetaLine offer={offer} />
+          <div className="mt-auto flex items-end justify-between gap-3 pt-2">
+            <PriceLine offer={offer} />
+            {variant === "hero" ? (
+              <span className="flex h-11 items-center rounded-control bg-ink px-4.5 text-14 font-bold text-on-dark">
+                {t.lista.ver}
+              </span>
+            ) : null}
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      {favorite ? (
+        <div className="absolute top-3 right-3">{favorite}</div>
+      ) : null}
+    </div>
   );
 }

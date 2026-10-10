@@ -3983,8 +3983,9 @@ export const resenas = {
     comentarioLabel: "Cuéntanos más (opcional)",
     comentarioPlaceholder: "¿Qué te gustó? ¿Qué podríamos mejorar?",
     contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    // "Elin K." slutar redan på punkt — ingen dubbel punkt.
     publicaComo: (p: { nombre: string }): string =>
-      `Se publica como ${p.nombre}.`,
+      `Se publica como ${p.nombre.replace(/\.$/, "")}.`,
     enviar: "Publicar reseña",
     guardar: "Guardar cambios",
     enviando: "Guardando…",

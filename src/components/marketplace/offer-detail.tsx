@@ -14,6 +14,7 @@ import {
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { strokeArrow } from "@/components/ui/icons";
+import { hrefMarketplace } from "@/config/routes";
 import { descubre } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
 import { initialsOf } from "@/lib/format/initials";
@@ -25,6 +26,7 @@ import type { ConsumerNav } from "./consumer-session";
 import { formatKm, formatRating } from "./format";
 import { OfferCard } from "./offer-card";
 import { OfferImage } from "./offer-image";
+import { favoriteFor } from "./favorite";
 import { OfferJsonLd } from "./offer-json-ld";
 
 const t = descubre;
@@ -131,11 +133,20 @@ export function OfferDetail({
           />
           <div className="relative mx-auto flex w-full max-w-360 flex-1 flex-col justify-end gap-4 px-4 pt-32 pb-8 sm:px-8 lg:px-22 lg:pb-14">
             <Brodsmulor migas={migas} label={t.migas.label} />
-            {offer.discountPct > 0 ? (
-              <span className="w-fit rounded-chip bg-lime px-3 py-1.5 text-14 font-bold text-ink">
-                {t.oferta.ahorra({ pct: offer.discountPct })}
-              </span>
-            ) : null}
+            <div className="flex items-center justify-between gap-3">
+              {offer.discountPct > 0 ? (
+                <span className="w-fit rounded-chip bg-lime px-3 py-1.5 text-14 font-bold text-ink">
+                  {t.oferta.ahorra({ pct: offer.discountPct })}
+                </span>
+              ) : (
+                <span />
+              )}
+              {favoriteFor(
+                nav,
+                offer.business.id,
+                hrefMarketplace("oferta", offer.slug),
+              )}
+            </div>
             <p className="text-13 font-bold tracking-label text-on-dark/80 uppercase">
               {t.oferta.eyebrow({ categoria })}
             </p>

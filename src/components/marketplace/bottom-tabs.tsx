@@ -1,11 +1,10 @@
 // Bottenmenyn i Upptäck på mobil (WP-68, Main.dc.html): mörk flytande bar.
-// Bokningar/Profil kommer från WP-67 (`getConsumerNav`); till dess Upptäck,
-// Karta och "För företag".
-import { Briefcase, CalendarDays, Map, Search, User } from "lucide-react";
+// Bokningar/Profil går till kundkontot (WP-67, `getConsumerNav`).
+import { CalendarDays, Map, Search, User } from "lucide-react";
 import Link from "next/link";
 
 import { cn } from "@/components/ui/cn";
-import { href, hrefMarketplace } from "@/config/routes";
+import { hrefMarketplace } from "@/config/routes";
 import { descubre } from "@/i18n";
 
 import type { ConsumerNav } from "./consumer-session";
@@ -47,16 +46,6 @@ export function BottomTabs({
     ...(perfil
       ? [{ id: "perfil", href: perfil.href, label: t.tabs.perfil, icon: User }]
       : []),
-    ...(reservas || perfil
-      ? []
-      : [
-          {
-            id: "negocios",
-            href: href("inicio"),
-            label: t.tabs.negocios,
-            icon: Briefcase,
-          },
-        ]),
   ];
   return (
     <nav

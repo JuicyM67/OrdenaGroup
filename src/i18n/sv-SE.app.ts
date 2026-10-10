@@ -2992,7 +2992,8 @@ export const resenas: Widen<typeof Es.resenas> = {
     comentarioLabel: "Berätta mer (valfritt)",
     comentarioPlaceholder: "Vad var bra? Vad kan bli bättre?",
     contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
-    publicaComo: (p: { nombre: string }): string => `Visas som ${p.nombre}.`,
+    publicaComo: (p: { nombre: string }): string =>
+      `Visas som ${p.nombre.replace(/\.$/, "")}.`,
     enviar: "Publicera omdöme",
     guardar: "Spara ändringar",
     enviando: "Sparar…",

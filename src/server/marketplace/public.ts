@@ -50,6 +50,7 @@ export type OfferCard = {
   priceMinor: number;
   discountPct: number;
   business: {
+    id: string;
     name: string;
     slug: string;
     areaName: string | null;
@@ -75,6 +76,20 @@ function likePattern(q: string): string {
   return `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
 }
 
+/**
+ * Blixttiden ligger helt inom företagets öppettider den veckodagen, räknat i
+ * företagets tidszon (D-017/D-018; `business_hours.weekday` är ISO 1–7). Skyddar
+ * remsan mot tider som skapats utanför öppettiderna (t.ex. 04:00).
+ */
+const WITHIN_OPENING_HOURS = `exists (
+         select 1 from public.business_hours h
+          where h.business_id = f.business_id
+            and h.weekday = extract(isodow from f.starts_at at time zone b.timezone)
+            and (f.starts_at at time zone b.timezone)::time >= h.start_time
+            and (f.ends_at at time zone b.timezone)::time <= h.end_time
+            and (f.ends_at at time zone b.timezone)::date = (f.starts_at at time zone b.timezone)::date
+       )`;
+
 /** Gemensamma filter för publicerade erbjudanden. `$1` = tidszon, `$2` = demo med. */
 const OFFER_BASE = `
   from public.offers o
@@ -93,6 +108,7 @@ const OFFER_BASE = `
        and f.starts_at < (date_trunc('day', now() at time zone $1) + interval '1 day') at time zone $1
        and b.marketplace_flash_visible
        and private.plan_has_feature(b.plan::text, 'flash')
+       and ${WITHIN_OPENING_HOURS}
   ) fl on true
  where o.status = 'published'
    and (o.sale_starts_at is null or o.sale_starts_at <= now())
@@ -110,6 +126,7 @@ type OfferRow = {
   category: MarketplaceCategoryId;
   regular_price_minor: number;
   offer_price_minor: number;
+  business_id: string;
   business_name: string;
   business_slug: string;
   area_name: string | null;
@@ -124,7 +141,7 @@ type OfferRow = {
 
 const OFFER_COLUMNS = `
   o.id, o.slug, o.title, o.image_url, o.category, o.regular_price_minor, o.offer_price_minor,
-  b.name as business_name, b.slug as business_slug, b.area_name, b.cover_url,
+  b.id as business_id, b.name as business_name, b.slug as business_slug, b.area_name, b.cover_url,
   b.lat::text as lat, b.lng::text as lng, rv.avg, rv.n, fl.next_ms`;
 
 function toCard(r: OfferRow): OfferCard {
@@ -138,6 +155,7 @@ function toCard(r: OfferRow): OfferCard {
     priceMinor: r.offer_price_minor,
     discountPct: discountPct(r.regular_price_minor, r.offer_price_minor),
     business: {
+      id: r.business_id,
       name: r.business_name,
       slug: r.business_slug,
       areaName: r.area_name,
@@ -280,7 +298,8 @@ export type FlashStripItem = {
   distanceKm: number | null;
 };
 
-/** Dagens kommande blixttider (D-005) hos företag som visar dem i Upptäck. */
+/** Dagens kommande blixttider (D-005) hos företag som visar dem i Upptäck,
+ * i tidsordning (närmast först vid samma tid). */
 export async function flashStripIn(
   q: Queryable,
   position: GeoPoint | undefined,
@@ -331,8 +350,9 @@ export async function flashStripIn(
         and b.timezone = $1
         and ($2::boolean or b.id::text not like 'de00000%')
         and b.marketplace_flash_visible
-        and private.plan_has_feature(b.plan::text, 'flash')${area}
-      order by ${position ? "km asc nulls last, " : ""}f.starts_at, f.id
+        and private.plan_has_feature(b.plan::text, 'flash')
+        and ${WITHIN_OPENING_HOURS}${area}
+      order by f.starts_at, ${position ? "km asc nulls last, " : ""}f.id
       limit $${params.length}`,
     params,
   );
@@ -409,7 +429,6 @@ export async function loadOffer(
     params.push(slug);
     const r = await q.query<
       OfferRow & {
-        business_id: string;
         description: string | null;
         includes: string[];
         terms: string | null;
@@ -424,7 +443,7 @@ export async function loadOffer(
         logo_url: string | null;
       }
     >(
-      `select ${OFFER_COLUMNS}, null::float8 as km, o.business_id,
+      `select ${OFFER_COLUMNS}, null::float8 as km,
               o.description, o.includes, o.terms, o.valid_months, o.currency,
               s.name as service_name, s.duration_min, o.published_at, o.sale_ends_at,
               b.address, b.comuna, b.logo_url

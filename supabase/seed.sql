@@ -389,6 +389,10 @@ begin
     values (v_svc, ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, r.offer, 60, r.regular, true);
     insert into public.staff_services (business_id, staff_id, service_id)
     values (('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, v_staff, v_svc);
+    -- Öppet alla dagar 10–19 (blixttiderna nedan ligger inom öppettiderna).
+    insert into public.business_hours (business_id, weekday, start_time, end_time)
+    select ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, d, '10:00', '19:00'
+      from generate_series(1, 7) d;
 
     insert into public.offers (
       id, business_id, service_id, slug, title, description, includes, terms,
@@ -433,11 +437,13 @@ begin
     end loop;
 
     if r.flash then
+      -- Dagens eftermiddag i Stockholmstid (15:30, 16:30, 17:30 …), inom
+      -- öppettiderna. Har tiden redan passerat visas den inte i remsan.
       insert into public.flash_slots (business_id, staff_id, service_ids, starts_at, ends_at, discount_pct, status, created_by)
       values (
         ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, v_staff, array[v_svc],
-        date_trunc('hour', now()) + make_interval(hours => 1 + r.n),
-        date_trunc('hour', now()) + make_interval(hours => 2 + r.n),
+        ((now() at time zone 'Europe/Stockholm')::date + time '13:30' + make_interval(hours => r.n - 1)) at time zone 'Europe/Stockholm',
+        ((now() at time zone 'Europe/Stockholm')::date + time '14:30' + make_interval(hours => r.n - 1)) at time zone 'Europe/Stockholm',
         20 + r.n * 2, 'active', 'b0000000-0000-0000-0000-000000900001'
       );
     end if;

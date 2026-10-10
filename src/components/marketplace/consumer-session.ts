@@ -1,25 +1,34 @@
-// Konsumentens inloggning i Upptäck — ett litet gränssnitt mot WP-67 (kundkonton).
-//
-// TODO(WP-67): när kundkonton är mergade ska `getConsumerNav()` läsa den riktiga
-// sessionen (Supabase-auth + `customer_accounts`) och `ACCOUNT_LINKS` peka på
-// `/konto`-rutterna i `routes.ts` (Bokningar, Profil, Logga in/Skapa konto).
-// Hjärtat (favoriter) på korten och erbjudandesidan kopplas in via
-// `FavoriteSlot` på samma sätt. Till dess visas inga kontolänkar (D-035:
-// det som inte är byggt syns inte).
-import type { ReactNode } from "react";
+// Konsumentens inloggning i Upptäck — kopplad till kundkontona (WP-67, D-054).
+// Läser bara sessionen när en Supabase-cookie finns (`optionalAccount`) och skapar
+// aldrig ett konto. Favoriterna (hjärtat) är WP-67:s `favorites` via dess server
+// action `toggleFavorite` (formulär, ingen klient-JS).
+import "server-only";
+
+import { optionalAccount } from "@/app/(consumer)/cuenta/session";
+import { cuentaHref } from "@/config/routes";
+import { loadMyFavorites } from "@/server/accounts/account";
 
 export type ConsumerNav = {
   /** Initial i profilknappen ("E"), eller null om utloggad. */
   initial: string | null;
-  /** Länkar i bottenmenyn/toppbaren; tomma tills WP-67 finns. */
+  /** Bottenmenyns kontolänkar (utloggad leder `proxy.ts` till inloggningen). */
   links: readonly { id: "reservas" | "perfil" | "ingresar"; href: string }[];
+  /** Inloggad kund: företags-id:n som är favoriter. `null` = utloggad (inget hjärta). */
+  favorites: ReadonlySet<string> | null;
 };
 
 export async function getConsumerNav(): Promise<ConsumerNav> {
-  return { initial: null, links: [] };
+  const links = [
+    { id: "reservas" as const, href: cuentaHref("cuentaReservas") },
+    { id: "perfil" as const, href: cuentaHref("cuenta") },
+  ];
+  const account = await optionalAccount();
+  if (!account) return { initial: null, links, favorites: null };
+  const favs = await loadMyFavorites(account.userId).catch(() => []);
+  const name = (account.displayName ?? account.email).trim();
+  return {
+    initial: name ? name.charAt(0).toUpperCase() : null,
+    links,
+    favorites: new Set(favs.map((f) => f.businessId)),
+  };
 }
-
-/** Plats för favorit-hjärtat (WP-67). `null` = ingenting renderas. */
-export type FavoriteSlot = (businessSlug: string) => ReactNode;
-
-export const noFavorite: FavoriteSlot = () => null;

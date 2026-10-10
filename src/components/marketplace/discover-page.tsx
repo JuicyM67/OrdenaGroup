@@ -28,6 +28,7 @@ import { Filters } from "./filters";
 import { FlashStrip } from "./flash-strip";
 import { LocationMenu } from "./location-menu";
 import { OfferCard } from "./offer-card";
+import { favoriteFor } from "./favorite";
 import { discoverHref, type DiscoverParams } from "./params";
 import { SearchForm } from "./search-form";
 import { ViewToggle } from "./view-toggle";
@@ -212,6 +213,7 @@ export function DiscoverPage({
                           offer={o}
                           variant={i === 0 ? "hero" : "grid"}
                           priority={i < 3}
+                          favorite={favoriteFor(nav, o.business.id, action)}
                         />
                       </div>
                       {i === 0 ? null : (
