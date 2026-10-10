@@ -5,6 +5,8 @@
 // oberoende av vilken `max-w-*`-container den ligger i). Namnen separeras av respektive
 // branschs egen emoji (ägarens val, "emoji mellan branscherna") — färgen cyklar
 // lime/lilac/peach för att skilja avdelarna åt utan att göra texten själv färgad.
+// `pr-3` = samma som `gap-3`: raden blir exakt 2 × (lista + mellanrum), så att
+// translateX(-50 %) landar sömlöst i stället för att hoppa ett halvt mellanrum per varv.
 // Pausar vid hover (`marquee-pausable`, tokens.css). `prefers-reduced-motion`: den
 // duplicerade halvan (för den sömlösa loopen) göms med `motion-reduce:hidden` och raden
 // wrappar normalt — en statisk lista, aldrig rörelse. Dekorativ komposition (som
@@ -23,7 +25,7 @@ const DOT_TONE = ["text-lime", "text-lilac", "text-peach"] as const;
 function MarqueeRow() {
   const doubled = [...ITEMS, ...ITEMS];
   return (
-    <div className="flex w-max animate-marquee flex-nowrap items-center gap-3 whitespace-nowrap marquee-pausable motion-reduce:w-full motion-reduce:flex-wrap motion-reduce:justify-center">
+    <div className="flex w-max animate-marquee flex-nowrap items-center gap-3 pr-3 whitespace-nowrap marquee-pausable motion-reduce:w-full motion-reduce:flex-wrap motion-reduce:justify-center">
       {doubled.map((item, i) => (
         <span
           key={`${item.nombre}-${i}`}
