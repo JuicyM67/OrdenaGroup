@@ -29,6 +29,9 @@ import {
   memberSettingsInputSchema,
   waitlistSettingsInputSchema,
   winbackSettingsInputSchema,
+  type AjustesHoursInput,
+  type AjustesServiceInput,
+  type AjustesStaffInput,
 } from "./ajustes-schemas";
 import {
   authzCode,
@@ -123,7 +126,7 @@ function pgConstraint(e: unknown): string | undefined {
 }
 
 /** Samma mönster som complete-onboarding.ts: bara SQLSTATE/constraint, aldrig detail. */
-function mapDbError(e: unknown): string {
+export function mapDbError(e: unknown): string {
   const authz = authzCode(e);
   if (authz) return authz;
   const code = pgErrorCode(e);
@@ -618,6 +621,30 @@ async function nextSort(
   return r.rows[0]?.next ?? 1;
 }
 
+/** Insert i anroparens transaktion (behörigheten kontrolleras av anroparen).
+ * Delas av `createService` och AI-importen (WP-66, `src/server/import/apply.ts`). */
+export async function insertServiceIn(
+  q: Queryable,
+  businessId: string,
+  input: AjustesServiceInput,
+): Promise<string | undefined> {
+  const sort = await nextSort(q, "services", businessId);
+  const r = await q.query<{ id: string }>(
+    `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort, description)
+     values ($1, $2, $3, $4, $5, $6, $7) returning id`,
+    [
+      businessId,
+      input.name,
+      input.durationMin,
+      input.priceClp,
+      input.bufferAfterMin,
+      sort,
+      input.description ?? null,
+    ],
+  );
+  return r.rows[0]?.id;
+}
+
 export async function createService(
   userId: string,
   businessId: string,
@@ -634,21 +661,7 @@ export async function createService(
   try {
     return await withOwnerTx(userId, async (q) => {
       await requireMemberPerm(q, userId, businessId, "can_edit_catalog");
-      const sort = await nextSort(q, "services", businessId);
-      const r = await q.query<{ id: string }>(
-        `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort, description)
-         values ($1, $2, $3, $4, $5, $6, $7) returning id`,
-        [
-          businessId,
-          input.name,
-          input.durationMin,
-          input.priceClp,
-          input.bufferAfterMin,
-          sort,
-          input.description ?? null,
-        ],
-      );
-      const id = r.rows[0]?.id;
+      const id = await insertServiceIn(q, businessId, input);
       if (!id) return { ok: false, code: "unauthorized" };
       return { ok: true, id };
     });
@@ -741,6 +754,24 @@ async function replaceStaffServices(
   }
 }
 
+/** Insert i anroparens transaktion (behörigheten kontrolleras av anroparen).
+ * Delas av `createStaff` och AI-importen (WP-66). */
+export async function insertStaffIn(
+  q: Queryable,
+  businessId: string,
+  input: AjustesStaffInput,
+): Promise<string | undefined> {
+  const sort = await nextSort(q, "staff", businessId);
+  const r = await q.query<{ id: string }>(
+    `insert into public.staff (business_id, name, color, sort)
+     values ($1, $2, $3, $4) returning id`,
+    [businessId, input.name, `staff-${((sort - 1) % 6) + 1}`, sort],
+  );
+  const id = r.rows[0]?.id;
+  if (id) await replaceStaffServices(q, businessId, id, input.serviceIds);
+  return id;
+}
+
 export async function createStaff(
   userId: string,
   businessId: string,
@@ -757,15 +788,8 @@ export async function createStaff(
   try {
     return await withOwnerTx(userId, async (q) => {
       await requireMemberPerm(q, userId, businessId, "can_manage_team");
-      const sort = await nextSort(q, "staff", businessId);
-      const r = await q.query<{ id: string }>(
-        `insert into public.staff (business_id, name, color, sort)
-         values ($1, $2, $3, $4) returning id`,
-        [businessId, input.name, `staff-${((sort - 1) % 6) + 1}`, sort],
-      );
-      const id = r.rows[0]?.id;
+      const id = await insertStaffIn(q, businessId, input);
       if (!id) return { ok: false, code: "unauthorized" };
-      await replaceStaffServices(q, businessId, id, input.serviceIds);
       return { ok: true, id };
     });
   } catch (e) {
@@ -852,6 +876,38 @@ export async function setStaffActive(
 // Öppettider (samma form som onboarding: ett intervall per dag)
 // ---------------------------------------------------------------------------
 
+/** I anroparens transaktion (behörigheten kontrolleras av anroparen). Delas av
+ * `replaceBusinessHours` och AI-importen (WP-66). */
+export async function replaceBusinessHoursIn(
+  q: Queryable,
+  businessId: string,
+  input: AjustesHoursInput,
+): Promise<MutationResult> {
+  const del = await q.query(
+    `delete from public.business_hours where business_id = $1`,
+    [businessId],
+  );
+  // Inga öppna dagar innan heller: kolla medlemskap separat, annars skulle en
+  // ägare utan dagar aldrig märka att skrivningen tystnat (0 rader från DELETE
+  // säger inget om en tom vecka).
+  if (del.rowCount === 0) {
+    const member = await q.query(
+      `select 1 from public.businesses where id = $1`,
+      [businessId],
+    );
+    if (member.rows.length === 0) return { ok: false, code: "unauthorized" };
+  }
+  for (const h of input) {
+    if (!h.open || !h.start || !h.end) continue;
+    await q.query(
+      `insert into public.business_hours (business_id, weekday, start_time, end_time)
+       values ($1, $2, $3, $4)`,
+      [businessId, h.weekday, h.start, h.end],
+    );
+  }
+  return { ok: true };
+}
+
 export async function replaceBusinessHours(
   userId: string,
   businessId: string,
@@ -868,30 +924,7 @@ export async function replaceBusinessHours(
   try {
     return await withOwnerTx(userId, async (q) => {
       await requireMemberPerm(q, userId, businessId, "can_edit_settings");
-      const del = await q.query(
-        `delete from public.business_hours where business_id = $1`,
-        [businessId],
-      );
-      // Inga öppna dagar innan heller: kolla medlemskap separat, annars skulle en
-      // ägare utan dagar aldrig märka att skrivningen tystnat (0 rader från DELETE
-      // säger inget om en tom vecka).
-      if (del.rowCount === 0) {
-        const member = await q.query(
-          `select 1 from public.businesses where id = $1`,
-          [businessId],
-        );
-        if (member.rows.length === 0)
-          return { ok: false, code: "unauthorized" };
-      }
-      for (const h of input) {
-        if (!h.open || !h.start || !h.end) continue;
-        await q.query(
-          `insert into public.business_hours (business_id, weekday, start_time, end_time)
-           values ($1, $2, $3, $4)`,
-          [businessId, h.weekday, h.start, h.end],
-        );
-      }
-      return { ok: true };
+      return replaceBusinessHoursIn(q, businessId, input);
     });
   } catch (e) {
     return { ok: false, code: mapDbError(e) };

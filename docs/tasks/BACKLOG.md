@@ -75,6 +75,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 | WP-65 | Verifierade recensioner (CL + SE): förfrågan 2 h efter genomförd bokning (outbox, e-post + SMS i SE), `/resena/[token]` (1–5 + text, redigerbar 7 dagar), snitt + sektion på `/[slug]`, Reseñas under Clientes (filter, svar, anmälan), moderering i `/admin`, av/på i Ajustes → Reglas, anonymisering + export (D-045) | db + integrations + copywriter + ui | WP-16, WP-26, WP-36 | F4, F7 | ◐ (plan: docs/tasks/plans/WP-65-recensioner.md) |
 | WP-63 | Demoföretag per marknad (`brand.demoSlug`: CL `estudio-brisa`, SE `salong-norrsken`) med full profil, rullande bokningar och horas flash via `private.seed_demo` (D-043) | db-engineer + ui-engineer | WP-41, WP-30 | F5, F13 | ☑ |
 | WP-64 | Stripe Connect: kunder betalar behandlingen online till företaget (bara SE, D-044) — Express-konto, Checkout, avgift, webhook, återbetalning | integrations + db + ui | WP-45, WP-56 | – | ◐ (kod klar, väntar på sk_test-nycklar och webhook i Stripe, se docs/tasks/plans/WP-64-stripe-connect.md) |
+| WP-66 | Flytta hit från ditt nuvarande bokningssystem: AI-import (Claude + web fetch med allowlist, eller inklistrad text) → förhandsgranskning → import i onboarding och Ajustes → Negocio; kostnadslogg `ai_import_runs`, 3/dygn, månadstak (D-046) | integrations-engineer + ui-engineer + db-engineer | WP-41, WP-55 | F1 | ☑ |
 
 ## Parallellisering — förslag
 - **Dag 1:** WP-00 (en agent). Samtidigt: WP-03 (copywriter).

@@ -72,13 +72,41 @@ async function insertServices(
   services: OnboardingInput["services"],
 ): Promise<string[]> {
   const ids: string[] = [];
+  // WP-66: kategorier från en import (namn → id, skapas i ordning).
+  const categories = new Map<string, string>();
   for (const [i, s] of services.entries()) {
     const r = await q.query<{ id: string }>(
-      `insert into public.services (business_id, name, duration_min, price_clp, sort)
-       values ($1, $2, $3, $4, $5) returning id`,
-      [businessId, s.name, s.durationMin, s.priceClp, i + 1],
+      `insert into public.services (business_id, name, duration_min, price_clp, sort, description)
+       values ($1, $2, $3, $4, $5, $6) returning id`,
+      [
+        businessId,
+        s.name,
+        s.durationMin,
+        s.priceClp,
+        i + 1,
+        s.description ?? null,
+      ],
     );
-    ids.push(r.rows[0]!.id);
+    const serviceId = r.rows[0]!.id;
+    ids.push(serviceId);
+    const category = s.category?.trim();
+    if (category) {
+      const key = category.toLowerCase();
+      let categoryId = categories.get(key);
+      if (!categoryId) {
+        const c = await q.query<{ id: string }>(
+          `insert into public.service_categories (business_id, name, sort)
+           values ($1, $2, $3) returning id`,
+          [businessId, category, categories.size + 1],
+        );
+        categoryId = c.rows[0]!.id;
+        categories.set(key, categoryId);
+      }
+      await q.query(
+        `update public.services set category_id = $3 where business_id = $1 and id = $2`,
+        [businessId, serviceId, categoryId],
+      );
+    }
   }
   return ids;
 }
@@ -91,11 +119,12 @@ async function insertStaff(
 ): Promise<void> {
   for (const [i, st] of staff.entries()) {
     const r = await q.query<{ id: string }>(
-      `insert into public.staff (business_id, name, color, sort)
-       values ($1, $2, $3, $4) returning id`,
+      `insert into public.staff (business_id, name, color, sort, title)
+       values ($1, $2, $3, $4, $5) returning id`,
       // profesionales.colores (es-CL.ts): staff-1 … staff-6, tilldelade i tur och
       // ordning — inget färgval i den här slimmade onboardingen (se rapporten).
-      [businessId, st.name, `staff-${(i % 6) + 1}`, i + 1],
+      // `title`: bara från en import (WP-66), annars null.
+      [businessId, st.name, `staff-${(i % 6) + 1}`, i + 1, st.title ?? null],
     );
     const staffId = r.rows[0]!.id;
     for (const idx of new Set(st.serviceIndexes)) {

@@ -7,10 +7,15 @@ import type { Metadata } from "next";
 import { logout } from "@/app/auth/actions";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { BusinessSection } from "@/components/settings/business-section";
+import { ImportSection } from "@/components/settings/import-section";
+import { market } from "@/config/brand";
 import { nav } from "@/i18n";
+import { platformNamesFor } from "@/server/import/platforms";
+import { isImportEnabled, isImportPaused } from "@/server/import/runs";
 import { loadAjustesBusiness } from "@/server/owner/ajustes";
 
 import { requireAjustesTab } from "../access";
+import { applyImportAction } from "../import-actions";
 import {
   approveCancelRequestAction,
   confirmRequestAction,
@@ -32,6 +37,11 @@ export default async function AjustesNegocioPage() {
     ctx.userId,
     ctx.current.business.id,
   );
+  // WP-66 (D-035): bara ägaren, och bara när importen finns och inte är pausad.
+  const showImport =
+    ctx.current.member.role === "owner" &&
+    isImportEnabled() &&
+    !(await isImportPaused());
 
   return (
     <AjustesShell
@@ -49,10 +59,18 @@ export default async function AjustesNegocioPage() {
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >
-      <BusinessSection
-        business={business}
-        action={updateBusinessSettingsAction}
-      />
+      <div className="flex flex-col gap-6">
+        {showImport ? (
+          <ImportSection
+            platformNames={platformNamesFor(market)}
+            action={applyImportAction}
+          />
+        ) : null}
+        <BusinessSection
+          business={business}
+          action={updateBusinessSettingsAction}
+        />
+      </div>
     </AjustesShell>
   );
 }

@@ -7,12 +7,14 @@
 // "Tu link"): no hay persistencia parcial entre pasos (alcance reducido, ver el reporte).
 import { useState } from "react";
 
-import { onboarding } from "@/i18n";
+import { ImportPanel } from "@/components/import/import-panel";
+import { importar, onboarding } from "@/i18n";
 
 import { BusinessStep } from "./business-step";
 import { DoneStep } from "./done-step";
 import { onboardingErrorText } from "./error-text";
 import { HoursStep } from "./hours-step";
+import { applyImportToWizard } from "./import-to-wizard";
 import { PageStep } from "./page-step";
 import { ServicesStep } from "./services-step";
 import { StaffStep } from "./staff-step";
@@ -22,6 +24,7 @@ import type {
   StepId,
   WizardData,
   WizardHours,
+  WizardPageDefaults,
 } from "./types";
 
 const DEFAULT_HOURS: WizardHours[] = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
@@ -51,14 +54,21 @@ export type OnboardingWizardProps = {
   onSubmit: (input: unknown) => Promise<OnboardingSubmitResult>;
   /** WP-51: paso "Tu página", mostrado después de crear el negocio. */
   pageActions: PageStepActions;
+  /** WP-66: "¿Ya tienes una página de reservas?" — `undefined` = oculto
+   * (sin ANTHROPIC_API_KEY ni modo falso, D-035). */
+  importer?: { platformNames: string };
 };
 
 export function OnboardingWizard({
   onSubmit,
   pageActions,
+  importer,
 }: OnboardingWizardProps) {
   const [step, setStep] = useState<StepId>("business");
   const [data, setData] = useState<WizardData>(initialData);
+  const [pageDefaults, setPageDefaults] = useState<
+    WizardPageDefaults | undefined
+  >();
   // WP-26 paso 6: casilla obligatoria de términos + encargo (regla dura 7,
   // nunca premarcada), mostrada en HoursStep (el último paso antes de
   // enviar). No vive en `WizardData` porque solo la usa este paso.
@@ -78,8 +88,14 @@ export function OnboardingWizard({
           name: s.name,
           durationMin: s.durationMin,
           priceClp: s.priceClp,
+          ...(s.description ? { description: s.description } : {}),
+          ...(s.category ? { category: s.category } : {}),
         })),
-        staff: data.staff,
+        staff: data.staff.map((st) => ({
+          name: st.name,
+          serviceIndexes: st.serviceIndexes,
+          ...(st.title ? { title: st.title } : {}),
+        })),
         hours: data.hours.map((h) =>
           h.open
             ? h
@@ -113,6 +129,7 @@ export function OnboardingWizard({
       <PageStep
         phone={data.business.phone}
         actions={pageActions}
+        initial={pageDefaults}
         onContinue={() => setStep("done")}
         onSkip={() => setStep("done")}
       />
@@ -135,6 +152,19 @@ export function OnboardingWizard({
         <p role="alert" className="text-13 font-semibold text-ink">
           {submitError}
         </p>
+      ) : null}
+
+      {step === "business" && importer ? (
+        <ImportPanel
+          mode="onboarding"
+          platformNames={importer.platformNames}
+          onConfirm={async (choice) => {
+            const next = applyImportToWizard(data, choice);
+            setData(next.data);
+            setPageDefaults(next.page);
+            return { ok: true, message: importar.listoOnboarding };
+          }}
+        />
       ) : null}
 
       {step === "business" ? (
