@@ -112,6 +112,45 @@ grant update (reply, replied_at, reported_at, report_reason, report_note) on pub
 -- (företaget/kunden/bokningen raderas), annars anonymiseras den.
 grant select, insert, update on public.reviews to service_role;
 
+-- Säkerhetsgranskning WP-65: kolumn-granten ovan räcker inte ensam — en
+-- medlem skulle via PostgREST kunna nollställa/skriva om en anmälan eller
+-- bakdatera `replied_at`. För `authenticated` (medlemmar) gäller därför:
+-- anmälan får bara gå null → satt (tidpunkten sätts här), aldrig ändras
+-- eller nollställas; `replied_at` sätts alltid här (now() när svaret ändras,
+-- null när det tas bort, annars oförändrad). service_role (kundens inskick,
+-- admin som återställer/avvisar en anmälan) berörs inte.
+create function private.reviews_guard_member_update()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if current_user = 'authenticated' then
+    if old.reported_at is not null then
+      if new.reported_at is distinct from old.reported_at
+         or new.report_reason is distinct from old.report_reason
+         or new.report_note is distinct from old.report_note then
+        raise exception 'review report is locked' using errcode = '42501';
+      end if;
+    elsif new.reported_at is not null then
+      new.reported_at := now();
+    end if;
+    if new.reply is distinct from old.reply then
+      new.replied_at := case when new.reply is null then null else now() end;
+    else
+      new.replied_at := old.replied_at;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function private.reviews_guard_member_update() from public;
+
+create trigger reviews_guard_member_update
+  before update on public.reviews
+  for each row execute function private.reviews_guard_member_update();
+
 -- ---------------------------------------------------------------------------
 -- Dataskydd (Ley 21.719/GDPR, D-045): när en kund anonymiseras — via
 -- `anonymizeCustomer` eller `private.run_retention` — nollas recensionens
@@ -146,3 +185,134 @@ revoke all on function private.anonymize_customer_reviews() from public;
 create trigger customers_anonymize_reviews
   after update of anonymized_at on public.customers
   for each row execute function private.anonymize_customer_reviews();
+
+-- ---------------------------------------------------------------------------
+-- Säkerhetsgranskning WP-65: `private.run_retention` rensar även utgångna
+-- `review_invites` (> 60 dagar). `create or replace` med samma returtyp som
+-- 20260930120000_run_retention_notes_and_failed.sql; steg 1–3 oförändrade.
+-- ---------------------------------------------------------------------------
+create or replace function private.run_retention()
+returns table (
+  anonymized_customers integer,
+  purged_outbox integer,
+  purged_consent_events integer
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_anonymized integer;
+  v_purged_outbox integer;
+  v_purged_consent integer;
+begin
+  -- 1. Kunder utan bokning på 24 månader: "utan bokning" = senaste boknings
+  --    startdag (oavsett status), eller om kunden aldrig bokat, kundens
+  --    created_at. Redan anonymiserade kunder (anonymized_at satt) rörs inte.
+  --    Samma steg som anonymizeCustomer (src/server/privacy/customer.ts):
+  --    nolla persondata + samtycke, radera svar, avbryt köade/misslyckade
+  --    outbox-rader och töm deras payload, rensa manage_token_hash/notes/
+  --    cancel_reason, koppla loss consent_events.
+  with anonymized as (
+    update public.customers c
+       set name = null,
+           phone_e164 = null,
+           email = null,
+           notes = null,
+           consent_terms_at = null,
+           consent_marketing_at = null,
+           consent_version = null,
+           consent_channel = null,
+           anonymized_at = now()
+     where c.anonymized_at is null
+       and coalesce(
+             (select max(lower(bk.period))
+                from public.bookings bk
+               where bk.business_id = c.business_id
+                 and bk.customer_id = c.id),
+             c.created_at
+           ) < now() - interval '24 months'
+    returning c.business_id, c.id
+  ),
+  cleared_customer_answers as (
+    delete from public.customer_answers ca
+     using anonymized a
+     where ca.business_id = a.business_id
+       and ca.customer_id = a.id
+    returning 1
+  ),
+  cleared_booking_answers as (
+    delete from public.booking_answers ba
+     using public.bookings bk
+     join anonymized a on a.business_id = bk.business_id and a.id = bk.customer_id
+    where ba.business_id = bk.business_id
+      and ba.booking_id = bk.id
+    returning 1
+  ),
+  cancelled_outbox as (
+    update public.message_outbox mo
+       set status = 'cancelled',
+           payload = '{}'::jsonb
+      from public.bookings bk
+      join anonymized a on a.business_id = bk.business_id and a.id = bk.customer_id
+     where mo.business_id = bk.business_id
+       and mo.booking_id = bk.id
+       and mo.status in ('queued', 'failed')
+    returning 1
+  ),
+  cleared_tokens as (
+    update public.bookings bk
+       set manage_token_hash = null,
+           notes = null,
+           cancel_reason = null
+      from anonymized a
+     where bk.business_id = a.business_id
+       and bk.customer_id = a.id
+    returning 1
+  ),
+  decoupled_consent as (
+    update public.consent_events ce
+       set customer_id = null
+      from anonymized a
+     where ce.business_id = a.business_id
+       and ce.customer_id = a.id
+    returning 1
+  )
+  select count(*) into v_anonymized from anonymized;
+
+  -- 2. Utkorgsrader (sent/dead/cancelled/failed) äldre än 90 dagar raderas
+  --    helt (ingen historik behöver bevaras, till skillnad från payments/Caja).
+  with purged as (
+    delete from public.message_outbox
+     where status in ('sent', 'dead', 'cancelled', 'failed')
+       and updated_at < now() - interval '90 days'
+    returning 1
+  )
+  select count(*) into v_purged_outbox from purged;
+
+  -- 3. Samtyckeslogg: rader som redan saknar kundkoppling (customer_id null)
+  --    och är äldre än 5 år raderas helt (ägarens svar 2026-09-30). Rader med
+  --    en levande customer_id rörs aldrig här.
+  with purged_consent as (
+    delete from public.consent_events
+     where customer_id is null
+       and created_at < now() - interval '5 years'
+    returning 1
+  )
+  select count(*) into v_purged_consent from purged_consent;
+
+  -- 4. WP-65 (D-045): recensionsinbjudningar vars länk gått ut (60 dagar,
+  --    `INVITE_VALID_DAYS` i src/server/reviews/public.ts) raderas. Ingen
+  --    egen räknare (returtypen är oförändrad, cron-routen läser tre
+  --    kolumner). Svepet (`queueReviewRequests`) ser bara bokningar som
+  --    slutade de senaste 3 dygnen, så en raderad inbjudan köas aldrig om.
+  delete from public.review_invites
+   where created_at < now() - interval '60 days';
+
+  -- Bara antal returneras (regel 8: ingen persondata i loggar/cronsvar).
+  return query select v_anonymized, v_purged_outbox, v_purged_consent;
+end;
+$$;
+
+revoke all on function private.run_retention() from public;
+grant execute on function private.run_retention() to service_role;

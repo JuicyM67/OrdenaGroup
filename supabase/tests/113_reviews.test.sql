@@ -3,7 +3,7 @@
 -- + smala skrivningar för medlemmar och anonymiseringstriggern.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(24);
+select plan(29);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -54,7 +54,20 @@ select throws_ok(
      values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-4000-0000-0000-000000000002', 'aaaaaaaa-3000-0000-0000-000000000001', 5) $$,
   '42501'
 );
--- 9. ownerA no puede tocar la reseña de B (0 filas, sin excepción)
+-- 9-13. Guard (säkerhetsgranskning): la denuncia no se puede borrar ni
+-- reescribir, y replied_at lo pone el trigger (no se puede bakdatera).
+select throws_ok($$ update public.reviews set reported_at = null, report_reason = null where id = 'aaaaaaaa-9000-0000-0000-000000000001' $$, '42501');
+select throws_ok($$ update public.reviews set report_reason = 'false' where id = 'aaaaaaaa-9000-0000-0000-000000000001' $$, '42501');
+select lives_ok(
+  $$ update public.reviews set reply = 'Gracias de nuevo', replied_at = '2020-01-01' where id = 'aaaaaaaa-9000-0000-0000-000000000001' $$,
+  'ownerA edita su respuesta'
+);
+reset role;
+select ok((select replied_at > now() - interval '1 minute' from public.reviews where id = 'aaaaaaaa-9000-0000-0000-000000000001'), 'replied_at lo fija el trigger, no el cliente');
+select is((select report_reason from public.reviews where id = 'aaaaaaaa-9000-0000-0000-000000000001'), 'other', 'la denuncia sigue intacta');
+select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+set local role authenticated;
+-- 14. ownerA no puede tocar la reseña de B (0 filas, sin excepción)
 update public.reviews set reply = 'hack', replied_at = now() where id = 'bbbbbbbb-9000-0000-0000-000000000001';
 reset role;
 select is((select reply from public.reviews where id = 'bbbbbbbb-9000-0000-0000-000000000001'), null, 'ownerA no pudo responder la reseña de B');
@@ -65,7 +78,7 @@ set local role authenticated;
 select is((select count(*) from public.reviews)::int, 1, 'staffA ve las reseñas de A');
 update public.reviews set reply = 'staff', replied_at = now() where id = 'aaaaaaaa-9000-0000-0000-000000000001';
 reset role;
-select is((select reply from public.reviews where id = 'aaaaaaaa-9000-0000-0000-000000000001'), 'Gracias', 'staffA sin permiso no cambió la respuesta');
+select is((select reply from public.reviews where id = 'aaaaaaaa-9000-0000-0000-000000000001'), 'Gracias de nuevo', 'staffA sin permiso no cambió la respuesta');
 
 -- 12-13. vendorA / nomember: cero filas --------------------------------------
 select set_config('request.jwt.claims', json_build_object('sub', '44444444-4444-4444-4444-444444444444', 'role', 'authenticated')::text, true);
