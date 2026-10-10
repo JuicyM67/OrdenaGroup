@@ -284,6 +284,7 @@ export type FlashStripItem = {
 export async function flashStripIn(
   q: Queryable,
   position: GeoPoint | undefined,
+  areaSlug?: string,
   limit = FLASH_STRIP_LIMIT,
 ): Promise<FlashStripItem[]> {
   const params: unknown[] = [marketConfig.timeZone, marketplaceIncludeDemo()];
@@ -291,6 +292,11 @@ export async function flashStripIn(
   if (position) {
     params.push(position.lat, position.lng);
     distance = `private.distance_km($3::numeric, $4::numeric, b.lat, b.lng)`;
+  }
+  let area = "";
+  if (areaSlug) {
+    params.push(areaSlug);
+    area = ` and b.area_slug = $${params.length}`;
   }
   params.push(limit);
   const r = await q.query<{
@@ -325,7 +331,7 @@ export async function flashStripIn(
         and b.timezone = $1
         and ($2::boolean or b.id::text not like 'de00000%')
         and b.marketplace_flash_visible
-        and private.plan_has_feature(b.plan::text, 'flash')
+        and private.plan_has_feature(b.plan::text, 'flash')${area}
       order by ${position ? "km asc nulls last, " : ""}f.starts_at, f.id
       limit $${params.length}`,
     params,
@@ -359,7 +365,9 @@ export function loadDiscover(
     const offers = await listOffersIn(q, f);
     const categories = await categoryCountsIn(q, f);
     const areas = await areasIn(q);
-    const flash = opts.withFlash ? await flashStripIn(q, f.position) : [];
+    const flash = opts.withFlash
+      ? await flashStripIn(q, f.position, f.areaSlug)
+      : [];
     return { offers, categories, areas, flash };
   });
 }

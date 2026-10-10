@@ -37,6 +37,8 @@ export const descubre = {
     destacado: "más barato cerca de ti",
     tituloCorto: "Ofertas",
     destacadoCorto: "cerca de ti",
+    /** "Pelo en {comuna}": preposición antes de la comuna destacada. */
+    en: "en",
     bajada:
       "Ofertas y horas libres de salones con reseñas verificadas de clientes reales.",
     foto: "Sillón de peluquería con luz natural",

@@ -50,6 +50,7 @@ export const descubre: Widen<typeof EsDescubre> = {
     destacado: "billigare nära dig",
     tituloCorto: "Erbjudanden",
     destacadoCorto: "nära dig",
+    en: "på",
     bajada:
       "Erbjudanden och lediga tider från salonger med verifierade recensioner.",
     foto: "Frisörstol i dagsljus",

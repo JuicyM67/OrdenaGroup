@@ -136,7 +136,9 @@ export async function DiscoverRoute({
   ];
   const heading = category
     ? {
-        pre: t.categorias.nombres[category],
+        pre: areaName
+          ? `${t.categorias.nombres[category]} ${t.hero.en}`
+          : t.categorias.nombres[category],
         marca: areaName ?? t.hero.destacadoCorto,
       }
     : { pre: t.hero.titulo, marca: t.hero.destacado };
