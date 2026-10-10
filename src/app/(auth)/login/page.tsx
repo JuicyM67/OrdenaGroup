@@ -3,6 +3,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { AuthShell } from "@/components/auth/auth-shell";
 import { LoginForm } from "@/components/auth/login-form";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { acceso } from "@/i18n/auth";
@@ -35,14 +36,12 @@ export default async function LoginPage({
       : undefined;
 
   return (
-    <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
-      <div className="w-full max-w-sm">
-        <LoginForm
-          onRequestMagicLink={requestMagicLink}
-          initialErrorCode={error}
-          initialEmail={initialEmail}
-        />
-      </div>
-    </main>
+    <AuthShell>
+      <LoginForm
+        onRequestMagicLink={requestMagicLink}
+        initialErrorCode={error}
+        initialEmail={initialEmail}
+      />
+    </AuthShell>
   );
 }
