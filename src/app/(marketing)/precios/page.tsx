@@ -39,10 +39,10 @@ export const metadata: Metadata = {
 const PRECIOS_FAQ = [
   copy.sitio.precios.faq.iva,
   copy.sitio.precios.faq.cambiarPlan,
-  copy.sitio.precios.faq.masWhatsapp,
   copy.sitio.precios.faq.permanencia,
   copy.sitio.precios.faq.fundador,
-  ...(paginas.sms ? [paginas.sms.faq] : []),
+  // SE: sms-krediterna ersätter den gamla raden om extra sms-paket.
+  ...(paginas.sms ? [paginas.sms.faq] : [copy.sitio.precios.faq.masWhatsapp]),
 ] as const;
 
 const SIN_COMISIONES_ITEMS = [
