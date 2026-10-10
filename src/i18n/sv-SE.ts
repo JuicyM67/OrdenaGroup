@@ -189,7 +189,7 @@ export const landing = {
     subtitulo:
       "Bokningssystemet för barberare, frisörer, hud & skönhet och naprapater. Dina kunder bokar själva med en länk, utan samtal eller sms fram och tillbaka.",
     ctaPrimario: LANDING_CTA_SKAPA_GRATIS,
-    ctaSecundario: "Se en exempelkalender",
+    ctaSecundario: "Prova demot",
     vistaPreviaAria: "Förhandsvisning av kalendern och en bokning",
   },
   heroStats: {
@@ -1845,7 +1845,7 @@ export const home = {
       "Blixttider syns direkt",
       "Omdömen från riktiga kunder",
     ],
-    cta: "Se exempelsidan",
+    cta: "Prova demot",
     tabs: ["Tjänster", "Personal", "Omdömen"],
     omdomenRad: (p: { n: string; zona: string }): string =>
       `${p.n} verifierade omdömen · ${p.zona}`,
@@ -2018,7 +2018,7 @@ export const home = {
     contacto: "Kontakt",
     flytt: "Smärtfri flytt",
     flash: "Blixttider",
-    ejemplo: "Exempelsida",
+    ejemplo: "Demo",
     cuenta: "Konto",
     crearCuenta: "Skapa konto gratis",
     omTitulo: (p: { nombre: string }): string => `Om ${p.nombre}`,

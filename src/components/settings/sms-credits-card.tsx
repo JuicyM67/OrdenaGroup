@@ -586,7 +586,14 @@ export function SmsCreditsSection({
               <span className="hidden lg:inline">{t.comprar.seguro}</span>
             </p>
           </aside>
-        ) : null}
+        ) : (
+          <aside
+            aria-label={t.comprar.titulo}
+            className="rounded-card bg-surface p-5 text-14 text-muted lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:p-7"
+          >
+            {t.comprar.pronto}
+          </aside>
+        )}
 
         <div className="lg:col-start-1">
           <MarketingCard data={data} onUpgrade={() => setUpgradeOpen(true)} />

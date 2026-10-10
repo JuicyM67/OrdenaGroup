@@ -55,7 +55,7 @@ export const landing = {
     subtitulo:
       "El sistema de reservas para barberías, peluquerías, estética y kinesiología. Tus clientes reservan solos con un link, sin llamadas ni mensajes uno a uno.",
     ctaPrimario: LANDING_CTA_CREAR_GRATIS,
-    ctaSecundario: "Ver una agenda de ejemplo",
+    ctaSecundario: "Prueba la demo",
     /** aria-label de la imagen de producto a la derecha del hero (rediseño,
      * sin `.dc.html` de referencia todavía). */
     vistaPreviaAria: "Vista previa de la agenda y de una reserva",
@@ -1825,7 +1825,7 @@ export const home = {
       "Horas flash a la vista",
       "Reseñas de clientes reales",
     ],
-    cta: "Ver la página de ejemplo",
+    cta: "Prueba la demo",
     tabs: ["Servicios", "Equipo", "Reseñas"],
     omdomenRad: (p: { n: string; zona: string }): string =>
       `${p.n} reseñas verificadas · ${p.zona}`,
@@ -1999,7 +1999,7 @@ export const home = {
     contacto: "Contacto",
     flytt: "Cambio sin dolor",
     flash: "Horas flash",
-    ejemplo: "Página de ejemplo",
+    ejemplo: "Demo",
     cuenta: "Cuenta",
     crearCuenta: "Crear cuenta gratis",
     omTitulo: (p: { nombre: string }): string => `Sobre ${p.nombre}`,

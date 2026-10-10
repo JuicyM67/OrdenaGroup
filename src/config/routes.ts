@@ -38,7 +38,7 @@ const CL_ROUTES: Record<RouteId, string> = {
   ventajas: "/ventajas",
   preguntas: "/preguntas",
   contacto: "/contacto",
-  ejemploNegocio: "/ejemplo/negocio",
+  ejemploNegocio: "/demo/negocio",
 };
 
 /** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
@@ -50,7 +50,7 @@ const SE_ROUTES: Record<RouteId, string> = {
   ventajas: "/fordelar",
   preguntas: "/vanliga-fragor",
   contacto: "/kontakt",
-  ejemploNegocio: "/exempel/foretag",
+  ejemploNegocio: "/demo/foretag",
 };
 
 const ROUTES_BY_MARKET: Record<Market, Record<RouteId, string>> = {
@@ -543,6 +543,17 @@ export function seLegacyRedirects(): {
       destination: SE_ROUTES.horasFlash,
       permanent: true,
     },
+    // Företagsdemot hette "exempel/foretag" före omdöpningen till "Demo".
+    {
+      source: "/exempel/foretag",
+      destination: SE_ROUTES.ejemploNegocio,
+      permanent: true,
+    },
+    {
+      source: "/ejemplo/negocio",
+      destination: SE_ROUTES.ejemploNegocio,
+      permanent: true,
+    },
     // Branschsidor före WP-75: `/for/<slug>` och `/para/<id>` → `/branscher/<slug>`.
     ...Object.entries(SE_LEGACY_FOR_SLUGS).map(([slug, id]) => ({
       source: `/for/${slug}`,
@@ -563,9 +574,17 @@ export function clLegacyRedirects(): {
   destination: string;
   permanent: true;
 }[] {
-  return (Object.keys(INDUSTRIA_TO_RUBRO) as IndustriaId[]).map((legacy) => ({
-    source: `/para/${legacy}`,
-    destination: `/rubros/${CL_RUBRO_SLUGS[INDUSTRIA_TO_RUBRO[legacy]]}`,
-    permanent: true as const,
-  }));
+  return [
+    // Demo del negocio: antes "/ejemplo/negocio".
+    {
+      source: "/ejemplo/negocio",
+      destination: CL_ROUTES.ejemploNegocio,
+      permanent: true as const,
+    },
+    ...(Object.keys(INDUSTRIA_TO_RUBRO) as IndustriaId[]).map((legacy) => ({
+      source: `/para/${legacy}`,
+      destination: `/rubros/${CL_RUBRO_SLUGS[INDUSTRIA_TO_RUBRO[legacy]]}`,
+      permanent: true as const,
+    })),
+  ];
 }

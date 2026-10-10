@@ -1,11 +1,11 @@
 // Innehållet i megamenyns två paneler (WP-75, Main.dc.html / Branscher.dc.html):
 // "Funktioner" (funktionslista med pastellikoner, fotokort för flytt och ett mörkt kort
-// till exempelsidan) och "Branscher" (fotorutor per bransch). Alla länkar går till riktiga
+// till demot) och "Branscher" (fotorutor per bransch). Alla länkar går till riktiga
 // undersidor via `routes.ts`. Samma länkar används i mobilmenyn (se `site-header.tsx`).
 "use client";
 
 import * as NavigationMenu from "@radix-ui/react-navigation-menu";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CalendarCheck, LayoutDashboard } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -129,6 +129,45 @@ export function FuncionesPanel() {
         </NavigationMenu.Link>
       </div>
     </div>
+  );
+}
+
+export function DemoPanel() {
+  const items = [
+    {
+      href: `/${brand.demoSlug}`,
+      icon: CalendarCheck,
+      tone: "lavender",
+      ...t.menuDemo.cliente,
+    },
+    {
+      href: href("ejemploNegocio"),
+      icon: LayoutDashboard,
+      tone: "lime",
+      ...t.menuDemo.negocio,
+    },
+  ] as const;
+  return (
+    <ul className="grid grid-cols-2 gap-1">
+      {items.map((it) => (
+        <li key={it.href}>
+          <NavigationMenu.Link asChild>
+            <Link href={it.href} className={itemClass}>
+              <span
+                aria-hidden="true"
+                className={`flex size-11 shrink-0 items-center justify-center rounded-full ${TONE_CLASS[it.tone]}`}
+              >
+                <it.icon className="size-4.5" strokeWidth={2} />
+              </span>
+              <span className="flex flex-col gap-0.5">
+                <b className="text-15">{it.titulo}</b>
+                <span className="text-13 text-muted">{it.texto}</span>
+              </span>
+            </Link>
+          </NavigationMenu.Link>
+        </li>
+      ))}
+    </ul>
   );
 }
 

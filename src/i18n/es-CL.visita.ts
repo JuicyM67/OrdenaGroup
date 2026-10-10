@@ -26,7 +26,7 @@ export const visita = {
   },
   cliente: {
     bienvenida: {
-      aria: "Bienvenida a la página de ejemplo",
+      aria: "Bienvenida a la demo",
       titulo: "Así puede verse tu página",
       texto:
         "Este es un negocio de ejemplo. Te mostramos todo en 40 segundos: elige tu rubro y adaptamos los ejemplos.",
