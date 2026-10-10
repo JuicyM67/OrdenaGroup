@@ -1,5 +1,5 @@
 // Guidad visning (WP-72): spotlight som glider mellan mål på sidan, infokort i
-// brons/kräm liquid glass, stegräknare, progress-segment, "Hoppa över" och en liten
+// ljust liquid glass, stegräknare, progress-segment, "Hoppa över" och en liten
 // "Visa mig runt igen"-knapp efteråt. Källa: docs/design/reference/visning/*.dc.html.
 //
 // Generisk: målen pekas ut med `data-tour="<namn>"` på riktiga element (sidan eller en
@@ -313,13 +313,13 @@ export function GuidedTour({
           setPhase(0);
         }}
         className={cn(
-          "fixed z-80 flex h-12 animate-tour-in items-center gap-2 rounded-full px-4.5 font-bold tour-glass focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze",
+          "fixed z-80 flex h-12 animate-tour-in items-center gap-2 rounded-full px-4.5 font-bold tour-glass focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
           restartClassName ?? "bottom-6 left-6",
         )}
       >
         <span
           aria-hidden="true"
-          className="flex size-6.5 items-center justify-center rounded-full text-13 tour-bronze"
+          className="flex size-6.5 items-center justify-center rounded-full bg-lime text-13 text-ink"
         >
           ?
         </span>
@@ -402,16 +402,14 @@ export function GuidedTour({
           >
             <span
               aria-hidden="true"
-              className="flex size-16 items-center justify-center rounded-full tour-bronze"
+              className="flex size-16 items-center justify-center rounded-full bg-staff-1 text-ink"
             >
               <CalendarCheck className="size-7" strokeWidth={2} />
             </span>
             <h2 className="font-display text-30 leading-snug font-semibold">
               {welcome.title}
             </h2>
-            <p className="text-15 leading-relaxed text-tour-soft">
-              {welcome.text}
-            </p>
+            <p className="text-15 leading-relaxed text-muted">{welcome.text}</p>
             {welcome.pills ? (
               <div
                 role="group"
@@ -429,10 +427,10 @@ export function GuidedTour({
                         setIndustry(it.id);
                       }}
                       className={cn(
-                        "inline-flex h-8.5 items-center rounded-full px-3 text-13 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze",
+                        "inline-flex h-8.5 items-center rounded-full px-3 text-13 font-semibold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
                         on
-                          ? "tour-bronze-soft"
-                          : "border-2 border-dashed border-bronze-light bg-surface/60 text-tour-soft",
+                          ? "bg-lime text-ink"
+                          : "border-2 border-dashed border-ink/25 bg-surface/60 text-muted",
                       )}
                     >
                       {it.label}
@@ -445,7 +443,7 @@ export function GuidedTour({
               <button
                 type="button"
                 onClick={finish}
-                className="h-12 rounded-full px-4.5 font-bold text-tour-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+                className="h-12 rounded-full px-4.5 font-bold text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 {welcome.skip}
               </button>
@@ -453,7 +451,7 @@ export function GuidedTour({
                 type="button"
                 data-autofocus
                 onClick={next}
-                className="flex h-13 items-center gap-3 rounded-full pr-2 pl-5.5 text-15 font-bold tour-bronze focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+                className="flex h-13 items-center gap-3 rounded-full bg-ink pr-2 pl-5.5 text-15 font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
               >
                 {welcome.start}
                 <span
@@ -482,13 +480,13 @@ export function GuidedTour({
           style={{ left: cardPos.left, top: cardPos.top }}
         >
           <div className="flex items-center justify-between">
-            <span className="text-12 font-bold tracking-caps text-bronze">
+            <span className="text-12 font-bold tracking-caps text-muted">
               {copy.counter(phase, total)}
             </span>
             <button
               type="button"
               onClick={finish}
-              className="text-13 font-semibold text-bronze focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+              className="text-13 font-semibold text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               {copy.skip}
             </button>
@@ -506,7 +504,7 @@ export function GuidedTour({
                 key={s.id}
                 className={cn(
                   "h-1.25 flex-1 rounded-tag",
-                  i < phase ? "bg-bronze" : "bg-bronze/18",
+                  i < phase ? "bg-lilac" : "bg-ink/10",
                 )}
               />
             ))}
@@ -514,14 +512,14 @@ export function GuidedTour({
           <h2 className="font-display text-22 leading-snug font-semibold sm:text-24">
             {step.title}
           </h2>
-          <p className="text-14 leading-relaxed text-tour-soft">
+          <p className="text-14 leading-relaxed text-muted">
             {compact && step.compactText ? step.compactText : step.text}
           </p>
           <div className="flex flex-wrap gap-1.5">
             {step.chips.map((c) => (
               <span
                 key={c}
-                className="inline-flex h-8 items-center gap-1.5 rounded-full px-2.75 text-12 font-semibold tour-bronze-soft"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full bg-lime px-2.75 text-12 font-semibold text-ink"
               >
                 <Check aria-hidden="true" className="size-3" strokeWidth={3} />
                 {c}
@@ -532,7 +530,7 @@ export function GuidedTour({
             <button
               type="button"
               onClick={back}
-              className="h-11 rounded-full border-2 border-bronze/35 bg-surface/55 px-4 font-bold text-tour-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+              className="h-11 rounded-full border-2 border-ink/15 bg-surface/60 px-4 font-bold text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               {copy.back}
             </button>
@@ -541,7 +539,7 @@ export function GuidedTour({
               data-autofocus
               aria-label={copy.next}
               onClick={next}
-              className="flex size-13 items-center justify-center rounded-full tour-bronze focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+              className="flex size-13 items-center justify-center rounded-full bg-ink text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               <ArrowRight
                 aria-hidden="true"

@@ -61,32 +61,30 @@ export default function BusinessTour({
       }}
       renderDone={({ close }) => (
         <div className="flex flex-col gap-3.5 rounded-shell p-6 tour-glass sm:p-7.5">
-          <span className="self-start rounded-event px-3.5 py-1.75 text-13 font-bold tour-bronze">
+          <span className="self-start rounded-event bg-lime px-3.5 py-1.75 text-13 font-bold text-ink">
             {n.final.etiqueta}
           </span>
           <h2 className="font-display text-30 leading-snug font-semibold">
             {n.final.titulo}
           </h2>
-          <p className="text-15 leading-relaxed text-tour-soft">
-            {n.final.texto}
-          </p>
+          <p className="text-15 leading-relaxed text-muted">{n.final.texto}</p>
           <div className="flex flex-col gap-2.5 sm:flex-row">
             <Link
               href="/login"
               data-autofocus
-              className="flex h-13.5 shrink-0 items-center justify-center gap-2.5 rounded-full bg-ink font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze sm:flex-1"
+              className="flex h-13.5 shrink-0 items-center justify-center gap-2.5 rounded-full bg-lilac font-bold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:flex-1"
             >
               {n.final.cta}
               <ArrowRight
                 aria-hidden="true"
-                className="size-4.5 text-lime"
+                className="size-4.5 text-ink"
                 strokeWidth={2.5}
               />
             </Link>
             <button
               type="button"
               onClick={close}
-              className="flex h-13.5 items-center justify-center rounded-full border-2 border-bronze/35 bg-surface/55 px-4.5 font-bold text-tour-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-bronze"
+              className="flex h-13.5 items-center justify-center rounded-full border-2 border-ink/15 bg-surface/60 px-4.5 font-bold text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
               {n.final.seguir}
             </button>
