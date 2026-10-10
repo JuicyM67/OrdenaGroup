@@ -64,6 +64,10 @@ function cardRows(market: Market, data: BookingCardData): BookingCardRow[] {
   } else if (data.precio) {
     rows.push({ label: precioLabel(market), value: data.precio });
   }
+  if (data.pago) {
+    const pago = emailNs(market).pago;
+    rows.push({ label: pago.label, value: pago[data.pago] });
+  }
   return rows;
 }
 
@@ -72,6 +76,17 @@ function cardRows(market: Market, data: BookingCardData): BookingCardRow[] {
  * verMiReserva` (samma ord, men tänkt för själva Reserva-sidan). */
 function verMiReserva(market: Market): string {
   return emailNs(market).comun.verReserva;
+}
+
+/** WP-64 (D-044): lägger till återbetalningsnotisen sist i brödtexten. */
+function withReembolso(
+  market: Market,
+  cuerpo: string,
+  reembolso: boolean | undefined,
+): string {
+  return reembolso
+    ? `${cuerpo}\n\n${emailNs(market).pago.reembolsoNota}`
+    : cuerpo;
 }
 
 function pieFooter(
@@ -189,6 +204,8 @@ export function reservaMovidaEmail(
 }
 
 export type ReservaCanceladaData = {
+  /** WP-64 (D-044): kunden har betalat online och får pengarna tillbaka. */
+  readonly reembolso?: boolean;
   readonly cliente: string;
   readonly negocio: string;
   readonly fecha: string;
@@ -204,15 +221,16 @@ export function reservaCanceladaEmail(
   const asunto = ns.asunto({ negocio: data.negocio });
   const preheader = ns.preheader(data);
   const cuerpo = ns.cuerpo(data);
+  const cuerpoFull = withReembolso(market, cuerpo, data.reembolso);
   const bodyHtml =
-    textToHtmlParagraphs(cuerpo) +
+    textToHtmlParagraphs(cuerpoFull) +
     button(data.linkNuevaReserva, nuevaReservaCta(market), "lime");
   const { html: footHtml, text: footText } = pieFooter(market, data.negocio);
   const { html, text } = renderLayout({
     market,
     preheader,
     bodyHtml,
-    bodyText: cuerpo,
+    bodyText: cuerpoFull,
     footerHtml: footHtml,
     footerText: footText,
   });
@@ -260,6 +278,8 @@ export function solicitudRecibidaEmail(
 }
 
 export type SolicitudRechazadaData = {
+  /** WP-64 (D-044): kunden har betalat online och får pengarna tillbaka. */
+  readonly reembolso?: boolean;
   readonly cliente: string;
   readonly negocio: string;
   readonly fecha: string;
@@ -283,15 +303,16 @@ export function solicitudRechazadaEmail(
   const asunto = ns.asunto({ negocio: data.negocio });
   const preheader = ns.preheader(data);
   const cuerpo = ns.cuerpo(data);
+  const cuerpoFull = withReembolso(market, cuerpo, data.reembolso);
   const bodyHtml =
-    textToHtmlParagraphs(cuerpo) +
+    textToHtmlParagraphs(cuerpoFull) +
     button(data.linkNuevaReserva, nuevaReservaCta(market), "lime");
   const { html: footHtml, text: footText } = pieFooter(market, data.negocio);
   const { html, text } = renderLayout({
     market,
     preheader,
     bodyHtml,
-    bodyText: cuerpo,
+    bodyText: cuerpoFull,
     footerHtml: footHtml,
     footerText: footText,
   });
@@ -299,6 +320,8 @@ export function solicitudRechazadaEmail(
 }
 
 export type SolicitudVencidaData = {
+  /** WP-64 (D-044): kunden har betalat online och får pengarna tillbaka. */
+  readonly reembolso?: boolean;
   readonly cliente: string;
   readonly negocio: string;
   readonly fecha: string;
@@ -317,15 +340,16 @@ export function solicitudVencidaEmail(
   const asunto = ns.asunto({ negocio: data.negocio });
   const preheader = ns.preheader(data);
   const cuerpo = ns.cuerpo(data);
+  const cuerpoFull = withReembolso(market, cuerpo, data.reembolso);
   const bodyHtml =
-    textToHtmlParagraphs(cuerpo) +
+    textToHtmlParagraphs(cuerpoFull) +
     button(data.linkNuevaReserva, nuevaReservaCta(market), "lime");
   const { html: footHtml, text: footText } = pieFooter(market, data.negocio);
   const { html, text } = renderLayout({
     market,
     preheader,
     bodyHtml,
-    bodyText: cuerpo,
+    bodyText: cuerpoFull,
     footerHtml: footHtml,
     footerText: footText,
   });

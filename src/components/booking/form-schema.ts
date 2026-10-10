@@ -30,6 +30,10 @@ export const customerFormSchema = z.object({
   ]),
   termsAccepted: z.literal(true, { error: "terms.required" }),
   marketing: z.boolean(),
+  /** WP-64 (D-044): kunden vill betala online nu ("Valfri"). Servern avgör
+   * själv om betalning gäller (företagets inställning); "Obligatorisk"
+   * ignorerar värdet. */
+  payOnline: z.boolean().optional(),
   consentVersion: z.literal(reserva.consentimientos.version),
   idempotencyKey: z.uuid(),
   serviceId: z.string().min(1),

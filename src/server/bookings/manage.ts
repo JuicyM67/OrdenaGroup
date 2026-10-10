@@ -55,6 +55,8 @@ export type ManagedBooking = {
    * godkänna (`cancelByToken` svarar då `pending: true`). Sätts alltid av
    * `loadBookingByToken`; valfri bara för äldre fixturer (saknas = false). */
   cancelNeedsApproval?: boolean;
+  /** WP-64 (D-044): betalning online, härledd ur Stripe-raden. Saknas = ingen. */
+  payment?: "reserved" | "paid" | "refund";
 };
 
 /** WP-56: kundens avbokning via länken. `pending: true` = blev en
@@ -99,6 +101,27 @@ type DetailRow = {
   cancel_approval: string;
 };
 
+/** WP-64 (D-044): kundens betalning online för bokningen, som kunden ser den. */
+async function onlinePaymentState(
+  q: Queryable,
+  businessId: string,
+  bookingId: string,
+  bookingStatus: string,
+): Promise<"reserved" | "paid" | "refund" | undefined> {
+  const r = await q.query<{ status: string }>(
+    `select status from public.stripe_checkouts
+      where business_id = $1 and booking_id = $2
+        and status in ('authorized', 'captured', 'voided', 'refunded')
+      order by created_at desc limit 1`,
+    [businessId, bookingId],
+  );
+  const st = r.rows[0]?.status;
+  if (!st) return undefined;
+  if (st === "voided" || st === "refunded") return "refund";
+  if (bookingStatus === "cancelled") return "refund";
+  return st === "authorized" ? "reserved" : "paid";
+}
+
 /**
  * Bokningen bakom länken, eller `null` om token är okänd (eller har
  * roterats bort av en flytt, D-029). `now` injiceras (deterministiska tester).
@@ -130,6 +153,7 @@ export async function loadBookingByToken(
     );
     const x = r.rows[0];
     if (!x) return null;
+    const payment = await onlinePaymentState(q, businessId, x.id, x.status);
     const start = Math.round(x.s);
     const cancelNeedsApproval = customerCancelNeedsApproval(
       {
@@ -166,6 +190,7 @@ export async function loadBookingByToken(
             now,
           )),
       cancelNeedsApproval,
+      ...(payment ? { payment } : {}),
     };
   });
 }

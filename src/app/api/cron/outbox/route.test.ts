@@ -33,6 +33,10 @@ vi.mock("@/server/bookings/confirm", () => ({
     (expireRequestsMock as (...a: unknown[]) => unknown)(...args),
 }));
 
+vi.mock("@/server/payments/stripe/reconcile", () => ({
+  runStripeSweep: async () => ({ reconciled: 0, sessions: 0 }),
+}));
+
 const { GET, POST } = await import("./route");
 
 const ORIGINAL_SECRET = process.env.CRON_SECRET;
@@ -97,6 +101,7 @@ describe("POST /api/cron/outbox", () => {
       expired: 0,
       waitlistExpired: 0,
       reviewRequests: 0,
+      stripe: { reconciled: 0, sessions: 0 },
     });
   });
 });

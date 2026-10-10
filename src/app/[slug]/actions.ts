@@ -31,7 +31,13 @@ import {
 } from "@/server/bookings/submit";
 import { pgErrorCode } from "@/server/db/errors";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
+import { withServiceTx } from "@/server/db/tx";
 import { kickOutbox } from "@/server/messaging/outbox";
+import {
+  cancelUnpaidBooking,
+  createCheckoutForBooking,
+  effectiveOnlinePayment,
+} from "@/server/payments/stripe/checkout";
 import { systemClock } from "@/server/scheduling/clock";
 import { joinWaitlist as joinWaitlistServer } from "@/server/waitlist/join";
 
@@ -62,6 +68,8 @@ export type CreateBookingActionResult =
        * fel/tom token.
        */
       readonly manageToken?: string;
+      /** WP-64 (D-044): Stripe Checkout-länk när kunden ska betala nu. */
+      readonly checkoutUrl?: string;
     })
   | BookingActionErr;
 
@@ -137,6 +145,36 @@ export async function createBooking(
     );
   }
 
+  // WP-64 (D-044): betalning online. Servern avgör (företagets läge + att kontot
+  // kan ta betalt); klientens `payOnline` räknas bara vid "Valfri". Belopp och
+  // avgift räknas i `createCheckoutForBooking` ur bokningsraden, aldrig härifrån.
+  const mode = await withServiceTx((q) =>
+    effectiveOnlinePayment(q, business.id),
+  );
+  let checkoutUrl: string | undefined;
+  if (
+    mode === "required" ||
+    (mode === "optional" && parsed.data.payOnline === true)
+  ) {
+    const checkout = await createCheckoutForBooking({
+      businessId: business.id,
+      bookingId: result.value.id,
+      now,
+    });
+    if (checkout.ok) {
+      checkoutUrl = checkout.url;
+    } else if (
+      mode === "required" &&
+      (checkout.code === "failed" || checkout.code === "unavailable")
+    ) {
+      // Obligatorisk betalning gick inte att starta: släpp tiden i stället för
+      // att lämna en obetald bokning kvar.
+      await cancelUnpaidBooking(business.id, result.value.id, now);
+      void kickOutbox();
+      return { ok: false, code: "payment_unavailable" };
+    }
+  }
+
   // `discountClp > 0` = medlemspris eller (WP-31) erbjudande, se
   // `discountReason`. Vid ett idempotent omförsök läses förmånstexten inte
   // om → `null`. `memberDiscountMinor` bär rabatten oavsett orsak.
@@ -155,9 +193,14 @@ export async function createBooking(
       discountReason: discountReason ?? "member",
       memberBenefitText: memberBenefitText ?? null,
       manageToken: manageTokenOrUndefined,
+      ...(checkoutUrl ? { checkoutUrl } : {}),
     };
   }
-  return { ok: true, manageToken: manageTokenOrUndefined };
+  return {
+    ok: true,
+    manageToken: manageTokenOrUndefined,
+    ...(checkoutUrl ? { checkoutUrl } : {}),
+  };
 }
 
 /**

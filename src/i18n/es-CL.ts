@@ -190,6 +190,9 @@ export const errores = {
      * desde el mismo IP, o ya hay demasiadas reservas futuras con este
      * número de teléfono en este negocio. */
     rate_limited: "Demasiados intentos. Prueba de nuevo en unos minutos.",
+    /** WP-64: el pago online no se pudo iniciar; la reserva no quedó hecha. */
+    payment_unavailable:
+      "No pudimos iniciar el pago. Tu reserva no se hizo, inténtalo de nuevo.",
     nombreVacio: "Escribe tu nombre.",
     emailInvalido: "Revisa tu correo electrónico.",
     consentimientoRequerido: "Acepta los términos para continuar.",
@@ -369,6 +372,20 @@ export const reserva = {
     emailAyuda: "Aquí te llegan la confirmación y el recordatorio.",
     emailPlaceholder: "tucorreo@ejemplo.cl",
   },
+  /** WP-64 (D-044): pago online al reservar (Stripe Checkout). */
+  pago: {
+    opcionalLabel: "Pagar ahora con tarjeta",
+    opcionalAyuda: "Pagas de forma segura en Stripe. Si no, pagas en el local.",
+    obligatorioAviso:
+      "Para reservar esta hora pagas con tarjeta. Al enviar te llevamos a la página de pago.",
+    reservadoAviso:
+      "El monto se reserva en tu tarjeta y se cobra cuando el negocio confirme tu hora. Si no la confirma, no se cobra nada.",
+    okAviso: "Listo, recibimos tu pago. Te llega la confirmación por correo.",
+    canceladoAviso:
+      "No se hizo el pago. Tu solicitud sigue enviada y pagas en el local.",
+    liberadaAviso:
+      "No se hizo el pago, así que la hora quedó libre. Puedes reservar de nuevo.",
+  },
   antesDeConfirmar: {
     politicaCancelacion: (p: { horas: number }): string =>
       `Puedes cancelar o cambiar la hora hasta ${p.horas} h antes, sin costo.`,
@@ -463,6 +480,13 @@ export const gestion = {
   /** WP-45: aviso en `r/[token]` cuando la reserva todavía está `requested`
    * (el negocio no la confirmó ni la rechazó). El chip de estado usa
    * `estados.porConfirmar`; esto es el texto largo debajo del chip. */
+  /** WP-64 (D-044): estado del pago online en `r/[token]`. */
+  pago: {
+    reservado:
+      "El monto está reservado en tu tarjeta y se cobra cuando el negocio confirme.",
+    pagado: "Pagado online.",
+    reembolso: "Tu pago se devuelve a tu tarjeta.",
+  },
   pendienteAviso:
     "El negocio todavía no confirma esta hora. Te avisaremos apenas lo haga.",
   /** WP-56: aviso bajo el chip `estados.cancelacionPendiente`, cuando el
@@ -1618,6 +1642,15 @@ export const email = {
   /** WP-54: precio con descuento de socio, en la tarjeta de la reserva
    * (`reservaConfirmada`/`solicitudRecibida`) en vez de la fila "Precio".
    * `descuento` ya viene formateado, sin signo. */
+  /** WP-64 (D-044): línea "Pago" en la tarjeta de la reserva y aviso de reembolso. */
+  pago: {
+    label: "Pago",
+    reservado: "Reservado en tu tarjeta, se cobra al confirmar",
+    pagado: "Pagado online",
+    reembolso: "Se devuelve a tu tarjeta",
+    reembolsoNota:
+      "El pago online que hiciste se devuelve a tu tarjeta. Puede tardar unos días en verse.",
+  },
   miembro: {
     precioLabel: "Precio socio",
     /** WP-31: mismo formato, cuando el descuento viene de una oferta. */
@@ -2136,6 +2169,7 @@ export const ajustes = {
     /** Sección nueva (WP-26 paso 7, F12): exportar los datos del negocio y
      * eliminar la cuenta. */
     privacidad: "Privacidad y datos",
+    pagos: "Pagos online",
     /** Sección nueva (WP-54): el beneficio para clientes marcados como
      * `is_member` ("socios", ver `estados.socio`). WP-31: renombrada — ahora
      * también vive acá el recordatorio automático "Te echamos de menos"
@@ -2144,6 +2178,57 @@ export const ajustes = {
   },
   /** Sección "Socios" (WP-54): `businesses.member_discount_pct`/
    * `member_benefit_text`. Apagado = `member_discount_pct` es `null`. */
+  /** WP-64 (D-044): pestaña "Pagos online" (Stripe Connect). Solo SE por ahora. */
+  pagos: {
+    titulo: "Pagos online",
+    intro:
+      "Tus clientes pueden pagar su hora con tarjeta al reservar. El dinero llega directo a tu cuenta de Stripe.",
+    estadoLabel: "Estado de la conexión",
+    estado: {
+      none: "Sin conectar",
+      onboarding: "Conexión en curso",
+      active: "Activa",
+      action_required: "Falta información",
+    },
+    estadoAyuda: {
+      none: "Conecta tu cuenta de Stripe para recibir pagos.",
+      onboarding: "Termina la conexión en Stripe para empezar a cobrar.",
+      active: "Tu cuenta está lista para cobrar.",
+      action_required:
+        "Stripe necesita más información para que puedas seguir cobrando.",
+    },
+    conectar: "Conectar con Stripe",
+    continuar: "Continuar en Stripe",
+    completar: "Completar información en Stripe",
+    abrirPanel: "Abrir mi panel de Stripe",
+    modoTitulo: "Pago al reservar",
+    modo: {
+      off: "Desactivado",
+      optional: "Opcional",
+      required: "Obligatorio",
+    },
+    modoAyuda: {
+      off: "El cliente paga en el local.",
+      optional: "El cliente elige si paga online o en el local.",
+      required: "El cliente tiene que pagar online para reservar.",
+    },
+    modoRequiereCuenta:
+      "Conecta y activa tu cuenta para elegir Opcional u Obligatorio.",
+    comision: (p: { monto: string }): string =>
+      `Comisión de la plataforma: ${p.monto} de cada pago online.`,
+    sinComision: "Tu plan no tiene comisión de la plataforma.",
+    reembolsos:
+      "Si rechazas, no alcanzas a responder o se cancela una reserva pagada, el dinero se devuelve al cliente automáticamente.",
+    guardar: "Guardar",
+    guardado: "Guardado",
+    errores: {
+      unavailable: "Los pagos online no están disponibles ahora.",
+      failed: "No pudimos conectar con Stripe. Inténtalo de nuevo.",
+      needs_account: "Primero conecta tu cuenta de Stripe.",
+      forbidden: "No tienes permiso para cambiar esto.",
+      unknown: "Algo salió mal. Inténtalo de nuevo.",
+    },
+  },
   socios: {
     activar: "Activar beneficio para socios",
     activarAyuda:
@@ -2672,6 +2757,7 @@ export const caja = {
     transfer: "Transferencia",
     mercadopago: "Mercado Pago",
     swish: "Swish",
+    stripe: "Online (tarjeta)",
   },
   /** `payment_kind` (DB enum). */
   tipo: {

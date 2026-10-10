@@ -169,6 +169,8 @@ export const errores: Widen<typeof Es.errores> = {
       "Vi kunde inte ansluta. Kontrollera din uppkoppling och försök igen.",
     waitlist_duplicate: "Du står redan på väntelistan för den här dagen.",
     rate_limited: "För många försök. Försök igen om en stund.",
+    payment_unavailable:
+      "Vi kunde inte starta betalningen. Din bokning gjordes inte, försök igen.",
     nombreVacio: "Skriv ditt namn.",
     emailInvalido: "Kontrollera din e-postadress.",
     consentimientoRequerido: "Godkänn villkoren för att fortsätta.",
@@ -284,6 +286,20 @@ export const reserva: Widen<typeof Es.reserva> = {
     emailAyuda: "Vi frågar ifall sms:et inte skulle nå fram.",
     emailPlaceholder: "dinepost@exempel.se",
   },
+  pago: {
+    opcionalLabel: "Betala nu med kort",
+    opcionalAyuda: "Du betalar säkert hos Stripe. Annars betalar du på plats.",
+    obligatorioAviso:
+      "För att boka den här tiden betalar du med kort. När du skickar tar vi dig till betalningssidan.",
+    reservadoAviso:
+      "Beloppet reserveras på ditt kort och dras när företaget bekräftar din tid. Om de inte bekräftar dras ingenting.",
+    okAviso:
+      "Klart, vi har tagit emot din betalning. Du får bekräftelsen i ett mejl.",
+    canceladoAviso:
+      "Ingen betalning gjordes. Din förfrågan är skickad och du betalar på plats.",
+    liberadaAviso:
+      "Ingen betalning gjordes, så tiden är ledig igen. Du kan boka på nytt.",
+  },
   antesDeConfirmar: {
     politicaCancelacion: (p: { horas: number }): string =>
       `Du kan avboka eller ändra tiden fram till ${p.horas} h innan, utan kostnad.`,
@@ -353,6 +369,12 @@ export const gestion: Widen<typeof Es.gestion> = {
   },
   ctaCambiarHora: "Ändra tid",
   ctaCancelarReserva: "Avboka tiden",
+  pago: {
+    reservado:
+      "Beloppet är reserverat på ditt kort och dras när företaget bekräftar.",
+    pagado: "Betald online.",
+    reembolso: "Din betalning betalas tillbaka till ditt kort.",
+  },
   pendienteAviso:
     "Företaget har inte bekräftat den här tiden än. Vi meddelar dig så fort de gör det.",
   cancelacionPendienteAviso: (p: { negocio: string }): string =>
@@ -1269,6 +1291,14 @@ export const email: Widen<typeof Es.email> = {
     ignorar:
       "Om du inte väntade dig den här inbjudan kan du bortse från mejlet.",
   },
+  pago: {
+    label: "Betalning",
+    reservado: "Reserverad på ditt kort, dras vid bekräftelse",
+    pagado: "Betald online",
+    reembolso: "Betalas tillbaka till ditt kort",
+    reembolsoNota:
+      "Din betalning online betalas tillbaka till ditt kort. Det kan ta några dagar innan du ser den.",
+  },
   miembro: {
     precioLabel: "Medlemspris",
     precioOfertaLabel: "Erbjudandepris",
@@ -1630,7 +1660,58 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     cuenta: "Konto",
     formularioReserva: "Bokningsformulär",
     privacidad: "Integritet",
+    pagos: "Onlinebetalning",
     socios: "Medlemmar & utskick",
+  },
+  pagos: {
+    titulo: "Onlinebetalning",
+    intro:
+      "Dina kunder kan betala sin tid med kort när de bokar. Pengarna går direkt till ditt Stripe-konto.",
+    estadoLabel: "Status för kopplingen",
+    estado: {
+      none: "Inte kopplad",
+      onboarding: "Koppling pågår",
+      active: "Aktiv",
+      action_required: "Information saknas",
+    },
+    estadoAyuda: {
+      none: "Koppla ditt Stripe-konto för att ta emot betalningar.",
+      onboarding: "Slutför kopplingen hos Stripe för att kunna ta betalt.",
+      active: "Ditt konto är redo att ta betalt.",
+      action_required:
+        "Stripe behöver mer information för att du ska kunna fortsätta ta betalt.",
+    },
+    conectar: "Koppla till Stripe",
+    continuar: "Fortsätt hos Stripe",
+    completar: "Fyll i information hos Stripe",
+    abrirPanel: "Öppna min Stripe-översikt",
+    modoTitulo: "Betalning vid bokning",
+    modo: {
+      off: "Av",
+      optional: "Valfri",
+      required: "Obligatorisk",
+    },
+    modoAyuda: {
+      off: "Kunden betalar på plats.",
+      optional: "Kunden väljer själv om hen betalar online eller på plats.",
+      required: "Kunden måste betala online för att boka.",
+    },
+    modoRequiereCuenta:
+      "Koppla och aktivera ditt konto för att välja Valfri eller Obligatorisk.",
+    comision: (p: { monto: string }): string =>
+      `Plattformens avgift: ${p.monto} av varje onlinebetalning.`,
+    sinComision: "Ingen plattformsavgift i din plan.",
+    reembolsos:
+      "Om du nekar, inte hinner svara eller en betald bokning avbokas får kunden pengarna tillbaka automatiskt.",
+    guardar: "Spara",
+    guardado: "Sparat",
+    errores: {
+      unavailable: "Onlinebetalning är inte tillgänglig just nu.",
+      failed: "Vi kunde inte nå Stripe. Försök igen.",
+      needs_account: "Koppla ditt Stripe-konto först.",
+      forbidden: "Du har inte behörighet att ändra det här.",
+      unknown: "Något gick fel. Försök igen.",
+    },
   },
   socios: {
     activar: "Aktivera medlemsförmån",
@@ -2013,6 +2094,7 @@ export const caja: Widen<typeof Es.caja> = {
     transfer: "Faktura eller övrigt",
     mercadopago: "Automatisk betalning",
     swish: "Swish",
+    stripe: "Online (kort)",
   },
   tipo: {
     deposit: "Förskott",
