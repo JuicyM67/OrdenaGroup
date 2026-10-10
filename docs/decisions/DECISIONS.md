@@ -17,6 +17,11 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-049 · 2026-10-10 · Ny logotyp för Booking Buddy (SE): "b-klockan" (WP-74)
+**Varför:** ägaren valde ett gement b vars rundel är en urtavla; den ersätter lime-pillen "Booking [Buddy]". **Konsekvens:** SE använder `BbMark`/`BrandLogo` (ordmärke "booking"600 + "buddy"800, Bricolage) överallt; CL (Ordena Calendar) behåller sin logotyp. Favicon/appikoner/manifest väljs per marknad (`icon.tsx`, `apple-icon.tsx`, `manifest.ts`), PNG genereras med `scripts/gen-brand-icons.mjs` till `public/brand/`. Mejl-layouten (alla mallar) fick lime-accentlist, tydligare rubrik och företagsuppgifter i sidfoten. Se DESIGN.md §14.
+
+---
+
 ### D-047 · 2026-10-10 · Plattformsavgift 1 % på alla planer (ersätter D-044:s 0 % på Företag)
 **Varför:** ägarens beslut — samma enkla regel för alla: 1 % per onlinebetalning, oavsett plan. **Konsekvens:** `PLATFORM_FEE_BPS` i `src/config/platform-fee.ts` är 100 bps för alla planer, även `local` (Företag), som tidigare var 0. Inga texter får påstå att Företag är avgiftsfri. Övrigt i D-044 gäller oförändrat.
 
