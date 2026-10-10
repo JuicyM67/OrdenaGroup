@@ -6,6 +6,7 @@ import {
   expireSmsCreditCheckout,
   fulfillSmsCreditCheckout,
   refundSmsCreditsForCharge,
+  voidSmsCreditsForDispute,
 } from "@/server/billing/sms-credits";
 import { withServiceTx } from "@/server/db/tx";
 
@@ -148,6 +149,12 @@ async function dispatch(event: Stripe.Event, now: Date): Promise<void> {
           .payment_intent,
       );
       if (account && pi) await handleChargeRefunded(pi, account);
+      return;
+    }
+    case "charge.dispute.created": {
+      // WP-76 (D-053): chargeback på ett sms-köp (plattformens händelse) →
+      // återstående krediter dras. Connect-tvister hanteras manuellt (D-044).
+      if (!account && obj.id) await voidSmsCreditsForDispute(obj.id);
       return;
     }
     // payment_intent.payment_failed: kunden kan försöka igen i samma session;

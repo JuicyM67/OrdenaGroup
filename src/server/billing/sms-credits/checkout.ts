@@ -4,6 +4,7 @@ import {
   smsCreditPackage,
   smsCreditPrice,
   SMS_CREDIT_VALIDITY_MONTHS,
+  SMS_CREDIT_VAT_BPS,
 } from "@/config/sms-credits";
 import { appHref } from "@/config/routes";
 import { smsCreditPackageSchema } from "@/lib/validation/sms-credits";
@@ -36,6 +37,29 @@ export type SmsCheckoutResult =
         | "rate_limited"
         | "failed";
     };
+
+/** Skattesatsen kontrolleras en gång per process: 25 %, exklusiv, aktiv.
+ * Fel konfigurerad → köpet avvisas (`sms_credits_unavailable`). */
+let vatRateCheck: { id: string; ok: Promise<boolean> } | undefined;
+
+function vatRateValid(id: string): Promise<boolean> {
+  if (vatRateCheck?.id !== id) {
+    const ok = getStripe()
+      .taxRates.retrieve(id)
+      .then(
+        (tr) =>
+          tr.active &&
+          !tr.inclusive &&
+          tr.percentage === SMS_CREDIT_VAT_BPS / 100,
+      );
+    // Nätverksfel cachas inte (nästa köp provar igen).
+    ok.catch(() => {
+      vatRateCheck = undefined;
+    });
+    vatRateCheck = { id, ok };
+  }
+  return vatRateCheck.ok;
+}
 
 export async function createSmsCreditCheckout(input: {
   businessId: string;
@@ -73,6 +97,13 @@ export async function createSmsCreditCheckout(input: {
   const price = smsCreditPrice(pkg);
   const vatRate = smsVatRateId();
   if (!vatRate) return { ok: false, code: "sms_credits_unavailable" };
+  try {
+    if (!(await vatRateValid(vatRate))) {
+      return { ok: false, code: "sms_credits_unavailable" };
+    }
+  } catch {
+    return { ok: false, code: "failed" };
+  }
   const now = input.now ?? new Date();
 
   const purchaseId = await withServiceTx(async (q) => {

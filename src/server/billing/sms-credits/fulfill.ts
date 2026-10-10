@@ -5,6 +5,9 @@ import type Stripe from "stripe";
 import { withServiceTx } from "@/server/db/tx";
 import { getStripe } from "@/server/payments/stripe/client";
 
+import { SmsCreditsError } from "./errors";
+import { refundAmountIn } from "./refund";
+
 /**
  * WP-76 (D-053): krediterar ett köp efter VERIFIERAD betalning. Sessionen
  * hämtas alltid från Stripes API (payloaden i webhooken litas aldrig på,
@@ -16,7 +19,7 @@ import { getStripe } from "@/server/payments/stripe/client";
 
 export type FulfillOutcome =
   | { status: "granted" | "already"; credits: number; businessId: string }
-  | { status: "pending" | "ignored" | "mismatch" | "forbidden" };
+  | { status: "pending" | "ignored" | "forbidden" };
 
 type PurchaseRow = {
   business_id: string;
@@ -79,7 +82,8 @@ export async function fulfillSmsCreditCheckout(
       row.amount_total !== s.amount_total ||
       row.currency !== s.currency
     ) {
-      return { status: "mismatch" as const };
+      // Synligt (500 i webhooken, Stripe skickar igen), aldrig tyst hanterat.
+      throw new SmsCreditsError("mismatch", purchaseId);
     }
     const granted = await q.query<{ ok: boolean }>(
       `select private.sms_credit_grant($1, $2, $3) as ok`,
@@ -97,6 +101,15 @@ export async function fulfillSmsCreditCheckout(
         receiptUrl?.startsWith("https://") ? receiptUrl : null,
       ],
     );
+    // Återbetalning som hann komma före krediteringen (webhooken för
+    // `charge.refunded` kastade då och försöker igen): dra direkt här också.
+    if (charge && charge.amount_refunded > 0) {
+      await refundAmountIn(
+        q,
+        { purchaseId, businessId },
+        charge.amount_refunded,
+      );
+    }
     return {
       status: granted.rows[0]?.ok ? ("granted" as const) : ("already" as const),
       credits: row.credits_total,

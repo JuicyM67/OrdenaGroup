@@ -3,7 +3,7 @@
 -- (grant/consume/release/refund/balance + återlämning via trigger).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(36);
+select plan(40);
 \ir _helpers.psql
 
 -- Köp: A1 (äldst utgång), A2, A3 (utgånget), B1.
@@ -63,6 +63,17 @@ values ('aaaaaaaa-7700-0000-0000-000000000004', 'aaaaaaaa-0000-0000-0000-0000000
 update public.message_outbox set status = 'cancelled' where id = 'aaaaaaaa-7700-0000-0000-000000000004';
 select is((select count(*)::int from public.sms_credit_ledger where outbox_id = 'aaaaaaaa-7700-0000-0000-000000000004' and kind = 'release'), 2, 'trigger: release-rader (per köp) när sms-raden avbryts');
 select is((select credits_remaining from public.sms_credit_purchases where id = 'aaaaaaaa-7600-0000-0000-000000000001'), 2, 'trigger: giltigt köp får tillbaka sin del, återbetalt köp inte');
+
+-- Retry med fler segment: consume fyller på mellanskillnaden (A1 har 2 kvar).
+set local role service_role;
+select is(private.sms_credit_consume('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-7700-0000-0000-000000000005', 1), 1, 'consume 1 segment');
+select is(private.sms_credit_consume('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-7700-0000-0000-000000000005', 2), 2, 'retry med 2 segment → fyller på 1');
+select is((select balance from private.sms_credit_balance('aaaaaaaa-0000-0000-0000-000000000001')), 0, 'mellanskillnaden förbrukad');
+select throws_ok(
+  $$ update public.sms_credit_ledger set delta = 0 $$,
+  '42501', null, 'kreditloggen är append-only även för service_role'
+);
+reset role;
 
 select ok(
   not exists (

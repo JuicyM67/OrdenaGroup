@@ -11,6 +11,7 @@ export {
   fulfillSmsCreditCheckout,
   type FulfillOutcome,
 } from "./fulfill";
-export { refundSmsCreditsForCharge } from "./refund";
+export { refundSmsCreditsForCharge, voidSmsCreditsForDispute } from "./refund";
+export { SmsCreditsError } from "./errors";
 export { loadSmsCreditsOverview, type SmsCreditsOverview } from "./balance";
 export { loadSmsBellNotices } from "./notices";

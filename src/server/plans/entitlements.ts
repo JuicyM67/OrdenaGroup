@@ -242,15 +242,12 @@ export async function reserveSmsQuotaIn(
   await q.query(`select pg_advisory_xact_lock(hashtext('sms:' || $1::text))`, [
     businessId,
   ]);
-  const prior = await q.query<{ n: number }>(
+  const priorRes = await q.query<{ n: number }>(
     `select coalesce(-sum(delta), 0)::int as n from public.sms_credit_ledger
       where business_id = $1 and outbox_id = $2 and kind = 'consume'`,
     [businessId, outboxId],
   );
-  if ((prior.rows[0]?.n ?? 0) > 0) {
-    await mark();
-    return "credit";
-  }
+  const prior = priorRes.rows[0]?.n ?? 0;
   const r = await q.query<{ n: number }>(
     `select coalesce(sum(coalesce(sms_segments, 1)), 0)::int as n
        from public.message_outbox
@@ -271,12 +268,18 @@ export async function reserveSmsQuotaIn(
       });
     }
   };
-  if (seg <= quotaLeft) {
+  if (prior === 0 && seg <= quotaLeft) {
     await mark();
     await warn80();
     return "quota";
   }
-  const need = seg - quotaLeft;
+  // Retry: raden behåller sina krediter; behöver den fler (fler segment än
+  // förra försöket) förbrukas bara mellanskillnaden (`p_count` = totalt behov).
+  const need = Math.max(prior, seg - quotaLeft);
+  if (prior > 0 && need === prior) {
+    await mark();
+    return "credit";
+  }
   const c = await q.query<{ n: number }>(
     `select private.sms_credit_consume($1, $2, $3) as n`,
     [businessId, outboxId, need],
