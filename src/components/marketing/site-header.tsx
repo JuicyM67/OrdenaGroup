@@ -90,7 +90,7 @@ export function SiteHeader({ className }: { className?: string }) {
           href={href("inicio")}
           className="flex shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <BrandLogo size="sm" decorative />
+          <BrandLogo size="sm" badge decorative />
         </Link>
 
         <NavigationMenu.Root
@@ -150,12 +150,14 @@ export function SiteHeader({ className }: { className?: string }) {
         </NavigationMenu.Root>
 
         <div className="flex shrink-0 items-center gap-2.5">
-          <Link
-            href="/login"
-            className={cn(navLinkClass, "hidden sm:inline-flex")}
+          <Button
+            asChild
+            variant="secondary"
+            size="sm"
+            className="hidden rounded-full hover:bg-canvas sm:inline-flex"
           >
-            {t.entrar}
-          </Link>
+            <Link href="/login">{t.entrar}</Link>
+          </Button>
           <Button
             asChild
             variant="primary"
@@ -189,7 +191,7 @@ export function SiteHeader({ className }: { className?: string }) {
                 <div className="flex items-center justify-between pb-2">
                   <Dialog.Title asChild>
                     <span>
-                      <BrandLogo size="sm" decorative />
+                      <BrandLogo size="sm" badge decorative />
                     </span>
                   </Dialog.Title>
                   <Dialog.Close asChild>

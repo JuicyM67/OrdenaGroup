@@ -31,10 +31,12 @@ function BbWordmark({
   size,
   variant,
   tone,
+  badge,
 }: {
   size: BrandLogoSize;
   variant: BrandLogoVariant;
   tone: BbMarkTone;
+  badge: boolean;
 }) {
   const words = brand.name.toLowerCase().split(" ");
   const first = words[0] ?? brand.name;
@@ -47,7 +49,13 @@ function BbWordmark({
         : "text-ink on-dark:text-on-dark";
   return (
     <>
-      <BbMark tone={tone} className={BB_MARK_SIZE[size]} />
+      {badge ? (
+        <span className="flex size-9 flex-none items-center justify-center rounded-full bg-ink">
+          <BbMark tone="dark" className="size-5.5" />
+        </span>
+      ) : (
+        <BbMark tone={tone} className={BB_MARK_SIZE[size]} />
+      )}
       {variant === "full" ? (
         <span
           className={cn(
@@ -75,6 +83,8 @@ export type BrandLogoProps = {
   size?: BrandLogoSize;
   /** Sätts när en omgivande länk/rubrik redan har det tillgängliga namnet. */
   decorative?: boolean;
+  /** SE: märket i en mörk cirkel (som appikonen), används i headern. */
+  badge?: boolean;
   className?: string;
 };
 
@@ -83,6 +93,7 @@ export function BrandLogo({
   tone = "auto",
   size = "sm",
   decorative = false,
+  badge = false,
   className,
 }: BrandLogoProps) {
   if (market === "SE") {
@@ -92,7 +103,7 @@ export function BrandLogo({
         aria-label={variant === "mark" && !decorative ? brand.name : undefined}
         className={cn("inline-flex items-center gap-2", className)}
       >
-        <BbWordmark size={size} variant={variant} tone={tone} />
+        <BbWordmark size={size} variant={variant} tone={tone} badge={badge} />
       </span>
     );
   }
