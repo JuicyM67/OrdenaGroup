@@ -1,5 +1,8 @@
 // Egen SVG (cirkel med fylld nederhalva), se DESIGN.md §6/§7. Enda komponenten som inte
 // använder lucide-react. Ritas i en lime-ruta med radie `icon` (18px), storlek 56 som standard.
+import { market } from "@/config/brand";
+
+import { BbMark } from "./bb-mark";
 import { cn } from "./cn";
 
 export type LogoMarkProps = {
@@ -30,6 +33,25 @@ export function LogoMark({
   decorative = false,
   className,
 }: LogoMarkProps) {
+  if (market === "SE") {
+    // SE: b-klockan fritt på ytan (D-049), ingen lime-ruta. Ritas lite större än CL:s
+    // glyf så att stammen fyller den klickbara rutan.
+    return (
+      <span
+        role={decorative ? undefined : "img"}
+        aria-hidden={decorative ? "true" : undefined}
+        aria-label={decorative ? undefined : label}
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center",
+          boxSizeClass[size],
+          className,
+        )}
+      >
+        <BbMark className="size-full" />
+      </span>
+    );
+  }
+
   return (
     <span
       role={decorative ? undefined : "img"}

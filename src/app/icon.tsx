@@ -9,9 +9,20 @@
 // Hex-värdena nedan är kopior av `--color-lime`/`--color-ink` (tokens.css), inte nya
 // godtyckliga värden — samma undantag som gäller för `src/components/agenda/**`s geometri
 // (D-021).
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { ImageResponse } from "next/og";
 
-import { brand } from "@/config/brand";
+import { brand, market } from "@/config/brand";
+
+// WP-74 (D-049): SE har b-klockan som incheckad PNG (scripts/gen-brand-icons.mjs).
+async function seIcon(): Promise<Response> {
+  const file = path.join(process.cwd(), "public", "brand", "bb-favicon-32.png");
+  return new Response(new Uint8Array(await readFile(file)), {
+    headers: { "Content-Type": "image/png" },
+  });
+}
 
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
@@ -23,7 +34,8 @@ const LIME = "#E3F36B";
 // eslint-disable-next-line no-restricted-syntax -- se motiveringen ovan (kopia av --color-ink)
 const INK = "#16161A";
 
-export default function Icon() {
+export default async function Icon() {
+  if (market === "SE") return seIcon();
   return new ImageResponse(
     <div
       role="img"

@@ -6,7 +6,7 @@ import { emailColors as c } from "./colors";
 
 /**
  * Byggstenar för HTML-mejl: tabellbaserad layout, inline-CSS, max 600 px.
- * Inga externa bilder: loggan är text/HTML (D-026, se `BrandLogo`-mönstret
+ * Inga externa bilder (utom SE:s märke, D-049): loggan är text/HTML (D-026, se `BrandLogo`-mönstret
  * i src/components/marketing/).
  *
  * Mörkt läge (WP-49): vi kör `color-scheme: light only` (meta +
@@ -74,7 +74,7 @@ export function codeLine(label: string, code: string): string {
 }
 
 export function heading(text: string): string {
-  return `<p style="margin:0 0 16px;font-family:${FONT_DISPLAY};font-weight:700;font-size:22px;color:${c.ink};">${escapeHtml(
+  return `<p style="margin:0 0 16px;font-family:${FONT_DISPLAY};font-weight:800;font-size:24px;line-height:1.25;letter-spacing:-0.02em;color:${c.ink};">${escapeHtml(
     text,
   )}</p>`;
 }
@@ -105,22 +105,22 @@ const FONT_SANS =
  * innan WP-49, se filkommentaren ovan. */
 function wordmarkHtml(market: Market): string {
   if (market === "SE") {
-    const words = brand.name.split(" ");
+    // D-049: b-klockan som hostad PNG (public/brand/bb-mark-email.png, 2x) + "booking" (600)
+    // och "buddy" (800) som text. Bilden har alt-text så att namnet syns även utan bilder.
+    const words = brand.name.toLowerCase().split(" ");
     const first = words[0] ?? brand.name;
     const rest = words.slice(1).join(" ");
+    // Basen är installationens APP_URL (samma som övriga mejllänkar); domänen är bara
+    // reserv, eftersom den kan vara okopplad (staging kör på vercel.app).
+    const base = (
+      process.env.NEXT_PUBLIC_APP_URL ?? `https://${brand.domain ?? ""}`
+    ).replace(/\/$/, "");
+    const src = `${base}/brand/bb-mark-email.png`;
     return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.canvas}">
       <tr>
-        <td bgcolor="${c.canvas}" style="background-color:${c.canvas};padding:4px 6px 4px 0;font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.ink};">${escapeHtml(
-          first,
-        )}</td>${
-          rest
-            ? `
-        <td bgcolor="${c.lime}" style="background-color:${c.lime};font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.onLimeSoft};border-radius:8px;padding:2px 8px;">${escapeHtml(
-          rest,
-        )}</td>`
-            : ""
-        }
+        <td bgcolor="${c.canvas}" style="background-color:${c.canvas};padding:0 8px 0 0;vertical-align:middle;"><img src="${src}" width="28" height="28" alt="" style="display:block;width:28px;height:28px;border:0;" /></td>
+        <td bgcolor="${c.canvas}" style="background-color:${c.canvas};vertical-align:middle;font-family:${FONT_DISPLAY};font-size:21px;letter-spacing:-0.03em;color:${c.ink};"><span style="font-weight:600;">${escapeHtml(first)}</span>${rest ? `<span style="font-weight:800;">${escapeHtml(rest)}</span>` : ""}</td>
       </tr>
     </table>`;
   }
@@ -222,6 +222,17 @@ export type EmailLayoutInput = {
   readonly footerText: string;
 };
 
+/** Företagsuppgifter ur brand.ts i sidfoten — bara riktiga värden, aldrig platshållare
+ * (de börjar med "["). */
+function legalFooterHtml(): string {
+  const { legalName, address } = brand.legal;
+  const parts = [legalName, address].filter((v) => !v.startsWith("["));
+  if (parts.length === 0) return "";
+  return `<p style="margin:8px 0 0;font-family:${FONT_SANS};font-size:12px;line-height:1.5;color:${c.subtle};">${escapeHtml(
+    parts.join(" · "),
+  )}</p>`;
+}
+
 /** Slår ihop header, innehållskort och footer till ett fullständigt
  * HTML-dokument + en textversion. */
 export function renderLayout(input: EmailLayoutInput): {
@@ -260,12 +271,15 @@ export function renderLayout(input: EmailLayoutInput): {
               <td class="px" style="padding:0 8px 24px;background-color:${c.canvas};" bgcolor="${c.canvas}">${wordmarkHtml(input.market)}</td>
             </tr>
             <tr>
-              <td class="px" style="background-color:${c.surface};border-radius:24px;padding:32px;" bgcolor="${c.surface}">
+              <td style="background-color:${c.lime};height:6px;line-height:6px;font-size:0;border-radius:24px 24px 0 0;" bgcolor="${c.lime}">&nbsp;</td>
+            </tr>
+            <tr>
+              <td class="px" style="background-color:${c.surface};border-radius:0 0 24px 24px;padding:32px;" bgcolor="${c.surface}">
                 ${input.bodyHtml}
               </td>
             </tr>
             <tr>
-              <td class="px" style="padding:24px 8px 0;background-color:${c.canvas};" bgcolor="${c.canvas}">${input.footerHtml}</td>
+              <td class="px" style="padding:24px 8px 0;background-color:${c.canvas};" bgcolor="${c.canvas}">${input.footerHtml}${legalFooterHtml()}</td>
             </tr>
           </table>
         </td>
