@@ -1699,8 +1699,9 @@ export const ajustes: Widen<typeof Es.ajustes> = {
     modoRequiereCuenta:
       "Koppla och aktivera ditt konto för att välja Valfri eller Obligatorisk.",
     comision: (p: { monto: string }): string =>
-      `Plattformens avgift: ${p.monto} av varje onlinebetalning.`,
-    sinComision: "Ingen plattformsavgift i din plan.",
+      `Ingen avgift per bokning. När kunden betalar med kort tar vi ${p.monto} + Stripes avgift.`,
+    sinComision:
+      "Ingen avgift per bokning. När kunden betalar med kort tar Stripe sin vanliga avgift.",
     reembolsos:
       "Om du nekar, inte hinner svara eller en betald bokning avbokas får kunden pengarna tillbaka automatiskt.",
     guardar: "Spara",
@@ -3132,6 +3133,76 @@ export const importar: Widen<typeof Es.importar> = {
   },
 };
 
+// ---------------------------------------------------------------------------
+// planes (WP-73, D-048). Samma nycklar som `es-CL.planes`.
+// ---------------------------------------------------------------------------
+
+export const planes: Widen<typeof Es.planes> = {
+  nombres: {
+    free: "Gratis",
+    emprende: "Starta",
+    equipo: "Team",
+    local: "Företag",
+    custom: "Skräddarsytt",
+  },
+  funciones: {
+    unbranded: "Bokningssida utan vår märkning",
+    online_payment: "Betalning vid bokning",
+    waitlist: "Väntelista",
+    flash: "Blixttider",
+    campaigns: "Utskick, Vi saknar dig och medlemsrabatter",
+    full_reports: "Full kassa och rapporter",
+    staff_accounts: "Personalkonton med behörigheter",
+    priority_support: "Prioriterad support",
+  },
+  bloqueo: {
+    titulo: (p: { funcion: string; plan: string }): string =>
+      `${p.funcion} ingår i ${p.plan}`,
+    ganchos: {
+      unbranded: "Uppgradera och visa bara ditt eget varumärke.",
+      online_payment: "Uppgradera och ta betalt redan när kunden bokar.",
+      waitlist: "Uppgradera och fyll avbokningar automatiskt.",
+      flash: "Uppgradera och fyll dina luckor.",
+      campaigns: "Uppgradera och få tillbaka kunder som inte bokat på länge.",
+      full_reports: "Uppgradera och se hela bilden av din ekonomi.",
+      staff_accounts: "Uppgradera och ge ditt team egna inloggningar.",
+      priority_support: "Uppgradera så hjälper vi dig först.",
+    },
+    verPlanes: "Se planer",
+    bloqueado: "Låst",
+  },
+  ajustes: {
+    titulo: "Plan",
+    planActual: "Din plan",
+    usoTitulo: "Användning",
+    sms: "Sms skickade denna månad",
+    cuentas: "Anställda med konto",
+    servicios: "Aktiva tjänster",
+    deMax: (p: { usado: number; max: number }): string =>
+      `${p.usado} av ${p.max}`,
+    sinLimite: (p: { usado: number }): string => `${p.usado} · obegränsat`,
+    incluye: "Det här ingår i din plan",
+    noIncluye: "Ingår inte",
+    cambiarPlan: "Byt plan",
+    contacto: "Kontakta oss",
+    cambiarAyuda:
+      "Snart kan du byta plan direkt här. Tills vidare: titta på planerna och hör av dig, så byter vi åt dig.",
+    pausado:
+      "Nedgraderar du raderas ingenting: det som inte ingår i den nya planen pausas tills du uppgraderar igen.",
+    smsAgotados:
+      "Månadens sms är slut. Bekräftelser och påminnelser skickas via mejl till den 1:a nästa månad.",
+  },
+  errores: {
+    plan_locked:
+      "Din plan har inte den här funktionen. Se planerna för att låsa upp den.",
+    plan_limit_services:
+      "Din plan har plats för 3 aktiva tjänster. Uppgradera för att lägga till fler.",
+    sms_quota:
+      "Månadens sms i din plan är slut. Uppgradera eller vänta till nästa månad.",
+  },
+  creadoCon: (p: { marca: string }): string => `Skapad med ${p.marca}`,
+};
+
 const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   resenas,
   comun,
@@ -3174,5 +3245,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   vOferta,
   uxTextos,
   importar,
+  planes,
 };
 void _check;

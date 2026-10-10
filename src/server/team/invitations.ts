@@ -32,6 +32,7 @@ import "server-only";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withServiceTx } from "@/server/db/tx";
+import { loadPlanIn, planCan } from "@/server/plans/entitlements";
 import { isOwner } from "@/server/privacy/authz";
 
 import {
@@ -165,6 +166,11 @@ export async function createInvitation(
     }
     if (!(await staffExists(q, businessId, staffId))) {
       return { ok: false, code: "staff_not_found" };
+    }
+    // WP-73 (D-048): personalkonton ingår från Team. Antalet spärras också
+    // i databasen (`member_invitations_guard_limit`, per företag).
+    if (!planCan(await loadPlanIn(q, businessId), "staff_accounts")) {
+      return { ok: false, code: "plan_limit_reached" };
     }
 
     const { token, hash } = createInvitationToken();

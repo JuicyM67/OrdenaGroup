@@ -13,7 +13,8 @@ import {
   type AjustesTabItem,
   type AjustesTabKey,
 } from "@/components/settings/ajustes-tabs";
-import { appHref } from "@/config/routes";
+import type { Feature } from "@/config/plans";
+import { appHref, href } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   getCurrentMember,
@@ -25,6 +26,11 @@ import {
   type PendingRequestItem,
 } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
+import {
+  loadBusinessPlan,
+  planCan,
+  type PlanInfo,
+} from "@/server/plans/entitlements";
 
 import {
   confirmMyPhotoUploadAction,
@@ -44,12 +50,32 @@ export type AjustesPageContext = {
   myProfileActions: MyProfileActions | undefined;
   pendingRequests: PendingRequestItem[];
   tabs: AjustesTabItem[];
+  /** WP-73 (D-048): företagets plan, för uppgraderingsrutorna. */
+  plan: PlanInfo;
+  /** "Se planer": Plan-fliken för ägaren, prissidan för personal. */
+  plansHref: string;
 };
 
 /** Kräver inloggning OCH behörighet för `tab` — annars samma omdirigeringar som förut
  * (/login, /app/onboarding, /app/agenda). Laddar sedan det `AjustesShell` behöver på varje
  * flik oavsett vilken (klockan, "Min profil", ägarens namn) — flikens EGEN data laddas i
  * respektive `page.tsx`. */
+/** WP-73 (D-048): flik → funktionen den kräver. */
+const TAB_FEATURE: Partial<Record<AjustesTabKey, Feature>> = {
+  socios: "campaigns",
+  equipo: "staff_accounts",
+  pagos: "online_payment",
+};
+
+function lockedTabs(plan: PlanInfo): Set<AjustesTabKey> {
+  return new Set(
+    (Object.keys(TAB_FEATURE) as AjustesTabKey[]).filter((k) => {
+      const f = TAB_FEATURE[k];
+      return f !== undefined && !planCan(plan, f);
+    }),
+  );
+}
+
 export async function requireAjustesTab(
   tab: AjustesTabKey,
 ): Promise<AjustesPageContext> {
@@ -65,9 +91,10 @@ export async function requireAjustesTab(
   // WP-64 (D-044): Betalningar finns bara när Stripe är konfigurerat.
   if (tab === "pagos" && !stripeEnabled()) redirect(appHref("appAgenda"));
 
-  const [myProfile, pendingRequests] = await Promise.all([
+  const [myProfile, pendingRequests, plan] = await Promise.all([
     loadMyProfileAction(),
     listPendingRequests(user.id, current.business.id, new Date()),
+    loadBusinessPlan(current.business.id),
   ]);
 
   return {
@@ -84,7 +111,12 @@ export async function requireAjustesTab(
         }
       : undefined,
     pendingRequests,
-    tabs: buildAjustesTabs(current.view).filter(
+    plan,
+    plansHref:
+      current.view.role === "owner"
+        ? appHref("appAjustesPlan")
+        : href("precios"),
+    tabs: buildAjustesTabs(current.view, lockedTabs(plan)).filter(
       (t) => t.key !== "pagos" || stripeEnabled(),
     ),
   };

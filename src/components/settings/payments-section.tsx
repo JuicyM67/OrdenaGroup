@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
 import { Pill } from "@/components/ui/pill";
-import { ajustes } from "@/i18n";
+import { ajustes, planes } from "@/i18n";
 
 export type PaymentsStatus =
   "none" | "onboarding" | "active" | "action_required";
@@ -43,6 +43,8 @@ function errorText(code: string): string {
       return e.needs_account;
     case "forbidden":
       return e.forbidden;
+    case "plan_locked":
+      return planes.errores.plan_locked;
     default:
       return e.unknown;
   }

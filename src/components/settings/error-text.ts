@@ -11,6 +11,7 @@ import {
   invitacion,
   negocio,
   perfil,
+  planes,
   profesionales,
   servicios,
   validacion,
@@ -116,6 +117,9 @@ const KNOWN: Record<string, string> = {
   not_found: comun.algoSalioMal,
   already_accepted: comun.algoSalioMal,
   already_revoked: comun.algoSalioMal,
+  // WP-73 (D-048): planspärrar.
+  plan_locked: planes.errores.plan_locked,
+  plan_limit_services: planes.errores.plan_limit_services,
 };
 
 /** En okänd kod ger `comun.algoSalioMal` i stället för att krascha UI:t. */

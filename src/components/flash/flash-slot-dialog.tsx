@@ -16,7 +16,7 @@ import { Pill } from "@/components/ui/pill";
 import { Select } from "@/components/ui/select";
 import { TextField } from "@/components/ui/text-field";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
-import { comun, flash } from "@/i18n";
+import { comun, flash, planes } from "@/i18n";
 import type { LocalDate, LocalTime } from "@/lib/format/dates";
 
 import type {
@@ -44,6 +44,7 @@ type Mode = "duracion" | "servicios";
 function flashErrorText(
   code: Exclude<CreateFlashResult, { ok: true }>["code"],
 ): string {
+  if (code === "plan_locked") return planes.errores.plan_locked;
   return flash.nueva.errores[code] ?? flash.nueva.errores.unknown;
 }
 

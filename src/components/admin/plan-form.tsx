@@ -1,28 +1,53 @@
 "use client";
 
 // Byt plan + valfritt slutdatum för en manuell override (F19/WP-36). Svensk
-// text.
+// text. WP-73 (D-048): planen `custom` med avtalade gränser (anställda/sms).
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  BUSINESS_PLANS,
+  type BusinessPlan,
+  type CustomLimits,
+} from "@/config/plans";
+
 import type { AdminActionResult } from "./confirm-action-button";
 
 export type PlanFormProps = {
-  plan: "free" | "emprende" | "equipo" | "local";
+  plan: BusinessPlan;
   overrideUntil: string | null;
+  customLimits?: CustomLimits;
   onSubmit: (
-    plan: "free" | "emprende" | "equipo" | "local",
+    plan: BusinessPlan,
     overrideUntil: string | null,
+    customLimits: CustomLimits | null,
   ) => Promise<AdminActionResult>;
 };
 
-const PLANS = ["free", "emprende", "equipo", "local"] as const;
+const INPUT =
+  "h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink";
 
-export function PlanForm({ plan, overrideUntil, onSubmit }: PlanFormProps) {
+function toInt(v: string): number | undefined {
+  const n = Number(v);
+  return v.trim() !== "" && Number.isInteger(n) && n >= 0 ? n : undefined;
+}
+
+export function PlanForm({
+  plan,
+  overrideUntil,
+  customLimits,
+  onSubmit,
+}: PlanFormProps) {
   const router = useRouter();
-  const [value, setValue] = useState(plan);
+  const [value, setValue] = useState<BusinessPlan>(plan);
   const [until, setUntil] = useState(overrideUntil?.slice(0, 10) ?? "");
+  const [staff, setStaff] = useState(
+    customLimits?.staff !== undefined ? String(customLimits.staff) : "",
+  );
+  const [sms, setSms] = useState(
+    customLimits?.sms !== undefined ? String(customLimits.sms) : "",
+  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,9 +55,15 @@ export function PlanForm({ plan, overrideUntil, onSubmit }: PlanFormProps) {
     e.preventDefault();
     setPending(true);
     setError(null);
+    const limits: CustomLimits = {};
+    const s = toInt(staff);
+    const m = toInt(sms);
+    if (s !== undefined) limits.staff = s;
+    if (m !== undefined) limits.sms = m;
     const result = await onSubmit(
       value,
       until ? new Date(`${until}T00:00:00.000Z`).toISOString() : null,
+      value === "custom" ? limits : null,
     );
     setPending(false);
     if (result.ok) router.refresh();
@@ -48,23 +79,47 @@ export function PlanForm({ plan, overrideUntil, onSubmit }: PlanFormProps) {
         Plan
         <select
           value={value}
-          onChange={(e) => setValue(e.target.value as typeof value)}
-          className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
+          onChange={(e) => setValue(e.target.value as BusinessPlan)}
+          className={INPUT}
         >
-          {PLANS.map((p) => (
+          {BUSINESS_PLANS.map((p) => (
             <option key={p} value={p}>
               {p}
             </option>
           ))}
         </select>
       </label>
+      {value === "custom" ? (
+        <>
+          <label className="flex flex-col gap-1 text-13 text-ink">
+            Anställda (avtalat, standard 10)
+            <input
+              type="number"
+              min={1}
+              value={staff}
+              onChange={(e) => setStaff(e.target.value)}
+              className={INPUT}
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-13 text-ink">
+            Sms/månad (avtalat, standard 300)
+            <input
+              type="number"
+              min={0}
+              value={sms}
+              onChange={(e) => setSms(e.target.value)}
+              className={INPUT}
+            />
+          </label>
+        </>
+      ) : null}
       <label className="flex flex-col gap-1 text-13 text-ink">
         Gratis/override till (valfritt)
         <input
           type="date"
           value={until}
           onChange={(e) => setUntil(e.target.value)}
-          className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
+          className={INPUT}
         />
       </label>
       <Button type="submit" size="sm" disabled={pending}>

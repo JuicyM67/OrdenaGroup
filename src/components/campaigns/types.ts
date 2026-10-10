@@ -49,6 +49,8 @@ export type SendCampaignErrorCode =
   | "no_recipients"
   | "sms_not_available"
   | "rate_limited"
+  | "plan_locked"
+  | "sms_quota"
   | "unexpected";
 
 export type SendCampaignResult =

@@ -1,6 +1,7 @@
 // /admin: företagslista med sök (namn, slug, ägarens e-post) och filter
 // plan/status (F19/WP-36). GET-formulär (inget klient-JS krävs). Svensk
 // text (bara ägaren använder ytan, se planen).
+import { BUSINESS_PLANS } from "@/config/plans";
 import Link from "next/link";
 
 import { requireAdminPage } from "@/server/admin/auth";
@@ -12,7 +13,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-const PLANS: readonly BusinessPlan[] = ["free", "emprende", "equipo", "local"];
+const PLANS: readonly BusinessPlan[] = BUSINESS_PLANS;
 const STATUSES: readonly BusinessStatus[] = ["active", "frozen"];
 
 export default async function AdminBusinessesPage({

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { formatPrecioPlan, type PlanId } from "@/config/pricing";
+import { href } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 
 const PLAN_STYLE: Record<
@@ -165,5 +166,38 @@ function PlanCardsFoto({ ctaHref }: { ctaHref: string }) {
         );
       })}
     </div>
+  );
+}
+
+/** WP-73 (D-048): det femte alternativet, "Skräddarsytt"/"A medida" (offert),
+ * som ett band under korten. "Kontakta oss" går till kontaktsidan. */
+export function PlanCustomBand() {
+  const t = copy.sitio.precios.aMedida;
+  return (
+    <Card
+      tone="dark"
+      radius="tile"
+      padding="lg"
+      className="mt-5 flex flex-col gap-4 md:flex-row md:items-center md:gap-8"
+    >
+      <div className="flex flex-col gap-1 md:w-56 md:shrink-0">
+        <h3 className="text-18 font-bold text-on-dark">{t.nombre}</h3>
+        <span className="font-display text-24 font-bold text-on-dark">
+          {t.precio}
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-1">
+        <p className="text-15 font-semibold text-on-dark">{t.titulo}</p>
+        <p className="text-14 leading-body text-on-dark-muted">{t.texto}</p>
+      </div>
+      <Button
+        asChild
+        variant="accent"
+        size="lg"
+        className="self-start md:self-center"
+      >
+        <Link href={href("contacto")}>{t.cta}</Link>
+      </Button>
+    </Card>
   );
 }

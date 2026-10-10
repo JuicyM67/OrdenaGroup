@@ -36,6 +36,7 @@ import {
   ajustesStaffInputSchema,
 } from "@/server/owner/ajustes-schemas";
 import { requireMemberPerm, requireOwnerMember } from "@/server/owner/member";
+import { canAddActiveServiceIn } from "@/server/plans/entitlements";
 
 import { normalizeName } from "./preview";
 
@@ -194,7 +195,13 @@ export async function applyImport(
               s.name,
             );
           }
-          const id = await insertServiceIn(q, businessId, input.data);
+          // WP-73 (D-048): över planens gräns sparas tjänsten inaktiv.
+          const id = await insertServiceIn(
+            q,
+            businessId,
+            input.data,
+            await canAddActiveServiceIn(q, businessId),
+          );
           if (!id) return { ok: false, code: "unauthorized" };
           taken.add(key);
           newServiceIds.push(id);

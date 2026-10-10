@@ -21,6 +21,7 @@ import { pgErrorCode } from "@/server/db/errors";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail, type EmailTemplateMap } from "@/server/messaging/email";
 import { sendSms } from "@/server/messaging/sms";
+import { reserveSmsQuotaIn } from "@/server/plans/entitlements";
 
 import { isOwnerMobile } from "./enqueue";
 import { OutboxSendError } from "./errors";
@@ -1476,10 +1477,37 @@ async function processCampaignRow(
   return "sent";
 }
 
+/** WP-73 (D-048): sms-kvoten per plan och kalendermånad. Över kvoten (eller
+ * en plan utan sms) avbryts raden med `error = 'sms_quota'` — kunden får
+ * ändå e-postraden som köades parallellt (om kunden har e-post), så e-post
+ * blir reserven. Raden reserverar sin plats under ett advisory lock per
+ * företag (`reserveSmsQuotaIn`), så parallella pass inte överskrider kvoten. */
+async function smsBlockedByPlan(row: ClaimedRow): Promise<boolean> {
+  if (row.channel !== "sms") return false;
+  return !(await withServiceTx((q) =>
+    reserveSmsQuotaIn(q, row.businessId, row.id),
+  ));
+}
+
+async function finalizeQuotaCancelled(row: ClaimedRow): Promise<void> {
+  await withServiceTx((q) =>
+    q.query(
+      `update public.message_outbox
+          set status = 'cancelled', payload = '{}'::jsonb, error = 'sms_quota'
+        where id = $1 and business_id = $2`,
+      [row.id, row.businessId],
+    ),
+  );
+}
+
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
   try {
+    if (await smsBlockedByPlan(row)) {
+      await finalizeQuotaCancelled(row);
+      return "cancelled";
+    }
     if (row.template === "bienvenidaMiembro") {
       return await processMemberWelcomeRow(row);
     }

@@ -19,7 +19,7 @@ import { useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
 import { Textarea } from "@/components/ui/textarea";
-import { clientes, comun } from "@/i18n";
+import { clientes, comun, planes } from "@/i18n";
 import { formatPhone, type E164 } from "@/lib/format/phone";
 
 import { clientSmsLengthInfo } from "./sms-length";
@@ -52,6 +52,8 @@ function errorText(code: SendMessageErrorCode): string {
       return T.error.too_long;
     case "rate_limited":
       return T.error.rate_limited;
+    case "sms_quota":
+      return planes.errores.sms_quota;
     default:
       return T.error.generico;
   }
