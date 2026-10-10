@@ -460,9 +460,9 @@ export type Database = {
           comuna: string;
           cover_url: string | null;
           created_at: string;
+          custom_limits: NonNullable<Json>;
           deletion_requested_at: string | null;
           facebook: string | null;
-          custom_limits: Json;
           id: string;
           instagram: string | null;
           logo_url: string | null;
@@ -503,9 +503,9 @@ export type Database = {
           comuna: string;
           cover_url?: string | null;
           created_at?: string;
+          custom_limits?: NonNullable<Json>;
           deletion_requested_at?: string | null;
           facebook?: string | null;
-          custom_limits?: Json;
           id?: string;
           instagram?: string | null;
           logo_url?: string | null;
@@ -546,9 +546,9 @@ export type Database = {
           comuna?: string;
           cover_url?: string | null;
           created_at?: string;
+          custom_limits?: NonNullable<Json>;
           deletion_requested_at?: string | null;
           facebook?: string | null;
-          custom_limits?: Json;
           id?: string;
           instagram?: string | null;
           logo_url?: string | null;
