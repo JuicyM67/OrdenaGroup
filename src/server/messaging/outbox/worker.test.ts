@@ -123,7 +123,7 @@ vi.mock("@/server/messaging/sms", () => ({
 
 // WP-73: sms-kvoten (planspärren) har egen täckning; här är den alltid öppen.
 vi.mock("@/server/plans/entitlements", () => ({
-  reserveSmsQuotaIn: async () => true,
+  reserveSmsQuotaIn: async () => "quota",
 }));
 
 const { nextRetry, processOutbox } = await import("./worker");

@@ -1527,6 +1527,7 @@ export type Database = {
           id: string;
           package_size: number;
           paid_at: string | null;
+          receipt_url: string | null;
           status: string;
           stripe_checkout_session_id: string | null;
           stripe_payment_intent_id: string | null;
@@ -1547,6 +1548,7 @@ export type Database = {
           id?: string;
           package_size: number;
           paid_at?: string | null;
+          receipt_url?: string | null;
           status?: string;
           stripe_checkout_session_id?: string | null;
           stripe_payment_intent_id?: string | null;
@@ -1567,6 +1569,7 @@ export type Database = {
           id?: string;
           package_size?: number;
           paid_at?: string | null;
+          receipt_url?: string | null;
           status?: string;
           stripe_checkout_session_id?: string | null;
           stripe_payment_intent_id?: string | null;

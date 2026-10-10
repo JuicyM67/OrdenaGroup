@@ -181,6 +181,9 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   texto: "Recuerda traer tu carnet.",
   /** WP-31 (F14): `sms.campanaMarketing`. */
   bajaLink: "https://ejemplo.cl/baja/abc123",
+  /** WP-76 (D-053): `email.smsCuota80`/`smsAgotados`. */
+  usado: 120,
+  max: 150,
 };
 
 function invocarGenerico(fn: unknown): unknown {

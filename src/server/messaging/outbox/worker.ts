@@ -20,7 +20,12 @@ import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import { pgErrorCode } from "@/server/db/errors";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail, type EmailTemplateMap } from "@/server/messaging/email";
-import { sendSms } from "@/server/messaging/sms";
+import {
+  sendSms,
+  smsLengthInfo,
+  type SendSmsInput,
+  type SmsTemplateName,
+} from "@/server/messaging/sms";
 import { reserveSmsQuotaIn } from "@/server/plans/entitlements";
 
 import { isOwnerMobile } from "./enqueue";
@@ -534,7 +539,7 @@ async function processWaitlistCupoRow(
     await finalizeSent(row, r.id);
     return "sent";
   }
-  const r = await sendSms({
+  const r = await sendRowSms(row, {
     to: ctx.phone as string,
     template: "listaEsperaCupo",
     data: {
@@ -573,7 +578,7 @@ async function processWaitlistTomadaRow(
     await finalizeSent(row, r.id);
     return "sent";
   }
-  const r = await sendSms({
+  const r = await sendRowSms(row, {
     to: ctx.phone as string,
     template: "listaEsperaTomada",
     data: { negocio: ctx.negocio, fecha: dia },
@@ -978,7 +983,7 @@ async function sendCustomerSms(
   const { fecha, hora } = fechaHora(ctx);
   switch (row.template) {
     case "reservaConfirmada": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to,
         template: "reservaConfirmada",
         data: {
@@ -993,7 +998,7 @@ async function sendCustomerSms(
       return r.id;
     }
     case "recordatorio": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to,
         template: "recordatorio",
         data: { negocio: ctx.negocio, fecha, hora, link: manageLink(token) },
@@ -1002,7 +1007,7 @@ async function sendCustomerSms(
       return r.id;
     }
     case "reservaMovida": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to,
         template: "reservaMovida",
         data: { negocio: ctx.negocio, fecha, hora, link: manageLink(token) },
@@ -1011,7 +1016,7 @@ async function sendCustomerSms(
       return r.id;
     }
     case "reservaCancelada": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to,
         template: "reservaCancelada",
         data: {
@@ -1025,7 +1030,7 @@ async function sendCustomerSms(
       return r.id;
     }
     case "solicitudRechazada": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to,
         template: "solicitudRechazada",
         data: {
@@ -1039,7 +1044,7 @@ async function sendCustomerSms(
       return r.id;
     }
     case "solicitudVencida": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to,
         template: "solicitudVencida",
         data: {
@@ -1053,7 +1058,7 @@ async function sendCustomerSms(
       return r.id;
     }
     case "solicitudResena": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to,
         template: "solicitudResena",
         data: { negocio: ctx.negocio, link: reviewLink(token) },
@@ -1062,7 +1067,7 @@ async function sendCustomerSms(
       return r.id;
     }
     case "cancelacionRechazada": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to,
         template: "cancelacionRechazada",
         data: { negocio: ctx.negocio, fecha, hora, ...negocioTelefono(ctx) },
@@ -1093,7 +1098,7 @@ async function sendOwnerSms(
   };
   switch (row.template) {
     case "nuevaSolicitud": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to: ctx.negocioTelefono,
         template: "nuevaSolicitudDueno",
         data,
@@ -1102,7 +1107,7 @@ async function sendOwnerSms(
       return r.id;
     }
     case "solicitudCancelacion": {
-      const r = await sendSms({
+      const r = await sendRowSms(row, {
         to: ctx.negocioTelefono,
         template: "solicitudCancelacionDueno",
         data,
@@ -1372,7 +1377,7 @@ async function processFreeMessageRow(
     await finalizeCancelled(row);
     return "cancelled";
   }
-  const r = await sendSms({
+  const r = await sendRowSms(row, {
     to: ctx.phone,
     template: "mensajeLibre",
     data: { negocio: ctx.negocio, texto },
@@ -1462,7 +1467,7 @@ async function processCampaignRow(
     await finalizeSent(row, r.id);
     return "sent";
   }
-  const r = await sendSms({
+  const r = await sendRowSms(row, {
     to: ctx.phone as string,
     template: "campanaMarketing",
     data: {
@@ -1477,16 +1482,71 @@ async function processCampaignRow(
   return "sent";
 }
 
-/** WP-73 (D-048): sms-kvoten per plan och kalendermånad. Över kvoten (eller
- * en plan utan sms) avbryts raden med `error = 'sms_quota'` — kunden får
- * ändå e-postraden som köades parallellt (om kunden har e-post), så e-post
- * blir reserven. Raden reserverar sin plats under ett advisory lock per
- * företag (`reserveSmsQuotaIn`), så parallella pass inte överskrider kvoten. */
-async function smsBlockedByPlan(row: ClaimedRow): Promise<boolean> {
-  if (row.channel !== "sms") return false;
-  return !(await withServiceTx((q) =>
-    reserveSmsQuotaIn(q, row.businessId, row.id),
-  ));
+/** WP-73 (D-048) + WP-76 (D-053): sms-kvoten per plan och kalendermånad, i
+ * segment, och därefter köpta krediter. Reservationen görs med den färdiga
+ * texten (antal segment) precis innan leverantören anropas, under ett
+ * advisory lock per företag (`reserveSmsQuotaIn`). Är både kvot och krediter
+ * slut avbryts raden med `error = 'sms_quota'` — kunden får ändå e-postraden
+ * som köades parallellt (om kunden har e-post), så e-post blir reserven. En
+ * rad som slutar `dead`/`cancelled` lämnar tillbaka sina krediter (trigger i
+ * databasen, 20261012010000_sms_credits.sql). */
+/** WP-76 (D-053): ägarens sms-varningar (`smsCuota80`/`smsAgotados`), köade
+ * av `reserveSmsQuotaIn`. Ingen bokning, ingen kunddata: bara siffrorna i
+ * payloaden och en länk till Inställningar → Plan. */
+async function processSmsNoticeRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const template = row.template as "smsCuota80" | "smsAgotados";
+  const num = (v: unknown) => (typeof v === "number" ? v : 0);
+  const negocio = await withServiceTx(async (q) => {
+    const r = await q.query<{ name: string }>(
+      `select name from public.businesses where id = $1`,
+      [row.businessId],
+    );
+    return r.rows[0]?.name ?? "";
+  });
+  const emails = await ownerEmailsFor(row.businessId);
+  if (emails.length === 0) throw new OutboxSendError("no_owner_email");
+  const data = {
+    negocio,
+    usado: num(row.payload.usado),
+    max: num(row.payload.max),
+    planUrl: `${appUrl()}${appHref("appAjustesPlan")}`,
+  };
+  const ids: string[] = [];
+  for (const [i, to] of emails.entries()) {
+    const r = await sendEmail({
+      to,
+      template,
+      data,
+      idempotencyKey: `${row.dedupeKey}:o${i}`,
+    });
+    ids.push(r.id);
+  }
+  await finalizeSent(row, ids.join(","));
+  return "sent";
+}
+
+class SmsQuotaBlockedError extends Error {
+  constructor() {
+    super("sms_quota");
+  }
+}
+
+function sendRowSms<T extends SmsTemplateName>(
+  row: ClaimedRow,
+  input: SendSmsInput<T>,
+) {
+  return sendSms({
+    ...input,
+    beforeSend: async (text) => {
+      const segments = Math.max(1, smsLengthInfo(text).segments);
+      const reserved = await withServiceTx((q) =>
+        reserveSmsQuotaIn(q, row.businessId, row.id, segments),
+      );
+      if (reserved === null) throw new SmsQuotaBlockedError();
+    },
+  });
 }
 
 async function finalizeQuotaCancelled(row: ClaimedRow): Promise<void> {
@@ -1504,9 +1564,8 @@ async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
   try {
-    if (await smsBlockedByPlan(row)) {
-      await finalizeQuotaCancelled(row);
-      return "cancelled";
+    if (row.template === "smsCuota80" || row.template === "smsAgotados") {
+      return await processSmsNoticeRow(row);
     }
     if (row.template === "bienvenidaMiembro") {
       return await processMemberWelcomeRow(row);
@@ -1561,6 +1620,10 @@ async function processRow(
     await finalizeSent(row, providerId);
     return "sent";
   } catch (e) {
+    if (e instanceof SmsQuotaBlockedError) {
+      await finalizeQuotaCancelled(row);
+      return "cancelled";
+    }
     return finalizeFailed(row, errorCodeOf(e));
   }
 }
