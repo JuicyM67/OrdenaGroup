@@ -1690,6 +1690,27 @@ export const email = {
       "Tu reseña se publica en su página de reservas solo con tu nombre y la inicial de tu apellido. Puedes editarla durante 7 días.",
     cta: "Dejar mi reseña",
   },
+  /** WP-76 (D-053): al dueño, sms del plan casi agotados (80 %). En CL no
+   * se envía en v1 (sin créditos SMS), solo paridad de tipos. */
+  smsCuota80: {
+    asunto: "Usaste el 80 % de tus SMS del mes",
+    preheader: "Cuando se acaben, los recordatorios salen por correo.",
+    titulo: "Te quedan pocos SMS este mes",
+    texto: (p: { usado: number; max: number }): string =>
+      `Llevas ${p.usado} de ${p.max} SMS de tu plan este mes.`,
+    ayuda: "Cuando se acaben, los recordatorios salen por correo.",
+    cta: "Ver mi plan",
+  },
+  /** WP-76 (D-053): al dueño, sin SMS (plan y créditos agotados). */
+  smsAgotados: {
+    asunto: "Se acabaron tus SMS",
+    preheader: "Los recordatorios ahora salen por correo.",
+    titulo: "Se acabaron tus SMS",
+    texto: (p: { usado: number; max: number }): string =>
+      `Usaste ${p.usado} de ${p.max} SMS de tu plan este mes.`,
+    ayuda: "Los recordatorios ahora salen por correo.",
+    cta: "Ver mi plan",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -4126,6 +4147,7 @@ export const importar = {
 
 // WP-72: recorrido guiado.
 export { visita } from "./es-CL.visita";
+export { smsCreditos } from "./es-CL.sms-creditos";
 
 // ---------------------------------------------------------------------------
 // planes (WP-73, D-048): nombres de plan, bloqueos con "Ver planes", resumen de

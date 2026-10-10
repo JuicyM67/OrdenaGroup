@@ -32,9 +32,10 @@ import {
 } from "./sv-SE.auth";
 
 import type * as Es from "./es-CL";
+import { smsCreditos } from "./sv-SE.sms-creditos";
 import { visita } from "./sv-SE.visita";
 
-export { visita };
+export { smsCreditos, visita };
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för
  * literaler, och med stöd för readonly-listor (CAJA_METODOS_MANUALES,
@@ -1336,6 +1337,29 @@ export const email: Widen<typeof Es.email> = {
     ayuda:
       "Ditt omdöme visas på bokningssidan med bara ditt förnamn och första bokstaven i efternamnet. Du kan ändra det i 7 dagar.",
     cta: "Lämna omdöme",
+  },
+  smsCuota80: {
+    asunto: "Du har använt 80 % av månadens sms",
+    preheader:
+      "Fyll på med sms-krediter så att påminnelserna fortsätter som sms.",
+    titulo: "Snart slut på månadens sms",
+    texto: (p: { usado: number; max: number }): string =>
+      `Du har använt ${p.usado} av ${p.max} sms som ingår i din plan den här månaden.`,
+    ayuda:
+      "När de är slut fortsätter påminnelserna från dina sms-krediter. Har du inga krediter skickas de som e-post i stället.",
+    cta: "Fyll på sms",
+  },
+  smsAgotados: {
+    asunto: "Dina sms är slut — påminnelser går nu som e-post",
+    preheader: "Fyll på med sms-krediter så att kunderna får sms igen.",
+    titulo: "Dina sms är slut",
+    texto: (p: { usado: number; max: number }): string =>
+      p.max > 0
+        ? `Du har använt alla ${p.max} sms i din plan den här månaden, och du har inga sms-krediter kvar.`
+        : "Du har inga sms-krediter kvar.",
+    ayuda:
+      "Bekräftelser och påminnelser skickas som e-post tills du fyller på eller en ny månad börjar.",
+    cta: "Fyll på sms",
   },
 };
 
@@ -3252,5 +3276,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   importar,
   visita,
   planes,
+  smsCreditos,
 };
 void _check;

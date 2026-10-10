@@ -45,6 +45,7 @@ export default async function AjustesPrivacidadPage() {
       onLogout={logout}
       canViewReports={ctx.current.view.perms.can_view_reports}
       pendingRequests={ctx.pendingRequests}
+      notices={ctx.notices}
       onConfirmRequest={confirmRequestAction}
       onDeclineRequest={declineRequestAction}
       onApproveCancelRequest={approveCancelRequestAction}

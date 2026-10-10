@@ -60,6 +60,11 @@ import {
   type ListaEsperaCupoData,
   type ListaEsperaTomadaData,
 } from "./templates/lista-espera";
+import {
+  smsAgotadosEmail,
+  smsCuota80Email,
+  type SmsAvisoData,
+} from "./templates/sms-creditos";
 import type { EmailKind, RenderedEmail } from "./types";
 
 /** En mall = { data, kind (`EMAIL_FROM_BOOKING`/`EMAIL_FROM_ACCOUNT`) }. */
@@ -96,6 +101,9 @@ export type EmailTemplateMap = {
   readonly campanaMarketing: CampanaMarketingData;
   /** WP-65 (D-045): al cliente, pedir reseña después de la cita. */
   readonly solicitudResena: SolicitudResenaData;
+  /** WP-76 (D-053): al dueño, avisos de SMS (80 % / agotados). */
+  readonly smsCuota80: SmsAvisoData;
+  readonly smsAgotados: SmsAvisoData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -129,6 +137,8 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   cancelacionRechazada: "booking",
   campanaMarketing: "booking",
   solicitudResena: "booking",
+  smsCuota80: "account",
+  smsAgotados: "account",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -155,6 +165,8 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "cancelacionRechazada",
   "campanaMarketing",
   "solicitudResena",
+  "smsCuota80",
+  "smsAgotados",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -214,6 +226,10 @@ export function renderEmail<T extends EmailTemplateName>(
       return campanaMarketingEmail(market, data as CampanaMarketingData);
     case "solicitudResena":
       return solicitudResenaEmail(market, data as SolicitudResenaData);
+    case "smsCuota80":
+      return smsCuota80Email(market, data as SmsAvisoData);
+    case "smsAgotados":
+      return smsAgotadosEmail(market, data as SmsAvisoData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

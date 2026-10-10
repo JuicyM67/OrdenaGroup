@@ -196,5 +196,17 @@ export function emailFixtures(market: Market): {
       servicio: b.servicio,
       resenaUrl: "https://app.example.com/resena/abc123",
     },
+    smsCuota80: {
+      negocio: b.negocio,
+      usado: 120,
+      max: 150,
+      planUrl: "https://app.example.com/app/ajustes/plan",
+    },
+    smsAgotados: {
+      negocio: b.negocio,
+      usado: 150,
+      max: 150,
+      planUrl: "https://app.example.com/app/ajustes/plan",
+    },
   };
 }

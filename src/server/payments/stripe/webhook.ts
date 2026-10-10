@@ -2,6 +2,12 @@ import "server-only";
 
 import Stripe from "stripe";
 
+import {
+  expireSmsCreditCheckout,
+  fulfillSmsCreditCheckout,
+  refundSmsCreditsForCharge,
+  voidSmsCreditsForDispute,
+} from "@/server/billing/sms-credits";
 import { withServiceTx } from "@/server/db/tx";
 
 import { syncAccount } from "./accounts";
@@ -92,12 +98,23 @@ async function dispatch(event: Stripe.Event, now: Date): Promise<void> {
     }
     case "checkout.session.completed":
     case "checkout.session.async_payment_succeeded": {
-      if (account && obj.id)
-        await handleCheckoutCompleted(obj.id, account, now);
+      if (!obj.id) return;
+      // WP-76 (D-053): plattformens egna händelser (inget `account`) =
+      // sms-krediter; `fulfill` kräver `metadata.kind === "sms_credits"`
+      // hämtat från API:t och ignorerar allt annat.
+      if (!account) {
+        await fulfillSmsCreditCheckout(obj.id, { now });
+        return;
+      }
+      await handleCheckoutCompleted(obj.id, account, now);
       return;
     }
     case "checkout.session.expired": {
-      if (!account || !obj.id) return;
+      if (!obj.id) return;
+      if (!account) {
+        await expireSmsCreditCheckout(obj.id);
+        return;
+      }
       const s = await getStripe().checkout.sessions.retrieve(
         obj.id,
         {},
@@ -123,11 +140,21 @@ async function dispatch(event: Stripe.Event, now: Date): Promise<void> {
       return;
     }
     case "charge.refunded": {
+      if (!account) {
+        if (obj.id) await refundSmsCreditsForCharge(obj.id);
+        return;
+      }
       const pi = idOf(
         (event.data.object as { payment_intent?: string | null })
           .payment_intent,
       );
       if (account && pi) await handleChargeRefunded(pi, account);
+      return;
+    }
+    case "charge.dispute.created": {
+      // WP-76 (D-053): chargeback på ett sms-köp (plattformens händelse) →
+      // återstående krediter dras. Connect-tvister hanteras manuellt (D-044).
+      if (!account && obj.id) await voidSmsCreditsForDispute(obj.id);
       return;
     }
     // payment_intent.payment_failed: kunden kan försöka igen i samma session;

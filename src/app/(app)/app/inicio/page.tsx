@@ -12,6 +12,10 @@ import { appHref } from "@/config/routes";
 import { inicio } from "@/i18n";
 import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import {
+  loadSmsBellNotices,
+  smsCreditsMarket,
+} from "@/server/billing/sms-credits";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import { loadOwnerInicio } from "@/server/owner/inicio";
@@ -53,7 +57,17 @@ export default async function InicioPage() {
   const now = new Date();
   const today = toLocalDate(now, APP_TZ);
   const owner = ownerNameParts(user.email);
-  const data = await loadOwnerInicio(user.id, business.id, today, now, owner);
+  const loaded = await loadOwnerInicio(user.id, business.id, today, now, owner);
+  // WP-76 (D-053): sms-varningar i klockan (ägaren, SE).
+  const data = smsCreditsMarket()
+    ? {
+        ...loaded,
+        notifications: {
+          ...loaded.notifications,
+          notices: await loadSmsBellNotices(business.id),
+        },
+      }
+    : loaded;
   const myProfile = await loadMyProfileAction();
 
   const onArrival = async (bookingId: string, status: ArrivalStatus) => {

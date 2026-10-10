@@ -36,6 +36,10 @@ export type SendSmsInput<T extends SmsTemplateName = SmsTemplateName> = {
    * `dedupe_key` från `message_outbox`. */
   readonly idempotencyKey?: string;
   readonly market?: "CL" | "SE";
+  /** WP-76 (D-053): körs med den färdiga texten innan leverantören anropas
+   * (workern reserverar sms-segment i kvoten/krediterna). Kastar den skickas
+   * inget. */
+  readonly beforeSend?: (text: string) => Promise<void>;
 };
 
 export type SendSmsResult =
@@ -86,6 +90,7 @@ export async function sendSms<T extends SmsTemplateName>(
   const text = SMS_MARKETING_TEMPLATES.includes(input.template)
     ? `${rendered.text}\n${smsOptOutLine(market)}`
     : rendered.text;
+  await input.beforeSend?.(text);
 
   const username = env.CLICKSEND_USERNAME;
   const apiKey = env.CLICKSEND_API_KEY;

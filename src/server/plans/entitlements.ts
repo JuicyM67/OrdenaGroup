@@ -13,6 +13,11 @@ import {
 import { APP_TZ } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
+import {
+  crossesWarnLevel,
+  enqueueSmsNoticeIn,
+  hasEverBoughtCreditsIn,
+} from "@/server/billing/sms-credits/notices";
 
 /**
  * Planspärrar på servern (WP-73, D-048). Matrisen ligger i `src/config/plans.ts`;
@@ -89,19 +94,33 @@ export async function canAddActiveServiceIn(
   return (await activeServiceCountIn(q, businessId)) < max;
 }
 
-/** Skickade sms (alla mottagare) denna kalendermånad i installationens
- * tidszon. Kvoten räknas på `sent`-rader i `message_outbox`. */
+/** Skickade sms-segment (alla mottagare) denna kalendermånad i
+ * installationens tidszon. Kvoten räknas i segment från WP-76 (D-053); äldre
+ * rader utan `sms_segments` räknas som 1. */
 export async function smsSentThisMonthIn(
   q: Queryable,
   businessId: string,
 ): Promise<number> {
   const r = await q.query<{ n: number }>(
-    `select count(*)::int as n from public.message_outbox
+    `select coalesce(sum(coalesce(sms_segments, 1)), 0)::int as n
+       from public.message_outbox
       where business_id = $1 and channel = 'sms' and status = 'sent'
         and sent_at >= (date_trunc('month', now() at time zone $2) at time zone $2)`,
     [businessId, APP_TZ],
   );
   return r.rows[0]?.n ?? 0;
+}
+
+/** WP-76: oförbrukade sms-krediter i giltiga köp. */
+export async function smsCreditBalanceIn(
+  q: Queryable,
+  businessId: string,
+): Promise<number> {
+  const r = await q.query<{ balance: number }>(
+    `select balance from private.sms_credit_balance($1)`,
+    [businessId],
+  );
+  return r.rows[0]?.balance ?? 0;
 }
 
 export type PlanUsage = PlanInfo & {
@@ -135,14 +154,19 @@ export function loadPlanUsage(businessId: string): Promise<PlanUsage> {
   });
 }
 
-/** Kvar av månadens sms-kvot (`null` = obegränsat). */
+/** Kvar av månadens sms-kvot plus köpta krediter (`null` = obegränsat).
+ * WP-76 (D-053): Gratis (kvot 0) har bara sina krediter. */
 export async function smsRemainingIn(
   q: Queryable,
   businessId: string,
 ): Promise<number | null> {
   const max = planLimit(await loadPlanIn(q, businessId), "sms");
   if (max === null) return null;
-  return Math.max(0, max - (await smsSentThisMonthIn(q, businessId)));
+  const quotaLeft = Math.max(
+    0,
+    max - (await smsSentThisMonthIn(q, businessId)),
+  );
+  return quotaLeft + (await smsCreditBalanceIn(q, businessId));
 }
 
 /** Utskick (manuellt, blixttid): planen måste ha funktionen, och ett
@@ -181,26 +205,52 @@ export function loadBusinessPlan(businessId: string): Promise<PlanInfo> {
   return withServiceTx((q) => loadPlanIn(q, businessId));
 }
 
+/** Resultatet av en sms-reservation: `quota` = planens kvot, `credit` =
+ * köpta krediter (helt eller delvis), `null` = blockerad (kvot och krediter slut). */
+export type SmsReservation = "quota" | "credit" | null;
+
 /**
- * Outbox-workern (service role), WP-73 säkerhetsgranskning: reserverar en
- * plats i månadens sms-kvot för raden `outboxId` ATOMISKT. Advisory lock per
- * företag serialiserar parallella pass; räknar skickade sms + rader i
- * `sending` som redan reserverat (`quota_reserved_at`), utom raden själv.
- * `false` = kvoten är slut (eller planen saknar sms).
+ * Outbox-workern (service role), WP-73 säkerhetsgranskning + WP-76 (D-053):
+ * reserverar `segments` sms-segment för raden `outboxId` ATOMISKT. Advisory
+ * lock per företag serialiserar parallella pass; räknar skickade segment +
+ * rader i `sending` som redan reserverat (`quota_reserved_at`), utom raden
+ * själv. Ordning: planens kvot först, sedan köpta krediter (FIFO, äldsta
+ * giltiga köp, `private.sms_credit_consume`). En rad som redan tagit krediter
+ * (retry) behåller dem och tar inga nya. Varningarna (80 %, slut) köas i
+ * samma transaktion, högst en per typ och månad (`notices.ts`).
  */
 export async function reserveSmsQuotaIn(
   q: Queryable,
   businessId: string,
   outboxId: string,
-): Promise<boolean> {
+  segments = 1,
+): Promise<SmsReservation> {
+  const seg = Math.max(1, Math.trunc(segments));
   const max = planLimit(await loadPlanIn(q, businessId), "sms");
-  if (max === null) return true;
-  if (max <= 0) return false;
+  const mark = () =>
+    q.query(
+      `update public.message_outbox
+          set quota_reserved_at = now(), sms_segments = $3
+        where id = $1 and business_id = $2`,
+      [outboxId, businessId, seg],
+    );
+  if (max === null) {
+    await mark();
+    return "quota";
+  }
+  // Låset tas även när kvoten är 0 (Gratis): krediter kan finnas.
   await q.query(`select pg_advisory_xact_lock(hashtext('sms:' || $1::text))`, [
     businessId,
   ]);
+  const priorRes = await q.query<{ n: number }>(
+    `select coalesce(-sum(delta), 0)::int as n from public.sms_credit_ledger
+      where business_id = $1 and outbox_id = $2 and kind = 'consume'`,
+    [businessId, outboxId],
+  );
+  const prior = priorRes.rows[0]?.n ?? 0;
   const r = await q.query<{ n: number }>(
-    `select count(*)::int as n from public.message_outbox
+    `select coalesce(sum(coalesce(sms_segments, 1)), 0)::int as n
+       from public.message_outbox
       where business_id = $1 and channel = 'sms' and id <> $2
         and (status = 'sent'
              or (status = 'sending' and quota_reserved_at is not null))
@@ -208,11 +258,43 @@ export async function reserveSmsQuotaIn(
             >= (date_trunc('month', now() at time zone $3) at time zone $3)`,
     [businessId, outboxId, APP_TZ],
   );
-  if ((r.rows[0]?.n ?? 0) >= max) return false;
-  await q.query(
-    `update public.message_outbox set quota_reserved_at = now()
-      where id = $1 and business_id = $2`,
-    [outboxId, businessId],
+  const used = r.rows[0]?.n ?? 0;
+  const quotaLeft = Math.max(0, max - used);
+  const warn80 = async () => {
+    if (max > 0 && crossesWarnLevel(used, Math.min(seg, quotaLeft), max)) {
+      await enqueueSmsNoticeIn(q, businessId, "smsCuota80", {
+        usado: Math.min(max, used + seg),
+        max,
+      });
+    }
+  };
+  if (prior === 0 && seg <= quotaLeft) {
+    await mark();
+    await warn80();
+    return "quota";
+  }
+  // Retry: raden behåller sina krediter; behöver den fler (fler segment än
+  // förra försöket) förbrukas bara mellanskillnaden (`p_count` = totalt behov).
+  const need = Math.max(prior, seg - quotaLeft);
+  if (prior > 0 && need === prior) {
+    await mark();
+    return "credit";
+  }
+  const c = await q.query<{ n: number }>(
+    `select private.sms_credit_consume($1, $2, $3) as n`,
+    [businessId, outboxId, need],
   );
-  return true;
+  if ((c.rows[0]?.n ?? 0) > 0) {
+    await mark();
+    await warn80();
+    return "credit";
+  }
+  // Slut. Gratis-företag som aldrig köpt krediter får inget mejl varje månad.
+  if (max > 0 || (await hasEverBoughtCreditsIn(q, businessId))) {
+    await enqueueSmsNoticeIn(q, businessId, "smsAgotados", {
+      usado: Math.min(max, used),
+      max,
+    });
+  }
+  return null;
 }

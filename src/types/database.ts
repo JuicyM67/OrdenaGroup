@@ -1133,6 +1133,7 @@ export type Database = {
           quota_reserved_at: string | null;
           recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at: string | null;
+          sms_segments: number | null;
           status: Database["public"]["Enums"]["message_outbox_status"];
           template: string;
           updated_at: string;
@@ -1153,6 +1154,7 @@ export type Database = {
           quota_reserved_at?: string | null;
           recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at?: string | null;
+          sms_segments?: number | null;
           status?: Database["public"]["Enums"]["message_outbox_status"];
           template: string;
           updated_at?: string;
@@ -1173,6 +1175,7 @@ export type Database = {
           quota_reserved_at?: string | null;
           recipient_kind?: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at?: string | null;
+          sms_segments?: number | null;
           status?: Database["public"]["Enums"]["message_outbox_status"];
           template?: string;
           updated_at?: string;
@@ -1467,6 +1470,118 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "service_categories";
             referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      sms_credit_ledger: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          delta: number;
+          id: number;
+          kind: string;
+          outbox_id: string | null;
+          purchase_id: string;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          delta: number;
+          id?: never;
+          kind: string;
+          outbox_id?: string | null;
+          purchase_id: string;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          delta?: number;
+          id?: never;
+          kind?: string;
+          outbox_id?: string | null;
+          purchase_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sms_credit_ledger_business_id_purchase_id_fkey";
+            columns: ["business_id", "purchase_id"];
+            isOneToOne: false;
+            referencedRelation: "sms_credit_purchases";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      sms_credit_purchases: {
+        Row: {
+          amount_net: number;
+          amount_total: number;
+          amount_vat: number;
+          business_id: string;
+          created_at: string;
+          created_by: string | null;
+          credits_refunded: number;
+          credits_remaining: number;
+          credits_total: number;
+          currency: string;
+          expires_at: string | null;
+          id: string;
+          package_size: number;
+          paid_at: string | null;
+          receipt_url: string | null;
+          status: string;
+          stripe_checkout_session_id: string | null;
+          stripe_payment_intent_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          amount_net: number;
+          amount_total: number;
+          amount_vat: number;
+          business_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          credits_refunded?: number;
+          credits_remaining?: number;
+          credits_total: number;
+          currency?: string;
+          expires_at?: string | null;
+          id?: string;
+          package_size: number;
+          paid_at?: string | null;
+          receipt_url?: string | null;
+          status?: string;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          amount_net?: number;
+          amount_total?: number;
+          amount_vat?: number;
+          business_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          credits_refunded?: number;
+          credits_remaining?: number;
+          credits_total?: number;
+          currency?: string;
+          expires_at?: string | null;
+          id?: string;
+          package_size?: number;
+          paid_at?: string | null;
+          receipt_url?: string | null;
+          status?: string;
+          stripe_checkout_session_id?: string | null;
+          stripe_payment_intent_id?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sms_credit_purchases_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
           },
         ];
       };
