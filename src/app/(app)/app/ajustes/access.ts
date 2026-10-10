@@ -16,6 +16,11 @@ import {
 import type { Feature } from "@/config/plans";
 import { appHref, href } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { SmsBellNotice } from "@/lib/validation/sms-credits";
+import {
+  loadSmsBellNotices,
+  smsCreditsMarket,
+} from "@/server/billing/sms-credits";
 import {
   getCurrentMember,
   type CurrentMember,
@@ -49,6 +54,8 @@ export type AjustesPageContext = {
    * som förut (`ajustes-screen.tsx`). */
   myProfileActions: MyProfileActions | undefined;
   pendingRequests: PendingRequestItem[];
+  /** WP-76 (D-053): sms-varningar i klockan (bara ägaren i SE). */
+  notices: SmsBellNotice[];
   tabs: AjustesTabItem[];
   /** WP-73 (D-048): företagets plan, för uppgraderingsrutorna. */
   plan: PlanInfo;
@@ -91,10 +98,13 @@ export async function requireAjustesTab(
   // WP-64 (D-044): Betalningar finns bara när Stripe är konfigurerat.
   if (tab === "pagos" && !stripeEnabled()) redirect(appHref("appAgenda"));
 
-  const [myProfile, pendingRequests, plan] = await Promise.all([
+  const [myProfile, pendingRequests, plan, notices] = await Promise.all([
     loadMyProfileAction(),
     listPendingRequests(user.id, current.business.id, new Date()),
     loadBusinessPlan(current.business.id),
+    current.view.role === "owner" && smsCreditsMarket()
+      ? loadSmsBellNotices(current.business.id)
+      : Promise.resolve([]),
   ]);
 
   return {
@@ -111,6 +121,7 @@ export async function requireAjustesTab(
         }
       : undefined,
     pendingRequests,
+    notices,
     plan,
     plansHref:
       current.view.role === "owner"

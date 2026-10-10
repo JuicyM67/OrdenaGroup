@@ -79,6 +79,8 @@ Tailwinds standardtema är nollställt (§12), så storlekarna heter efter px (`
 | page-title (mobil) | `font-display text-30 font-semibold tracking-display` |
 | stat | `font-display text-38 font-semibold tracking-display` |
 | stat (belopp) | `font-display text-32 font-semibold tracking-display` |
+| sms-saldo (WP-76, Plan) | `font-display text-36 font-bold` (mobil `text-28`) |
+| section-title (WP-76, Plan) | `font-display text-20 font-bold` |
 | time-xl | `font-display text-44 leading-none font-semibold tracking-display` |
 | day-number (desktop) | `font-display text-30 font-bold tracking-display` |
 | day-number (mobil) | `font-display text-22 font-bold` |

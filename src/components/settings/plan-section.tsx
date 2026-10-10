@@ -62,8 +62,16 @@ function UsageRow({
   );
 }
 
-export function PlanSection({ data }: { data: PlanSectionData }) {
+export function PlanSection({
+  data,
+  hideSmsNotice = false,
+}: {
+  data: PlanSectionData;
+  /** WP-76: sms-kortet ovanför har egen varning (D-053). */
+  hideSmsNotice?: boolean;
+}) {
   const smsOut =
+    !hideSmsNotice &&
     market === "SE" &&
     data.sms.limit !== null &&
     data.sms.used >= data.sms.limit;

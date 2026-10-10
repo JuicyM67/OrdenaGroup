@@ -25,6 +25,7 @@ import type {
 } from "@/components/shared/notification-bell";
 import { OwnerChromeProvider } from "@/components/shared/owner-chrome";
 import { cn } from "@/components/ui/cn";
+import type { SmsBellNotice } from "@/lib/validation/sms-credits";
 
 export type AppShellProps = {
   rail: ReactNode;
@@ -37,6 +38,8 @@ export type AppShellProps = {
   /** WP-45: klockan i `OwnerMobileTopBar` (mobil, < lg). `undefined` döljer
    * den (design lab). */
   pendingRequests?: readonly PendingRequestItem[];
+  /** WP-76 (D-053): sms-varningar i klockan (skrivbordets OwnerPageHeader). */
+  notices?: readonly SmsBellNotice[];
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
   onDeclineRequest?: (
     bookingId: string,
@@ -76,6 +79,7 @@ export function AppShell({
   mobileTabBar,
   onLogout,
   pendingRequests,
+  notices,
   onConfirmRequest,
   onDeclineRequest,
   onApproveCancelRequest,
@@ -97,6 +101,7 @@ export function AppShell({
         publicPageHref: publicPageHref ?? "/",
         canViewReports,
         pendingRequests: pendingRequests ?? [],
+        notices,
         onConfirmRequest,
         onDeclineRequest,
         onApproveCancelRequest,
