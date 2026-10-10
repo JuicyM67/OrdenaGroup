@@ -1,7 +1,9 @@
 // Footer delad av alla sidor på sitio-webben. Ny sidfot (WP-71, SidaP3.dc.html): mörk,
-// kolumner (produkt, branscher, företaget, kontakt) och Stampello som partnerkort.
-// Kontaktuppgifter kommer från `brand.legal`; fält som fortfarande är platshållare
-// ("[…]") renderas inte.
+// kolumner (produkt, branscher, företaget, kontakt + konto), en kort "Om"-text,
+// Stampello som partnerkort och en trygghetsrad. Kontaktuppgifter kommer från
+// `brand.legal`; fält som fortfarande är platshållare ("[…]") renderas inte.
+// Sociala ikoner visas inte: `brand.ts` har inga länkar till sociala medier än.
+import { Check } from "lucide-react";
 import Link from "next/link";
 
 import { BrandLogo } from "@/components/marketing/brand-logo";
@@ -50,6 +52,14 @@ export function SiteFooter() {
             <p className="text-15 leading-relaxed text-on-dark-muted">
               {brand.tagline}
             </p>
+            <div className="flex flex-col gap-1.5">
+              <b className="text-14 text-on-dark">
+                {t.omTitulo({ nombre: brand.name })}
+              </b>
+              <p className="text-14 leading-relaxed text-on-dark-muted">
+                {t.omTexto}
+              </p>
+            </div>
             <a
               href={partner.url}
               target="_blank"
@@ -81,6 +91,9 @@ export function SiteFooter() {
             <Link href={href("horasFlash")} className={linkClass}>
               {t.flash}
             </Link>
+            <Link href={href("ventajas")} className={linkClass}>
+              {copy.sitio.nav.porQue}
+            </Link>
             <Link href={`/${brand.demoSlug}`} className={linkClass}>
               {t.ejemplo}
             </Link>
@@ -99,6 +112,12 @@ export function SiteFooter() {
           </Column>
 
           <Column title={t.empresa}>
+            <Link href={href("preguntas")} className={linkClass}>
+              {copy.sitio.footer.links.preguntas}
+            </Link>
+            <Link href={href("contacto")} className={linkClass}>
+              {copy.sitio.footer.links.contacto}
+            </Link>
             <Link href={hrefLegal("terminos")} className={linkClass}>
               {copy.sitio.footer2.legal.terminos}
             </Link>
@@ -128,12 +147,36 @@ export function SiteFooter() {
                 ? legal.address
                 : copy.sitio.footer2.contacto.ciudad}
             </span>
+            <b className="mt-3 text-14 text-on-dark">{t.cuenta}</b>
+            <Link href="/login" className={linkClass}>
+              {copy.sitio.nav.entrar}
+            </Link>
+            <Link
+              href="/login"
+              className="self-start rounded-control bg-lime px-3.5 py-2 text-14 font-bold text-ink transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
+            >
+              {t.crearCuenta}
+            </Link>
           </Column>
         </div>
 
-        <div className="flex flex-col justify-between gap-2 border-t border-dark-2 pt-6 text-13 text-blocked sm:flex-row">
+        <div className="flex flex-col justify-between gap-4 border-t border-dark-2 pt-6 text-13 text-blocked sm:flex-row sm:items-center">
           <span>{t.pie({ anio, nombre: brand.name })}</span>
-          <span>{copy.home.confianza.map((c) => c.texto).join(" · ")}</span>
+          <ul className="flex flex-wrap gap-x-5 gap-y-2">
+            {copy.home.confianza.map((c) => (
+              <li
+                key={c.id}
+                className="flex items-center gap-1.5 text-on-dark-muted"
+              >
+                <Check
+                  className="size-3.5 text-lime"
+                  strokeWidth={2.6}
+                  aria-hidden="true"
+                />
+                {c.texto}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </footer>

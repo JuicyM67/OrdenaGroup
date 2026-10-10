@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
-import { seRouteRedirects, seRouteRewrites } from "./src/config/routes";
+import {
+  seLegacyRedirects,
+  seRouteRedirects,
+  seRouteRewrites,
+} from "./src/config/routes";
 
 const MARKET = process.env.NEXT_PUBLIC_MARKET ?? "CL";
 
@@ -17,7 +21,9 @@ const nextConfig: NextConfig = {
     return MARKET === "SE" ? seRouteRewrites() : [];
   },
   async redirects() {
-    return MARKET === "SE" ? seRouteRedirects() : [];
+    return MARKET === "SE"
+      ? [...seRouteRedirects(), ...seLegacyRedirects()]
+      : [];
   },
   // WP-27: grundläggande säkerhetsheaders (ingen inbäddning → ingen clickjacking
   // av /app eller avbokningen i /r/[token]). Full CSP med img-src kommer senare (IDEAS).

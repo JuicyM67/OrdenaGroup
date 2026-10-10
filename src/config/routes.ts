@@ -44,7 +44,7 @@ const SE_ROUTES: Record<RouteId, string> = {
   inicio: "/",
   precios: "/priser",
   funcionalidades: "/funktioner",
-  horasFlash: "/flashtider",
+  horasFlash: "/blixttider",
   ventajas: "/fordelar",
   preguntas: "/vanliga-fragor",
   contacto: "/kontakt",
@@ -320,4 +320,21 @@ export function seRouteRedirects(): {
     permanent: true as const,
   }));
   return [...rutter, ...industrier, ...legal, ...appRutter];
+}
+
+/** Gamla svenska sökvägar som bytt namn → nuvarande (308), så delade länkar inte bryts.
+ * Hålls utanför `seRouteRedirects()` (som är exakt motsats till rewrites). Bara SE. */
+export function seLegacyRedirects(): {
+  source: string;
+  destination: string;
+  permanent: true;
+}[] {
+  return [
+    // "Flashtider" heter "Blixttider" på svenska.
+    {
+      source: "/flashtider",
+      destination: SE_ROUTES.horasFlash,
+      permanent: true,
+    },
+  ];
 }

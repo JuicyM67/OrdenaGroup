@@ -54,7 +54,7 @@ export const nav = {
   hoy: "Idag",
   agenda: "Kalender",
   clientes: "Kunder",
-  horasFlash: "Flashtider",
+  horasFlash: "Blixttider",
   cajaEInformes: "Kassa och rapporter",
   caja: "Kassa",
   ajustes: "Inställningar",
@@ -91,9 +91,9 @@ export const estados = {
   listaDeEspera: "Väntelista",
   desdeLista: "Från väntelistan",
   abono: "Delbetalning",
-  flash: "Flash",
+  flash: "Blixt",
   flashConDescuento: (p: { porcentaje: number }): string =>
-    `Flash −${p.porcentaje}%`,
+    `Blixt −${p.porcentaje}%`,
   pendientePago: "Väntar på betalning",
   /** Nyckeln finns av typskäl (samma som es-CL, WP-54): kund markerad som
    * medlem med egen rabatt/förmån. */
@@ -127,7 +127,7 @@ export const hoy = {
     noVino: "Kom inte",
   },
   accionesRapidas: {
-    crearHoraFlash: "Skapa flashtid",
+    crearHoraFlash: "Skapa blixttid",
     listaEspera: (p: { n: number }): string => `Väntelista · ${p.n}`,
     cobrar: "Ta betalt",
   },
@@ -355,7 +355,7 @@ export const sitio = {
   },
   /** Innehållet i panelen för "Produkt" (wp/WP-43-nav-a, "Nav A"): en enda
    * kolumn med sex punkter (ikon + en rads förklaring) plus det utvalda
-   * kortet som puffar för Flashtider. Ingen egen "Vem är det för"/"Resurser"
+   * kortet som puffar för Blixttider. Ingen egen "Vem är det för"/"Resurser"
    * längre: de ämnena är nu egna ord i menyraden (`nav.paraQuien`,
    * `nav.precios`, `nav.porQue`). Samma nycklar och samma teckengräns
    * (`texto` ~60 tecken) som i `es-CL.ts`. Ingen WhatsApp (D-028):
@@ -392,7 +392,7 @@ export const sitio = {
     },
     destacado: {
       etiqueta: "Nytt",
-      titulo: "Flashtider",
+      titulo: "Blixttider",
       texto: "Sälj dina lediga tider med rabatt innan de går förlorade.",
       cta: "Se hur det funkar",
     },
@@ -442,7 +442,7 @@ export const sitio = {
     },
     novedad: {
       etiqueta: "Nytt",
-      texto: "Flashtider redan tillgängliga",
+      texto: "Blixttider redan tillgängliga",
     },
   },
   inicio: {
@@ -456,7 +456,7 @@ export const sitio = {
     heroBento: {
       nuevo: {
         etiqueta: "Nyhet",
-        texto: "Flashtider: sälj dina lediga tider",
+        texto: "Blixttider: sälj dina lediga tider",
       },
       /** Kalenderkortet i hero: visar alltid mån–fre, utan koppling till ett
        * riktigt datum. */
@@ -584,11 +584,11 @@ export const sitio = {
       titulo: "För alla verksamheter som jobbar med tider",
       aria: "Branscher som bokar tid med en kalender",
     },
-    /** Sektionen som förklarar Flashtider på startsidan (wp/hemsida): `mock`
+    /** Sektionen som förklarar Blixttider på startsidan (wp/hemsida): `mock`
      * är de korta etiketterna i den animerade mockupen, inte text som en
      * riktig kund får. */
     flash: {
-      etiqueta: "Flashtider",
+      etiqueta: "Blixttider",
       titulo: "Sälj dina lediga tider innan de går förlorade",
       texto:
         "När en tid blir ledig i sista minuten erbjuder du den med rabatt till dina kunder. Den som bokar först får den.",
@@ -742,17 +742,17 @@ export const sitio = {
       },
     },
   },
-  /** Egen sida för Flashtider (F13 i MVP_SPEC.md). Kunderna nås via sms och
+  /** Egen sida för Blixttider (F13 i MVP_SPEC.md). Kunderna nås via sms och
    * mejl (D-028: ingen WhatsApp i Sverige), samma nycklar som
    * `es-CL.sitio.flashPagina`. */
   flashPagina: {
     meta: {
-      titulo: (p: { nombre: string }): string => `Flashtider — ${p.nombre}`,
+      titulo: (p: { nombre: string }): string => `Blixttider — ${p.nombre}`,
       descripcion: (p: { nombre: string }): string =>
         `Sälj dina lediga tider med rabatt innan de går förlorade, med ${p.nombre}. Du väljer rabatten och hur länge den gäller.`,
     },
     hero: {
-      etiqueta: "Flashtider",
+      etiqueta: "Blixttider",
       titulo: "Sälj dina lediga tider innan de går förlorade",
       texto:
         "När en tid blir ledig i sista minuten erbjuder du den med rabatt till dina kunder. Den som bokar först får den.",
@@ -811,7 +811,7 @@ export const sitio = {
       titulo: "Vanliga frågor",
       items: {
         a: {
-          pregunta: "Hur länge gäller en flashtid?",
+          pregunta: "Hur länge gäller en blixttid?",
           respuesta:
             "Du bestämmer: den kan gälla några minuter eller ända fram till tiden för besöket.",
         },
@@ -821,7 +821,7 @@ export const sitio = {
             "Ja, via sms och mejl. Ingen app behövs för att ta emot det.",
         },
         c: {
-          pregunta: "Vad händer om ingen bokar flashtiden?",
+          pregunta: "Vad händer om ingen bokar blixttiden?",
           respuesta:
             "Inget särskilt: tiden förblir ledig precis som innan, utan kostnad eller bindning.",
         },
@@ -830,7 +830,7 @@ export const sitio = {
     cta: {
       titulo: "Redo att sälja dina lediga tider?",
       texto:
-        "Skapa ditt gratiskonto och aktivera din första flashtid på några minuter.",
+        "Skapa ditt gratiskonto och aktivera din första blixttid på några minuter.",
       boton: SITIO_CTA,
     },
   },
@@ -868,7 +868,7 @@ export const sitio = {
           "En sida med din logga och dina färger där kunderna bokar själva, redo att dela på Instagram.",
       },
       d: {
-        titulo: "Flashtider",
+        titulo: "Blixttider",
         texto:
           "Sälj dina lediga tider med rabatt innan de går förlorade, i stället för att låta dem stå tomma.",
       },
@@ -913,7 +913,7 @@ export const sitio = {
             "Du betalar din månadsplan och vi tar ingen provision på bokningar. Onlinebetalning med kort är valfritt: 1 % per betalning och Stripes avgift.",
         },
         c: {
-          titulo: "Flashtider fyller luckorna",
+          titulo: "Blixttider fyller luckorna",
           texto:
             "Sälj dina lediga tider med rabatt i sista minuten, i stället för att låta dem stå tomma.",
         },
@@ -1240,7 +1240,7 @@ export const SITIO_PRECIOS_TABLA: readonly SitioPrecioFila[] = [
     valores: { gratis: "–", emprende: "✓", equipo: "✓", local: "✓" },
   },
   {
-    funcion: "Flashtider",
+    funcion: "Blixttider",
     valores: { gratis: "–", emprende: "–", equipo: "✓", local: "✓" },
   },
   {
@@ -1530,7 +1530,7 @@ export const PLANES: readonly PlanTexto[] = [
     puntos: [
       "Upp till 3 anställda",
       "150 sms/månad",
-      "Flashtider",
+      "Blixttider",
       "Vi saknar dig-påminnelser",
       "Rapporter",
     ],
@@ -1847,7 +1847,7 @@ export const home = {
         texto: "Namn och telefon – inget konto krävs",
       },
       {
-        titulo: "Betalar och är bokad",
+        titulo: "Bokar – och betalar om du vill",
         texto: "Bekräftelse direkt via SMS och e-post",
       },
     ],
@@ -1861,7 +1861,7 @@ export const home = {
       telLabel: "Mobilnummer",
       tel: "070-123 45 67",
       nota: "Vi skickar en bekräftelse och en påminnelse dagen innan.",
-      boton: "Betala 650 kr och boka",
+      boton: "Boka",
       confirmada: "Bekräftelse skickad",
     },
   },
@@ -1952,6 +1952,11 @@ export const home = {
     flytt: "Smärtfri flytt",
     flash: "Blixttider",
     ejemplo: "Exempelsida",
+    cuenta: "Konto",
+    crearCuenta: "Skapa konto gratis",
+    omTitulo: (p: { nombre: string }): string => `Om ${p.nombre}`,
+    omTexto:
+      "Ett bokningssystem för frisörer, barberare, hudvård och naprapater. Kunderna bokar själva via din länk, och lediga tider fylls med väntelista och blixttider.",
     partnerEtiqueta: "PARTNER",
     partnerTexto: "digitalt stämpelkort för dina stamkunder",
     pie: (p: { anio: number; nombre: string }): string =>

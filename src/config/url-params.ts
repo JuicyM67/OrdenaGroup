@@ -29,7 +29,7 @@ const SE_ANCHORS: Dict = {
   precios: "priser",
   preguntas: "fragor",
   comparar: "jamfor",
-  "horas-flash": "flashtider",
+  "horas-flash": "blixttider",
   "link-reservas": "bokningslank",
   agenda: "kalender",
   hoy: "idag",

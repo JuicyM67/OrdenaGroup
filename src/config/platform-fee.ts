@@ -8,7 +8,7 @@ export const PLATFORM_FEE_BPS: Record<FeePlan, number> = {
   free: 100,
   emprende: 100,
   equipo: 100,
-  local: 0,
+  local: 100,
 };
 
 /** Minsta belopp (öre) som går att ta betalt för online. Stripes golv för SEK
