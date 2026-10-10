@@ -36,7 +36,7 @@ export const visita: Widen<typeof EsVisita> = {
   },
   cliente: {
     bienvenida: {
-      aria: "Välkommen till exempelsidan",
+      aria: "Välkommen till demot",
       titulo: "Så här kan din sida se ut",
       texto:
         "Det här är ett exempelföretag. Vi visar dig runt på 40 sekunder – välj din bransch så anpassar vi exemplen.",

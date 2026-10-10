@@ -9,7 +9,17 @@ export const paginas: PaginasCopy = {
     funciones: "Funktioner",
     rubros: "Branscher",
     precios: "Priser",
-    ejemplo: "Exempelsida",
+    ejemplo: "Demo",
+    menuDemo: {
+      cliente: {
+        titulo: "Boka som kund",
+        texto: "Se bokningssidan och boka en tid",
+      },
+      negocio: {
+        titulo: "Se företagsvyn",
+        texto: "Kalendern, kassan och blixttiderna",
+      },
+    },
     menuFunciones: {
       titulo: "FUNKTIONER",
       verTodas: "Se alla funktioner",
@@ -19,7 +29,7 @@ export const paginas: PaginasCopy = {
         texto: "Klistra in länken – vi flyttar resten",
       },
       ejemplo: {
-        titulo: "Se exempelsidan",
+        titulo: "Prova demot",
         texto: "En riktig bokningssida att klicka runt i",
       },
     },
@@ -39,7 +49,7 @@ export const paginas: PaginasCopy = {
     migas: "Brödsmulor",
     inicio: "Start",
     crearGratis: "Kom igång gratis",
-    verEjemplo: "Se exempelsidan",
+    verEjemplo: "Prova demot",
     faqEtiqueta: "FRÅGOR",
     faqTitulo: "Bra att veta.",
     masFunciones: "Fler funktioner",

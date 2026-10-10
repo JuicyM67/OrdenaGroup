@@ -96,6 +96,10 @@ export interface PaginasCopy {
     readonly rubros: string;
     readonly precios: string;
     readonly ejemplo: string;
+    readonly menuDemo: {
+      readonly cliente: { readonly titulo: string; readonly texto: string };
+      readonly negocio: { readonly titulo: string; readonly texto: string };
+    };
     readonly menuFunciones: {
       readonly titulo: string;
       readonly verTodas: string;

@@ -9,7 +9,17 @@ export const paginas: PaginasCopy = {
     funciones: "Funcionalidades",
     rubros: "Rubros",
     precios: "Precios",
-    ejemplo: "Página de ejemplo",
+    ejemplo: "Demo",
+    menuDemo: {
+      cliente: {
+        titulo: "Reserva como cliente",
+        texto: "Mira la página de reservas y reserva una hora",
+      },
+      negocio: {
+        titulo: "Mira la vista del negocio",
+        texto: "La agenda, la caja y las horas flash",
+      },
+    },
     menuFunciones: {
       titulo: "FUNCIONALIDADES",
       verTodas: "Ver todas las funcionalidades",
@@ -19,7 +29,7 @@ export const paginas: PaginasCopy = {
         texto: "Pega tu link, nosotros movemos el resto",
       },
       ejemplo: {
-        titulo: "Ver la página de ejemplo",
+        titulo: "Prueba la demo",
         texto: "Una página de reservas real para recorrer",
       },
     },
@@ -39,7 +49,7 @@ export const paginas: PaginasCopy = {
     migas: "Migas de pan",
     inicio: "Inicio",
     crearGratis: "Empieza gratis",
-    verEjemplo: "Ver la página de ejemplo",
+    verEjemplo: "Prueba la demo",
     faqEtiqueta: "PREGUNTAS",
     faqTitulo: "Bueno saber.",
     masFunciones: "Más funcionalidades",

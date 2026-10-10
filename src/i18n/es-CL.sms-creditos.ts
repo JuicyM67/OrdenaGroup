@@ -41,6 +41,7 @@ export const smsCreditos = {
   comprar: {
     titulo: "Cargar SMS",
     sub: "Válidos por 12 meses.",
+    pronto: "La compra de créditos SMS se activa pronto.",
     subCorto: "Válidos por 12 meses · 160 caracteres por SMS",
     leyenda: "Elige un paquete",
     paquete: (p: { n: string }): string => `${p.n} SMS`,
