@@ -9,12 +9,16 @@ import Link from "next/link";
 import { BrandLogo } from "@/components/marketing/brand-logo";
 import { brand } from "@/config/brand";
 import {
+  funcionesDisponibles,
   href,
-  hrefIndustria,
+  hrefFuncion,
   hrefLegal,
-  type IndustriaId,
+  hrefRubro,
+  hrefRubros,
+  RUBRO_IDS,
 } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
+import { paginas } from "@/i18n/paginas";
 
 const t = copy.home.footer;
 
@@ -79,17 +83,13 @@ export function SiteFooter() {
             <Link href={href("funcionalidades")} className={linkClass}>
               {copy.sitio.footer.links.funcionalidades}
             </Link>
+            {funcionesDisponibles().map((id) => (
+              <Link key={id} href={hrefFuncion(id)} className={linkClass}>
+                {paginas.funciones[id]?.nombre}
+              </Link>
+            ))}
             <Link href={href("precios")} className={linkClass}>
               {copy.sitio.footer.links.precios}
-            </Link>
-            <Link
-              href={href("inicio", "migracion-facil")}
-              className={linkClass}
-            >
-              {t.flytt}
-            </Link>
-            <Link href={href("horasFlash")} className={linkClass}>
-              {t.flash}
             </Link>
             <Link href={href("ventajas")} className={linkClass}>
               {copy.sitio.nav.porQue}
@@ -100,15 +100,14 @@ export function SiteFooter() {
           </Column>
 
           <Column title={t.rubros}>
-            {copy.SITIO_PARA_INDUSTRIAS.map((i) => (
-              <Link
-                key={i.id}
-                href={hrefIndustria(i.id as IndustriaId)}
-                className={linkClass}
-              >
-                {i.nombre}
+            {RUBRO_IDS.map((id) => (
+              <Link key={id} href={hrefRubro(id)} className={linkClass}>
+                {paginas.rubros[id].nombre}
               </Link>
             ))}
+            <Link href={hrefRubros()} className={`${linkClass} font-bold`}>
+              {paginas.nav.menuRubros.todas}
+            </Link>
           </Column>
 
           <Column title={t.empresa}>

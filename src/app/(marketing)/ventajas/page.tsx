@@ -20,6 +20,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { strokeCard } from "@/components/ui/icons";
 import { CtaBand } from "@/components/marketing/cta-band";
+import { SmsVentaja } from "@/components/marketing/sms-creditos";
 import { PartnerStampello } from "@/components/marketing/partner-stampello";
 import { SectionHeading } from "@/components/marketing/section-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
@@ -214,6 +215,8 @@ export default function VentajasPage() {
         <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-8">
           <PartnerStampello />
         </section>
+
+        <SmsVentaja />
 
         <CtaBand
           title={V.cta.titulo}

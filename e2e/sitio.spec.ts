@@ -7,10 +7,14 @@ import { expect, test } from "@playwright/test";
 const PAGINAS = [
   "/funcionalidades",
   "/precios",
-  "/para/barberias",
-  "/para/peluquerias",
-  "/para/estetica",
-  "/para/kinesiologia",
+  "/rubros",
+  "/rubros/barberias",
+  "/rubros/peluquerias",
+  "/rubros/estetica",
+  "/rubros/kinesiologia",
+  "/funcionalidades/reservas-online",
+  "/funcionalidades/lista-de-espera",
+  "/migracion",
   "/preguntas",
   "/contacto",
   "/horas-flash",
@@ -25,7 +29,12 @@ for (const ruta of PAGINAS) {
   });
 }
 
-test("/para/no-existe responde 404", async ({ page }) => {
-  const response = await page.goto("/para/no-existe");
+test("/rubros/no-existe responde 404", async ({ page }) => {
+  const response = await page.goto("/rubros/no-existe");
+  expect(response?.status()).toBe(404);
+});
+
+test("la página de pagos no existe en CL (404)", async ({ page }) => {
+  const response = await page.goto("/funcionalidades/pagos");
   expect(response?.status()).toBe(404);
 });

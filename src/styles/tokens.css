@@ -925,6 +925,13 @@
 @utility bg-hero-tint-mobile {
   background-image: linear-gradient(0deg, rgb(28 24 22 / 0.9) 0%, rgb(28 24 22 / 0.72) 55%, rgb(28 24 22 / 0.5) 100%);
 }
+/* Full-bleed foto-hero: kraftigare toning så vit text når >= 4.5:1 även över ljusa foton. */
+@utility bg-photo-tint {
+  background-image: linear-gradient(90deg, rgb(28 24 22 / 0.88) 0%, rgb(28 24 22 / 0.8) 40%, rgb(28 24 22 / 0.5) 62%, rgb(28 24 22 / 0) 88%), linear-gradient(0deg, rgb(28 24 22 / 0.45) 0%, rgb(28 24 22 / 0) 30%);
+}
+@utility bg-photo-tint-mobile {
+  background-image: linear-gradient(0deg, rgb(28 24 22 / 0.92) 0%, rgb(28 24 22 / 0.82) 55%, rgb(28 24 22 / 0.66) 100%);
+}
 @utility bg-cta-tint {
   background-image: linear-gradient(90deg, rgb(28 24 22 / 0.82) 0%, rgb(28 24 22 / 0.5) 45%, rgb(28 24 22 / 0) 75%);
 }
@@ -940,4 +947,84 @@
 /* Mobil: fotots motiv (kvinnan) ligger ca 65 % från vänster. */
 @utility object-hero-mobile {
   object-position: 65% 50%;
+}
+
+/* WP-75: hero-foton på funktions- och branschsidorna ligger i porträtt; fokus på övre delen. */
+@utility object-photo-top {
+  object-position: 50% 30%;
+}
+
+/* ---------- WP-72: guidad visning (brons/kräm liquid glass) ----------
+   Källa: docs/design/reference/visning/*.dc.html. Spotlight = ett element med enorm
+   box-shadow som dimmar resten och glider mellan mål. */
+@theme {
+  --color-bronze: #8A6A50;
+  --color-bronze-mid: #B48C69;
+  --color-bronze-light: #CBA77F;
+  --color-tour-ink: #2B2420;       /* text på kräm-glas */
+  --color-tour-soft: #6E5440;      /* sekundär text på kräm-glas */
+  --shadow-row-open: 0 10px 30px rgb(22 22 26 / 0.08); /* utfälld tjänsterad (accordion) */
+  --shadow-spotlight: 0 0 0 9999px rgb(36 28 22 / 0.58);
+  --animate-tour-in: tour-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  --animate-tour-ring: tour-ring 2.4s ease-in-out infinite;
+  @keyframes tour-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes tour-ring {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgb(203 167 127 / 0), 0 0 0 9999px rgb(36 28 22 / 0.58);
+    }
+    50% {
+      box-shadow: 0 0 0 8px rgb(203 167 127 / 0.35), 0 0 0 9999px rgb(36 28 22 / 0.58);
+    }
+  }
+}
+@utility tour-glass {
+  background: linear-gradient(140deg, rgb(255 251 246 / 0.92) 0%, rgb(247 238 227 / 0.78) 100%);
+  backdrop-filter: blur(22px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 0.78);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.95), 0 30px 70px rgb(43 32 24 / 0.3);
+  color: var(--color-tour-ink);
+}
+@utility tour-bronze {
+  background: linear-gradient(135deg, var(--color-bronze) 0%, var(--color-bronze-mid) 55%, var(--color-bronze-light) 100%);
+  color: var(--color-on-dark);
+}
+@utility tour-bronze-soft {
+  background: linear-gradient(135deg, var(--color-bronze), var(--color-bronze-mid));
+  color: var(--color-on-dark);
+}
+@utility tour-scrim {
+  background-image: linear-gradient(180deg, rgb(43 32 24 / 0.05) 0%, rgb(43 32 24 / 0.35) 100%);
+}
+/* Spotlighten glider via left/top/width/height (inline style). Ingen klickyta. */
+@utility tour-spot {
+  position: fixed;
+  pointer-events: none;
+  z-index: 70;
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1), top 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.6s cubic-bezier(0.4, 0, 0.2, 1), height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: var(--shadow-spotlight);
+}
+@utility tour-spot-still {
+  transition: none;
+}
+/* Info-rad som bara syns när visningen är aktiv (html[data-tour-on], satt av visningen). */
+@utility tour-note {
+  display: none;
+  :root[data-tour-on] & {
+    display: flex;
+  }
+}
+/* WP-72: företagsvyns demo — kalender + 390 px högerkolumn. */
+@utility grid-cols-agenda-demo {
+  grid-template-columns: minmax(0, 1fr) 390px;
 }

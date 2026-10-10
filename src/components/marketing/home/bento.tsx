@@ -1,4 +1,4 @@
-// Sektion 4: Funktioner-bento över ett hudterapeut-foto med glasrutor (WP-71,
+// Sektion 4: Funktioner-bento över ett foto med glasrutor (WP-71,
 // SidaP3.dc.html). Den stora rutan är betalning vid bokning på SE och påminnelser på CL
 // (marknadens texter, se `copy.home.bento.grande`).
 import { Check, Star, Zap } from "lucide-react";
@@ -17,7 +17,7 @@ export function Bento() {
   return (
     <section className="relative overflow-hidden text-on-dark">
       <Image
-        src="/marketing/hudterapeut.webp"
+        src="/marketing/bento.webp"
         alt=""
         fill
         sizes="100vw"

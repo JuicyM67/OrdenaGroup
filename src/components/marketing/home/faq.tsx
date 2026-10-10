@@ -29,7 +29,7 @@ export function Faq() {
             >
               <summary className="flex cursor-pointer list-none items-center justify-between gap-5 rounded-event text-16 font-bold focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ink sm:text-18">
                 {item.pregunta}
-                <span className="flex size-9 flex-none items-center justify-center rounded-event bg-canvas group-open:bg-surface">
+                <span className="flex size-9 flex-none items-center justify-center rounded-full bg-canvas group-open:bg-surface">
                   <ChevronDown
                     aria-hidden="true"
                     className="size-4 transition-transform duration-300 group-open:rotate-180"

@@ -12,9 +12,9 @@ import type {
   WaitlistFormOutput,
 } from "@/components/booking/form-schema";
 import type { BookingActionResult } from "@/components/booking/types";
-import { brand } from "@/config/brand";
+import { brand, market } from "@/config/brand";
 import { href } from "@/config/routes";
-import { planes, reserva } from "@/i18n";
+import { planes, reserva, visita } from "@/i18n";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { findValidOfferIn, isOfferTokenShape } from "@/server/bookings/offer";
 import {
@@ -207,8 +207,14 @@ export default async function ReservaPage({
     reviews?.hasMore && reviews.items.length < PUBLIC_REVIEWS_MAX
       ? `${queryString("resenas", reviews.items.length + PUBLIC_REVIEWS_PAGE * 4)}#${anchor("resenas")}`
       : undefined;
+  // WP-72: guidad visning, bara på marknadens demoföretag (aldrig riktiga företag).
+  // Stripe-raden finns bara i SE och visas bara medan visningen pågår.
+  const isDemo = slug === brand.demoSlug;
   const profileContent = p ? (
     <ProfileBrowse
+      paymentNote={
+        isDemo && market === "SE" ? visita.cliente.pagoNota : undefined
+      }
       data={data}
       profile={p}
       social={social}
@@ -221,6 +227,7 @@ export default async function ReservaPage({
     <>
       <BookingScreen
         profileContent={profileContent}
+        tour={isDemo}
         offerNotice={pagoNotice ?? offerNotice}
         data={data}
         initialSelection={initialSelection}

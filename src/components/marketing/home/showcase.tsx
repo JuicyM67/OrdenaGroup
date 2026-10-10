@@ -6,6 +6,8 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { brand } from "@/config/brand";
+import { href } from "@/config/routes";
+import { visita } from "@/i18n";
 import { copy } from "@/i18n/marketing";
 
 import { DemoCover, DemoLogo, DemoStaff } from "./demo-assets";
@@ -56,6 +58,12 @@ export function Showcase() {
             >
               <ArrowRight className="size-4.5" strokeWidth={2.5} />
             </span>
+          </Link>
+          <Link
+            href={href("ejemploNegocio")}
+            className="self-start text-15 font-semibold text-on-dark underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-dark"
+          >
+            {visita.negocio.enlaceInicio}
           </Link>
         </div>
 
@@ -159,7 +167,7 @@ export function Showcase() {
                     size={44}
                     className="size-11 rounded-avatar"
                   />
-                  <span className="flex size-11 items-center justify-center rounded-avatar bg-lavender text-12 font-bold">
+                  <span className="flex size-11 items-center justify-center rounded-full bg-lavender text-12 font-bold">
                     {d.equipoMas}
                   </span>
                 </span>
