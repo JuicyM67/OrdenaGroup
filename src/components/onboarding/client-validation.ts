@@ -32,6 +32,11 @@ const RESERVED_SLUGS = new Set([
   "legal",
   "terminos",
   "privacidad",
+  // WP-68 (D-056): samma som RESERVED_SLUGS i schemas.ts.
+  "descubre",
+  "upptack",
+  "oferta",
+  "erbjudande",
 ]);
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;

@@ -19,6 +19,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { expireRequests } from "@/server/bookings/confirm";
 import { pgErrorCode } from "@/server/db/errors";
+import { runGeocodeSweep } from "@/server/geocoding";
 import { processOutbox } from "@/server/messaging/outbox";
 import { runStripeSweep } from "@/server/payments/stripe/reconcile";
 import { queueReviewRequests } from "@/server/reviews/requests";
@@ -97,6 +98,16 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
+  // WP-68 (D-056): geokoda några få företag med ändrad adress (Nominatim,
+  // 1 anrop/s). Ett fel här stoppar aldrig utkorgen.
+  let geocoded = { ok: 0, notFound: 0, skipped: 0 };
+  try {
+    geocoded = await runGeocodeSweep();
+  } catch (e) {
+    console.error("outbox: runGeocodeSweep misslyckades", {
+      code: pgErrorCode(e) ?? "unknown",
+    });
+  }
   const result = await processOutbox({ limit: CRON_LIMIT });
   // Bara räknare (regel hård 8: ingen persondata i loggar).
   console.log("outbox: pass klart", {
@@ -104,6 +115,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     waitlistExpired,
     reviewRequests,
     stripe,
+    geocoded,
     ...result,
   });
   return NextResponse.json({
@@ -112,6 +124,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     waitlistExpired,
     reviewRequests,
     stripe,
+    geocoded,
   });
 }
 

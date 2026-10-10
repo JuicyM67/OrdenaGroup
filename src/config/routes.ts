@@ -477,6 +477,65 @@ function seMarketingPagePairs(): { source: string; destination: string }[] {
   return [...funciones, ...rubros];
 }
 
+// ---------------------------------------------------------------------------
+// Marknadsplatsen (WP-68, D-056). Filsystemet (CL): `src/app/(consumer)/descubre/**`
+// och `src/app/(consumer)/oferta/[slug]`. SE: `/upptack`, `/upptack/karta`,
+// `/upptack/<kategori>[/<ort>]`, `/erbjudande/<slug>` (rewrites/redirects nedan).
+// Kategorislugsen per marknad finns i `marketplace.ts`. I CL är ytan dold (404).
+// ---------------------------------------------------------------------------
+export type MarketplaceRouteId = "descubre" | "descubreMapa" | "oferta";
+
+const CL_MARKETPLACE: Record<MarketplaceRouteId, string> = {
+  descubre: "/descubre",
+  descubreMapa: "/descubre/mapa",
+  oferta: "/oferta",
+};
+
+const SE_MARKETPLACE: Record<MarketplaceRouteId, string> = {
+  descubre: "/upptack",
+  descubreMapa: "/upptack/karta",
+  oferta: "/erbjudande",
+};
+
+/** Segment som inte får bli en kategori- eller ortslug (krockar med kartan). */
+export const MARKETPLACE_RESERVED_SEGMENTS: readonly string[] = [
+  "mapa",
+  "karta",
+];
+
+/** Länk till marknadsplatsen. Extra segment (kategori, ort, erbjudandets slug) läggs
+ * på i ordning: `hrefMarketplace("descubre", "har", "sodermalm")` → `/upptack/har/sodermalm`. */
+export function hrefMarketplace(
+  id: MarketplaceRouteId,
+  ...segments: readonly string[]
+): string {
+  const base = (market === "SE" ? SE_MARKETPLACE : CL_MARKETPLACE)[id];
+  return [base, ...segments.map((x) => encodeURIComponent(x))].join("/");
+}
+
+function seMarketplacePairs(): { source: string; destination: string }[] {
+  // Kartan före `:kategori`, annars fångas `/upptack/karta` som en kategori.
+  return [
+    { source: SE_MARKETPLACE.descubre, destination: CL_MARKETPLACE.descubre },
+    {
+      source: SE_MARKETPLACE.descubreMapa,
+      destination: CL_MARKETPLACE.descubreMapa,
+    },
+    {
+      source: `${SE_MARKETPLACE.descubre}/:categoria`,
+      destination: `${CL_MARKETPLACE.descubre}/:categoria`,
+    },
+    {
+      source: `${SE_MARKETPLACE.descubre}/:categoria/:ciudad`,
+      destination: `${CL_MARKETPLACE.descubre}/:categoria/:ciudad`,
+    },
+    {
+      source: `${SE_MARKETPLACE.oferta}/:slug`,
+      destination: `${CL_MARKETPLACE.oferta}/:slug`,
+    },
+  ];
+}
+
 /** `{ source, destination }`-par: svensk slug → befintlig (spansk) sidfilsrutt. Bara SE
  * (`next.config.ts` anropar den här funktionen enbart när `NEXT_PUBLIC_MARKET=SE`). */
 export function seRouteRewrites(): { source: string; destination: string }[] {
@@ -492,7 +551,13 @@ export function seRouteRewrites(): { source: string; destination: string }[] {
     source: toRewritePath(SE_APP_ROUTES[id]),
     destination: toRewritePath(CL_APP_ROUTES[id]),
   }));
-  return [...rutter, ...marknadsSidor, ...legal, ...appRutter];
+  return [
+    ...rutter,
+    ...marknadsSidor,
+    ...legal,
+    ...appRutter,
+    ...seMarketplacePairs(),
+  ];
 }
 
 /** `{ source, destination, permanent }`-par: gamla spanska sökvägar → nya svenska (308),
@@ -526,7 +591,18 @@ export function seRouteRedirects(): {
     destination: toRewritePath(SE_APP_ROUTES[id]),
     permanent: true as const,
   }));
-  return [...rutter, ...marknadsSidor, ...legal, ...appRutter];
+  const marknadsplats = seMarketplacePairs().map(({ source, destination }) => ({
+    source: destination,
+    destination: source,
+    permanent: true as const,
+  }));
+  return [
+    ...rutter,
+    ...marknadsSidor,
+    ...legal,
+    ...appRutter,
+    ...marknadsplats,
+  ];
 }
 
 /** Gamla svenska sökvägar som bytt namn → nuvarande (308), så delade länkar inte bryts.

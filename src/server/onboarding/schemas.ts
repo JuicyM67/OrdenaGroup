@@ -46,6 +46,11 @@ export const RESERVED_SLUGS = [
   "legal",
   "terminos",
   "privacidad",
+  // WP-68 (D-056): marknadsplatsens toppsegment, båda språken.
+  "descubre",
+  "upptack",
+  "oferta",
+  "erbjudande",
 ] as const;
 
 // Samma nycklar som `negocio.rubros` (src/i18n/es-CL.ts). Hålls i synk manuellt (som
