@@ -336,3 +336,111 @@ values ('b0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-0000009
 -- skapas bara den egna marknadens demo (deploy-staging.yml, /api/cron/retention).
 select private.seed_demo('CL');
 select private.seed_demo('SE');
+
+-- WP-68 (D-056): påhittade SE-salonger runt Södermalm/Vasastan för marknadsplatsen
+-- (upptäck, karta, blixttider, verifierade recensioner) lokalt och i e2e. BARA
+-- lokalt: seed.sql körs aldrig i staging/prod. Fasta id:n `ad00000N-…`.
+do $$
+declare
+  r record;
+  v_staff uuid;
+  v_svc uuid;
+  v_cust uuid;
+  v_book uuid;
+  v_start timestamptz;
+  i int;
+  v_names text[] := array['Sara Lind', 'Johan Berg', 'Amina Ali', 'Erik Holm', 'Lina Ek'];
+  v_comments text[] := array[
+    'Supertrevligt bemötande och precis det jag ville ha. Kommer tillbaka!',
+    'Lugnt, proffsigt och i tid.',
+    null,
+    'Bästa behandlingen jag fått på länge.',
+    'Enkelt att boka och jättebra resultat.'
+  ];
+begin
+  for r in
+    select * from (values
+      (1, 'hudrummet', 'Hudrummet', 'estetica', 'Götgatan 41, 118 26 Stockholm', 59.31440, 18.07250, 'sodermalm', 'Södermalm',
+       'Ansiktsbehandling 60 min', 99500, 59700, 'hudvard', '/marketing/hudvard.webp', false, 'ansiktsbehandling-60-min-a1'),
+      (2, 'nagelstudion-soder', 'Nagelstudion', 'unas', 'Hornsgatan 58, 118 21 Stockholm', 59.31790, 18.06190, 'sodermalm', 'Södermalm',
+       'Gellack + manikyr', 69500, 49500, 'naglar', '/marketing/naglar.webp', true, 'gellack-och-manikyr-a2'),
+      (3, 'studio-mosebacke', 'Studio Mosebacke', 'peluqueria', 'Mosebacke torg 3, 116 46 Stockholm', 59.31830, 18.07560, 'sodermalm', 'Södermalm',
+       'Färgning + klippning', 185000, 139000, 'har', '/marketing/makeup.webp', false, 'fargning-och-klippning-a3'),
+      (4, 'kroppsrum', 'Kroppsrum', 'masajes', 'Upplandsgatan 12, 113 60 Stockholm', 59.34230, 18.04650, 'vasastan', 'Vasastan',
+       'Klassisk massage 50 min', 79500, 63600, 'massage', '/marketing/massage.webp', true, 'klassisk-massage-50-min-a4'),
+      (5, 'barberaren-soder', 'Barberaren Söder', 'barberia', 'Skånegatan 70, 116 37 Stockholm', 59.31310, 18.07890, 'sodermalm', 'Södermalm',
+       'Herrklippning + skägg', 56000, 42000, 'har', '/marketing/barberare.webp', true, 'herrklippning-och-skagg-a5')
+    ) as t(n, slug, name, category, address, lat, lng, area_slug, area_name, offer, regular, price, ocat, img, flash, oslug)
+  loop
+    insert into public.businesses (
+      id, slug, name, comuna, category, timezone, address, plan, status,
+      lat, lng, area_slug, area_name, geocode_status, geocoded_at, about
+    ) values (
+      ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, r.slug, r.name, r.area_name,
+      r.category, 'Europe/Stockholm', r.address, 'equipo', 'active',
+      r.lat, r.lng, r.area_slug, r.area_name, 'manual', now(),
+      'Påhittad salong för lokal utveckling av marknadsplatsen.'
+    );
+    v_staff := ('ad00000' || r.n || '-0000-0000-0001-000000000001')::uuid;
+    insert into public.staff (id, business_id, name, color, active)
+    values (v_staff, ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, 'Alex', 'staff-1', true);
+    v_svc := ('ad00000' || r.n || '-0000-0000-0003-000000000001')::uuid;
+    insert into public.services (id, business_id, name, duration_min, price_clp, active)
+    values (v_svc, ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, r.offer, 60, r.regular, true);
+    insert into public.staff_services (business_id, staff_id, service_id)
+    values (('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, v_staff, v_svc);
+
+    insert into public.offers (
+      id, business_id, service_id, slug, title, description, includes, terms,
+      image_url, regular_price_minor, offer_price_minor, currency, category, status, published_at
+    ) values (
+      ('ad00000' || r.n || '-0000-0000-0009-000000000001')::uuid,
+      ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, v_svc,
+      r.oslug, r.offer,
+      'Ett erbjudande från ' || r.name || ' på ' || r.area_name || '.',
+      array['Konsultation', r.offer, 'Ca 60 min'],
+      'Gäller nya och befintliga kunder. Fri avbokning upp till 24 h före.',
+      r.img, r.regular, r.price, 'SEK', r.ocat, 'published', now() - make_interval(days => r.n)
+    );
+
+    -- Fem genomförda bokningar med verifierade recensioner (D-045).
+    for i in 1..5 loop
+      v_cust := ('ad00000' || r.n || '-0000-0000-0004-00000000000' || i)::uuid;
+      insert into public.customers (id, business_id, name, phone_e164)
+      values (v_cust, ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, v_names[i],
+              '+4670' || lpad((r.n * 100000 + i)::text, 7, '0'));
+      v_book := ('ad00000' || r.n || '-0000-0000-0005-00000000000' || i)::uuid;
+      v_start := date_trunc('hour', now()) - make_interval(days => 3 + i * 4);
+      insert into public.bookings (
+        id, business_id, staff_id, service_id, customer_id, period, blocked,
+        status, source, price_clp
+      ) values (
+        v_book, ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, v_staff, v_svc, v_cust,
+        tstzrange(v_start, v_start + interval '60 minutes', '[)'),
+        tstzrange(v_start, v_start + interval '60 minutes', '[)'),
+        'completed', 'web', r.regular
+      );
+      insert into public.reviews (
+        business_id, booking_id, customer_id, rating, comment, display_name, reply, replied_at, created_at
+      ) values (
+        ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, v_book, v_cust,
+        case when i = 3 then 4 else 5 end, v_comments[i],
+        split_part(v_names[i], ' ', 1) || ' ' || left(split_part(v_names[i], ' ', 2), 1) || '.',
+        case when i = 1 then 'Tack ' || split_part(v_names[i], ' ', 1) || ', välkommen åter!' end,
+        case when i = 1 then v_start + interval '2 days' end,
+        v_start + interval '1 day'
+      );
+    end loop;
+
+    if r.flash then
+      insert into public.flash_slots (business_id, staff_id, service_ids, starts_at, ends_at, discount_pct, status, created_by)
+      values (
+        ('ad00000' || r.n || '-0000-0000-0000-000000000001')::uuid, v_staff, array[v_svc],
+        date_trunc('hour', now()) + make_interval(hours => 1 + r.n),
+        date_trunc('hour', now()) + make_interval(hours => 2 + r.n),
+        20 + r.n * 2, 'active', 'b0000000-0000-0000-0000-000000900001'
+      );
+    end if;
+  end loop;
+end;
+$$;
