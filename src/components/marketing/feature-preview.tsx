@@ -99,7 +99,7 @@ function LinkPreview() {
               key={i}
               aria-hidden="true"
               className={cn(
-                "flex size-8.5 items-center justify-center rounded-icon",
+                "flex size-8.5 items-center justify-center rounded-full",
                 item.tone === "dark"
                   ? "bg-ink text-on-dark"
                   : "bg-surface text-ink",

@@ -229,7 +229,7 @@ export function SiteHeader({ className }: { className?: string }) {
                               >
                                 <span
                                   aria-hidden="true"
-                                  className={`flex size-9.5 shrink-0 items-center justify-center rounded-event ${TONE_CLASS[ui.tone]}`}
+                                  className={`flex size-9.5 shrink-0 items-center justify-center rounded-full ${TONE_CLASS[ui.tone]}`}
                                 >
                                   <ui.icon
                                     className="size-4.5"

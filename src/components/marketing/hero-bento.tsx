@@ -301,7 +301,7 @@ function LinkTile() {
               key={i}
               aria-hidden="true"
               className={cn(
-                "flex size-9 animate-hero-share items-center justify-center rounded-icon",
+                "flex size-9 animate-hero-share items-center justify-center rounded-full",
                 item.tone === "dark"
                   ? "bg-ink text-on-dark"
                   : "bg-surface text-ink",

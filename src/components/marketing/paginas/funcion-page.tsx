@@ -71,7 +71,7 @@ export function FuncionPage({ id }: { id: FuncionId }) {
                 >
                   <span
                     aria-hidden="true"
-                    className={`flex size-11.5 items-center justify-center rounded-avatar ${TONE_CLASS[tones[i]!]}`}
+                    className={`flex size-11.5 items-center justify-center rounded-full ${TONE_CLASS[tones[i]!]}`}
                   >
                     <Icon className="size-5" strokeWidth={2} />
                   </span>
@@ -103,7 +103,7 @@ export function FuncionPage({ id }: { id: FuncionId }) {
                     className="flex items-start gap-3.5 border-t border-line-strong py-4"
                   >
                     <span
-                      className={`flex size-9.5 flex-none items-center justify-center rounded-event font-bold ${i === 2 ? "bg-lime" : "bg-canvas"}`}
+                      className={`flex size-9.5 flex-none items-center justify-center rounded-full font-bold ${i === 2 ? "bg-lime" : "bg-canvas"}`}
                     >
                       {i + 1}
                     </span>
@@ -136,7 +136,7 @@ export function FuncionPage({ id }: { id: FuncionId }) {
                     >
                       <span
                         aria-hidden="true"
-                        className={`flex size-10.5 flex-none items-center justify-center rounded-icon ${TONE_CLASS[rui.tone]}`}
+                        className={`flex size-10.5 flex-none items-center justify-center rounded-full ${TONE_CLASS[rui.tone]}`}
                       >
                         <rui.icon className="size-4.5" strokeWidth={2} />
                       </span>

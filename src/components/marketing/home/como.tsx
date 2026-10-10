@@ -31,8 +31,8 @@ export function Como() {
                 <span
                   className={
                     k === 3
-                      ? "flex size-11 flex-none items-center justify-center rounded-avatar bg-lime font-bold text-ink"
-                      : "flex size-11 flex-none items-center justify-center rounded-avatar bg-canvas font-bold text-ink"
+                      ? "flex size-11 flex-none items-center justify-center rounded-full bg-lime font-bold text-ink"
+                      : "flex size-11 flex-none items-center justify-center rounded-full bg-canvas font-bold text-ink"
                   }
                 >
                   {String(k + 1).padStart(2, "0")}

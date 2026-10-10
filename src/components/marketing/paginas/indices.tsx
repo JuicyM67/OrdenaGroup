@@ -73,7 +73,7 @@ export function FuncionesIndexTop() {
                 >
                   <span
                     aria-hidden="true"
-                    className={`flex size-11 flex-none items-center justify-center rounded-avatar ${TONE_CLASS[ui.tone]}`}
+                    className={`flex size-11 flex-none items-center justify-center rounded-full ${TONE_CLASS[ui.tone]}`}
                   >
                     <ui.icon className="size-5" strokeWidth={2} />
                   </span>

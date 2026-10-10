@@ -29,8 +29,10 @@ export function TrustRow({ className }: { className?: string }) {
       {copy.home.confianza.map((c) => {
         const Icon = TRUST_ICONS[c.id] ?? Lock;
         return (
-          <li key={c.id} className="flex items-center gap-1.5">
-            <Icon className="size-3.5" strokeWidth={2} aria-hidden="true" />
+          <li key={c.id} className="flex items-center gap-2">
+            <span className="flex size-7 flex-none items-center justify-center rounded-full bg-surface/20 backdrop-blur-glass">
+              <Icon className="size-3.5" strokeWidth={2} aria-hidden="true" />
+            </span>
             {c.texto}
           </li>
         );

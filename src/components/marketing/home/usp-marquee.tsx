@@ -55,7 +55,7 @@ function UspCard({ index }: { index: number }) {
     <div className="flex h-32 w-48 flex-none flex-col justify-between rounded-card p-3.5 glass-light transition-all duration-300 ease-out hover:-translate-y-1.5 hover:scale-102 lg:h-37.5 lg:w-57.5 lg:p-4.5">
       <span
         className={cn(
-          "flex size-10 items-center justify-center rounded-avatar text-ink",
+          "flex size-10 items-center justify-center rounded-full text-ink",
           TONES[index % TONES.length],
         )}
       >

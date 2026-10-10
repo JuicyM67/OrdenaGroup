@@ -49,7 +49,7 @@ export function FuncionesPanel() {
                     <Link href={hrefFuncion(id)} className={itemClass}>
                       <span
                         aria-hidden="true"
-                        className={`flex size-11 shrink-0 items-center justify-center rounded-avatar ${TONE_CLASS[ui.tone]}`}
+                        className={`flex size-11 shrink-0 items-center justify-center rounded-full ${TONE_CLASS[ui.tone]}`}
                       >
                         <ui.icon className="size-4.5" strokeWidth={2} />
                       </span>
