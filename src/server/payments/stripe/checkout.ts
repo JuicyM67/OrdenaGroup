@@ -3,6 +3,7 @@ import "server-only";
 import { createHash } from "node:crypto";
 
 import { marketConfig } from "@/config/market";
+import { can } from "@/config/plans";
 import { queryString } from "@/config/url-params";
 import {
   ONLINE_PAYMENT_MIN_MINOR,
@@ -62,8 +63,12 @@ export async function effectiveOnlinePayment(
   businessId: string,
 ): Promise<OnlinePaymentMode> {
   if (!stripeEnabled()) return "off";
-  const r = await q.query<{ online_payment: OnlinePaymentMode; ok: boolean }>(
-    `select b.online_payment,
+  const r = await q.query<{
+    online_payment: OnlinePaymentMode;
+    ok: boolean;
+    plan: string;
+  }>(
+    `select b.online_payment, b.plan::text as plan,
             coalesce(sa.charges_enabled, false) as ok
        from public.businesses b
        left join public.stripe_accounts sa on sa.business_id = b.id
@@ -71,7 +76,10 @@ export async function effectiveOnlinePayment(
     [businessId],
   );
   const row = r.rows[0];
-  return row?.ok ? row.online_payment : "off";
+  // WP-73 (D-048): pausad (inställningen ligger kvar) när planen saknar
+  // betalning vid bokning.
+  if (!row || !can(row.plan, "online_payment")) return "off";
+  return row.ok ? row.online_payment : "off";
 }
 
 /** Deterministisk uuid för checkout-raden: ett omförsök efter ett tappat svar

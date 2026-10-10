@@ -3,6 +3,8 @@ import { expect, test } from "@playwright/test";
 
 import { reserva } from "../src/i18n";
 
+import { pickFirstFreeSlot } from "./helpers/pick-slot";
+
 /**
  * Reserva mot riktig data (WP-20): `/barberia-norte` är seed-företaget
  * (`supabase/seed.sql`), inte en fixture. Tiderna räknas av schemamotorn i
@@ -31,18 +33,8 @@ test.describe("Reserva (riktig data) — /barberia-norte", () => {
       page.getByRole("button", { name: /Corte clásico/ }),
     ).toHaveAttribute("aria-pressed", "true");
 
-    // Första lediga dagen (schemamotorn, "Cualquiera" är förvalt) — seedens
-    // öppettider (mån–lör 10:00–19:00, 21 dagars fönster) ger alltid minst en.
-    const daySection = page.locator('[aria-labelledby="paso-dia-hora"]');
-    const firstDay = daySection.getByRole("button").first();
-    await firstDay.waitFor();
-    await firstDay.click();
-
-    const firstTime = page
-      .getByRole("button", { name: /Elegir la hora/ })
-      .first();
-    await firstTime.waitFor();
-    await firstTime.click();
+    // Första dag med ledig tid (schemamotorn, "Cualquiera" är förvalt).
+    await pickFirstFreeSlot(page);
 
     await page
       .getByRole("button", { name: reserva.bookingBar.ctaReservar })

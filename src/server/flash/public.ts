@@ -2,6 +2,7 @@ import "server-only";
 
 import type { BookingPageData } from "@/components/booking/types";
 import type { BookingSelection } from "@/components/booking/flow-state";
+import { can } from "@/config/plans";
 import { memberDiscountMinor } from "@/server/bookings/member";
 import type { Queryable } from "@/server/db/pool";
 
@@ -28,6 +29,12 @@ export async function loadActiveFlashSlotsIn(
   businessId: string,
   now: Date,
 ): Promise<PublicFlashSlot[]> {
+  // WP-73 (D-048): blixttider visas bara när planen har dem.
+  const plan = await q.query<{ plan: string }>(
+    `select plan::text as plan from public.businesses where id = $1`,
+    [businessId],
+  );
+  if (!can(plan.rows[0]?.plan ?? "free", "flash")) return [];
   const r = await q.query<{
     id: string;
     staff_id: string;

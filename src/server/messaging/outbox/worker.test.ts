@@ -121,6 +121,11 @@ vi.mock("@/server/messaging/sms", () => ({
     (sendSmsMock as (...a: unknown[]) => unknown)(...args),
 }));
 
+// WP-73: sms-kvoten (planspärren) har egen täckning; här är den alltid öppen.
+vi.mock("@/server/plans/entitlements", () => ({
+  reserveSmsQuotaIn: async () => true,
+}));
+
 const { nextRetry, processOutbox } = await import("./worker");
 
 const BIZ = "b0000000-0000-4000-8000-000000000001";

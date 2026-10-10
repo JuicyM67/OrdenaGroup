@@ -8,6 +8,7 @@ import { actorMember, canManageStaffBookings } from "@/server/bookings/authz";
 import { pgErrorCode } from "@/server/db/errors";
 import type { Queryable } from "@/server/db/pool";
 import { savepoint, withOwnerTx } from "@/server/db/tx";
+import { loadPlanIn, planCan } from "@/server/plans/entitlements";
 import { systemClock } from "@/server/scheduling/clock";
 import { eligibleStaff, needMs } from "@/server/scheduling/core/slots";
 import { freeWindows } from "@/server/scheduling/core/windows";
@@ -43,7 +44,11 @@ export type CreateFlashSlotInput = z.input<typeof createFlashSchema>;
 
 export type CreateFlashSlotResult =
   | { ok: true; id: string }
-  | { ok: false; code: "forbidden" | "not_free" | "overlap" | "invalid_input" };
+  | {
+      ok: false;
+      code:
+        "forbidden" | "not_free" | "overlap" | "invalid_input" | "plan_locked";
+    };
 
 const MIN = 60_000;
 /** En flash-tid får vara högst ett dygn lång. */
@@ -137,6 +142,11 @@ export async function createFlashSlot(
       );
       if (!member || !canManageStaffBookings(member, p.data.staffId)) {
         throw new Fail("forbidden");
+      }
+      // WP-73 (D-048): nya blixttider kräver Team+. Befintliga aktiva
+      // blixttider ligger kvar efter en nedgradering (de går ut av sig själva).
+      if (!planCan(await loadPlanIn(q, businessId), "flash")) {
+        throw new Fail("plan_locked");
       }
       const free = await isFreeIn(q, {
         businessId,

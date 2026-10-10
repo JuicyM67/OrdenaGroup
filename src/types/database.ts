@@ -460,6 +460,7 @@ export type Database = {
           comuna: string;
           cover_url: string | null;
           created_at: string;
+          custom_limits: NonNullable<Json>;
           deletion_requested_at: string | null;
           facebook: string | null;
           id: string;
@@ -502,6 +503,7 @@ export type Database = {
           comuna: string;
           cover_url?: string | null;
           created_at?: string;
+          custom_limits?: NonNullable<Json>;
           deletion_requested_at?: string | null;
           facebook?: string | null;
           id?: string;
@@ -544,6 +546,7 @@ export type Database = {
           comuna?: string;
           cover_url?: string | null;
           created_at?: string;
+          custom_limits?: NonNullable<Json>;
           deletion_requested_at?: string | null;
           facebook?: string | null;
           id?: string;
@@ -1127,6 +1130,7 @@ export type Database = {
           next_attempt_at: string;
           payload: NonNullable<Json>;
           provider_message_id: string | null;
+          quota_reserved_at: string | null;
           recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at: string | null;
           status: Database["public"]["Enums"]["message_outbox_status"];
@@ -1146,6 +1150,7 @@ export type Database = {
           next_attempt_at?: string;
           payload?: NonNullable<Json>;
           provider_message_id?: string | null;
+          quota_reserved_at?: string | null;
           recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at?: string | null;
           status?: Database["public"]["Enums"]["message_outbox_status"];
@@ -1165,6 +1170,7 @@ export type Database = {
           next_attempt_at?: string;
           payload?: NonNullable<Json>;
           provider_message_id?: string | null;
+          quota_reserved_at?: string | null;
           recipient_kind?: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at?: string | null;
           status?: Database["public"]["Enums"]["message_outbox_status"];
@@ -1900,7 +1906,7 @@ export type Database = {
         | "no_show"
         | "cancel_requested"
         | "cancelled";
-      business_plan: "free" | "emprende" | "equipo" | "local";
+      business_plan: "free" | "emprende" | "equipo" | "local" | "custom";
       business_status: "active" | "frozen";
       campaign_status: "draft" | "sent";
       consent_channel: "web" | "whatsapp" | "manual";
@@ -2072,7 +2078,7 @@ export const Constants = {
         "cancel_requested",
         "cancelled",
       ],
-      business_plan: ["free", "emprende", "equipo", "local"],
+      business_plan: ["free", "emprende", "equipo", "local", "custom"],
       business_status: ["active", "frozen"],
       campaign_status: ["draft", "sent"],
       consent_channel: ["web", "whatsapp", "manual"],

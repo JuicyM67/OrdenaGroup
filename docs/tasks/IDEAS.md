@@ -122,3 +122,11 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Importera personalens arbetstider och vilka tjänster var och en utför, om plattformen visar det.
 - Fler plattformar i allowlisten (t.ex. Setmore, SimplyBook, Vagaro) efter efterfrågan.
 - Admin-vy över `ai_import_runs` (kostnad per månad, andel lyckade per plattform).
+
+## Uppskjutet från WP-73 (planspärrar, 2026-10-11)
+- Byt plan själv i appen: Stripe Billing (SE) / Flow (CL) med Checkout + kundportal, webhook som sätter `businesses.plan`. Tills dess går "Byt plan" till prissidan och "Kontakta oss" till kontaktsidan, och admin sätter planen i `/admin`.
+- Extra sms-paket (köp fler sms när kvoten tar slut) i stället för bara uppgradering.
+- Låsikon på låsta poster även i huvudmenyn (Blixttider) och i Mer-arket — i dag bara i Inställningar-flikarna och som ruta på sidan.
+- Varning till ägaren (e-post/klocka) när 80 % av månadens sms-kvot är använd.
+- Kontaktformulär för Skräddarsytt (via outbox till plattformsägaren) i stället för länk till kontaktsidan.
+- Plan-texterna i `planes` (es-CL/sv-SE) granskas av copywriter-es-cl.

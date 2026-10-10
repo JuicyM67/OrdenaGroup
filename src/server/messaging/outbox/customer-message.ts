@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 
 import { withOwnerTx, withServiceTx } from "@/server/db/tx";
 import { hitRateLimit } from "@/server/db/rate-limit";
+import { smsRemainingIn } from "@/server/plans/entitlements";
 
 import { kickOutbox } from "./kick";
 
@@ -44,7 +45,8 @@ export type SendCustomerMessageError =
   | "no_phone" // el cliente no tiene un celular válido
   | "empty" // texto vacío (después de trim)
   | "too_long" // > MAX_MESSAGE_LENGTH caracteres
-  | "rate_limited";
+  | "rate_limited"
+  | "sms_quota"; // WP-73 (D-048): planens sms-kvot för månaden är slut
 
 export type SendCustomerMessageResult =
   { ok: true } | { ok: false; error: SendCustomerMessageError };
@@ -81,6 +83,12 @@ export async function sendCustomerMessage(
   });
   if (!row?.allowed) return { ok: false, error: "forbidden" };
   if (!row.has_phone) return { ok: false, error: "no_phone" };
+  const smsLeft = await withServiceTx((q) =>
+    smsRemainingIn(q, input.businessId),
+  );
+  if (smsLeft !== null && smsLeft <= 0) {
+    return { ok: false, error: "sms_quota" };
+  }
 
   // Hashas inuti hitRateLimit (rate-limit.ts) — businessId är redan ogenomskinligt
   // (uuid), men subjektet hashas ändå av samma anledning som IP/telefon/e-post.

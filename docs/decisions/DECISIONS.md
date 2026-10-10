@@ -4,6 +4,24 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-048 · 2026-10-11 · Planspärrar per plan + planen Skräddarsytt/A medida (`custom`) (WP-73)
+**Varför:** ägaren har godkänt vad varje plan innehåller (Gratis/Starta/Team/Företag, CL Gratis/Emprende/Equipo/Local) och vill ha ett offertalternativ för kedjor. **Konsekvens:**
+- **En matris:** `src/config/plans.ts` (`can(plan, feature)`, `limit(plan, 'staff'|'services'|'sms')`). Gratis: 1 konto, max 3 aktiva tjänster, 0 sms, märkning "Skapad med …" på bokningssidan, ingen väntelista/betalning. Starta (`emprende`): 1 konto, 50 sms/mån, utan märkning, betalning vid bokning (SE), väntelista. Team (`equipo`): 3 konton, 150 sms, + blixttider, utskick/Vi saknar dig/medlemsrabatter, full kassa & rapporter, personalkonton. Företag (`local`): 10 konton, 300 sms, + prioriterad support. `custom`: allt, gränser från `businesses.custom_limits` (standard 10 konton/300 sms), sätts bara av plattformsadmin i `/admin` (loggas i `admin_audit_log`). Konton räknas som i D-037; `private.business_staff_limit(uuid)` ersätter `plan_staff_limit` i spärren.
+- **Spärrarna sitter på servern** (actions, route handlers, cron, outbox-workern) via `src/server/plans/entitlements.ts`; UI:t visar bara lås/uppgraderingsruta. Felkoder: `plan_locked`, `plan_limit_services`, `sms_quota`.
+- **Databasens skydd** (säkerhetsgranskning, `20261011070000_plan_db_guards.sql`, pgTAP 117): för rollen `authenticated` (PostgREST/ägarens JWT) nekar triggrar en fjärde aktiv tjänst på Gratis (23514, constraint `plan_limit_services`), nya blixttider utan Team och påslagen medlemsrabatt/"Vi saknar dig" utan Team (42501). `private.plan_has_feature` speglar matrisen i SQL. Ägaren kan inte längre lägga in `memberships` direkt (insert-grant och policyn "owners insert" borttagna) — medlemskap skapas bara av `create_business`/`accept_invitation`/servern. Service role/postgres (servern efter egen kontroll, admin, seed) spärras inte av triggrarna.
+- **Rabatter vid bokning:** medlemsrabatt (`bookings/member.ts`) och blixtrabatt (`bookings/create.ts`, och listningen på `/[slug]`, `flash/public.ts`) tillämpas bara när planen har funktionen — aktiva blixttider/rabatter efter en nedgradering är alltså pausade, inte borta.
+- **Sms-kvoten** räknas på skickade sms-rader i `message_outbox` per kalendermånad i installationens tidszon, alla mottagare (kund, ägare, utskick). Workern reserverar en plats per rad (`quota_reserved_at`) under `pg_advisory_xact_lock(hashtext('sms:'||business_id))` och räknar skickade + reserverade rader i `sending`, så parallella pass inte överskrider kvoten. Över kvoten avbryts sms-raden (`error = 'sms_quota'`); e-postraden som redan köas parallellt blir reserven. Utskick via sms nekas om mottagarna inte ryms i resterande kvot.
+- **Nedgradering raderar aldrig data:** aktiva tjänster över gränsen får vara kvar (nya/återaktiverade nekas), aktiva blixttider ligger kvar men visas/rabatteras inte förrän planen har blixttider igen, winback-cronen och väntelistans erbjudanden pausas, betalningsläget ignoreras (bokningssidan ser "off"), inställningar ligger kvar och gäller igen efter uppgradering. Rapportsidan visar uppgraderingsrutan i stället för rapporterna.
+- **Byte av plan** (Stripe Billing/Flow) finns inte än: Inställningar → Plan visar plan och användning, "Byt plan" går till prissidan och "Kontakta oss" till kontaktsidan (IDEAS). Skräddarsytt visas som ett band under plankorten med "Kontakta oss".
+- **Avgiftstexter (SE):** inga påståenden om "ingen provision"/"0 kr provision" utan förbehållet; standardmeningen `TARIFA.resumen` i `sv-SE.ts`: "Ingen avgift per bokning. När kunden betalar med kort tar vi 1 % + Stripes avgift." CL (ingen onlinebetalning) behåller "0 provisión por reserva".
+
+---
+
+### D-049 · 2026-10-10 · Ny logotyp för Booking Buddy (SE): "b-klockan" (WP-74)
+**Varför:** ägaren valde ett gement b vars rundel är en urtavla; den ersätter lime-pillen "Booking [Buddy]". **Konsekvens:** SE använder `BbMark`/`BrandLogo` (ordmärke "booking"600 + "buddy"800, Bricolage) överallt; CL (Ordena Calendar) behåller sin logotyp. Favicon/appikoner/manifest väljs per marknad (`icon.tsx`, `apple-icon.tsx`, `manifest.ts`), PNG genereras med `scripts/gen-brand-icons.mjs` till `public/brand/`. Mejl-layouten (alla mallar) fick lime-accentlist, tydligare rubrik och företagsuppgifter i sidfoten. Se DESIGN.md §14.
+
+---
+
 ### D-047 · 2026-10-10 · Plattformsavgift 1 % på alla planer (ersätter D-044:s 0 % på Företag)
 **Varför:** ägarens beslut — samma enkla regel för alla: 1 % per onlinebetalning, oavsett plan. **Konsekvens:** `PLATFORM_FEE_BPS` i `src/config/platform-fee.ts` är 100 bps för alla planer, även `local` (Företag), som tidigare var 0. Inga texter får påstå att Företag är avgiftsfri. Övrigt i D-044 gäller oförändrat.
 

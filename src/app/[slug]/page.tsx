@@ -13,7 +13,8 @@ import type {
 } from "@/components/booking/form-schema";
 import type { BookingActionResult } from "@/components/booking/types";
 import { brand, market } from "@/config/brand";
-import { reserva, visita } from "@/i18n";
+import { href } from "@/config/routes";
+import { planes, reserva, visita } from "@/i18n";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { findValidOfferIn, isOfferTokenShape } from "@/server/bookings/offer";
 import {
@@ -223,15 +224,28 @@ export default async function ReservaPage({
   ) : undefined;
 
   return (
-    <BookingScreen
-      profileContent={profileContent}
-      tour={isDemo}
-      offerNotice={pagoNotice ?? offerNotice}
-      data={data}
-      initialSelection={initialSelection}
-      submitBooking={submitBooking}
-      joinWaitlist={submitWaitlist}
-      initialMobileTab={reviews && reviewsExpanded ? "resenas" : undefined}
-    />
+    <>
+      <BookingScreen
+        profileContent={profileContent}
+        tour={isDemo}
+        offerNotice={pagoNotice ?? offerNotice}
+        data={data}
+        initialSelection={initialSelection}
+        submitBooking={submitBooking}
+        joinWaitlist={submitWaitlist}
+        initialMobileTab={reviews && reviewsExpanded ? "resenas" : undefined}
+      />
+      {/* WP-73 (D-048): diskret märkning på planen Gratis, serverrenderad. */}
+      {data.business.branded ? (
+        <p className="bg-canvas pt-4 pb-28 text-center text-12 text-muted lg:pb-6">
+          <a
+            href={href("inicio")}
+            className="underline-offset-2 hover:underline"
+          >
+            {planes.creadoCon({ marca: brand.name })}
+          </a>
+        </p>
+      ) : null}
+    </>
   );
 }

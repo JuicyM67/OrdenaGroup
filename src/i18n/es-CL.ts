@@ -4126,3 +4126,76 @@ export const importar = {
 
 // WP-72: recorrido guiado.
 export { visita } from "./es-CL.visita";
+
+// ---------------------------------------------------------------------------
+// planes (WP-73, D-048): nombres de plan, bloqueos con "Ver planes", resumen de
+// uso en Ajustes → Tu plan y la marca "Creado con …" en la página de reservas
+// del plan Gratis. La matriz vive en `src/config/plans.ts`.
+// ---------------------------------------------------------------------------
+
+export const planes = {
+  nombres: {
+    free: "Gratis",
+    emprende: "Emprende",
+    equipo: "Equipo",
+    local: "Local",
+    custom: "A medida",
+  },
+  funciones: {
+    unbranded: "Página de reservas sin nuestra marca",
+    online_payment: "Pago al reservar",
+    waitlist: "Lista de espera",
+    flash: "Horas flash",
+    campaigns: "Envíos, Te echamos de menos y socios",
+    full_reports: "Caja e informes completos",
+    staff_accounts: "Cuentas para tu equipo",
+    priority_support: "Soporte prioritario",
+  },
+  bloqueo: {
+    titulo: (p: { funcion: string; plan: string }): string =>
+      `${p.funcion} viene en el plan ${p.plan}`,
+    ganchos: {
+      unbranded: "Mejora tu plan y muestra solo tu marca.",
+      online_payment: "Mejora tu plan y cobra al reservar.",
+      waitlist:
+        "Mejora tu plan y no pierdas a nadie cuando se libere una hora.",
+      flash: "Mejora tu plan y llena tus horas vacías.",
+      campaigns: "Mejora tu plan y trae de vuelta a tus clientes.",
+      full_reports: "Mejora tu plan y mira tus números completos.",
+      staff_accounts: "Mejora tu plan y dale una cuenta a tu equipo.",
+      priority_support: "Mejora tu plan y te atendemos primero.",
+    },
+    verPlanes: "Ver planes",
+    bloqueado: "Bloqueado",
+  },
+  ajustes: {
+    titulo: "Tu plan",
+    planActual: "Plan actual",
+    usoTitulo: "Uso",
+    sms: "SMS enviados este mes",
+    cuentas: "Cuentas",
+    servicios: "Servicios activos",
+    deMax: (p: { usado: number; max: number }): string =>
+      `${p.usado} de ${p.max}`,
+    sinLimite: (p: { usado: number }): string => `${p.usado} · sin límite`,
+    incluye: "Qué incluye tu plan",
+    noIncluye: "No incluido",
+    cambiarPlan: "Cambiar plan",
+    contacto: "Contáctanos",
+    cambiarAyuda:
+      "Muy pronto podrás cambiar de plan desde acá. Por ahora, revisa los planes y escríbenos: lo cambiamos por ti.",
+    pausado:
+      "Si bajas de plan, no se borra nada: lo que no viene en el nuevo plan queda en pausa hasta que vuelvas a subir.",
+    smsAgotados:
+      "Se acabaron los SMS de este mes. Las confirmaciones y recordatorios salen por correo hasta el 1 del próximo mes.",
+  },
+  errores: {
+    plan_locked:
+      "Tu plan no incluye esta función. Revisa los planes para activarla.",
+    plan_limit_services:
+      "Tu plan permite hasta 3 servicios activos. Mejora tu plan para agregar más.",
+    sms_quota:
+      "Se acabaron los SMS de tu plan este mes. Mejora tu plan o espera al próximo mes.",
+  },
+  creadoCon: (p: { marca: string }): string => `Creado con ${p.marca}`,
+} as const satisfies Trad;

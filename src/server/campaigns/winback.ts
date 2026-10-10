@@ -4,6 +4,7 @@ import { market } from "@/config/brand";
 import { addLocalDays, APP_TZ, toLocalDate } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
+import { loadPlanIn, planCan } from "@/server/plans/entitlements";
 
 import { MAX_RECIPIENTS, writeCampaignAsSystemIn } from "./send";
 import type { CampaignChannel } from "./types";
@@ -133,6 +134,10 @@ export async function runWinback(now: Date): Promise<RunWinbackResult> {
 
   for (const b of businesses) {
     try {
+      // WP-73 (D-048): pausad (inte avstängd) när planen saknar utskick —
+      // inställningen ligger kvar och fortsätter efter en uppgradering.
+      const plan = await withServiceTx((q) => loadPlanIn(q, b.id));
+      if (!planCan(plan, "campaigns")) continue;
       const customerIds = await withServiceTx((q) =>
         eligibleCustomerIdsIn(q, b.id, b.winback_days, now),
       );

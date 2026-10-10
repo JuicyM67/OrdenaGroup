@@ -1,5 +1,6 @@
 import "server-only";
 
+import { can } from "@/config/plans";
 import { negocio } from "@/i18n";
 
 import type {
@@ -123,6 +124,7 @@ type BusinessRow = {
    * stället för "Confirmar reserva" (ui-engineer, se createBooking i
    * src/app/[slug]/actions.ts för själva statusen). */
   auto_confirm_bookings: boolean;
+  plan: string;
 };
 
 type HoursRow = { weekday: number; start_time: string; end_time: string };
@@ -250,7 +252,7 @@ export async function loadReservaPageData(
   const bizRes = await q.query<BusinessRow>(
     `select name, comuna, category, status::text as status, cancel_window_hours,
             about, cover_url, logo_url, instagram, tiktok, facebook, address, phone,
-            auto_confirm_bookings
+            auto_confirm_bookings, plan::text as plan
        from public.businesses where id = $1`,
     [businessId],
   );
@@ -297,6 +299,8 @@ export async function loadReservaPageData(
     autoConfirmBookings: biz.auto_confirm_bookings,
     // WP-64 (D-044): "off" om Stripe saknas eller kontot inte kan ta betalt.
     onlinePayment: await effectiveOnlinePayment(q, businessId),
+    waitlist: can(biz.plan, "waitlist"),
+    branded: !can(biz.plan, "unbranded"),
   };
 
   if (business.status !== "active") {

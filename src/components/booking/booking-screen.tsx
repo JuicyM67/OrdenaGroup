@@ -245,7 +245,9 @@ export function BookingScreen({
 
   const { selection } = state;
   const day = findDay(data, selection, selection.date);
-  const dayIsFull = day?.state === "full";
+  // WP-73 (D-048): utan väntelista i planen visas bara "dagen är full".
+  const waitlistOn = data.business.waitlist !== false;
+  const dayIsFull = day?.state === "full" && waitlistOn;
   const barVisible = canContinue(selection, dayIsFull);
 
   // Ingen fallback till "any" (qa-granskning, item 13): annars visas
@@ -493,6 +495,7 @@ export function BookingScreen({
                     date={day.date}
                     joined={state.waitlistJoined}
                     duplicate={state.errorCode === "waitlist_duplicate"}
+                    waitlist={waitlistOn}
                   />
                 ) : (
                   <>

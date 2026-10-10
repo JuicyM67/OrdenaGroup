@@ -1,5 +1,6 @@
 import "server-only";
 
+import { can } from "@/config/plans";
 import type { Queryable } from "@/server/db/pool";
 
 /**
@@ -29,6 +30,7 @@ type Row = {
   is_member: boolean;
   member_discount_pct: number | null;
   member_benefit_text: string | null;
+  plan: string;
 };
 
 /**
@@ -43,7 +45,8 @@ export async function memberDiscountIn(
   priceMinor: number,
 ): Promise<MemberDiscount | undefined> {
   const r = await q.query<Row>(
-    `select c.is_member, b.member_discount_pct, b.member_benefit_text
+    `select c.is_member, b.member_discount_pct, b.member_benefit_text,
+            b.plan::text as plan
        from public.customers c
        join public.businesses b on b.id = c.business_id
       where c.business_id = $1 and c.id = $2 and c.anonymized_at is null`,
@@ -51,6 +54,9 @@ export async function memberDiscountIn(
   );
   const row = r.rows[0];
   if (!row?.is_member || row.member_discount_pct === null) return undefined;
+  // WP-73 (D-048): medlemsrabatt ingår från Team — pausad annars, även om
+  // kolumnen satts direkt (t.ex. via PostgREST).
+  if (!can(row.plan, "campaigns")) return undefined;
   const discountMinor = memberDiscountMinor(
     priceMinor,
     row.member_discount_pct,

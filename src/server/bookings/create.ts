@@ -1,5 +1,6 @@
 import "server-only";
 
+import { can } from "@/config/plans";
 import type { E164 } from "@/lib/format/phone";
 import { validateAnswers } from "@/lib/validation/booking-questions";
 import { saveBookingAnswersIn } from "@/server/booking-questions/answers";
@@ -520,6 +521,19 @@ type FlashMatch = { id: string; staffId: string; pct: number };
  * Låser raderna (`for update`) så att två samtidiga bokningar av samma
  * flash-tid serialiseras (`no_overlap` avgör ändå vem som får tiden).
  */
+/** WP-73 (D-048): har företagets plan blixttider? Annars ignoreras aktiva
+ * flash-rader (pausade efter nedgradering, eller skrivna direkt). */
+async function planHasFlashIn(
+  q: Queryable,
+  businessId: string,
+): Promise<boolean> {
+  const r = await q.query<{ plan: string }>(
+    `select plan::text as plan from public.businesses where id = $1`,
+    [businessId],
+  );
+  return can(r.rows[0]?.plan ?? "free", "flash");
+}
+
 async function matchingFlashSlotsIn(
   q: Queryable,
   input: {
@@ -529,6 +543,7 @@ async function matchingFlashSlotsIn(
     start: number;
   },
 ): Promise<FlashMatch[]> {
+  if (!(await planHasFlashIn(q, input.businessId))) return [];
   const r = await q.query<{ id: string; staff_id: string; pct: number }>(
     `select id, staff_id, discount_pct::int as pct
        from public.flash_slots

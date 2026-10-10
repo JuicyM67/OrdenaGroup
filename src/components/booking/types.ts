@@ -99,6 +99,10 @@ export interface BookingBusiness {
   /** WP-64 (D-044): betalning online vid bokning. Frivilligt (saknas = "off");
    * servern sätter "off" när Stripe saknas eller kontot inte kan ta betalt. */
   readonly onlinePayment?: "off" | "optional" | "required";
+  /** WP-73 (D-048): planen har väntelista. Saknas = `true`. */
+  readonly waitlist?: boolean;
+  /** WP-73 (D-048): "Skapad med …"-märkning (plan Gratis). Saknas = `false`. */
+  readonly branded?: boolean;
 }
 
 /** WP-41: en rad i `business_hours` (väggtid, `end` får vara "24:00"). */

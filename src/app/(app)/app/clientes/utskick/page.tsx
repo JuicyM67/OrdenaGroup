@@ -7,11 +7,13 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { CampaignsScreen } from "@/components/campaigns/campaigns-screen";
-import { appHref } from "@/config/routes";
+import { UpgradeNotice } from "@/components/plans/upgrade-notice";
+import { appHref, href } from "@/config/routes";
 import { campanas } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { ownerNameParts } from "@/server/owner/shared";
+import { loadBusinessPlan, planCan } from "@/server/plans/entitlements";
 
 import {
   confirmMyPhotoUploadAction,
@@ -51,8 +53,20 @@ export default async function UtskickPage({
   const owner = ownerNameParts(user.email);
   const myProfile = await loadMyProfileAction();
 
+  const plan = await loadBusinessPlan(current.business.id);
+
   return (
     <CampaignsScreen
+      planNotice={
+        planCan(plan, "campaigns") ? undefined : (
+          <UpgradeNotice
+            feature="campaigns"
+            linkHref={
+              current.view.role === "owner" ? undefined : href("precios")
+            }
+          />
+        )
+      }
       items={items}
       canViewReports={current.view.perms.can_view_reports}
       enviado={enviado === "1"}

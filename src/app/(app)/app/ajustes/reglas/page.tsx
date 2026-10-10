@@ -5,10 +5,13 @@
 import type { Metadata } from "next";
 
 import { logout } from "@/app/auth/actions";
+import { UpgradeNotice } from "@/components/plans/upgrade-notice";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { BookingRulesSection } from "@/components/settings/booking-rules-section";
 import { nav } from "@/i18n";
 import { loadAjustesBusiness } from "@/server/owner/ajustes";
+
+import { planCan } from "@/server/plans/entitlements";
 
 import { requireAjustesTab } from "../access";
 import {
@@ -51,6 +54,9 @@ export default async function AjustesReglasPage() {
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >
+      {planCan(ctx.plan, "waitlist") ? null : (
+        <UpgradeNotice feature="waitlist" linkHref={ctx.plansHref} />
+      )}
       <BookingRulesSection
         business={business}
         action={updateBusinessSettingsAction}

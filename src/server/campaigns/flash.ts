@@ -5,6 +5,7 @@ import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx, withServiceTx } from "@/server/db/tx";
 import { hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
+import { checkCampaignPlan } from "@/server/plans/entitlements";
 
 import { resolveAudienceIn } from "./audience";
 import {
@@ -47,6 +48,8 @@ export type SendFlashCampaignError =
   | "no_recipients"
   | "sms_not_available"
   | "rate_limited"
+  | "plan_locked"
+  | "sms_quota"
   | "unexpected";
 
 export type SendFlashCampaignResult =
@@ -204,6 +207,14 @@ export async function sendFlashCampaign(
   if (customerIds.length > MAX_RECIPIENTS) {
     return { ok: false, code: "rate_limited" };
   }
+  // WP-73 (D-048): planspärr + sms-kvot.
+  const planBlock = await checkCampaignPlan(
+    businessId,
+    "flash",
+    parsed.data.channel,
+    customerIds.length,
+  );
+  if (planBlock) return { ok: false, code: planBlock };
 
   try {
     const { campaignId, queued } = await writeFlashCampaign({

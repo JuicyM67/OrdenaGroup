@@ -5,7 +5,7 @@
 // på varandra, se review.tpl.html §Caja). Fyra enkla grafer med tokens,
 // ingen ny dependency (`charts.tsx`).
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
@@ -51,6 +51,9 @@ export type InformesScreenProps = {
   publicPageHref: string;
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-73 (D-048): uppgraderingsrutan när planen saknar full rapportvy —
+   * ersätter rapporterna (inget laddas). */
+  planNotice?: ReactNode;
 };
 
 function shortWeekLabel(weekStart: LocalDate): string {
@@ -69,11 +72,13 @@ export function InformesScreen({
   publicPageHref,
   myProfile,
   myProfileActions,
+  planNotice,
 }: InformesScreenProps) {
   const [result, setResult] = useState<InformesResult | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (planNotice) return;
     let active = true;
     void loadInformes().then((r) => {
       if (active) {
@@ -130,7 +135,9 @@ export function InformesScreen({
         }
       />
 
-      {loading || !result ? (
+      {planNotice ? (
+        planNotice
+      ) : loading || !result ? (
         <p role="status" className="text-13 text-muted">
           {comun.cargando}
         </p>

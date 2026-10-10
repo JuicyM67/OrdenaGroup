@@ -93,6 +93,7 @@ export default async function AdminBusinessDetailPage({
         <PlanForm
           plan={business.plan}
           overrideUntil={business.planOverrideUntil}
+          customLimits={business.customLimits}
           onSubmit={setPlanAction.bind(null, business.id)}
         />
       </section>
