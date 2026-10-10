@@ -169,6 +169,8 @@ export const descubre = {
     descubre: "Descubre",
     mapa: "Mapa",
     negocios: "Negocios",
+    reservas: "Reservas",
+    perfil: "Perfil",
   },
   migas: {
     label: "Estás aquí",

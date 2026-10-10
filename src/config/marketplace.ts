@@ -91,6 +91,9 @@ export function categoryForRubro(rubro: string): MarketplaceCategoryId {
   }
 }
 
+/** Ortsegmentet får inte vara kartans slug (`/upptack/karta`). */
+export const MARKETPLACE_RESERVED_AREA = "karta";
+
 /** Avståndsfiltret (km) när besökaren delat sin position. */
 export const DISTANCE_OPTIONS_KM = [1, 3, 10] as const;
 export type DistanceKm = (typeof DISTANCE_OPTIONS_KM)[number];

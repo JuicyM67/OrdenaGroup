@@ -8,15 +8,18 @@ import Link from "next/link";
 
 import { BrandLogo } from "@/components/marketing/brand-logo";
 import { brand } from "@/config/brand";
+import { marketplaceEnabled } from "@/config/marketplace";
 import {
   funcionesDisponibles,
   href,
   hrefFuncion,
   hrefLegal,
+  hrefMarketplace,
   hrefRubro,
   hrefRubros,
   RUBRO_IDS,
 } from "@/config/routes";
+import { descubre } from "@/i18n";
 import { copy } from "@/i18n/marketing";
 import { paginas } from "@/i18n/paginas";
 
@@ -111,6 +114,11 @@ export function SiteFooter() {
           </Column>
 
           <Column title={t.empresa}>
+            {marketplaceEnabled() ? (
+              <Link href={hrefMarketplace("descubre")} className={linkClass}>
+                {descubre.nav.descubreMenu}
+              </Link>
+            ) : null}
             <Link href={href("preguntas")} className={linkClass}>
               {copy.sitio.footer.links.preguntas}
             </Link>

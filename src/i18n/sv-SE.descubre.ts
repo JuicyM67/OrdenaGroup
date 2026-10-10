@@ -182,6 +182,8 @@ export const descubre: Widen<typeof EsDescubre> = {
     descubre: "Upptäck",
     mapa: "Karta",
     negocios: "Företag",
+    reservas: "Bokningar",
+    perfil: "Profil",
   },
   migas: {
     label: "Du är här",
