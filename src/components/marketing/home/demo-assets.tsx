@@ -11,9 +11,12 @@ export const DEMO_DIR = `/demo/${market.toLowerCase()}`;
 export function DemoCover({
   sizes,
   className,
+  loading,
 }: {
   sizes: string;
   className?: string;
+  /** "eager" där bilden visas mitt i en animation (flytt-demot) så att den inte laddas sent. */
+  loading?: "eager" | "lazy";
 }) {
   return (
     <Image
@@ -21,6 +24,7 @@ export function DemoCover({
       alt=""
       fill
       sizes={sizes}
+      loading={loading}
       className={cn("object-cover", className)}
     />
   );

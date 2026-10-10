@@ -10,6 +10,7 @@ import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import {
   useEffect,
+  useRef,
   useState,
   useSyncExternalStore,
   type ReactNode,
@@ -58,7 +59,7 @@ type ReactPreview = {
   staffMas: string;
 };
 
-const STEP_SECONDS = 3.2;
+const STEP_SECONDS = 4.2;
 const REDUCE = "(prefers-reduced-motion: reduce)";
 
 function subscribeReduce(cb: () => void) {
@@ -71,6 +72,22 @@ export function FlyttDemo(props: FlyttProps) {
   const [iState, setI] = useState(0);
   const [pState, setP] = useState(0);
   const [paused, setPaused] = useState(false);
+  // Animationen startar först när sektionen syns (och pausar utanför skärmen) så att
+  // den alltid börjar från steg 1 och inte konkurrerar med sidladdningen.
+  const [visible, setVisible] = useState(false);
+  const rootRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => setVisible(e?.isIntersecting ?? false),
+      {
+        threshold: 0.35,
+      },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   const reduce = useSyncExternalStore(
     subscribeReduce,
     () => window.matchMedia(REDUCE).matches,
@@ -81,7 +98,7 @@ export function FlyttDemo(props: FlyttProps) {
   const p = reduce ? 1 : pState;
 
   useEffect(() => {
-    if (reduce || paused) return;
+    if (reduce || paused || !visible) return;
     const id = setInterval(() => {
       setP((prev) => {
         const next = prev + 0.1 / STEP_SECONDS;
@@ -93,7 +110,7 @@ export function FlyttDemo(props: FlyttProps) {
       });
     }, 100);
     return () => clearInterval(id);
-  }, [reduce, paused]);
+  }, [reduce, paused, visible]);
 
   const url = props.urlEjemplo;
   const typedLen = Math.min(url.length, Math.floor(p * 2.2 * url.length));
@@ -104,6 +121,7 @@ export function FlyttDemo(props: FlyttProps) {
 
   return (
     <section
+      ref={rootRef}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       className="mx-auto grid max-w-360 grid-cols-1 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-2 lg:items-center lg:gap-18 lg:px-22 lg:py-20"
