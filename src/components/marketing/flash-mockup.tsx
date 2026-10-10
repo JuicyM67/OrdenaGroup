@@ -93,7 +93,7 @@ export function FlashMockup({ className }: { className?: string }) {
         className,
       )}
     >
-      <span className="flex size-11 items-center justify-center rounded-icon bg-lime text-ink">
+      <span className="flex size-11 items-center justify-center rounded-full bg-lime text-ink">
         <Zap aria-hidden="true" className="size-5.5" strokeWidth={strokeCard} />
       </span>
       <div

@@ -557,7 +557,7 @@ måste läggas till i motsvarande lista i `cn.ts` i samma PR.
 ## 13. Startsidan "Foto-berättelse" (WP-71)
 
 Referenser: `docs/design/reference/startsida/` (Konv1 = hero, Flytt = smärtfri flytt, SidaP3 + genpages.py = övriga sektioner). Komponenter i `src/components/marketing/home/`.
-Nya tokens i `tokens.css` (finns bara för startsidan): textstorlekar 20/34/52/54/56/60/68, `tracking-hero|headline|label`, `leading-display`, radier `device`, `device-sm`, `screen`, `cta`, `form`, `highlight`, skuggor `float-lg|float-md|soft`, blur `photo|layer`, animationer `marquee-slow`, `drift-1..3`, `pulse-ring`, samt utilities `glass-light`, `glass-dark`, `glass-nav` (liquid glass på foton), `bg-hero-tint(-mobile)`, `bg-cta-tint(-mobile)`, `bg-scrim-bottom`, `bg-flytt-stage`, `object-hero-mobile`.
+Nya tokens i `tokens.css` (finns bara för startsidan): textstorlekar 20/34/52/54/56/60/68, `tracking-hero|headline|label`, `leading-display`, radier `device`, `device-sm`, `screen`, `cta`, `form`, `highlight`, skuggor `float-lg|float-md|soft`, blur `photo|layer`, animationer `marquee-slow`, `drift-1..3`, `pulse-ring`, samt utilities `glass-light`, `glass-dark`, `glass-nav` (liquid glass på foton), `bg-hero-tint(-mobile)`, `bg-photo-tint(-mobile)` (full-bleed foto-hero, WP-75: kant i kant, innehåll i `max-w-360`-container, toning för >= 4.5:1), `bg-cta-tint(-mobile)`, `bg-scrim-bottom`, `bg-flytt-stage`, `object-hero-mobile`.
 Foton: `public/marketing/` (Unsplash, se CREDITS.md). Text på foto ligger alltid på en toning (min. 4,5:1).
 
 ## 14. Logotyp SE: b-klockan (WP-74, D-049)

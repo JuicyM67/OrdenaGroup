@@ -167,7 +167,7 @@ export function Showcase() {
                     size={44}
                     className="size-11 rounded-avatar"
                   />
-                  <span className="flex size-11 items-center justify-center rounded-avatar bg-lavender text-12 font-bold">
+                  <span className="flex size-11 items-center justify-center rounded-full bg-lavender text-12 font-bold">
                     {d.equipoMas}
                   </span>
                 </span>

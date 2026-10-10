@@ -210,7 +210,7 @@ export function FlujoSteps({ className }: { className?: string }) {
         >
           <span
             className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-event bg-canvas font-display text-18 font-bold text-ink",
+              "flex size-10 shrink-0 items-center justify-center rounded-full bg-canvas font-display text-18 font-bold text-ink",
               BADGE_ANIMATIONS[i],
             )}
           >

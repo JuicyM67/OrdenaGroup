@@ -924,6 +924,13 @@
 @utility bg-hero-tint-mobile {
   background-image: linear-gradient(0deg, rgb(28 24 22 / 0.9) 0%, rgb(28 24 22 / 0.72) 55%, rgb(28 24 22 / 0.5) 100%);
 }
+/* Full-bleed foto-hero: kraftigare toning så vit text når >= 4.5:1 även över ljusa foton. */
+@utility bg-photo-tint {
+  background-image: linear-gradient(90deg, rgb(28 24 22 / 0.88) 0%, rgb(28 24 22 / 0.8) 40%, rgb(28 24 22 / 0.5) 62%, rgb(28 24 22 / 0) 88%), linear-gradient(0deg, rgb(28 24 22 / 0.45) 0%, rgb(28 24 22 / 0) 30%);
+}
+@utility bg-photo-tint-mobile {
+  background-image: linear-gradient(0deg, rgb(28 24 22 / 0.92) 0%, rgb(28 24 22 / 0.82) 55%, rgb(28 24 22 / 0.66) 100%);
+}
 @utility bg-cta-tint {
   background-image: linear-gradient(90deg, rgb(28 24 22 / 0.82) 0%, rgb(28 24 22 / 0.5) 45%, rgb(28 24 22 / 0) 75%);
 }
@@ -939,6 +946,11 @@
 /* Mobil: fotots motiv (kvinnan) ligger ca 65 % från vänster. */
 @utility object-hero-mobile {
   object-position: 65% 50%;
+}
+
+/* WP-75: hero-foton på funktions- och branschsidorna ligger i porträtt; fokus på övre delen. */
+@utility object-photo-top {
+  object-position: 50% 30%;
 }
 
 /* ---------- WP-72: guidad visning (brons/kräm liquid glass) ----------

@@ -156,7 +156,7 @@ export function FlyttDemo(props: FlyttProps) {
                 <span className="flex items-center gap-3.5">
                   <span
                     className={cn(
-                      "flex size-8.5 flex-none items-center justify-center rounded-event font-bold",
+                      "flex size-8.5 flex-none items-center justify-center rounded-full font-bold",
                       k <= i ? "bg-ink text-lime" : "bg-surface text-ink",
                     )}
                   >

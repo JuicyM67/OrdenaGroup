@@ -18,10 +18,10 @@ describe("routes.ts", () => {
     expect(href("ventajas")).toBe("/ventajas");
     expect(href("preguntas")).toBe("/preguntas");
     expect(href("contacto")).toBe("/contacto");
-    expect(hrefIndustria("barberias")).toBe("/para/barberias");
-    expect(hrefIndustria("peluquerias")).toBe("/para/peluquerias");
-    expect(hrefIndustria("estetica")).toBe("/para/estetica");
-    expect(hrefIndustria("kinesiologia")).toBe("/para/kinesiologia");
+    expect(hrefIndustria("barberias")).toBe("/rubros/barberias");
+    expect(hrefIndustria("peluquerias")).toBe("/rubros/peluquerias");
+    expect(hrefIndustria("estetica")).toBe("/rubros/estetica");
+    expect(hrefIndustria("kinesiologia")).toBe("/rubros/kinesiologia");
     expect(hrefLegal("privacidad")).toBe("/legal/privacidad");
     expect(hrefLegal("terminos")).toBe("/legal/terminos");
     expect(hrefLegal("encargo")).toBe("/legal/encargo");
@@ -39,10 +39,10 @@ describe("routes.ts", () => {
     expect(href("ventajas")).toBe("/fordelar");
     expect(href("preguntas")).toBe("/vanliga-fragor");
     expect(href("contacto")).toBe("/kontakt");
-    expect(hrefIndustria("barberias")).toBe("/for/barberare");
-    expect(hrefIndustria("peluquerias")).toBe("/for/frisorer");
-    expect(hrefIndustria("estetica")).toBe("/for/hudvard");
-    expect(hrefIndustria("kinesiologia")).toBe("/for/naprapat");
+    expect(hrefIndustria("barberias")).toBe("/branscher/barberare");
+    expect(hrefIndustria("peluquerias")).toBe("/branscher/frisor");
+    expect(hrefIndustria("estetica")).toBe("/branscher/hudvard");
+    expect(hrefIndustria("kinesiologia")).toBe("/branscher/naprapat-och-fysio");
     expect(hrefLegal("privacidad")).toBe("/legal/integritet");
     expect(hrefLegal("terminos")).toBe("/legal/villkor");
     expect(hrefLegal("encargo")).toBe("/legal/bitradesavtal");
@@ -60,10 +60,15 @@ describe("routes.ts", () => {
     expect(bySource["/fordelar"]).toBe("/ventajas");
     expect(bySource["/vanliga-fragor"]).toBe("/preguntas");
     expect(bySource["/kontakt"]).toBe("/contacto");
-    expect(bySource["/for/barberare"]).toBe("/para/barberias");
-    expect(bySource["/for/frisorer"]).toBe("/para/peluquerias");
-    expect(bySource["/for/hudvard"]).toBe("/para/estetica");
-    expect(bySource["/for/naprapat"]).toBe("/para/kinesiologia");
+    expect(bySource["/branscher/barberare"]).toBe("/rubros/barberias");
+    expect(bySource["/branscher/frisor"]).toBe("/rubros/peluquerias");
+    expect(bySource["/branscher/hudvard"]).toBe("/rubros/estetica");
+    expect(bySource["/branscher/naprapat-och-fysio"]).toBe(
+      "/rubros/kinesiologia",
+    );
+    expect(bySource["/branscher"]).toBe("/rubros");
+    expect(bySource["/funktioner/betalning"]).toBe("/funcionalidades/pagos");
+    expect(bySource["/flytt"]).toBe("/migracion");
     expect(bySource["/legal/integritet"]).toBe("/legal/privacidad");
     expect(bySource["/legal/villkor"]).toBe("/legal/terminos");
     expect(bySource["/legal/bitradesavtal"]).toBe("/legal/encargo");
@@ -83,10 +88,13 @@ describe("routes.ts", () => {
     expect(bySource["/ventajas"]).toBe("/fordelar");
     expect(bySource["/preguntas"]).toBe("/vanliga-fragor");
     expect(bySource["/contacto"]).toBe("/kontakt");
-    expect(bySource["/para/barberias"]).toBe("/for/barberare");
-    expect(bySource["/para/peluquerias"]).toBe("/for/frisorer");
-    expect(bySource["/para/estetica"]).toBe("/for/hudvard");
-    expect(bySource["/para/kinesiologia"]).toBe("/for/naprapat");
+    expect(bySource["/rubros/barberias"]).toBe("/branscher/barberare");
+    expect(bySource["/rubros/peluquerias"]).toBe("/branscher/frisor");
+    expect(bySource["/rubros/estetica"]).toBe("/branscher/hudvard");
+    expect(bySource["/rubros/kinesiologia"]).toBe(
+      "/branscher/naprapat-och-fysio",
+    );
+    expect(bySource["/funcionalidades/pagos"]).toBe("/funktioner/betalning");
     expect(bySource["/legal/privacidad"]).toBe("/legal/integritet");
     expect(bySource["/legal/terminos"]).toBe("/legal/villkor");
     expect(bySource["/legal/encargo"]).toBe("/legal/bitradesavtal");

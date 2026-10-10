@@ -69,7 +69,7 @@ export function FloatCards({ variant }: { variant: "desktop" | "mobile" }) {
         className={cn(
           "h-26 w-full max-w-67.5 animate-drift-1 overflow-hidden rounded-card glass-light",
           variant === "desktop"
-            ? "absolute top-30 right-16 w-67.5"
+            ? "absolute top-44 right-16 w-67.5"
             : "relative",
         )}
       >
@@ -94,7 +94,7 @@ export function FloatCards({ variant }: { variant: "desktop" | "mobile" }) {
 
       {variant === "desktop" ? (
         <>
-          <div className="absolute top-65.5 right-30 h-20.5 w-62.5 animate-drift-2 overflow-hidden rounded-card glass-light">
+          <div className="absolute top-79.5 right-30 h-20.5 w-62.5 animate-drift-2 overflow-hidden rounded-card glass-light">
             <Layers
               items={t.cardB}
               tick={tick}
@@ -120,7 +120,7 @@ export function FloatCards({ variant }: { variant: "desktop" | "mobile" }) {
             />
           </div>
 
-          <div className="absolute top-95.5 right-14 h-25 w-70 animate-drift-3 overflow-hidden rounded-card glass-light">
+          <div className="absolute top-109.5 right-14 h-25 w-70 animate-drift-3 overflow-hidden rounded-card glass-light">
             <Layers
               items={t.cardC}
               tick={tick}
