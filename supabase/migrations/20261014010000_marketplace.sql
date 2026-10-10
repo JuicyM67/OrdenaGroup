@@ -1,4 +1,4 @@
--- WP-68 · Marknadsplats — upptäck (D-056). Geodata på `businesses`, tabellen
+-- WP-68 · Marknadsplats — upptäck (D-055). Geodata på `businesses`, tabellen
 -- `offers` (erbjudanden = förbetalda värdebevis för EN tjänst; köpet byggs i
 -- WP-69) och `private.distance_km` (haversine, ingen PostGIS i v1).
 --
@@ -9,7 +9,7 @@
 set search_path = public, extensions;
 
 -- ---------------------------------------------------------------------------
--- Geodata på företaget (D-056). Koordinaterna sätts bara av servern
+-- Geodata på företaget (D-055). Koordinaterna sätts bara av servern
 -- (geokodningssvepet, service_role) — `authenticated` får inga skrivgrants på
 -- dem. Ändrad adress ⇒ `pending` (svepet geokodar om).
 -- ---------------------------------------------------------------------------
@@ -236,4 +236,4 @@ create trigger offers_guard
   for each row execute function private.offers_guard();
 
 comment on table public.offers is
-  'WP-68 (D-056): erbjudanden i marknadsplatsen. Publik läsning bara via servern (service_role).';
+  'WP-68 (D-055): erbjudanden i marknadsplatsen. Publik läsning bara via servern (service_role).';

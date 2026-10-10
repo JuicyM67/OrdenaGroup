@@ -32,7 +32,7 @@ const RESERVED_SLUGS = new Set([
   "legal",
   "terminos",
   "privacidad",
-  // WP-68 (D-056): samma som RESERVED_SLUGS i schemas.ts.
+  // WP-68 (D-055): samma som RESERVED_SLUGS i schemas.ts.
   "descubre",
   "upptack",
   "oferta",

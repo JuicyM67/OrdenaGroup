@@ -1,4 +1,4 @@
-// WP-68 (D-056): geokodar befintliga företag (`geocode_status = 'pending'`) i
+// WP-68 (D-055): geokodar befintliga företag (`geocode_status = 'pending'`) i
 // små pass med Nominatims takt (1 anrop/s), tills inga återstår. Körs av en
 // människa mot lokal databas eller staging — aldrig mot produktion från en
 // agent (regel hård 8). Samma kod som cron-svepet (`runGeocodeSweep`).

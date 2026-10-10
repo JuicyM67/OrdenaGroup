@@ -1,6 +1,6 @@
 "use client";
 
-// "Min position" (WP-68, D-056): den enda klientön på listsidan. Koordinaterna
+// "Min position" (WP-68, D-055): den enda klientön på listsidan. Koordinaterna
 // avrundas till 2 decimaler (~1 km) i webbläsaren och sparas i sessionscookien
 // `nara` (30 min, SameSite=Lax) — aldrig i URL:en (åtkomstloggar), aldrig i DB.
 // Servern läser cookien vid nästa rendering (router.refresh()).

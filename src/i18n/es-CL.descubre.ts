@@ -1,5 +1,5 @@
 /**
- * WP-68 (D-056): marketplace "Descubre" (ofertas cerca de ti, mapa, página de
+ * WP-68 (D-055): marketplace "Descubre" (ofertas cerca de ti, mapa, página de
  * oferta). En CL la sección está oculta hasta que exista Mercado Pago (decisión
  * del dueño 2026-10-10); estos textos mantienen la paridad de tipos con
  * `sv-SE.descubre.ts`. Archivo propio (como `es-CL.visita.ts`) para que no

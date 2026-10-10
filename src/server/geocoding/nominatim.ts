@@ -8,7 +8,7 @@ import { pickAreaName } from "./area";
 import type { GeocodeHit, GeocodeQuery, Geocoder } from "./types";
 
 /**
- * Nominatim/OpenStreetMap (D-056). Användarpolicyn: högst 1 anrop/s, en
+ * Nominatim/OpenStreetMap (D-055). Användarpolicyn: högst 1 anrop/s, en
  * identifierande `User-Agent` med kontaktadress, inga massanrop — svepet
  * (`sweep.ts`) tar några få `pending` per cron-pass och håller avståndet
  * globalt via `hitRateLimit`. Resultaten får lagras permanent (ODbL) med

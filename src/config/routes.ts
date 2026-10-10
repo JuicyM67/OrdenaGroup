@@ -478,7 +478,7 @@ function seMarketingPagePairs(): { source: string; destination: string }[] {
 }
 
 // ---------------------------------------------------------------------------
-// Marknadsplatsen (WP-68, D-056). Filsystemet (CL): `src/app/(consumer)/descubre/**`
+// Marknadsplatsen (WP-68, D-055). Filsystemet (CL): `src/app/(consumer)/descubre/**`
 // och `src/app/(consumer)/oferta/[slug]`. SE: `/upptack`, `/upptack/karta`,
 // `/upptack/<kategori>[/<ort>]`, `/erbjudande/<slug>` (rewrites/redirects nedan).
 // Kategorislugsen per marknad finns i `marketplace.ts`. I CL är ytan dold (404).

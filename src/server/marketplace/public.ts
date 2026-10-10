@@ -12,7 +12,7 @@ import { withServiceTx } from "@/server/db/tx";
 import { flashPrice } from "@/server/flash/public";
 
 /**
- * WP-68 (D-056): marknadsplatsens publika läsning. Körs som service_role
+ * WP-68 (D-055): marknadsplatsens publika läsning. Körs som service_role
  * (som resten av de publika sidorna, aldrig anon) med EXPLICITA filter i
  * varje fråga: publicerat erbjudande inom säljfönstret och inte slutsålt,
  * aktiv tjänst, aktivt företag (inte `frozen`, ingen radering begärd) i

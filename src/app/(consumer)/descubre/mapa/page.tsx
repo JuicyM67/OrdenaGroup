@@ -1,4 +1,4 @@
-// /upptack/karta (CL: /descubre/mapa, dold) — kartvyn (WP-68, D-056).
+// /upptack/karta (CL: /descubre/mapa, dold) — kartvyn (WP-68, D-055).
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";

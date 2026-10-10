@@ -1,4 +1,4 @@
-// Marknadsplatsen (WP-68, D-056): flaggor, kategorier och gränser. Inga texter här —
+// Marknadsplatsen (WP-68, D-055): flaggor, kategorier och gränser. Inga texter här —
 // namnen finns i `src/i18n/*.descubre.ts`. Ruttsökvägarna finns i `routes.ts`.
 import { market, type Market } from "./brand";
 
@@ -104,7 +104,7 @@ export const MARKETPLACE_PAGE_SIZE = 12;
 /** Blixttider i remsan. */
 export const FLASH_STRIP_LIMIT = 8;
 
-/** "Min position" (D-056): cookie med koordinater avrundade till 2 decimaler (~1 km),
+/** "Min position" (D-055): cookie med koordinater avrundade till 2 decimaler (~1 km),
  * 30 minuter, aldrig i URL, DB eller loggar. */
 export const POSITION_COOKIE = "nara";
 export const POSITION_MAX_AGE_S = 30 * 60;

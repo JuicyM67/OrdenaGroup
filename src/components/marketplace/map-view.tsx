@@ -1,6 +1,6 @@
 "use client";
 
-// Kartan i Upptäck (WP-68, Karta.dc.html, D-056): MapLibre GL + OpenFreeMap-tiles
+// Kartan i Upptäck (WP-68, Karta.dc.html, D-055): MapLibre GL + OpenFreeMap-tiles
 // (gratis, ingen nyckel). Biblioteket laddas med dynamisk import först när
 // kartrutten monteras — det följer aldrig med listan eller `/[slug]`. Markörerna är
 // rabatt-/blixttidspiller; ett klick markerar kortet i listan bredvid/under.

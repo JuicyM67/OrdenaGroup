@@ -1,4 +1,4 @@
-/** Marknadsplatsen "Upptäck" (WP-68, D-056), svenska. Samma form som
+/** Marknadsplatsen "Upptäck" (WP-68, D-055), svenska. Samma form som
  * `es-CL.descubre.ts`; egen fil så att texterna inte hamnar i bokningssidans
  * i18n-chunk. */
 import type { descubre as EsDescubre } from "./es-CL.descubre";

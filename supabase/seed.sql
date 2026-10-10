@@ -337,7 +337,7 @@ values ('b0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-0000009
 select private.seed_demo('CL');
 select private.seed_demo('SE');
 
--- WP-68 (D-056): påhittade SE-salonger runt Södermalm/Vasastan för marknadsplatsen
+-- WP-68 (D-055): påhittade SE-salonger runt Södermalm/Vasastan för marknadsplatsen
 -- (upptäck, karta, blixttider, verifierade recensioner) lokalt och i e2e. BARA
 -- lokalt: seed.sql körs aldrig i staging/prod. Fasta id:n `ad00000N-…`.
 do $$

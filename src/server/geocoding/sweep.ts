@@ -12,7 +12,7 @@ import { getGeocoder } from "./provider";
 import type { Geocoder } from "./types";
 
 /**
- * WP-68 (D-056): geokodningssvepet i `/api/cron/outbox`. Tar några få
+ * WP-68 (D-055): geokodningssvepet i `/api/cron/outbox`. Tar några få
  * företag med `geocode_status = 'pending'` och en adress, ett i taget med
  * minst `minIntervalMs` emellan (Nominatim: 1 anrop/s) och en global
  * räknare i `private.hit_rate_limit` (flera instanser/marknader delar inte

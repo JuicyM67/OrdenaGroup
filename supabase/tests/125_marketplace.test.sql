@@ -1,4 +1,4 @@
--- WP-68 (D-056) · Marknadsplats: `offers` + geodata på `businesses`.
+-- WP-68 (D-055) · Marknadsplats: `offers` + geodata på `businesses`.
 -- INV-3: RLS, inga anon-grants. INV-4: tenant-isolering. Ordinarie pris och
 -- valuta sätts av servern (trigger), bara ägaren publicerar, medlemmar kan
 -- inte skriva koordinater, `distance_km` räknar rätt.

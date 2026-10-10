@@ -184,7 +184,7 @@ const RETENTION_SWEEP_EXCEPTION = "app/api/cron/retention/route.ts";
  */
 const WINBACK_SWEEP_EXCEPTION = "server/campaigns/winback.ts";
 /**
- * WP-68 (D-056): geokodningssvepet letar upp företag med `geocode_status =
+ * WP-68 (D-055): geokodningssvepet letar upp företag med `geocode_status =
  * 'pending'` — ett svep över alla företag i installationen (service_role,
  * cron), per definition utan ett givet `business_id`. Varje skrivning sker
  * per `id`.

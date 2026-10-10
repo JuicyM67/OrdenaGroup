@@ -1,4 +1,4 @@
-// Upptäck (WP-68): sökparametrar ↔ filter, och positionscookien (D-056). Rena
+// Upptäck (WP-68): sökparametrar ↔ filter, och positionscookien (D-055). Rena
 // funktioner utan server-beroenden — används av sidorna (server) och av
 // positionsknappen (klient).
 import {
@@ -85,7 +85,7 @@ export function discoverHref(
 }
 
 // ---------------------------------------------------------------------------
-// Positionscookien `nara` (D-056)
+// Positionscookien `nara` (D-055)
 // ---------------------------------------------------------------------------
 
 export type Position = { lat: number; lng: number };

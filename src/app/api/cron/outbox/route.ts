@@ -98,7 +98,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
-  // WP-68 (D-056): geokoda några få företag med ändrad adress (Nominatim,
+  // WP-68 (D-055): geokoda några få företag med ändrad adress (Nominatim,
   // 1 anrop/s). Ett fel här stoppar aldrig utkorgen.
   let geocoded = { ok: 0, notFound: 0, skipped: 0 };
   try {

@@ -1,4 +1,4 @@
-// /erbjudande/<slug> (CL: /oferta/<slug>, dold) — erbjudandesidan (WP-68, D-056).
+// /erbjudande/<slug> (CL: /oferta/<slug>, dold) — erbjudandesidan (WP-68, D-055).
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";

@@ -4,6 +4,19 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-055 · 2026-10-11 · Marknadsplats "Upptäck" (SE), geodata och position, JS-budget (WP-68; ersätter D-004)
+**Varför:** ägarens beslut 2026-10-10 (WP-68-planen, "Ägarens beslut"): konsumenter ska hitta erbjudanden och blixttider nära sig. Ersätter D-004 ("ingen marknadsplats i MVP"); planens förslag D-049–D-051 slås ihop här (numren var redan tagna). **Konsekvens:**
+- **Yta och flaggor** (`src/config/marketplace.ts`): `/upptack`, `/upptack/<kategori>[/<ort>]`, `/upptack/karta`, `/erbjudande/<slug>` (filsystemet `(consumer)/descubre/**`, `(consumer)/oferta/[slug]`, via `routes.ts`). **Chile helt dold** (404, inte i meny eller sitemap) tills Mercado Pago finns. SE på som standard (`NEXT_PUBLIC_MARKETPLACE=0` stänger). `noindex` och utanför sitemap tills `MARKETPLACE_INDEXABLE=1` (sätts när köpet, WP-69, är live). Demoföretagen (D-043) syns inte i produktionens lista om inte `MARKETPLACE_INCLUDE_DEMO=1`. "Upptäck" i SE:s header/mobilmeny och sidfot.
+- **Data:** `public.offers` (ett erbjudande = en tjänst; ordinarie pris och valuta sätts av en trigger = tjänstens pris, erbjudandepriset måste vara lägre; bara ägaren publicerar; inga delete-grants; `quantity_sold` bara servern). Publik läsning bara via servern som service_role med explicita filter (publicerat, säljfönster, inte slutsålt, aktiv tjänst, aktivt företag, installationens tidszon) — aldrig anon (INV-3). Recensioner: bara synliga (D-045). pgTAP `125_marketplace`.
+- **Blixttider** visas i Upptäck som standard (`businesses.marketplace_flash_visible`, ägaren kan stänga av) och bara när planen har blixttider (D-048). Länken går till `/{slug}?flash=<id>`.
+- **Geodata:** `businesses.lat/lng/area_slug/area_name/geocode_status`. Geokodning via Nominatim/OpenStreetMap bakom ett gränssnitt (`src/server/geocoding/`, byte av leverantör = en fil): svep i `/api/cron/outbox` (≤ 20 `pending` per pass, minst 1,1 s mellan anrop + global räknare i `hit_rate_limit`, identifierande User-Agent, `countrycodes`), resultat lagras permanent (ODbL, attribution på kartan). Ändrad adress ⇒ `pending`; `manual` rörs aldrig. Standard: bara på Vercel; lokalt `GEOCODING_PROVIDER=fake|nominatim`. Backfill: `scripts/geocode-backfill.ts` (människa, staging). Ingen PostGIS: `private.distance_km` (haversine).
+- **Besökarens position:** bara i webbläsaren, avrundad till 2 decimaler (~1 km), i sessionscookien `nara` (30 min, SameSite=Lax) — aldrig i URL, DB eller loggar. Utan position: ortväljare.
+- **Karta:** MapLibre GL (`maplibre-gl` 6.11.2) + OpenFreeMap-tiles (ingen nyckel), laddas med dynamisk import bara på kartrutten; webworkern är självhostad i `public/vendor/maplibre-gl-<version>/` (kopieras vid uppgradering). En markör per salong.
+- **JS-budget:** `/[slug]` oförändrad (D-039, ≤ 190 kB) — inget marknadsplatsbibliotek där. Upptäck/erbjudande ska hållas ≤ 120 kB gzip first-load, kartan ≤ 330 kB (mäts i e2e när WP-68 slutförs).
+- **Köp** (värdebevis, 1 % avgift, konto krävs) byggs i WP-69. Till dess visar erbjudandesidan "Köpet öppnar snart" och länkar till salongens lediga tider till ordinarie pris — ingen köpknapp (D-035).
+
+---
+
 ### D-053 · 2026-10-10 · SMS-krediter i SE: förbetalda paket, 1 kredit = 1 segment, används efter månadskvoten (WP-76)
 **Varför:** ägaren vill att alla planer, även Gratis, kan "ladda upp kontot" med sms (som hos Bokadirekt), så att påminnelser fortsätter som sms när planens kvot (D-048) är slut. **Konsekvens:**
 - **Paket** (exkl. moms, `src/config/sms-credits.ts`, servern bestämmer priset): 100 sms = 100 kr, 250 = 250 kr, 500 = 450 kr, 1 000 = 900 kr. Moms 25 % läggs på i Stripe Checkout med en **fast skattesats** (`STRIPE_SMS_VAT_RATE_ID`, exklusiv). Saknas variabeln (eller `STRIPE_SECRET_KEY`) visas inte köpet alls — det enklaste säkra alternativet; saldo, förbrukning och marknadsföringskortet syns ändå i SE. Ingen egen momsberäkning mot Stripe.

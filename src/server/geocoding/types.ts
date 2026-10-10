@@ -1,7 +1,7 @@
 import "server-only";
 
 /**
- * WP-68 (D-056): geokodning bakom ett litet gränssnitt, så att byte av
+ * WP-68 (D-055): geokodning bakom ett litet gränssnitt, så att byte av
  * leverantör (Nominatim → LocationIQ/Mapbox/Google) är en fil.
  */
 
