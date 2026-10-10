@@ -4,6 +4,9 @@ import { readParam, queryString, anchor } from "@/config/url-params";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { toggleFavorite } from "@/app/(consumer)/cuenta/actions";
+import { optionalAccount } from "@/app/(consumer)/cuenta/session";
+import { FavoriteHeart } from "@/components/account/favorite-heart";
 import { BookingScreen } from "@/components/booking/booking-screen";
 import { ProfileBrowse } from "@/components/booking/profile-browse";
 import { SocialLinks } from "@/components/booking/social-icons";
@@ -15,6 +18,7 @@ import type { BookingActionResult } from "@/components/booking/types";
 import { brand, market } from "@/config/brand";
 import { href } from "@/config/routes";
 import { planes, reserva, visita } from "@/i18n";
+import { isFavorite } from "@/server/accounts/account";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { findValidOfferIn, isOfferTokenShape } from "@/server/bookings/offer";
 import {
@@ -104,6 +108,9 @@ export default async function ReservaPage({
     ? Math.min(rawResenas, PUBLIC_REVIEWS_MAX)
     : PUBLIC_REVIEWS_PAGE;
   const now = systemClock();
+  // WP-67 (D-054): inloggad kund med kundkonto → förifyllt namn/e-post och
+  // hjärtat (favorit). Utloggad: oförändrat flöde, ingen extra fråga.
+  const accountPromise = optionalAccount();
   const [data, offer, flash, reviews] = await withServiceTx(async (q) => {
     const d = await loadReservaPageData(q, {
       businessId: business.id,
@@ -128,6 +135,18 @@ export default async function ReservaPage({
   // Bara en skyddsnät mot en race (företaget togs bort mellan de två
   // frågorna ovan) — `resolveBusinessBySlug` hittade det just innan.
   if (!data) notFound();
+  const account = await accountPromise;
+  const favorite = account
+    ? await isFavorite(account.userId, business.id).catch(() => false)
+    : false;
+  const heart = account ? (
+    <FavoriteHeart
+      businessId={business.id}
+      saved={favorite}
+      back={`/${slug}`}
+      action={toggleFavorite}
+    />
+  ) : null;
 
   const boundOfferToken = offer ? offerToken : undefined;
   const initialSelection = flash ? flashSelection(data, flash) : undefined;
@@ -176,7 +195,19 @@ export default async function ReservaPage({
   const p = data.profile;
   const social = p
     ? {
-        chips: (
+        chips: heart ? (
+          <span className="ml-auto flex items-center gap-2">
+            <SocialLinks
+              instagramUrl={p.instagramUrl}
+              tiktokUrl={p.tiktokUrl}
+              facebookUrl={p.facebookUrl}
+              businessName={data.business.name}
+              tone="surface"
+              size={36}
+            />
+            {heart}
+          </span>
+        ) : (
           <SocialLinks
             instagramUrl={p.instagramUrl}
             tiktokUrl={p.tiktokUrl}
@@ -234,6 +265,15 @@ export default async function ReservaPage({
         submitBooking={submitBooking}
         joinWaitlist={submitWaitlist}
         initialMobileTab={reviews && reviewsExpanded ? "resenas" : undefined}
+        initialContact={
+          account
+            ? {
+                name: account.displayName ?? "",
+                phone: "",
+                email: account.email,
+              }
+            : undefined
+        }
       />
       {/* WP-73 (D-048): diskret märkning på planen Gratis, serverrenderad. */}
       {data.business.branded ? (
