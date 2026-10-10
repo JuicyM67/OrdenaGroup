@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Sektion – smärtfri flytt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16161A}a:hover{opacity:.88}
+@keyframes fl-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes fl-caret{50%{opacity:0}}
+@keyframes fl-spin{to{transform:rotate(360deg)}}
+@keyframes fl-pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
+.fl-in{animation:fl-in .5s cubic-bezier(.2,.7,.2,1) both}
+.fl-caret{animation:fl-caret 1s steps(1) infinite}
+.fl-spin{animation:fl-spin 1s linear infinite}
+.fl-pop{animation:fl-pop .45s cubic-bezier(.2,.7,.2,1) both}
+.fl-step{transition:background .5s ease,box-shadow .5s ease,opacity .5s ease}
+@media (prefers-reduced-motion: reduce){.fl-in,.fl-caret,.fl-spin,.fl-pop{animation:none}.fl-step{transition:none}}
+</style>
+</helmet>
+<section onMouseEnter="{{pause}}" onMouseLeave="{{resume}}" style="width: 1440px; height: 820px; box-sizing: border-box; padding: 80px 88px; background: #F4F4F0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #16161A; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 72px; align-items: center">
+
+<div style="display: flex; flex-direction: column; gap: 26px">
+<span style="align-self: flex-start; font-size: 13px; font-weight: 700; letter-spacing: .08em; padding: 7px 12px; border-radius: 10px; background: #E6E0F8; color: #4B3AA8">SMÄRTFRI FLYTT</span>
+<h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 56px; line-height: 1; font-weight: 600; letter-spacing: -0.03em">Byt system utan att <span style="background: #E3F36B; border-radius: 14px; padding: 0 10px">börja om.</span></h2>
+<p style="margin: 0; font-size: 18px; line-height: 1.55; color: #5E5E66; max-width: 520px">Har du redan en bokningssida någon annanstans? Klistra in länken – vi flyttar över tjänster, priser, öppettider och personal åt dig.</p>
+
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; max-width: 540px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="4">
+<li><button onClick="{{s.go}}" aria-current="{{s.current}}" class="fl-step" style="width: 100%; border: 0; border-radius: 20px; background: {{s.bg}}; box-shadow: {{s.shadow}}; opacity: {{s.opacity}}; font: inherit; color: #16161A; text-align: left; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; cursor: pointer">
+<span style="display: flex; align-items: center; gap: 14px">
+<span style="width: 34px; height: 34px; border-radius: 12px; background: {{s.numBg}}; color: {{s.numFg}}; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none">{{s.n}}</span>
+<span style="display: flex; flex-direction: column; flex: 1"><b style="font-size: 16px">{{s.title}}</b><span style="font-size: 13px; color: #5E5E66">{{s.sub}}</span></span>
+</span>
+<span style="height: 3px; border-radius: 2px; background: #EFEFEA; overflow: hidden; display: block; margin-left: 48px"><span style="display: block; height: 100%; width: {{s.width}}; background: #16161A"></span></span>
+</button></li>
+</sc-for>
+</ol>
+
+<div style="display: flex; align-items: center; gap: 16px">
+<a href="#" style="height: 56px; padding: 0 8px 0 24px; border-radius: 28px; background: #16161A; color: #FFFFFF; font-weight: 700; font-size: 16px; text-decoration: none; display: flex; align-items: center; gap: 14px">Flytta hit gratis<span style="width: 40px; height: 40px; border-radius: 50%; background: #E3F36B; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16161A" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></a>
+<span style="font-size: 13px; color: #5E5E66">Inga lösenord · Inga kunduppgifter</span>
+</div>
+</div>
+
+<div aria-hidden="true" style="position: relative; height: 560px; border-radius: 32px; background: linear-gradient(160deg, #E6E0F8 0%, #EEF6C4 100%); display: flex; align-items: center; justify-content: center">
+<div style="width: 470px; min-height: 380px; max-height: 520px; border-radius: 28px; background: #FFFFFF; box-shadow: 0 30px 80px rgba(22,22,26,.16); padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; justify-content: space-between"><b style="font-size: 15px">Importera till Booking Buddy</b><span style="font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 8px; background: #F4F4F0; color: #5E5E66">Steg {{stepNo}} av 4</span></div>
+
+<sc-if value="{{s0}}" hint-placeholder-val="{{ true }}">
+<div class="fl-in" style="display: flex; flex-direction: column; gap: 12px">
+<span style="font-size: 13px; font-weight: 600; color: #3E3E46">Länk till din nuvarande bokningssida</span>
+<div style="display: flex; gap: 8px">
+<span style="flex: 1; height: 52px; border-radius: 16px; border: 2px solid #16161A; padding: 0 14px; display: flex; align-items: center; font-family: ui-monospace, monospace; font-size: 13.5px; overflow: hidden; white-space: nowrap">{{typed}}<span class="fl-caret" style="width: 2px; height: 20px; background: #16161A; margin-left: 2px; flex: none"></span></span>
+<span style="height: 52px; padding: 0 18px; border-radius: 16px; background: {{fetchBg}}; color: {{fetchFg}}; font-weight: 700; display: flex; align-items: center; transition: background .4s">Hämta</span>
+</div>
+<sc-if value="{{pasted}}" hint-placeholder-val="{{ false }}"><span class="fl-pop" style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 5px 10px; border-radius: 10px; background: #D5EEDC; color: #1F6B3A">Länk inklistrad</span></sc-if>
+<span style="font-size: 12px; color: #5E5E66">Fungerar med de vanligaste bokningssystemen.</span>
+</div>
+</sc-if>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ false }}">
+<div class="fl-in" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; align-items: center; gap: 12px"><span class="fl-spin" style="width: 22px; height: 22px; border-radius: 50%; border: 3px solid #EFEFEA; border-top-color: #16161A; flex: none"></span><b style="font-size: 16px">Vi läser in din sida …</b><span style="margin-left: auto; font-size: 13px; font-weight: 700; color: #5E5E66">{{clock}}</span></div>
+<span style="height: 8px; border-radius: 4px; background: #EFEFEA; overflow: hidden; display: block"><span style="display: block; height: 100%; width: {{loadW}}; background: #E3F36B; transition: width .5s linear"></span></span>
+<sc-for list="{{found}}" as="f" hint-placeholder-count="4"><div class="fl-in" style="display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-radius: 14px; background: #F4F4F0; font-size: 14px"><span style="display: flex; gap: 10px; align-items: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1F6B3A" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>{{f.label}}</span><b>{{f.count}}</b></div></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div class="fl-in" style="display: flex; flex-direction: column; gap: 10px">
+<b style="font-size: 16px">Välj vad du vill ha med</b>
+<sc-for list="{{picks}}" as="k" hint-placeholder-count="5"><div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 14px; background: #F4F4F0">
+<span style="width: 22px; height: 22px; border-radius: 7px; border: 2px solid #16161A; background: {{k.boxBg}}; display: flex; align-items: center; justify-content: center; transition: background .3s; flex: none"><sc-if value="{{k.on}}" hint-placeholder-val="{{ true }}"><svg class="fl-pop" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#E3F36B" stroke-width="3.5" stroke-linecap="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg></sc-if></span>
+<span style="flex: 1; font-size: 14px; font-weight: 600">{{k.label}}</span><span style="font-size: 13px; color: #5E5E66">{{k.count}}</span>
+</div></sc-for>
+<span style="height: 50px; border-radius: 16px; background: #16161A; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">Importera valda</span>
+</div>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<div class="fl-in" style="display: flex; flex-direction: column; gap: 12px">
+<span class="fl-pop" style="align-self: flex-start; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; padding: 8px 12px; border-radius: 12px; background: #D5EEDC; color: #1F6B3A"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="m5 12 5 5 9-10"></path></svg>Klart – du är igång!</span>
+<div class="fl-in" style="border-radius: 22px; overflow: hidden; background: #FFFFFF; box-shadow: 0 1px 0 #EFEFEA, 0 18px 40px rgba(22,22,26,.10)">
+<div style="height: 132px; position: relative; overflow: hidden">
+<img src="/_blob/8578e11a786bd9a75aab2a8ef69fc611" alt="" style="width: 100%; height: 100%; object-fit: cover; display: block">
+<span style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,.45) 100%)"></span>
+<span style="position: absolute; right: 12px; top: 12px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 6px 10px; border-radius: 12px; background: rgba(255,255,255,.85); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px)"><span style="color: #C77A1E">★</span>4,9 · 128 omdömen</span>
+<span style="position: absolute; left: 16px; bottom: -26px; width: 62px; height: 62px; border-radius: 19px; border: 3px solid #FFFFFF; box-shadow: 0 8px 20px rgba(22,22,26,.2); overflow: hidden; display: block; background: #14213D"><svg width="56" height="56" viewBox="0 0 160 160" role="img" aria-label="Salong Norrsken logotyp" style="display: block"><rect width="160" height="160" fill="#14213D"></rect><path d="M30 104C52 58 84 40 130 46" fill="none" stroke="#7CF2C4" stroke-width="9" stroke-linecap="round"></path><path d="M34 120C60 82 92 68 130 72" fill="none" stroke="#B49CFF" stroke-opacity=".8" stroke-width="7" stroke-linecap="round"></path><circle cx="116" cy="114" r="5" fill="#FFFFFF"></circle><circle cx="52" cy="48" r="3.5" fill="#FFFFFF" fill-opacity=".8"></circle></svg></span>
+</div>
+<div style="padding: 32px 16px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 10px">
+<span style="display: flex; flex-direction: column; gap: 2px"><b style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px; letter-spacing: -0.01em">Salong Norrsken</b><span style="font-size: 12px; color: #5E5E66">Frisör · Södermalm, Stockholm</span></span>
+<span style="display: flex"><img src="/_blob/a8ca03a095c088e1a9cc292d5d35b82f" alt="" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid #FFFFFF"><img src="/_blob/c437c85f987d319d29e1ba2d8f2bde67" alt="" style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 2px solid #FFFFFF; margin-left: -8px"><span style="width: 30px; height: 30px; border-radius: 50%; background: #E6E0F8; border: 2px solid #FFFFFF; margin-left: -8px; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">+2</span></span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 14px; background: #F4F4F0; font-size: 13px"><span style="display: flex; flex-direction: column"><b>Klippning dam</b><span style="font-size: 11.5px; color: #5E5E66">45 min</span></span><b>650 kr</b></span>
+<span style="display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 14px; background: #F4F4F0; font-size: 13px"><span style="display: flex; flex-direction: column"><b>Färgning + klipp</b><span style="font-size: 11.5px; color: #5E5E66">2 h</span></span><b>1 290 kr</b></span>
+</div>
+<div style="display: flex; gap: 8px; align-items: center">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 8px 10px; border-radius: 12px; background: #E3F36B; color: #2F3310"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg>Idag 16:30 −25 %</span>
+<span style="flex: 1; height: 44px; border-radius: 14px; background: #16161A; color: #FFFFFF; font-weight: 700; display: flex; align-items: center; justify-content: center">Boka tid</span>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+</div>
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"stepSeconds":{"editor":"range","default":3.2,"min":2,"max":10,"step":0.5,"unit":"s"},"$preview":{"width":1440,"height":820}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { i: 0, p: 0, paused: false }; }
+componentDidMount() {
+const reduce = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduce) { this.setState({ i: 3, p: 1 }); return; }
+this.timer = setInterval(() => {
+if (this.state.paused) return;
+const secs = this.props.stepSeconds ?? 3.2;
+const p = this.state.p + 0.1 / secs;
+if (p >= 1) this.setState({ i: (this.state.i + 1) % 4, p: 0 }); else this.setState({ p });
+}, 100);
+}
+componentWillUnmount() { clearInterval(this.timer); }
+renderVals() {
+const { i, p } = this.state;
+const meta = [
+{ title: 'Klistra in länken', sub: 'Till din nuvarande bokningssida' },
+{ title: 'Vi läser in allt', sub: 'Klart på ett par minuter' },
+{ title: 'Välj vad du vill ha med', sub: 'Du godkänner allt innan något sparas' },
+{ title: 'Klart – du är igång', sub: 'Din nya bokningssida är redo' },
+];
+const steps = meta.map((m, k) => ({ ...m, n: k + 1, current: k === i ? 'step' : 'false', bg: k === i ? '#FFFFFF' : 'transparent', shadow: k === i ? '0 12px 30px rgba(22,22,26,.08)' : 'none', opacity: k === i ? 1 : 0.62, numBg: k <= i ? '#16161A' : '#FFFFFF', numFg: k <= i ? '#E3F36B' : '#16161A', width: (k < i ? 100 : k === i ? Math.round(p * 100) : 0) + '%', go: () => this.setState({ i: k, p: 0 }) }));
+const url = 'https://www.dinbokning.se/salong-norrsken';
+const typedLen = Math.min(url.length, Math.floor(p * 2.2 * url.length));
+const pasted = p > 0.5;
+const secsPassed = Math.floor(p * 118);
+const clock = Math.floor(secsPassed / 60) + ':' + String(secsPassed % 60).padStart(2, '0');
+const foundAll = [
+{ at: 0.18, label: 'Tjänster och priser', count: '8' },
+{ at: 0.38, label: 'Öppettider', count: 'mån–lör' },
+{ at: 0.58, label: 'Personal', count: '4' },
+{ at: 0.78, label: 'Profil och sociala medier', count: '✓' },
+];
+const pickAll = [
+{ at: 0.1, label: 'Tjänster och priser', count: '8 st' },
+{ at: 0.25, label: 'Kategorier', count: '3 st' },
+{ at: 0.4, label: 'Öppettider', count: 'mån–lör' },
+{ at: 0.55, label: 'Personal', count: '4 st' },
+{ at: 0.7, label: 'Profiltext och sociala medier', count: '' },
+];
+return {
+steps, stepNo: i + 1, s0: i === 0, s1: i === 1, s2: i === 2, s3: i === 3,
+typed: url.slice(0, typedLen), pasted, fetchBg: pasted ? '#16161A' : '#EFEFEA', fetchFg: pasted ? '#FFFFFF' : '#A3A3AB',
+clock, loadW: Math.round(p * 100) + '%', found: foundAll.filter((f) => p > f.at),
+picks: pickAll.map((k) => ({ ...k, on: p > k.at, boxBg: p > k.at ? '#16161A' : '#FFFFFF' })),
+pause: () => this.setState({ paused: true }), resume: () => this.setState({ paused: false }),
+};
+}
+}
+</script>
+</body>
+</html>

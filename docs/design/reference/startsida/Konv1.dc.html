@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Hero – H2 v3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:inherit}a:hover{opacity:.9}
+.lg{background:linear-gradient(135deg,rgba(255,255,255,.82) 0%,rgba(255,255,255,.58) 60%,rgba(255,255,255,.7) 100%);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);border:1px solid rgba(255,255,255,.75);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.3),0 18px 50px rgba(10,30,60,.22);color:#16161A}
+.lg-nav{background:rgba(255,255,255,.18);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
+@keyframes v3-marquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes v3-drift1{0%,100%{transform:translate(0,0) rotate(-1deg)}50%{transform:translate(6px,-12px) rotate(.5deg)}}
+@keyframes v3-drift2{0%,100%{transform:translate(0,0) rotate(1deg)}50%{transform:translate(-8px,-10px) rotate(-.5deg)}}
+@keyframes v3-drift3{0%,100%{transform:translate(0,0) rotate(-.5deg)}50%{transform:translate(4px,-14px) rotate(1deg)}}
+.v3-track{animation:v3-marquee 130s linear infinite}
+.v3-track:has(.usp:hover){animation-play-state:paused}
+.usp{transition:transform .35s cubic-bezier(.2,.7,.2,1),box-shadow .35s}
+.usp:hover{transform:translateY(-6px) scale(1.02);box-shadow:inset 0 1px 0 rgba(255,255,255,.95),0 26px 60px rgba(10,30,60,.3)}
+.v3-d1{animation:v3-drift1 9s ease-in-out infinite}
+.v3-d2{animation:v3-drift2 11s ease-in-out infinite}
+.v3-d3{animation:v3-drift3 10s ease-in-out infinite}
+.v3-layer{position:absolute;inset:0;padding:16px;display:flex;flex-direction:column;justify-content:center;gap:6px;transition:opacity .9s cubic-bezier(.4,0,.2,1),transform .9s cubic-bezier(.4,0,.2,1),filter .9s cubic-bezier(.4,0,.2,1)}
+@media (prefers-reduced-motion: reduce){.v3-track,.v3-d1,.v3-d2,.v3-d3{animation:none}.v3-layer,.usp{transition:none}}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 16px; background: #F4F4F0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif">
+<section style="position: relative; height: 100%; border-radius: 32px; overflow: hidden; color: #FFFFFF; background: #7D9AB4">
+<img src="{{photo}}" alt="{{photoAlt}}" style="position: absolute; left: 0; top: 0; height: 100%; width: {{imgW}}; object-fit: cover; object-position: {{imgPos}}; transform: {{imgFlip}}; transform-origin: center">
+<div aria-hidden="true" style="position: absolute; inset: 0; background: linear-gradient(90deg, rgba({{tint}},.74) 0%, rgba({{tint}},.44) 36%, rgba({{tint}},0) 58%), linear-gradient(0deg, rgba({{tint}},.5) 0%, rgba({{tint}},0) 34%)"></div>
+
+<header style="position: relative; display: flex; align-items: center; justify-content: space-between; padding: 24px 36px">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 22px">Booking <span style="background: #E3F36B; color: #16161A; border-radius: 8px; padding: 0 6px">Buddy</span></span>
+<nav aria-label="Huvudmeny" class="lg-nav" style="display: flex; gap: 4px; padding: 6px; border-radius: 20px"><a href="#" style="padding: 10px 16px; font-size: 14px; font-weight: 600; text-decoration: none">Funktioner</a><a href="#" style="padding: 10px 16px; font-size: 14px; font-weight: 600; text-decoration: none">Branscher</a><a href="#" style="padding: 10px 16px; font-size: 14px; font-weight: 600; text-decoration: none">Priser</a><a href="#" style="padding: 10px 16px; font-size: 14px; font-weight: 600; text-decoration: none">Logga in</a></nav>
+<a href="#" style="height: 48px; padding: 0 22px; border-radius: 24px; background: #E3F36B; color: #16161A; font-size: 14px; font-weight: 700; text-decoration: none; display: flex; align-items: center">Skapa min kalender</a>
+</header>
+
+<div style="position: relative; padding: 30px 64px 0; display: flex; flex-direction: column; gap: 22px; max-width: 620px">
+<span class="lg-nav" style="align-self: flex-start; display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600">
+<span style="width: 8px; height: 8px; border-radius: 50%; background: #E3F36B; flex: none"></span>Bokningssystemet för
+<span style="position: relative; display: inline-block; height: 18px; overflow: hidden; width: {{wordWidth}}; transition: width .6s cubic-bezier(.4,0,.2,1)">
+<sc-for list="{{words}}" as="w" hint-placeholder-count="8"><span style="position: absolute; left: 0; top: 0; color: #E3F36B; font-weight: 700; white-space: nowrap; opacity: {{w.o}}; transform: translateY({{w.y}}); transition: opacity .6s ease, transform .6s cubic-bezier(.4,0,.2,1)">{{w.label}}</span></sc-for>
+</span>
+</span>
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 68px; line-height: .98; font-weight: 600; letter-spacing: -0.035em">Din egen bokningssida.<br>Klar på <span style="background: #E3F36B; color: #16161A; border-radius: 14px; padding: 0 10px">5 minuter.</span></h1>
+<p style="margin: 0; font-size: 18px; line-height: 1.5; color: rgba(255,255,255,.92)">Låt kunderna boka och betala dygnet runt. Påminnelser, omdömen och blixttider sköter sig själva.</p>
+<form class="lg-nav" style="display: flex; gap: 6px; padding: 6px; border-radius: 30px; max-width: 560px" onSubmit="{{noop}}">
+<label style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)" for="v1-email">Din e-post</label>
+<input id="v1-email" type="email" placeholder="Din e-postadress" style="flex: 1; min-width: 0; height: 52px; border: 0; border-radius: 26px; padding: 0 20px; font: inherit; font-size: 16px; background: #FFFFFF; color: #16161A">
+<button type="submit" style="height: 52px; padding: 0 8px 0 22px; border: 0; border-radius: 26px; background: #E3F36B; color: #16161A; font: inherit; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 12px; cursor: pointer">Skapa gratis konto<span style="width: 38px; height: 38px; border-radius: 50%; background: #16161A; display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#E3F36B" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></button>
+</form>
+<div style="display: flex; gap: 20px; font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,.95); flex-wrap: wrap">
+<span style="display: flex; gap: 6px; align-items: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>Betalningar via Stripe</span>
+<span style="display: flex; gap: 6px; align-items: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"></path></svg>Data lagras i EU</span>
+<span style="display: flex; gap: 6px; align-items: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>Support på svenska</span>
+</div>
+</div>
+
+<div class="lg v3-d1" style="position: absolute; right: 64px; top: 120px; width: 270px; height: 104px; border-radius: 24px; overflow: hidden">
+<sc-for list="{{cardA}}" as="s" hint-placeholder-count="4">
+<div class="v3-layer" style="opacity: {{s.o}}; transform: translateY({{s.y}}); filter: blur({{s.b}})">
+<span style="font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #5E5E66">{{s.eyebrow}}</span>
+<b style="font-size: 16px">{{s.title}}</b>
+<span style="align-self: flex-start; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 8px; background: #D5EEDC; color: #1F6B3A">{{s.chip}}</span>
+</div>
+</sc-for>
+</div>
+
+<div class="lg v3-d2" style="position: absolute; right: 120px; top: 262px; width: 250px; height: 82px; border-radius: 24px; overflow: hidden">
+<sc-for list="{{cardB}}" as="s" hint-placeholder-count="3">
+<div class="v3-layer" style="flex-direction: row; align-items: center; justify-content: flex-start; gap: 12px; opacity: {{s.o}}; transform: translateY({{s.y}}); filter: blur({{s.b}})">
+<span style="font-family: 'Bricolage Grotesque', sans-serif; font-size: 34px; font-weight: 700">{{s.big}}</span>
+<span style="display: flex; flex-direction: column"><span style="color: #C77A1E; letter-spacing: 2px">★★★★★</span><span style="font-size: 12px; color: #3E3E46">{{s.sub}}</span></span>
+</div>
+</sc-for>
+</div>
+
+<div class="lg v3-d3" style="position: absolute; right: 56px; top: 382px; width: 280px; height: 100px; border-radius: 24px; overflow: hidden">
+<sc-for list="{{cardC}}" as="s" hint-placeholder-count="4">
+<div class="v3-layer" style="opacity: {{s.o}}; transform: translateY({{s.y}}); filter: blur({{s.b}})">
+<span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .06em; color: #5E5E66"><svg width="14" height="14" viewBox="0 0 24 24" fill="#9DB017" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></svg>{{s.eyebrow}}</span>
+<b style="font-size: 18px">{{s.title}}</b>
+<span style="font-size: 12px; color: #3E3E46">{{s.sub}}</span>
+</div>
+</sc-for>
+</div>
+
+<div role="region" aria-label="Det här ingår i Booking Buddy" style="position: absolute; left: 0; right: 0; bottom: 24px; overflow: hidden">
+<div class="v3-track" style="display: flex; gap: 14px; width: max-content; padding: 8px 24px">
+<sc-for list="{{usps}}" as="u" hint-placeholder-count="24">
+<div class="lg usp" style="flex: none; width: 230px; height: 150px; box-sizing: border-box; border-radius: 24px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between">
+<span style="width: 40px; height: 40px; border-radius: 13px; background: {{u.tone}}; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16161A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{u.d}}"></path></svg></span>
+<span style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 16px; line-height: 1.2">{{u.title}}</b><span style="font-size: 12.5px; line-height: 1.35; color: #3E3E46">{{u.sub}}</span></span>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"photo":{"editor":"enum","options":["Behandlingsrum – morgonrock och handduk","Spa – blond i morgonrock","Leende blond kvinna","Ren beauty – blond profil","Blond med tulpaner","Hudterapeut i behandling","Kvinna i tröja vid havet"],"default":"Behandlingsrum – morgonrock och handduk"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { t: 0, n: 6 }; }
+componentDidMount() {
+const reduce = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (reduce) return;
+this.timer = setInterval(() => this.setState({ t: this.state.t + 1 }), 500);
+}
+componentWillUnmount() { clearInterval(this.timer); }
+layers(list, period, offset) {
+const t = this.state.t * 0.5;
+const idx = Math.floor((t + offset) / period) % list.length;
+const prev = (idx + list.length - 1) % list.length;
+return list.map((s, k) => ({ ...s, o: k === idx ? 1 : 0, y: k === idx ? '0px' : (k === prev ? '-12px' : '12px'), b: k === idx ? '0px' : '6px' }));
+}
+renderVals() {
+const t = this.state.t * 0.5;
+const photos = {
+'Behandlingsrum – morgonrock och handduk': { src: '/_blob/8ea4f29001507e56597f0aafa0e5e2d7', alt: 'Blond kvinna i morgonrock med handduk i ett behandlingsrum', w: '100%', pos: '50% 40%', flip: 'scaleX(-1)', tint: '28,24,22' },
+'Spa – blond i morgonrock': { src: '/_blob/30aafada22b737f219a5db3059c1f10b', alt: 'Blond kvinna i vit morgonrock i ett ljust spa', w: '100%', pos: '50% 35%', flip: 'none', tint: '28,26,24' },
+'Leende blond kvinna': { src: '/_blob/4dee5623709b61abeaa1819eaf2ee572', alt: 'Leende blond kvinna', w: '100%', pos: '50% 30%', flip: 'none', tint: '30,26,22' },
+'Ren beauty – blond profil': { src: '/_blob/e56976d34470708a7092837fc7fa7659', alt: 'Blond kvinna i profil mot ljus bakgrund', w: '128%', pos: '50% 30%', flip: 'none', tint: '40,38,36' },
+'Blond med tulpaner': { src: '/_blob/cc12ffefb26e95aa683261b052cacf12', alt: 'Blond kvinna med tulpaner och en presentask', w: '118%', pos: '50% 35%', flip: 'none', tint: '40,34,24' },
+'Hudterapeut i behandling': { src: '/_blob/2ef851bb6194863d0b7f137b68c9805a', alt: 'Blond hudterapeut ger en ansiktsbehandling', w: '128%', pos: '50% 40%', flip: 'none', tint: '18,16,16' },
+'Kvinna i tröja vid havet': { src: '/_blob/7714ad46d50f483e6c1302931d675d7a', alt: 'Leende kvinna i stickad tröja vid havet', w: '138%', pos: '50% 40%', flip: 'none', tint: '10,30,58' },
+};
+const ph = photos[this.props.photo] || photos['Behandlingsrum – morgonrock och handduk'];
+const industries = ['frisörer', 'barberare', 'nagelstudios', 'hudterapeuter', 'massörer', 'PT', 'tatuerare', 'hundfrisörer'];
+const wi = Math.floor(t / 2.6) % industries.length;
+const prevW = (wi + industries.length - 1) % industries.length;
+const words = industries.map((label, k) => ({ label, o: k === wi ? 1 : 0, y: k === wi ? '0%' : (k === prevW ? '-110%' : '110%') }));
+const wordWidth = Math.round(industries[wi].length * 7.6 + 2) + 'px';
+const cardA = this.layers([
+{ eyebrow: 'NY BOKNING', title: 'Elin · Färgning, tor 14:30', chip: 'Betald online' },
+{ eyebrow: 'NY BOKNING', title: 'Amir · Skägg, fre 10:00', chip: 'Betald online' },
+{ eyebrow: 'BOKAD KL. 23:14', title: 'Sara · Gellack, lör 12:00', chip: 'Medan du sov' },
+{ eyebrow: 'NY BOKNING', title: 'Jonas · Massage 50 min', chip: 'Betald online' },
+], 4.5, 0);
+const cardB = this.layers([
+{ big: '4,9', sub: 'verifierade omdömen' },
+{ big: '+3', sub: 'nya omdömen idag' },
+{ big: '5,0', sub: '"Kommer tillbaka!" – Sara L.' },
+], 5.5, 1.5);
+const cardC = this.layers([
+{ eyebrow: 'BLIXTTID', title: 'Idag 16:30 · −25 %', sub: 'Skickad till 12 på väntelistan' },
+{ eyebrow: 'BLIXTTID', title: 'Idag 16:30 · bokad!', sub: 'Maja tog tiden på 4 minuter' },
+{ eyebrow: 'BLIXTTID', title: 'I morgon 09:15 · −30 %', sub: 'Tom lucka blev en bokning' },
+{ eyebrow: 'VÄNTELISTA', title: 'Fullbokat lördag', sub: '3 väntar på en avbokning' },
+], 5, 3);
+const base = [
+{ tone: '#E6E0F8', d: 'M8 2v4M16 2v4M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z', title: 'Onlinebokning dygnet runt', sub: 'Kunderna bokar själva – även kl. 23.' },
+{ tone: '#D5EEDC', d: 'M2 7h20v12H2zM2 11h20M6 15h4', title: 'Betalning vid bokning', sub: 'Kort och Apple Pay, direkt till ditt konto.' },
+{ tone: '#FBEBD6', d: 'm12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z', title: 'Verifierade omdömen', sub: 'Bara riktiga kunder kan recensera.' },
+{ tone: '#EEF6C4', d: 'M13 2 4 14h7l-1 8 9-12h-7z', title: 'Blixttider', sub: 'Fyll tomma luckor med rabatt på ett klick.' },
+{ tone: '#D3E3EE', d: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8', title: 'Väntelista', sub: 'En avbokad tid går direkt till nästa i kön.' },
+{ tone: '#E6E0F8', d: 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z', title: 'SMS-påminnelser', sub: 'Färre uteblivna besök, helt automatiskt.' },
+{ tone: '#FBEBD6', d: 'M12 3v12M7 10l5 5 5-5M5 21h14', title: 'Smärtfri flytt', sub: 'Vi importerar från ditt gamla system.' },
+{ tone: '#D5EEDC', d: 'M3 9l9-6 9 6v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1zM9 21v-6h6v6', title: 'Egen bokningssida', sub: 'Bilder, personal och sociala medier.' },
+{ tone: '#EEF6C4', d: 'M20 12v9H4v-9M2 7h20v5H2zM12 21V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z', title: 'Medlemmar & rabatter', sub: 'Belöna dina stamkunder.' },
+{ tone: '#D3E3EE', d: 'M4 4h16v16H4zM4 4l8 8 8-8', title: 'Utskick & kampanjer', sub: 'Väck kunder som inte bokat på länge.' },
+{ tone: '#E6E0F8', d: 'M3 3v18h18M7 15l4-4 3 3 5-6', title: 'Kassa & statistik', sub: 'Intäkter och beläggning i realtid.' },
+{ tone: '#FBEBD6', d: 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21v-1a7 7 0 0 1 14 0v1M19 8v6M22 11h-6', title: 'Personalkonton', sub: 'Rätt behörighet för varje medarbetare.' },
+];
+const n = this.state.n; return { n, loss: (n * 650).toLocaleString('sv-SE'), setN: (e) => this.setState({ n: Number(e.target.value) }), noop: (e) => e.preventDefault(), photo: ph.src, photoAlt: ph.alt, imgW: ph.w, imgPos: ph.pos, imgFlip: ph.flip, tint: ph.tint, words, wordWidth, cardA, cardB, cardC, usps: base.concat(base) };
+}
+}
+</script>
+</body>
+</html>

@@ -1,18 +1,10 @@
-// Footer delad av alla sidor på sitio-webben (WP-hemsida, retro: ny design mappad från
-// `.visual-diff/ref/footer.html`). Ljus lime-50-överdel, ett mörkt rundat kort med
-// diskreta konturlinjer (inline SVG, låg opacitet) och en svävande 3D-kalender
-// (`calendar-3d.tsx`) som sticker upp över kortets överkant. `BrandLogo` (`size="lg"`) i
-// mitten — samma logga som headern/mobilmenyn, bara större.
-//
-// Kolumnen med sociala länkar utelämnas: `brand.ts` har inga sociala fält (regel dura 10 —
-// inga påhittade länkar). E-post utelämnas av samma skäl (`brand.supportEmail` finns
-// inte). "Términos"/"Privacidad" är nu riktiga länkar till `/legal/[doc]` (WP-26 steg 6),
-// tillsammans med en tredje länk till biträdesavtalet (DPA).
-import { ArrowUpRight } from "lucide-react";
+// Footer delad av alla sidor på sitio-webben. Ny sidfot (WP-71, SidaP3.dc.html): mörk,
+// kolumner (produkt, branscher, företaget, kontakt) och Stampello som partnerkort.
+// Kontaktuppgifter kommer från `brand.legal`; fält som fortfarande är platshållare
+// ("[…]") renderas inte.
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
-import { strokeArrow } from "@/components/ui/icons";
+import { BrandLogo } from "@/components/marketing/brand-logo";
 import { brand } from "@/config/brand";
 import {
   href,
@@ -22,168 +14,126 @@ import {
 } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 
-import { BrandLogo } from "./brand-logo";
-import { Calendar3D } from "./calendar-3d";
+const t = copy.home.footer;
 
-const INDUSTRIAS = copy.SITIO_PARA_INDUSTRIAS.map((industria) => ({
-  id: industria.id,
-  nombre: industria.nombre,
-  href: hrefIndustria(industria.id as IndustriaId),
-}));
+const linkClass =
+  "text-14 text-on-dark-muted transition-colors duration-150 ease-out hover:text-lime focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime";
 
-// "Horas flash"/"Ventajas": mismo motivo que en `site-header.tsx` (sitio-v6, sin una
-// entrada propia en `copy.sitio.footer.links` todavía) — reutilizan
-// `megamenu.destacado.titulo` y `ventajas.hero.etiqueta`, nunca texto inventado.
-const PRODUCTO_LINKS = [
-  {
-    href: href("funcionalidades"),
-    label: copy.sitio.footer.links.funcionalidades,
-  },
-  { href: href("precios"), label: copy.sitio.footer.links.precios },
-  { href: href("preguntas"), label: copy.sitio.footer.links.preguntas },
-  { href: href("contacto"), label: copy.sitio.footer.links.contacto },
-  {
-    href: href("horasFlash"),
-    label: copy.sitio.megamenu.destacado.titulo,
-  },
-  { href: href("ventajas"), label: copy.sitio.ventajas.hero.etiqueta },
-] as const;
+const real = (v: string): boolean => v.trim() !== "" && !v.startsWith("[");
 
-const footerLinkClass =
-  "text-14 font-semibold text-on-dark-soft transition-colors duration-150 ease-out hover:text-lime focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime";
-
-const legalLinkClass =
-  "underline-offset-2 transition-colors duration-150 ease-out hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
-
-const ENCARGO_LABEL = copy.sitio.footer2.legal.encargo;
-
-function ArrowCircle({ tone }: { tone: "on-lime" | "on-dark" }) {
+function Column({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
-    <span
-      aria-hidden="true"
-      className={
-        tone === "on-lime"
-          ? "flex size-6.5 shrink-0 items-center justify-center rounded-full bg-ink text-lime"
-          : "flex size-6.5 shrink-0 items-center justify-center rounded-full bg-lime text-ink"
-      }
-    >
-      <ArrowUpRight className="size-3.5" strokeWidth={strokeArrow} />
-    </span>
-  );
-}
-
-/** Diskreta konturlinjer i bakgrunden (WP-hemsida, mappad från `footer.html`): fyra mjuka
- * kurvor, `opacity-5` i stället för referensens `stroke-opacity=".06"` (närmaste
- * Tailwind-opacitetssteget). Rent dekorativt. */
-function ContourLines() {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 1344 460"
-      preserveAspectRatio="none"
-      className="absolute inset-0 h-full w-full stroke-on-dark opacity-5"
-      fill="none"
-      strokeWidth={1.5}
-    >
-      <path d="M-20 120 C 200 60, 320 220, 520 160 S 900 40, 1100 140 S 1320 260, 1380 200" />
-      <path d="M-20 200 C 180 150, 340 300, 540 240 S 880 120, 1080 220 S 1300 340, 1380 290" />
-      <path d="M-20 290 C 220 240, 360 380, 560 320 S 900 200, 1120 300 S 1320 420, 1380 380" />
-      <path d="M-20 40 C 240 0, 380 120, 600 80 S 940 -20, 1160 60 S 1320 140, 1380 110" />
-    </svg>
+    <div className="flex flex-col gap-3 lg:col-span-2">
+      <b className="text-14 text-on-dark">{title}</b>
+      {children}
+    </div>
   );
 }
 
 export function SiteFooter() {
   const anio = new Date().getFullYear();
+  const { legal } = brand;
+  const partner = copy.sitio.partner.stampello;
+
   return (
-    <footer className="bg-lime-50">
-      <div className="px-4 pt-24 pb-4 sm:px-6 sm:pt-28 sm:pb-6 lg:px-8">
-        <div
-          data-surface="dark"
-          className="relative rounded-shell bg-dark px-6 pt-20 pb-10 text-on-dark sm:px-10 sm:pt-24 sm:pb-12 lg:px-16"
-        >
-          <ContourLines />
-
-          <Calendar3D className="absolute -top-14 left-1/2 w-32 -translate-x-1/2 sm:-top-20 sm:w-44" />
-
-          <div className="relative flex flex-col items-center gap-3 text-center">
-            <BrandLogo size="lg" />
-            <p className="text-16 font-medium text-on-dark-soft italic">
+    <footer data-surface="dark" className="bg-night text-on-dark">
+      <div className="mx-auto flex max-w-360 flex-col gap-12 px-6 pt-16 pb-10 sm:px-8 lg:px-22 lg:pt-20">
+        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+          <div className="flex flex-col gap-4 sm:col-span-2 lg:col-span-4">
+            <BrandLogo size="sm" />
+            <p className="text-15 leading-relaxed text-on-dark-muted">
               {brand.tagline}
             </p>
-            <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
-              <Button asChild variant="accent" size="xl">
-                <Link href="/login">
-                  {copy.sitio.nav.ctaCrearAgenda}
-                  <ArrowCircle tone="on-lime" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline-dark" size="xl">
-                <Link href="/login">
-                  {copy.sitio.nav.entrar}
-                  <ArrowCircle tone="on-dark" />
-                </Link>
-              </Button>
-            </div>
-          </div>
-
-          <div className="relative mt-14 grid gap-10 sm:grid-cols-3">
-            <div className="flex flex-col gap-6">
-              <div>
-                <span className="font-display text-24 font-semibold">
-                  {copy.sitio.footer2.contacto.titulo}
-                </span>
-                <p className="mt-2.5 text-14 leading-relaxed text-on-dark-soft">
-                  {copy.sitio.footer2.contacto.ciudad}
-                </p>
-              </div>
-              <div className="inline-flex w-fit items-center gap-2 rounded-full bg-dark-2 px-3 py-1.5 text-12 text-on-dark-muted">
-                <span className="rounded-full bg-lime px-2 py-0.5 text-11 font-bold text-ink">
-                  {copy.sitio.footer2.novedad.etiqueta}
-                </span>
-                {copy.sitio.footer2.novedad.texto}
-              </div>
-            </div>
-
-            <div className="flex flex-col items-start gap-4 sm:col-start-3 sm:items-end">
-              <span className="font-display text-24 font-semibold">
-                {copy.sitio.footer2.irA.titulo}
+            <a
+              href={partner.url}
+              target="_blank"
+              rel="noopener"
+              className="mt-2 flex flex-col gap-1 rounded-icon px-4 py-3.5 text-14 glass-dark transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
+            >
+              <span className="text-11 font-bold tracking-label text-lime">
+                {t.partnerEtiqueta}
               </span>
-              <div className="grid grid-cols-2 gap-x-10 gap-y-2.5 text-left sm:text-right">
-                {PRODUCTO_LINKS.map((link, i) => (
-                  // `contents`: los dos <Link> participan directo en la grid de 2
-                  // columnas, el <div> en sí no genera una celda propia.
-                  <div key={link.href} className="contents">
-                    <Link href={link.href} className={footerLinkClass}>
-                      {link.label}
-                    </Link>
-                    {INDUSTRIAS[i] ? (
-                      <Link
-                        href={INDUSTRIAS[i]!.href}
-                        className={footerLinkClass}
-                      >
-                        {INDUSTRIAS[i]!.nombre}
-                      </Link>
-                    ) : (
-                      <span />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center gap-5 rounded-control bg-lime-50 px-3.5 py-2 text-12 font-semibold text-ink">
-                <Link href={hrefLegal("terminos")} className={legalLinkClass}>
-                  {copy.sitio.footer2.legal.terminos}
-                </Link>
-                <Link href={hrefLegal("privacidad")} className={legalLinkClass}>
-                  {copy.sitio.footer2.legal.privacidad}
-                </Link>
-                <Link href={hrefLegal("encargo")} className={legalLinkClass}>
-                  {ENCARGO_LABEL}
-                </Link>
-                <span>©{copy.sitio.footer2.legal.derechos({ anio })}</span>
-              </div>
-            </div>
+              <span>
+                <b>Stampello</b> – {t.partnerTexto}
+              </span>
+            </a>
           </div>
+
+          <Column title={t.producto}>
+            <Link href={href("funcionalidades")} className={linkClass}>
+              {copy.sitio.footer.links.funcionalidades}
+            </Link>
+            <Link href={href("precios")} className={linkClass}>
+              {copy.sitio.footer.links.precios}
+            </Link>
+            <Link
+              href={href("inicio", "migracion-facil")}
+              className={linkClass}
+            >
+              {t.flytt}
+            </Link>
+            <Link href={href("horasFlash")} className={linkClass}>
+              {t.flash}
+            </Link>
+            <Link href={`/${brand.demoSlug}`} className={linkClass}>
+              {t.ejemplo}
+            </Link>
+          </Column>
+
+          <Column title={t.rubros}>
+            {copy.SITIO_PARA_INDUSTRIAS.map((i) => (
+              <Link
+                key={i.id}
+                href={hrefIndustria(i.id as IndustriaId)}
+                className={linkClass}
+              >
+                {i.nombre}
+              </Link>
+            ))}
+          </Column>
+
+          <Column title={t.empresa}>
+            <Link href={hrefLegal("terminos")} className={linkClass}>
+              {copy.sitio.footer2.legal.terminos}
+            </Link>
+            <Link href={hrefLegal("privacidad")} className={linkClass}>
+              {copy.sitio.footer2.legal.privacidad}
+            </Link>
+            <Link href={hrefLegal("encargo")} className={linkClass}>
+              {copy.sitio.footer2.legal.encargo}
+            </Link>
+          </Column>
+
+          <Column title={t.contacto}>
+            {real(legal.contactEmail) ? (
+              <a
+                href={`mailto:${legal.contactEmail}`}
+                aria-label={copy.sitio.footer2.contacto.correoAria}
+                className={`${linkClass} break-all`}
+              >
+                {legal.contactEmail}
+              </a>
+            ) : null}
+            {real(legal.taxId) ? (
+              <span className="text-14 text-on-dark-muted">{legal.taxId}</span>
+            ) : null}
+            <span className="text-14 text-on-dark-muted">
+              {real(legal.address)
+                ? legal.address
+                : copy.sitio.footer2.contacto.ciudad}
+            </span>
+          </Column>
+        </div>
+
+        <div className="flex flex-col justify-between gap-2 border-t border-dark-2 pt-6 text-13 text-blocked sm:flex-row">
+          <span>{t.pie({ anio, nombre: brand.name })}</span>
+          <span>{copy.home.confianza.map((c) => c.texto).join(" · ")}</span>
         </div>
       </div>
     </footer>

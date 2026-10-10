@@ -203,14 +203,14 @@ function ProductoMenuPanel() {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ className }: { className?: string }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   // Kontrollerat värde, bara för triggerns "öppen"-pill (se filkommentaren ovan om
   // varför inte `data-[state=open]:…`).
   const [menuValue, setMenuValue] = useState("");
 
   return (
-    <header className="sticky top-4 z-40 px-4 sm:px-8">
+    <header className={cn("sticky top-4 z-40 px-4 sm:px-8", className)}>
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 rounded-full border border-surface/60 bg-surface/70 px-3 shadow-glass backdrop-blur-glass backdrop-saturate-150 sm:px-5">
         <Link
           href={href("inicio")}

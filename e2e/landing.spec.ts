@@ -5,40 +5,37 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 import { brand } from "../src/config/brand";
-import { landing, sitio } from "../src/i18n/es-CL.marketing";
+import { home, landing } from "../src/i18n/es-CL.marketing";
 
 test("renderar med rubrik, nav och CTA:er", async ({ page, isMobile }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
 
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  // Mobil: glas-naven visar bara logga + meny; CTA:n finns i heron.
+  // Mobil: glas-naven visar bara logga + meny; CTA:n finns i heron (e-postfältet).
   await expect(
     isMobile
       ? page
           .getByRole("main")
-          .getByRole("link", { name: landing.hero.ctaPrimario })
+          .getByRole("button", { name: home.hero.cta })
           .first()
       : page
           .getByRole("banner")
           .getByRole("link", { name: landing.nav.ctaCrearAgenda, exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: landing.precios.titulo }),
+    page.getByRole("heading", { name: new RegExp(home.precios.tituloPre) }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: landing.preguntas.titulo }),
+    page.getByRole("heading", { name: home.faq.titulo }),
   ).toBeVisible();
 });
 
-test("hero: novedad y vista previa de producto", async ({ page }) => {
+test("hero: foto, pill med bransch och USP-karusell", async ({ page }) => {
   await page.goto("/");
-
+  await expect(page.getByText(home.hero.prefijo).first()).toBeVisible();
   await expect(
-    page.getByText(sitio.inicio.heroBento.nuevo.texto),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("img", { name: landing.hero.vistaPreviaAria }),
+    page.getByRole("img", { name: home.hero.fotoAlt }),
   ).toBeVisible();
 });
 
@@ -55,21 +52,32 @@ test('"Entrar" lleva a /login', async ({ page, isMobile }) => {
   await page.waitForURL("**/login");
 });
 
-test('el CTA secundario ("Ver una agenda de ejemplo") lleva al negocio de demo (brand.demoSlug)', async ({
+test('"Ver la página de ejemplo" lleva al negocio de demo (brand.demoSlug)', async ({
   page,
 }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: landing.hero.ctaSecundario }).click();
+  await page.getByRole("link", { name: home.showcase.cta }).click();
   await page.waitForURL(`**/${brand.demoSlug}`);
 });
 
-test("el CTA primario del hero lleva a /login", async ({ page }) => {
+test("el formulario del hero lleva a /login con el correo", async ({
+  page,
+}) => {
   await page.goto("/");
+  await page.locator("#hero-email").fill("ana@example.com");
+  // Inloggade projekt omdirigeras vidare från /login – kontrollera själva
+  // navigeringen dit i stället för slutadressen.
+  const navigated = page.waitForRequest(
+    (r) =>
+      r.isNavigationRequest() &&
+      r.url().includes("/login?email=ana%40example.com"),
+  );
   await page
-    .getByRole("link", { name: landing.hero.ctaPrimario })
+    .getByRole("main")
+    .getByRole("button", { name: home.hero.cta })
     .first()
     .click();
-  await page.waitForURL("**/login");
+  await navigated;
 });
 
 test("360 px de ancho: sin scroll horizontal", async ({ page }) => {
@@ -87,8 +95,8 @@ test("preguntas frecuentes: se puede abrir una pregunta (details/summary nativo)
   page,
 }) => {
   await page.goto("/");
-  const primeraPregunta = landing.preguntas.items.instalar.pregunta;
-  const respuesta = landing.preguntas.items.instalar.respuesta;
+  // La primera pregunta viene abierta; probamos con la segunda.
+  const { pregunta: primeraPregunta, respuesta } = home.faq.items[1]!;
   await expect(page.getByText(respuesta)).not.toBeVisible();
   await page.getByText(primeraPregunta).click();
   await expect(page.getByText(respuesta)).toBeVisible();
