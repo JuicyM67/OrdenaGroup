@@ -51,6 +51,7 @@ export const smsCreditos: Widen<typeof EsSmsCreditos> = {
   comprar: {
     titulo: "Fyll på SMS",
     sub: "1 kr per SMS. Gäller i 12 månader.",
+    pronto: "Köp av SMS-krediter aktiveras snart.",
     subCorto: "1 kr per SMS · gäller i 12 månader · 160 tecken per SMS",
     leyenda: "Välj paket",
     paquete: (p: { n: string }): string => `${p.n} SMS`,

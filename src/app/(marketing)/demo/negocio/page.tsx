@@ -1,4 +1,4 @@
-// /ejemplo/negocio (SE: /exempel/foretag) — WP-72: interaktiv demo av ägarappen med guidad
+// /demo/negocio (SE: /demo/foretag) — WP-72: interaktiv demo av ägarappen med guidad
 // visning. Statisk mockup med fiktiv data (ingen inloggning, inga DB-anrop), se
 // `docs/design/reference/visning/Foretag.dc.html`. Texter via `visita` (@/i18n).
 import type { Metadata } from "next";
