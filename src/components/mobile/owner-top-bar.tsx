@@ -15,11 +15,12 @@
 import { LogOut } from "lucide-react";
 import Link from "next/link";
 
-import { brand } from "@/config/brand";
+import { brand, market } from "@/config/brand";
 import { appHref } from "@/config/routes";
 import { nav } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 
+import { BrandLogo } from "@/components/marketing/brand-logo";
 import { IconButton } from "@/components/ui/icon-button";
 import { LogoMark } from "@/components/ui/logo-mark";
 import type { AvatarProps } from "@/components/ui/avatar";
@@ -87,8 +88,14 @@ export function OwnerMobileTopBar({
         aria-label={nav.volverAlInicio}
         className="flex items-center gap-2.5 rounded-icon focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime focus-visible:transition-none"
       >
-        <LogoMark label={nav.volverAlInicio} size={40} decorative />
-        <span className="text-15 font-bold text-on-dark">{brand.name}</span>
+        {market === "SE" ? (
+          <BrandLogo size="sm" decorative />
+        ) : (
+          <>
+            <LogoMark label={nav.volverAlInicio} size={40} decorative />
+            <span className="text-15 font-bold text-on-dark">{brand.name}</span>
+          </>
+        )}
       </Link>
       <div className="flex items-center gap-2">
         {onConfirmRequest && onDeclineRequest ? (

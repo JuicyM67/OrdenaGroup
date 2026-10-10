@@ -559,3 +559,14 @@ måste läggas till i motsvarande lista i `cn.ts` i samma PR.
 Referenser: `docs/design/reference/startsida/` (Konv1 = hero, Flytt = smärtfri flytt, SidaP3 + genpages.py = övriga sektioner). Komponenter i `src/components/marketing/home/`.
 Nya tokens i `tokens.css` (finns bara för startsidan): textstorlekar 20/34/52/54/56/60/68, `tracking-hero|headline|label`, `leading-display`, radier `device`, `device-sm`, `screen`, `cta`, `form`, `highlight`, skuggor `float-lg|float-md|soft`, blur `photo|layer`, animationer `marquee-slow`, `drift-1..3`, `pulse-ring`, samt utilities `glass-light`, `glass-dark`, `glass-nav` (liquid glass på foton), `bg-hero-tint(-mobile)`, `bg-photo-tint(-mobile)` (full-bleed foto-hero, WP-75: kant i kant, innehåll i `max-w-360`-container, toning för >= 4.5:1), `bg-cta-tint(-mobile)`, `bg-scrim-bottom`, `bg-flytt-stage`, `object-hero-mobile`.
 Foton: `public/marketing/` (Unsplash, se CREDITS.md). Text på foto ligger alltid på en toning (min. 4,5:1).
+
+## 14. Logotyp SE: b-klockan (WP-74, D-049)
+
+Booking Buddys märke: gement **b** med kraftig stam och en rundel som tjock ring med limegröna klockvisare. Källor: `docs/design/brand/*.svg`. Komponenter: `BbMark` (`src/components/ui/bb-mark.tsx`, bara märket) och `BrandLogo` (`variant` full/mark, `tone` auto/light/dark). CL behåller sin logotyp.
+
+- **Ordmärke:** "booking" (600) + "buddy" (800), Bricolage Grotesque, `tracking-headline`, märket till vänster med `gap-2`.
+- **Färger:** på ljus yta ink + `flash-dot` (visare, kontrast på ljust); på mörk yta `on-dark` + `lime`. `tone="auto"` följer `data-surface="dark"`.
+- **Frizon:** minst märkets halva stamhöjd runt om (ca 0,5 x märkeshöjd). Inga effekter, ingen lime-ruta bakom märket (appikonen undantagen).
+- **Minsta storlek:** 16 px favicon (`bb-favicon.svg`), 24 px på skärm (märket), ordmärket minst 19 px text.
+- **Ikoner:** `public/brand/` (favicon 16/32, apple 180 utan rundade hörn, 192/512, maskable 512 med säkerhetsmarginal) genereras med `node scripts/gen-brand-icons.mjs`.
+- **Mejl:** märket som PNG (`bb-mark-email.png`, hostad på marknadens domän) + ordet som text; alla mallar delar `renderLayout`.

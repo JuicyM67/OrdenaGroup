@@ -32,6 +32,9 @@ import path from "node:path";
 import { brand, market, type Market } from "@/config/brand";
 import { renderEmail } from "@/server/messaging/email/render";
 
+// Statiska mallar: Supabase fyller i bas-URL:en vid utskick (märkesbilden i mejlhuvudet).
+process.env.NEXT_PUBLIC_APP_URL = "{{ .SiteURL }}";
+
 const MARKET_DIR: Record<Market, string> = { CL: "es-CL", SE: "sv-SE" };
 
 // D-019/WP-15: länken MÅSTE gå via /auth/confirm?token_hash=…&type=…, se
