@@ -159,8 +159,6 @@ export async function createBooking(
     const checkout = await createCheckoutForBooking({
       businessId: business.id,
       bookingId: result.value.id,
-      manageToken:
-        result.value.manageToken !== "" ? result.value.manageToken : undefined,
       now,
     });
     if (checkout.ok) {

@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 
 import { marketConfig } from "@/config/market";
 import {
@@ -73,18 +73,39 @@ export async function effectiveOnlinePayment(
   return row?.ok ? row.online_payment : "off";
 }
 
+/** Deterministisk uuid för checkout-raden: ett omförsök efter ett tappat svar
+ * ger exakt samma Stripe-parametrar (idempotensnyckeln kräver det). */
+function checkoutUuid(bookingId: string, n: number): string {
+  const h = createHash("sha256")
+    .update(`checkout:${bookingId}:${String(n)}`)
+    .digest("hex");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
+}
+
+/** Sessionens slut, avrundat till 10-minutersblock så att omförsök inom
+ * blocket får identiska parametrar; alltid 31-41 min fram (Stripe kräver >= 30). */
+function sessionExpiresAt(now: Date): number {
+  const bucket = 10 * 60;
+  const t = Math.floor(now.getTime() / 1000 / bucket) * bucket;
+  return t + (SESSION_TTL_MINUTES + 10) * 60;
+}
+
 export async function createCheckoutForBooking(input: {
   businessId: string;
   bookingId: string;
-  /** Kundens klartext-token (för tillbakalänken); saknas vid idempotent omförsök. */
-  manageToken?: string | undefined;
   now: Date;
 }): Promise<CheckoutResult> {
   if (!stripeEnabled()) return { ok: false, code: "unavailable" };
   const { businessId, bookingId } = input;
   try {
-    const loaded = await withServiceTx(async (q) => {
-      const b = await q.query<BookingRow>(
+    // Allt under ett advisory-lås per bokning: dubbelklick serialiseras och
+    // den andra anropet återanvänder den öppna sessionen.
+    return await withServiceTx(async (q): Promise<CheckoutResult> => {
+      await q.query(
+        "select pg_advisory_xact_lock(hashtextextended('stripe-checkout:' || $1::text || ':' || $2::text, 0))",
+        [businessId, bookingId],
+      );
+      const bres = await q.query<BookingRow>(
         `select bk.status::text as status,
                 (bk.price_clp - bk.discount_clp)::int as amount,
                 sv.name as service_name, b.name as business_name, b.slug,
@@ -108,89 +129,85 @@ export async function createCheckoutForBooking(input: {
           order by created_at`,
         [businessId, bookingId],
       );
-      return { booking: b.rows[0], existing: ex.rows };
-    });
-    const b = loaded.booking;
-    if (!b || !b.stripe_account_id || !b.charges_enabled) {
-      return { ok: false, code: "unavailable" };
-    }
-    if (b.online_payment === "off") return { ok: false, code: "unavailable" };
-    if (b.status !== "requested" && b.status !== "confirmed") {
-      return { ok: false, code: "not_payable" };
-    }
-    if (
-      loaded.existing.some(
-        (e) => e.status === "authorized" || e.status === "captured",
-      )
-    ) {
-      return { ok: false, code: "not_payable" };
-    }
-    if (b.amount < ONLINE_PAYMENT_MIN_MINOR) {
-      return { ok: false, code: "not_payable" };
-    }
+      const b = bres.rows[0];
+      const existing = ex.rows;
+      if (!b || !b.stripe_account_id || !b.charges_enabled) {
+        return { ok: false, code: "unavailable" };
+      }
+      if (b.online_payment === "off") return { ok: false, code: "unavailable" };
+      if (b.status !== "requested" && b.status !== "confirmed") {
+        return { ok: false, code: "not_payable" };
+      }
+      if (
+        existing.some(
+          (e) => e.status === "authorized" || e.status === "captured",
+        )
+      ) {
+        return { ok: false, code: "not_payable" };
+      }
+      if (b.amount < ONLINE_PAYMENT_MIN_MINOR) {
+        return { ok: false, code: "not_payable" };
+      }
 
-    const stripe = getStripe();
-    // Återanvänd en fortfarande öppen session (omförsök / dubbelklick).
-    const open = loaded.existing.find((e) => e.status === "open");
-    if (open) {
-      const s = await stripe.checkout.sessions.retrieve(
-        open.session_id,
-        {},
-        { stripeAccount: open.stripe_account_id },
-      );
-      if (s.status === "open" && s.url) return { ok: true, url: s.url };
-    }
+      const stripe = getStripe();
+      // Återanvänd en fortfarande öppen session (omförsök / dubbelklick).
+      const open = existing.find((e) => e.status === "open");
+      if (open) {
+        const s = await stripe.checkout.sessions.retrieve(
+          open.session_id,
+          {},
+          { stripeAccount: open.stripe_account_id },
+        );
+        if (s.status === "open" && s.url) return { ok: true, url: s.url };
+      }
 
-    const fee = platformFeeMinor(b.amount, b.plan);
-    const checkoutId = randomUUID();
-    const base = appBaseUrl();
-    const successUrl = input.manageToken
-      ? `${base}/r/${input.manageToken}?pago=ok`
-      : `${base}/${b.slug}?pago=ok`;
-    const session = await stripe.checkout.sessions.create(
-      {
-        mode: "payment",
-        allowed_payment_method_types: ["card"],
-        locale: "sv",
-        client_reference_id: bookingId,
-        ...(b.customer_email ? { customer_email: b.customer_email } : {}),
-        line_items: [
-          {
-            quantity: 1,
-            price_data: {
-              currency: marketConfig.currency.toLowerCase(),
-              unit_amount: b.amount,
-              product_data: {
-                name: b.service_name,
-                description: b.business_name,
+      const fee = platformFeeMinor(b.amount, b.plan);
+      const checkoutId = checkoutUuid(bookingId, existing.length);
+      const base = appBaseUrl();
+      // Ingen kundtoken i URL:en hos Stripe: kunden landar på bokningssidan och
+      // får sin personliga länk i bekräftelsen.
+      const session = await stripe.checkout.sessions.create(
+        {
+          mode: "payment",
+          allowed_payment_method_types: ["card"],
+          locale: "sv",
+          client_reference_id: bookingId,
+          ...(b.customer_email ? { customer_email: b.customer_email } : {}),
+          line_items: [
+            {
+              quantity: 1,
+              price_data: {
+                currency: marketConfig.currency.toLowerCase(),
+                unit_amount: b.amount,
+                product_data: {
+                  name: b.service_name,
+                  description: b.business_name,
+                },
               },
             },
+          ],
+          payment_intent_data: {
+            capture_method: "manual",
+            ...(fee > 0 ? { application_fee_amount: fee } : {}),
+            metadata: { booking_id: bookingId, business_id: businessId },
           },
-        ],
-        payment_intent_data: {
-          capture_method: "manual",
-          ...(fee > 0 ? { application_fee_amount: fee } : {}),
           metadata: { booking_id: bookingId, business_id: businessId },
+          expires_at: sessionExpiresAt(input.now),
+          success_url: `${base}/${b.slug}?pago=ok`,
+          cancel_url: `${base}/api/checkout/cancel?c=${checkoutId}`,
         },
-        metadata: { booking_id: bookingId, business_id: businessId },
-        expires_at:
-          Math.floor(input.now.getTime() / 1000) + SESSION_TTL_MINUTES * 60,
-        success_url: successUrl,
-        cancel_url: `${base}/api/checkout/cancel?c=${checkoutId}`,
-      },
-      {
-        stripeAccount: b.stripe_account_id,
-        idempotencyKey: `checkout:${bookingId}:${String(loaded.existing.length)}`,
-      },
-    );
-    if (!session.url) return { ok: false, code: "failed" };
+        {
+          stripeAccount: b.stripe_account_id,
+          idempotencyKey: `checkout:${bookingId}:${String(existing.length)}`,
+        },
+      );
+      if (!session.url) return { ok: false, code: "failed" };
 
-    await withServiceTx(async (q) => {
       await q.query(
         `insert into public.stripe_checkouts
            (id, business_id, booking_id, stripe_account_id, session_id,
-            amount_minor, fee_minor, currency, status)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, 'open')
+            amount_minor, fee_minor, currency, status, mode)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, 'open', $9)
          on conflict (session_id) do nothing`,
         [
           checkoutId,
@@ -201,10 +218,11 @@ export async function createCheckoutForBooking(input: {
           b.amount,
           fee,
           marketConfig.currency.toLowerCase(),
+          b.online_payment,
         ],
       );
+      return { ok: true, url: session.url };
     });
-    return { ok: true, url: session.url };
   } catch {
     return { ok: false, code: "failed" };
   }
@@ -229,9 +247,10 @@ export async function cancelUnpaidBooking(
     const paid = await q.query(
       `select 1 from public.stripe_checkouts
         where business_id = $1 and booking_id = $2
-          and status in ('authorized', 'captured')`,
+          and status in ('open', 'authorized', 'captured')`,
       [businessId, bookingId],
     );
+    // Betald, eller en öppen session finns fortfarande: släpp inte bokningen.
     if (paid.rows.length > 0) return false;
     // Radlåset först: förra statusen avgör vilket besked kunden får, och en
     // CTE med `for update` hoppas över av UPDATE i samma sats.
@@ -296,62 +315,17 @@ export async function handleCheckoutExpired(
     const r = await q.query<{
       business_id: string;
       booking_id: string;
-      online_payment: OnlinePaymentMode;
+      mode: OnlinePaymentMode;
     }>(
       `update public.stripe_checkouts sc
           set status = case when sc.status = 'open' then 'expired' else sc.status end
-         from public.businesses b
-        where sc.session_id = $1 and b.id = sc.business_id
-        returning sc.business_id, sc.booking_id, b.online_payment`,
+        where sc.session_id = $1
+        returning sc.business_id, sc.booking_id, sc.mode`,
       [sessionId],
     );
     return r.rows[0];
   });
-  if (row?.online_payment === "required") {
+  if (row?.mode === "required") {
     await cancelUnpaidBooking(row.business_id, row.booking_id, now);
   }
-}
-
-/**
- * Kunden tryckte "tillbaka" i Stripe Checkout. `checkoutId` är en slumpmässig
- * uuid som bara finns i den länken. Sessionen avslutas direkt (annars hänger
- * tiden kvar i 30 min) och redirect-målet beror på om betalningen var
- * obligatorisk (bokningen släpps) eller valfri (förfrågan gäller ändå).
- */
-export async function abandonCheckout(
-  checkoutId: string,
-  now: Date,
-): Promise<{ slug: string; released: boolean } | undefined> {
-  if (!/^[0-9a-f-]{36}$/i.test(checkoutId)) return undefined;
-  const row = await withServiceTx(async (q) => {
-    const r = await q.query<{
-      session_id: string;
-      stripe_account_id: string;
-      status: string;
-      slug: string;
-      online_payment: OnlinePaymentMode;
-    }>(
-      `select sc.session_id, sc.stripe_account_id, sc.status, b.slug, b.online_payment
-         from public.stripe_checkouts sc
-         join public.businesses b on b.id = sc.business_id
-        where sc.id = $1`,
-      [checkoutId],
-    );
-    return r.rows[0];
-  });
-  if (!row) return undefined;
-  const released = row.online_payment === "required" && row.status === "open";
-  if (row.status === "open" && stripeEnabled()) {
-    try {
-      await getStripe().checkout.sessions.expire(
-        row.session_id,
-        {},
-        { stripeAccount: row.stripe_account_id },
-      );
-    } catch {
-      // Redan avslutad eller Stripe nåddes inte: webhooken/cron tar över.
-    }
-    await handleCheckoutExpired(row.session_id, now);
-  }
-  return { slug: row.slug, released };
 }

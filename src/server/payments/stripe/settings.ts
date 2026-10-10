@@ -93,7 +93,9 @@ export async function setOnlinePaymentMode(
     const state = await loadConnectState(businessId);
     if (!state.canCharge) return { ok: false, code: "needs_account" };
   }
-  await withOwnerTx(userId, async (q) => {
+  // Servern skriver (service role) först efter ägarkontrollen ovan; kolumnen har
+  // medvetet ingen grant till `authenticated` (personal kan annars gå via PostgREST).
+  await withServiceTx(async (q) => {
     await q.query(
       `update public.businesses set online_payment = $2 where id = $1`,
       [businessId, parsed.data],

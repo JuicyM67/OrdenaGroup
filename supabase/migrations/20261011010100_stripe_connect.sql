@@ -17,7 +17,8 @@ alter table public.businesses
   add column online_payment text not null default 'off',
   add constraint businesses_online_payment_check
     check (online_payment in ('off', 'optional', 'required'));
-grant update (online_payment) on public.businesses to authenticated;
+-- Medvetet INGEN grant till authenticated: inställningen skrivs av servern (service
+-- role) efter att den kontrollerat att personen är ägare (settings.ts).
 
 -- 2. stripe_accounts ---------------------------------------------------------
 create table public.stripe_accounts (
@@ -48,6 +49,7 @@ grant select, insert, update on public.stripe_accounts to service_role;
 -- status: open (session skapad) -> authorized (kortet reserverat, väntar på
 -- företagets svar) -> captured (dragit) | voided (reservationen släppt) ;
 -- captured -> refunded. open -> expired. 'failed' = betalningen nekades.
+-- 'stuck' = permanent fel i avstämningen (behöver mänsklig hjälp), tas bort ur cron-passet.
 create table public.stripe_checkouts (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses (id) on delete cascade,
@@ -60,14 +62,21 @@ create table public.stripe_checkouts (
   fee_minor integer not null default 0,
   currency text not null,
   status text not null default 'open',
+  -- Företagets läge (optional/required) när bokningen gjordes; styr vad som händer
+  -- om sessionen går ut, oberoende av en senare ändring av inställningen.
+  mode text not null default 'optional',
+  -- Backoff för cron-passet (reconcile.ts).
+  attempts integer not null default 0,
+  next_attempt_at timestamptz not null default now(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  foreign key (business_id, booking_id) references public.bookings (business_id, id),
+  foreign key (business_id, booking_id) references public.bookings (business_id, id) on delete cascade,
   constraint stripe_checkouts_amount_check check (amount_minor > 0),
   constraint stripe_checkouts_fee_check check (fee_minor >= 0 and fee_minor <= amount_minor),
   constraint stripe_checkouts_status_check check (
-    status in ('open', 'authorized', 'captured', 'voided', 'refunded', 'expired', 'failed')
-  )
+    status in ('open', 'authorized', 'captured', 'voided', 'refunded', 'expired', 'failed', 'stuck')
+  ),
+  constraint stripe_checkouts_mode_check check (mode in ('optional', 'required'))
 );
 create index stripe_checkouts_booking_idx on public.stripe_checkouts (business_id, booking_id);
 create index stripe_checkouts_open_idx on public.stripe_checkouts (status)

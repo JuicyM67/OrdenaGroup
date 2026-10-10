@@ -9,6 +9,65 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      ai_import_runs: {
+        Row: {
+          business_id: string | null;
+          cost_usd: number;
+          created_at: string;
+          duration_ms: number | null;
+          finished_at: string | null;
+          id: string;
+          input_tokens: number;
+          model: string;
+          output_tokens: number;
+          platform: string | null;
+          source: string;
+          status: string;
+          user_id: string;
+          web_fetches: number;
+        };
+        Insert: {
+          business_id?: string | null;
+          cost_usd?: number;
+          created_at?: string;
+          duration_ms?: number | null;
+          finished_at?: string | null;
+          id?: string;
+          input_tokens?: number;
+          model: string;
+          output_tokens?: number;
+          platform?: string | null;
+          source: string;
+          status?: string;
+          user_id: string;
+          web_fetches?: number;
+        };
+        Update: {
+          business_id?: string | null;
+          cost_usd?: number;
+          created_at?: string;
+          duration_ms?: number | null;
+          finished_at?: string | null;
+          id?: string;
+          input_tokens?: number;
+          model?: string;
+          output_tokens?: number;
+          platform?: string | null;
+          source?: string;
+          status?: string;
+          user_id?: string;
+          web_fetches?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_import_runs_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       booking_answers: {
         Row: {
           booking_id: string;
@@ -1587,12 +1646,15 @@ export type Database = {
       stripe_checkouts: {
         Row: {
           amount_minor: number;
+          attempts: number;
           booking_id: string;
           business_id: string;
           created_at: string;
           currency: string;
           fee_minor: number;
           id: string;
+          mode: string;
+          next_attempt_at: string;
           payment_intent_id: string | null;
           session_id: string;
           status: string;
@@ -1601,12 +1663,15 @@ export type Database = {
         };
         Insert: {
           amount_minor: number;
+          attempts?: number;
           booking_id: string;
           business_id: string;
           created_at?: string;
           currency: string;
           fee_minor?: number;
           id?: string;
+          mode?: string;
+          next_attempt_at?: string;
           payment_intent_id?: string | null;
           session_id: string;
           status?: string;
@@ -1615,12 +1680,15 @@ export type Database = {
         };
         Update: {
           amount_minor?: number;
+          attempts?: number;
           booking_id?: string;
           business_id?: string;
           created_at?: string;
           currency?: string;
           fee_minor?: number;
           id?: string;
+          mode?: string;
+          next_attempt_at?: string;
           payment_intent_id?: string | null;
           session_id?: string;
           status?: string;

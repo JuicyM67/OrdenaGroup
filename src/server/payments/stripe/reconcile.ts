@@ -108,7 +108,9 @@ async function reconcileRow(
       await setStatus(q, row.id, "voided");
       return;
     }
-    if (bookingStatus === "requested") return; // väntar på företagets svar
+    if (bookingStatus === "requested" || bookingStatus === "cancel_requested") {
+      return; // väntar på företagets svar
+    }
     try {
       await stripe.paymentIntents.capture(
         pi.id,
@@ -288,13 +290,66 @@ export async function handleChargeRefunded(
 }
 
 const SWEEP_LIMIT = 25;
-/** Sessionen lever 31 min; efter 35 min har webhooken i normalfallet redan kommit. */
-const OPEN_STALE_MINUTES = 35;
+/** Sessionen lever 31-41 min; efter 45 min har webhooken i normalfallet redan kommit. */
+const OPEN_STALE_MINUTES = 45;
+/** Efter så här många misslyckade pass markeras raden `stuck` (terminal). */
+const MAX_SWEEP_ATTEMPTS = 5;
+
+function isPermanentStripeError(e: unknown): boolean {
+  const t = (e as { type?: string } | null)?.type;
+  return (
+    t === "StripePermissionError" ||
+    t === "StripeAuthenticationError" ||
+    t === "StripeInvalidRequestError"
+  );
+}
+
+/**
+ * Backoff 1/5/15/60 min per misslyckat pass; permanenta fel (behörighet,
+ * ogiltig begäran) eller `MAX_SWEEP_ATTEMPTS` försök ger `stuck` så att en
+ * trasig rad aldrig svälter kön.
+ */
+async function recordSweepFailure(
+  where:
+    | { booking: { businessId: string; bookingId: string } }
+    | { session: string },
+  e: unknown,
+  now: Date,
+): Promise<void> {
+  const permanent = isPermanentStripeError(e);
+  await withServiceTx(async (q) => {
+    const set = `attempts = attempts + 1,
+          next_attempt_at = $1::timestamptz + interval '1 minute' *
+            (case least(attempts, 3) when 0 then 1 when 1 then 5 when 2 then 15 else 60 end),
+          status = case when $2::boolean or attempts + 1 >= $3 then 'stuck' else status end`;
+    if ("booking" in where) {
+      await q.query(
+        `update public.stripe_checkouts set ${set}
+          where business_id = $4 and booking_id = $5
+            and status in ('authorized', 'captured')`,
+        [
+          now,
+          permanent,
+          MAX_SWEEP_ATTEMPTS,
+          where.booking.businessId,
+          where.booking.bookingId,
+        ],
+      );
+    } else {
+      await q.query(
+        `update public.stripe_checkouts set ${set}
+          where session_id = $4 and status = 'open'`,
+        [now, permanent, MAX_SWEEP_ATTEMPTS, where.session],
+      );
+    }
+  });
+}
 
 /**
  * Cron-passet (`/api/cron/outbox`): fångar det webhooken missat — bokningar
  * vars betalning ska dras/släppas/återbetalas, och sessioner som fastnat som
- * "open". Ett fel för en bokning stoppar aldrig resten.
+ * "open". Äldst först; ett fel för en bokning ger backoff (och till slut
+ * `stuck`) och stoppar aldrig resten.
  */
 export async function runStripeSweep(
   now: Date,
@@ -302,20 +357,25 @@ export async function runStripeSweep(
   if (!stripeEnabled()) return { reconciled: 0, sessions: 0 };
   const { bookings, sessions } = await withServiceTx(async (q) => {
     const b = await q.query<{ business_id: string; booking_id: string }>(
-      `select distinct sc.business_id, sc.booking_id
+      `select sc.business_id, sc.booking_id, min(sc.next_attempt_at) as due
          from public.stripe_checkouts sc
          join public.bookings bk
            on bk.business_id = sc.business_id and bk.id = sc.booking_id
-        where (sc.status = 'authorized' and bk.status::text <> 'requested')
-           or (sc.status in ('authorized', 'captured') and bk.status::text = 'cancelled')
+        where sc.next_attempt_at <= $2::timestamptz
+          and ((sc.status = 'authorized' and bk.status::text not in ('requested', 'cancel_requested'))
+           or (sc.status in ('authorized', 'captured') and bk.status::text = 'cancelled'))
+        group by sc.business_id, sc.booking_id
+        order by due
         limit $1`,
-      [SWEEP_LIMIT],
+      [SWEEP_LIMIT, now],
     );
     const s = await q.query<{ session_id: string; stripe_account_id: string }>(
       `select session_id, stripe_account_id
          from public.stripe_checkouts
         where status = 'open'
+          and next_attempt_at <= $1::timestamptz
           and created_at < $1::timestamptz - $2 * interval '1 minute'
+        order by next_attempt_at
         limit $3`,
       [now, OPEN_STALE_MINUTES, SWEEP_LIMIT],
     );
@@ -326,8 +386,12 @@ export async function runStripeSweep(
     try {
       await reconcileBookingPayment(b.business_id, b.booking_id, now);
       reconciled += 1;
-    } catch {
-      // nästa pass
+    } catch (e) {
+      await recordSweepFailure(
+        { booking: { businessId: b.business_id, bookingId: b.booking_id } },
+        e,
+        now,
+      ).catch(() => undefined);
     }
   }
   let handled = 0;
@@ -344,11 +408,74 @@ export async function runStripeSweep(
         await handleCheckoutExpired(s.session_id, now);
       }
       handled += 1;
-    } catch {
-      // nästa pass
+    } catch (e) {
+      await recordSweepFailure({ session: s.session_id }, e, now).catch(
+        () => undefined,
+      );
     }
   }
   return { reconciled, sessions: handled };
+}
+
+/**
+ * Kunden tryckte "tillbaka" i Stripe Checkout. `checkoutId` är en uuid som
+ * bara finns i den länken. Vi frågar alltid Stripe vad som hänt: avslutar
+ * sessionen om den fortfarande är öppen och släpper bokningen först när
+ * Stripe säger `expired`. Hann kunden betala (`complete`) behandlas det som
+ * betalt. Redirect-målet beror på läget som lagrades vid bokningen.
+ */
+export async function abandonCheckout(
+  checkoutId: string,
+  now: Date,
+): Promise<{ slug: string; released: boolean } | undefined> {
+  if (!/^[0-9a-f-]{36}$/i.test(checkoutId)) return undefined;
+  const row = await withServiceTx(async (q) => {
+    const r = await q.query<{
+      session_id: string;
+      stripe_account_id: string;
+      status: string;
+      mode: string;
+      slug: string;
+    }>(
+      `select sc.session_id, sc.stripe_account_id, sc.status, sc.mode, b.slug
+         from public.stripe_checkouts sc
+         join public.businesses b on b.id = sc.business_id
+        where sc.id = $1`,
+      [checkoutId],
+    );
+    return r.rows[0];
+  });
+  if (!row) return undefined;
+  if (row.status !== "open" || !stripeEnabled()) {
+    return { slug: row.slug, released: false };
+  }
+  const stripe = getStripe();
+  const opts = { stripeAccount: row.stripe_account_id };
+  let session = await stripe.checkout.sessions.retrieve(
+    row.session_id,
+    {},
+    opts,
+  );
+  if (session.status === "open") {
+    try {
+      session = await stripe.checkout.sessions.expire(row.session_id, {}, opts);
+    } catch {
+      session = await stripe.checkout.sessions.retrieve(
+        row.session_id,
+        {},
+        opts,
+      );
+    }
+  }
+  if (session.status === "complete") {
+    await handleCheckoutCompleted(row.session_id, row.stripe_account_id, now);
+    return { slug: row.slug, released: false };
+  }
+  if (session.status === "expired") {
+    await handleCheckoutExpired(row.session_id, now);
+    return { slug: row.slug, released: row.mode === "required" };
+  }
+  return { slug: row.slug, released: false };
 }
 
 /** `payment_intent.succeeded` m.fl.: slå upp bokningen på PaymentIntent och stäm av. */

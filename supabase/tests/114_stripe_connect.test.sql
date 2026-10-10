@@ -4,7 +4,7 @@
 -- webhooken skriver med service role); `inbound_events` är servern-bara.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(14);
 \ir _helpers.psql
 
 insert into public.staff (id, business_id, name, color) values
@@ -56,11 +56,9 @@ select throws_ok(
 select throws_ok($$ select * from public.inbound_events $$, '42501', null, 'authenticated kan inte läsa inbound_events');
 
 -- online_payment: ägaren sätter sitt eget, inte B:s
-update public.businesses set online_payment = 'optional' where id = 'aaaaaaaa-0000-0000-0000-000000000001';
-update public.businesses set online_payment = 'required' where id = 'bbbbbbbb-0000-0000-0000-000000000002';
 select throws_ok(
-  $$ update public.businesses set online_payment = 'bogus' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
-  '23514', null, 'ogiltigt online_payment avvisas'
+  $$ update public.businesses set online_payment = 'optional' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '42501', null, 'authenticated (inte ens ägaren) kan inte skriva online_payment direkt'
 );
 
 -- staffA (personal) ser inte stripe-tabellerna
@@ -69,8 +67,17 @@ select is((select count(*) from public.stripe_accounts)::int, 0, 'personal ser i
 select is((select count(*) from public.stripe_checkouts)::int, 0, 'personal ser inte stripe_checkouts');
 
 reset role;
-select is((select online_payment from public.businesses where id = 'aaaaaaaa-0000-0000-0000-000000000001'), 'optional', 'A: online_payment sparad');
-select is((select online_payment from public.businesses where id = 'bbbbbbbb-0000-0000-0000-000000000002'), 'off', 'B: online_payment oförändrad');
+select is((select online_payment from public.businesses where id = 'aaaaaaaa-0000-0000-0000-000000000001'), 'off', 'A: online_payment oförändrad (default)');
+set local role service_role;
+update public.businesses set online_payment = 'required' where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+select throws_ok(
+  $$ update public.businesses set online_payment = 'bogus' where id = 'aaaaaaaa-0000-0000-0000-000000000001' $$,
+  '23514', null, 'ogiltigt online_payment avvisas'
+);
+reset role;
+-- Företagsradering (purgeBusiness) måste fungera: en bokning med checkout-rad kan raderas.
+delete from public.bookings where id = 'aaaaaaaa-4000-0000-0000-000000000001';
+select is((select count(*) from public.stripe_checkouts where business_id = 'aaaaaaaa-0000-0000-0000-000000000001')::int, 0, 'checkout-raden försvinner med bokningen (on delete cascade)');
 
 set local role anon;
 select throws_ok($$ select * from public.stripe_checkouts $$, '42501', null, 'anon kan inte läsa stripe_checkouts');
