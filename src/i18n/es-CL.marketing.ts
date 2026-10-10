@@ -1695,7 +1695,7 @@ export const home = {
       {
         id: "recordatorios",
         titulo: "Recordatorios",
-        texto: "Menos plantones, todo automático por WhatsApp.",
+        texto: "Menos plantones, todo automático por correo.",
       },
       {
         id: "flytt",
@@ -1804,13 +1804,13 @@ export const home = {
       etiqueta: "RECORDATORIOS",
       titulo: "Menos plantones.",
       texto:
-        "Tus clientes reciben un recordatorio por WhatsApp antes de su hora, sin que tú hagas nada.",
+        "Tus clientes reciben un recordatorio por correo antes de su hora, sin que tú hagas nada.",
       ejemploLinea: "Corte de pelo · jue 14:30",
       ejemploValor: "Mañana 14:30",
       ejemploEstado: "Confirmó",
       cajaEtiqueta: "Recordatorio",
       cajaValor: "24 h",
-      cajaTexto: "antes de cada hora, automático por WhatsApp.",
+      cajaTexto: "antes de cada hora, automático por correo.",
     },
     resenas: {
       etiqueta: "RESEÑAS VERIFICADAS",
@@ -1857,7 +1857,7 @@ export const home = {
       },
       {
         titulo: "Reservado",
-        texto: "Confirmación al tiro por WhatsApp y correo",
+        texto: "Confirmación al tiro por correo",
       },
     ],
     movil: {
