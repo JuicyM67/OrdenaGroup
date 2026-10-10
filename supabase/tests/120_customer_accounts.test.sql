@@ -119,7 +119,7 @@ select ok(
   not exists (select 1 from auth.users where id = 'c1c1c1c1-0000-0000-0000-000000000001')
   and not exists (select 1 from public.customer_account_links where user_id = 'c1c1c1c1-0000-0000-0000-000000000001')
   and exists (select 1 from public.customers where id = 'c1000000-0000-0000-0000-00000000000a')
-  and (select count(*) from public.account_consent_events where user_id is null) = 1,
+  and (select count(*) from public.account_consent_events where user_id is null and created_at = now()) = 1,
   'radering: konto och länkar borta, företagets kundrad kvar, samtyckesloggen anonymiserad'
 );
 

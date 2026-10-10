@@ -33,10 +33,10 @@ export async function cancelAccountBooking(
 ): Promise<AccountCancelResult> {
   const userId = await sessionUserId();
   if (!userId || !isUuid(bookingId)) return { ok: false, code: "not_found" };
-  const r = await cancelForAccount(userId, bookingId, systemClock());
-  revalidatePath(cuentaHref("cuentaReservas"));
-  revalidatePath(cuentaHref("cuenta"));
-  return r;
+  // Ingen revalidatePath här: kortet visar svaret på plats (raden skulle
+  // annars flyttas/försvinna innan kunden hinner läsa det). Sidorna är
+  // dynamiska, så nästa besök visar det nya läget.
+  return cancelForAccount(userId, bookingId, systemClock());
 }
 
 /** Hjärtat på `/[slug]` och Ta bort i Favoriter (formulär, fungerar utan JS). */

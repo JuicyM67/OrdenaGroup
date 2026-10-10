@@ -222,6 +222,20 @@ begin
      and c.anonymized_at is null
   on conflict do nothing;
   get diagnostics v_count = row_count;
+  -- Saknar kontot visningsnamn (magisk länk ger inget) tas namnet kunden själv
+  -- angav vid sin senaste bokning hos ett kopplat företag.
+  update public.customer_accounts a
+     set display_name = left(x.name, 80)
+    from (
+      select c.name
+        from public.customer_account_links l
+        join public.customers c
+          on c.business_id = l.business_id and c.id = l.customer_id
+       where l.user_id = v_uid and c.name is not null and c.anonymized_at is null
+       order by c.updated_at desc
+       limit 1
+    ) x
+   where a.user_id = v_uid and a.display_name is null;
   return v_count;
 end;
 $$;

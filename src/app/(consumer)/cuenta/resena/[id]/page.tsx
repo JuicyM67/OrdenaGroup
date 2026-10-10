@@ -109,7 +109,7 @@ export default async function CuentaResenaPage({
         <h1 className="font-display text-30 leading-display font-semibold tracking-title text-ink">
           {t.titulo}
         </h1>
-        <div className="rounded-card bg-surface p-5">
+        <div className="rounded-card bg-surface p-5 fields-on-surface">
           {page.editable ? (
             <ReviewForm
               negocio={page.negocio}
