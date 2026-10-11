@@ -345,6 +345,9 @@ export function ServicesSection({
             ),
           );
           setEditingId(null);
+        } else if (result.code === "offers.service_price_locked") {
+          // WP-70 (D-056): prisvakten — felet hör till prisfältet.
+          setErrors({ priceClp: ajustesErrorText(result.code) });
         } else {
           setErrors({ name: ajustesErrorText(result.code) });
         }

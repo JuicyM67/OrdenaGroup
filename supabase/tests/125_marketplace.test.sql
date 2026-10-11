@@ -7,6 +7,9 @@ create extension if not exists pgtap with schema extensions;
 select plan(21);
 \ir _helpers.psql
 
+-- WP-70 (D-056): erbjudanden kräver planfunktionen `offers` (Team och uppåt).
+update public.businesses set plan = 'equipo' where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+
 insert into public.services (id, business_id, name, duration_min, price_clp) values
   ('aaaaaaaa-6800-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Corte', 30, 10000),
   ('bbbbbbbb-6800-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002', 'Corte B', 30, 12000);

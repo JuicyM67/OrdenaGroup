@@ -36,6 +36,7 @@ export type OwnerMobileTab =
   | "caja"
   | "ajustes"
   | "flash"
+  | "ofertas"
   | "campanas";
 
 const ICON_SIZE = "size-5.5";
@@ -45,6 +46,7 @@ const MER_ACTIVE_KEYS: ReadonlySet<OwnerMobileTab> = new Set([
   "caja",
   "ajustes",
   "flash",
+  "ofertas",
   "campanas",
 ]);
 

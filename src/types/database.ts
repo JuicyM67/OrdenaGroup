@@ -1369,6 +1369,7 @@ export type Database = {
           id: string;
           image_url: string | null;
           includes: string[];
+          last_unpublished_at: string | null;
           offer_price_minor: number;
           published_at: string | null;
           quantity_sold: number;
@@ -1393,6 +1394,7 @@ export type Database = {
           id?: string;
           image_url?: string | null;
           includes?: string[];
+          last_unpublished_at?: string | null;
           offer_price_minor: number;
           published_at?: string | null;
           quantity_sold?: number;
@@ -1417,6 +1419,7 @@ export type Database = {
           id?: string;
           image_url?: string | null;
           includes?: string[];
+          last_unpublished_at?: string | null;
           offer_price_minor?: number;
           published_at?: string | null;
           quantity_sold?: number;
@@ -1653,6 +1656,45 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "businesses";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      service_price_history: {
+        Row: {
+          business_id: string;
+          id: number;
+          price_minor: number;
+          service_id: string;
+          valid_from: string;
+        };
+        Insert: {
+          business_id: string;
+          id?: never;
+          price_minor: number;
+          service_id: string;
+          valid_from?: string;
+        };
+        Update: {
+          business_id?: string;
+          id?: never;
+          price_minor?: number;
+          service_id?: string;
+          valid_from?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "service_price_history_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "service_price_history_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
           },
         ];
       };

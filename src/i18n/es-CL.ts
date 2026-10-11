@@ -4184,6 +4184,7 @@ export { smsCreditos } from "./es-CL.sms-creditos";
 export { descubre } from "./es-CL.descubre";
 export { cuenta } from "./es-CL.cuenta";
 export { vales } from "./es-CL.vales";
+export { ofertas } from "./es-CL.ofertas";
 
 // ---------------------------------------------------------------------------
 // planes (WP-73, D-048): nombres de plan, bloqueos con "Ver planes", resumen de
@@ -4207,6 +4208,7 @@ export const planes = {
     campaigns: "Envíos, Te echamos de menos y socios",
     full_reports: "Caja e informes completos",
     staff_accounts: "Cuentas para tu equipo",
+    offers: "Ofertas en el marketplace",
     priority_support: "Soporte prioritario",
   },
   bloqueo: {
@@ -4221,6 +4223,7 @@ export const planes = {
       campaigns: "Mejora tu plan y trae de vuelta a tus clientes.",
       full_reports: "Mejora tu plan y mira tus números completos.",
       staff_accounts: "Mejora tu plan y dale una cuenta a tu equipo.",
+      offers: "Mejora tu plan y vende tus servicios a clientes nuevos.",
       priority_support: "Mejora tu plan y te atendemos primero.",
     },
     verPlanes: "Ver planes",

@@ -29,6 +29,8 @@ const FEATURES: readonly Feature[] = [
   "campaigns",
   "full_reports",
   "staff_accounts",
+  // WP-70: marknadsplatsen finns bara i SE (D-055).
+  ...(market === "SE" ? (["offers"] as const) : []),
   "priority_support",
 ];
 

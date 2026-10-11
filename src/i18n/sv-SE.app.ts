@@ -36,9 +36,10 @@ import { descubre } from "./sv-SE.descubre";
 import { smsCreditos } from "./sv-SE.sms-creditos";
 import { visita } from "./sv-SE.visita";
 import { cuenta } from "./sv-SE.cuenta";
+import { ofertas } from "./sv-SE.ofertas";
 import { vales } from "./sv-SE.vales";
 
-export { cuenta, descubre, smsCreditos, vales, visita };
+export { cuenta, descubre, ofertas, smsCreditos, vales, visita };
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för
  * literaler, och med stöd för readonly-listor (CAJA_METODOS_MANUALES,
@@ -3202,6 +3203,7 @@ export const planes: Widen<typeof Es.planes> = {
     campaigns: "Utskick, Vi saknar dig och medlemsrabatter",
     full_reports: "Full kassa och rapporter",
     staff_accounts: "Personalkonton med behörigheter",
+    offers: "Erbjudanden i Upptäck",
     priority_support: "Prioriterad support",
   },
   bloqueo: {
@@ -3215,6 +3217,7 @@ export const planes: Widen<typeof Es.planes> = {
       campaigns: "Uppgradera och få tillbaka kunder som inte bokat på länge.",
       full_reports: "Uppgradera och se hela bilden av din ekonomi.",
       staff_accounts: "Uppgradera och ge ditt team egna inloggningar.",
+      offers: "Uppgradera och sälj dina tjänster till nya kunder i Upptäck.",
       priority_support: "Uppgradera så hjälper vi dig först.",
     },
     verPlanes: "Se planer",
@@ -3299,6 +3302,7 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   smsCreditos,
   descubre,
   cuenta,
+  ofertas,
   vales,
 };
 void _check;

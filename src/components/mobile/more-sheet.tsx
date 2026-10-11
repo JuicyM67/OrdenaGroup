@@ -18,6 +18,7 @@ import {
   Star,
   X,
   Zap,
+  Tag,
 } from "lucide-react";
 import Link from "next/link";
 import { useId, type ReactNode } from "react";
@@ -25,8 +26,9 @@ import { useId, type ReactNode } from "react";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeNav } from "@/components/ui/icons";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
+import { marketplaceEnabled } from "@/config/marketplace";
 import { appHref } from "@/config/routes";
-import { campanas, comun, nav, resenas } from "@/i18n";
+import { campanas, comun, nav, ofertas, resenas } from "@/i18n";
 
 export type MoreSheetProps = {
   open: boolean;
@@ -93,6 +95,20 @@ export function MoreSheet({
               }
               onNavigate={() => onOpenChange(false)}
             />
+            {marketplaceEnabled() ? (
+              <MoreSheetLink
+                href={appHref("appOfertas")}
+                label={ofertas.nav}
+                icon={
+                  <Tag
+                    aria-hidden="true"
+                    className={ROW_ICON}
+                    strokeWidth={strokeNav}
+                  />
+                }
+                onNavigate={() => onOpenChange(false)}
+              />
+            ) : null}
             {showCaja ? (
               <MoreSheetLink
                 href={appHref("appCaja")}

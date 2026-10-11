@@ -10,6 +10,7 @@ import {
   horarios,
   invitacion,
   negocio,
+  ofertas,
   perfil,
   planes,
   profesionales,
@@ -120,6 +121,7 @@ const KNOWN: Record<string, string> = {
   // WP-73 (D-048): planspärrar.
   plan_locked: planes.errores.plan_locked,
   plan_limit_services: planes.errores.plan_limit_services,
+  "offers.service_price_locked": ofertas.errores["offers.service_price_locked"],
 };
 
 /** En okänd kod ger `comun.algoSalioMal` i stället för att krascha UI:t. */

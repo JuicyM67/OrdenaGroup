@@ -19,8 +19,11 @@ import type { MediaStorage } from "./profile";
  *   `<business_id>/<uuid>.<ext>`, ingen upsert), och bucketens
  *   `file_size_limit`/`allowed_mime_types` gäller även för den.
  */
-export function mediaStorageFrom(client: SupabaseClient): MediaStorage {
-  const bucket = () => client.storage.from(MEDIA_BUCKET);
+export function mediaStorageFrom(
+  client: SupabaseClient,
+  bucketId: string = MEDIA_BUCKET,
+): MediaStorage {
+  const bucket = () => client.storage.from(bucketId);
   return {
     async createSignedUploadUrl(path) {
       const { data, error } = await bucket().createSignedUploadUrl(path);
@@ -35,9 +38,12 @@ export function mediaStorageFrom(client: SupabaseClient): MediaStorage {
   };
 }
 
-/** Standard i server actions: sessionsklienten från cookien (WP-15). */
-export async function ownerMediaStorage(): Promise<MediaStorage> {
+/** Standard i server actions: sessionsklienten från cookien (WP-15).
+ * WP-70: `bucketId` = `offer-images` för erbjudandebilder (samma mönster). */
+export async function ownerMediaStorage(
+  bucketId: string = MEDIA_BUCKET,
+): Promise<MediaStorage> {
   const { createSupabaseServerClient } = await import("@/lib/supabase/server");
   const client = await createSupabaseServerClient();
-  return mediaStorageFrom(client as unknown as SupabaseClient);
+  return mediaStorageFrom(client as unknown as SupabaseClient, bucketId);
 }
