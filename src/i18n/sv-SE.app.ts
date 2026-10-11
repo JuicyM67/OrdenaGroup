@@ -79,6 +79,7 @@ export type {
 } from "./sv-SE.panel";
 export { cuenta } from "./sv-SE.cuenta";
 export { descubre } from "./sv-SE.descubre";
+export { paraClientes } from "./sv-SE.clientes";
 export { ofertas } from "./sv-SE.ofertas";
 export { smsCreditos } from "./sv-SE.sms-creditos";
 export { vales } from "./sv-SE.vales";

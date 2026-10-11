@@ -4,6 +4,7 @@
 import { formatMonto } from "@/config/pricing";
 import { copy } from "@/i18n/marketing";
 import { paginas } from "@/i18n/paginas";
+import { Highlight } from "@/components/marketing/highlight";
 
 /** Paket i öre. 500 och 1 000 har mängdrabatt. */
 const PAQUETES = [
@@ -27,10 +28,8 @@ export function SmsCreditos() {
             {t.etiqueta}
           </span>
           <h2 className="font-display text-30 leading-none font-semibold tracking-headline sm:text-44">
-            {t.titulo.pre}{" "}
-            <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
-              {t.titulo.marca}
-            </span>
+            {t.titulo.pre}
+            <Highlight>{t.titulo.marca}</Highlight>
           </h2>
           <p className="max-w-2xl text-16 leading-relaxed text-ink-soft">
             {t.texto}

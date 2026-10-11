@@ -12,6 +12,7 @@ import type { RequestMagicLinkResult } from "@/app/(auth)/login/actions";
 import { authErrorText } from "@/components/auth/error-text";
 import { TextField } from "@/components/ui/text-field";
 import { cuenta } from "@/i18n";
+import { Highlight } from "@/components/marketing/highlight";
 
 type Estado =
   | { fase: "form" }
@@ -28,6 +29,8 @@ export type SignInCardProps = {
   googleAction?: (formData: FormData) => Promise<void>;
   googleEnabled: boolean;
   initialErrorCode?: string;
+  /** E-post förifylld från landningssidan "För kunder" (`?email=`). */
+  initialEmail?: string;
   /** Villkor + integritet, renderade av sidan (länkar per marknad). */
   legal: ReactNode;
   businessLink: ReactNode;
@@ -53,6 +56,7 @@ export function SignInCard({
   googleAction,
   googleEnabled,
   initialErrorCode,
+  initialEmail,
   legal,
   businessLink,
 }: SignInCardProps) {
@@ -62,7 +66,7 @@ export function SignInCard({
       ? { fase: "error", code: initialErrorCode }
       : { fase: "form" },
   );
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [marketing, setMarketing] = useState(false);
   const emailId = useId();
   const marketingId = useId();
@@ -127,10 +131,8 @@ export function SignInCard({
         <UserRound className="size-6" strokeWidth={2} />
       </span>
       <h1 className="font-display text-30 leading-snug font-semibold tracking-title text-ink">
-        {t.titulo}{" "}
-        <span className="rounded-highlight bg-lime box-decoration-clone px-2">
-          {t.destacado}
-        </span>
+        {t.titulo}
+        <Highlight>{t.destacado}</Highlight>
       </h1>
 
       {errorText ? (

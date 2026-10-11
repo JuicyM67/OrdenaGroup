@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/components/ui/cn";
 
 import type { MockFila, Pregunta } from "@/i18n/paginas";
+import { Highlight } from "@/components/marketing/highlight";
 
 export function HeroPrimary({
   href,
@@ -190,10 +191,7 @@ export function BuddyCta({
         <div className="relative flex max-w-140 flex-col gap-4">
           <h2 className="font-display text-40 leading-none font-semibold tracking-headline sm:text-52">
             {pre}
-            <br />
-            <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
-              {marca}
-            </span>
+            <Highlight>{marca}</Highlight>
           </h2>
           <p className="text-16 text-on-dark/90 sm:text-17">{texto}</p>
           <div>
