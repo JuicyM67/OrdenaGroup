@@ -70,7 +70,7 @@ type Field =
   | "general";
 
 function fieldFor(code: string): Field {
-  if (code === "offers.service_required") return "serviceId";
+  if (code.startsWith("offers.service")) return "serviceId";
   if (code.startsWith("offers.title")) return "title";
   if (code.startsWith("offers.include")) return "includes";
   if (code.startsWith("offers.price")) return "offerPrice";
@@ -419,6 +419,8 @@ export function OfferEditor({
         <Select
           label={t.servicio}
           value={form.serviceId}
+          // B1 (#111): ett publicerat erbjudande behåller sin tjänst.
+          disabled={offer?.publishedAt != null}
           onChange={(e) => update({ serviceId: e.target.value })}
           error={errors.serviceId}
         >

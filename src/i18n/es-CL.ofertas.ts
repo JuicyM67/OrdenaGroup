@@ -127,6 +127,10 @@ export const ofertas = {
     "offers.not_found": "No encontramos la oferta. Recarga la página.",
     "offers.published_owner_only":
       "Esta oferta está publicada. Solo el dueño puede cambiarla.",
+    "offers.service_locked":
+      "El servicio no se puede cambiar en una oferta publicada. Crea una oferta nueva.",
+    "offers.image_in_use":
+      "Esta imagen ya está en otra oferta. Sube una nueva.",
     "offers.publish_owner_only": "Solo el dueño puede publicar.",
     plan_locked:
       "Tu plan no incluye ofertas. Revisa los planes para activarlas.",

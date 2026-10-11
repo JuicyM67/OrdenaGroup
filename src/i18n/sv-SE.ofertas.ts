@@ -134,6 +134,10 @@ export const ofertas: Widen<typeof EsOfertas> = {
     "offers.not_found": "Vi hittar inte erbjudandet. Ladda om sidan.",
     "offers.published_owner_only":
       "Erbjudandet är publicerat. Bara ägaren kan ändra det.",
+    "offers.service_locked":
+      "Tjänsten kan inte bytas på ett publicerat erbjudande – skapa ett nytt.",
+    "offers.image_in_use":
+      "Bilden används redan i ett annat erbjudande. Ladda upp en ny.",
     "offers.publish_owner_only": "Bara ägaren kan publicera.",
     plan_locked:
       "Din plan har inte erbjudanden. Se planerna för att låsa upp dem.",

@@ -3,7 +3,7 @@
 -- `offers` och redigeringsrättigheter (katalog = utkast, bara ägaren publicerar).
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(38);
 \ir _helpers.psql
 set local storage.allow_delete_query = 'true';
 
@@ -187,6 +187,58 @@ select lives_ok(
 select throws_ok(
   $$ update public.offers set status = 'published' where slug = 'staff-wp70' $$,
   '42501', 'offers: bara ägaren publicerar'
+);
+reset role;
+
+-- 31-32. Säkerhetsgranskning #111 B1: tjänsten kan inte bytas på ett erbjudande
+-- som publicerats (prisvakten kringgås annars). corte-wp70 publicerades i 15.
+select set_config('request.jwt.claims', json_build_object('sub', '11111111-1111-1111-1111-111111111111', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select throws_ok(
+  $$ update public.offers set service_id = 'aaaaaaaa-7000-0000-0000-000000000002' where slug = 'corte-wp70' $$,
+  '23514', 'offers: tjänsten kan inte bytas på ett publicerat erbjudande'
+);
+select lives_ok(
+  $$ update public.offers set service_id = 'aaaaaaaa-7000-0000-0000-000000000001' where slug = 'staff-wp70' $$,
+  'utkast kan byta tjänst'
+);
+
+-- 33-35. S2/S3: bara relativ sökväg i egen mapp; ingen full URL, ingen annan mapp.
+select lives_ok(
+  $$ update public.offers set image_url = 'offer-images/aaaaaaaa-0000-0000-0000-000000000001/aaaaaaaa-1111-2222-3333-444444444444.jpg' where slug = 'staff-wp70' $$,
+  'relativ sökväg i egen mapp'
+);
+select throws_ok(
+  $$ update public.offers set image_url = 'offer-images/bbbbbbbb-0000-0000-0000-000000000002/aaaaaaaa-1111-2222-3333-444444444444.jpg' where slug = 'barba-wp70' $$,
+  '23514'
+);
+select throws_ok(
+  $$ update public.offers set image_url = 'https://abc.supabase.co/storage/v1/object/public/offer-images/aaaaaaaa-0000-0000-0000-000000000001/aaaaaaaa-1111-2222-3333-444444444444.jpg' where slug = 'barba-wp70' $$,
+  '23514'
+);
+-- 36. K4: samma bild på två erbjudanden nekas.
+select throws_ok(
+  $$ update public.offers set image_url = 'offer-images/aaaaaaaa-0000-0000-0000-000000000001/aaaaaaaa-1111-2222-3333-444444444444.jpg' where slug = 'barba-wp70' $$,
+  '23505'
+);
+reset role;
+
+-- 37. S1: personal med katalogrätt kan inte radera bilder (bara ägaren).
+select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
+set local role authenticated;
+delete from storage.objects where bucket_id = 'offer-images' and name = 'aaaaaaaa-0000-0000-0000-000000000001/staff-ok.jpg';
+reset role;
+select is(
+  (select count(*) from storage.objects where bucket_id = 'offer-images' and name = 'aaaaaaaa-0000-0000-0000-000000000001/staff-ok.jpg')::int,
+  1, 'staffA raderar inte bilder'
+);
+
+-- 38. K1: företag utan planfunktionen kan inte ladda upp (ownerB, Gratis).
+select set_config('request.jwt.claims', json_build_object('sub', '22222222-2222-2222-2222-222222222222', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select throws_ok(
+  $$ insert into storage.objects (bucket_id, name) values ('offer-images', 'bbbbbbbb-0000-0000-0000-000000000002/gratis.jpg') $$,
+  '42501'
 );
 reset role;
 

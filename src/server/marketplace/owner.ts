@@ -39,6 +39,11 @@ import {
   offerImageUploadSchema,
   offerInputSchema,
 } from "@/lib/validation/offers";
+import {
+  isOfferImageRef,
+  offerImageRef,
+  offerImageSrc,
+} from "@/lib/media/storage-url";
 import { pgErrorCode } from "@/server/db/errors";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
@@ -133,7 +138,12 @@ export function mapOfferDbError(e: unknown): string {
         return "offers.image_invalid";
       case "offers_quantity_within_total":
         return "offers.quantity_below_sold";
+      case "offer_service_locked":
+        return "offers.service_locked";
     }
+  }
+  if (code === "23505" && constraint === "offers_image_url_unique") {
+    return "offers.image_in_use";
   }
   if (code === "23503") return "offers.service_required";
   if (code === "42501") return "forbidden";
@@ -141,36 +151,18 @@ export function mapOfferDbError(e: unknown): string {
 }
 
 // ---------------------------------------------------------------------------
-// Bild-URL:er (bucketen är publik, samma form som `business-media`)
+// Bildreferenser (säkerhetsgranskning #111 S2/S3): `offers.image_url` lagrar bara
+// `offer-images/<business_id>/<uuid>.<ext>`; full URL byggs i appen
+// (`src/lib/media/storage-url.ts`).
 // ---------------------------------------------------------------------------
-function supabaseBaseUrl(): string {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL saknas");
-  return url.replace(/\/+$/, "");
-}
-
-function offerImagePrefix(baseUrl: string): string {
-  return `${baseUrl}/storage/v1/object/public/${OFFER_IMAGE_BUCKET}/`;
-}
-
-export function offerImageUrl(
-  path: string,
-  baseUrl: string = supabaseBaseUrl(),
-): string {
-  return offerImagePrefix(baseUrl) + path;
-}
-
-/** Omvändningen (för att ta bort en ersatt bild). `null` om URL:en inte är
- * företagets egen fil i bucketen (t.ex. en demobild i `public/`). */
-export function offerImagePathFromUrl(
-  url: string | null,
+/** `offer-images/<business_id>/<uuid>.<ext>` → sökvägen i bucketen, om den är
+ * företagets egen fil. Statiska demobilder (`/demo/...`) → `null`. */
+export function offerImagePathFromRef(
+  ref: string | null,
   businessId: string,
-  baseUrl: string = supabaseBaseUrl(),
 ): string | null {
-  if (!url) return null;
-  const prefix = offerImagePrefix(baseUrl);
-  if (!url.startsWith(prefix)) return null;
-  const path = url.slice(prefix.length);
+  if (!ref || !isOfferImageRef(ref)) return null;
+  const path = ref.slice(`${OFFER_IMAGE_BUCKET}/`.length);
   return isOwnOfferImagePath(path, businessId) ? path : null;
 }
 
@@ -331,7 +323,7 @@ export async function loadOffersEditor(
           : null,
         saleEndsOn: lastDayOf(o.sale_ends_at),
         validMonths: o.valid_months,
-        imageUrl: o.image_url,
+        imageUrl: offerImageSrc(o.image_url),
         publishedAt: o.published_at ? o.published_at.toISOString() : null,
       })),
       services,
@@ -431,8 +423,10 @@ export async function saveOffer(
         const prev = await q.query<{
           status: OfferStatus;
           image_url: string | null;
+          service_id: string;
+          published_at: Date | null;
         }>(
-          `select status, image_url from public.offers
+          `select status, image_url, service_id, published_at from public.offers
             where id = $1 and business_id = $2 for update`,
           [offerId, businessId],
         );
@@ -447,6 +441,11 @@ export async function saveOffer(
             discard: true,
           };
         }
+        // B1 (#111): tjänsten kan inte bytas på ett erbjudande som publicerats
+        // (prisvakten följer tjänsten) — skapa ett nytt i stället.
+        if (row.published_at !== null && row.service_id !== input.serviceId) {
+          return { ok: false, code: "offers.service_locked", discard: true };
+        }
         prevImage = row.image_url;
       }
 
@@ -455,7 +454,17 @@ export async function saveOffer(
       if (typeof input.imagePath === "string") {
         const bad = await checkUploadedImage(q, input.imagePath);
         if (bad) return { ok: false, code: bad, discard: true };
-        imageUrl = offerImageUrl(input.imagePath);
+        imageUrl = offerImageRef(input.imagePath);
+        // K4 (#111): en uppladdad bild hör till ett erbjudande.
+        const used = await q.query(
+          `select 1 from public.offers
+            where business_id = $1 and image_url = $2
+              and ($3::uuid is null or id <> $3)`,
+          [businessId, imageUrl, offerId],
+        );
+        if (used.rowCount) {
+          return { ok: false, code: "offers.image_in_use", discard: false };
+        }
       }
 
       const values = [
@@ -509,7 +518,7 @@ export async function saveOffer(
       );
       const replaced =
         imageUrl !== undefined && prevImage !== imageUrl
-          ? offerImagePathFromUrl(prevImage, businessId)
+          ? offerImagePathFromRef(prevImage, businessId)
           : null;
       return { ok: true, id: offerId, replaced };
     });
@@ -519,16 +528,44 @@ export async function saveOffer(
 
   // Storage städas efter commit (en misslyckad borttagning lämnar i värsta
   // fall en föräldralös fil, aldrig en rad som pekar på en saknad fil).
+  // S1 (#111): bara filer som ingen rad längre pekar på tas bort.
   if (!result.ok) {
-    if (result.discard && typeof input.imagePath === "string") {
+    if (
+      result.discard &&
+      typeof input.imagePath === "string" &&
+      !(await isImageReferenced(userId, businessId, input.imagePath))
+    ) {
       await (storage ?? (await defaultStorage())).remove([input.imagePath]);
     }
     return { ok: false, code: result.code };
   }
-  if (result.replaced) {
+  if (
+    result.replaced &&
+    !(await isImageReferenced(userId, businessId, result.replaced))
+  ) {
     await (storage ?? (await defaultStorage())).remove([result.replaced]);
   }
   return { ok: true, id: result.id };
+}
+
+/** `true` om någon rad pekar på filen — eller om det inte gick att avgöra
+ * (då rörs filen inte). */
+async function isImageReferenced(
+  userId: string,
+  businessId: string,
+  path: string,
+): Promise<boolean> {
+  try {
+    return await withOwnerTx(userId, async (q) => {
+      const r = await q.query(
+        `select 1 from public.offers where business_id = $1 and image_url = $2`,
+        [businessId, offerImageRef(path)],
+      );
+      return (r.rowCount ?? 0) > 0;
+    });
+  } catch {
+    return true;
+  }
 }
 
 // ---------------------------------------------------------------------------

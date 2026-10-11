@@ -7,6 +7,7 @@ import {
   type MarketplaceCategoryId,
 } from "@/config/marketplace";
 import { marketConfig } from "@/config/market";
+import { isOwnImageUrl, offerImageSrc } from "@/lib/media/storage-url";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 import { flashPrice } from "@/server/flash/public";
@@ -66,17 +67,13 @@ export type OfferCard = {
 export type OfferPage = { items: OfferCard[]; total: number; page: number };
 
 /**
- * B1 (säkerhetsgranskning #110): bara bilder från vårt eget ursprung — statiska
- * filer i `public/` eller projektets Supabase Storage (publika buckets för
- * erbjudanden och företagsbilder). Allt annat (godtycklig https-värd) visas inte,
- * så besökarens IP aldrig skickas till tredje part. Samma regel som
- * `offers_image_url_check` (för omslagsbilder: `business-media`).
+ * B1 (säkerhetsgranskning #110, skärpt i #111 S2/S3): bara bilder från vårt eget
+ * ursprung — statiska filer i `public/` eller projektets EGEN Supabase Storage
+ * (`NEXT_PUBLIC_SUPABASE_URL`). Allt annat visas inte, så besökarens IP aldrig
+ * skickas till tredje part. Erbjudandets bild lagras relativt (`offer-images/…`).
  */
-const SAFE_IMAGE =
-  /^(\/(?!\/)[A-Za-z0-9/_.-]+|https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/(offer-images|business-media)\/[A-Za-z0-9/_.%-]+)$/;
-
 export function safeImageUrl(url: string | null): string | null {
-  return url !== null && SAFE_IMAGE.test(url) ? url : null;
+  return url !== null && isOwnImageUrl(url) ? url : null;
 }
 
 /** Rabatt i hela procent (avrundad nedåt — vi lovar aldrig mer än det är). */
@@ -168,7 +165,7 @@ function toCard(r: OfferRow): OfferCard {
     id: r.id,
     slug: r.slug,
     title: r.title,
-    imageUrl: safeImageUrl(r.image_url) ?? safeImageUrl(r.cover_url),
+    imageUrl: offerImageSrc(r.image_url) ?? safeImageUrl(r.cover_url),
     category: r.category,
     regularMinor: r.regular_price_minor,
     priceMinor: r.offer_price_minor,

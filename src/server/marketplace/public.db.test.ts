@@ -41,6 +41,17 @@ describe("listOffersIn", () => {
           [biz],
         )
       ).rows[0]!.id;
+      // S3: tjänsten bakom "pricier" sänks under erbjudandepriset — erbjudandet
+      // ska då döljas (ordinarie pris räknas från tjänstens aktuella pris).
+      // (WP-70 #111 B1: tjänsten kan inte bytas på ett publicerat erbjudande,
+      // så "pricier" skapas direkt på den billiga tjänsten.)
+      const cheap = (
+        await c.query<{ id: string }>(
+          `insert into public.services (business_id, name, duration_min, price_clp)
+           values ($1, 'S6 billig', 30, 10000) returning id`,
+          [biz],
+        )
+      ).rows[0]!.id;
       const rows: [string, string, string][] = [
         ["s6zz-ok", "published", ""],
         ["s6zz-draft", "draft", ""],
@@ -57,7 +68,7 @@ describe("listOffersIn", () => {
         await c.query(
           `insert into public.offers (business_id, service_id, slug, title, offer_price_minor, category, status, regular_price_minor, currency)
            values ($1, $2, $3, $3, 8000, 'har', $4, 1, 'CLP')`,
-          [biz, svc, slug, status],
+          [biz, slug === "s6zz-pricier" ? cheap : svc, slug, status],
         );
         if (extra) {
           await c.query(`update public.offers set ${extra} where slug = $1`, [
@@ -65,19 +76,6 @@ describe("listOffersIn", () => {
           ]);
         }
       }
-      // S3: tjänsten bakom "pricier" sänks under erbjudandepriset — erbjudandet
-      // ska då döljas (ordinarie pris räknas från tjänstens aktuella pris).
-      const cheap = (
-        await c.query<{ id: string }>(
-          `insert into public.services (business_id, name, duration_min, price_clp)
-           values ($1, 'S6 billig', 30, 10000) returning id`,
-          [biz],
-        )
-      ).rows[0]!.id;
-      await c.query(
-        `update public.offers set service_id = $2 where business_id = $1 and slug = 's6zz-pricier'`,
-        [biz, cheap],
-      );
       await c.query(
         `update public.services set price_clp = 7000 where business_id = $1 and id = $2`,
         [biz, cheap],

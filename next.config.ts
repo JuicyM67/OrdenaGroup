@@ -9,6 +9,24 @@ import {
 
 const MARKET = process.env.NEXT_PUBLIC_MARKET ?? "CL";
 
+function supabaseImageConfig(): NonNullable<NextConfig["images"]> {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!raw) return { remotePatterns: [] };
+  const u = new URL(raw);
+  const local = ["127.0.0.1", "localhost", "[::1]"].includes(u.hostname);
+  return {
+    remotePatterns: [
+      {
+        protocol: u.protocol === "http:" ? "http" : "https",
+        hostname: u.hostname,
+        ...(u.port ? { port: u.port } : {}),
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+    ...(local ? { dangerouslyAllowLocalIP: true } : {}),
+  };
+}
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Marknaden bakas alltid in (CL som standard) så att `process.env.NEXT_PUBLIC_MARKET`
@@ -49,15 +67,9 @@ const nextConfig: NextConfig = {
   },
   // WP-68 (B1, säkerhetsgranskning #110): marknadsplatsens bilder från projektets
   // Supabase Storage går via Next bildoptimering (samma ursprung för besökaren).
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-    ],
-  },
+  // WP-70 (#111 S3): bara projektets EGEN Supabase-värd (från NEXT_PUBLIC_SUPABASE_URL),
+  // aldrig `*.supabase.co`. Lokalt (127.0.0.1:54321) måste Next tillåta lokal IP.
+  images: supabaseImageConfig(),
   // Next skriver annars in egna regler i CLAUDE.md vid `next dev`.
   agentRules: false,
   // Dev-indikatorn ritas i nederkanten och hamnar annars i skärmdumparna
