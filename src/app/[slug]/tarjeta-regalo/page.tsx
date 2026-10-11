@@ -3,9 +3,7 @@
 // bokningsflödets klientkomponenter, så `/[slug]`:s JS-budget (D-039) påverkas
 // inte. Bara SE (CL: 404). Designen: `presentkort/Main.dc.html` (desktop) och
 // `Mobil.dc.html`.
-import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { optionalAccount } from "@/app/(consumer)/cuenta/session";
@@ -14,6 +12,7 @@ import {
   type GiftCardFormState,
   type GiftCardFormTexts,
 } from "@/components/gift-cards/gift-card-form";
+import { GiftCardHeader } from "@/components/gift-cards/gift-card-header";
 import {
   GIFT_CARD_DELIVERY_MAX_DAYS,
   GIFT_CARD_MAX_SEK,
@@ -22,7 +21,12 @@ import {
   GIFT_CARD_VALIDITY_MONTHS,
 } from "@/config/gift-cards";
 import { regalo } from "@/i18n";
-import { addLocalDays, toLocalDate, type LocalDate } from "@/lib/format/dates";
+import {
+  addLocalDays,
+  formatLocalDate,
+  toLocalDate,
+  type LocalDate,
+} from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { formatGiftCardDate } from "@/server/gift-cards/rules";
 import { loadGiftCardShop } from "@/server/gift-cards/shop";
@@ -57,6 +61,22 @@ function addMonths(date: LocalDate, months: number): LocalDate {
   const last = new Date(Date.UTC(ny, nm, 0)).getUTCDate();
   const nd = Math.min(d, last);
   return `${ny}-${String(nm).padStart(2, "0")}-${String(nd).padStart(2, "0")}` as LocalDate;
+}
+
+/** Månadsnamnen och "{d} {m}" i installationens språk (via dates.ts). */
+function monthTexts(): { months: string[]; dayMonthTpl: string } {
+  const months = Array.from({ length: 12 }, (_, i) => {
+    const mm = String(i + 1).padStart(2, "0");
+    return formatLocalDate(
+      `2026-${mm}-02` as LocalDate,
+      "dayMonthLong",
+    ).replace(/^2 (de )?/, "");
+  });
+  const sample = formatLocalDate("2026-01-02" as LocalDate, "dayMonthLong");
+  return {
+    months,
+    dayMonthTpl: sample.replace(/^2/, "{d}").replace(months[0] ?? "", "{m}"),
+  };
 }
 
 export default async function GiftCardPage({
@@ -109,6 +129,7 @@ export default async function GiftCardPage({
       buyerEmailShort: t.campos.tuEmailCorto,
     },
     terms: t.terminos,
+    ...monthTexts(),
     cardLabel: t.tarjeta.etiqueta,
     toTpl: t.tarjeta.para({ nombre: "{nombre}" }),
     validUntil: `${t.tarjeta.validoHasta({ fecha: validUntil })} · PK-••••-••••-••••`,
@@ -137,43 +158,15 @@ export default async function GiftCardPage({
 
   return (
     <div className="min-h-dvh bg-canvas text-ink">
-      <header className="relative h-57.5 overflow-hidden bg-dark lg:h-65">
-        {shop.coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- omslagsbilden, redan optimerad i bucketen
-          <img
-            src={shop.coverUrl}
-            alt=""
-            className="absolute inset-0 size-full object-cover"
-          />
-        ) : null}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-linear-to-b from-ink/35 to-ink/85 lg:bg-linear-to-r lg:from-ink/80 lg:to-ink/35"
-        />
-        <div className="relative mx-auto flex max-w-300 flex-col gap-11.5 p-4 text-on-dark lg:gap-7 lg:px-10 lg:pt-8">
-          <Link
-            href={`/${slug}`}
-            aria-label={t.volverCorto}
-            className="flex size-11 items-center justify-center self-start rounded-full border border-on-dark/30 bg-on-dark/15 text-14 font-semibold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-dark lg:size-auto lg:gap-2 lg:px-4.5 lg:py-2.5"
-          >
-            <ChevronLeft aria-hidden="true" className="size-4.5 lg:size-4" />
-            <span className="hidden lg:inline">
-              {t.volver({ negocio: shop.name })}
-            </span>
-          </Link>
-          <div className="flex flex-col gap-1.5 lg:gap-2.5">
-            <span className="text-12 font-bold tracking-caps text-lime uppercase lg:text-13">
-              {t.eyebrow}
-            </span>
-            <h1 className="font-display text-30 leading-hero font-extrabold tracking-display lg:text-52 lg:leading-none">
-              {t.titulo({ negocio: shop.name })}
-            </h1>
-            <p className="hidden text-17 text-on-dark-soft lg:block">
-              {t.bajada}
-            </p>
-          </div>
-        </div>
-      </header>
+      <GiftCardHeader
+        coverUrl={shop.coverUrl}
+        backHref={`/${slug}`}
+        backLabel={t.volver({ negocio: shop.name })}
+        backLabelShort={t.volverCorto}
+        eyebrow={t.eyebrow}
+        title={t.titulo({ negocio: shop.name })}
+        lead={t.bajada}
+      />
       <main className="relative mx-auto -mt-4.5 flex max-w-300 flex-col gap-3.5 px-4 pb-10 lg:-mt-10 lg:px-10 lg:pb-16">
         {sp.avbrutet === "1" ? (
           <p

@@ -80,14 +80,14 @@ export function TillRedeem({
   return (
     <section
       aria-labelledby="pk-till-h"
-      className="flex flex-col gap-4.5 rounded-card bg-surface p-6.5"
+      className="flex flex-col gap-4.5 rounded-card bg-surface p-5 lg:p-6.5"
     >
       <h2 id="pk-till-h" className="font-display text-22 font-extrabold">
         {t.title}
       </h2>
       <form action={formAction} className="flex gap-2.5">
         <input type="hidden" name="intent" value="lookup" />
-        <label className="flex flex-1 flex-col gap-1.5 text-13 font-semibold">
+        <label className="flex min-w-0 flex-1 flex-col gap-1.5 text-13 font-semibold">
           {t.code}
           <input
             name="code"
@@ -96,13 +96,13 @@ export function TillRedeem({
             spellCheck={false}
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="h-13 rounded-avatar border-2 border-border px-3.5 font-mono text-18 tracking-caps uppercase outline-none focus-visible:border-ink"
+            className="h-13 w-full min-w-0 rounded-avatar border-2 border-border px-3.5 font-mono text-16 tracking-caps uppercase outline-none focus-visible:border-ink lg:text-18"
           />
         </label>
         <button
           type="submit"
           disabled={pending}
-          className="h-13 self-end rounded-full bg-ink px-5.5 font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-60"
+          className="h-13 shrink-0 self-end rounded-full bg-ink px-5.5 font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-60"
         >
           {t.lookup}
         </button>

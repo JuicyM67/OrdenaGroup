@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { GiftCardHeader } from "@/components/gift-cards/gift-card-header";
 import { GiftCardPreview } from "@/components/gift-cards/gift-card-preview";
 import { regaloHref } from "@/config/routes";
 import { regalo } from "@/i18n";
@@ -50,39 +51,35 @@ export default async function GiftCardDonePage({
   const done = await loadGiftCardReturn(shop.id, session);
   const t = regalo.listo;
 
-  const text = !done
+  // Datumet i fetstil (designen): texten delas runt en markör.
+  const MARK = "\u0000";
+  const raw = !done
     ? t.pendiente
     : done.toBuyer
       ? t.textoTuyo
       : done.deliverOn && done.deliverOn > toLocalDate(now, shop.timeZone)
-        ? t.texto({
-            nombre: done.recipientName ?? "",
-            fecha: t.fechaHora({
-              fecha: formatLocalDate(
-                done.deliverOn as LocalDate,
-                "dayMonthLong",
-              ),
-            }),
-          })
+        ? t.texto({ nombre: done.recipientName ?? "", fecha: MARK })
         : t.textoAhora({ nombre: done.recipientName ?? "" });
+  const [before, after] = raw.split(MARK);
+  const when =
+    done?.deliverOn && after !== undefined
+      ? t.fechaHora({
+          fecha: formatLocalDate(done.deliverOn as LocalDate, "dayMonthLong"),
+        })
+      : null;
 
   return (
     <div className="min-h-dvh bg-canvas text-ink">
-      <header className="relative h-40 overflow-hidden bg-dark lg:h-65">
-        {shop.coverUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- omslagsbilden
-          <img
-            src={shop.coverUrl}
-            alt=""
-            className="absolute inset-0 size-full object-cover"
-          />
-        ) : null}
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-linear-to-r from-ink/80 to-ink/35"
-        />
-      </header>
-      <main className="relative mx-auto -mt-10 max-w-160 px-4 pb-16 lg:px-10">
+      <GiftCardHeader
+        coverUrl={shop.coverUrl}
+        backHref={`/${slug}`}
+        backLabel={regalo.compra.volver({ negocio: shop.name })}
+        backLabelShort={regalo.compra.volverCorto}
+        eyebrow={regalo.compra.eyebrow}
+        title={regalo.compra.titulo({ negocio: shop.name })}
+        lead={regalo.compra.bajada}
+      />
+      <main className="relative mx-auto -mt-4.5 max-w-160 px-4 pb-16 lg:-mt-10 lg:px-10">
         <section className="flex flex-col items-center gap-5.5 rounded-hero bg-surface p-6 text-center shadow-popover lg:p-10">
           <div className="flex size-18 items-center justify-center rounded-full bg-mint">
             <Check
@@ -94,7 +91,11 @@ export default async function GiftCardDonePage({
           <h1 className="font-display text-28 leading-snug font-extrabold tracking-display lg:text-34">
             {done ? t.titulo : regalo.tarjeta.meta}
           </h1>
-          <p className="text-16 leading-relaxed text-muted">{text}</p>
+          <p className="text-16 leading-relaxed text-muted">
+            {before}
+            {when ? <b className="text-ink">{when}</b> : null}
+            {after}
+          </p>
           {done ? (
             <GiftCardPreview
               theme={

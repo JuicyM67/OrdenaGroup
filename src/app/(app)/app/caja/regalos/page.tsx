@@ -22,6 +22,7 @@ import { APP_TZ, formatDate } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { giftCardsEnabled, loadBusinessGiftCards } from "@/server/gift-cards";
+import { formatGiftCardDate } from "@/server/gift-cards/rules";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { ownerNameParts } from "@/server/owner/shared";
 import { systemClock } from "@/server/scheduling/clock";
@@ -178,7 +179,9 @@ export default async function CajaRegalosPage() {
                   </b>
                   <span className="text-12 text-muted">
                     {t.comprada({ fecha: day(g.purchasedAt) })} ·{" "}
-                    {t.vence({ fecha: day(g.expiresAt) })}
+                    {t.vence({
+                      fecha: formatGiftCardDate(new Date(g.expiresAt), APP_TZ),
+                    })}
                   </span>
                 </span>
                 <span

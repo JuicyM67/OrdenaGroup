@@ -9,7 +9,6 @@ import { ArrowRight, Check, Lock } from "lucide-react";
 import { useActionState, useState } from "react";
 
 import { cn } from "@/components/ui/cn";
-import { formatLocalDate, type LocalDate } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 
 import {
@@ -38,6 +37,10 @@ export type GiftCardFormTexts = {
     buyerEmailShort: string;
   };
   terms: string;
+  /** Månadsnamn (jan–dec) och "{d} {m}" från servern (dates.ts, D-018) —
+   * håller kalendertabellerna borta från klientbunten. */
+  months: readonly string[];
+  dayMonthTpl: string;
   cardLabel: string;
   /** "Till {nombre}" med `{nombre}` kvar. */
   toTpl: string;
@@ -111,8 +114,11 @@ export function GiftCardForm({
   const to = recipient.trim()
     ? t.toTpl.replace("{nombre}", recipient.trim())
     : undefined;
-  const sendLabel = /^\d{4}-\d{2}-\d{2}$/.test(deliverOn)
-    ? `${formatLocalDate(deliverOn as LocalDate, "dayMonthLong")}, 08:00`
+  const dm = /^\d{4}-(\d{2})-(\d{2})$/.exec(deliverOn);
+  const sendLabel = dm
+    ? `${t.dayMonthTpl
+        .replace("{d}", String(Number(dm[2])))
+        .replace("{m}", t.months[Number(dm[1]) - 1] ?? "")}, 08:00`
     : t.summary.now;
   const payLabel = t.summary.payTpl.replace("{monto}", amountLabel);
   const error = state.error ? (t.errors[state.error] ?? t.errors.failed) : null;
@@ -400,7 +406,12 @@ export function GiftCardForm({
                 ”{greeting.trim()}”
               </p>
             ) : null}
-            <dl className="hidden grid-cols-2 gap-2 border-t border-line-strong pt-3.5 text-14 lg:grid">
+            <dl
+              className={cn(
+                "hidden grid-cols-2 gap-2 text-14 lg:grid",
+                greeting.trim() && "border-t border-line-strong pt-3.5",
+              )}
+            >
               <dt className="text-muted">{t.summary.send}</dt>
               <dd className="text-right">{sendLabel}</dd>
               <dt className="text-muted">{t.summary.toPay}</dt>

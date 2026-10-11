@@ -144,6 +144,18 @@ function giftCardBlock(
     </table>`;
 }
 
+/** Hel bredd, rund (designen): bulletproof som `button` i layout.ts. */
+function wideButton(href: string, label: string): string {
+  return `
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 22px;">
+      <tr>
+        <td align="center" bgcolor="${c.ink}" style="background-color:${c.ink};border-radius:999px;">
+          <a href="${escapeHtml(href)}" target="_blank" rel="noopener" style="display:block;padding:18px 24px;font-family:${FONT_SANS};font-size:16px;font-weight:700;line-height:1;color:${c.onDark};text-decoration:none;border:none;border-radius:999px;text-align:center;">${escapeHtml(label)}</a>
+        </td>
+      </tr>
+    </table>`;
+}
+
 function greetingBlock(text: string): string {
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 22px;">
@@ -183,7 +195,7 @@ export function presentkortLeveransEmail(
     giftCardBlock(data.tema, data.negocio, ns.etiqueta, data.valor, valido) +
     (data.saludo ? greetingBlock(data.saludo) : "") +
     codeBlock(ns.codigo, data.codigo) +
-    button(data.reservarUrl, ns.cta) +
+    wideButton(data.reservarUrl, ns.cta) +
     textToHtmlParagraphs(ayuda) +
     secondaryLink(data.verUrl, ns.saldo);
   const bodyText = [
