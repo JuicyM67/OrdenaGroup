@@ -388,14 +388,97 @@ export async function abandonVoucherOrder(
 
 const SWEEP_LIMIT = 25;
 
+/** "Ångra köp" som stått i `refunding` så här länge har kraschat mellan
+ * `active` → `refunding` och Stripes svar (D-057). */
+const REFUNDING_STALE_MINUTES = 15;
+
+/**
+ * Värdebevis som fastnat i `refunding` (processen dog mellan statusbytet och
+ * Stripes svar i `withdrawVoucher`): fråga Stripe på företagets konto. Helt
+ * återbetald → `refunded` (samma väg som "Ångra köp"); en återbetalning som
+ * fortfarande behandlas → nästa pass; annars → `active` igen. Idempotent
+ * (villkorade updates), högst `SWEEP_LIMIT` per pass, ett fel stoppar aldrig
+ * resten. Returnerar antalet som lösts upp.
+ */
+export async function sweepStuckRefunds(now: Date): Promise<number> {
+  const stuck = await withServiceTx(async (q) => {
+    const r = await q.query<{
+      id: string;
+      payment_intent_id: string | null;
+      stripe_account_id: string;
+    }>(
+      `select v.id, o.payment_intent_id, o.stripe_account_id
+         from public.vouchers v
+         join public.voucher_orders o on o.business_id = v.business_id and o.id = v.order_id
+        where v.status = 'refunding'
+          and v.updated_at <= $1::timestamptz - make_interval(mins => $2)
+        order by v.updated_at
+        limit $3`,
+      [now, REFUNDING_STALE_MINUTES, SWEEP_LIMIT],
+    );
+    return r.rows;
+  });
+  let resolved = 0;
+  for (const v of stuck) {
+    try {
+      let refunded = false;
+      if (v.payment_intent_id) {
+        const stripe = getStripe();
+        const opts = { stripeAccount: v.stripe_account_id };
+        const pi = await stripe.paymentIntents.retrieve(
+          v.payment_intent_id,
+          { expand: ["latest_charge"] },
+          opts,
+        );
+        const charge =
+          typeof pi.latest_charge === "object" ? pi.latest_charge : null;
+        refunded = charge?.refunded === true;
+        if (!refunded) {
+          const list = await stripe.refunds.list(
+            { payment_intent: v.payment_intent_id, limit: 10 },
+            opts,
+          );
+          if (
+            list.data.some(
+              (x) => x.status === "pending" || x.status === "requires_action",
+            )
+          ) {
+            continue; // Stripe behandlar fortfarande: nästa pass.
+          }
+        }
+      }
+      await withServiceTx((q) =>
+        refunded
+          ? q.query(
+              `select private.voucher_mark_payment($1, 'withdrawn', $2)`,
+              [v.payment_intent_id, now],
+            )
+          : q.query(
+              `update public.vouchers set status = 'active'
+                where id = $1 and status = 'refunding'`,
+              [v.id],
+            ),
+      );
+      resolved += 1;
+    } catch {
+      // Stripe eller databasen svarade inte: värdebeviset står kvar i
+      // `refunding` och tas i nästa pass.
+    }
+  }
+  return resolved;
+}
+
 /**
  * Cron-passet (`/api/cron/outbox`): öppna ordrar som webhooken missat (frågar
- * Stripe), utgångna värdebevis och genomförda besök. Ett fel för en order ger
- * backoff och stoppar aldrig resten.
+ * Stripe), utgångna värdebevis, genomförda besök och "Ångra köp" som fastnat
+ * i `refunding`. Ett fel för en order ger backoff och stoppar aldrig resten.
  */
-export async function runVoucherSweep(
-  now: Date,
-): Promise<{ orders: number; expired: number; redeemed: number }> {
+export async function runVoucherSweep(now: Date): Promise<{
+  orders: number;
+  expired: number;
+  redeemed: number;
+  refunding: number;
+}> {
   const swept = await withServiceTx(async (q) => {
     const r = await q.query<{ expired: number; redeemed: number }>(
       `select * from private.voucher_sweep($1)`,
@@ -403,7 +486,7 @@ export async function runVoucherSweep(
     );
     return r.rows[0] ?? { expired: 0, redeemed: 0 };
   });
-  if (!stripeEnabled()) return { orders: 0, ...swept };
+  if (!stripeEnabled()) return { orders: 0, refunding: 0, ...swept };
   const stale = await withServiceTx(async (q) => {
     const r = await q.query<OrderRow>(
       `select id, business_id, stripe_account_id, session_id, payment_intent_id, status
@@ -454,7 +537,13 @@ export async function runVoucherSweep(
       ).catch(() => undefined);
     }
   }
-  return { orders, ...swept };
+  let refunding = 0;
+  try {
+    refunding = await sweepStuckRefunds(now);
+  } catch {
+    // Urvalet misslyckades: nästa pass.
+  }
+  return { orders, refunding, ...swept };
 }
 
 /** Visas köpknappen för företaget? (SE, Stripe på, kontot kan ta betalt.) */

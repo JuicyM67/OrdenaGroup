@@ -4,8 +4,11 @@
 // förfrågan lämnar tillbaka värdebeviset, besök efter utgången nekas.
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
-// Stripe är en fake: "Ångra köp" ska bara testa låsningen mot inlösen (B1).
+// Stripe är en fake: "Ångra köp" ska bara testa låsningen mot inlösen (B1),
+// svepet för fastnade återbetalningar läser `stripeState` per PaymentIntent
+// (okänd PaymentIntent = Stripe svarar inte).
 const refunds: string[] = [];
+const stripeState = new Map<string, "refunded" | "pending" | "none">();
 vi.mock("@/server/payments/stripe/client", () => ({
   stripeEnabled: () => true,
   getStripe: () => ({
@@ -14,6 +17,18 @@ vi.mock("@/server/payments/stripe/client", () => ({
         await new Promise((r) => setTimeout(r, 30));
         refunds.push(p.payment_intent);
         return { id: "re_fake" };
+      },
+      list: async (p: { payment_intent: string }) => {
+        const st = stripeState.get(p.payment_intent);
+        if (!st) throw new Error("okänd PaymentIntent");
+        return { data: st === "pending" ? [{ status: "pending" }] : [] };
+      },
+    },
+    paymentIntents: {
+      retrieve: async (id: string) => {
+        const st = stripeState.get(id);
+        if (!st) throw new Error("okänd PaymentIntent");
+        return { latest_charge: { refunded: st === "refunded" } };
       },
     },
   }),
@@ -41,6 +56,7 @@ import { createBooking } from "@/server/bookings/create";
 import { moveBooking } from "@/server/bookings/move";
 
 import { withdrawVoucher } from "./account";
+import { sweepStuckRefunds } from "./checkout";
 
 const at = (date: string, time: string) =>
   fromLocal(date as LocalDate, time as LocalTime, SANTIAGO);
@@ -225,6 +241,61 @@ describe("värdebevis (DB)", () => {
       [r.value.id],
     );
     expect(bk.rows[0]?.discount_clp).toBe(0);
+  });
+
+  it("svep: fastnade i `refunding` → återbetalt, aktivt igen eller nästa pass", async () => {
+    const ids = {
+      refunded: await buyVoucher(buyer, "BB-DB00-0006"),
+      none: await buyVoucher(buyer, "BB-DB00-0007"),
+      pending: await buyVoucher(buyer, "BB-DB00-0008"),
+    };
+    for (const [st, id] of Object.entries(ids)) {
+      const r = await adminQuery<{ pi: string }>(
+        `update public.vouchers v set status = 'refunding'
+           from public.voucher_orders o
+          where o.id = v.order_id and v.id = $1
+          returning o.payment_intent_id as pi`,
+        [id],
+      );
+      stripeState.set(r.rows[0]!.pi, st as "refunded" | "pending" | "none");
+    }
+    const status = async () => {
+      const r = await adminQuery<{ id: string; status: string }>(
+        `select id, status from public.vouchers where id = any($1::uuid[])`,
+        [Object.values(ids)],
+      );
+      return Object.fromEntries(
+        Object.entries(ids).map(([k, id]) => [
+          k,
+          r.rows.find((x) => x.id === id)?.status,
+        ]),
+      );
+    };
+
+    // Yngre än 15 min: rörs inte (ett "Ångra köp" kan pågå).
+    await sweepStuckRefunds(new Date());
+    expect(await status()).toEqual({
+      refunded: "refunding",
+      none: "refunding",
+      pending: "refunding",
+    });
+
+    const later = new Date(Date.now() + 20 * 60_000);
+    expect(await sweepStuckRefunds(later)).toBeGreaterThanOrEqual(2);
+    const after = {
+      refunded: "refunded",
+      none: "active",
+      pending: "refunding",
+    };
+    expect(await status()).toEqual(after);
+    // Idempotent: ett andra pass ändrar ingenting.
+    await sweepStuckRefunds(later);
+    expect(await status()).toEqual(after);
+    const ref = await adminQuery<{ refunded_at: Date | null }>(
+      `select refunded_at from public.vouchers where id = $1`,
+      [ids.refunded],
+    );
+    expect(ref.rows[0]?.refunded_at).not.toBeNull();
   });
 
   it("S2: en bokning betald med värdebevis kan inte flyttas förbi utgången", async () => {
