@@ -10,10 +10,13 @@ import {
   type PaidPlan,
   type PlanChangePreview,
 } from "@/lib/validation/billing";
+import { hitRateLimit } from "@/server/db/rate-limit";
+import { withServiceTx } from "@/server/db/tx";
 import { getStripe, stripeSecretKey } from "@/server/payments/stripe/client";
 
 import {
   billingVatRateId,
+  isStripeInvoiceUrl,
   planForLookupKey,
   planNetOre,
   planRank,
@@ -108,6 +111,14 @@ export async function previewChange(input: {
     rateLimit: false,
   });
   if (denied) return { ok: false, code: denied };
+  // Egen gräns för förhandsvisningen (varje anrop kan träffa Stripe).
+  const allowed = await hitRateLimit({
+    scope: "billing:preview",
+    subject: input.businessId,
+    windowSeconds: 3600,
+    max: 60,
+  });
+  if (!allowed) return { ok: false, code: "rate_limited" };
   const loaded = await loadForChange(input.businessId);
   if (!loaded.ok) return loaded;
   const { row } = loaded;
@@ -230,7 +241,7 @@ export async function changePlan(input: {
       ) {
         // Betalningen gick inte igenom direkt (3-D Secure eller nekat kort):
         // planen är oförändrad tills fakturan betalas.
-        if (inv.hosted_invoice_url?.startsWith("https://")) {
+        if (isStripeInvoiceUrl(inv.hosted_invoice_url)) {
           url = inv.hosted_invoice_url;
         } else {
           return { ok: false, code: "billing_payment_required" };
@@ -321,11 +332,20 @@ export async function resumeSubscription(input: {
   }
 }
 
+function isResourceMissing(e: unknown): boolean {
+  return (
+    !!e &&
+    typeof e === "object" &&
+    (e as { code?: string }).code === "resource_missing"
+  );
+}
+
 /**
  * Radering av företaget (`src/server/privacy/business.ts`): begärd radering →
  * uppsägning vid periodens slut; faktisk radering → uppsägning direkt (ingen
- * återbetalning för påbörjad period). Stripe-kunden och fakturorna ligger
- * kvar (bokföringsunderlag). Utan abonnemang/Stripe: ingenting.
+ * återbetalning för påbörjad period). Raderingen får aldrig fastna (Ley
+ * 21.719/GDPR): ett abonnemang som redan är avslutat eller saknas i Stripe
+ * hoppas över. Stripe-kunden och fakturorna ligger kvar (bokföringsunderlag).
  */
 export async function cancelSubscriptionForDeletion(
   businessId: string,
@@ -334,15 +354,58 @@ export async function cancelSubscriptionForDeletion(
   if (!stripeSecretKey()) return;
   const row = await loadBillingRow(businessId);
   if (!row?.stripe_subscription_id || !row.status) return;
-  if (!LIVE_STATUSES.has(row.status) && row.status !== "unpaid") return;
-  const stripe = getStripe();
-  if (mode === "now") {
-    await stripe.subscriptions.cancel(row.stripe_subscription_id, {
-      prorate: false,
-    });
+  const subId = row.stripe_subscription_id;
+  let sub: Stripe.Subscription;
+  try {
+    sub = await retrieveSubscription(subId);
+  } catch (e) {
+    if (isResourceMissing(e)) return;
+    throw e;
+  }
+  if (sub.status === "canceled" || sub.status === "incomplete_expired") {
     return;
   }
-  const sub = await retrieveSubscription(row.stripe_subscription_id);
+  const stripe = getStripe();
+  if (mode === "now") {
+    try {
+      await stripe.subscriptions.cancel(subId, { prorate: false });
+    } catch (e) {
+      if (!isResourceMissing(e)) throw e;
+    }
+    // Raden speglas utan planändring/mejl: företaget raderas strax.
+    await withServiceTx((q) =>
+      q.query(
+        `update public.billing_subscriptions
+            set status = 'canceled', grace_until = null
+          where business_id = $1 and stripe_subscription_id = $2`,
+        [businessId, subId],
+      ),
+    );
+    return;
+  }
   await releaseSchedule(sub);
   await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true });
+  await syncSubscription(sub.id, { expectBusinessId: businessId });
+}
+
+/** Ångrad radering: en uppsägning som raderingen gjorde återupptas. */
+export async function resumeSubscriptionAfterDeletionCancel(
+  businessId: string,
+): Promise<void> {
+  if (!stripeSecretKey()) return;
+  const row = await loadBillingRow(businessId);
+  if (
+    !row?.stripe_subscription_id ||
+    !row.status ||
+    !row.cancel_at_period_end ||
+    !LIVE_STATUSES.has(row.status)
+  ) {
+    return;
+  }
+  await getStripe().subscriptions.update(row.stripe_subscription_id, {
+    cancel_at_period_end: false,
+  });
+  await syncSubscription(row.stripe_subscription_id, {
+    expectBusinessId: businessId,
+  });
 }

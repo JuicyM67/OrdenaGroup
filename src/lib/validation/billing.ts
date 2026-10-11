@@ -30,6 +30,16 @@ export const BILLING_ERROR_CODES = [
 ] as const;
 export type BillingErrorCode = (typeof BILLING_ERROR_CODES)[number];
 
+/** Levande abonnemang — samma lista som `v_live` i
+ * `private.billing_apply_subscription` (SQL). */
+export const LIVE_BILLING_STATUSES: ReadonlySet<string> = new Set([
+  "trialing",
+  "active",
+  "past_due",
+  "incomplete",
+  "unpaid",
+]);
+
 export type BillingStatus =
   | "incomplete"
   | "incomplete_expired"

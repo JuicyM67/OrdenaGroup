@@ -10,12 +10,16 @@ import { formatPrecioPlan, precioPlan } from "@/config/pricing";
 import { planes, suscripcion } from "@/i18n";
 import { APP_TZ, formatLocalDate, toLocalDate } from "@/lib/format/dates";
 import { formatSek } from "@/lib/format/money";
-import { PAID_PLANS, type PaidPlan } from "@/lib/validation/billing";
+import {
+  LIVE_BILLING_STATUSES,
+  PAID_PLANS,
+  type PaidPlan,
+} from "@/lib/validation/billing";
 import { TRIAL_DAYS } from "@/server/billing/subscriptions/config";
 import type { BillingOverview } from "@/server/billing/subscriptions/status";
 
 const ab = suscripcion;
-const LIVE = new Set(["trialing", "active", "past_due", "incomplete"]);
+const LIVE = LIVE_BILLING_STATUSES;
 
 function shortDate(iso: string | null): string {
   return iso
@@ -50,7 +54,7 @@ export function buildBillingView(
     chip = { label: ab.estado.activo, tone: "success" };
   } else if (sub && live) {
     const end = sub.status === "trialing" ? sub.trialEnd : sub.periodEnd;
-    if (sub.status === "past_due") {
+    if (sub.status === "past_due" || sub.status === "unpaid") {
       chip = { label: ab.estado.fallido, tone: "alert" };
       warning = ab.fallidoTexto({
         plan: name(sub.plan),
@@ -138,7 +142,7 @@ export function buildBillingView(
     portalLabel: ov.hasCustomer
       ? trialNoCard
         ? ab.botones.agregarTarjeta
-        : sub?.status === "past_due"
+        : sub?.status === "past_due" || sub?.status === "unpaid"
           ? ab.banner.cta
           : ab.botones.gestionar
       : null,
@@ -170,7 +174,7 @@ export function buildBillingView(
           ? "none"
           : !live
             ? "start"
-            : sub.status === "past_due" || sub.status === "incomplete"
+            : sub.status !== "trialing" && sub.status !== "active"
               ? "none"
               : "change",
       };

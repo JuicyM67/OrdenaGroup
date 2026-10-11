@@ -2,6 +2,8 @@ import "server-only";
 
 import { withServiceTx } from "@/server/db/tx";
 
+import { isStripeInvoiceUrl } from "./config";
+
 /**
  * WP-78 (D-059): misslyckad betalning och säkerhetsnätet.
  *  - `invoice.payment_failed` / `invoice.payment_action_required` → mejl till
@@ -37,7 +39,7 @@ export async function enqueuePaymentFailedEmail(input: {
       [
         input.businessId,
         input.invoiceId,
-        input.hostedInvoiceUrl?.startsWith("https://")
+        isStripeInvoiceUrl(input.hostedInvoiceUrl)
           ? input.hostedInvoiceUrl
           : null,
         `billing_${input.kind}:${input.invoiceId}`,

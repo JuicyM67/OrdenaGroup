@@ -3,7 +3,7 @@
 -- regeln i `private.billing_apply_subscription` / `private.billing_sweep`.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(46);
 \ir _helpers.psql
 
 update public.memberships set can_edit_settings = true
@@ -124,6 +124,29 @@ select is((select pilot_reminders from private.billing_sweep(now())), 0, '… ba
 select is((select pilots_ended from private.billing_sweep(now() + interval '11 days')), 1, 'pilotdatumet passerat → avslutad');
 reset role;
 select is((select plan::text from public.businesses where id = 'bbbbbbbb-0000-0000-0000-000000000002'), 'free', 'piloten går till free utan abonnemang');
+
+-- Dubbel Checkout: ett andra levande abonnemang → 'duplicate', raden orörd.
+set local role service_role;
+select private.billing_apply_subscription('bbbbbbbb-0000-0000-0000-000000000002', 'cus_B', 'sub_B2', 'equipo', null, 'active', null, null, false, null, null, null, now() + interval '20 days', 'evt_b3');
+select is(private.billing_apply_subscription('bbbbbbbb-0000-0000-0000-000000000002', 'cus_B', 'sub_B3', 'local', null, 'active', null, null, false, null, null, null, now() + interval '21 days', 'evt_b4'), 'duplicate', 'andra levande abonnemanget → duplicate');
+reset role;
+select is((select stripe_subscription_id from public.billing_subscriptions where business_id = 'bbbbbbbb-0000-0000-0000-000000000002'), 'sub_B2', 'raden behåller det första abonnemanget');
+
+-- Pilot med past_due efter grace → Gratis (inte abonnemangets plan), inga påminnelser.
+update public.billing_subscriptions set status = 'past_due', grace_until = now() + interval '1 day'
+ where business_id = 'bbbbbbbb-0000-0000-0000-000000000002';
+update public.businesses set plan = 'equipo', plan_override_until = now() + interval '5 days'
+ where id = 'bbbbbbbb-0000-0000-0000-000000000002';
+set local role service_role;
+select is((select pilot_reminders from private.billing_sweep(now() + interval '2 days')), 1, 'past_due efter grace räknas inte som levande: påminnelse köas');
+select is((select pilots_ended from private.billing_sweep(now() + interval '6 days')), 1, 'pilotdatumet passerat');
+reset role;
+select is((select plan::text from public.businesses where id = 'bbbbbbbb-0000-0000-0000-000000000002'), 'free', 'pilot med förfallen past_due → free');
+
+-- Append-only även för service_role.
+set local role service_role;
+select throws_ok($$ delete from private.plan_changes $$, '42501', null, 'plan_changes kan inte raderas av service_role');
+reset role;
 
 select finish();
 rollback;

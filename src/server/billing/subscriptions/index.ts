@@ -4,6 +4,7 @@ export {
   billingAvailable,
   billingMarket,
   GRACE_DAYS,
+  isStripeInvoiceUrl,
   TRIAL_DAYS,
 } from "./config";
 export { startSubscriptionCheckout } from "./checkout";
@@ -13,6 +14,7 @@ export {
   changePlan,
   previewChange,
   resumeSubscription,
+  resumeSubscriptionAfterDeletionCancel,
 } from "./change";
 export { openPortal } from "./portal";
 export {

@@ -138,9 +138,4 @@ export async function businessPlanState(
   });
 }
 
-export const LIVE_STATUSES = new Set([
-  "trialing",
-  "active",
-  "past_due",
-  "incomplete",
-]);
+export { LIVE_BILLING_STATUSES as LIVE_STATUSES } from "@/lib/validation/billing";

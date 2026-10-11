@@ -3,6 +3,7 @@
 // persondata i loggar (bara händelsetyp och SQLSTATE).
 import { NextResponse } from "next/server";
 
+import { BillingError } from "@/server/billing/subscriptions";
 import { pgErrorCode } from "@/server/db/errors";
 import {
   stripeEnabled,
@@ -37,7 +38,10 @@ export async function POST(request: Request): Promise<NextResponse> {
   } catch (e) {
     console.error("stripe webhook: hantering misslyckades", {
       type: event.type,
-      code: pgErrorCode(e) ?? "unknown",
+      code:
+        pgErrorCode(e) ??
+        // WP-78: abonnemangens felkod (ingen persondata, bara koden).
+        (e instanceof BillingError ? `billing_${e.code}` : "unknown"),
     });
     return NextResponse.json({ error: "processing_failed" }, { status: 500 });
   }

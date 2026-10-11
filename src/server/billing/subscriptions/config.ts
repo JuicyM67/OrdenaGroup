@@ -71,3 +71,16 @@ export function planNetOre(plan: PaidPlan): number {
 export function planRank(plan: PaidPlan): number {
   return plan === "emprende" ? 1 : plan === "equipo" ? 2 : 3;
 }
+
+/** Fakturans sida i Stripe: bara https://invoice.stripe.com/… godtas. */
+export function isStripeInvoiceUrl(
+  url: string | null | undefined,
+): url is string {
+  if (!url) return false;
+  try {
+    const u = new URL(url);
+    return u.protocol === "https:" && u.hostname === "invoice.stripe.com";
+  } catch {
+    return false;
+  }
+}

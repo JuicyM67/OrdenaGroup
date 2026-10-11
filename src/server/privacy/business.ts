@@ -1,6 +1,9 @@
 import "server-only";
 
-import { cancelSubscriptionForDeletion } from "@/server/billing/subscriptions";
+import {
+  cancelSubscriptionForDeletion,
+  resumeSubscriptionAfterDeletionCancel,
+} from "@/server/billing/subscriptions";
 import type { Queryable } from "@/server/db/pool";
 import { getStorageAdminClient } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
@@ -451,7 +454,7 @@ export async function cancelBusinessDeletion(
   userId: string,
   businessId: string,
 ): Promise<MutationResult> {
-  return withServiceTx(async (q) => {
+  const result = await withServiceTx(async (q): Promise<MutationResult> => {
     const denied = await ownerDenial(q, userId, businessId);
     if (denied) return { ok: false, code: denied };
     const r = await q.query(
@@ -464,6 +467,16 @@ export async function cancelBusinessDeletion(
     );
     return r.rowCount ? { ok: true } : { ok: false, code: "not_requested" };
   });
+  // WP-78 (D-059): uppsägningen som raderingsbegäran gjorde återupptas.
+  // Ett Stripe-fel stoppar inte ångrandet (ägaren kan "Återuppta" själv).
+  if (result.ok) {
+    try {
+      await resumeSubscriptionAfterDeletionCancel(businessId);
+    } catch {
+      // se ovan
+    }
+  }
+  return result;
 }
 
 // ---------------------------------------------------------------------------

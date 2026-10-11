@@ -28,6 +28,7 @@ import {
   type SendSmsInput,
   type SmsTemplateName,
 } from "@/server/messaging/sms";
+import { isStripeInvoiceUrl } from "@/server/billing/subscriptions/config";
 import { reserveSmsQuotaIn } from "@/server/plans/entitlements";
 import { formatVoucherDate } from "@/server/vouchers/rules";
 
@@ -1652,7 +1653,7 @@ async function processBillingNoticeRow(
       plan: planName(str(p.plan)),
       fecha: fecha(str(p.hasta)),
       planUrl,
-      facturaUrl: facturaUrl.startsWith("https://") ? facturaUrl : null,
+      facturaUrl: isStripeInvoiceUrl(facturaUrl) ? facturaUrl : null,
     });
   }
   if (row.template === "abonnemangNedgraderat") {

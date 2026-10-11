@@ -3,11 +3,12 @@ import "server-only";
 import type Stripe from "stripe";
 
 import type { PaidPlan } from "@/lib/validation/billing";
+import { hitRateLimit } from "@/server/db/rate-limit";
 import { withServiceTx } from "@/server/db/tx";
 import { getStripe } from "@/server/payments/stripe/client";
 
 import { planForLookupKey } from "./config";
-import { LIVE_STATUSES, loadBillingRow } from "./customer";
+import { loadBillingRow } from "./customer";
 import { BillingError } from "./errors";
 
 /**
@@ -109,21 +110,6 @@ export async function syncSubscription(
   const plan = planForLookupKey(lookupKey);
   if (!item || !plan) throw new BillingError("unknown_price", sub.id);
 
-  // Dubbel Checkout (två flikar): det abonnemang som redan finns på raden
-  // behålls, det andra sägs upp direkt.
-  if (
-    row.stripe_subscription_id &&
-    row.stripe_subscription_id !== sub.id &&
-    row.status !== null &&
-    LIVE_STATUSES.has(row.status) &&
-    LIVE_STATUSES.has(sub.status)
-  ) {
-    await getStripe().subscriptions.cancel(sub.id, { prorate: true });
-    // Synligt fel (500 → Stripe skickar igen; då är det uppsagt och
-    // ignoreras). Eventuell återbetalning görs manuellt i Stripe.
-    throw new BillingError("duplicate_subscription", sub.id);
-  }
-
   const card = cardOf(sub);
   const nowSec = Math.floor(fetchedAt.getTime() / 1000);
   const result = await withServiceTx(async (q) => {
@@ -152,6 +138,14 @@ export async function syncSubscription(
     );
     return r.rows[0]?.outcome ?? "applied";
   });
+  // Dubbel Checkout (två flikar): databasen har avgjort under radlåset att
+  // raden redan har ett annat levande abonnemang. Först nu sägs det nya upp.
+  // Synligt fel (500 → Stripe skickar igen; då är det uppsagt och ignoreras).
+  // Eventuell återbetalning görs manuellt i Stripe.
+  if (result === "duplicate") {
+    await getStripe().subscriptions.cancel(sub.id, { prorate: true });
+    throw new BillingError("duplicate_subscription", sub.id);
+  }
   return {
     status: result as "applied" | "stale" | "other",
     businessId,
@@ -165,6 +159,14 @@ export async function syncFromCheckoutReturn(
   sessionId: string,
   businessId: string,
 ): Promise<"done" | "processing" | "forbidden"> {
+  // Retursidan kan laddas om godtyckligt; begränsa Stripe-anropen.
+  const allowed = await hitRateLimit({
+    scope: "billing:return",
+    subject: businessId,
+    windowSeconds: 3600,
+    max: 30,
+  });
+  if (!allowed) return "processing";
   const s = await getStripe().checkout.sessions.retrieve(sessionId);
   if (s.metadata?.kind !== "subscription") return "forbidden";
   if (s.metadata.business_id !== businessId) return "forbidden";

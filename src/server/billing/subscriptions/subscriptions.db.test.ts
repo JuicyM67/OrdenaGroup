@@ -23,7 +23,10 @@ vi.mock("@/server/payments/stripe/client", () => ({
     subscriptions: {
       retrieve: async (id: string) => {
         const s = subs.get(id);
-        if (!s) throw new Error("okänt abonnemang");
+        if (!s)
+          throw Object.assign(new Error("okänt abonnemang"), {
+            code: "resource_missing",
+          });
         await new Promise((r) => setTimeout(r, 10));
         return {
           id: s.id,
@@ -81,6 +84,7 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 
+import { cancelSubscriptionForDeletion } from "./change";
 import { handleSubscriptionEvent } from "./events";
 import { syncFromCheckoutReturn, syncSubscription } from "./sync";
 
@@ -221,5 +225,26 @@ describe("syncSubscription (fake Stripe)", () => {
     });
     expect(canceled).toContain("sub_dup");
     expect(await planOf(a)).toBe("equipo");
+  });
+
+  it("radering: avslutat eller saknat abonnemang hoppas över, aldrig fel", async () => {
+    canceled.length = 0;
+    await adminQuery(
+      `update public.billing_subscriptions set stripe_subscription_id = 'sub_gone', status = 'active' where business_id = $1`,
+      [b.id],
+    );
+    await expect(cancelSubscriptionForDeletion(b.id, "now")).resolves.toBe(
+      undefined,
+    );
+    subs.set("sub_gone", {
+      id: "sub_gone",
+      status: "canceled",
+      customer: cus(b),
+      metadata: { kind: "subscription", business_id: b.id },
+      price: "bb_se_local_monthly_v1",
+      pending_update: null,
+    });
+    await cancelSubscriptionForDeletion(b.id, "now");
+    expect(canceled).toEqual([]);
   });
 });
