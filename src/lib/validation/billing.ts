@@ -51,6 +51,8 @@ export type PlanChangePreview = {
   readonly nextVatOre: number;
   /** ISO 8601: när nedgraderingen gäller / nästa faktura. */
   readonly effectiveAt: string | null;
+  /** `effectiveAt` formaterat ("12 november"), satt av server action:en. */
+  readonly effectiveLabel?: string;
 };
 
 export type BillingActionResult =

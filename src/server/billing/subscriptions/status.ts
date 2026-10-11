@@ -9,6 +9,8 @@ import {
 import { getStripe } from "@/server/payments/stripe/client";
 
 import { billingAvailable } from "./config";
+import { withOwnerTx } from "@/server/db/tx";
+
 import { businessPlanState, loadBillingRow } from "./customer";
 
 /**
@@ -104,9 +106,22 @@ export type BillingBanner = {
 
 export async function loadBillingBanner(
   businessId: string,
+  userId: string,
 ): Promise<BillingBanner | null> {
   if (!billingAvailable()) return null;
-  const row = await loadBillingRow(businessId);
+  // Bara ägaren (samma RLS-hjälpare som raden): personal ser ingen banner.
+  const row = await withOwnerTx(userId, async (q) => {
+    const r = await q.query<{
+      status: string | null;
+      plan: string | null;
+      grace_until: Date | null;
+    }>(
+      `select status, plan::text as plan, grace_until
+         from public.billing_subscriptions where business_id = $1`,
+      [businessId],
+    );
+    return r.rows[0] ?? null;
+  });
   if (row?.status !== "past_due" || !row.grace_until || !isPaidPlan(row.plan)) {
     return null;
   }

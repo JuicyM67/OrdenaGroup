@@ -1,8 +1,8 @@
 // WP-73 (D-048): Inställningar → Plan. Aktuell plan, användning denna månad
 // (konton, aktiva tjänster, sms i SE) och vad planen innehåller. Ingen
-// "use client": allt räknas på servern (`loadPlanUsage`). Själva bytet av
-// plan (Stripe Billing) finns inte än — "Byt plan" går till prissidan och
-// "Kontakta oss" till kontaktsidan (IDEAS/BACKLOG).
+// "use client": allt räknas på servern (`loadPlanUsage`). Utan Stripe Billing
+// (CL, saknade nycklar) går "Byt plan" till prissidan och "Kontakta oss" till
+// kontaktsidan; i SE med WP-78 (D-059) görs bytet i abonnemangskortet ovanför.
 import { Check, Lock } from "lucide-react";
 import Link from "next/link";
 
@@ -67,10 +67,13 @@ function UsageRow({
 export function PlanSection({
   data,
   hideSmsNotice = false,
+  hideChangeCard = false,
 }: {
   data: PlanSectionData;
   /** WP-76: sms-kortet ovanför har egen varning (D-053). */
   hideSmsNotice?: boolean;
+  /** WP-78 (D-059): planbytet (och planens namn) finns i abonnemangskortet ovanför. */
+  hideChangeCard?: boolean;
 }) {
   const smsOut =
     !hideSmsNotice &&
@@ -80,12 +83,15 @@ export function PlanSection({
   return (
     <div className="flex flex-col gap-5">
       <Card radius="tile" padding="lg" className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <p className="text-13 text-muted">{planes.ajustes.planActual}</p>
-          <h2 className="text-24 font-bold text-ink">
-            {planes.nombres[data.plan]}
-          </h2>
-        </div>
+        {/* WP-78: med abonnemangskortet ovanför visas planens namn där. */}
+        {hideChangeCard ? null : (
+          <div className="flex flex-col gap-1">
+            <p className="text-13 text-muted">{planes.ajustes.planActual}</p>
+            <h2 className="text-24 font-bold text-ink">
+              {planes.nombres[data.plan]}
+            </h2>
+          </div>
+        )}
         <div className="flex flex-col">
           <p className="text-14 font-semibold text-ink">
             {planes.ajustes.usoTitulo}
@@ -141,22 +147,24 @@ export function PlanSection({
         </ul>
       </Card>
 
-      <Card radius="tile" padding="lg" className="flex flex-col gap-4">
-        <p className="text-14 leading-body text-ink">
-          {planes.ajustes.cambiarAyuda}
-        </p>
-        <p className="text-13 leading-body text-muted">
-          {planes.ajustes.pausado}
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Button asChild variant="primary" size="md">
-            <Link href={href("precios")}>{planes.ajustes.cambiarPlan}</Link>
-          </Button>
-          <Button asChild variant="secondary" size="md">
-            <Link href={href("contacto")}>{planes.ajustes.contacto}</Link>
-          </Button>
-        </div>
-      </Card>
+      {hideChangeCard ? null : (
+        <Card radius="tile" padding="lg" className="flex flex-col gap-4">
+          <p className="text-14 leading-body text-ink">
+            {planes.ajustes.cambiarAyuda}
+          </p>
+          <p className="text-13 leading-body text-muted">
+            {planes.ajustes.pausado}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild variant="primary" size="md">
+              <Link href={href("precios")}>{planes.ajustes.cambiarPlan}</Link>
+            </Button>
+            <Button asChild variant="secondary" size="md">
+              <Link href={href("contacto")}>{planes.ajustes.contacto}</Link>
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

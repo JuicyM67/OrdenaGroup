@@ -49,6 +49,9 @@ export const suscripcion: Widen<typeof EsSuscripcion> = {
     `Vi kunde inte dra betalningen. Uppdatera kortet före ${p.fecha} så behåller du ${p.plan}.`,
   pilotoTexto: (p: { fecha: string }): string =>
     `Din pilotperiod gäller till ${p.fecha}. Välj en plan innan dess så behåller du funktionerna.`,
+  gratisTexto: (p: { n: number }): string =>
+    `Prova vilken plan som helst gratis i ${p.n} dagar, utan kort.`,
+  gratisSinPrueba: "Välj en plan när du vill. Du kan säga upp när du vill.",
   custom: "Din plan hanteras av oss – kontakta oss om du vill ändra den.",
   botones: {
     gestionar: "Hantera betalning",
@@ -57,7 +60,6 @@ export const suscripcion: Widen<typeof EsSuscripcion> = {
     reanudar: "Återuppta",
     elegir: "Välj",
     actual: "Nuvarande",
-    probar: (p: { n: number }): string => `Prova gratis i ${p.n} dagar`,
     mantener: "Behåll",
     contacto: "Kontakta oss",
   },
@@ -66,6 +68,7 @@ export const suscripcion: Widen<typeof EsSuscripcion> = {
     porMes: "/mån",
     sinIva: "exkl. moms",
     gratisNota: "Kostar ingenting",
+    prueba: (p: { n: number }): string => `${p.n} dagar gratis, utan kort`,
   },
   dialogo: {
     tituloInicio: (p: { plan: string }): string => `Starta ${p.plan}`,

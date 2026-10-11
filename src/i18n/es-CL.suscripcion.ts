@@ -37,6 +37,10 @@ export const suscripcion = {
     `No pudimos cobrar. Actualiza la tarjeta antes del ${p.fecha} para mantener ${p.plan}.`,
   pilotoTexto: (p: { fecha: string }): string =>
     `Tu periodo piloto dura hasta el ${p.fecha}. Elige un plan antes para mantener las funciones.`,
+  gratisTexto: (p: { n: number }): string =>
+    `Prueba cualquier plan gratis por ${p.n} días, sin tarjeta.`,
+  gratisSinPrueba:
+    "Elige un plan cuando quieras. Puedes cancelar cuando quieras.",
   custom: "Tu plan lo gestionamos nosotros. Escríbenos si quieres cambiarlo.",
   botones: {
     gestionar: "Gestionar pago",
@@ -45,7 +49,6 @@ export const suscripcion = {
     reanudar: "Reanudar",
     elegir: "Elegir",
     actual: "Plan actual",
-    probar: (p: { n: number }): string => `Prueba gratis ${p.n} días`,
     mantener: "Mantener",
     contacto: "Contáctanos",
   },
@@ -54,6 +57,7 @@ export const suscripcion = {
     porMes: "/mes",
     sinIva: "+ IVA",
     gratisNota: "Sin costo",
+    prueba: (p: { n: number }): string => `${p.n} días gratis, sin tarjeta`,
   },
   dialogo: {
     tituloInicio: (p: { plan: string }): string => `Empezar ${p.plan}`,

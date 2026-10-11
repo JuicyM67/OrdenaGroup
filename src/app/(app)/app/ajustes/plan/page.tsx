@@ -7,6 +7,10 @@ import type { Metadata } from "next";
 
 import { logout } from "@/app/auth/actions";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
+import {
+  PlanBillingSection,
+  type PlanBillingData,
+} from "@/components/settings/plan-billing-section";
 import { PlanSection } from "@/components/settings/plan-section";
 import {
   SmsCreditsSection,
@@ -33,6 +37,12 @@ import {
   smsCreditsMarket,
   smsCreditsPurchasable,
 } from "@/server/billing/sms-credits";
+import {
+  billingAvailable,
+  loadBillingOverview,
+  loadUpcomingAmount,
+  syncFromCheckoutReturn,
+} from "@/server/billing/subscriptions";
 import { loadPlanUsage } from "@/server/plans/entitlements";
 
 import { requireAjustesTab } from "../access";
@@ -42,7 +52,16 @@ import {
   declineCancelRequestAction,
   declineRequestAction,
 } from "../actions";
-import { buySmsCreditsAction } from "./actions";
+import {
+  buySmsCreditsAction,
+  cancelSubscriptionAction,
+  changePlanAction,
+  openBillingPortalAction,
+  previewPlanChangeAction,
+  resumeSubscriptionAction,
+  startSubscriptionAction,
+} from "./actions";
+import { buildBillingView } from "./billing-view";
 
 export const metadata: Metadata = {
   title: nav.ajustes,
@@ -126,6 +145,48 @@ async function returnState(
   }
 }
 
+// ---------------------------------------------------------------------------
+// WP-78 (D-059): abonnemanget (SE, `billingAvailable()`). Retur från Stripe
+// Checkout: `?abonnemang=klart&session=…` synkar idempotent här också
+// (samma funktion som webhooken), `?abonnemang=avbrutet` visar en rad.
+// ---------------------------------------------------------------------------
+
+async function billingReturn(
+  sp: SearchParams,
+  businessId: string,
+): Promise<PlanBillingData["returnState"] | "done"> {
+  const v = typeof sp.abonnemang === "string" ? sp.abonnemang : undefined;
+  if (v === "avbrutet") return { kind: "cancelled" };
+  if (v !== "klart") return null;
+  const session = typeof sp.session === "string" ? sp.session : "";
+  if (!/^cs_[A-Za-z0-9_]{1,250}$/.test(session)) return { kind: "processing" };
+  try {
+    const r = await syncFromCheckoutReturn(session, businessId);
+    if (r === "done") return "done";
+    return r === "processing" ? { kind: "processing" } : null;
+  } catch {
+    // Stripe svarade inte: webhooken synkar ändå.
+    return { kind: "processing" };
+  }
+}
+
+async function buildBilling(
+  businessId: string,
+  sp: SearchParams,
+): Promise<PlanBillingData | null> {
+  if (!billingAvailable()) return null;
+  const ret = await billingReturn(sp, businessId);
+  const ov = await loadBillingOverview(businessId);
+  const sub = ov.subscription;
+  const upcoming =
+    sub &&
+    (sub.status === "trialing" || sub.status === "active") &&
+    !sub.cancelAtPeriodEnd
+      ? await loadUpcomingAmount(businessId)
+      : null;
+  return buildBillingView(ov, upcoming, ret);
+}
+
 export default async function AjustesPlanPage({
   searchParams,
 }: {
@@ -135,6 +196,8 @@ export default async function AjustesPlanPage({
   const ctx = await requireAjustesTab("plan");
   const businessId = ctx.current.business.id;
   const showSms = smsCreditsMarket();
+  // Abonnemanget synkar retur först, så att planen nedan redan är uppdaterad.
+  const billing = await buildBilling(businessId, sp);
   // Returen krediterar först, så att saldot nedan redan är uppdaterat.
   const ret = showSms ? await returnState(sp, businessId) : null;
   const allHistory = sp.historik === "alla";
@@ -192,6 +255,19 @@ export default async function AjustesPlanPage({
       myProfile={ctx.myProfile ?? undefined}
       myProfileActions={ctx.myProfileActions}
     >
+      {billing ? (
+        <PlanBillingSection
+          data={billing}
+          actions={{
+            onStart: startSubscriptionAction,
+            onPreview: previewPlanChangeAction,
+            onChange: changePlanAction,
+            onCancel: cancelSubscriptionAction,
+            onResume: resumeSubscriptionAction,
+            onPortal: openBillingPortalAction,
+          }}
+        />
+      ) : null}
       {smsData ? (
         <SmsCreditsSection data={smsData} onBuy={buySmsCreditsAction} />
       ) : null}
@@ -203,6 +279,7 @@ export default async function AjustesPlanPage({
           sms: usage.sms,
         }}
         hideSmsNotice={smsData !== null}
+        hideChangeCard={billing !== null}
       />
     </AjustesShell>
   );

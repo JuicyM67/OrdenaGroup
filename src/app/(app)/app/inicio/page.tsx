@@ -8,14 +8,16 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { InicioScreen } from "@/components/dashboard/inicio-screen";
+import { PlanBillingBanner } from "@/components/settings/plan-billing-banner";
 import { appHref } from "@/config/routes";
-import { inicio } from "@/i18n";
-import { APP_TZ, toLocalDate } from "@/lib/format/dates";
+import { inicio, planes } from "@/i18n";
+import { APP_TZ, formatLocalDate, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   loadSmsBellNotices,
   smsCreditsMarket,
 } from "@/server/billing/sms-credits";
+import { loadBillingBanner } from "@/server/billing/subscriptions";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import { loadOwnerInicio } from "@/server/owner/inicio";
@@ -69,6 +71,8 @@ export default async function InicioPage() {
       }
     : loaded;
   const myProfile = await loadMyProfileAction();
+  // WP-78 (D-059): misslyckad abonnemangsbetalning (ägaren, SE).
+  const billingBanner = await loadBillingBanner(business.id, user.id);
 
   const onArrival = async (bookingId: string, status: ArrivalStatus) => {
     "use server";
@@ -135,6 +139,18 @@ export default async function InicioPage() {
   return (
     <InicioScreen
       data={data}
+      topBanner={
+        billingBanner ? (
+          <PlanBillingBanner
+            plan={planes.nombres[billingBanner.plan]}
+            date={formatLocalDate(
+              toLocalDate(new Date(billingBanner.until), APP_TZ),
+              "dayMonthLong",
+            )}
+            href={appHref("appAjustesPlan")}
+          />
+        ) : undefined
+      }
       bookingLink={{ slug: business.slug, businessName: business.name }}
       onArrival={onArrival}
       onMoveBooking={onMoveBooking}
