@@ -166,7 +166,9 @@ export async function createBooking(
       return {
         ok: false,
         code: "invalid_input",
-        giftCardError: result.error === "gift_card_empty" ? "empty" : "invalid",
+        // Säkerhetsgranskning #116 (KAN): samma fel för tomt och ogiltigt kort
+        // (inget orakel för kodgissning).
+        giftCardError: "invalid",
       };
     }
     return { ok: false, code: result.error };

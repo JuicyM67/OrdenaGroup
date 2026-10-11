@@ -133,6 +133,8 @@ export async function createGiftCardCheckout(input: {
       {
         mode: "payment",
         allowed_payment_method_types: ["card"],
+        // Kortbedrägeri (presentkort är ett vanligt tvättmål): 3DS alltid.
+        payment_method_options: { card: { request_three_d_secure: "any" } },
         locale: "sv",
         client_reference_id: orderId,
         customer_email: f.buyerEmail,
@@ -310,7 +312,7 @@ export async function handleGiftCardCheckoutEvent(
 /** `charge.refunded` / `charge.dispute.created` (Connect). Återbetalningen
  * speglas KUMULATIVT (som D-053): `charge.amount_refunded` från Stripes API. */
 export async function handleGiftCardPaymentEvent(
-  kind: "refunded" | "disputed",
+  kind: "refunded" | "disputed" | "dispute_won",
   paymentIntentId: string,
   accountId: string,
   now: Date,

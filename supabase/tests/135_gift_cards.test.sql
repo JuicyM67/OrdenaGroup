@@ -6,7 +6,7 @@
 -- append-only ledger och invarianten `balance_minor = sum(delta_minor)`.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(46);
+select plan(55);
 \ir _helpers.psql
 
 insert into auth.users (id, email, role, aud) values
@@ -188,6 +188,55 @@ select throws_ok(
   $$ insert into public.gift_card_ledger (business_id, gift_card_id, kind, delta_minor)
      select business_id, id, 'redeem', -1 from public.gift_cards where code = 'PK-2222-3333-4444' $$,
   '23514', null, 'saldot kan aldrig bli negativt');
+
+
+-- 47-52. Säkerhetsgranskning #116 B1/B2: ett kort betalar två besök (unik
+-- provider_ref per betalning), reservationen syns som betald direkt (kassan
+-- kan inte lösa in samma belopp igen), svepet körs efteråt utan fel.
+create temp table o4 as
+  select * from private.gift_card_open_order('aaaaaaaa-0000-0000-0000-000000000001', null,
+    'Gäst', 'gast4@example.com', 'Liv', null, null, 'lime', null, 100000, 100, 31, now());
+update public.gift_card_orders set session_id = 'cs_pk_4' where id = (select order_id from o4);
+select created from private.gift_card_fulfill((select order_id from o4), 'cs_pk_4', 'pi_pk_4', 100000, 'sek', 'PK-4444-5555-6666', repeat('b', 43), repeat('v', 43), now());
+insert into public.bookings (id, business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, discount_clp) values
+  ('aaaaaaaa-7700-0000-0004-000000000004', 'aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-7700-0000-0000-000000000001', 'aaaaaaaa-7700-0000-0001-000000000001', 'aaaaaaaa-7700-0000-0002-000000000001',
+   tstzrange(now() + interval '5 days', now() + interval '5 days 30 minutes', '[)'), tstzrange(now() + interval '5 days', now() + interval '5 days 30 minutes', '[)'), 'confirmed', 'web', 40000, 0),
+  ('aaaaaaaa-7700-0000-0004-000000000005', 'aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-7700-0000-0000-000000000001', 'aaaaaaaa-7700-0000-0001-000000000001', 'aaaaaaaa-7700-0000-0002-000000000001',
+   tstzrange(now() + interval '6 days', now() + interval '6 days 30 minutes', '[)'), tstzrange(now() + interval '6 days', now() + interval '6 days 30 minutes', '[)'), 'confirmed', 'web', 40000, 0);
+select is(
+  (select held_minor from private.gift_card_hold('aaaaaaaa-0000-0000-0000-000000000001', 'PK-4444-5555-6666', 'aaaaaaaa-7700-0000-0004-000000000004', 30000, now())),
+  30000, 'reservation på besök 1 (delbetalning)');
+select is(
+  (select held_minor from private.gift_card_hold('aaaaaaaa-0000-0000-0000-000000000001', 'PK-4444-5555-6666', 'aaaaaaaa-7700-0000-0004-000000000005', 40000, now())),
+  40000, 'samma kort reserverar besök 2');
+select is(
+  (select kind::text || ':' || status::text from public.payments where booking_id = 'aaaaaaaa-7700-0000-0004-000000000004' and method = 'gift_card'),
+  'deposit:approved', 'reservationen är en godkänd betalning direkt (B2)');
+select is(
+  (select outcome from private.gift_card_redeem_at_till('aaaaaaaa-0000-0000-0000-000000000001', 'PK-4444-5555-6666', 10000, 'aaaaaaaa-7700-0000-0004-000000000005', now())),
+  'invalid_amount', 'kassan kan inte lösa in en redan reserverad bokning igen (B2)');
+select is(
+  (select outcome from private.gift_card_redeem_at_till('aaaaaaaa-0000-0000-0000-000000000001', 'PK-4444-5555-6666', 10000, 'aaaaaaaa-7700-0000-0004-000000000004', now())),
+  'redeemed', 'kassan tar resten av besök 1 (egen provider_ref, B1)');
+update public.bookings set status = 'completed' where id in ('aaaaaaaa-7700-0000-0004-000000000004', 'aaaaaaaa-7700-0000-0004-000000000005');
+select lives_ok($$ select * from private.gift_card_sweep(now()) $$, 'svepet efter två genomförda besök på samma kort (B1)');
+select is(
+  (select count(*)::int from public.payments where provider_ref like 'gift_card:' || (select id::text from public.gift_cards where code = 'PK-4444-5555-6666') || ':%' and status = 'approved'),
+  3, 'tre presentkortsbetalningar på samma kort');
+
+-- 54. Avbokning efter reservation: betalningsraden blir `refunded`.
+insert into public.bookings (id, business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, discount_clp) values
+  ('aaaaaaaa-7700-0000-0004-000000000006', 'aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-7700-0000-0000-000000000001', 'aaaaaaaa-7700-0000-0001-000000000001', 'aaaaaaaa-7700-0000-0002-000000000001',
+   tstzrange(now() + interval '7 days', now() + interval '7 days 30 minutes', '[)'), tstzrange(now() + interval '7 days', now() + interval '7 days 30 minutes', '[)'), 'confirmed', 'web', 10000, 0);
+select held_minor from private.gift_card_hold('aaaaaaaa-0000-0000-0000-000000000001', 'PK-4444-5555-6666', 'aaaaaaaa-7700-0000-0004-000000000006', 10000, now());
+update public.bookings set status = 'cancelled', cancelled_at = now(), cancel_reason = 'customer' where id = 'aaaaaaaa-7700-0000-0004-000000000006';
+select is(
+  (select status::text from public.payments where booking_id = 'aaaaaaaa-7700-0000-0004-000000000006' and method = 'gift_card'),
+  'refunded', 'avbokad reservation: betalningen återförs');
+
+-- 55. Kontoradering fastnar inte på presentkorten (BÖR 3).
+delete from auth.users where id = 'c0000000-7700-0000-0000-000000000001';
+select is((select count(*)::int from public.gift_cards where code = 'PK-7QXM-4HRT-9KZ2' and user_id is null), 1, 'kontoradering nollar köparen');
 
 -- 44. Invarianten efter alla fall.
 select is(

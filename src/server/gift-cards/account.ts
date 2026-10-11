@@ -142,7 +142,9 @@ export async function loadGiftCardByToken(
     // känt för köparen (Stripe-genererat).
     if (!/^cs_[A-Za-z0-9_]{1,250}$/.test(access.session)) return undefined;
     arg = access.session;
-    where = "o.session_id = $2 and $3::uuid is null";
+    // Säkerhetsgranskning #116 (KAN): bara 24 h efter betalningen.
+    where =
+      "o.session_id = $2 and $3::uuid is null and o.paid_at > now() - interval '24 hours'";
   } else {
     if (!/^[0-9a-f-]{36}$/i.test(access.cardId)) return undefined;
     arg = access.cardId;

@@ -60,6 +60,22 @@ export async function dispatchGiftCardEvent(
         ? handleGiftCardPaymentEvent("disputed", pi, account, now)
         : false;
     }
+    case "charge.dispute.closed": {
+      // Vunnen tvist: spärren hävs (pengarna är kvar hos salongen).
+      if (!obj.id) return false;
+      const dispute = await getStripe().disputes.retrieve(
+        obj.id,
+        {},
+        { stripeAccount: account },
+      );
+      const pi = idOf(dispute.payment_intent);
+      if (!pi) return false;
+      if (dispute.status !== "won") {
+        // Förlorad tvist: kortet förblir spärrat (idempotent).
+        return handleGiftCardPaymentEvent("disputed", pi, account, now);
+      }
+      return handleGiftCardPaymentEvent("dispute_won", pi, account, now);
+    }
     default:
       return false;
   }
