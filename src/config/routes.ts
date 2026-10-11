@@ -317,7 +317,6 @@ export type AppRouteId =
   | "appClientesResenas"
   | "appCaja"
   | "appCajaInformes"
-  | "appCajaVales"
   | "appFlash"
   | "appAjustes"
   | "appAjustesNegocio"
@@ -370,7 +369,6 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appClientesUtskickNytt: "/app/clientes/utskick/nytt",
   appCaja: "/app/caja",
   appCajaInformes: "/app/caja/informes",
-  appCajaVales: "/app/caja/vales",
   appFlash: "/app/flash",
   appAjustes: "/app/ajustes",
   appAjustesNegocio: "/app/ajustes/negocio",
@@ -404,7 +402,6 @@ const SE_APP_ROUTES: Record<AppRouteId, string> = {
   appClientesResenas: "/app/kunder/omdomen",
   appCaja: "/app/kassa",
   appCajaInformes: "/app/kassa/rapporter",
-  appCajaVales: "/app/kassa/vardebevis",
   appFlash: "/app/blixttider",
   appAjustes: "/app/installningar",
   appAjustesNegocio: "/app/installningar/foretag",
@@ -467,8 +464,7 @@ export type CuentaRouteId =
   | "cuentaReservas"
   | "cuentaFavoritos"
   | "cuentaPrivacidad"
-  | "cuentaResena"
-  | "cuentaVales";
+  | "cuentaResena";
 
 const CL_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
   cuenta: "/cuenta",
@@ -477,7 +473,6 @@ const CL_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
   cuentaFavoritos: "/cuenta/favoritos",
   cuentaPrivacidad: "/cuenta/privacidad",
   cuentaResena: "/cuenta/resena/[id]",
-  cuentaVales: "/cuenta/vales",
 };
 
 const SE_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
@@ -487,7 +482,6 @@ const SE_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
   cuentaFavoritos: "/konto/favoriter",
   cuentaPrivacidad: "/konto/integritet",
   cuentaResena: "/konto/recension/[id]",
-  cuentaVales: "/konto/vardebevis",
 };
 
 /** Länk till en kontosida, i den här installationens marknad. `param` ersätter
@@ -509,6 +503,30 @@ export const CUENTA_INGRESAR_PATHS: readonly [string, string] = [
   CL_CUENTA_ROUTES.cuentaIngresar,
   SE_CUENTA_ROUTES.cuentaIngresar,
 ];
+
+// WP-69 (D-057): värdebevisens sidor (kontot och kassan). Egen liten tabell, inte i
+// app-/kontotabellerna ovan, så att sökvägarna inte följer med tabellerna in i
+// bokningssidans klientbunt (D-039). Rewrites/redirects som övriga.
+export type ValesRouteId = "cuenta" | "caja";
+const CL_VALES: Record<ValesRouteId, string> = {
+  cuenta: "/cuenta/vales",
+  caja: "/app/caja/vales",
+};
+const SE_VALES: Record<ValesRouteId, string> = {
+  cuenta: "/konto/vardebevis",
+  caja: "/app/kassa/vardebevis",
+};
+
+export function valesHref(id: ValesRouteId): string {
+  return (market === "SE" ? SE_VALES : CL_VALES)[id];
+}
+
+function valesPairs(): { source: string; destination: string }[] {
+  return (["cuenta", "caja"] as const).map((id) => ({
+    source: SE_VALES[id],
+    destination: CL_VALES[id],
+  }));
+}
 
 function cuentaPairs(): { source: string; destination: string }[] {
   return (Object.keys(CL_CUENTA_ROUTES) as CuentaRouteId[]).map((id) => ({
@@ -623,6 +641,7 @@ export function seRouteRewrites(): { source: string; destination: string }[] {
     ...appRutter,
     ...seMarketplacePairs(),
     ...cuentaPairs(),
+    ...valesPairs(),
   ];
 }
 
@@ -662,11 +681,13 @@ export function seRouteRedirects(): {
     destination: source,
     permanent: true as const,
   }));
-  const cuenta = cuentaPairs().map(({ source, destination }) => ({
-    source: destination,
-    destination: source,
-    permanent: true as const,
-  }));
+  const cuenta = [...cuentaPairs(), ...valesPairs()].map(
+    ({ source, destination }) => ({
+      source: destination,
+      destination: source,
+      permanent: true as const,
+    }),
+  );
   return [
     ...rutter,
     ...marknadsSidor,

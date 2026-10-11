@@ -5,7 +5,7 @@ import { randomInt } from "node:crypto";
 import { brand } from "@/config/brand";
 import { marketplaceEnabled } from "@/config/marketplace";
 import { MARKETPLACE_FEE_BPS } from "@/config/platform-fee";
-import { cuentaHref } from "@/config/routes";
+import { valesHref } from "@/config/routes";
 import { pgErrorCode } from "@/server/db/errors";
 import { hitRateLimit } from "@/server/db/rate-limit";
 import { savepoint, withServiceTx } from "@/server/db/tx";
@@ -146,7 +146,7 @@ export async function createVoucherCheckout(input: {
         expires_at:
           Math.floor(input.now.getTime() / 1000) +
           VOUCHER_SESSION_TTL_MINUTES * 60,
-        success_url: `${base}${cuentaHref("cuentaVales")}?kop=klart&session={CHECKOUT_SESSION_ID}`,
+        success_url: `${base}${valesHref("cuenta")}?kop=klart&session={CHECKOUT_SESSION_ID}`,
         cancel_url: `${base}/api/checkout/vardebevis?o=${orderId}`,
       },
       { stripeAccount: accountId, idempotencyKey: `voucher:${orderId}` },

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { logout } from "@/app/auth/actions";
 import { CajaScreen } from "@/components/caja/caja-screen";
 import { marketplaceEnabled } from "@/config/marketplace";
-import { appHref } from "@/config/routes";
+import { appHref, valesHref } from "@/config/routes";
 import { vales } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
@@ -59,7 +59,7 @@ export default async function CajaPage() {
       publicPageHref={`/${current.business.slug}`}
       vouchersLink={
         marketplaceEnabled()
-          ? { href: appHref("appCajaVales"), label: vales.caja.enlace }
+          ? { href: valesHref("caja"), label: vales.caja.enlace }
           : undefined
       }
       myProfile={myProfile ?? undefined}

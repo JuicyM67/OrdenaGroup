@@ -421,24 +421,30 @@ export function OfferDetail({
 
       <div className="fixed inset-x-0 bottom-0 z-20 rounded-t-card bg-surface px-4 pt-3 pb-27 shadow-popover lg:hidden">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex flex-col">
+          <div className="flex min-w-0 flex-col">
             <s className="text-13 text-muted">
               {formatMoney(offer.regularMinor)}
             </s>
             <b className="font-display text-26 leading-none font-semibold">
               {formatMoney(offer.priceMinor)}
             </b>
-            <span className="mt-1 text-12 text-muted">
-              {purchase
-                ? (purchase.notice ?? vales.compra.arrepentimiento)
-                : t.oferta.proximamente}
-            </span>
+            {purchase ? (
+              purchase.notice ? (
+                <span role="status" className="mt-1 text-12 text-muted">
+                  {purchase.notice}
+                </span>
+              ) : null
+            ) : (
+              <span className="mt-1 text-12 text-muted">
+                {t.oferta.proximamente}
+              </span>
+            )}
           </div>
           {purchase ? (
             <BuyForm
               offer={offer}
               purchase={purchase}
-              className="h-14 px-5"
+              className="h-14 shrink-0 px-5 whitespace-nowrap"
               label={vales.compra.comprar}
             />
           ) : (

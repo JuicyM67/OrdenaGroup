@@ -12,7 +12,7 @@ import { NextBookingCard } from "@/components/account/booking-cards";
 import { FavoriteTile } from "@/components/account/favorite-tile";
 import { VoucherCard } from "@/components/account/voucher-card";
 import { marketplaceEnabled } from "@/config/marketplace";
-import { appHref, cuentaHref } from "@/config/routes";
+import { appHref, cuentaHref, valesHref } from "@/config/routes";
 import { cuenta, vales } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 import { loadMyBookings, loadMyFavorites } from "@/server/accounts/account";
@@ -138,7 +138,7 @@ export default async function CuentaPage() {
                   {vales.cuenta.titulo}
                 </h2>
                 <Link
-                  href={cuentaHref("cuentaVales")}
+                  href={valesHref("cuenta")}
                   className="text-13 font-semibold text-ink underline underline-offset-4"
                 >
                   {vales.cuenta.verTodos({ n: vouchers.length })}
@@ -165,7 +165,7 @@ export default async function CuentaPage() {
               />
             </Link>
             {withVouchers ? (
-              <Link href={cuentaHref("cuentaVales")} className={rowClass}>
+              <Link href={valesHref("cuenta")} className={rowClass}>
                 {vales.cuenta.menu}
                 <ChevronRight
                   className="size-4.5 text-muted"
