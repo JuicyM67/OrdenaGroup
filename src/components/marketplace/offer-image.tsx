@@ -1,9 +1,12 @@
-// Bild till ett erbjudande: lokala filer (`/marketing`, `/demo`) via next/image,
-// externa (https, Storage) utan optimering så att ingen bildvärd behöver
-// whitelistas. Saknas bild visas en lugn pastellyta.
+// Bild till ett erbjudande via next/image. Servern släpper bara igenom lokala filer
+// och projektets Supabase Storage (`safeImageUrl`, B1); för säkerhets skull görs
+// samma kontroll här. Saknas bild visas en lugn pastellyta.
 import Image from "next/image";
 
 import { cn } from "@/components/ui/cn";
+
+const ALLOWED =
+  /^(\/(?!\/)|https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/(offer-images|business-media)\/)/;
 
 export function OfferImage({
   src,
@@ -18,7 +21,7 @@ export function OfferImage({
   priority?: boolean;
   className?: string;
 }) {
-  if (!src) {
+  if (!src || !ALLOWED.test(src)) {
     return <div aria-hidden="true" className={cn("bg-lavender", className)} />;
   }
   return (
@@ -28,7 +31,6 @@ export function OfferImage({
       fill
       sizes={sizes}
       priority={priority}
-      unoptimized={src.startsWith("https://")}
       className={cn("object-cover", className)}
     />
   );

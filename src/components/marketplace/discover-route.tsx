@@ -25,6 +25,7 @@ import {
   discoverHref,
   parseDiscoverParams,
   parsePositionCookie,
+  safeDecode,
 } from "./params";
 
 const t = descubre;
@@ -39,15 +40,20 @@ export function resolveCategory(
 ): MarketplaceCategoryId | undefined {
   if (!marketplaceEnabled()) notFound();
   if (slug === undefined) return undefined;
-  const id = categoryFromSlug(decodeURIComponent(slug));
+  const decoded = safeDecode(slug);
+  const id = decoded === undefined ? undefined : categoryFromSlug(decoded);
   if (!id) notFound();
   return id;
 }
 
 export function resolveArea(slug: string | undefined): string | undefined {
   if (slug === undefined) return undefined;
-  const s = decodeURIComponent(slug);
-  if (!/^[a-z0-9-]{1,60}$/.test(s) || s === MARKETPLACE_RESERVED_AREA) {
+  const s = safeDecode(slug);
+  if (
+    s === undefined ||
+    !/^[a-z0-9-]{1,60}$/.test(s) ||
+    s === MARKETPLACE_RESERVED_AREA
+  ) {
     notFound();
   }
   return s;

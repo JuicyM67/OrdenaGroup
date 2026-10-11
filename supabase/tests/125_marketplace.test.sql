@@ -4,7 +4,7 @@
 -- inte skriva koordinater, `distance_km` räknar rätt.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(18);
+select plan(21);
 \ir _helpers.psql
 
 insert into public.services (id, business_id, name, duration_min, price_clp) values
@@ -97,6 +97,27 @@ select ok(
   'Stockholm–Uppsala ≈ 64 km'
 );
 select is(private.distance_km(null, 18, 59, 17), null::float8, 'null ⇒ null');
+
+-- 19-21. S2: katalogbehörighet räcker för utkast men inte för att skriva om ett
+-- publicerat erbjudande; en extern bildvärd nekas (B1).
+update public.memberships set can_edit_catalog = true
+ where user_id = '33333333-3333-3333-3333-333333333333';
+select set_config('request.jwt.claims', json_build_object('sub', '33333333-3333-3333-3333-333333333333', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select lives_ok(
+  $$ update public.offers set title = 'Borrador editado' where slug = 'nuevo-a' $$,
+  'staffA con catálogo edita un borrador'
+);
+select throws_ok(
+  $$ update public.offers set offer_price_minor = 1 where slug = 'corte-a' $$,
+  '42501'
+);
+reset role;
+select set_config('request.jwt.claims', '', true);
+select throws_ok(
+  $$ update public.offers set image_url = 'https://evil.example.com/x.jpg' where slug = 'corte-a' $$,
+  '23514'
+);
 
 select * from finish();
 rollback;

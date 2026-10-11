@@ -65,6 +65,20 @@ export type OfferCard = {
 
 export type OfferPage = { items: OfferCard[]; total: number; page: number };
 
+/**
+ * B1 (säkerhetsgranskning #110): bara bilder från vårt eget ursprung — statiska
+ * filer i `public/` eller projektets Supabase Storage (publika buckets för
+ * erbjudanden och företagsbilder). Allt annat (godtycklig https-värd) visas inte,
+ * så besökarens IP aldrig skickas till tredje part. Samma regel som
+ * `offers_image_url_check` (för omslagsbilder: `business-media`).
+ */
+const SAFE_IMAGE =
+  /^(\/(?!\/)[A-Za-z0-9/_.-]+|https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/(offer-images|business-media)\/[A-Za-z0-9/_.%-]+)$/;
+
+export function safeImageUrl(url: string | null): string | null {
+  return url !== null && SAFE_IMAGE.test(url) ? url : null;
+}
+
 /** Rabatt i hela procent (avrundad nedåt — vi lovar aldrig mer än det är). */
 export function discountPct(regular: number, price: number): number {
   if (regular <= 0 || price >= regular) return 0;
@@ -111,6 +125,9 @@ const OFFER_BASE = `
        and ${WITHIN_OPENING_HOURS}
   ) fl on true
  where o.status = 'published'
+   -- S3: ordinarie pris = tjänstens AKTUELLA pris; är erbjudandet inte längre
+   -- billigare (tjänsten har sänkts) visas det inte.
+   and o.offer_price_minor < s.price_clp
    and (o.sale_starts_at is null or o.sale_starts_at <= now())
    and (o.sale_ends_at is null or o.sale_ends_at > now())
    and (o.quantity_total is null or o.quantity_sold < o.quantity_total)
@@ -140,7 +157,7 @@ type OfferRow = {
 };
 
 const OFFER_COLUMNS = `
-  o.id, o.slug, o.title, o.image_url, o.category, o.regular_price_minor, o.offer_price_minor,
+  o.id, o.slug, o.title, o.image_url, o.category, s.price_clp as regular_price_minor, o.offer_price_minor,
   b.id as business_id, b.name as business_name, b.slug as business_slug, b.area_name, b.cover_url,
   b.lat::text as lat, b.lng::text as lng, rv.avg, rv.n, fl.next_ms`;
 
@@ -149,7 +166,7 @@ function toCard(r: OfferRow): OfferCard {
     id: r.id,
     slug: r.slug,
     title: r.title,
-    imageUrl: r.image_url ?? r.cover_url,
+    imageUrl: safeImageUrl(r.image_url) ?? safeImageUrl(r.cover_url),
     category: r.category,
     regularMinor: r.regular_price_minor,
     priceMinor: r.offer_price_minor,
@@ -215,7 +232,7 @@ function orderSql(sort: MarketplaceSort, hasPosition: boolean): string {
     case "price":
       return "o.offer_price_minor asc, o.id";
     case "discount":
-      return "(o.regular_price_minor - o.offer_price_minor)::float8 / o.regular_price_minor desc, o.id";
+      return "(s.price_clp - o.offer_price_minor)::float8 / s.price_clp desc, o.id";
     case "new":
       return "o.published_at desc nulls last, o.id";
     case "near":

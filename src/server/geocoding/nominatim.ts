@@ -67,7 +67,7 @@ export const nominatimGeocoder: Geocoder = {
         "User-Agent": userAgent(),
         "Accept-Language": query.country === "se" ? "sv" : "es",
       },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(5000),
       cache: "no-store",
     });
     if (!res.ok) throw new Error(`nominatim: HTTP ${res.status}`);

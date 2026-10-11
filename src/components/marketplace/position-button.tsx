@@ -10,6 +10,7 @@ import { useState, useTransition } from "react";
 
 import { cn } from "@/components/ui/cn";
 import { POSITION_COOKIE, POSITION_MAX_AGE_S } from "@/config/marketplace";
+import { hrefMarketplace } from "@/config/routes";
 
 import { formatPositionCookie } from "./params";
 
@@ -21,9 +22,15 @@ type Labels = {
   nota: string;
 };
 
+/** Cookien gäller bara Upptäck (`/upptack`, CL `/descubre`, inkl. kartan) —
+ * ingen annan sida får positionen (K3). Erbjudandesidan använder den inte. */
+const COOKIE_PATH = hrefMarketplace("descubre");
+
 function writeCookie(value: string, maxAge: number): void {
   const secure = window.location.protocol === "https:" ? "; Secure" : "";
-  document.cookie = `${POSITION_COOKIE}=${value}; Max-Age=${maxAge}; Path=/; SameSite=Lax${secure}`;
+  document.cookie = `${POSITION_COOKIE}=${value}; Max-Age=${maxAge}; Path=${COOKIE_PATH}; SameSite=Lax${secure}`;
+  // Äldre version satte Path=/ — städa bort den vid varje skrivning.
+  document.cookie = `${POSITION_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax${secure}`;
 }
 
 export function PositionButton({

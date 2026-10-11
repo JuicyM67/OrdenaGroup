@@ -7,7 +7,7 @@ import { pageMetadata } from "@/components/marketing/paginas/metadata";
 import { getConsumerNav } from "@/components/marketplace/consumer-session";
 import { OfferDetail } from "@/components/marketplace/offer-detail";
 import { offerJsonLd } from "@/components/marketplace/offer-json-ld";
-import { discoverHref } from "@/components/marketplace/params";
+import { discoverHref, safeDecode } from "@/components/marketplace/params";
 import { marketplaceEnabled, marketplaceIndexable } from "@/config/marketplace";
 import { href, hrefMarketplace } from "@/config/routes";
 import { descubre } from "@/i18n";
@@ -17,7 +17,8 @@ type Params = Promise<{ slug: string }>;
 
 const getOffer = cache(async (slug: string) => {
   if (!marketplaceEnabled()) notFound();
-  const offer = await loadOffer(decodeURIComponent(slug));
+  const decoded = safeDecode(slug);
+  const offer = decoded === undefined ? undefined : await loadOffer(decoded);
   if (!offer) notFound();
   return offer;
 });

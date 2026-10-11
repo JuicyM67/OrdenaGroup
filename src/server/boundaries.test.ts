@@ -183,13 +183,6 @@ const RETENTION_SWEEP_EXCEPTION = "app/api/cron/retention/route.ts";
  * som alla filtrerar på `business_id`).
  */
 const WINBACK_SWEEP_EXCEPTION = "server/campaigns/winback.ts";
-/**
- * WP-68 (D-055): geokodningssvepet letar upp företag med `geocode_status =
- * 'pending'` — ett svep över alla företag i installationen (service_role,
- * cron), per definition utan ett givet `business_id`. Varje skrivning sker
- * per `id`.
- */
-const GEOCODE_SWEEP_EXCEPTION = "server/geocoding/sweep.ts";
 /** All produktionskod som kan köra SQL: src/server och src/app/api. */
 const productionSources = [
   ...serverSources,
@@ -370,7 +363,6 @@ describe("src/server gränser", () => {
       if (rel(f) === SLUG_LOOKUP_EXCEPTION) continue;
       if (rel(f) === RETENTION_SWEEP_EXCEPTION) continue;
       if (rel(f) === WINBACK_SWEEP_EXCEPTION) continue;
-      if (rel(f) === GEOCODE_SWEEP_EXCEPTION) continue;
       for (const s of sqlOffenders(read(f))) offenders.push(`${rel(f)}: ${s}`);
     }
     expect(offenders).toEqual([]);
@@ -392,16 +384,6 @@ describe("src/server gränser", () => {
     expect(offenders).toHaveLength(1);
     expect(offenders[0]).toMatch(
       /from public\.businesses where deletion_requested_at/i,
-    );
-  });
-
-  it(`${GEOCODE_SWEEP_EXCEPTION}: den enda frågan utan business_id är svepet över businesses.geocode_status`, () => {
-    const f = productionSources.find((x) => rel(x) === GEOCODE_SWEEP_EXCEPTION);
-    expect(f).toBeDefined();
-    const offenders = sqlOffenders(read(f!));
-    expect(offenders).toHaveLength(1);
-    expect(offenders[0]).toMatch(
-      /select id, address, comuna from public\.businesses/i,
     );
   });
 

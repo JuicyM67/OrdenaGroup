@@ -32,6 +32,9 @@ export const dynamic = "force-dynamic";
  * vägen för påminnelser och omförsök, så den får plocka mer per gång. */
 const CRON_LIMIT = 50;
 
+/** WP-68: högst så här länge geokodning per pass (efter utkorgen). */
+const GEOCODE_BUDGET_MS = 8_000;
+
 /** Konstant tid oavsett längdskillnad (annars läcker en tidig retur
  * längden på hemligheten via svarstiden). */
 function safeEqual(a: string, b: string): boolean {
@@ -98,17 +101,18 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
-  // WP-68 (D-055): geokoda några få företag med ändrad adress (Nominatim,
-  // 1 anrop/s). Ett fel här stoppar aldrig utkorgen.
+  const result = await processOutbox({ limit: CRON_LIMIT });
+  // WP-68 (D-055, S4): geokodningen körs EFTER utkorgen och med en kort
+  // tidsbudget, så att den aldrig försenar meddelanden. Ett fel här påverkar
+  // inget annat.
   let geocoded = { ok: 0, notFound: 0, skipped: 0 };
   try {
-    geocoded = await runGeocodeSweep();
+    geocoded = await runGeocodeSweep({ budgetMs: GEOCODE_BUDGET_MS });
   } catch (e) {
     console.error("outbox: runGeocodeSweep misslyckades", {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
-  const result = await processOutbox({ limit: CRON_LIMIT });
   // Bara räknare (regel hård 8: ingen persondata i loggar).
   console.log("outbox: pass klart", {
     expired,

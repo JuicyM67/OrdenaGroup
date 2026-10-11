@@ -19,13 +19,13 @@ import type { Geocoder } from "./types";
  * process). Ett nätverksfel avbryter passet (raden förblir `pending`).
  * `manual` (ägaren/seed satt nålen) rörs aldrig.
  *
- * Svepet går över alla företag i installationen, per definition utan ett
- * givet `business_id` (undantag i boundaries.test.ts, samma princip som
- * `RETENTION_SWEEP_EXCEPTION`); varje skrivning sker per `id`.
+ * Bara aktiva företag utan begärd radering som har ett publicerat
+ * erbjudande eller visar blixttider i Upptäck (S5) geokodas. Varje
+ * skrivning sker per `id`.
  */
 
 export const GEOCODE_SWEEP_LIMIT = 20;
-/** Tidsbudget per pass, så att cron-anropet aldrig blir långt. */
+/** Standardbudget per pass (cron-routen skickar en kortare). */
 const SWEEP_BUDGET_MS = 25_000;
 
 export type GeocodeSweepResult = {
@@ -59,7 +59,7 @@ async function waitForSlot(geocoder: Geocoder): Promise<boolean> {
 }
 
 export async function runGeocodeSweep(
-  opts: { limit?: number; geocoder?: Geocoder | null } = {},
+  opts: { limit?: number; geocoder?: Geocoder | null; budgetMs?: number } = {},
 ): Promise<GeocodeSweepResult> {
   const result: GeocodeSweepResult = { ok: 0, notFound: 0, skipped: 0 };
   // Chile: marknadsplatsen är dold — inga anrop i onödan.
@@ -77,6 +77,12 @@ export async function runGeocodeSweep(
       `select id, address, comuna from public.businesses
         where geocode_status = 'pending' and address is not null
           and status = 'active' and timezone = $1
+          and deletion_requested_at is null
+          and ((marketplace_flash_visible
+                and private.plan_has_feature(plan::text, 'flash'))
+               or exists (select 1 from public.offers o
+                           where o.business_id = businesses.id
+                             and o.status = 'published'))
         order by updated_at
         limit $2`,
       [tz, limit],
@@ -87,7 +93,13 @@ export async function runGeocodeSweep(
   const started = Date.now();
   let first = true;
   for (const row of pending) {
-    if (Date.now() - started > SWEEP_BUDGET_MS) break;
+    // Nästa anrop (intervall + nätverk) ska rymmas i budgeten.
+    if (
+      Date.now() - started + geocoder.minIntervalMs >
+      (opts.budgetMs ?? SWEEP_BUDGET_MS)
+    ) {
+      break;
+    }
     // Alltid minst `minIntervalMs` mellan två anrop från den här processen,
     // även när den globala räknaren är avstängd (E2E_DISABLE_RATE_LIMITS).
     if (!first) await sleep(geocoder.minIntervalMs);

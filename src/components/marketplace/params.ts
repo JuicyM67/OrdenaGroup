@@ -84,6 +84,15 @@ export function discoverHref(
   return `${base}${toQuery(p)}`;
 }
 
+/** `decodeURIComponent` som inte kastar på trasig procentkodning (K1). */
+export function safeDecode(v: string): string | undefined {
+  try {
+    return decodeURIComponent(v);
+  } catch {
+    return undefined;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Positionscookien `nara` (D-055)
 // ---------------------------------------------------------------------------
