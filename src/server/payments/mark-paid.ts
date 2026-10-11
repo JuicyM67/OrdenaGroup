@@ -211,7 +211,9 @@ export async function undoPayment(
       if (
         !canPay(member, row.staff_id) ||
         row.method === "mercadopago" ||
-        row.method === "stripe"
+        row.method === "stripe" ||
+        // WP-77 (D-058): presentkortsbetalningen hör ihop med kortets ledger.
+        row.method === "gift_card"
       ) {
         return { ok: false, code: "forbidden" } as const;
       }

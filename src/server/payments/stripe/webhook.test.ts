@@ -48,6 +48,10 @@ vi.mock("@/server/vouchers", () => ({
   handleVoucherCheckoutEvent: (...a: unknown[]) => voucherCheckout(...a),
   handleVoucherPaymentEvent: (...a: unknown[]) => voucherPayment(...a),
 }));
+// WP-77 (D-058): presentkortets gren testas i gift-cards.db.test.ts.
+vi.mock("@/server/gift-cards/webhook", () => ({
+  dispatchGiftCardEvent: async () => false,
+}));
 vi.mock("./reconcile", () => ({
   handleCheckoutCompleted: (...a: unknown[]) => bookingCompleted(...a),
   handleChargeRefunded: (...a: unknown[]) => bookingRefunded(...a),

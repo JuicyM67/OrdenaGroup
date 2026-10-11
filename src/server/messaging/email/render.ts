@@ -66,6 +66,12 @@ import {
   type SmsAvisoData,
 } from "./templates/sms-creditos";
 import { valeCompradoEmail, type ValeCompradoData } from "./templates/vale";
+import {
+  presentkortKvittoEmail,
+  presentkortLeveransEmail,
+  type PresentkortKvittoData,
+  type PresentkortLeveransData,
+} from "./templates/presentkort";
 import type { EmailKind, RenderedEmail } from "./types";
 
 /** En mall = { data, kind (`EMAIL_FROM_BOOKING`/`EMAIL_FROM_ACCOUNT`) }. */
@@ -107,6 +113,9 @@ export type EmailTemplateMap = {
   readonly smsAgotados: SmsAvisoData;
   /** WP-69 (D-057): al comprador, recibo del vale. */
   readonly valeComprado: ValeCompradoData;
+  /** WP-77 (D-058): presentkort — kvitto till köparen, leverans till mottagaren. */
+  readonly presentkortKvitto: PresentkortKvittoData;
+  readonly presentkortLeverans: PresentkortLeveransData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -143,6 +152,8 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   smsCuota80: "account",
   smsAgotados: "account",
   valeComprado: "booking",
+  presentkortKvitto: "booking",
+  presentkortLeverans: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -172,6 +183,8 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "smsCuota80",
   "smsAgotados",
   "valeComprado",
+  "presentkortKvitto",
+  "presentkortLeverans",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -237,6 +250,10 @@ export function renderEmail<T extends EmailTemplateName>(
       return smsAgotadosEmail(market, data as SmsAvisoData);
     case "valeComprado":
       return valeCompradoEmail(market, data as ValeCompradoData);
+    case "presentkortKvitto":
+      return presentkortKvittoEmail(market, data as PresentkortKvittoData);
+    case "presentkortLeverans":
+      return presentkortLeveransEmail(market, data as PresentkortLeveransData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

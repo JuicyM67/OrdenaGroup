@@ -217,5 +217,31 @@ export function emailFixtures(market: Market): {
       direccion: "Storgatan 1",
       reservarUrl: "https://app.example.com/barberia-norte?vardebevis=abc",
     },
+    presentkortKvitto: {
+      negocio: b.negocio,
+      valor: market === "SE" ? "500 kr" : "$5.000",
+      codigo: "PK-7QXM-4HRT-9KZ2",
+      para: "Sara",
+      fechaEnvio: market === "SE" ? "24 december 2026" : "24 de diciembre 2026",
+      validoHasta: market === "SE" ? "24 oktober 2028" : "24 de octubre 2028",
+      direccion: "Storgatan 1",
+      verUrl: "https://app.example.com/barberia-norte/presentkort/kort?t=abc",
+    },
+    presentkortLeverans: {
+      nombre: "Sara",
+      de: "Ella",
+      negocio: b.negocio,
+      valor: market === "SE" ? "500 kr" : "$5.000",
+      validoHasta: market === "SE" ? "24 oktober 2028" : "24 de octubre 2028",
+      codigo: "PK-7QXM-4HRT-9KZ2",
+      saludo:
+        market === "SE"
+          ? "Grattis på födelsedagen! Unna dig något riktigt skönt. Kram, Ella"
+          : "¡Feliz cumpleaños! Date un gustito. Abrazo, Ella",
+      tema: "lilac",
+      reservarUrl: "https://app.example.com/barberia-norte",
+      verUrl: "https://app.example.com/barberia-norte/presentkort/kort?t=def",
+      direccion: "Storgatan 1",
+    },
   };
 }

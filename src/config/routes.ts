@@ -515,6 +515,54 @@ function valesPairs(): { source: string; destination: string }[] {
   }));
 }
 
+// WP-77 (D-058): presentkortens sidor. Köpet ligger under företagets egen sida
+// (`/<slug>/presentkort`, CL-filsystemet `/[slug]/tarjeta-regalo`), kontot och
+// kassan som värdebevisen. Egen tabell (D-039: inget i bokningssidans klientbunt).
+export type RegaloRouteId = "compra" | "listo" | "tarjeta";
+const CL_REGALO: Record<RegaloRouteId, string> = {
+  compra: "/tarjeta-regalo",
+  listo: "/tarjeta-regalo/listo",
+  tarjeta: "/tarjeta-regalo/tarjeta",
+};
+const SE_REGALO: Record<RegaloRouteId, string> = {
+  compra: "/presentkort",
+  listo: "/presentkort/klart",
+  tarjeta: "/presentkort/kort",
+};
+export type RegalosRouteId = "cuenta" | "caja";
+const CL_REGALOS: Record<RegalosRouteId, string> = {
+  cuenta: "/cuenta/regalos",
+  caja: "/app/caja/regalos",
+};
+const SE_REGALOS: Record<RegalosRouteId, string> = {
+  cuenta: "/konto/presentkort",
+  caja: "/app/kassa/presentkort",
+};
+
+/** `/<slug>/presentkort[/klart|/kort]` i den här installationens marknad. */
+export function regaloHref(slug: string, id: RegaloRouteId = "compra"): string {
+  const tail = (market === "SE" ? SE_REGALO : CL_REGALO)[id];
+  return `/${encodeURIComponent(slug)}${tail}`;
+}
+
+export function regalosHref(id: RegalosRouteId): string {
+  return (market === "SE" ? SE_REGALOS : CL_REGALOS)[id];
+}
+
+/** Kontot och kassan först (statiska), sist `/:slug/…` (fångar annars
+ * `/konto/presentkort`). */
+function regaloPairs(): { source: string; destination: string }[] {
+  const fixed = (["cuenta", "caja"] as const).map((id) => ({
+    source: SE_REGALOS[id],
+    destination: CL_REGALOS[id],
+  }));
+  const slugged = (["listo", "tarjeta", "compra"] as const).map((id) => ({
+    source: `/:slug${SE_REGALO[id]}`,
+    destination: `/:slug${CL_REGALO[id]}`,
+  }));
+  return [...fixed, ...slugged];
+}
+
 function cuentaPairs(): { source: string; destination: string }[] {
   return (Object.keys(CL_CUENTA_ROUTES) as CuentaRouteId[]).map((id) => ({
     source: SE_CUENTA_ROUTES[id].replace("[id]", ":id"),
@@ -629,6 +677,7 @@ export function seRouteRewrites(): { source: string; destination: string }[] {
     ...seMarketplacePairs(),
     ...cuentaPairs(),
     ...valesPairs(),
+    ...regaloPairs(),
   ];
 }
 
@@ -668,7 +717,7 @@ export function seRouteRedirects(): {
     destination: source,
     permanent: true as const,
   }));
-  const cuenta = [...cuentaPairs(), ...valesPairs()].map(
+  const cuenta = [...cuentaPairs(), ...valesPairs(), ...regaloPairs()].map(
     ({ source, destination }) => ({
       source: destination,
       destination: source,

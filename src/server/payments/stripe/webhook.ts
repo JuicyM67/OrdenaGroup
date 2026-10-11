@@ -9,6 +9,7 @@ import {
   voidSmsCreditsForDispute,
 } from "@/server/billing/sms-credits";
 import { withServiceTx } from "@/server/db/tx";
+import { dispatchGiftCardEvent } from "@/server/gift-cards/webhook";
 import {
   handleVoucherCheckoutEvent,
   handleVoucherPaymentEvent,
@@ -93,6 +94,8 @@ function idOf(x: string | { id: string } | null | undefined): string | null {
 }
 
 async function dispatch(event: Stripe.Event, now: Date): Promise<void> {
+  // WP-77 (D-058): presentkort (Connect) först; `false` = inte ett presentkort.
+  if (await dispatchGiftCardEvent(event, now)) return;
   const account = event.account ?? null;
   const obj = event.data.object as unknown as { id?: string };
   switch (event.type) {
