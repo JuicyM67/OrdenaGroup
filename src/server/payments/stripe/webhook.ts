@@ -8,6 +8,7 @@ import {
   refundSmsCreditsForCharge,
   voidSmsCreditsForDispute,
 } from "@/server/billing/sms-credits";
+import { handleSubscriptionEvent } from "@/server/billing/subscriptions";
 import { withServiceTx } from "@/server/db/tx";
 import {
   handleVoucherCheckoutEvent,
@@ -95,6 +96,10 @@ function idOf(x: string | { id: string } | null | undefined): string | null {
 async function dispatch(event: Stripe.Event, now: Date): Promise<void> {
   const account = event.account ?? null;
   const obj = event.data.object as unknown as { id?: string };
+  // WP-78 (D-059): abonnemang — plattformens händelser (inget `account`),
+  // routade på händelsetyp och, för Checkout, `metadata.kind === "subscription"`
+  // hämtat från API:t. `false` = inte ett abonnemang → vidare nedan.
+  if (!account && (await handleSubscriptionEvent(event))) return;
   switch (event.type) {
     case "account.updated": {
       if (account) await syncAccount(account);

@@ -1,7 +1,7 @@
 import "server-only";
 
 import { appHref } from "@/config/routes";
-import { formulario } from "@/i18n";
+import { formulario, planes } from "@/i18n";
 import {
   APP_LOCALE,
   APP_TZ,
@@ -9,6 +9,7 @@ import {
   formatLocalDate,
   formatTime,
   parseTimeZone,
+  toLocalDate,
   type LocalDate,
 } from "@/lib/format/dates";
 import { formatMoney, formatMoneyIn } from "@/lib/format/money";
@@ -1589,6 +1590,87 @@ async function processSmsNoticeRow(
   return "sent";
 }
 
+/** WP-78 (D-059): ägarens abonnemangsmejl, köade av webhooken
+ * (`abonnemangBetalningMisslyckades`) och av `private.billing_set_plan`/
+ * `billing_sweep` (`abonnemangNedgraderat`, `abonnemangPilotSlutar`). Ingen
+ * kunddata: planens id, ett datum och en länk till Inställningar → Plan. */
+const BILLING_TEMPLATES = new Set([
+  "abonnemangBetalningMisslyckades",
+  "abonnemangNedgraderat",
+  "abonnemangPilotSlutar",
+]);
+
+async function processBillingNoticeRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  const negocio = await withServiceTx(async (q) => {
+    const r = await q.query<{ name: string }>(
+      `select name from public.businesses where id = $1`,
+      [row.businessId],
+    );
+    return r.rows[0]?.name ?? "";
+  });
+  const emails = await ownerEmailsFor(row.businessId);
+  if (emails.length === 0) throw new OutboxSendError("no_owner_email");
+  const planUrl = `${appUrl()}${appHref("appAjustesPlan")}`;
+  const planName = (id: string) =>
+    (planes.nombres as Record<string, string>)[id] ?? id;
+  const fecha = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+      ? ""
+      : formatLocalDate(toLocalDate(d, APP_TZ), "dayMonthLong");
+  };
+  const p = row.payload;
+  const send = async <
+    T extends
+      | "abonnemangBetalningMisslyckades"
+      | "abonnemangNedgraderat"
+      | "abonnemangPilotSlutar",
+  >(
+    template: T,
+    data: EmailTemplateMap[T],
+  ) => {
+    const ids: string[] = [];
+    for (const [i, to] of emails.entries()) {
+      const r = await sendEmail({
+        to,
+        template,
+        data,
+        idempotencyKey: `${row.dedupeKey}:o${i}`,
+      });
+      ids.push(r.id);
+    }
+    await finalizeSent(row, ids.join(","));
+    return "sent" as const;
+  };
+  if (row.template === "abonnemangBetalningMisslyckades") {
+    const facturaUrl = str(p.facturaUrl);
+    return send("abonnemangBetalningMisslyckades", {
+      negocio,
+      plan: planName(str(p.plan)),
+      fecha: fecha(str(p.hasta)),
+      planUrl,
+      facturaUrl: facturaUrl.startsWith("https://") ? facturaUrl : null,
+    });
+  }
+  if (row.template === "abonnemangNedgraderat") {
+    return send("abonnemangNedgraderat", {
+      negocio,
+      plan: planName(str(p.plan)),
+      motivo: str(p.motivo),
+      planUrl,
+    });
+  }
+  return send("abonnemangPilotSlutar", {
+    negocio,
+    fecha: fecha(str(p.hasta)),
+    dias: typeof p.dias === "number" ? p.dias : 14,
+    planUrl,
+  });
+}
+
 class SmsQuotaBlockedError extends Error {
   constructor() {
     super("sms_quota");
@@ -1631,6 +1713,9 @@ async function processRow(
     }
     if (row.template === "valeComprado") {
       return await processVoucherRow(row);
+    }
+    if (BILLING_TEMPLATES.has(row.template)) {
+      return await processBillingNoticeRow(row);
     }
     if (row.template === "bienvenidaMiembro") {
       return await processMemberWelcomeRow(row);

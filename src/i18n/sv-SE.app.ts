@@ -81,6 +81,7 @@ export { cuenta } from "./sv-SE.cuenta";
 export { descubre } from "./sv-SE.descubre";
 export { ofertas } from "./sv-SE.ofertas";
 export { smsCreditos } from "./sv-SE.sms-creditos";
+export { suscripcion } from "./sv-SE.suscripcion";
 export { vales } from "./sv-SE.vales";
 export { visita } from "./sv-SE.visita";
 

@@ -217,5 +217,24 @@ export function emailFixtures(market: Market): {
       direccion: "Storgatan 1",
       reservarUrl: "https://app.example.com/barberia-norte?vardebevis=abc",
     },
+    abonnemangBetalningMisslyckades: {
+      negocio: b.negocio,
+      plan: market === "SE" ? "Team" : "Equipo",
+      fecha: market === "SE" ? "25 oktober" : "25 de octubre",
+      planUrl: "https://app.example.com/app/ajustes/plan",
+      facturaUrl: null,
+    },
+    abonnemangNedgraderat: {
+      negocio: b.negocio,
+      plan: market === "SE" ? "Team" : "Equipo",
+      motivo: "payment",
+      planUrl: "https://app.example.com/app/ajustes/plan",
+    },
+    abonnemangPilotSlutar: {
+      negocio: b.negocio,
+      fecha: market === "SE" ? "1 november" : "1 de noviembre",
+      dias: 14,
+      planUrl: "https://app.example.com/app/ajustes/plan",
+    },
   };
 }

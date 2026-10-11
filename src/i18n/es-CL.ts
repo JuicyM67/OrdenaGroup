@@ -604,6 +604,7 @@ export { smsCreditos } from "./es-CL.sms-creditos";
 export { descubre } from "./es-CL.descubre";
 export { cuenta } from "./es-CL.cuenta";
 export { vales } from "./es-CL.vales";
+export { suscripcion } from "./es-CL.suscripcion";
 export { ofertas } from "./es-CL.ofertas";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).

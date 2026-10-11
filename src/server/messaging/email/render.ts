@@ -65,6 +65,14 @@ import {
   smsCuota80Email,
   type SmsAvisoData,
 } from "./templates/sms-creditos";
+import {
+  abonnemangBetalningMisslyckadesEmail,
+  abonnemangNedgraderatEmail,
+  abonnemangPilotSlutarEmail,
+  type SuscripcionFallidaData,
+  type SuscripcionGratisData,
+  type SuscripcionPilotoData,
+} from "./templates/suscripcion";
 import { valeCompradoEmail, type ValeCompradoData } from "./templates/vale";
 import type { EmailKind, RenderedEmail } from "./types";
 
@@ -107,6 +115,10 @@ export type EmailTemplateMap = {
   readonly smsAgotados: SmsAvisoData;
   /** WP-69 (D-057): al comprador, recibo del vale. */
   readonly valeComprado: ValeCompradoData;
+  /** WP-78 (D-059): al dueño, suscripción (pago fallido, pasó a Gratis, fin del piloto). */
+  readonly abonnemangBetalningMisslyckades: SuscripcionFallidaData;
+  readonly abonnemangNedgraderat: SuscripcionGratisData;
+  readonly abonnemangPilotSlutar: SuscripcionPilotoData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -143,6 +155,9 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   smsCuota80: "account",
   smsAgotados: "account",
   valeComprado: "booking",
+  abonnemangBetalningMisslyckades: "account",
+  abonnemangNedgraderat: "account",
+  abonnemangPilotSlutar: "account",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -172,6 +187,9 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "smsCuota80",
   "smsAgotados",
   "valeComprado",
+  "abonnemangBetalningMisslyckades",
+  "abonnemangNedgraderat",
+  "abonnemangPilotSlutar",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -237,6 +255,15 @@ export function renderEmail<T extends EmailTemplateName>(
       return smsAgotadosEmail(market, data as SmsAvisoData);
     case "valeComprado":
       return valeCompradoEmail(market, data as ValeCompradoData);
+    case "abonnemangBetalningMisslyckades":
+      return abonnemangBetalningMisslyckadesEmail(
+        market,
+        data as SuscripcionFallidaData,
+      );
+    case "abonnemangNedgraderat":
+      return abonnemangNedgraderatEmail(market, data as SuscripcionGratisData);
+    case "abonnemangPilotSlutar":
+      return abonnemangPilotSlutarEmail(market, data as SuscripcionPilotoData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

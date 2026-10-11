@@ -17,6 +17,7 @@ import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse, type NextRequest } from "next/server";
 
+import { billingMarket, runBillingSweep } from "@/server/billing/subscriptions";
 import { expireRequests } from "@/server/bookings/confirm";
 import { pgErrorCode } from "@/server/db/errors";
 import { runGeocodeSweep } from "@/server/geocoding";
@@ -103,6 +104,19 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
+  // WP-78 (D-059): abonnemang (bara SE) — past_due efter grace → Gratis,
+  // pilotdatum passerat → Gratis, påminnelser 14/3 dagar innan. Före
+  // utkorgen (mejlen köas här). Ett fel här stoppar aldrig utkorgen.
+  let billing = { graceExpired: 0, pilotsEnded: 0, pilotReminders: 0 };
+  if (billingMarket()) {
+    try {
+      billing = await runBillingSweep(systemClock());
+    } catch (e) {
+      console.error("outbox: runBillingSweep misslyckades", {
+        code: pgErrorCode(e) ?? "unknown",
+      });
+    }
+  }
   // WP-65 (D-045): recensionsförfrågningar för bokningar som slutade för
   // 2 h–3 dygn sedan — köas före utkorgen töms, samma felhantering.
   let reviewRequests = 0;
@@ -132,6 +146,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     reviewRequests,
     stripe,
     vouchers,
+    billing,
     geocoded,
     ...result,
   });
@@ -142,6 +157,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     reviewRequests,
     stripe,
     vouchers,
+    billing,
     geocoded,
   });
 }
