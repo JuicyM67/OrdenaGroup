@@ -45,6 +45,15 @@ vi.mock("@/server/vouchers", () => ({
     refunding: 0,
   }),
 }));
+// WP-77 (D-058): presentkortssvepet.
+vi.mock("@/server/gift-cards", () => ({
+  runGiftCardSweep: async () => ({
+    orders: 0,
+    expired: 0,
+    settled: 0,
+    cleared: 0,
+  }),
+}));
 vi.mock("@/server/geocoding", () => ({
   runGeocodeSweep: async () => {
     calls.push("runGeocodeSweep");
@@ -122,6 +131,7 @@ describe("POST /api/cron/outbox", () => {
       reviewRequests: 0,
       stripe: { reconciled: 0, sessions: 0 },
       vouchers: { orders: 0, expired: 0, redeemed: 0, refunding: 0 },
+      giftCards: { orders: 0, expired: 0, settled: 0, cleared: 0 },
       // WP-78: abonnemangssvepet körs bara i SE (testerna kör CL).
       billing: { graceExpired: 0, pilotsEnded: 0, pilotReminders: 0 },
       geocoded: { ok: 0, notFound: 0, skipped: 0 },

@@ -74,6 +74,12 @@ import {
   type SuscripcionPilotoData,
 } from "./templates/suscripcion";
 import { valeCompradoEmail, type ValeCompradoData } from "./templates/vale";
+import {
+  presentkortKvittoEmail,
+  presentkortLeveransEmail,
+  type PresentkortKvittoData,
+  type PresentkortLeveransData,
+} from "./templates/presentkort";
 import type { EmailKind, RenderedEmail } from "./types";
 
 /** En mall = { data, kind (`EMAIL_FROM_BOOKING`/`EMAIL_FROM_ACCOUNT`) }. */
@@ -115,6 +121,9 @@ export type EmailTemplateMap = {
   readonly smsAgotados: SmsAvisoData;
   /** WP-69 (D-057): al comprador, recibo del vale. */
   readonly valeComprado: ValeCompradoData;
+  /** WP-77 (D-058): presentkort — kvitto till köparen, leverans till mottagaren. */
+  readonly presentkortKvitto: PresentkortKvittoData;
+  readonly presentkortLeverans: PresentkortLeveransData;
   /** WP-78 (D-059): al dueño, suscripción (pago fallido, pasó a Gratis, fin del piloto). */
   readonly abonnemangBetalningMisslyckades: SuscripcionFallidaData;
   readonly abonnemangNedgraderat: SuscripcionGratisData;
@@ -155,6 +164,8 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   smsCuota80: "account",
   smsAgotados: "account",
   valeComprado: "booking",
+  presentkortKvitto: "booking",
+  presentkortLeverans: "booking",
   abonnemangBetalningMisslyckades: "account",
   abonnemangNedgraderat: "account",
   abonnemangPilotSlutar: "account",
@@ -187,6 +198,8 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "smsCuota80",
   "smsAgotados",
   "valeComprado",
+  "presentkortKvitto",
+  "presentkortLeverans",
   "abonnemangBetalningMisslyckades",
   "abonnemangNedgraderat",
   "abonnemangPilotSlutar",
@@ -255,6 +268,10 @@ export function renderEmail<T extends EmailTemplateName>(
       return smsAgotadosEmail(market, data as SmsAvisoData);
     case "valeComprado":
       return valeCompradoEmail(market, data as ValeCompradoData);
+    case "presentkortKvitto":
+      return presentkortKvittoEmail(market, data as PresentkortKvittoData);
+    case "presentkortLeverans":
+      return presentkortLeveransEmail(market, data as PresentkortLeveransData);
     case "abonnemangBetalningMisslyckades":
       return abonnemangBetalningMisslyckadesEmail(
         market,

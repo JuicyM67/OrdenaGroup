@@ -8,6 +8,7 @@ import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
 
 import type { Migas } from "./json-ld";
+import { Highlight } from "@/components/marketing/highlight";
 
 export function Brodsmulor({
   migas,
@@ -102,10 +103,7 @@ export function FotoHero({
           ) : null}
           <h1 className="font-display text-40 leading-display font-semibold tracking-hero text-balance sm:text-56 lg:text-68">
             {pre}
-            <br />
-            <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
-              {marca}
-            </span>
+            <Highlight>{marca}</Highlight>
           </h1>
           <p className="max-w-xl text-16 leading-relaxed text-on-dark/90 sm:text-19">
             {texto}

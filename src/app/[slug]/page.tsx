@@ -16,9 +16,9 @@ import type {
 } from "@/components/booking/form-schema";
 import type { BookingActionResult } from "@/components/booking/types";
 import { brand, market } from "@/config/brand";
-import { href } from "@/config/routes";
+import { href, regaloHref } from "@/config/routes";
 import { marketplaceEnabled } from "@/config/marketplace";
-import { planes, reserva, vales, visita } from "@/i18n";
+import { planes, regalo, reserva, vales, visita } from "@/i18n";
 import { isFavorite } from "@/server/accounts/account";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { findValidOfferIn, isOfferTokenShape } from "@/server/bookings/offer";
@@ -36,6 +36,8 @@ import {
 import { withServiceTx } from "@/server/db/tx";
 import { systemClock } from "@/server/scheduling/clock";
 import { isUuid } from "@/server/accounts/account";
+import { businessCanSellGiftCards } from "@/server/gift-cards";
+import { businessAcceptsGiftCards } from "@/server/gift-cards/shop";
 import { loadBookableVoucherIn } from "@/server/vouchers";
 import {
   voucherPageData,
@@ -161,6 +163,35 @@ export default async function ReservaPage({
   // frågorna ovan) — `resolveBusinessBySlug` hittade det just innan.
   if (!data) notFound();
   const account = await accountPromise;
+  // WP-77 (D-058): "Köp presentkort" — serverrenderad länk (ingen klient-JS).
+  const sellsGiftCards = await businessCanSellGiftCards(business.id).catch(
+    () => false,
+  );
+  // Kodfältet i datasteget: inte med värdebevis (det betalar redan allt).
+  const acceptsGiftCards =
+    !voucher &&
+    (sellsGiftCards ||
+      (await businessAcceptsGiftCards(business.id).catch(() => false)));
+  const tr = regalo.reserva;
+  const giftCardField = acceptsGiftCards ? (
+    <details className="group rounded-control bg-field px-4 py-3 open:pb-4">
+      <summary className="cursor-pointer text-14 font-semibold text-ink">
+        {tr.pregunta}
+      </summary>
+      <label className="mt-3 flex flex-col gap-1.5 text-13 font-semibold text-ink">
+        {tr.codigo}
+        <input
+          name="giftCardCode"
+          autoComplete="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          maxLength={40}
+          className="h-13 w-full rounded-control border-2 border-transparent bg-surface px-4 font-mono text-15 font-medium tracking-caps text-ink uppercase focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        />
+      </label>
+      <p className="mt-1.5 text-13 text-muted">{tr.ayuda}</p>
+    </details>
+  ) : undefined;
   const favorite = account
     ? await isFavorite(account.userId, business.id).catch(() => false)
     : false;
@@ -292,6 +323,17 @@ export default async function ReservaPage({
       paymentNote={
         isDemo && market === "SE" ? visita.cliente.pagoNota : undefined
       }
+      giftCardLink={
+        sellsGiftCards ? (
+          <a
+            href={regaloHref(slug)}
+            className="flex items-center justify-between gap-3 rounded-card bg-lilac px-5 py-4 text-15 font-bold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          >
+            {regalo.compra.enlacePerfil}
+            <span aria-hidden="true">→</span>
+          </a>
+        ) : undefined
+      }
       data={data}
       profile={p}
       social={social}
@@ -311,6 +353,16 @@ export default async function ReservaPage({
         submitBooking={submitBooking}
         joinWaitlist={submitWaitlist}
         initialMobileTab={reviews && reviewsExpanded ? "resenas" : undefined}
+        giftCardField={giftCardField}
+        giftCardErrors={
+          acceptsGiftCards
+            ? {
+                invalid: tr.errores.gift_card_invalid,
+                empty: tr.errores.gift_card_empty,
+                rate_limited: tr.errores.gift_card_rate_limited,
+              }
+            : undefined
+        }
         initialContact={
           account
             ? {

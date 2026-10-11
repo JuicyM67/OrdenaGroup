@@ -25,6 +25,8 @@ import type {
 } from "@/components/booking/types";
 import { optionalAccount } from "@/app/(consumer)/cuenta/session";
 import { market } from "@/config/brand";
+import { regalo } from "@/i18n";
+import { formatMoney } from "@/lib/format/money";
 import {
   claimBookingForAccount,
   linkAccountRows,
@@ -75,6 +77,8 @@ export type CreateBookingActionResult =
       readonly manageToken?: string;
       /** WP-64 (D-044): Stripe Checkout-länk när kunden ska betala nu. */
       readonly checkoutUrl?: string;
+      /** WP-77 (D-058): "Betalt med presentkort: …". */
+      readonly giftCardNotice?: string;
     })
   | BookingActionErr;
 
@@ -117,6 +121,25 @@ export async function createBooking(
     }
   }
 
+  // WP-77 (D-058): presentkortskod. Kodgissning: varje försök med kod
+  // räknas per IP (10 / timme), samma fel för okänd/annat företag/utgången.
+  const giftCardCode = parsed.data.giftCardCode;
+  if (giftCardCode) {
+    const allowed = await hitRateLimit({
+      scope: "gift_card:booking:ip",
+      subject: ip,
+      windowSeconds: 60 * 60,
+      max: 10,
+    });
+    if (!allowed) {
+      return {
+        ok: false,
+        code: "invalid_input",
+        giftCardError: "rate_limited",
+      };
+    }
+  }
+
   const now = systemClock();
   const result = await createCustomerBooking({
     businessId: business.id,
@@ -132,9 +155,24 @@ export async function createBooking(
     answers: parsed.data.answers,
     offerToken: opts.offerToken,
     ...(opts.voucher ? { voucher: opts.voucher } : {}),
+    ...(giftCardCode && !opts.voucher ? { giftCardCode } : {}),
     now,
   });
-  if (!result.ok) return { ok: false, code: result.error };
+  if (!result.ok) {
+    if (
+      result.error === "gift_card_invalid" ||
+      result.error === "gift_card_empty"
+    ) {
+      return {
+        ok: false,
+        code: "invalid_input",
+        // Säkerhetsgranskning #116 (KAN): samma fel för tomt och ogiltigt kort
+        // (inget orakel för kodgissning).
+        giftCardError: "invalid",
+      };
+    }
+    return { ok: false, code: result.error };
+  }
   // WP-16: bekräftelsen skickas direkt efter svaret, utan att vänta på cron.
   void kickOutbox();
 
@@ -188,6 +226,26 @@ export async function createBooking(
       ok: true,
       manageToken:
         result.value.manageToken !== "" ? result.value.manageToken : undefined,
+    };
+  }
+  // WP-77 (D-058): betald (helt eller delvis) med presentkort — resten betalas
+  // i salongen (ägarens beslut 2026-10-11), ingen onlinebetalning.
+  if (result.value.giftCard) {
+    const g = result.value.giftCard;
+    return {
+      ok: true,
+      manageToken:
+        result.value.manageToken !== "" ? result.value.manageToken : undefined,
+      giftCardNotice: regalo.reserva.aviso({
+        pagado: formatMoney(g.heldMinor),
+        resto: formatMoney(
+          Math.max(
+            0,
+            result.value.priceClp - result.value.discountClp - g.heldMinor,
+          ),
+        ),
+        saldo: formatMoney(g.balanceMinor),
+      }),
     };
   }
   const mode = await withServiceTx((q) =>

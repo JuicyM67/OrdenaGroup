@@ -145,6 +145,8 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 
 - 2026-10-11 (WP-67): Snabbtaggar i recensionen ("Trevligt bemötande", "Punktlig" … i `Recension.dc.html`) — finns inte i D-045, inte byggt. Dessutom: "Visas som Elin K.." (dubbel punkt när visningsnamnet slutar på initial-punkt, `resenas`-texten från WP-65).
 - 2026-10-11 (WP-67): Hjärtat (favorit) på `/[slug]` för utloggade besökare (länk till Skapa konto) — i v1 visas det bara för inloggade med kundkonto, så `/[slug]`-referenserna inte ändras.
+- 2026-10-11 (WP-77, D-058): Presentkort utanför v1 — i marknadsplatsen (`/upptack`, `/erbjudande`) och för flera salonger; fysiska/förtryckta koder som säljs i salongen; QR-kod och Apple/Google Wallet; PDF-bilaga i mejlet; ändra mottagare/leveransdag efter köpet; "Skicka igen" till köparens/mottagarens adress (en gång per dygn); påminnelse före utgång; företagets "Återbetala" i appen; tema per företag; momsrapport i kassan och momsklassning per företag (om juristfråga 22 kräver det); förlängd giltighet, överlåtelse mellan konton, kampanjer ("köp för 500, få 600"); mottagaren lägger kortet i sitt konto; publik saldosida med kod; Checkout för resten när onlinebetalning är "Obligatorisk".
+- 2026-10-11 (WP-77, omverifiering #116): Kassans rapporter visar presentkortsbetalningar (`gift_card`) på besöksdatum i stället för bokningsdatum (`paid_at`).
 
 ## Uppskjutet från WP-78 (abonnemang, 2026-10-11)
 - Årsbetalning (rabatt) för planerna.

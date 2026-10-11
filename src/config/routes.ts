@@ -7,6 +7,7 @@
 // aldrig hårdkodade `/precios`-strängar — annars pekar SE-installationen på fel sida.
 // `/login` är undantaget (auth-route, rörs inte här).
 import { market, type Market } from "./brand";
+import { marketplaceEnabled } from "./marketplace";
 import { anchor } from "./url-params";
 
 export type RouteId =
@@ -17,7 +18,8 @@ export type RouteId =
   | "ventajas"
   | "preguntas"
   | "contacto"
-  | "ejemploNegocio";
+  | "ejemploNegocio"
+  | "paraClientes";
 
 /** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts` / `sv-SE.ts`). */
 export type IndustriaId =
@@ -37,6 +39,8 @@ const CL_ROUTES: Record<RouteId, string> = {
   preguntas: "/preguntas",
   contacto: "/contacto",
   ejemploNegocio: "/demo/negocio",
+  // Landningssidan för konsumentkontot. Bara SE (dold/404 i CL som marknadsplatsen).
+  paraClientes: "/para-clientes",
 };
 
 /** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
@@ -49,6 +53,7 @@ const SE_ROUTES: Record<RouteId, string> = {
   preguntas: "/vanliga-fragor",
   contacto: "/kontakt",
   ejemploNegocio: "/demo/foretag",
+  paraClientes: "/for-kunder",
 };
 
 const ROUTES_BY_MARKET: Record<Market, Record<RouteId, string>> = {
@@ -271,6 +276,7 @@ export function sitemapPaths(): string[] {
     href("ventajas"),
     href("preguntas"),
     href("contacto"),
+    ...(marketplaceEnabled() ? [href("paraClientes")] : []),
     ...funcionesDisponibles().map(hrefFuncion),
     hrefRubros(),
     ...RUBRO_IDS.map(hrefRubro),
@@ -515,6 +521,54 @@ function valesPairs(): { source: string; destination: string }[] {
   }));
 }
 
+// WP-77 (D-058): presentkortens sidor. Köpet ligger under företagets egen sida
+// (`/<slug>/presentkort`, CL-filsystemet `/[slug]/tarjeta-regalo`), kontot och
+// kassan som värdebevisen. Egen tabell (D-039: inget i bokningssidans klientbunt).
+export type RegaloRouteId = "compra" | "listo" | "tarjeta";
+const CL_REGALO: Record<RegaloRouteId, string> = {
+  compra: "/tarjeta-regalo",
+  listo: "/tarjeta-regalo/listo",
+  tarjeta: "/tarjeta-regalo/tarjeta",
+};
+const SE_REGALO: Record<RegaloRouteId, string> = {
+  compra: "/presentkort",
+  listo: "/presentkort/klart",
+  tarjeta: "/presentkort/kort",
+};
+export type RegalosRouteId = "cuenta" | "caja";
+const CL_REGALOS: Record<RegalosRouteId, string> = {
+  cuenta: "/cuenta/regalos",
+  caja: "/app/caja/regalos",
+};
+const SE_REGALOS: Record<RegalosRouteId, string> = {
+  cuenta: "/konto/presentkort",
+  caja: "/app/kassa/presentkort",
+};
+
+/** `/<slug>/presentkort[/klart|/kort]` i den här installationens marknad. */
+export function regaloHref(slug: string, id: RegaloRouteId = "compra"): string {
+  const tail = (market === "SE" ? SE_REGALO : CL_REGALO)[id];
+  return `/${encodeURIComponent(slug)}${tail}`;
+}
+
+export function regalosHref(id: RegalosRouteId): string {
+  return (market === "SE" ? SE_REGALOS : CL_REGALOS)[id];
+}
+
+/** Kontot och kassan först (statiska), sist `/:slug/…` (fångar annars
+ * `/konto/presentkort`). */
+function regaloPairs(): { source: string; destination: string }[] {
+  const fixed = (["cuenta", "caja"] as const).map((id) => ({
+    source: SE_REGALOS[id],
+    destination: CL_REGALOS[id],
+  }));
+  const slugged = (["listo", "tarjeta", "compra"] as const).map((id) => ({
+    source: `/:slug${SE_REGALO[id]}`,
+    destination: `/:slug${CL_REGALO[id]}`,
+  }));
+  return [...fixed, ...slugged];
+}
+
 function cuentaPairs(): { source: string; destination: string }[] {
   return (Object.keys(CL_CUENTA_ROUTES) as CuentaRouteId[]).map((id) => ({
     source: SE_CUENTA_ROUTES[id].replace("[id]", ":id"),
@@ -629,6 +683,7 @@ export function seRouteRewrites(): { source: string; destination: string }[] {
     ...seMarketplacePairs(),
     ...cuentaPairs(),
     ...valesPairs(),
+    ...regaloPairs(),
   ];
 }
 
@@ -668,7 +723,7 @@ export function seRouteRedirects(): {
     destination: source,
     permanent: true as const,
   }));
-  const cuenta = [...cuentaPairs(), ...valesPairs()].map(
+  const cuenta = [...cuentaPairs(), ...valesPairs(), ...regaloPairs()].map(
     ({ source, destination }) => ({
       source: destination,
       destination: source,

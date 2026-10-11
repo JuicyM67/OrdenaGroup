@@ -138,6 +138,9 @@ export const createBookingRequestSchema = z.strictObject({
   // validerade det för den inloggade köparen); `createIn` validerar igen i
   // transaktionen med radlås.
   voucher: z.strictObject({ id: uuid, userId: uuid }).optional(),
+  // WP-77 (D-058): presentkortets kod (betalningsmedel, inte rabatt).
+  // `createIn` reserverar saldot i transaktionen; fel kod → ingen bokning.
+  giftCardCode: z.string().trim().min(1).max(40).optional(),
 });
 
 /** Kundens flytt: bokningen identifieras bara med länkens token. */

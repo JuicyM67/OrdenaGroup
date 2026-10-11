@@ -522,6 +522,11 @@ async function checkPurgeEligible(
   const open = await q.query(
     `select 1 from public.vouchers
       where business_id = $1 and status in ('active', 'reserved', 'refunding')
+     union all
+     -- WP-77 (D-058): presentkort med saldo som inte gått ut (samma kod).
+     select 1 from public.gift_cards
+      where business_id = $1 and status in ('active', 'refunding', 'disputed')
+        and balance_minor > 0 and expires_at > now()
       limit 1`,
     [businessId],
   );

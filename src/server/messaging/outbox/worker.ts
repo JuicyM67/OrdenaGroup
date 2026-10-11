@@ -1,6 +1,6 @@
 import "server-only";
 
-import { appHref } from "@/config/routes";
+import { appHref, regaloHref } from "@/config/routes";
 import { formulario, planes } from "@/i18n";
 import {
   APP_LOCALE,
@@ -8,9 +8,11 @@ import {
   formatDate,
   formatLocalDate,
   formatTime,
+  fromLocal,
   parseTimeZone,
   toLocalDate,
   type LocalDate,
+  type LocalTime,
 } from "@/lib/format/dates";
 import { formatMoney, formatMoneyIn } from "@/lib/format/money";
 import { formatPhone, type E164 } from "@/lib/format/phone";
@@ -1423,6 +1425,120 @@ async function processVoucherRow(
   return "sent";
 }
 
+/** WP-77 (D-058): presentkortets två mejl. Adresserna (köparens, mottagarens)
+ * och koden läses ur tabellerna vid sändningen; payload bär bara kortets id
+ * och länkens engångstoken, som nollas när raden skickats (`finalizeSent`).
+ * Saknas mottagaradress går leveransmejlet till köparen. Ett återbetalt kort
+ * skickas inte. */
+async function processGiftCardRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const cardId =
+    typeof row.payload.giftCardId === "string" ? row.payload.giftCardId : "";
+  const token = typeof row.payload.token === "string" ? row.payload.token : "";
+  if (!cardId || !token) throw new OutboxSendError("invalid_payload");
+  const ctx = await withServiceTx(async (q) => {
+    const r = await q.query<{
+      code: string;
+      initial_minor: number;
+      status: string;
+      expires_at: Date;
+      buyer_name: string | null;
+      buyer_email: string | null;
+      recipient_name: string | null;
+      recipient_email: string | null;
+      greeting: string | null;
+      theme: "lime" | "lilac" | "photo";
+      deliver_on: string | null;
+      negocio: string;
+      slug: string;
+      address: string | null;
+      timezone: string;
+    }>(
+      `select g.code, g.initial_minor, g.status, g.expires_at,
+              o.buyer_name, o.buyer_email, o.recipient_name, o.recipient_email,
+              o.greeting, o.theme, to_char(o.deliver_on, 'YYYY-MM-DD') as deliver_on,
+              b.name as negocio, b.slug, b.address, b.timezone
+         from public.gift_cards g
+         join public.gift_card_orders o on o.business_id = g.business_id and o.id = g.order_id
+         join public.businesses b on b.id = g.business_id
+        where g.business_id = $1 and g.id = $2`,
+      [row.businessId, cardId],
+    );
+    return r.rows[0];
+  });
+  if (!ctx) throw new OutboxSendError("no_gift_card");
+  const to =
+    row.template === "presentkortLeverans"
+      ? (ctx.recipient_email ?? ctx.buyer_email)
+      : ctx.buyer_email;
+  if (!to || ctx.status === "refunding" || ctx.status === "refunded") {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const parsedTz = parseTimeZone(ctx.timezone);
+  const tz = parsedTz.ok ? parsedTz.value : APP_TZ;
+  const valor = formatMoneyIn("SEK", ctx.initial_minor);
+  const validoHasta = formatVoucherDate(ctx.expires_at, tz);
+  const verUrl = `${appUrl()}${regaloHref(ctx.slug, "tarjeta")}?t=${encodeURIComponent(token)}`;
+  const r =
+    row.template === "presentkortLeverans"
+      ? await sendEmail({
+          to,
+          template: "presentkortLeverans",
+          data: {
+            nombre: ctx.recipient_name ?? ctx.buyer_name ?? "",
+            de: ctx.buyer_name ?? "",
+            negocio: ctx.negocio,
+            valor,
+            validoHasta,
+            codigo: ctx.code,
+            saludo: ctx.greeting,
+            tema: ctx.theme,
+            reservarUrl: `${appUrl()}/${ctx.slug}`,
+            verUrl,
+            direccion: ctx.address,
+          },
+          idempotencyKey: row.dedupeKey,
+        })
+      : await sendEmail({
+          to,
+          template: "presentkortKvitto",
+          data: {
+            negocio: ctx.negocio,
+            valor,
+            codigo: ctx.code,
+            para: ctx.recipient_email ? ctx.recipient_name : null,
+            fechaEnvio:
+              ctx.recipient_email && ctx.deliver_on
+                ? formatVoucherDate(
+                    fromLocal(
+                      ctx.deliver_on as LocalDate,
+                      "12:00" as LocalTime,
+                      tz,
+                    ),
+                    tz,
+                  )
+                : null,
+            validoHasta,
+            direccion: ctx.address,
+            verUrl,
+          },
+          idempotencyKey: row.dedupeKey,
+        });
+  await finalizeSent(row, r.id);
+  if (row.template === "presentkortLeverans") {
+    await withServiceTx((q) =>
+      q.query(
+        `update public.gift_cards set delivered_at = coalesce(delivered_at, now())
+          where business_id = $1 and id = $2`,
+        [row.businessId, cardId],
+      ),
+    );
+  }
+  return "sent";
+}
+
 /** WP-55: `mensajeLibre` — `payload.text` es el mensaje tal cual lo escribió
  * el dueño/staff (`sendCustomerMessage` ya lo validó, ≤ 320 caracteres); acá
  * solo se antepone `negocio` como remitente (`sms.mensajeLibre`). */
@@ -1714,6 +1830,12 @@ async function processRow(
     }
     if (row.template === "valeComprado") {
       return await processVoucherRow(row);
+    }
+    if (
+      row.template === "presentkortKvitto" ||
+      row.template === "presentkortLeverans"
+    ) {
+      return await processGiftCardRow(row);
     }
     if (BILLING_TEMPLATES.has(row.template)) {
       return await processBillingNoticeRow(row);

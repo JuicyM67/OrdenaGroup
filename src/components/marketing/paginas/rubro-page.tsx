@@ -24,6 +24,7 @@ import { formatDuration } from "@/lib/format/dates";
 import { FotoHero } from "./foto-hero";
 import { BreadcrumbJsonLd, type Migas } from "./json-ld";
 import { HeroGlass, HeroPrimary } from "./ui";
+import { Highlight } from "@/components/marketing/highlight";
 
 const c = paginas.comunes;
 
@@ -75,10 +76,7 @@ export function RubroPage({ id }: { id: RubroId }) {
           <div className="mx-auto flex max-w-360 flex-col gap-7 px-4 pt-16 pb-6 sm:px-8 lg:px-22 lg:pt-22">
             <h2 className="font-display text-40 leading-none font-semibold tracking-headline text-balance sm:text-52">
               {t.problemas.pre}
-              <br />
-              <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
-                {t.problemas.marca}
-              </span>
+              <Highlight>{t.problemas.marca}</Highlight>
             </h2>
             <ul className="grid grid-cols-1 gap-4 md:grid-cols-3">
               {t.problemas.items.map((p) => (
@@ -169,10 +167,7 @@ export function RubroPage({ id }: { id: RubroId }) {
             <div className="relative flex max-w-140 flex-col gap-4">
               <h2 className="font-display text-40 leading-none font-semibold tracking-headline sm:text-52">
                 {c.cta.pre}
-                <br />
-                <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
-                  {c.cta.marca}
-                </span>
+                <Highlight>{c.cta.marca}</Highlight>
               </h2>
               <p className="text-16 text-on-dark/90 sm:text-17">
                 {t.cierre.texto}

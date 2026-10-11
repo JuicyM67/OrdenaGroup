@@ -12,14 +12,19 @@ export function EmailForm({
   id,
   tone,
   className,
+  action = "/login",
+  texts = t,
 }: {
   id: string;
   tone: "nav" | "light";
   className?: string;
+  /** Mål för GET-formuläret (kundlandningen skickar till kundinloggningen). */
+  action?: string;
+  texts?: { emailLabel: string; emailPlaceholder: string; cta: string };
 }) {
   return (
     <form
-      action="/login"
+      action={action}
       method="get"
       className={cn(
         "flex w-full max-w-140 flex-col gap-1.5 rounded-tile p-1.5 sm:flex-row sm:rounded-form",
@@ -28,21 +33,21 @@ export function EmailForm({
       )}
     >
       <label htmlFor={id} className="sr-only">
-        {t.emailLabel}
+        {texts.emailLabel}
       </label>
       <input
         id={id}
         name="email"
         type="email"
         autoComplete="email"
-        placeholder={t.emailPlaceholder}
+        placeholder={texts.emailPlaceholder}
         className="h-13 min-w-0 rounded-bar bg-surface px-5 text-16 text-ink placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime sm:flex-1"
       />
       <button
         type="submit"
         className="flex h-13 shrink-0 items-center justify-between gap-3 rounded-bar bg-lime pr-2 pl-5.5 text-16 font-bold text-ink transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-dark"
       >
-        {t.cta}
+        {texts.cta}
         <span
           aria-hidden="true"
           className="flex size-9.5 items-center justify-center rounded-full bg-ink text-lime"

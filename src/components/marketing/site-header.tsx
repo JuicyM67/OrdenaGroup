@@ -30,14 +30,16 @@ import {
   hrefFuncion,
   hrefMarketplace,
   hrefRubro,
+  cuentaHref,
   hrefRubros,
   RUBRO_IDS,
 } from "@/config/routes";
-import { descubre } from "@/i18n";
+import { descubre, paraClientes } from "@/i18n";
 import { copy } from "@/i18n/marketing";
 import { paginas } from "@/i18n/paginas";
 
 import { BrandLogo } from "./brand-logo";
+import { LoginMenu } from "./login-menu";
 import { DemoPanel, FuncionesPanel, RubrosPanel } from "./mega-menu";
 import { FUNCION_UI, TONE_CLASS } from "./paginas/registry";
 
@@ -154,6 +156,16 @@ export function SiteHeader({ className }: { className?: string }) {
               </NavigationMenu.Item>
             ) : null}
 
+            {marketplaceEnabled() ? (
+              <NavigationMenu.Item>
+                <NavigationMenu.Link asChild>
+                  <Link href={href("paraClientes")} className={navLinkClass}>
+                    {paraClientes.nav.label}
+                  </Link>
+                </NavigationMenu.Link>
+              </NavigationMenu.Item>
+            ) : null}
+
             <NavigationMenu.Item>
               <NavigationMenu.Link asChild>
                 <Link href={href("precios")} className={navLinkClass}>
@@ -165,14 +177,18 @@ export function SiteHeader({ className }: { className?: string }) {
         </NavigationMenu.Root>
 
         <div className="flex shrink-0 items-center gap-2.5">
-          <Button
-            asChild
-            variant="secondary"
-            size="sm"
-            className="hidden rounded-full hover:bg-canvas sm:inline-flex"
-          >
-            <Link href="/login">{t.entrar}</Link>
-          </Button>
+          {marketplaceEnabled() ? (
+            <LoginMenu />
+          ) : (
+            <Button
+              asChild
+              variant="secondary"
+              size="sm"
+              className="hidden rounded-full hover:bg-canvas sm:inline-flex"
+            >
+              <Link href="/login">{t.entrar}</Link>
+            </Button>
+          )}
           <Button
             asChild
             variant="primary"
@@ -323,6 +339,17 @@ export function SiteHeader({ className }: { className?: string }) {
                     </Dialog.Close>
                   ) : null}
 
+                  {marketplaceEnabled() ? (
+                    <Dialog.Close asChild>
+                      <Link
+                        href={href("paraClientes")}
+                        className={mobileRowClass}
+                      >
+                        {paraClientes.nav.label}
+                      </Link>
+                    </Dialog.Close>
+                  ) : null}
+
                   <Dialog.Close asChild>
                     <Link href={href("precios")} className={mobileRowClass}>
                       {t.precios}
@@ -374,14 +401,35 @@ export function SiteHeader({ className }: { className?: string }) {
                       <Link href="/login">{t.crearGratis}</Link>
                     </Button>
                   </Dialog.Close>
-                  <Dialog.Close asChild>
-                    <Link
-                      href="/login"
-                      className="flex h-12 items-center justify-center rounded-full bg-ink/6 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-                    >
-                      {t.entrar}
-                    </Link>
-                  </Dialog.Close>
+                  {marketplaceEnabled() ? (
+                    <>
+                      <Dialog.Close asChild>
+                        <Link
+                          href={cuentaHref("cuentaIngresar")}
+                          className="flex h-12 items-center justify-center rounded-full bg-ink/6 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                        >
+                          {paraClientes.nav.soyCliente}
+                        </Link>
+                      </Dialog.Close>
+                      <Dialog.Close asChild>
+                        <Link
+                          href="/login"
+                          className="flex h-12 items-center justify-center rounded-full bg-ink/6 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                        >
+                          {paraClientes.nav.tengoNegocio}
+                        </Link>
+                      </Dialog.Close>
+                    </>
+                  ) : (
+                    <Dialog.Close asChild>
+                      <Link
+                        href="/login"
+                        className="flex h-12 items-center justify-center rounded-full bg-ink/6 font-bold focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                      >
+                        {t.entrar}
+                      </Link>
+                    </Dialog.Close>
+                  )}
                 </div>
               </Dialog.Content>
             </Dialog.Portal>

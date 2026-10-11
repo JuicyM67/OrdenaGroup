@@ -575,6 +575,7 @@ export type Database = {
           geocode_address_hash: string | null;
           geocode_status: string;
           geocoded_at: string | null;
+          gift_cards_enabled: boolean;
           id: string;
           instagram: string | null;
           lat: number | null;
@@ -626,6 +627,7 @@ export type Database = {
           geocode_address_hash?: string | null;
           geocode_status?: string;
           geocoded_at?: string | null;
+          gift_cards_enabled?: boolean;
           id?: string;
           instagram?: string | null;
           lat?: number | null;
@@ -677,6 +679,7 @@ export type Database = {
           geocode_address_hash?: string | null;
           geocode_status?: string;
           geocoded_at?: string | null;
+          gift_cards_enabled?: boolean;
           id?: string;
           instagram?: string | null;
           lat?: number | null;
@@ -1183,6 +1186,228 @@ export type Database = {
             columns: ["business_id", "staff_id"];
             isOneToOne: false;
             referencedRelation: "staff";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      gift_card_ledger: {
+        Row: {
+          actor_user_id: string | null;
+          booking_id: string | null;
+          business_id: string;
+          created_at: string;
+          delta_minor: number;
+          gift_card_id: string;
+          id: number;
+          kind: string;
+          payment_id: string | null;
+        };
+        Insert: {
+          actor_user_id?: string | null;
+          booking_id?: string | null;
+          business_id: string;
+          created_at?: string;
+          delta_minor: number;
+          gift_card_id: string;
+          id?: never;
+          kind: string;
+          payment_id?: string | null;
+        };
+        Update: {
+          actor_user_id?: string | null;
+          booking_id?: string | null;
+          business_id?: string;
+          created_at?: string;
+          delta_minor?: number;
+          gift_card_id?: string;
+          id?: never;
+          kind?: string;
+          payment_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "gift_card_ledger_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "gift_card_ledger_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "gift_card_ledger_business_id_gift_card_id_fkey";
+            columns: ["business_id", "gift_card_id"];
+            isOneToOne: false;
+            referencedRelation: "gift_cards";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      gift_card_orders: {
+        Row: {
+          amount_minor: number;
+          attempts: number;
+          business_id: string;
+          buyer_email: string | null;
+          buyer_name: string | null;
+          buyer_token_hash: string | null;
+          created_at: string;
+          currency: string;
+          deliver_on: string | null;
+          expires_at: string;
+          fee_minor: number;
+          greeting: string | null;
+          id: string;
+          next_attempt_at: string;
+          paid_at: string | null;
+          payment_intent_id: string | null;
+          personal_data_cleared_at: string | null;
+          recipient_email: string | null;
+          recipient_name: string | null;
+          refunded_minor: number;
+          session_id: string | null;
+          status: string;
+          stripe_account_id: string;
+          theme: string;
+          updated_at: string;
+          user_id: string | null;
+        };
+        Insert: {
+          amount_minor: number;
+          attempts?: number;
+          business_id: string;
+          buyer_email?: string | null;
+          buyer_name?: string | null;
+          buyer_token_hash?: string | null;
+          created_at?: string;
+          currency?: string;
+          deliver_on?: string | null;
+          expires_at: string;
+          fee_minor: number;
+          greeting?: string | null;
+          id?: string;
+          next_attempt_at?: string;
+          paid_at?: string | null;
+          payment_intent_id?: string | null;
+          personal_data_cleared_at?: string | null;
+          recipient_email?: string | null;
+          recipient_name?: string | null;
+          refunded_minor?: number;
+          session_id?: string | null;
+          status?: string;
+          stripe_account_id: string;
+          theme?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Update: {
+          amount_minor?: number;
+          attempts?: number;
+          business_id?: string;
+          buyer_email?: string | null;
+          buyer_name?: string | null;
+          buyer_token_hash?: string | null;
+          created_at?: string;
+          currency?: string;
+          deliver_on?: string | null;
+          expires_at?: string;
+          fee_minor?: number;
+          greeting?: string | null;
+          id?: string;
+          next_attempt_at?: string;
+          paid_at?: string | null;
+          payment_intent_id?: string | null;
+          personal_data_cleared_at?: string | null;
+          recipient_email?: string | null;
+          recipient_name?: string | null;
+          refunded_minor?: number;
+          session_id?: string | null;
+          status?: string;
+          stripe_account_id?: string;
+          theme?: string;
+          updated_at?: string;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "gift_card_orders_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      gift_cards: {
+        Row: {
+          balance_minor: number;
+          business_id: string;
+          code: string;
+          created_at: string;
+          currency: string;
+          delivered_at: string | null;
+          expires_at: string;
+          id: string;
+          initial_minor: number;
+          order_id: string;
+          purchased_at: string;
+          status: string;
+          updated_at: string;
+          user_id: string | null;
+          view_token_hash: string;
+        };
+        Insert: {
+          balance_minor?: number;
+          business_id: string;
+          code: string;
+          created_at?: string;
+          currency?: string;
+          delivered_at?: string | null;
+          expires_at: string;
+          id?: string;
+          initial_minor: number;
+          order_id: string;
+          purchased_at: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string | null;
+          view_token_hash: string;
+        };
+        Update: {
+          balance_minor?: number;
+          business_id?: string;
+          code?: string;
+          created_at?: string;
+          currency?: string;
+          delivered_at?: string | null;
+          expires_at?: string;
+          id?: string;
+          initial_minor?: number;
+          order_id?: string;
+          purchased_at?: string;
+          status?: string;
+          updated_at?: string;
+          user_id?: string | null;
+          view_token_hash?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "gift_cards_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "gift_cards_business_id_order_id_fkey";
+            columns: ["business_id", "order_id"];
+            isOneToOne: false;
+            referencedRelation: "gift_card_orders";
             referencedColumns: ["business_id", "id"];
           },
         ];
@@ -2584,6 +2809,7 @@ export type Database = {
         | "transfer"
         | "swish"
         | "stripe"
+        | "gift_card"
         | "mercadopago";
       payment_status: "pending" | "approved" | "rejected" | "refunded";
       question_kind:
@@ -2762,6 +2988,7 @@ export const Constants = {
         "transfer",
         "swish",
         "stripe",
+        "gift_card",
         "mercadopago",
       ],
       payment_status: ["pending", "approved", "rejected", "refunded"],

@@ -2438,6 +2438,7 @@ export const caja = {
     mercadopago: "Mercado Pago",
     swish: "Swish",
     stripe: "Online (tarjeta)",
+    gift_card: "Tarjeta de regalo",
   },
   /** `payment_kind` (DB enum). */
   tipo: {

@@ -10,6 +10,7 @@ import { BrandLogo } from "@/components/marketing/brand-logo";
 import { brand } from "@/config/brand";
 import { marketplaceEnabled } from "@/config/marketplace";
 import {
+  cuentaHref,
   funcionesDisponibles,
   href,
   hrefFuncion,
@@ -19,7 +20,7 @@ import {
   hrefRubros,
   RUBRO_IDS,
 } from "@/config/routes";
-import { descubre } from "@/i18n";
+import { descubre, paraClientes } from "@/i18n";
 import { copy } from "@/i18n/marketing";
 import { paginas } from "@/i18n/paginas";
 
@@ -155,9 +156,23 @@ export function SiteFooter() {
                 : copy.sitio.footer2.contacto.ciudad}
             </span>
             <b className="mt-3 text-14 text-on-dark">{t.cuenta}</b>
-            <Link href="/login" className={linkClass}>
-              {copy.sitio.nav.entrar}
-            </Link>
+            {marketplaceEnabled() ? (
+              <>
+                <Link href={href("paraClientes")} className={linkClass}>
+                  {paraClientes.nav.label}
+                </Link>
+                <Link href={cuentaHref("cuentaIngresar")} className={linkClass}>
+                  {paraClientes.nav.soyCliente}
+                </Link>
+                <Link href="/login" className={linkClass}>
+                  {paraClientes.nav.tengoNegocio}
+                </Link>
+              </>
+            ) : (
+              <Link href="/login" className={linkClass}>
+                {copy.sitio.nav.entrar}
+              </Link>
+            )}
             <Link
               href="/login"
               className="self-start rounded-control bg-lime px-3.5 py-2 text-14 font-bold text-ink transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"

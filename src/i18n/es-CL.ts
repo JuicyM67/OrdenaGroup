@@ -602,8 +602,10 @@ export const formulario = {
 export { visita } from "./es-CL.visita";
 export { smsCreditos } from "./es-CL.sms-creditos";
 export { descubre } from "./es-CL.descubre";
+export { paraClientes } from "./es-CL.clientes";
 export { cuenta } from "./es-CL.cuenta";
 export { vales } from "./es-CL.vales";
+export { regalo } from "./es-CL.regalo";
 export { suscripcion } from "./es-CL.suscripcion";
 export { ofertas } from "./es-CL.ofertas";
 

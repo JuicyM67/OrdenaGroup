@@ -21,6 +21,7 @@ import { billingMarket, runBillingSweep } from "@/server/billing/subscriptions";
 import { expireRequests } from "@/server/bookings/confirm";
 import { pgErrorCode } from "@/server/db/errors";
 import { runGeocodeSweep } from "@/server/geocoding";
+import { runGiftCardSweep } from "@/server/gift-cards";
 import { processOutbox } from "@/server/messaging/outbox";
 import { runStripeSweep } from "@/server/payments/stripe/reconcile";
 import { runVoucherSweep } from "@/server/vouchers";
@@ -117,6 +118,17 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       });
     }
   }
+  // WP-77 (D-058): presentkort — utgångna kort, reservationer på passerade
+  // besök blir betalning, öppna köp som webhooken missat, persondata efter
+  // 90 dagar. Före utkorgen (kvitto- och leveransmejlen köas här).
+  let giftCards = { orders: 0, expired: 0, settled: 0, cleared: 0 };
+  try {
+    giftCards = await runGiftCardSweep(systemClock());
+  } catch (e) {
+    console.error("outbox: runGiftCardSweep misslyckades", {
+      code: pgErrorCode(e) ?? "unknown",
+    });
+  }
   // WP-65 (D-045): recensionsförfrågningar för bokningar som slutade för
   // 2 h–3 dygn sedan — köas före utkorgen töms, samma felhantering.
   let reviewRequests = 0;
@@ -146,6 +158,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     reviewRequests,
     stripe,
     vouchers,
+    giftCards,
     billing,
     geocoded,
     ...result,
@@ -157,6 +170,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     reviewRequests,
     stripe,
     vouchers,
+    giftCards,
     billing,
     geocoded,
   });

@@ -49,6 +49,11 @@ vi.mock("./sync", () => ({
   syncFromCheckoutReturn: vi.fn(),
 }));
 
+// WP-77: presentkortets gren (först i dispatch) är inte inblandad här.
+vi.mock("@/server/gift-cards/webhook", () => ({
+  dispatchGiftCardEvent: async () => false,
+}));
+
 const connectCompleted = vi.fn<(...a: unknown[]) => Promise<void>>();
 vi.mock("@/server/vouchers", () => ({
   handleVoucherCheckoutEvent: async () => false,

@@ -27,7 +27,7 @@ const ERROR_RE = /^[a-z_]{1,40}$/;
 export default async function CuentaIngresarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; cuenta?: string }>;
+  searchParams: Promise<{ error?: string; cuenta?: string; email?: string }>;
 }) {
   const supabase = await createSupabaseServerClient();
   const {
@@ -35,7 +35,12 @@ export default async function CuentaIngresarPage({
   } = await supabase.auth.getUser();
   if (user && (await hasAccount(user.id))) redirect(cuentaHref("cuenta"));
 
-  const { error, cuenta: estadoCuenta } = await searchParams;
+  const { error, cuenta: estadoCuenta, email } = await searchParams;
+  // Förifyll bara något som ser ut som en e-postadress (kommer från "För kunder").
+  const initialEmail =
+    email && email.length <= 254 && /^[^\s@]+@[^\s@]+$/.test(email)
+      ? email
+      : undefined;
   const notice =
     estadoCuenta === "eliminada"
       ? cuenta.privacidad.eliminada
@@ -61,6 +66,7 @@ export default async function CuentaIngresarPage({
         googleAction={signInWithGoogle}
         googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1"}
         initialErrorCode={error && ERROR_RE.test(error) ? error : undefined}
+        initialEmail={initialEmail}
         legal={
           <>
             {t.legalAntes}

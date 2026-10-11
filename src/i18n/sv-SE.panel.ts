@@ -1874,6 +1874,7 @@ export const caja: Widen<typeof Es.caja> = {
     mercadopago: "Automatisk betalning",
     swish: "Swish",
     stripe: "Online (kort)",
+    gift_card: "Presentkort",
   },
   tipo: {
     deposit: "Förskott",
