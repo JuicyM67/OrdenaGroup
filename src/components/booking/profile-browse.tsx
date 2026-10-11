@@ -65,8 +65,12 @@ export function ProfileBrowse({
   reviews,
   reviewsMoreHref,
   paymentNote,
+  giftCardLink,
 }: {
   data: BookingPageData;
+  /** WP-77 (D-058): "Köp presentkort" (serverrenderad länk, bara när
+   * företaget säljer presentkort). */
+  giftCardLink?: ReactNode;
   /** WP-72: info-raden "Betala direkt …" som bara syns i visningsläget (SE-demon). */
   paymentNote?: { texto: string; via: string };
   profile: BookingProfile;
@@ -101,6 +105,7 @@ export function ProfileBrowse({
         hasSocial={hasSocial}
         social={social?.contact}
       />
+      {giftCardLink}
     </div>
   );
 
@@ -199,6 +204,7 @@ export function ProfileBrowse({
               hasSocial={hasSocial}
               social={social?.contact}
             />
+            {giftCardLink}
           </aside>
         </div>
       </div>

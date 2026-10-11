@@ -123,11 +123,33 @@ export type GiftCardView = {
 /** Kortet bakom en länk, bara hos företaget i URL:en (`/<slug>/presentkort/kort?t=`). */
 export async function loadGiftCardByToken(
   businessId: string,
-  token: string,
+  access:
+    | { token: string }
+    | { session: string }
+    | { userId: string; cardId: string },
   now: Date,
 ): Promise<GiftCardView | undefined> {
-  if (!isGiftCardTokenShape(token)) return undefined;
-  const hash = hashGiftCardToken(token);
+  let where: string;
+  let arg: unknown;
+  let extra: unknown = null;
+  if ("token" in access) {
+    if (!isGiftCardTokenShape(access.token)) return undefined;
+    arg = hashGiftCardToken(access.token);
+    where =
+      "(g.view_token_hash = $2 or o.buyer_token_hash = $2) and $3::uuid is null";
+  } else if ("session" in access) {
+    // Retursidan från Checkout ("Ladda ner som PDF"): sessionens id är bara
+    // känt för köparen (Stripe-genererat).
+    if (!/^cs_[A-Za-z0-9_]{1,250}$/.test(access.session)) return undefined;
+    arg = access.session;
+    where = "o.session_id = $2 and $3::uuid is null";
+  } else {
+    if (!/^[0-9a-f-]{36}$/i.test(access.cardId)) return undefined;
+    arg = access.cardId;
+    extra = access.userId;
+    where = "g.id = $2::uuid and g.user_id = $3::uuid";
+  }
+  const hash = "token" in access ? arg : null;
   const x = await withServiceTx(async (q) => {
     const r = await q.query<{
       id: string;
@@ -146,16 +168,15 @@ export async function loadGiftCardByToken(
       timezone: string;
     }>(
       `select g.id,
-              case when g.view_token_hash = $2 then 'recipient' else 'buyer' end as holder,
+              case when g.view_token_hash = $4::bytea then 'recipient' else 'buyer' end as holder,
               g.code, g.initial_minor, g.balance_minor, g.status, g.purchased_at,
               g.expires_at, o.recipient_name, o.buyer_name, o.greeting, o.theme,
               o.deliver_on, b.timezone
          from public.gift_cards g
          join public.gift_card_orders o on o.business_id = g.business_id and o.id = g.order_id
          join public.businesses b on b.id = g.business_id
-        where g.business_id = $1
-          and (g.view_token_hash = $2 or o.buyer_token_hash = $2)`,
-      [businessId, hash],
+        where g.business_id = $1 and ${where}`,
+      [businessId, arg, extra, hash],
     );
     return r.rows[0];
   });

@@ -11,9 +11,10 @@ import { AccountShell } from "@/components/account/account-shell";
 import { NextBookingCard } from "@/components/account/booking-cards";
 import { FavoriteTile } from "@/components/account/favorite-tile";
 import { VoucherCard } from "@/components/account/voucher-card";
+import { giftCardsMarket } from "@/config/gift-cards";
 import { marketplaceEnabled } from "@/config/marketplace";
-import { appHref, cuentaHref, valesHref } from "@/config/routes";
-import { cuenta, vales } from "@/i18n";
+import { appHref, cuentaHref, regalosHref, valesHref } from "@/config/routes";
+import { cuenta, regalo, vales } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 import { loadMyBookings, loadMyFavorites } from "@/server/accounts/account";
 import { splitBookings } from "@/server/accounts/view";
@@ -167,6 +168,15 @@ export default async function CuentaPage() {
             {withVouchers ? (
               <Link href={valesHref("cuenta")} className={rowClass}>
                 {vales.cuenta.menu}
+                <ChevronRight
+                  className="size-4.5 text-muted"
+                  aria-hidden="true"
+                />
+              </Link>
+            ) : null}
+            {giftCardsMarket() ? (
+              <Link href={regalosHref("cuenta")} className={rowClass}>
+                {regalo.cuenta.menu}
                 <ChevronRight
                   className="size-4.5 text-muted"
                   aria-hidden="true"

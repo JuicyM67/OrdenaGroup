@@ -185,6 +185,13 @@ export async function moveIn(
   );
   const expires = voucher.rows[0]?.expires ?? null;
   if (expires !== null && start >= expires.getTime()) return err("too_far");
+  // WP-77 (D-058): samma regel för ett presentkort som reserverats för bokningen.
+  const giftCard = await q.query<{ expires: Date | null }>(
+    `select private.gift_card_expiry_for_booking($1, $2) as expires`,
+    [input.businessId, b.id],
+  );
+  const gcExpires = giftCard.rows[0]?.expires ?? null;
+  if (gcExpires !== null && start >= gcExpires.getTime()) return err("too_far");
   const check = checkStart(
     {
       snapshot,

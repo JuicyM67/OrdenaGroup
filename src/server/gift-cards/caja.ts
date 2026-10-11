@@ -182,10 +182,6 @@ async function failedLookupAllowed(
     windowSeconds: 60 * 60,
     max: 100,
   });
-  if (!perBusiness) {
-    // Larm utan persondata (bara att gränsen nåtts).
-    console.warn("gift_card: många misslyckade uppslag", { code: "rate" });
-  }
   return perMember && perBusiness;
 }
 

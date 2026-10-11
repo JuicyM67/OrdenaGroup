@@ -144,6 +144,8 @@ export type CreateInput = {
   waitlistEntryId?: string | undefined;
   /** WP-69 (D-057): värdebeviset (köparens id från sessionen, aldrig klienten). */
   voucher?: { id: string; userId: string } | undefined;
+  /** WP-77 (D-058): presentkortets kod (kunden anger den i formuläret). */
+  giftCardCode?: string | undefined;
 };
 
 type IdempotencyRow = {
@@ -481,6 +483,35 @@ export async function createIn(
         throw new Error("createIn: värdebeviset redan använt");
       }
     }
+    // WP-77 (D-058): presentkort = betalningsmedel. `min(saldo, att betala)`
+    // reserveras under radlås i samma transaktion; fel kod/inget saldo →
+    // felet rullar tillbaka hela bokningen (`runAs`). Inte med värdebevis
+    // (det betalar redan allt).
+    let giftCard: CreatedBooking["giftCard"];
+    if (input.giftCardCode && !input.voucher) {
+      const h = await q.query<{
+        outcome: "held" | "invalid" | "empty";
+        held_minor: number;
+        balance_minor: number;
+      }>(
+        `select outcome, held_minor, balance_minor
+           from private.gift_card_hold($1, $2, $3, $4, $5)`,
+        [
+          input.businessId,
+          input.giftCardCode,
+          booked.id,
+          priceClp - discountClp,
+          input.now,
+        ],
+      );
+      const x = h.rows[0];
+      if (x?.outcome !== "held") {
+        return err(
+          x?.outcome === "empty" ? "gift_card_empty" : "gift_card_invalid",
+        );
+      }
+      giftCard = { heldMinor: x.held_minor, balanceMinor: x.balance_minor };
+    }
     if (validated.value.length > 0) {
       await saveBookingAnswersIn(q, {
         businessId: input.businessId,
@@ -507,6 +538,7 @@ export async function createIn(
       depositClp: 0,
       status,
       manageToken: token,
+      ...(giftCard ? { giftCard } : {}),
     });
   }
   // Sista skyddsnätet (granskningsfynd): alla kandidater gav `no_overlap`

@@ -12,7 +12,10 @@ import type { PhoneError } from "@/lib/format/phone";
 // `import type` raderas vid kompilering (ingen JS-emission), säker i en
 // "use client"-fil trots att @/server/bookings/types har `import "server-only"`
 // som värde-import — se src/components/booking/types.ts.
-import type { BookingError } from "@/server/bookings/types";
+import type {
+  BookingError,
+  GiftCardBookingError,
+} from "@/server/bookings/types";
 
 export type ManualFieldError =
   | { field: "service"; kind: "empty" }
@@ -56,9 +59,11 @@ const SERVER_MESSAGES = {
   outside_hours: errores.agenda.outside_hours,
   business_unavailable: errores.agenda.business_unavailable,
   forbidden: errores.permiso.generico,
-} satisfies Record<BookingError, string>;
+} satisfies Record<Exclude<BookingError, GiftCardBookingError>, string>;
 
-function isKnownServerErrorCode(code: string): code is BookingError {
+function isKnownServerErrorCode(
+  code: string,
+): code is Exclude<BookingError, GiftCardBookingError> {
   return code in SERVER_MESSAGES;
 }
 
