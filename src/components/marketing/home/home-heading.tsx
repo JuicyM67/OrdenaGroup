@@ -2,6 +2,7 @@
 // vit/lavendel etikett, stor rubrik där sista raden ligger på en lime-markering.
 // Källa: docs/design/reference/startsida/SidaP3.dc.html + Flytt.dc.html.
 import { cn } from "@/components/ui/cn";
+import { Highlight } from "@/components/marketing/highlight";
 
 export function HomeHeading({
   etiqueta,
@@ -33,14 +34,11 @@ export function HomeHeading({
       <h2
         className={cn(
           "font-display leading-none font-semibold tracking-headline text-balance",
-          size === "lg" ? "text-40 sm:text-56" : "text-40 sm:text-52",
+          size === "lg" ? "text-36 sm:text-56" : "text-36 sm:text-52",
         )}
       >
         {pre}
-        <br />
-        <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
-          {marca}
-        </span>
+        <Highlight>{marca}</Highlight>
       </h2>
     </div>
   );

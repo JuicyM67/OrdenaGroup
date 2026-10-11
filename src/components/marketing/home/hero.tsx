@@ -12,6 +12,7 @@ import { FloatCards } from "./float-cards";
 import { TrustRow } from "./trust-row";
 import { UspMarquee } from "./usp-marquee";
 import { WordPill } from "./word-pill";
+import { Highlight } from "@/components/marketing/highlight";
 
 const t = copy.home.hero;
 
@@ -39,10 +40,8 @@ export function HomeHero() {
           <h1 className="font-display text-44 leading-display font-semibold tracking-hero text-balance sm:text-56 lg:text-68">
             {t.tituloLinea1}
             <br />
-            {t.tituloPre}{" "}
-            <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 whitespace-nowrap text-ink">
-              {t.tituloMarca}
-            </span>
+            {t.tituloPre}
+            <Highlight>{t.tituloMarca}</Highlight>
           </h1>
           <p className="max-w-xl text-16 leading-relaxed text-on-dark/90 sm:text-18">
             {t.texto}

@@ -7,6 +7,7 @@
 // aldrig hårdkodade `/precios`-strängar — annars pekar SE-installationen på fel sida.
 // `/login` är undantaget (auth-route, rörs inte här).
 import { market, type Market } from "./brand";
+import { marketplaceEnabled } from "./marketplace";
 import { anchor } from "./url-params";
 
 export type RouteId =
@@ -17,7 +18,8 @@ export type RouteId =
   | "ventajas"
   | "preguntas"
   | "contacto"
-  | "ejemploNegocio";
+  | "ejemploNegocio"
+  | "paraClientes";
 
 /** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts` / `sv-SE.ts`). */
 export type IndustriaId =
@@ -37,6 +39,8 @@ const CL_ROUTES: Record<RouteId, string> = {
   preguntas: "/preguntas",
   contacto: "/contacto",
   ejemploNegocio: "/demo/negocio",
+  // Landningssidan för konsumentkontot. Bara SE (dold/404 i CL som marknadsplatsen).
+  paraClientes: "/para-clientes",
 };
 
 /** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
@@ -49,6 +53,7 @@ const SE_ROUTES: Record<RouteId, string> = {
   preguntas: "/vanliga-fragor",
   contacto: "/kontakt",
   ejemploNegocio: "/demo/foretag",
+  paraClientes: "/for-kunder",
 };
 
 const ROUTES_BY_MARKET: Record<Market, Record<RouteId, string>> = {
@@ -271,6 +276,7 @@ export function sitemapPaths(): string[] {
     href("ventajas"),
     href("preguntas"),
     href("contacto"),
+    ...(marketplaceEnabled() ? [href("paraClientes")] : []),
     ...funcionesDisponibles().map(hrefFuncion),
     hrefRubros(),
     ...RUBRO_IDS.map(hrefRubro),

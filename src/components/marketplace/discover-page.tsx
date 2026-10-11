@@ -32,6 +32,8 @@ import { favoriteFor } from "./favorite";
 import { discoverHref, type DiscoverParams } from "./params";
 import { SearchForm } from "./search-form";
 import { ViewToggle } from "./view-toggle";
+import { ClientesBanner } from "@/components/marketing/clientes/clientes-page";
+import { Highlight } from "@/components/marketing/highlight";
 
 const t = descubre;
 
@@ -104,10 +106,8 @@ export function DiscoverPage({
           <div className="relative mx-auto flex max-w-360 flex-col gap-5 px-4 pt-32 pb-8 sm:px-8 lg:px-22 lg:pt-40 lg:pb-16">
             <Brodsmulor migas={migas} label={t.migas.label} />
             <h1 className="max-w-4xl font-display text-38 leading-display font-semibold tracking-hero text-balance sm:text-56 lg:text-60">
-              {heading.pre}{" "}
-              <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
-                {heading.marca}
-              </span>
+              {heading.pre}
+              <Highlight>{heading.marca}</Highlight>
             </h1>
             <p className="max-w-xl text-16 leading-relaxed text-on-dark/90 sm:text-18">
               {t.hero.bajada}
@@ -125,6 +125,8 @@ export function DiscoverPage({
         </section>
 
         <div className="mx-auto flex max-w-360 flex-col gap-6 px-4 py-6 sm:px-8 lg:gap-8 lg:px-22 lg:py-10">
+          {category || params.q ? null : <ClientesBanner />}
+
           <CategoryTiles
             counts={data.categories}
             active={category}

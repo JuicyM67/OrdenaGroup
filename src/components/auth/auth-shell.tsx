@@ -11,6 +11,7 @@ import { BrandLogo } from "@/components/marketing/brand-logo";
 import { TrustRow } from "@/components/marketing/home/trust-row";
 import { href } from "@/config/routes";
 import { acceso } from "@/i18n/auth";
+import { Highlight } from "@/components/marketing/highlight";
 
 export function AuthShell({ children }: { children: ReactNode }) {
   return (
@@ -61,10 +62,10 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <div className="grid flex-1 items-center gap-8 pt-6 lg:grid-cols-2 lg:gap-16 lg:pt-0">
           <div className="flex flex-col gap-4 lg:max-w-140 lg:gap-6">
             <p className="font-display text-36 leading-display font-semibold tracking-hero text-balance sm:text-44 lg:text-54">
-              {acceso.login.bienvenida.split(" ").slice(0, -1).join(" ")}{" "}
-              <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 whitespace-nowrap text-ink">
+              {acceso.login.bienvenida.split(" ").slice(0, -1).join(" ")}
+              <Highlight>
                 {acceso.login.bienvenida.split(" ").slice(-1)[0]}
-              </span>
+              </Highlight>
             </p>
             <p className="max-w-md text-16 leading-relaxed text-on-dark/90 sm:text-18">
               {acceso.login.bienvenidaTexto}
