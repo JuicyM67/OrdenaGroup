@@ -352,10 +352,11 @@ export async function createIn(
              (business_id, staff_id, service_id, customer_id, period, blocked,
               status, source, price_clp, discount_clp, deposit_clp,
               manage_token_hash, notes, idempotency_key, created_at,
-              campaign_recipient_id, flash_slot_id, waitlist_entry_id)
+              campaign_recipient_id, flash_slot_id, waitlist_entry_id,
+              contact_email)
            values ($1, $2, $3, $4, $5::tstzrange, $6::tstzrange,
                    $12::public.booking_status, $7::public.booking_source,
-                   $8, $14, 0, $9, $10, $11, $13, $15, $16, $17)
+                   $8, $14, 0, $9, $10, $11, $13, $15, $16, $17, $18)
            returning id`,
           [
             input.businessId,
@@ -376,6 +377,10 @@ export async function createIn(
             pricing.campaignRecipientId,
             pricing.flashSlotId,
             input.waitlistEntryId ?? null,
+            // WP-67 (D-054, säkerhetsgranskning B1): e-posten som angavs vid
+            // JUST den här bokningen — kundkonton ser bokningar per bokning,
+            // inte per kundrad (som matchas på telefon).
+            input.customer.email?.trim() || null,
           ],
         );
         return r.rows[0]!.id;

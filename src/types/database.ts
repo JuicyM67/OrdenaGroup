@@ -267,12 +267,14 @@ export type Database = {
       };
       bookings: {
         Row: {
+          account_user_id: string | null;
           blocked: unknown;
           business_id: string;
           campaign_recipient_id: string | null;
           cancel_reason: string | null;
           cancelled_at: string | null;
           confirmed_by_customer_at: string | null;
+          contact_email: string | null;
           created_at: string;
           customer_id: string;
           deposit_clp: number;
@@ -296,12 +298,14 @@ export type Database = {
           waitlist_entry_id: string | null;
         };
         Insert: {
+          account_user_id?: string | null;
           blocked: unknown;
           business_id: string;
           campaign_recipient_id?: string | null;
           cancel_reason?: string | null;
           cancelled_at?: string | null;
           confirmed_by_customer_at?: string | null;
+          contact_email?: string | null;
           created_at?: string;
           customer_id: string;
           deposit_clp?: number;
@@ -325,12 +329,14 @@ export type Database = {
           waitlist_entry_id?: string | null;
         };
         Update: {
+          account_user_id?: string | null;
           blocked?: unknown;
           business_id?: string;
           campaign_recipient_id?: string | null;
           cancel_reason?: string | null;
           cancelled_at?: string | null;
           confirmed_by_customer_at?: string | null;
+          contact_email?: string | null;
           created_at?: string;
           customer_id?: string;
           deposit_clp?: number;

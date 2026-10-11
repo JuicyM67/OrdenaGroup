@@ -49,7 +49,7 @@ export async function toggleFavorite(formData: FormData): Promise<void> {
   if (isUuid(businessId)) await setFavorite(userId, businessId, on);
   // Bara egna, relativa sökvägar (ingen öppen omdirigering).
   const target =
-    typeof back === "string" && /^\/[a-z0-9/-]{0,120}$/.test(back)
+    typeof back === "string" && /^\/(?!\/)[a-z0-9/-]{0,120}$/.test(back)
       ? back
       : cuentaHref("cuentaFavoritos");
   revalidatePath(target);
@@ -78,16 +78,22 @@ export async function exportAccountData(): Promise<string | null> {
 
 export async function deleteAccount(
   confirmWord: string,
-): Promise<{ ok: false }> {
+): Promise<{ ok: false; code: "word" | "error" }> {
   const userId = await sessionUserId();
+  if (!userId) return { ok: false, code: "error" };
   if (
-    !userId ||
     typeof confirmWord !== "string" ||
     confirmWord.trim() !== cuenta.privacidad.palabra
   ) {
-    return { ok: false };
+    return { ok: false, code: "word" };
   }
-  const authDeleted = await deleteMyAccount(userId);
+  let authDeleted: boolean;
+  try {
+    authDeleted = await deleteMyAccount(userId);
+  } catch {
+    // Ingen persondata i loggar; kunden får ett vänligt fel (PrivacyPanel).
+    return { ok: false, code: "error" };
+  }
   if (authDeleted) {
     // Användaren och dess sessioner finns inte längre; rensa cookien lokalt.
     const supabase = await createSupabaseServerClient();
