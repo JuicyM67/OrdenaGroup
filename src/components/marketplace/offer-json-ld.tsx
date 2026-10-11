@@ -58,7 +58,7 @@ export function offerJsonLd(
     url: absoluteUrl(url),
     ...(offer.imageUrl
       ? {
-          image: offer.imageUrl.startsWith("https://")
+          image: /^https?:\/\//.test(offer.imageUrl)
             ? offer.imageUrl
             : absoluteUrl(offer.imageUrl),
         }

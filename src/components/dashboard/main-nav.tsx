@@ -30,6 +30,7 @@ import {
   LayoutGrid,
   LogOut,
   SlidersHorizontal,
+  Tag,
   Users,
   Zap,
   type LucideIcon,
@@ -45,11 +46,19 @@ import {
   NavRailSpacer,
 } from "@/components/ui/nav-rail";
 import { useNavCollapsed } from "@/components/ui/use-nav-collapsed";
+import { marketplaceEnabled } from "@/config/marketplace";
 import { appHref } from "@/config/routes";
-import { nav } from "@/i18n";
+import { nav, ofertas } from "@/i18n";
 
 export type MainNavKey =
-  "inicio" | "agenda" | "hoy" | "clientes" | "horasFlash" | "caja" | "ajustes";
+  | "inicio"
+  | "agenda"
+  | "hoy"
+  | "clientes"
+  | "horasFlash"
+  | "ofertas"
+  | "caja"
+  | "ajustes";
 
 export const DEFAULT_MAIN_NAV_HREFS: Record<MainNavKey, string> = {
   inicio: appHref("appInicio"),
@@ -57,6 +66,7 @@ export const DEFAULT_MAIN_NAV_HREFS: Record<MainNavKey, string> = {
   hoy: appHref("appHoy"),
   clientes: appHref("appClientes"),
   horasFlash: appHref("appFlash"),
+  ofertas: appHref("appOfertas"),
   caja: appHref("appCaja"),
   ajustes: appHref("appAjustes"),
 };
@@ -70,6 +80,8 @@ const VISIBLE_KEYS: readonly MainNavKey[] = [
   "hoy",
   "clientes",
   "horasFlash",
+  // WP-70 (D-056): bara där marknadsplatsen finns (SE, D-055).
+  ...(marketplaceEnabled() ? (["ofertas"] as const) : []),
   "caja",
   "ajustes",
 ];
@@ -80,6 +92,7 @@ const ITEMS: { key: MainNavKey; label: string; icon: LucideIcon }[] = [
   { key: "hoy", label: nav.hoy, icon: Clock },
   { key: "clientes", label: nav.clientes, icon: Users },
   { key: "horasFlash", label: nav.horasFlash, icon: Zap },
+  { key: "ofertas", label: ofertas.nav, icon: Tag },
   { key: "caja", label: nav.caja, icon: BarChart3 },
   { key: "ajustes", label: nav.ajustes, icon: SlidersHorizontal },
 ];
