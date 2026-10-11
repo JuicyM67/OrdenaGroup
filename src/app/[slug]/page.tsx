@@ -17,7 +17,8 @@ import type {
 import type { BookingActionResult } from "@/components/booking/types";
 import { brand, market } from "@/config/brand";
 import { href } from "@/config/routes";
-import { planes, reserva, visita } from "@/i18n";
+import { marketplaceEnabled } from "@/config/marketplace";
+import { planes, reserva, vales, visita } from "@/i18n";
 import { isFavorite } from "@/server/accounts/account";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { findValidOfferIn, isOfferTokenShape } from "@/server/bookings/offer";
@@ -34,6 +35,12 @@ import {
 } from "@/server/reviews/public";
 import { withServiceTx } from "@/server/db/tx";
 import { systemClock } from "@/server/scheduling/clock";
+import { isUuid } from "@/server/accounts/account";
+import { loadBookableVoucherIn } from "@/server/vouchers";
+import {
+  voucherPageData,
+  voucherSelection,
+} from "@/server/vouchers/booking-page";
 
 import { createBooking, joinWaitlist } from "./actions";
 
@@ -111,27 +118,45 @@ export default async function ReservaPage({
   // WP-67 (D-054): inloggad kund med kundkonto → förifyllt namn/e-post och
   // hjärtat (favorit). Utloggad: oförändrat flöde, ingen extra fråga.
   const accountPromise = optionalAccount();
-  const [data, offer, flash, reviews] = await withServiceTx(async (q) => {
-    const d = await loadReservaPageData(q, {
-      businessId: business.id,
-      slug,
-      now,
-    });
-    const o = offerToken
-      ? await findValidOfferIn(q, {
-          businessId: business.id,
-          token: offerToken,
-          now,
-        })
-      : undefined;
-    const f = flashId
-      ? (await loadActiveFlashSlotsIn(q, business.id, now)).find(
-          (x) => x.id === flashId,
-        )
-      : undefined;
-    const r = await loadPublicReviewsIn(q, business.id, reviewsLimit);
-    return [d, o, f, r] as const;
-  });
+  // WP-69 (D-057): `?vardebevis=<id>` — boka med ett köpt värdebevis. Bara för
+  // den inloggade köparen (annars sidan som vanligt), servervalidering här och
+  // igen i bokningens transaktion.
+  const rawVoucher = readParam(sp, "vardebevis");
+  const voucherAccount =
+    marketplaceEnabled() && isUuid(rawVoucher) ? await accountPromise : null;
+  const [rawData, offer, flash, reviews, voucher] = await withServiceTx(
+    async (q) => {
+      const d = await loadReservaPageData(q, {
+        businessId: business.id,
+        slug,
+        now,
+      });
+      const o = offerToken
+        ? await findValidOfferIn(q, {
+            businessId: business.id,
+            token: offerToken,
+            now,
+          })
+        : undefined;
+      const f = flashId
+        ? (await loadActiveFlashSlotsIn(q, business.id, now)).find(
+            (x) => x.id === flashId,
+          )
+        : undefined;
+      const r = await loadPublicReviewsIn(q, business.id, reviewsLimit);
+      const v =
+        voucherAccount && isUuid(rawVoucher)
+          ? await loadBookableVoucherIn(q, {
+              userId: voucherAccount.userId,
+              voucherId: rawVoucher,
+              businessId: business.id,
+              now,
+            })
+          : undefined;
+      return [d, o, f, r, v] as const;
+    },
+  );
+  const data = rawData && voucher ? voucherPageData(rawData, voucher) : rawData;
   // Bara en skyddsnät mot en race (företaget togs bort mellan de två
   // frågorna ovan) — `resolveBusinessBySlug` hittade det just innan.
   if (!data) notFound();
@@ -148,8 +173,25 @@ export default async function ReservaPage({
     />
   ) : null;
 
-  const boundOfferToken = offer ? offerToken : undefined;
-  const initialSelection = flash ? flashSelection(data, flash) : undefined;
+  const boundOfferToken = offer && !voucher ? offerToken : undefined;
+  const boundVoucher =
+    voucher && voucherAccount
+      ? { id: voucher.id, userId: voucherAccount.userId }
+      : undefined;
+  const initialSelection = voucher
+    ? voucherSelection(data, voucher.serviceId)
+    : flash
+      ? flashSelection(data, flash)
+      : undefined;
+  const voucherNotice = voucher ? (
+    <p
+      role="note"
+      className="flex flex-col gap-0.5 self-start rounded-control bg-lime px-3 py-2 text-13 font-semibold text-ink"
+    >
+      <span>{vales.reserva.aviso({ codigo: voucher.code })}</span>
+      <span className="font-normal">{vales.reserva.avisoTexto}</span>
+    </p>
+  ) : undefined;
   const offerNotice = offer ? (
     <p
       role="note"
@@ -180,7 +222,11 @@ export default async function ReservaPage({
     "use server";
     // WP-31: token binds här på servern (krypterad closure-variabel), bara
     // när sidan själv godkände den — aldrig ur klientens formulär.
-    return createBooking(slug, input, { offerToken: boundOfferToken });
+    // WP-69: värdebeviset (id + köparens id) binds likadant, aldrig ur formuläret.
+    return createBooking(slug, input, {
+      offerToken: boundOfferToken,
+      voucher: boundVoucher,
+    });
   }
 
   async function submitWaitlist(
@@ -259,7 +305,7 @@ export default async function ReservaPage({
       <BookingScreen
         profileContent={profileContent}
         tour={isDemo}
-        offerNotice={pagoNotice ?? offerNotice}
+        offerNotice={voucherNotice ?? pagoNotice ?? offerNotice}
         data={data}
         initialSelection={initialSelection}
         submitBooking={submitBooking}

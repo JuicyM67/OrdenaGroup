@@ -22,6 +22,7 @@ import { pgErrorCode } from "@/server/db/errors";
 import { runGeocodeSweep } from "@/server/geocoding";
 import { processOutbox } from "@/server/messaging/outbox";
 import { runStripeSweep } from "@/server/payments/stripe/reconcile";
+import { runVoucherSweep } from "@/server/vouchers";
 import { queueReviewRequests } from "@/server/reviews/requests";
 import { systemClock } from "@/server/scheduling/clock";
 import { expireWaitlistOffers } from "@/server/waitlist";
@@ -91,6 +92,16 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
+  // WP-69 (D-057): värdebevis — öppna köp som webhooken missat, utgångna
+  // värdebevis och genomförda besök. Före utkorgen (kvittomejlen köas här).
+  let vouchers = { orders: 0, expired: 0, redeemed: 0 };
+  try {
+    vouchers = await runVoucherSweep(systemClock());
+  } catch (e) {
+    console.error("outbox: runVoucherSweep misslyckades", {
+      code: pgErrorCode(e) ?? "unknown",
+    });
+  }
   // WP-65 (D-045): recensionsförfrågningar för bokningar som slutade för
   // 2 h–3 dygn sedan — köas före utkorgen töms, samma felhantering.
   let reviewRequests = 0;
@@ -119,6 +130,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     waitlistExpired,
     reviewRequests,
     stripe,
+    vouchers,
     geocoded,
     ...result,
   });
@@ -128,6 +140,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     waitlistExpired,
     reviewRequests,
     stripe,
+    vouchers,
     geocoded,
   });
 }

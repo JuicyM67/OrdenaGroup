@@ -85,7 +85,11 @@ export type CreateBookingActionResult =
 export async function createBooking(
   slug: string,
   input: unknown,
-  opts: { offerToken?: string | undefined } = {},
+  opts: {
+    offerToken?: string | undefined;
+    /** WP-69 (D-057): värdebeviset, bundet på servern (`page.tsx`). */
+    voucher?: { id: string; userId: string } | undefined;
+  } = {},
 ): Promise<CreateBookingActionResult> {
   const parsed = customerFormSchemaFor(market).safeParse(input);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
@@ -105,6 +109,14 @@ export async function createBooking(
   const business = await resolveBusinessBySlug(slug);
   if (!business) return { ok: false, code: "not_found" };
 
+  // WP-69: värdebeviset gäller bara för köparen som fortfarande är inloggad.
+  if (opts.voucher) {
+    const account = await optionalAccount();
+    if (account?.userId !== opts.voucher.userId) {
+      return { ok: false, code: "invalid_input" };
+    }
+  }
+
   const now = systemClock();
   const result = await createCustomerBooking({
     businessId: business.id,
@@ -119,6 +131,7 @@ export async function createBooking(
     // frågelista för tjänsten — klientens `answers` litas aldrig på.
     answers: parsed.data.answers,
     offerToken: opts.offerToken,
+    ...(opts.voucher ? { voucher: opts.voucher } : {}),
     now,
   });
   if (!result.ok) return { ok: false, code: result.error };
@@ -169,6 +182,14 @@ export async function createBooking(
   // WP-64 (D-044): betalning online. Servern avgör (företagets läge + att kontot
   // kan ta betalt); klientens `payOnline` räknas bara vid "Valfri". Belopp och
   // avgift räknas i `createCheckoutForBooking` ur bokningsraden, aldrig härifrån.
+  // WP-69 (D-057): betald med värdebevis — ingen onlinebetalning, ingen rabattrad.
+  if (opts.voucher) {
+    return {
+      ok: true,
+      manageToken:
+        result.value.manageToken !== "" ? result.value.manageToken : undefined,
+    };
+  }
   const mode = await withServiceTx((q) =>
     effectiveOnlinePayment(q, business.id),
   );
@@ -207,7 +228,11 @@ export async function createBooking(
   const manageTokenOrUndefined = manageToken !== "" ? manageToken : undefined;
   // WP-30: flashpriset syns redan på tiden (servern satte `priceClp` på
   // sloten) — ingen extra rabattrad i bekräftelsen.
-  if (discountClp > 0 && discountReason !== "flash") {
+  if (
+    discountClp > 0 &&
+    discountReason !== "flash" &&
+    discountReason !== "voucher"
+  ) {
     return {
       ok: true,
       memberDiscountMinor: discountClp,

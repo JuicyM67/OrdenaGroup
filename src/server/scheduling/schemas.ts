@@ -134,6 +134,10 @@ export const createBookingRequestSchema = z.strictObject({
   // WP-31 (F14): erbjudandelänkens klartext-token (`/{slug}?o=`). Bara en
   // önskan — `createIn` validerar den i transaktionen; ogiltig = ingen rabatt.
   offerToken: z.string().max(128).optional(),
+  // WP-69 (D-057): värdebeviset kunden bokar med. Binds på servern (sidan
+  // validerade det för den inloggade köparen); `createIn` validerar igen i
+  // transaktionen med radlås.
+  voucher: z.strictObject({ id: uuid, userId: uuid }).optional(),
 });
 
 /** Kundens flytt: bokningen identifieras bara med länkens token. */

@@ -23,11 +23,9 @@ export type RouteId =
 export type IndustriaId =
   "barberias" | "peluquerias" | "estetica" | "kinesiologia";
 
-/** Id interno de cada documento legal (`/legal/[doc]`, WP-26 paso 6), con el mismo
- * nombre que su slug CL (`LEGAL_DOCS_CL` en `src/i18n/legal/`): la ruta del sistema de
- * archivos (`src/app/(marketing)/legal/[doc]/`) usa siempre estos tres valores, igual
- * que `/para/[industria]` usa siempre el id CL de `IndustriaId`. */
-export type LegalDocId = "privacidad" | "terminos" | "encargo";
+import { hrefLegal, SE_LEGAL_SLUGS, type LegalDocId } from "./legal-routes";
+
+export { hrefLegal, type LegalDocId };
 
 /** CL-sökvägen: exakt filsystemsrutten under `(marketing)/`, oavsett marknad. */
 const CL_ROUTES: Record<RouteId, string> = {
@@ -58,27 +56,12 @@ const ROUTES_BY_MARKET: Record<Market, Record<RouteId, string>> = {
   SE: SE_ROUTES,
 };
 
-/** Svensk slug per dokument-id, för `/legal/<slug>` (CL fortsätter använda `/legal/<id>`).
- * Samma strängar som nycklarna i `LEGAL_DOCS_SE` (`src/i18n/legal/index.ts`) — de råkar
- * sammanfalla, men den här listan är den enda källan för routingen. */
-const SE_LEGAL_SLUGS: Record<LegalDocId, string> = {
-  privacidad: "integritet",
-  terminos: "villkor",
-  encargo: "bitradesavtal",
-};
-
 /** Länk till en av de delade marknadssidorna, i den här installationens marknad.
  * `hash` läggs på utan `#` (t.ex. `href("funcionalidades", "agenda")` → `/funktioner#agenda`
  * på SE, `/funcionalidades#agenda` på CL). */
 export function href(id: RouteId, hash?: string): string {
   const path = ROUTES_BY_MARKET[market][id];
   return hash ? `${path}#${anchor(hash)}` : path;
-}
-
-/** Länk till en policysida (`/legal/[doc]`), i den här installationens marknad. */
-export function hrefLegal(id: LegalDocId): string {
-  if (market === "SE") return `/legal/${SE_LEGAL_SLUGS[id]}`;
-  return `/legal/${id}`;
 }
 
 /** Alla dokument-id:n med sin svenska slug, i en fast ordning — används av
@@ -508,6 +491,30 @@ export const CUENTA_INGRESAR_PATHS: readonly [string, string] = [
   SE_CUENTA_ROUTES.cuentaIngresar,
 ];
 
+// WP-69 (D-057): värdebevisens sidor (kontot och kassan). Egen liten tabell, inte i
+// app-/kontotabellerna ovan, så att sökvägarna inte följer med tabellerna in i
+// bokningssidans klientbunt (D-039). Rewrites/redirects som övriga.
+export type ValesRouteId = "cuenta" | "caja";
+const CL_VALES: Record<ValesRouteId, string> = {
+  cuenta: "/cuenta/vales",
+  caja: "/app/caja/vales",
+};
+const SE_VALES: Record<ValesRouteId, string> = {
+  cuenta: "/konto/vardebevis",
+  caja: "/app/kassa/vardebevis",
+};
+
+export function valesHref(id: ValesRouteId): string {
+  return (market === "SE" ? SE_VALES : CL_VALES)[id];
+}
+
+function valesPairs(): { source: string; destination: string }[] {
+  return (["cuenta", "caja"] as const).map((id) => ({
+    source: SE_VALES[id],
+    destination: CL_VALES[id],
+  }));
+}
+
 function cuentaPairs(): { source: string; destination: string }[] {
   return (Object.keys(CL_CUENTA_ROUTES) as CuentaRouteId[]).map((id) => ({
     source: SE_CUENTA_ROUTES[id].replace("[id]", ":id"),
@@ -621,6 +628,7 @@ export function seRouteRewrites(): { source: string; destination: string }[] {
     ...appRutter,
     ...seMarketplacePairs(),
     ...cuentaPairs(),
+    ...valesPairs(),
   ];
 }
 
@@ -660,11 +668,13 @@ export function seRouteRedirects(): {
     destination: source,
     permanent: true as const,
   }));
-  const cuenta = cuentaPairs().map(({ source, destination }) => ({
-    source: destination,
-    destination: source,
-    permanent: true as const,
-  }));
+  const cuenta = [...cuentaPairs(), ...valesPairs()].map(
+    ({ source, destination }) => ({
+      source: destination,
+      destination: source,
+      permanent: true as const,
+    }),
+  );
   return [
     ...rutter,
     ...marknadsSidor,

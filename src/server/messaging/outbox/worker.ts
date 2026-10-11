@@ -8,9 +8,10 @@ import {
   formatDate,
   formatLocalDate,
   formatTime,
+  parseTimeZone,
   type LocalDate,
 } from "@/lib/format/dates";
-import { formatMoney } from "@/lib/format/money";
+import { formatMoney, formatMoneyIn } from "@/lib/format/money";
 import { formatPhone, type E164 } from "@/lib/format/phone";
 import type {
   AnswerValue,
@@ -27,6 +28,7 @@ import {
   type SmsTemplateName,
 } from "@/server/messaging/sms";
 import { reserveSmsQuotaIn } from "@/server/plans/entitlements";
+import { formatVoucherDate } from "@/server/vouchers/rules";
 
 import { isOwnerMobile } from "./enqueue";
 import { OutboxSendError } from "./errors";
@@ -1359,6 +1361,66 @@ async function processMemberWelcomeRow(
   return "sent";
 }
 
+/** WP-69 (D-057): `valeComprado` — kvittot till köparen (kundkonto, ingen
+ * bokning). Adressen slås upp vid sändningen (`private.voucher_buyer_email`,
+ * ingen adress i kön, D-029); koden läses ur `vouchers`. */
+async function processVoucherRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const voucherId =
+    typeof row.payload.voucherId === "string" ? row.payload.voucherId : "";
+  if (!voucherId) throw new OutboxSendError("invalid_payload");
+  const ctx = await withServiceTx(async (q) => {
+    const r = await q.query<{
+      email: string | null;
+      code: string;
+      title: string;
+      price_minor: number;
+      currency: string;
+      expires_at: Date;
+      status: string;
+      negocio: string;
+      slug: string;
+      address: string | null;
+      timezone: string;
+    }>(
+      `select private.voucher_buyer_email(v.id) as email, v.code, v.title,
+              v.price_minor, v.currency, v.expires_at, v.status,
+              b.name as negocio, b.slug, b.address, b.timezone
+         from public.vouchers v
+         join public.businesses b on b.id = v.business_id
+        where v.business_id = $1 and v.id = $2`,
+      [row.businessId, voucherId],
+    );
+    return r.rows[0];
+  });
+  if (!ctx) throw new OutboxSendError("no_voucher");
+  if (!ctx.email || ctx.status === "refunded") {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const tz = parseTimeZone(ctx.timezone);
+  const r = await sendEmail({
+    to: ctx.email,
+    template: "valeComprado",
+    data: {
+      negocio: ctx.negocio,
+      titulo: ctx.title,
+      codigo: ctx.code,
+      valor: formatMoneyIn(
+        ctx.currency === "SEK" ? "SEK" : "CLP",
+        ctx.price_minor,
+      ),
+      validoHasta: formatVoucherDate(ctx.expires_at, tz.ok ? tz.value : APP_TZ),
+      direccion: ctx.address,
+      reservarUrl: `${appUrl()}/${ctx.slug}?vardebevis=${voucherId}`,
+    },
+    idempotencyKey: row.dedupeKey,
+  });
+  await finalizeSent(row, r.id);
+  return "sent";
+}
+
 /** WP-55: `mensajeLibre` — `payload.text` es el mensaje tal cual lo escribió
  * el dueño/staff (`sendCustomerMessage` ya lo validó, ≤ 320 caracteres); acá
  * solo se antepone `negocio` como remitente (`sms.mensajeLibre`). */
@@ -1566,6 +1628,9 @@ async function processRow(
   try {
     if (row.template === "smsCuota80" || row.template === "smsAgotados") {
       return await processSmsNoticeRow(row);
+    }
+    if (row.template === "valeComprado") {
+      return await processVoucherRow(row);
     }
     if (row.template === "bienvenidaMiembro") {
       return await processMemberWelcomeRow(row);

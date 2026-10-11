@@ -37,8 +37,9 @@ import { smsCreditos } from "./sv-SE.sms-creditos";
 import { visita } from "./sv-SE.visita";
 import { cuenta } from "./sv-SE.cuenta";
 import { ofertas } from "./sv-SE.ofertas";
+import { vales } from "./sv-SE.vales";
 
-export { cuenta, descubre, ofertas, smsCreditos, visita };
+export { cuenta, descubre, ofertas, smsCreditos, vales, visita };
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för
  * literaler, och med stöd för readonly-listor (CAJA_METODOS_MANUALES,
@@ -1351,6 +1352,22 @@ export const email: Widen<typeof Es.email> = {
     ayuda:
       "När de är slut fortsätter påminnelserna från dina sms-krediter. Har du inga krediter skickas de som e-post i stället.",
     cta: "Fyll på sms",
+  },
+  valeComprado: {
+    asunto: (p: { titulo: string }): string => `Ditt värdebevis: ${p.titulo}`,
+    preheader: (p: { negocio: string }): string =>
+      `Din kod hos ${p.negocio} och hur du bokar.`,
+    titulo: "Ditt värdebevis är klart",
+    texto: (p: { negocio: string }): string =>
+      `Tack för ditt köp. Det är ${p.negocio} som säljer värdebeviset och som har fått betalningen. Boka din tid när du vill, före sista giltighetsdag.`,
+    arrepentimiento:
+      "Du har 14 dagars ångerrätt. Ångra köpet under Mina värdebevis i ditt konto, så länge värdebeviset inte är använt.",
+    codigo: "Kod",
+    servicio: "Behandling",
+    valor: "Värde",
+    validoHasta: "Giltigt till",
+    vendidoPor: "Säljs av",
+    cta: "Välj tid",
   },
   smsAgotados: {
     asunto: "Dina sms är slut — påminnelser går nu som e-post",
@@ -3286,5 +3303,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   descubre,
   cuenta,
   ofertas,
+  vales,
 };
 void _check;

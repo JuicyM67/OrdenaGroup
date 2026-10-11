@@ -18,3 +18,12 @@ Samlade från säkerhetsgranskningen av WP-03 (2026-09-27). Texterna finns i `sr
 11. **Väntelistan:** är aviseringen transaktionell eller marknadsföring? Hur länge får en anmälan sparas?
 12. **Anteckningar och ansvar:** om ett företag i vårdnära bransch ändå skriver hälsouppgifter i kundanteckningar, vilket ansvar har plattformen som biträde? Räcker hjälptexten, eller behövs ett förbud i villkoren/biträdesavtalet?
 13. **Sen betalning:** plattformen visar "{negocio} te devolverá el abono" men betalar inte själv. Krävs mer av plattformen (påminnelse till företaget, tidsfrist)?
+
+## Värdebevis i marknadsplatsen (WP-69, D-057, bara SE) — före skarp lansering
+
+14. **Giltighetstid:** räcker 12 månader (sista dagen 23:59 i företagets tidszon)? Får företaget behålla värdet efter utgång?
+15. **Ångerrätt (lag 2005:59):** "Ångra köp" ger full återbetalning t.o.m. dag 14 efter köpet om värdebeviset inte är använt. Förloras ångerrätten om behandlingen genomförs inom 14 dagar utan uttryckligt samtycke före start — behövs en ruta vid bokning med värdebevis?
+16. **No-show med värdebevis:** räknas som inlöst (som no-show behåller betalningen, D-044). Skäligt?
+17. **Moms och kvitto:** enfunktionsvoucher (moms vid försäljning hos företaget), kassaregisterkrav för onlineförsäljning, moms på plattformens avgift (1 %).
+18. **Marknadsplatsens ansvar:** räcker "Säljs av {företag}" + direct charge (företaget är säljare, pengarna går till företaget) för att plattformen inte ska ses som säljare? Vad händer om företaget stänger med oinlösta värdebevis?
+19. **Radering av ett företag med värdebevis:** raderingen blockeras så länge det finns oanvända värdebevis (de måste återbetalas först). När företaget raderas försvinner också köpen (`voucher_orders`) och värdebevisen ur vår databas. Behöver plattformen bevara köpunderlaget (bokföringsplikt 7 år, eller som underlag vid tvist) trots att företaget är säljaren — och i så fall avidentifierat eller med köparens konto-id?

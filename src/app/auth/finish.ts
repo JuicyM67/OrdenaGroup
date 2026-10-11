@@ -12,7 +12,9 @@ import { redirect } from "next/navigation";
 import { cuentaHref } from "@/config/routes";
 import {
   ACCOUNT_MARKETING_COOKIE,
+  ACCOUNT_RETURN_COOKIE,
   AUTH_INTENT_COOKIE,
+  parseAccountReturn,
   parseAuthIntent,
   type AuthIntent,
 } from "@/lib/supabase/intent";
@@ -21,13 +23,16 @@ import { ensureAccountAndLink } from "@/server/accounts/account";
 async function takeIntent(): Promise<{
   intent: AuthIntent;
   marketing: boolean;
+  returnTo: string | null;
 }> {
   const store = await cookies();
   const intent = parseAuthIntent(store.get(AUTH_INTENT_COOKIE)?.value);
   const marketing = store.get(ACCOUNT_MARKETING_COOKIE)?.value === "1";
+  const returnTo = parseAccountReturn(store.get(ACCOUNT_RETURN_COOKIE)?.value);
   store.delete(AUTH_INTENT_COOKIE);
   store.delete(ACCOUNT_MARKETING_COOKIE);
-  return { intent, marketing };
+  store.delete(ACCOUNT_RETURN_COOKIE);
+  return { intent, marketing, returnTo };
 }
 
 function metadataName(
@@ -42,7 +47,7 @@ function metadataName(
 /** Anropas efter en lyckad verifiering/kodväxling med SAMMA klient (den har
  * sessionen i minnet). Kastar alltid (redirect). */
 export async function finishSignIn(supabase: SupabaseClient): Promise<never> {
-  const { intent, marketing } = await takeIntent();
+  const { intent, marketing, returnTo } = await takeIntent();
   if (intent === "customer") {
     const {
       data: { user },
@@ -57,7 +62,8 @@ export async function finishSignIn(supabase: SupabaseClient): Promise<never> {
         // Kontot skapas igen vid nästa besök (`/cuenta` kräver det inte för
         // att visas); ingen persondata loggas.
       }
-      redirect(cuentaHref("cuenta"));
+      // WP-69: tillbaka till erbjudandet kunden ville köpa (whitelist).
+      redirect(returnTo ?? cuentaHref("cuenta"));
     }
   }
   redirect("/app");

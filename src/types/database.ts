@@ -2175,6 +2175,180 @@ export type Database = {
           },
         ];
       };
+      voucher_orders: {
+        Row: {
+          amount_minor: number;
+          attempts: number;
+          business_id: string;
+          created_at: string;
+          currency: string;
+          expires_at: string;
+          fee_minor: number;
+          id: string;
+          next_attempt_at: string;
+          offer_id: string;
+          paid_at: string | null;
+          payment_intent_id: string | null;
+          session_id: string | null;
+          status: string;
+          stripe_account_id: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          amount_minor: number;
+          attempts?: number;
+          business_id: string;
+          created_at?: string;
+          currency: string;
+          expires_at: string;
+          fee_minor: number;
+          id?: string;
+          next_attempt_at?: string;
+          offer_id: string;
+          paid_at?: string | null;
+          payment_intent_id?: string | null;
+          session_id?: string | null;
+          status?: string;
+          stripe_account_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          amount_minor?: number;
+          attempts?: number;
+          business_id?: string;
+          created_at?: string;
+          currency?: string;
+          expires_at?: string;
+          fee_minor?: number;
+          id?: string;
+          next_attempt_at?: string;
+          offer_id?: string;
+          paid_at?: string | null;
+          payment_intent_id?: string | null;
+          session_id?: string | null;
+          status?: string;
+          stripe_account_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "voucher_orders_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "voucher_orders_business_id_offer_id_fkey";
+            columns: ["business_id", "offer_id"];
+            isOneToOne: false;
+            referencedRelation: "offers";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      vouchers: {
+        Row: {
+          booking_id: string | null;
+          business_id: string;
+          code: string;
+          created_at: string;
+          currency: string;
+          expires_at: string;
+          id: string;
+          offer_id: string;
+          order_id: string;
+          price_minor: number;
+          purchased_at: string;
+          redeemed_at: string | null;
+          refunded_at: string | null;
+          service_id: string;
+          status: string;
+          title: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          booking_id?: string | null;
+          business_id: string;
+          code: string;
+          created_at?: string;
+          currency: string;
+          expires_at: string;
+          id?: string;
+          offer_id: string;
+          order_id: string;
+          price_minor: number;
+          purchased_at: string;
+          redeemed_at?: string | null;
+          refunded_at?: string | null;
+          service_id: string;
+          status?: string;
+          title: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          booking_id?: string | null;
+          business_id?: string;
+          code?: string;
+          created_at?: string;
+          currency?: string;
+          expires_at?: string;
+          id?: string;
+          offer_id?: string;
+          order_id?: string;
+          price_minor?: number;
+          purchased_at?: string;
+          redeemed_at?: string | null;
+          refunded_at?: string | null;
+          service_id?: string;
+          status?: string;
+          title?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "vouchers_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "vouchers_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "vouchers_business_id_offer_id_fkey";
+            columns: ["business_id", "offer_id"];
+            isOneToOne: false;
+            referencedRelation: "offers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "vouchers_business_id_order_id_fkey";
+            columns: ["business_id", "order_id"];
+            isOneToOne: false;
+            referencedRelation: "voucher_orders";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "vouchers_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
       waitlist_entries: {
         Row: {
           business_id: string;

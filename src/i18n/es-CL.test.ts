@@ -184,6 +184,8 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   /** WP-76 (D-053): `email.smsCuota80`/`smsAgotados`. */
   usado: 120,
   max: 150,
+  /** WP-69 (D-057): `email.valeComprado`. */
+  titulo: "Corte + barba",
 };
 
 function invocarGenerico(fn: unknown): unknown {
