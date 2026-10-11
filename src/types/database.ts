@@ -95,6 +95,80 @@ export type Database = {
           },
         ];
       };
+      billing_subscriptions: {
+        Row: {
+          business_id: string;
+          cancel_at_period_end: boolean;
+          card_brand: string | null;
+          card_last4: string | null;
+          created_at: string;
+          current_period_end: string | null;
+          grace_until: string | null;
+          open_checkout_expires_at: string | null;
+          open_checkout_session_id: string | null;
+          pending_plan: Database["public"]["Enums"]["business_plan"] | null;
+          plan: Database["public"]["Enums"]["business_plan"] | null;
+          price_lookup_key: string | null;
+          status: string | null;
+          stripe_customer_id: string;
+          stripe_subscription_id: string | null;
+          stripe_updated_at: string | null;
+          trial_end: string | null;
+          trial_used_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          business_id: string;
+          cancel_at_period_end?: boolean;
+          card_brand?: string | null;
+          card_last4?: string | null;
+          created_at?: string;
+          current_period_end?: string | null;
+          grace_until?: string | null;
+          open_checkout_expires_at?: string | null;
+          open_checkout_session_id?: string | null;
+          pending_plan?: Database["public"]["Enums"]["business_plan"] | null;
+          plan?: Database["public"]["Enums"]["business_plan"] | null;
+          price_lookup_key?: string | null;
+          status?: string | null;
+          stripe_customer_id: string;
+          stripe_subscription_id?: string | null;
+          stripe_updated_at?: string | null;
+          trial_end?: string | null;
+          trial_used_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          business_id?: string;
+          cancel_at_period_end?: boolean;
+          card_brand?: string | null;
+          card_last4?: string | null;
+          created_at?: string;
+          current_period_end?: string | null;
+          grace_until?: string | null;
+          open_checkout_expires_at?: string | null;
+          open_checkout_session_id?: string | null;
+          pending_plan?: Database["public"]["Enums"]["business_plan"] | null;
+          plan?: Database["public"]["Enums"]["business_plan"] | null;
+          price_lookup_key?: string | null;
+          status?: string | null;
+          stripe_customer_id?: string;
+          stripe_subscription_id?: string | null;
+          stripe_updated_at?: string | null;
+          trial_end?: string | null;
+          trial_used_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "billing_subscriptions_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: true;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       booking_answers: {
         Row: {
           booking_id: string;
