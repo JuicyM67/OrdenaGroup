@@ -145,3 +145,13 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 
 - 2026-10-11 (WP-67): Snabbtaggar i recensionen ("Trevligt bemötande", "Punktlig" … i `Recension.dc.html`) — finns inte i D-045, inte byggt. Dessutom: "Visas som Elin K.." (dubbel punkt när visningsnamnet slutar på initial-punkt, `resenas`-texten från WP-65).
 - 2026-10-11 (WP-67): Hjärtat (favorit) på `/[slug]` för utloggade besökare (länk till Skapa konto) — i v1 visas det bara för inloggade med kundkonto, så `/[slug]`-referenserna inte ändras.
+
+## Uppskjutet från WP-78 (abonnemang, 2026-10-11)
+- Årsbetalning (rabatt) för planerna.
+- Abonnemang i CL via Flow (D-027).
+- Samla sms-krediternas köp (D-053) på samma Stripe-kund som abonnemanget.
+- Rabattkoder/kuponger i Checkout.
+- Banner för misslyckad betalning på fler skärmar än Start och Plan-fliken (Agenda, Idag) — kräver att fler loaders läser `billing_subscriptions`.
+- Automatisk återbetalning när ett dubbelt abonnemang sägs upp (i v1 manuellt i Stripe).
+- "Återuppta" abonnemanget automatiskt när en begärd radering ångras.
+- Designreferens för Plan-flikens abonnemangsdel (`docs/design/reference/abonnemang/`) så att `npm run visual` kan jämföra.
