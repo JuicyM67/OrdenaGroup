@@ -27,8 +27,9 @@ describe("listOffersIn", () => {
           : "America/Santiago";
       const biz = (
         await c.query<{ id: string }>(
-          `insert into public.businesses (slug, name, comuna, category, timezone)
-           values ('wp68-s6-test', 'S6 Test', 'Providencia', 'peluqueria', $1)
+          // WP-70 (D-056): erbjudanden visas bara när planen har `offers`.
+          `insert into public.businesses (slug, name, comuna, category, timezone, plan)
+           values ('wp68-s6-test', 'S6 Test', 'Providencia', 'peluqueria', $1, 'equipo')
            returning id`,
           [tz],
         )

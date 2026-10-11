@@ -318,6 +318,7 @@ export type AppRouteId =
   | "appCaja"
   | "appCajaInformes"
   | "appFlash"
+  | "appOfertas"
   | "appAjustes"
   | "appAjustesNegocio"
   | "appAjustesPerfil"
@@ -370,6 +371,8 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appCaja: "/app/caja",
   appCajaInformes: "/app/caja/informes",
   appFlash: "/app/flash",
+  // WP-70 (D-056): erbjudanderedigeraren. Dold i CL (som marknadsplatsen, D-055).
+  appOfertas: "/app/ofertas",
   appAjustes: "/app/ajustes",
   appAjustesNegocio: "/app/ajustes/negocio",
   appAjustesPerfil: "/app/ajustes/perfil",
@@ -403,6 +406,7 @@ const SE_APP_ROUTES: Record<AppRouteId, string> = {
   appCaja: "/app/kassa",
   appCajaInformes: "/app/kassa/rapporter",
   appFlash: "/app/blixttider",
+  appOfertas: "/app/erbjudanden",
   appAjustes: "/app/installningar",
   appAjustesNegocio: "/app/installningar/foretag",
   appAjustesPerfil: "/app/installningar/profil",

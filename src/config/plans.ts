@@ -31,6 +31,8 @@ export type Feature =
   | "full_reports"
   /** Personalkonton med behörigheter (D-034). */
   | "staff_accounts"
+  /** Erbjudanden i marknadsplatsen (WP-70, D-056). */
+  | "offers"
   | "priority_support";
 
 export type LimitKind = "staff" | "services" | "sms";
@@ -46,6 +48,7 @@ const ALL_FEATURES: readonly Feature[] = [
   "campaigns",
   "full_reports",
   "staff_accounts",
+  "offers",
   "priority_support",
 ];
 
@@ -60,6 +63,7 @@ const FEATURES: Record<BusinessPlan, ReadonlySet<Feature>> = {
     "campaigns",
     "full_reports",
     "staff_accounts",
+    "offers",
   ]),
   local: new Set<Feature>(ALL_FEATURES),
   custom: new Set<Feature>(ALL_FEATURES),

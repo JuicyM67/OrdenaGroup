@@ -141,6 +141,10 @@ export function mapDbError(e: unknown): string {
   if (code === "23514" && constraint === "plan_limit_services") {
     return "plan_limit_services";
   }
+  // WP-70 (D-056): prisvakten — priset kan inte höjas under/efter ett erbjudande.
+  if (code === "23514" && constraint === "service_price_offer_lock") {
+    return "offers.service_price_locked";
+  }
   if (code === "42501") return "unauthorized";
   if (code === "23505" && constraint === "businesses_slug_key") {
     return "business.slug_taken";

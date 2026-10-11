@@ -132,6 +132,8 @@ const OFFER_BASE = `
    and (o.sale_ends_at is null or o.sale_ends_at > now())
    and (o.quantity_total is null or o.quantity_sold < o.quantity_total)
    and b.status = 'active' and b.deletion_requested_at is null
+   -- WP-70 (D-056): efter en nedgradering pausas erbjudandena (D-048), raderas inte.
+   and private.plan_has_feature(b.plan::text, 'offers')
    and b.timezone = $1
    and ($2::boolean or b.id::text not like 'de00000%')`;
 
