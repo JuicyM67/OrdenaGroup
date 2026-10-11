@@ -1,0 +1,2849 @@
+/**
+ * Texterna för företagets app och meddelandena (sv-SE), utbrutna ur
+ * `sv-SE.app.ts` för JS-budgeten på bokningssidan (`/[slug]`, D-039), på
+ * samma sätt som `es-CL.panel.ts`: bundlern kompilerar varje modul en gång
+ * med unionen av de exporter som någon klientkomponent använder, så allt i
+ * `sv-SE.app.ts` hamnade i `/[slug]`-bunten. Här ligger allt som
+ * bokningssidan inte använder på klienten; `sv-SE.app.ts` reexporterar det
+ * med samma namn. Samma regler som i `sv-SE.app.ts` (inget produktnamn,
+ * ingen import av `brand`).
+ */
+import {
+  acceso as accesoSv,
+  invitacionNegocio as invitacionNegocioSv,
+} from "./sv-SE.auth";
+
+import type * as Es from "./es-CL";
+import { CTA_BOKA, numeroEntero, type Widen } from "./sv-SE.compartido";
+
+// ---------------------------------------------------------------------------
+// nav
+// ---------------------------------------------------------------------------
+
+export const nav: Widen<typeof Es.nav> = {
+  principal: "Huvudmeny",
+  inicio: "Start",
+  hoy: "Idag",
+  agenda: "Kalender",
+  clientes: "Kunder",
+  horasFlash: "Blixttider",
+  cajaEInformes: "Kassa och rapporter",
+  caja: "Kassa",
+  ajustes: "Inställningar",
+  cerrarSesion: "Logga ut",
+  secciones: "Avsnitt",
+  volverAlInicio: "Tillbaka till start",
+  buscar: "Sök",
+  notificaciones: "Aviseringar",
+  notificacionesNuevas: (p: { n: number }): string =>
+    `${p.n} ${p.n === 1 ? "ny avisering" : "nya aviseringar"}`,
+  masOpciones: "Fler alternativ",
+  menuUsuario: (p: { nombre: string }): string => `Meny för ${p.nombre}`,
+};
+
+// ---------------------------------------------------------------------------
+// estados
+// ---------------------------------------------------------------------------
+
+export const estados: Widen<typeof Es.estados> = {
+  confirmada: "Bekräftad",
+  abonoPagado: "Förskott betalt",
+  pagada: "Betald",
+  sinConfirmar: "Obekräftad",
+  porConfirmar: "Väntar på bekräftelse",
+  confirmo: "Bekräftade",
+  confirmoPorWhatsapp: "Bekräftade via sms",
+  llego: "Kom",
+  noVino: "Kom inte",
+  cancelada: "Avbokad",
+  /** WP-56: chip för en bokning `cancel_requested` — kunden vill avboka och
+   * väntar på svar. */
+  cancelacionPendiente: "Avbokning begärd",
+  listaDeEspera: "Väntelista",
+  desdeLista: "Från väntelistan",
+  abono: "Förskott",
+  flash: "Blixt",
+  flashConDescuento: (p: { porcentaje: number }): string =>
+    `Blixt −${p.porcentaje}%`,
+  pendientePago: "Väntar på förskott",
+  /** WP-54: kund markerad som medlem med egen rabatt/förmån. */
+  socio: "Medlem",
+};
+
+// ---------------------------------------------------------------------------
+// calendario
+// ---------------------------------------------------------------------------
+
+export const calendario: Widen<typeof Es.calendario> = {
+  hoy: "Idag",
+  cerrado: "Stängt",
+  diaConReservas: (p: { fecha: string }): string => `${p.fecha}, har bokningar`,
+  vista: {
+    mes: "Månad",
+    semana: "Vecka",
+    dia: "Dag",
+  },
+  mesAnterior: "Föregående månad",
+  mesSiguiente: "Nästa månad",
+  semanaAnterior: "Föregående vecka",
+  semanaSiguiente: "Nästa vecka",
+  diaAnterior: "Föregående dag",
+  diaSiguiente: "Nästa dag",
+  zonaHoraria: (p: { offset: number }): string =>
+    `GMT${p.offset < 0 ? "−" : "+"}${Math.abs(p.offset)}`,
+};
+
+// ---------------------------------------------------------------------------
+// gestion
+// ---------------------------------------------------------------------------
+
+export const gestion: Widen<typeof Es.gestion> = {
+  titulo: "Din bokning",
+  campos: {
+    servicio: "Tjänst",
+    dia: "Dag",
+    hora: "Tid",
+    profesional: "Medarbetare",
+    negocio: "Företag",
+    direccion: "Adress",
+  },
+  ctaCambiarHora: "Ändra tid",
+  ctaCancelarReserva: "Avboka tiden",
+  pago: {
+    reservado:
+      "Beloppet är reserverat på ditt kort och dras när företaget bekräftar.",
+    pagado: "Betald online.",
+    reembolso: "Din betalning betalas tillbaka till ditt kort.",
+  },
+  pendienteAviso:
+    "Företaget har inte bekräftat den här tiden än. Vi meddelar dig så fort de gör det.",
+  cancelacionPendienteAviso: (p: { negocio: string }): string =>
+    `Din avbokning väntar på svar från ${p.negocio}. Vi meddelar dig så fort de svarar.`,
+  confirmarCancelacion: {
+    titulo: "Avboka tiden?",
+    cuerpo: "Vi meddelar företaget och släpper tiden till någon annan.",
+    cuerpoPendiente:
+      "Den här gången måste företaget godkänna din avbokning. Tiden gäller fortfarande tills de svarar.",
+    ctaSi: "Ja, avboka",
+    ctaNo: "Nej, behåll",
+  },
+  fueraDePlazo: (p: { horas: number; telefonoNegocio: string }): string =>
+    `Fristen på ${p.horas} h för att avboka eller ändra härifrån har gått ut. Skriv till ${p.telefonoNegocio} för andra alternativ.`,
+  yaCancelada: "Den här bokningen är redan avbokad.",
+  yaPaso: "Den här bokningen har redan varit.",
+  linkInvalido: "Den här länken är inte giltig.",
+  linkVencido: "Den här länken har gått ut.",
+  cambioConfirmado: "Klart, din tid är ändrad.",
+  cancelacionConfirmada: "Klart, din bokning är avbokad.",
+  ctaReservarOtraHora: "Boka en ny tid",
+};
+
+// ---------------------------------------------------------------------------
+// inicio
+// ---------------------------------------------------------------------------
+
+function heroDestacadoSv(p: { horas: string; monto: string }): string {
+  return `${p.horas} · ${p.monto}`;
+}
+
+export const inicio: Widen<typeof Es.inicio> = {
+  titulo: "Start",
+  resumenSemanaAria: "Veckans sammanfattning",
+  calendarioAria: "Kalender",
+  metaRow: (p: { fecha: string; negocio: string; comuna: string }): string =>
+    `${p.fecha} · ${p.negocio}, ${p.comuna}`,
+  hola: (p: { nombre: string }): string => `Hej, ${p.nombre}`,
+  hero: {
+    titulo: "Din kalender fyllde sig själv den här veckan",
+    tituloVacio: "Den här veckan har du inte fyllt några tider än",
+    horas: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "timme" : "timmar"}`,
+    destacado: heroDestacadoSv,
+    resumen: (p: { horas: string; monto: string }): string =>
+      `Du fyllde ${heroDestacadoSv(p)} med väntelistan och blixttiderna.`,
+    resumenVacio:
+      "Aktivera väntelistan och blixttider för att börja fylla lediga tider.",
+    verDetalle: "SE DETALJER",
+  },
+  features: {
+    listaEspera: {
+      titulo: "Väntelista",
+      resumen: (p: { n: number; dia: string }): string =>
+        `${p.n} ${p.n === 1 ? "person" : "personer"} · ${p.dia}`,
+    },
+    horasFlash: {
+      titulo: "Blixttider",
+      resumen: (p: { activas: number; reservadas: number }): string =>
+        `${p.activas} ${p.activas === 1 ? "aktiv" : "aktiva"} · ${p.reservadas} ${p.reservadas === 1 ? "bokad" : "bokade"}`,
+    },
+    teEchamosDeMenos: {
+      titulo: "Vi saknar dig",
+      resumen: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "kund" : "kunder"} har inte kommit tillbaka`,
+      enviarRecordatorio: "Skicka påminnelse",
+    },
+  },
+  stats: {
+    reservasHoy: (p: { n: number }): string =>
+      `Bokningar idag · ${p.n} att bekräfta`,
+    ingresosSemana: "Intäkter den här veckan",
+    inasistencias: "Uteblivna besök · senaste 30 dagarna",
+    tendencia: {
+      bajando: "minskar",
+      subiendo: "ökar",
+      igual: "oförändrat",
+    },
+  },
+  agendaHoy: {
+    titulo: "Dagens schema",
+    verAgenda: "Se kalendern",
+    fila: (p: { servicio: string; profesional: string }): string =>
+      `${p.servicio} · med ${p.profesional}`,
+    vacio: "Du har inga bokningar idag än.",
+    verEnAgenda: "Visa i kalendern",
+  },
+  proximasReservas: {
+    titulo: "Kommande bokningar",
+    verAgenda: "Se i kalendern",
+    vacio: "Du har inga kommande bokningar.",
+    fechaHora: (p: { fecha: string; hora: string }): string =>
+      `${p.fecha} · ${p.hora}`,
+  },
+  solicitudes: {
+    titulo: "Förfrågningar att bekräfta",
+  },
+  flashCard: {
+    titulo: "Aktiv blixttid",
+    vacio: "Du har ingen aktiv blixttid än.",
+    compartir: "Dela blixttid",
+    detalle: (p: { servicio: string; profesional: string }): string =>
+      `${p.servicio} med ${p.profesional}`,
+    fechaHoraDescuento: (p: {
+      fecha: string;
+      hora: string;
+      porcentaje: number;
+    }): string => `${p.fecha} · ${p.hora} · −${p.porcentaje}%`,
+  },
+  tuLink: {
+    titulo: "Din bokningslänk",
+    ayuda: "Klistra in den på Instagram och dela den via sms.",
+    copiar: "Kopiera länk",
+    copiado: "Länk kopierad",
+    compartirWhatsapp: "Dela länken",
+    mensajeWhatsapp: (p: { negocio: string; url: string }): string =>
+      `Hej, du kan boka tid hos ${p.negocio} här: ${p.url}`,
+    abrir: "Se min bokningssida",
+    errorCopiar: "Vi kunde inte kopiera länken. Kopiera den manuellt.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// agenda
+// ---------------------------------------------------------------------------
+
+const NOTAS_AYUDA_SV =
+  "Bara du och dina administratörer ser dem, och kunden kan be om en kopia av sina uppgifter. Skriv inte in hälsouppgifter eller annan känslig information.";
+
+const AGREGA_EQUIPO_VACIO_SV =
+  "Lägg till dem som tar emot kunder. Jobbar du själv, lägg till dig själv.";
+
+const AGREGAR_PROFESIONAL_SV = "Lägg till medarbetare";
+
+const FILTRO_EQUIPO_SV = {
+  misReservas: "Mina bokningar",
+  todoElEquipo: "Hela personalen",
+} as const;
+
+export const agenda: Widen<typeof Es.agenda> = {
+  calendarioMensualAria: "Månadskalender",
+  filtroEquipo: FILTRO_EQUIPO_SV,
+  panel: {
+    profesionales: "Medarbetare",
+    reservasCount: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "bokning" : "bokningar"}`,
+    mostrarAria: "Visa i kalendern",
+    mostrar: "Visa",
+    horasFlash: "Blixttider",
+    desdeListaDeEspera: "Från väntelistan",
+    bloqueosYAlmuerzo: "Blockeringar och lunch",
+    esperanEl: (p: { n: number; dia: string }): string =>
+      `${p.n} ${p.n === 1 ? "person väntar" : "personer väntar"} den ${p.dia}`,
+    avisoWhatsapp: "Meddelas bara via sms",
+    minimoUnProfesional: "Du måste lämna minst en medarbetare synlig.",
+    listaEsperaEstado: {
+      waiting: "Väntar",
+      offered: "Erbjudande skickat",
+    },
+    quitarDeLaLista: (p: { nombre: string }): string =>
+      `Ta bort ${p.nombre} från väntelistan`,
+    horaFlashDisponibleAria: (p: {
+      hora: string;
+      porcentaje: number;
+    }): string => `Blixttid tillgänglig kl. ${p.hora}, −${p.porcentaje}%`,
+  },
+  nuevaReserva: "Ny bokning",
+  celdaVacia: {
+    menuAria: "Skapa vid den här tiden",
+    nuevaReserva: "Ny bokning",
+    horaFlash: "Blixttid",
+  },
+  agregarProfesional: AGREGAR_PROFESIONAL_SV,
+  verAgendaDe: (p: { nombre: string }): string => `Se ${p.nombre}s kalender`,
+  vistaAria: "Vy",
+  semana: (p: { desde: string; hasta: string }): string =>
+    `Vecka från ${p.desde} till ${p.hasta}`,
+  mes: {
+    rejillaAria: "Månadsöversikt",
+    celdaConReservasAria: (p: { fecha: string; n: number }): string =>
+      `${p.fecha}, ${p.n} ${p.n === 1 ? "bokning" : "bokningar"}`,
+    celdaSinReservasAria: (p: { fecha: string }): string =>
+      `${p.fecha}, inga bokningar`,
+    celdaCerradaAria: (p: { fecha: string }): string => `${p.fecha}, stängt`,
+    lleno: "Fullt",
+    celdaLlenaAria: (p: { fecha: string }): string => `${p.fecha}, fullt`,
+    verMesAria: "Visa månaden",
+    verDiaAria: "Visa dagen",
+  },
+  bloqueo: {
+    almuerzo: "Lunch",
+    bloqueado: "blockerad",
+  },
+  bloque: {
+    meta: (p: { hora: string; servicio: string }): string =>
+      `${p.hora} · ${p.servicio}`,
+    aria: (p: {
+      cliente: string;
+      servicio: string;
+      hora: string;
+      profesional: string;
+    }): string => `${p.cliente}, ${p.servicio}, ${p.hora} med ${p.profesional}`,
+  },
+  diaCerrado: "Stängt",
+  columnaVacia: "Inga bokningar under den här tiden.",
+  popover: {
+    titulo: "Bokningsdetaljer",
+    conProfesional: (p: { profesional: string }): string =>
+      `med ${p.profesional}`,
+    telefonoYVisita: (p: { telefono: string; visita: string }): string =>
+      `${p.telefono} · ${p.visita}`,
+    fechaYRango: (p: { fecha: string; rango: string }): string =>
+      `${p.fecha} · ${p.rango}`,
+    pagoLinea: (p: { precio: string; monto: string }): string =>
+      `${p.precio} · förskott ${p.monto} betalt`,
+    acciones: {
+      llego: "Kom",
+      noVino: "Kom inte",
+      mover: "Flytta",
+    },
+    cerrar: "Stäng",
+  },
+  mover: {
+    titulo: "Flytta bokning",
+    elegirNuevaHora: "Välj ny tid",
+  },
+  manual: {
+    tituloNueva: "Ny bokning",
+    campos: {
+      servicio: "Tjänst",
+      profesional: "Medarbetare",
+      cliente: "Kund",
+      telefono: "Mobilnummer",
+      dia: "Dag",
+      hora: "Tid",
+      notas: "Anteckningar (valfritt)",
+    },
+    notasAyuda: NOTAS_AYUDA_SV,
+    ctaGuardar: "Spara bokning",
+  },
+  confirmarAviso: {
+    mover: {
+      titulo: "Flytta den här bokningen?",
+      cuerpo: "Kunden meddelas via sms med den nya tiden.",
+      ctaSi: "Ja, flytta",
+      ctaNo: "Nej, behåll",
+    },
+    cancelar: {
+      titulo: "Avboka den här bokningen?",
+      cuerpo: "Kunden meddelas via sms.",
+      ctaSi: "Ja, avboka",
+      ctaNo: "Nej, behåll",
+    },
+  },
+  toast: {
+    llego: "Markerad som Kom.",
+    noVino: "Markerad som Kom inte.",
+    movida: "Bokning flyttad.",
+    cancelada: "Bokning avbokad.",
+    deshacer: "Ångra",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// hoy
+// ---------------------------------------------------------------------------
+
+export const hoy: Widen<typeof Es.hoy> = {
+  titulo: "Idag",
+  filtroEquipo: FILTRO_EQUIPO_SV,
+  proximaReserva: "Nästa bokning",
+  siguiente: (p: { relativo: string }): string => `Nästa · ${p.relativo}`,
+  relativo: {
+    ahora: "nu",
+    enMin: (p: { n: number }): string => `om ${p.n} min`,
+    enHoras: (p: { h: number; m: number }): string =>
+      p.m === 0 ? `om ${p.h} h` : `om ${p.h} h ${p.m} min`,
+    atrasado: (p: { n: number }): string => `${p.n} min försenad`,
+  },
+  sinProximaReserva: "Du har inga fler kunder inbokade idag.",
+  detalleCliente: (p: {
+    servicio: string;
+    profesional: string;
+    visita: string;
+  }): string => `${p.servicio} · med ${p.profesional} · ${p.visita}`,
+  acciones: {
+    llego: "Kom",
+    noVino: "Kom inte",
+  },
+  accionesRapidas: {
+    crearHoraFlash: "Skapa blixttid",
+    listaEspera: (p: { n: number }): string => `Väntelista · ${p.n}`,
+    cobrar: "Ta betalt",
+  },
+  restoDia: {
+    titulo: "Resten av dagen",
+    resumen: (p: { n: number; monto: string }): string =>
+      `${p.n} ${p.n === 1 ? "bokning" : "bokningar"} · ${p.monto}`,
+    detalle: (p: { servicio: string; profesional: string }): string =>
+      `${p.servicio} · ${p.profesional}`,
+    vacio: "Du har inga fler bokningar idag.",
+    diaCerrado: "Stängt idag.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Interfaces/tipos: mismos que es-CL (contrato con integrations-engineer).
+// ---------------------------------------------------------------------------
+
+export type { VariablePlantilla, BotonPlantilla, Plantilla } from "./es-CL";
+
+// ---------------------------------------------------------------------------
+// plantillasWhatsapp: sex "mallar", omskrivna som sms utan knappar (D-028:
+// SE har ingen WhatsApp-kanal, bara sms/e-post). Samma form som es-CL
+// (samma sex nycklar, samma fält per mall), men `botones` är alltid tom och
+// texten nämner aldrig "WhatsApp".
+// ---------------------------------------------------------------------------
+
+export const plantillasWhatsapp = {
+  reservaConfirmada: {
+    nombre: "bokning_bekraftad",
+    categoria: "UTILITY",
+    idioma: "sv",
+    body: "Din tid hos {{1}} är bekräftad, {{2}}: {{3}} den {{4}} kl. {{5}} med {{6}}. Du kan avboka utan kostnad fram till {{7}} h innan.",
+    variables: [
+      {
+        numero: 1,
+        significado: "Företagets namn",
+        ejemplo: "Salong Nord",
+        fuente: "businesses.name",
+      },
+      {
+        numero: 2,
+        significado: "Kundens namn",
+        ejemplo: "Erik",
+        fuente: "första ordet i customers.name",
+      },
+      {
+        numero: 3,
+        significado: "Tjänst",
+        ejemplo: "Klippning + skägg",
+        fuente: "services.name",
+      },
+      {
+        numero: 4,
+        significado: "Datum, utskrivet och inte relativt",
+        ejemplo: "fredag 2 oktober",
+        fuente: "bookings.period, formaterat",
+      },
+      {
+        numero: 5,
+        significado: "Tid",
+        ejemplo: "15:00",
+        fuente: "bookings.period, formaterat",
+      },
+      {
+        numero: 6,
+        significado: "Medarbetare",
+        ejemplo: "Diana",
+        fuente: "staff.name",
+      },
+      {
+        numero: 7,
+        significado: "Antal timmar i avbokningsfristen",
+        ejemplo: "4",
+        fuente: "businesses.cancel_window_hours",
+      },
+    ],
+    footer: null,
+    botones: [],
+    nota: "Utility: bekräftar en bokning som kunden själv precis gjorde. Ingen marknadsföring, bara bokningsdetaljer.",
+  },
+  recordatorio24h: {
+    nombre: "paminnelse_24h",
+    categoria: "UTILITY",
+    idioma: "sv",
+    body: "Påminnelse från {{1}}, {{2}}: din tid för {{3}} är den {{4}} kl. {{5}}. Svara Bekräfta eller Ändra.",
+    variables: [
+      {
+        numero: 1,
+        significado: "Företagets namn",
+        ejemplo: "Salong Nord",
+        fuente: "businesses.name",
+      },
+      {
+        numero: 2,
+        significado: "Kundens namn",
+        ejemplo: "Erik",
+        fuente: "första ordet i customers.name",
+      },
+      {
+        numero: 3,
+        significado: "Tjänst",
+        ejemplo: "Klippning + skägg",
+        fuente: "services.name",
+      },
+      {
+        numero: 4,
+        significado: "Datum, utskrivet",
+        ejemplo: "fredag 2 oktober",
+        fuente: "bookings.period, formaterat",
+      },
+      {
+        numero: 5,
+        significado: "Tid",
+        ejemplo: "15:00",
+        fuente: "bookings.period, formaterat",
+      },
+    ],
+    footer: null,
+    botones: [],
+    nota: "Utility: påminner om en redan bekräftad bokning, utan att erbjuda något nytt.",
+  },
+  reservaCancelada: {
+    nombre: "bokning_avbokad",
+    categoria: "UTILITY",
+    idioma: "sv",
+    body: "Din tid hos {{1}} avbokades, {{2}}: den var den {{3}} kl. {{4}}. Du kan boka en ny tid när du vill.",
+    variables: [
+      {
+        numero: 1,
+        significado: "Företagets namn",
+        ejemplo: "Salong Nord",
+        fuente: "businesses.name",
+      },
+      {
+        numero: 2,
+        significado: "Kundens namn",
+        ejemplo: "Erik",
+        fuente: "första ordet i customers.name",
+      },
+      {
+        numero: 3,
+        significado: "Datum för den avbokade tiden",
+        ejemplo: "fredag 2 oktober",
+        fuente: "bookings.period, formaterat",
+      },
+      {
+        numero: 4,
+        significado: "Avbokad tid",
+        ejemplo: "15:00",
+        fuente: "bookings.period, formaterat",
+      },
+    ],
+    footer: null,
+    botones: [],
+    nota: "Utility: bekräftar att kundens egen bokning avbokades. Inget erbjudande eller rabatt.",
+  },
+  reservaMovida: {
+    nombre: "bokning_flyttad",
+    categoria: "UTILITY",
+    idioma: "sv",
+    body: "Din tid hos {{1}} ändrades, {{2}}: nu är den {{3}} kl. {{4}} med {{5}}. Passar det inte kan du ändra eller avboka.",
+    variables: [
+      {
+        numero: 1,
+        significado: "Företagets namn",
+        ejemplo: "Salong Nord",
+        fuente: "businesses.name",
+      },
+      {
+        numero: 2,
+        significado: "Kundens namn",
+        ejemplo: "Erik",
+        fuente: "första ordet i customers.name",
+      },
+      {
+        numero: 3,
+        significado: "Nytt datum",
+        ejemplo: "lördag 3 oktober",
+        fuente: "bookings.period, formaterat",
+      },
+      {
+        numero: 4,
+        significado: "Ny tid",
+        ejemplo: "11:30",
+        fuente: "bookings.period, formaterat",
+      },
+      {
+        numero: 5,
+        significado: "Medarbetare",
+        ejemplo: "Diana",
+        fuente: "staff.name",
+      },
+    ],
+    footer: null,
+    botones: [],
+    nota: "Utility: informerar om en ändring i kundens egen bokning, gjord av företaget.",
+  },
+  listaEsperaOferta: {
+    nombre: "vantelista_erbjudande",
+    categoria: "UTILITY",
+    idioma: "sv",
+    body: "En tid hos {{1}} blev ledig för dig, {{2}}: {{3}} den {{4}} kl. {{5}}. Du har {{6}} min på dig att svara; tiden går till den som bekräftar först.",
+    variables: [
+      {
+        numero: 1,
+        significado: "Företagets namn",
+        ejemplo: "Salong Nord",
+        fuente: "businesses.name",
+      },
+      {
+        numero: 2,
+        significado: "Kundens namn",
+        ejemplo: "Erik",
+        fuente: "första ordet i customers.name",
+      },
+      {
+        numero: 3,
+        significado: "Tjänst",
+        ejemplo: "Klippning + skägg",
+        fuente: "services.name",
+      },
+      {
+        numero: 4,
+        significado: "Datum",
+        ejemplo: "fredag 2 oktober",
+        fuente: "bookings.period, formaterat",
+      },
+      {
+        numero: 5,
+        significado: "Tid",
+        ejemplo: "15:00",
+        fuente: "bookings.period, formaterat",
+      },
+      {
+        numero: 6,
+        significado: "Minuter kvar att svara",
+        ejemplo: "15",
+        fuente: "waitlist_entries.offer_expires_at − now()",
+      },
+    ],
+    footer: null,
+    botones: [],
+    nota: "Utility: meddelar om kundens egen plats på väntelistan, inte ett nytt erbjudande.",
+  },
+  listaEsperaTomada: {
+    nombre: "vantelista_upptagen",
+    categoria: "UTILITY",
+    idioma: "sv",
+    body: "Den tiden hos {{1}} är redan tagen, {{2}}. Du står kvar på väntelistan för {{3}} och vi hör av oss om en ny tid blir ledig.",
+    variables: [
+      {
+        numero: 1,
+        significado: "Företagets namn",
+        ejemplo: "Salong Nord",
+        fuente: "businesses.name",
+      },
+      {
+        numero: 2,
+        significado: "Kundens namn",
+        ejemplo: "Erik",
+        fuente: "första ordet i customers.name",
+      },
+      {
+        numero: 3,
+        significado: "Datum kunden fortfarande väntar på",
+        ejemplo: "lördag 3 oktober",
+        fuente: "waitlist_entries.date, formaterat",
+      },
+    ],
+    footer: null,
+    botones: [],
+    nota: "Utility: informerar om resultatet av erbjudandet som gjordes till kunden.",
+  },
+} as const;
+
+// ---------------------------------------------------------------------------
+// whatsappSesion: sms-texter (D-028), inte plattformsmeddelanden i Metas
+// mening. Namnet på exporten behålls (samma form som es-CL); innehållet
+// nämner aldrig "WhatsApp".
+// ---------------------------------------------------------------------------
+
+export const whatsappSesion: Widen<typeof Es.whatsappSesion> = {
+  confirmo: (p: { negocio: string }): string =>
+    `Tack för att du bekräftade din tid hos ${p.negocio}! Vi ses.`,
+  necesitoCambiar: (p: { negocio: string; linkGestion: string }): string =>
+    `Inga problem. Ändra din tid hos ${p.negocio} här: ${p.linkGestion}`,
+  listaEsperaConfirmada: (p: {
+    negocio: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+  }): string =>
+    `Klart! Din tid för ${p.servicio} hos ${p.negocio} blev den ${p.fecha} kl. ${p.hora}. Bekräftelsen med alla detaljer kommer strax.`,
+  listaEsperaYaTomada: (p: { negocio: string }): string =>
+    `Den tiden hos ${p.negocio} togs av någon annan. Du står kvar på väntelistan.`,
+  listaEsperaNoGracias: (p: { negocio: string }): string =>
+    `Klart, vi fortsätter att meddela dig om fler lediga tider hos ${p.negocio}.`,
+  listaEsperaExpirada: (p: { negocio: string }): string =>
+    `Tiden för att svara har gått ut. Vi meddelar dig om en ny tid blir ledig hos ${p.negocio}.`,
+  noEntendido: (p: { negocio: string; telefonoNegocio: string }): string =>
+    `Vi förstod inte ditt meddelande. Skriv direkt till ${p.negocio} på ${p.telefonoNegocio} om du behöver hjälp.`,
+  baja: (p: { negocio: string }): string =>
+    `Klart, du får inga fler erbjudanden från ${p.negocio}. Du får fortfarande bara avierna om dina bokningar.`,
+  bajaTotal: (p: { negocio: string }): string =>
+    `Klart, du får inga fler meddelanden alls från ${p.negocio}, varken erbjudanden eller påminnelser om dina bokningar. För att hantera en bokning, gå till din bokningslänk.`,
+};
+
+// ---------------------------------------------------------------------------
+// email
+// ---------------------------------------------------------------------------
+
+export const email: Widen<typeof Es.email> = {
+  reservaConfirmada: {
+    asunto: (p: { negocio: string }): string =>
+      `Din tid hos ${p.negocio} är bekräftad`,
+    preheader: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `${p.servicio} den ${p.fecha} kl. ${p.hora}.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+      profesional: string;
+      horasCancelacion: number;
+      linkGestion: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nDin tid hos ${p.negocio} är bekräftad.\n\nTjänst: ${p.servicio}\nDag: ${p.fecha}\nTid: ${p.hora}\nMedarbetare: ${p.profesional}\n\nDu kan avboka eller ändra utan kostnad fram till ${p.horasCancelacion} h innan, via den här länken: ${p.linkGestion}\n\nVi ses!`,
+  },
+  recordatorio24h: {
+    asunto: (p: { negocio: string; fecha: string }): string =>
+      `Påminnelse: din tid hos ${p.negocio} den ${p.fecha}`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Din tid är den ${p.fecha} kl. ${p.hora}.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+      linkGestion: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nVi påminner om din tid hos ${p.negocio}.\n\nTjänst: ${p.servicio}\nDag: ${p.fecha}\nTid: ${p.hora}\n\nOm du behöver ändra den, gå in här: ${p.linkGestion}`,
+  },
+  reservaCancelada: {
+    asunto: (p: { negocio: string }): string =>
+      `Din tid hos ${p.negocio} avbokades`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Din tid den ${p.fecha} kl. ${p.hora} avbokades.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      linkNuevaReserva: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nDin tid hos ${p.negocio} den ${p.fecha} kl. ${p.hora} avbokades.\n\nDu kan boka en ny tid när du vill: ${p.linkNuevaReserva}`,
+  },
+  reservaMovida: {
+    asunto: (p: { negocio: string }): string =>
+      `Din tid hos ${p.negocio} bytte tidpunkt`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Nu är den ${p.fecha} kl. ${p.hora}.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      profesional: string;
+      linkGestion: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nDin tid hos ${p.negocio} ändrades.\n\nNy dag: ${p.fecha}\nNy tid: ${p.hora}\nMedarbetare: ${p.profesional}\n\nSe detaljerna här: ${p.linkGestion}`,
+  },
+  pie: (p: { negocio: string; plataforma: string }): string =>
+    `Du får det här mejlet eftersom du bokade hos ${p.negocio} via ${p.plataforma}.`,
+  comun: {
+    saludo: (p: { nombre: string }): string => `Hej ${p.nombre},`,
+    piePagina: (p: { marca: string; negocio: string }): string =>
+      `Skickat av ${p.marca} för ${p.negocio}.`,
+    porQueRecibes:
+      "Du får det här mejlet eftersom du har ett konto eller en bokning hos oss.",
+    ayuda: "Har du frågor? Svara på det här mejlet, så hjälper vi dig.",
+    verReserva: "Se min bokning",
+    cambiarHora: "Ändra tid",
+    cancelar: "Avboka tiden",
+    agregarCalendario: "Lägg till i kalendern",
+    comoLlegar: "Hitta hit",
+  },
+  bienvenida: {
+    asunto: (p: { marca: string }): string => `Välkommen till ${p.marca}`,
+    preheader: "Din bokningssida är redo att ta emot kunder.",
+    titulo: "Din kalender är redo!",
+    texto:
+      "Nu kan du dela din bokningslänk och börja ta emot tider. Här är tre saker att göra idag:",
+    pasos: {
+      link: "Kopiera din bokningslänk: den finns under Start och Inställningar.",
+      compartir: "Dela den via sms eller klistra in den på Instagram.",
+      recordatorios:
+        "De automatiska påminnelserna är redan aktiverade, så dina kunder glömmer inte sin tid.",
+    },
+    cta: "Gå till min kalender",
+  },
+  /** Inbjudan att skapa ett företag, skickad av en plattformsadmin
+   * (F19/WP-36, `/admin` → "Nytt företag"). Länken går till
+   * `/app/bienvenida/[token]`. */
+  invitacionNegocio: {
+    asunto: (p: { marca: string }): string => `Du är inbjuden till ${p.marca}`,
+    preheader: "Acceptera inbjudan och skapa din kalender på några minuter.",
+    titulo: "Du har en inbjudan",
+    texto: (p: { negocio: string }): string =>
+      `Du är inbjuden att skapa kalendern för ${p.negocio}. Klicka på knappen för att acceptera och komma igång.`,
+    cta: "Acceptera inbjudan",
+  },
+  nuevaReservaDueno: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `Ny bokning från ${p.cliente} den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} kl. ${p.hora}.`,
+    titulo: "Du har en ny bokning",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} bokade ${p.servicio} den ${p.fecha} kl. ${p.hora}.`,
+    cta: "Se min kalender",
+  },
+  cancelacionDueno: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} avbokade sin tid den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `Tiden kl. ${p.hora} för ${p.servicio} blev ledig.`,
+    titulo: "En bokning avbokades",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} avbokade sin tid för ${p.servicio} den ${p.fecha} kl. ${p.hora}. Tiden är nu ledig i din kalender.`,
+    cta: "Se min kalender",
+  },
+  nuevaSolicitud: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `Förfrågan från ${p.cliente} den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} kl. ${p.hora}. Bekräfta eller neka den.`,
+    titulo: "Du har en förfrågan att bekräfta",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} skickade en förfrågan om ${p.servicio} för ${p.fecha} kl. ${p.hora}. Bekräfta eller neka den innan den hinner gå ut.`,
+    cta: "Se förfrågan",
+  },
+  solicitudCancelacion: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} vill avboka sin tid den ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} kl. ${p.hora}. Godkänn eller neka avbokningen.`,
+    titulo: "Du har en avbokningsförfrågan",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} vill avboka sin tid för ${p.servicio} den ${p.fecha} kl. ${p.hora}. Tiden är kvar tills du svarar.`,
+    cta: "Svara",
+  },
+  cancelacionRechazada: {
+    asunto: (p: { negocio: string }): string =>
+      `Din avbokning hos ${p.negocio} godkändes inte`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Din tid den ${p.fecha} kl. ${p.hora} gäller fortfarande.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      telefono?: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nDin avbokning hos ${p.negocio} av tiden den ${p.fecha} kl. ${p.hora} godkändes inte, så tiden gäller fortfarande.\n\n${p.telefono ? `Kontakta ${p.negocio} på ${p.telefono} om du behöver ändra den.` : `Kontakta ${p.negocio} om du behöver ändra den.`}`,
+  },
+  solicitudRecibida: {
+    asunto: (p: { negocio: string }): string =>
+      `Vi tog emot din förfrågan hos ${p.negocio}`,
+    preheader: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `${p.servicio} den ${p.fecha} kl. ${p.hora}.`,
+    titulo: "Vi tog emot din förfrågan",
+    texto: (p: {
+      negocio: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `Din förfrågan om ${p.servicio} hos ${p.negocio} för ${p.fecha} kl. ${p.hora} väntar på bekräftelse. Vi mejlar dig så fort ${p.negocio} bekräftar den.`,
+    cta: "Se min förfrågan",
+  },
+  solicitudRechazada: {
+    asunto: (p: { negocio: string }): string =>
+      `Din förfrågan hos ${p.negocio} kunde inte bekräftas`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Tiden den ${p.fecha} kl. ${p.hora} blev inte bekräftad.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      linkNuevaReserva: string;
+      motivo?: string;
+    }): string =>
+      `Hej ${p.cliente},\n\n${p.negocio} kunde inte bekräfta din förfrågan om tiden den ${p.fecha} kl. ${p.hora}.${p.motivo ? ` Anledning: ${p.motivo}.` : ""}\n\nDu kan boka en ny tid när du vill: ${p.linkNuevaReserva}`,
+  },
+  solicitudVencida: {
+    asunto: (p: { negocio: string }): string =>
+      `Din förfrågan hos ${p.negocio} hann gå ut`,
+    preheader: (p: { fecha: string; hora: string }): string =>
+      `Tiden den ${p.fecha} kl. ${p.hora} är inte längre ledig.`,
+    cuerpo: (p: {
+      cliente: string;
+      negocio: string;
+      fecha: string;
+      hora: string;
+      linkNuevaReserva: string;
+    }): string =>
+      `Hej ${p.cliente},\n\nDin förfrågan hos ${p.negocio} om tiden den ${p.fecha} kl. ${p.hora} hann gå ut innan vi bekräftade den.\n\nDu kan boka en ny tid när du vill: ${p.linkNuevaReserva}`,
+  },
+  listaEsperaCupo: {
+    asunto: (p: { negocio: string }): string =>
+      `En tid hos ${p.negocio} blev ledig`,
+    preheader: (p: { servicio: string; fecha: string }): string =>
+      `${p.servicio} den ${p.fecha}. Bekräfta innan tiden går ut.`,
+    titulo: "Din tid blev ledig!",
+    texto: (p: { servicio: string; fecha: string }): string =>
+      `Det finns en ledig tid för ${p.servicio} den ${p.fecha}. Den är din om du bekräftar i tid.`,
+    cta: "Bekräfta tiden",
+    expira: (p: { minutos: number }): string =>
+      `Du har ${p.minutos} min på dig att bekräfta innan vi erbjuder den till någon annan.`,
+  },
+  listaEsperaTomada: {
+    asunto: (p: { negocio: string }): string =>
+      `Den tiden hos ${p.negocio} är redan tagen`,
+    preheader: (p: { fecha: string }): string =>
+      `Du står kvar på väntelistan för ${p.fecha}.`,
+    cuerpo: (p: { cliente: string; negocio: string; fecha: string }): string =>
+      `Hej ${p.cliente},\n\nTiden vi erbjöd dig hos ${p.negocio} är redan tagen av någon annan. Du står kvar på väntelistan för ${p.fecha} och vi hör av oss om en ny tid blir ledig.`,
+  },
+  horaFlash: {
+    asunto: (p: { negocio: string; pct: number }): string =>
+      `Blixttid hos ${p.negocio}: −${p.pct}%`,
+    preheader: "Det är ont om tid att utnyttja den.",
+    titulo: (p: { pct: number }): string => `−${p.pct}% under en begränsad tid`,
+    texto: (p: { servicio: string; fecha: string; hora: string }): string =>
+      `Passa på med ${p.servicio} den ${p.fecha} kl. ${p.hora} med rabatt. Den tar snart slut.`,
+    cta: "Boka nu",
+  },
+  campanaMarketing: {
+    asunto: (p: { negocio: string }): string => `Nyheter från ${p.negocio}`,
+    preheader: "Läs om det här erbjudandet.",
+    titulo: (p: { negocio: string }): string =>
+      `Ett meddelande från ${p.negocio}`,
+    ofertaLabel: "Erbjudande",
+    oferta: (p: { pct: number; fecha?: string }): string =>
+      p.fecha
+        ? `−${p.pct}% rabatt, gäller till ${p.fecha}`
+        : `−${p.pct}% rabatt`,
+    ofertaTextoLabel: "Detaljer",
+    cta: "Boka",
+    baja: "Avregistrera mig från dessa erbjudanden",
+    porQue: (p: { negocio: string }): string =>
+      `Du får detta mejl för att du tackade ja till erbjudanden från ${p.negocio}.`,
+  },
+  acceso: {
+    magicLink: {
+      asunto: (p: { marca: string }): string =>
+        `Din inloggningslänk till ${p.marca}`,
+      preheader: "Klicka på länken för att logga in på ditt konto.",
+      titulo: "Logga in på ditt konto",
+      texto:
+        "Klicka på knappen för att logga in. Länken går bara att använda en gång.",
+      cta: "Logga in",
+      codigo: "Eller använd den här koden:",
+      ignorar:
+        "Om du inte bad om det här mejlet kan du bortse från det. Dela aldrig koden med någon.",
+      expira: "Länken och koden gäller i 15 minuter.",
+    },
+    confirmation: {
+      asunto: (p: { marca: string }): string =>
+        `Bekräfta ditt konto hos ${p.marca}`,
+      preheader: "Bekräfta ditt konto för att komma igång.",
+      titulo: "Bekräfta ditt konto",
+      texto: "Klicka på knappen för att bekräfta ditt konto och logga in.",
+      cta: "Bekräfta mitt konto",
+      codigo: "Eller använd den här koden:",
+      ignorar:
+        "Om du inte skapade det här kontot kan du bortse från mejlet. Dela aldrig koden med någon.",
+      expira: "Länken och koden gäller i 15 minuter.",
+    },
+  },
+  abono: {
+    lineaConfirmacion: (p: {
+      monto: string;
+      saldo: string;
+      condiciones: string;
+    }): string =>
+      `Du betalade ${p.monto} i förskott. Resten (${p.saldo}) betalar du på plats. ${p.condiciones}`,
+  },
+  invitacionEquipo: {
+    asunto: (p: { negocio: string }): string =>
+      `Du har blivit inbjuden till ${p.negocio}`,
+    preheader: (p: { invitadoPor: string; negocio: string }): string =>
+      `${p.invitadoPor} bjöd in dig till ${p.negocio}.`,
+    titulo: "Du har blivit inbjuden",
+    texto: (p: { invitadoPor: string; negocio: string }): string =>
+      `${p.invitadoPor} bjöd in dig att logga in hos ${p.negocio} och se kalendern.`,
+    cta: "Acceptera inbjudan",
+    expira: "Länken gäller i 7 dagar.",
+    ignorar:
+      "Om du inte väntade dig den här inbjudan kan du bortse från mejlet.",
+  },
+  pago: {
+    label: "Betalning",
+    reservado: "Reserverad på ditt kort, dras vid bekräftelse",
+    pagado: "Betald online",
+    reembolso: "Betalas tillbaka till ditt kort",
+    reembolsoNota:
+      "Din betalning online betalas tillbaka till ditt kort. Det kan ta några dagar innan du ser den.",
+  },
+  miembro: {
+    precioLabel: "Medlemspris",
+    precioOfertaLabel: "Erbjudandepris",
+    precio: (p: { precio: string; descuento: string }): string =>
+      `${p.precio} (−${p.descuento})`,
+  },
+  bienvenidaMiembro: {
+    asunto: (p: { negocio: string }): string =>
+      `Nu är du medlem hos ${p.negocio}`,
+    preheader: (p: { beneficio: string }): string =>
+      `Din förmån: ${p.beneficio}.`,
+    titulo: "Välkommen som medlem!",
+    texto: (p: { cliente: string; negocio: string }): string =>
+      `Hej ${p.cliente}! Från och med i dag är du medlem hos ${p.negocio}.`,
+    beneficio: (p: { beneficio: string }): string =>
+      `Din förmån: ${p.beneficio}. Den gäller när du bokar med samma telefonnummer.`,
+    beneficioPct: (p: { pct: number }): string =>
+      `${p.pct} % rabatt på dina bokningar`,
+    cta: "Boka tid",
+  },
+  solicitudResena: {
+    asunto: (p: { negocio: string }): string =>
+      `Hur var ditt besök hos ${p.negocio}?`,
+    preheader: "Berätta på en minut. Ditt omdöme hjälper andra att välja.",
+    titulo: "Hur var det?",
+    texto: (p: {
+      cliente: string;
+      negocio: string;
+      servicio: string;
+    }): string =>
+      `Hej ${p.cliente}! Tack för besöket hos ${p.negocio}. Vad tyckte du om din ${p.servicio}?`,
+    ayuda:
+      "Ditt omdöme visas på bokningssidan med bara ditt förnamn och första bokstaven i efternamnet. Du kan ändra det i 7 dagar.",
+    cta: "Lämna omdöme",
+  },
+  smsCuota80: {
+    asunto: "Du har använt 80 % av månadens sms",
+    preheader:
+      "Fyll på med sms-krediter så att påminnelserna fortsätter som sms.",
+    titulo: "Snart slut på månadens sms",
+    texto: (p: { usado: number; max: number }): string =>
+      `Du har använt ${p.usado} av ${p.max} sms som ingår i din plan den här månaden.`,
+    ayuda:
+      "När de är slut fortsätter påminnelserna från dina sms-krediter. Har du inga krediter skickas de som e-post i stället.",
+    cta: "Fyll på sms",
+  },
+  valeComprado: {
+    asunto: (p: { titulo: string }): string => `Ditt värdebevis: ${p.titulo}`,
+    preheader: (p: { negocio: string }): string =>
+      `Din kod hos ${p.negocio} och hur du bokar.`,
+    titulo: "Ditt värdebevis är klart",
+    texto: (p: { negocio: string }): string =>
+      `Tack för ditt köp. Det är ${p.negocio} som säljer värdebeviset och som har fått betalningen. Boka din tid när du vill, före sista giltighetsdag.`,
+    arrepentimiento:
+      "Du har 14 dagars ångerrätt. Ångra köpet under Mina värdebevis i ditt konto, så länge värdebeviset inte är använt.",
+    codigo: "Kod",
+    servicio: "Behandling",
+    valor: "Värde",
+    validoHasta: "Giltigt till",
+    vendidoPor: "Säljs av",
+    cta: "Välj tid",
+  },
+  smsAgotados: {
+    asunto: "Dina sms är slut — påminnelser går nu som e-post",
+    preheader: "Fyll på med sms-krediter så att kunderna får sms igen.",
+    titulo: "Dina sms är slut",
+    texto: (p: { usado: number; max: number }): string =>
+      p.max > 0
+        ? `Du har använt alla ${p.max} sms i din plan den här månaden, och du har inga sms-krediter kvar.`
+        : "Du har inga sms-krediter kvar.",
+    ayuda:
+      "Bekräftelser och påminnelser skickas som e-post tills du fyller på eller en ny månad börjar.",
+    cta: "Fyll på sms",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// validacion
+// ---------------------------------------------------------------------------
+
+export const validacion: Widen<typeof Es.validacion> = {
+  clp: {
+    empty: "Skriv ett belopp.",
+    invalid_format: "Använd bara siffror, utan decimaler.",
+    out_of_range: "Det beloppet är för högt.",
+    invalid_type: "Det beloppet är inte giltigt.",
+  },
+  rut: {
+    empty: "Skriv ett organisationsnummer.",
+    invalid_format: "Det organisationsnumret har fel format.",
+    invalid_check_digit: "Kontrollera sista siffran.",
+    out_of_range: "Det organisationsnumret är inte giltigt.",
+  },
+  date: {
+    invalid_format: "Välj ett giltigt datum.",
+    invalid_date: "Det datumet finns inte.",
+    invalid_type: "Det datumet är inte giltigt.",
+  },
+  time: {
+    invalid_format: "Använd formatet timme:minut, till exempel 15:00.",
+    out_of_range: "Den tiden finns inte. Kontrollera timme och minut.",
+    invalid_type: "Den tiden är inte giltig.",
+  },
+  horaLocal: {
+    nonexistent_local_time:
+      "Den tiden finns inte den dagen på grund av tidsomställningen. Välj en annan.",
+    ambiguous_local_time:
+      "Den tiden förekommer två gånger den dagen på grund av tidsomställningen. Välj före eller efter omställningen.",
+  },
+  telefonoNegocio: {
+    empty: "Skriv företagets telefonnummer.",
+    invalid_chars: "Använd bara siffror, till exempel 070-123 45 67.",
+    not_chilean: "Just nu tar vi bara emot svenska nummer.",
+    wrong_country: "Skriv ett svenskt mobilnummer.",
+    invalid_length:
+      "Det numret har inte rätt antal siffror för ett svenskt telefonnummer. Kontrollera numret.",
+    not_mobile: "Skriv ett svenskt mobilnummer, till exempel 070-123 45 67.",
+    invalid_prefix:
+      "Det numret är inte giltigt. Det ska börja med 07 (mobil) eller ett riktnummer (fast telefon).",
+    invalid_type: "Det telefonnumret är inte giltigt.",
+    invalid_format: "Kontrollera företagets telefonnummer.",
+  },
+  telefonoCliente: {
+    empty: "Skriv kundens mobilnummer.",
+    invalid_chars: "Använd bara siffror, till exempel 070-123 45 67.",
+    not_chilean: "Just nu tar vi bara emot svenska mobilnummer.",
+    wrong_country: "Skriv ett svenskt mobilnummer.",
+    invalid_length:
+      "Ett svenskt mobilnummer har 10 siffror. Kontrollera numret.",
+    not_mobile: "Skriv ett svenskt mobilnummer, till exempel 070-123 45 67.",
+    invalid_prefix: "Det numret är inte giltigt. Kontrollera riktnumret.",
+    invalid_type: "Det mobilnumret är inte giltigt.",
+    invalid_format: "Kontrollera kundens mobilnummer.",
+  },
+  email: {
+    invalid: "Kontrollera e-postadressen.",
+  },
+  requerido: "Fyll i det här fältet.",
+  numeroEntero,
+};
+
+// ---------------------------------------------------------------------------
+// acceso: identisk med sv-SE.auth.ts (samma marknad använder samma text).
+// ---------------------------------------------------------------------------
+
+export const acceso: Widen<typeof Es.acceso> = accesoSv;
+
+// F19/WP-36: identisk med sv-SE.auth.ts (samma marknad använder samma text).
+export const invitacionNegocio: Widen<typeof Es.invitacionNegocio> =
+  invitacionNegocioSv;
+
+// ---------------------------------------------------------------------------
+// negocio
+// ---------------------------------------------------------------------------
+
+export const negocio: Widen<typeof Es.negocio> = {
+  campos: {
+    nameLabel: "Företagets namn",
+    namePlaceholder: "T.ex: Salong Nord",
+    comunaLabel: "Ort",
+    categoryLabel: "Bransch",
+    phoneLabel: "Företagets telefonnummer",
+    phoneAyuda:
+      "Mobil eller fast telefon. Dina kunder ser det i bekräftelsen och använder det för att kontakta dig om de inte kan ändra tiden själva.",
+    phonePlaceholder: "070-123 45 67",
+    addressLabel: "Adress (valfritt)",
+    addressPlaceholder: "Gata och nummer",
+  },
+  rubros: {
+    barberia: "Barberare",
+    peluqueria: "Frisör",
+    estetica: "Hudvård",
+    unas: "Naglar",
+    cejas_pestanas: "Bryn och fransar",
+    masajes: "Massage",
+    kinesiologia: "Naprapat/fysioterapi",
+    otro: "Annat",
+  },
+  slug: {
+    label: "Din bokningslänk",
+    ayuda:
+      "Så ser länken ut som du delar med dina kunder. Du kan ändra den senare i Inställningar.",
+    vistaPrevia: (p: { url: string }): string => `Din länk: ${p.url}`,
+  },
+  errores: {
+    slug_taken:
+      "Den länken används redan av ett annat företag. Prova en annan.",
+    slug_reserved: "Den länken är inte tillgänglig. Prova en annan.",
+    slug_invalid:
+      "Använd 3–40 små bokstäver, siffror eller bindestreck, utan mellanslag.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// onboarding
+// ---------------------------------------------------------------------------
+
+export const onboarding: Widen<typeof Es.onboarding> = {
+  bienvenida: "Ställ in din kalender i 5 steg, det tar mindre än 10 minuter.",
+  paso: (p: { n: number; total: number }): string =>
+    `Steg ${p.n} av ${p.total}`,
+  pasos: {
+    servicios: "Tjänster",
+    equipo: "Personal",
+    horario: "Öppettider",
+    pagina: "Din sida",
+    link: "Din länk",
+  },
+  ctaContinuar: "Fortsätt",
+  ctaVolver: "Tillbaka",
+  ctaSaltar: "Hoppa över det här steget",
+  loHagoDespues: "Jag gör det senare",
+  intro: {
+    servicios: "Lägg till det du erbjuder: namn, tid och pris.",
+    equipo: AGREGA_EQUIPO_VACIO_SV,
+    horario: "Berätta när du har öppet varje dag.",
+    pagina:
+      "Lägg till foton och kontaktuppgifter så att kunderna hittar dig. Allt är valfritt.",
+    link: "Nu har du din bokningssida klar.",
+  },
+  listo: {
+    titulo: "Din länk är klar",
+    ctaCopiar: "Kopiera länk",
+    copiado: "Kopierad",
+    ctaCompartirWhatsapp: "Dela länken",
+    ctaVerPagina: "Se min sida",
+    ctaIrAgenda: "Gå till min kalender",
+    mensajeCompartir: (p: { negocio: string; url: string }): string =>
+      `Hej, nu kan du boka tid hos ${p.negocio} här: ${p.url}`,
+  },
+  checklist: {
+    titulo: "Slutför din inställning",
+    pasosPendientes: (p: { n: number }): string => `${p.n} steg kvar`,
+  },
+  avisoSinServicios:
+    "Din sida tar inte emot bokningar förrän du lagt till en tjänst.",
+  pasoOmitidoAviso: (p: { seccion: string }): string =>
+    `Du hoppade över det här steget. Du kan slutföra det senare i Inställningar → ${p.seccion}.`,
+  terminos: {
+    prefijo: "Jag godkänner",
+    terminosLinkTexto: "villkoren",
+    medio: "och",
+    encargoLinkTexto: "biträdesavtalet",
+    sufijo: ".",
+    error: "Du måste godkänna villkoren och biträdesavtalet för att fortsätta.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// servicios
+// ---------------------------------------------------------------------------
+
+export const servicios: Widen<typeof Es.servicios> = {
+  campos: {
+    nameLabel: "Tjänstens namn",
+    namePlaceholder: "T.ex: Klippning",
+    nombreAyuda:
+      "Namnet skickas till kunden via sms och e-post. Använd ett allmänt namn, utan hälsouppgifter.",
+    nombreAyudaExtendida:
+      'Skriv till exempel "Naprapatbehandling" eller "Behandling (60 min)", inte diagnos eller specifik behandling.',
+    durationLabel: "Tid (min)",
+    priceLabel: "Pris",
+    pricePlaceholder: "100 kr",
+    bufferLabel: "Extra tid efteråt",
+    bufferAyuda: "För städning eller förberedelse. Kunden ser den inte.",
+    categoryLabel: "Kategori (valfritt)",
+    profesionalesLabel: "Vem utför den?",
+    mostrarEnPaginaLabel: "Visa på bokningssidan",
+    descripcionLabel: "Beskrivning (valfritt)",
+    descripcionPlaceholder: "Berätta för kunden vad som ingår i tjänsten.",
+    descripcionAyuda: "Visas på din bokningssida.",
+    subirAria: "Flytta upp",
+    bajarAria: "Flytta ner",
+  },
+  errores: {
+    nombreVacio: "Skriv tjänstens namn.",
+    duracionInvalida: "Tiden måste vara mer än 0.",
+    bufferInvalido: "Extra tiden kan inte vara negativ.",
+    service_in_use:
+      "Den tjänsten har bokningar. Inaktivera den i stället för att ta bort den.",
+    descripcionMuyLarga: "Beskrivningen får inte vara längre än 500 tecken.",
+  },
+  vacio: "Lägg till de tjänster du erbjuder.",
+  contador: (p: { n: number }): string =>
+    `${p.n} ${p.n === 1 ? "tjänst" : "tjänster"}`,
+  ctaAgregar: "Lägg till tjänst",
+  ctaEliminar: "Ta bort tjänst",
+  ctaDesactivar: "Inaktivera tjänst",
+  ctaActivar: "Aktivera tjänst",
+};
+
+// ---------------------------------------------------------------------------
+// profesionales
+// ---------------------------------------------------------------------------
+
+export const profesionales: Widen<typeof Es.profesionales> = {
+  campos: {
+    nameLabel: "Namn",
+    tituloLabel: "Roll eller specialitet (valfritt)",
+    tituloPlaceholder: "T.ex: Färgspecialist",
+    tituloAyuda: "Visas på din bokningssida.",
+    fotoLabel: "Profilbild (valfritt)",
+    colorLabel: "Färg",
+    serviciosLabel: "Tjänster hen utför",
+    horarioLabel: "Öppettider",
+    horarioIgualNegocio: "Samma som företaget",
+    horarioPropio: "Egna tider",
+    activoLabel: "Aktiv",
+  },
+  colores: {
+    "staff-1": "Lavendel",
+    "staff-2": "Himmelsblå",
+    "staff-3": "Lila",
+    "staff-4": "Persika",
+    "staff-5": "Mint",
+    "staff-6": "Lime",
+  },
+  horarioAyuda:
+    "Egna tider kan bara krympa företagets öppettider, aldrig utöka dem.",
+  horarioAvisoFueraDeNegocio:
+    "Den tiden ligger utanför företagets öppettider. Inga tider erbjuds där.",
+  errores: {
+    nombreVacio: "Skriv medarbetarens namn.",
+    staff_has_future_bookings: (p: { n: number }): string =>
+      `Har ${p.n} ${p.n === 1 ? "kommande bokning" : "kommande bokningar"}, flytta eller avboka dem först.`,
+  },
+  vacio: AGREGA_EQUIPO_VACIO_SV,
+  ctaAgregar: AGREGAR_PROFESIONAL_SV,
+  ctaEliminar: "Ta bort medarbetare",
+  ctaDesactivar: "Inaktivera medarbetare",
+  ctaActivar: "Aktivera medarbetare",
+  ctaFoto: "Foto",
+};
+
+// ---------------------------------------------------------------------------
+// horarios
+// ---------------------------------------------------------------------------
+
+export const horarios: Widen<typeof Es.horarios> = {
+  abierto: "Öppet",
+  cerrado: "Stängt",
+  ctaAgregarHorario: "Lägg till öppettid",
+  ctaQuitarHorario: "Ta bort öppettid",
+  ctaCopiarATodosLosDias: "Kopiera till alla dagar",
+  intervalos: (p: { rangos: readonly string[] }): string => {
+    const r = p.rangos;
+    if (r.length === 0) return "";
+    if (r.length === 1) return r[0] ?? "";
+    if (r.length === 2) return `${r[0]} och ${r[1]}`;
+    return `${r.slice(0, -1).join(", ")} och ${r[r.length - 1]}`;
+  },
+  errores: {
+    business_hours_start_before_end: "Starttiden måste vara innan sluttiden.",
+    business_hours_no_overlap: "Den tiden krockar med en annan samma dag.",
+  },
+  bloqueos: {
+    tituloNuevo: "Ny blockering",
+    kind: {
+      block: "Blockering",
+      lunch: "Lunch",
+      vacation: "Semester",
+      holiday: "Helgdag",
+    },
+    alcance: {
+      negocio: "Hela företaget",
+      profesional: "En medarbetare",
+    },
+    campos: {
+      desde: "Från",
+      hasta: "Till",
+      nota: "Anteckning (valfritt)",
+    },
+    notaAyuda: "Bara din personal ser den. Skriv inte in hälsouppgifter.",
+    ctaAgregar: "Lägg till blockering",
+    ctaGuardar: "Spara blockering",
+    ctaEliminar: "Ta bort blockering",
+    overlapsBookings: (p: { n: number }): string =>
+      `Den blockeringen krockar med ${p.n} ${p.n === 1 ? "bokning" : "bokningar"}. Flytta dem innan du sparar.`,
+  },
+};
+
+// ---------------------------------------------------------------------------
+// ajustes
+// ---------------------------------------------------------------------------
+
+export const ajustes: Widen<typeof Es.ajustes> = {
+  secciones: {
+    // WP-55: flikarna i /app/ajustes (ägarens feedback 2026-09-30) — korta nog för en
+    // vänsterkolumn med ikon + namn, samma sträng som respektive sektions egen rubrik.
+    negocio: "Företag",
+    link: "Din bokningslänk",
+    reglas: "Bokningsregler",
+    servicios: "Tjänster",
+    equipo: "Personal",
+    horario: "Öppettider",
+    mercadopago: "Betalningar",
+    cuenta: "Konto",
+    formularioReserva: "Bokningsformulär",
+    privacidad: "Integritet",
+    pagos: "Onlinebetalning",
+    socios: "Medlemmar & utskick",
+  },
+  pagos: {
+    titulo: "Onlinebetalning",
+    intro:
+      "Dina kunder kan betala sin tid med kort när de bokar. Pengarna går direkt till ditt Stripe-konto.",
+    estadoLabel: "Status för kopplingen",
+    estado: {
+      none: "Inte kopplad",
+      onboarding: "Koppling pågår",
+      active: "Aktiv",
+      action_required: "Information saknas",
+    },
+    estadoAyuda: {
+      none: "Koppla ditt Stripe-konto för att ta emot betalningar.",
+      onboarding: "Slutför kopplingen hos Stripe för att kunna ta betalt.",
+      active: "Ditt konto är redo att ta betalt.",
+      action_required:
+        "Stripe behöver mer information för att du ska kunna fortsätta ta betalt.",
+    },
+    conectar: "Koppla till Stripe",
+    continuar: "Fortsätt hos Stripe",
+    completar: "Fyll i information hos Stripe",
+    abrirPanel: "Öppna min Stripe-översikt",
+    modoTitulo: "Betalning vid bokning",
+    modo: {
+      off: "Av",
+      optional: "Valfri",
+      required: "Obligatorisk",
+    },
+    modoAyuda: {
+      off: "Kunden betalar på plats.",
+      optional: "Kunden väljer själv om hen betalar online eller på plats.",
+      required: "Kunden måste betala online för att boka.",
+    },
+    modoRequiereCuenta:
+      "Koppla och aktivera ditt konto för att välja Valfri eller Obligatorisk.",
+    comision: (p: { monto: string }): string =>
+      `Ingen avgift per bokning. När kunden betalar med kort tar vi ${p.monto} + Stripes avgift.`,
+    sinComision:
+      "Ingen avgift per bokning. När kunden betalar med kort tar Stripe sin vanliga avgift.",
+    reembolsos:
+      "Om du nekar, inte hinner svara eller en betald bokning avbokas får kunden pengarna tillbaka automatiskt.",
+    guardar: "Spara",
+    guardado: "Sparat",
+    errores: {
+      unavailable: "Onlinebetalning är inte tillgänglig just nu.",
+      failed: "Vi kunde inte nå Stripe. Försök igen.",
+      needs_account: "Koppla ditt Stripe-konto först.",
+      forbidden: "Du har inte behörighet att ändra det här.",
+      unknown: "Något gick fel. Försök igen.",
+    },
+  },
+  socios: {
+    activar: "Aktivera medlemsförmån",
+    activarAyuda:
+      "När den är på kan du markera dina stamkunder som medlemmar från deras kundkort.",
+    descuentoLabel: "Rabatt för medlemmar (%)",
+    descuentoAyuda: "Ett tal mellan 1 % och 100 %.",
+    beneficioLabel: "Text om förmånen (valfritt)",
+    beneficioPlaceholder: "T.ex. 10 % rabatt på alla behandlingar",
+    beneficioAyuda: "Upp till 140 tecken.",
+  },
+  winback: {
+    titulo: "Vi saknar dig (automatiskt)",
+    activar: "Aktivera automatisk påminnelse",
+    activarAyuda:
+      "Vi skriver automatiskt till kunder som inte har kommit tillbaka, utan att du behöver göra något.",
+    diasLabel: "Dagar utan besök",
+    diasAyuda: "Ett tal mellan 30 och 365.",
+    mensajeLabel: "Meddelande",
+    mensajePlaceholder: "T.ex. Vi saknar dig, välkommen tillbaka",
+    mensajeAyuda: "Upp till 320 tecken.",
+    ofertaPctLabel: "Rabatt (%, valfritt)",
+    ofertaPctAyuda: "Ett tal mellan 1 % och 100 %.",
+    ofertaDiasLabel: "Giltig i (dagar)",
+    ofertaDiasAyuda: "Hur många dagar rabatten gäller från att den skickas.",
+  },
+  reglas: {
+    minNoticeLabel: "Minsta förvarning",
+    maxDaysAheadLabel: (p: { n: number }): string =>
+      `Bokningar upp till ${p.n} dagar i förväg`,
+    cancelWindowLabel: "Frist för att avboka eller ändra",
+    cancelWindowAyuda:
+      "Det här antalet visas för kunden innan bekräftelse och i sms-bekräftelsen.",
+    slotIntervalLabel: "Hur ofta tider erbjuds",
+    confirmarAutomatico: "Bekräfta bokningar automatiskt",
+    confirmarAutomaticoAyuda:
+      "Om du stänger av den här väntar varje bokning från din sida tills du bekräftar eller nekar den. Under tiden är tiden blockerad så att ingen annan kan ta den.",
+    cancelApprovalLabel: "Kundens avbokningar",
+    cancelApprovalAyuda:
+      "Gäller tillsammans med fristen ovan: en avbokning inom den fristen (eller alla, beroende på vad du väljer) väntar tills du godkänner eller nekar den, utan att tiden släpps.",
+    cancelApprovalOpciones: {
+      none: "Direkta, utan ditt godkännande",
+      late: "Sena behöver ditt godkännande",
+      all: "Alla behöver ditt godkännande",
+    },
+  },
+  waitlistMode: {
+    sequential: "En i taget, i ordning",
+    broadcast: "Till alla samtidigt",
+  },
+  waitlistModeAyuda: {
+    sequential: "Vi meddelar en kund i taget och väntar på svar.",
+    broadcast:
+      "Vi meddelar alla som väntar samtidigt, och den som svarar först får tiden.",
+  },
+  waitlistHoldMinutesLabel: "Hur länge vi väntar innan nästa i kön erbjuds",
+  waitlistHoldMinutesAyuda: "Mellan 5 och 240 minuter.",
+  slugAviso:
+    'Om du ändrar din länk slutar den gamla att fungera. Redan skickade sms med knappen "Boka igen" pekar fortfarande på den gamla länken.',
+  guardarCambios: "Spara ändringar",
+  guardando: "Sparar…",
+  cambiosGuardados: "Ändringar sparade",
+  cambiosSinGuardar: "Du har osparade ändringar",
+  seguirEditando: "Fortsätt redigera",
+  salirSinGuardar: "Avsluta utan att spara",
+  conflictoEdicion:
+    "Någon annan ändrade det här. Ladda om för att se senaste versionen.",
+  cuenta: {
+    sesionComo: (p: { email: string }): string => `Inloggad som ${p.email}`,
+  },
+  privacidad: {
+    exportarTitulo: "Exportera ditt företags data",
+    exportarAyuda:
+      "Ladda ner en fil med information om ditt företag, dina kunder och dina bokningar.",
+    exportarCta: "Exportera data",
+    eliminarTitulo: "Radera ditt konto",
+    eliminarAyuda:
+      "Vi rekommenderar att du exporterar dina data innan du raderar kontot.",
+    eliminarCta: "Radera konto",
+    eliminarDialogTitulo: "Radera ditt konto?",
+    eliminarDialogCuerpo: (p: { n: number }): string =>
+      `Din bokningssida stängs av direkt. Du har ${p.n} dagar på dig att ångra dig; därefter raderar vi allt permanent.`,
+    eliminarConfirmarSi: "Ja, radera kontot",
+    eliminarConfirmarNo: "Nej, behåll kontot",
+    solicitadaAviso: (p: { fecha: string }): string =>
+      `Ditt konto raderas ${p.fecha}.`,
+    solicitadaCtaDeshacer: "Ångra",
+    solicitadaDeshecha: "Raderingen avbröts.",
+    error: "Vi kunde inte slutföra åtgärden. Försök igen.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// clientes
+// ---------------------------------------------------------------------------
+
+export const clientes: Widen<typeof Es.clientes> = {
+  titulo: "Kunder",
+  ctaCampanas: "Utskick",
+  lista: {
+    buscarPlaceholder: "Sök på namn eller mobilnummer",
+    columnaUltimaVisita: "Senaste besök",
+    columnaVisitas: "Besök",
+    columnaInasistencias: "Uteblivna besök",
+    ordenarPor: "Sortera efter",
+    ordenar: {
+      ultimaVisita: "Senaste besök",
+      masVisitas: "Flest besök",
+      nombre: "Namn",
+    },
+    filtros: {
+      todos: "Alla",
+      habituales: "Stamkunder",
+      inactivos: "Inaktiva",
+      conInasistencias: "Med uteblivna besök",
+      socios: "Medlemmar",
+    },
+    filtroHabitualesAyuda: "3 besök eller fler",
+    filtroInactivosAyuda: "Inte varit här på mer än 90 dagar",
+    vacio: "Du har inga kunder än.",
+    sinResultados: (p: { busqueda: string }): string =>
+      `Vi hittade inga kunder för "${p.busqueda}".`,
+    sinResultadosFiltro: "Du har inga kunder som matchar det här filtret.",
+  },
+  ficha: {
+    clienteDesde: (p: { fecha: string }): string => `Kund sedan ${p.fecha}`,
+    visitas: (p: { n: number }): string => `${p.n} besök`,
+    inasistencias: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "uteblivet besök" : "uteblivna besök"}`,
+    contactoTitulo: "Kontakt",
+    consentimientosTitulo: "Samtycken",
+    estadisticasTitulo: "Statistik",
+    totalGastado: "Totalt spenderat",
+    promedioPorVisita: "Snitt per besök",
+    historialTitulo: "Historik",
+    historialVacio: "Den här kunden har inga bokningar än.",
+    proximasTitulo: "Kommande bokningar",
+    proximasVacio: "Inga kommande bokningar.",
+    respuestasTitulo: "Svar på bokningsfrågor",
+    respuestasVacio: "Den här kunden har inte svarat på några frågor.",
+    ctaNuevaReserva: "Ny bokning",
+    ctaLlamar: "Ring",
+    ctaWhatsapp: "Skicka sms",
+    ctaSms: "Skicka sms",
+    ctaEmail: "Skicka e-post",
+    ctaVerFicha: "Se kundkort",
+    ctaEnviarOferta: "Skicka erbjudande",
+    ofertaSinConsentimiento:
+      "Den här kunden har inte tackat ja till erbjudanden.",
+    membresiaTitulo: "Medlem",
+    socioDesde: (p: { fecha: string }): string => `Medlem sedan ${p.fecha}`,
+    socioAyuda:
+      "Markera kunden som medlem för att ge den förmånen du ställt in under Inställningar.",
+    notificarCta: "Meddela kunden",
+    notificarEnviado: "Vi meddelade kunden via e-post.",
+    notificarYaEnviado: "Vi har redan meddelat kunden om medlemskapet.",
+    mensaje: {
+      titulo: "Skicka meddelande",
+      paraLabel: "Till",
+      textoLabel: "Meddelande",
+      textoPlaceholder: "Skriv ditt meddelande…",
+      contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+      segmentosSms: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "sms" : "sms (flera meddelanden)"}`,
+      notaWhatsapp: "Skickas som sms.",
+      ctaCancelar: "Avbryt",
+      ctaEnviar: "Skicka",
+      enviando: "Skickar…",
+      enviado: "Meddelandet skickades.",
+      error: {
+        vacio: "Skriv ett meddelande.",
+        forbidden:
+          "Du har inte behörighet att skicka meddelanden till den här kunden.",
+        no_phone: "Den här kunden saknar ett giltigt mobilnummer.",
+        too_long: "Meddelandet får inte vara längre än 320 tecken.",
+        rate_limited:
+          "Du har skickat många meddelanden. Vänta en stund och försök igen.",
+        generico: "Vi kunde inte skicka meddelandet. Försök igen.",
+      },
+    },
+  },
+  notas: {
+    label: "Anteckningar",
+    ayuda: NOTAS_AYUDA_SV,
+    errorLargo: "Anteckningarna får inte vara längre än 1000 tecken.",
+  },
+  editar: {
+    tituloNuevo: "Ny kund",
+    tituloEditar: "Redigera kund",
+    nameLabel: "Namn",
+    phoneLabel: "Mobilnummer",
+    emailLabel: "E-post (valfritt)",
+    ctaGuardar: "Spara kund",
+  },
+  errores: {
+    customer_phone_taken: "Du har redan en kund med det numret.",
+  },
+  consentimientos: {
+    canal: {
+      web: "På din bokningssida",
+      whatsapp: "Via sms",
+      manual: "Registrerad av dig",
+    },
+    canalEnFrase: {
+      web: "på din bokningssida",
+      whatsapp: "via sms",
+      manual: "registrerad av dig",
+    },
+    aceptoEl: (p: { fecha: string; canal: string }): string =>
+      `Godkände den ${p.fecha} (${p.canal})`,
+    sinRegistro: "Har inte gett sitt samtycke än.",
+    baja: "Svarade STOPP på erbjudanden.",
+  },
+  consentimientoManual: {
+    version: "manuell-2026-10-v1",
+    texto:
+      "Kunden godkände att få bekräftelsen och påminnelser om den här tiden och kommande tider via sms.",
+    ayuda: (p: { negocio: string }): string =>
+      `Berätta att hen kommer få sms från ${p.negocio} och att hen kan be om att slippa fler meddelanden.`,
+    marketingRechazado: "Kunden vill inte få erbjudanden.",
+  },
+  anonimizado: "Anonymiserad kund",
+  privacidad: {
+    ctaExportar: "Exportera data",
+    ctaAnonimizar: "Anonymisera kund",
+    exportadoOk: "Vi laddade ner kundens uppgifter.",
+    confirmarTitulo: "Anonymisera den här kunden?",
+    confirmarCuerpo:
+      "Namn, mobilnummer, e-post och anteckningar tas bort. Bokningar och betalningar behålls, utan de uppgifterna. Går inte att ångra.",
+    confirmarSi: "Ja, anonymisera",
+    confirmarNo: "Nej, behåll",
+    error: "Vi kunde inte slutföra åtgärden. Försök igen.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// campanas: /app/clientes/utskick (WP-31, F14)
+// ---------------------------------------------------------------------------
+
+export const campanas: Widen<typeof Es.campanas> = {
+  titulo: "Utskick",
+  canal: {
+    email: "E-post",
+    sms: "Sms",
+  },
+  historial: {
+    vacio: "Du har inte skickat något utskick än.",
+    columnaCanal: "Kanal",
+    columnaFecha: "Datum",
+    columnaDestinatarios: "Mottagare",
+    columnaReservas: "Bokningar via länken",
+    ctaNueva: "Nytt utskick",
+    enviadoToast: "Vi skickade ditt utskick.",
+  },
+  nueva: {
+    titulo: "Nytt utskick",
+    volver: "Tillbaka till Utskick",
+    nombreLabel: "Namn på utskicket",
+    nombrePlaceholder: "T.ex. Välkommen tillbaka i september",
+    audienciaLabel: "Vem ska få det?",
+    audiencia: {
+      all: "Alla som tackat ja till erbjudanden",
+      members: "Medlemmar",
+      regulars: "Stamkunder",
+      inactive: "Inaktiva i",
+      selected: "Valda kunder",
+    },
+    audienciaInactivosDiasLabel: "dagar",
+    audienciaSeleccionadosResumen: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "vald kund" : "valda kunder"}`,
+    canalLabel: "Kanal",
+    mensajeLabel: "Meddelande",
+    mensajePlaceholder: "Skriv ditt meddelande…",
+    contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    segmentosSms: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "sms" : "sms (flera meddelanden)"}`,
+    ofertaActivar: "Lägg till en rabatt",
+    ofertaActivarAyuda:
+      "Valfritt: en procentrabatt, med en kort text och ett sista giltighetsdatum.",
+    ofertaPctLabel: "Rabatt (%)",
+    ofertaPctAyuda: "Ett tal mellan 1 % och 100 %.",
+    ofertaTextoLabel: "Rabattext (valfritt)",
+    ofertaTextoPlaceholder: "T.ex. 15 % rabatt på din nästa tid",
+    ofertaValidoHastaLabel: "Giltig till",
+    previsualizacion: {
+      titulo: "Innan du skickar",
+      cargando: "Räknar ut…",
+      destinatarios: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "kund kommer få det här meddelandet" : "kunder kommer få det här meddelandet"}`,
+      sinConsentimiento: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "kund får det inte" : "kunder får det inte"} eftersom de inte tackat ja till erbjudanden.`,
+      sms: (p: { porMensaje: number; total: number }): string =>
+        `${p.porMensaje} sms per meddelande · ${p.total} sms totalt`,
+      vacio: "Välj vem som ska få det för att se hur många kunder det blir.",
+    },
+    ctaEnviar: "Skicka",
+    enviando: "Skickar…",
+    confirmarTitulo: "Skicka det här utskicket?",
+    confirmarCuerpo: (p: { n: number }): string =>
+      `Det går till ${p.n} ${p.n === 1 ? "kund" : "kunder"} som tackat ja till erbjudanden. Går inte att ångra.`,
+    confirmarSi: "Ja, skicka",
+    confirmarNo: "Nej, fortsätt redigera",
+    soloConsentimiento:
+      "Det går bara till kunder som tackat ja till erbjudanden.",
+    error: {
+      forbidden: "Du har inte behörighet att skicka utskick.",
+      invalid_input: "Kontrollera uppgifterna i formuläret.",
+      no_recipients: "Det finns inga kunder som får det här utskicket.",
+      sms_not_available: "Sms är inte tillgängligt i din installation.",
+      rate_limited:
+        "Du har skickat många utskick. Vänta en stund och försök igen.",
+      unexpected: "Vi kunde inte skicka utskicket. Försök igen.",
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
+// caja: koder oförändrade (samma DB-enum oavsett marknad), etiketter
+// neutrala utan namnge en specifik betaltjänst (D-027).
+// ---------------------------------------------------------------------------
+
+export const CAJA_METODOS_MANUALES = [
+  "cash",
+  "card_terminal",
+  "transfer",
+  "swish",
+] as const;
+
+export const caja: Widen<typeof Es.caja> = {
+  tabs: {
+    caja: "Kassa",
+    informes: "Rapporter",
+  },
+  periodos: {
+    hoy: "Idag",
+    semana: "Vecka",
+    mes: "Månad",
+    rango: "Eget",
+  },
+  periodo: (p: { desde: string; hasta: string }): string =>
+    `Från ${p.desde} till ${p.hasta}`,
+  rangoPersonalizado: {
+    desdeLabel: "Från",
+    hastaLabel: "Till",
+    ctaAplicar: "Tillämpa",
+    error: "Startdatumet måste vara före slutdatumet.",
+  },
+  resumen: {
+    cobrado: "Inkommet",
+    porCobrar: "Ej betalt",
+    abonosMercadopago: "Förskott online",
+    reservasCount: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "bokning" : "bokningar"}`,
+    inasistenciasCount: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "uteblivet besök" : "uteblivna besök"}`,
+    ticketPromedio: "Snittpris",
+    explicacion:
+      "Summerar godkända betalningar inom perioden, minus återbetalningar.",
+  },
+  distribucion: {
+    porMetodo: "Per betalsätt",
+    porProfesional: "Per medarbetare",
+    porServicio: "Per tjänst",
+  },
+  porCobrarLista: {
+    titulo: "Att ta betalt för",
+    vacio: "Du har inga avslutade bokningar som väntar på betalning.",
+  },
+  pagosDeHoy: {
+    titulo: "Dagens betalningar",
+    vacio: "Du har inga registrerade betalningar idag.",
+  },
+  /** Fjärde metoden (`swish`) mappas till "Swish" i kassans knappar (planen
+   * för WP-24: kontant, kort, Swish, faktura/övrigt). `transfer` byter
+   * etikett från "Överföring" till "Faktura eller övrigt" för att täcka
+   * samma fjärde knapp. */
+  metodo: {
+    cash: "Kontant",
+    card_terminal: "Kort",
+    transfer: "Faktura eller övrigt",
+    mercadopago: "Automatisk betalning",
+    swish: "Swish",
+    stripe: "Online (kort)",
+  },
+  tipo: {
+    deposit: "Förskott",
+    balance: "Resterande belopp",
+    full: "Full betalning",
+  },
+  estado: {
+    pending: "Väntande",
+    approved: "Godkänd",
+    rejected: "Nekad",
+    refunded: "Återbetald",
+  },
+  marcarPagada: {
+    titulo: "Markera som betald",
+    aPagar: (p: { total: string; desglose?: string }): string =>
+      p.desglose ? `${p.total} (${p.desglose})` : p.total,
+    metodoLabel: "Betalsätt",
+    montoLabel: "Belopp",
+    propinaLabel: "Dricks (valfritt)",
+    propinaAyuda: "Dricksen räknas inte med i kassans summor.",
+    cta: "Markera som betald",
+    confirmacion: (p: { metodo: string }): string => `Betald med ${p.metodo}.`,
+  },
+  anular: {
+    cta: "Ogiltigförklara betalning",
+    tituloConfirmacion: "Ogiltigförklara den här betalningen?",
+    cuerpoConfirmacion: "Det här går inte att ångra.",
+  },
+  soloLecturaMercadopago: "Betald automatiskt online, går inte att ändra här.",
+  errores: {
+    already_paid:
+      "Den här bokningen är redan markerad som betald. Ladda om för att se statusen.",
+    booking_cancelled:
+      "Den här bokningen är avbokad, går inte att ta betalt för den.",
+    invalid_amount: "Det beloppet är inte giltigt.",
+    same_day_required:
+      "Du kan bara ogiltigförklara en betalning samma dag som den registrerades.",
+  },
+  vacioPeriodo: "Inga betalningar under den här perioden.",
+  vacioDia: "Du har inga bokningar den här dagen.",
+  informes: {
+    ingresosPorSemana: {
+      titulo: "Intäkter per vecka",
+      subtitulo: "Senaste 12 veckorna",
+    },
+    ocupacionPorProfesional: {
+      titulo: "Beläggning per medarbetare",
+    },
+    nuevosVsRecurrentes: {
+      titulo: "Nya och återkommande kunder",
+      nuevos: "Nya",
+      recurrentes: "Återkommande",
+    },
+    tendenciaInasistencias: {
+      titulo: "Trend för uteblivna besök",
+    },
+    vacio: "Det finns inte tillräckligt med data för den här statistiken än.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// abono: förskottsbetalning, neutralt formulerat utan att namnge en
+// specifik betaltjänst (D-027: inga kundbetalningar i SE, nycklarna finns
+// bara av typskäl).
+// ---------------------------------------------------------------------------
+
+export const abono: Widen<typeof Es.abono> = {
+  ajustes: {
+    titulo: "Ta emot förskott",
+    explicacion:
+      "Förskottet går direkt till ditt eget betalkonto. Det går aldrig via oss.",
+    ctaConectar: "Anslut onlinebetalning",
+    conectadaComo: (p: { cuenta: string }): string =>
+      `Ansluten som ${p.cuenta}`,
+    ctaDesconectar: "Koppla från",
+    confirmarDesconectar:
+      "Tjänster med förskott slutar begära det tills du ansluter igen.",
+    errores: {
+      oauth_cancelled: "Du avbröt anslutningen.",
+      oauth_denied: "Anslutningen nekades. Försök igen.",
+      token_expired: "Din anslutning har gått ut. Anslut igen.",
+      mp_unavailable: "Tjänsten svarar inte just nu. Försök igen senare.",
+    },
+  },
+  servicio: {
+    depositKindLabel: "Förskott",
+    depositKind: {
+      none: "Inget förskott",
+      fixed: "Fast belopp",
+      percent: "Procent av priset",
+    },
+    depositValueLabel: "Förskottsbelopp",
+    depositValuePercentLabel: "Förskottets procentandel",
+    vistaPrevia: (p: { monto: string }): string =>
+      `Kunden betalar ${p.monto} för att boka.`,
+    errores: {
+      porcentajeFueraDeRango: "Procentandelen måste vara mellan 1 och 100.",
+      montoMayorAlPrecio: "Förskottet kan inte vara högre än tjänstens pris.",
+      mp_not_connected: "Anslut en betaltjänst för att begära förskott.",
+    },
+  },
+  reserva: {
+    requiereAbono: (p: { monto: string }): string =>
+      `Kräver förskott på ${p.monto}`,
+    explicacion: (p: { monto: string; saldo: string }): string =>
+      `Betala ${p.monto} nu online. Resten (${p.saldo}) betalar du på plats.`,
+    condiciones: (p: { negocio: string; horas: number }): string =>
+      `Om du avbokar fram till ${p.horas} h innan betalar ${p.negocio} tillbaka förskottet. Om du avbokar senare eller uteblir behåller ${p.negocio} förskottet. Om du ändrar tiden behålls förskottet. Om ${p.negocio} avbokar får du tillbaka förskottet.`,
+    ctaPagar: "Betala förskott",
+    redirigiendo: "Vi tar dig vidare för betalning…",
+    tiempoParaPagar: (p: { minutos: number }): string =>
+      `Du har ${p.minutos} min på dig att betala. Sen släpper vi tiden.`,
+    retorno: {
+      aprobado: "Förskottet är betalt, din tid är bekräftad.",
+      pendiente: "Vi bekräftar din betalning…",
+      rechazado: "Betalningen gick inte igenom. Du kan försöka igen.",
+      expirado: "Tiden gick ut och platsen släpptes.",
+    },
+    pagoTardio: (p: { negocio: string; telefonoNegocio: string }): string =>
+      `${p.negocio} fick din betalning, men tiden hade redan släppts. ${p.negocio} betalar tillbaka förskottet. Skriv till ${p.telefonoNegocio} för att lösa det.`,
+  },
+  gestion: {
+    abonoPagado: (p: { monto: string }): string =>
+      `Förskott betalt: ${p.monto}`,
+    cancelarConAbonoDentroPlazo: (p: {
+      monto: string;
+      negocio: string;
+    }): string => `${p.negocio} betalar tillbaka ${p.monto}.`,
+    cancelarConAbonoFueraPlazo: (p: { monto: string }): string =>
+      `Förskottet på ${p.monto} betalas inte tillbaka.`,
+  },
+  dueno: {
+    abonoPorDevolver: "Förskott att betala tillbaka",
+    devolverEnMercadopago: "Betala tillbaka det via din betaltjänst.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// sms: samma nio meddelanden som es-CL, för sms i stället för WhatsApp/
+// e-post (D-028): en enda kanal här, så till skillnad från
+// `plantillasWhatsapp`/`whatsappSesion` ovan (som redan är sms i sak men
+// behåller sina gamla exportnamn av formskäl) heter den här exporten helt
+// enkelt `sms`. Samma format som es-CL: ≤ 160 tecken, ingen emoji, en länk
+// per meddelande. `pie` läggs bara till marknadsförings-sms (idag
+// `horaFlash`); avsändarnamnet sätts av sms-leverantören, inte av texten.
+// ---------------------------------------------------------------------------
+
+export const sms: Widen<typeof Es.sms> = {
+  reservaConfirmada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+    precioSocio?: string;
+    precioOferta?: string;
+  }): string =>
+    `Din tid hos ${p.negocio} är bekräftad: ${p.fecha} kl. ${p.hora}.${p.precioSocio ? ` Medlemspris: ${p.precioSocio}.` : ""}${p.precioOferta ? ` Erbjudandepris: ${p.precioOferta}.` : ""} Detaljer: ${p.link}`,
+  recordatorio: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Påminnelse från ${p.negocio}: din tid är ${p.fecha} kl. ${p.hora}. Detaljer: ${p.link}`,
+  recordatorioHoy: (p: {
+    negocio: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Påminnelse från ${p.negocio}: din tid är idag kl. ${p.hora}. Detaljer: ${p.link}`,
+  reservaMovida: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din tid hos ${p.negocio} ändrades: nu är den ${p.fecha} kl. ${p.hora}. Detaljer: ${p.link}`,
+  reservaCancelada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din tid hos ${p.negocio} den ${p.fecha} kl. ${p.hora} avbokades. Boka ny tid: ${p.link}`,
+  solicitudRechazada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din förfrågan hos ${p.negocio} för ${p.fecha} kl. ${p.hora} kunde inte bekräftas. Boka en ny tid: ${p.link}`,
+  solicitudVencida: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Din förfrågan hos ${p.negocio} för ${p.fecha} kl. ${p.hora} hann gå ut. Boka en ny tid: ${p.link}`,
+  listaEsperaCupo: (p: {
+    negocio: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+    link: string;
+    minutos: number;
+  }): string =>
+    `En tid hos ${p.negocio} blev ledig! ${p.servicio}, ${p.fecha} kl. ${p.hora}. Du har ${p.minutos} min: ${p.link}`,
+  listaEsperaTomada: (p: { negocio: string; fecha: string }): string =>
+    `Den tiden hos ${p.negocio} är redan tagen. Du står kvar på väntelistan för ${p.fecha}.`,
+  horaFlash: (p: {
+    negocio: string;
+    hora: string;
+    pct: number;
+    link: string;
+  }): string =>
+    `Blixttid hos ${p.negocio}: -${p.pct}% om du bokar idag kl. ${p.hora}. ${p.link}`,
+  nuevaReservaDueno: (p: {
+    cliente: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+  }): string =>
+    `Ny bokning: ${p.cliente} bokade ${p.servicio} ${p.fecha} kl. ${p.hora}.`,
+  nuevaSolicitudDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Ny bokningsförfrågan: ${p.cliente}, ${p.fecha} kl. ${p.hora} - svara här: ${p.link}`,
+  solicitudCancelacionDueno: (p: {
+    cliente: string;
+    fecha: string;
+    hora: string;
+    link: string;
+  }): string =>
+    `Avbokningsförfrågan: ${p.cliente}, ${p.fecha} kl. ${p.hora} - svara här: ${p.link}`,
+  cancelacionRechazada: (p: {
+    negocio: string;
+    fecha: string;
+    hora: string;
+    telefono?: string;
+  }): string =>
+    `Din avbokning hos ${p.negocio} ${p.fecha} kl. ${p.hora} godkändes inte - kontakta ${p.negocio}${p.telefono ? ` på ${p.telefono}` : ""}.`,
+  codigoAcceso: (p: { codigo: string }): string =>
+    `Din inloggningskod är ${p.codigo}. Dela den aldrig med någon.`,
+  mensajeLibre: (p: { negocio: string; texto: string }): string =>
+    `${p.negocio}: ${p.texto}`,
+  solicitudResena: (p: { negocio: string; link: string }): string =>
+    `Hur var ditt besök hos ${p.negocio}? Lämna ett omdöme: ${p.link}`,
+  campanaMarketing: (p: {
+    negocio: string;
+    texto: string;
+    link: string;
+    bajaLink: string;
+  }): string => `${p.negocio}: ${p.texto} Boka: ${p.link} Avreg: ${p.bajaLink}`,
+  pie: "Svara STOPP för att avsluta.",
+};
+
+// ---------------------------------------------------------------------------
+// perfil: WP-41 — företagets publika profil (`/[slug]`) och Inställningar →
+// "Profil" (omslagsbild, logga, galleri, om oss, Instagram). Samma nycklar
+// som `Es.perfil`; texten är hämtad direkt ur designutkasten
+// (`.visual-diff/ref/ProfilDesktop.dc.html`, `ProfilMobil.dc.html`) där de
+// redan är på svenska.
+// ---------------------------------------------------------------------------
+
+export const perfil: Widen<typeof Es.perfil> = {
+  publico: {
+    chips: {
+      abiertoAhora: (p: { hasta: string }): string =>
+        `Öppet nu · till ${p.hasta}`,
+      cerrado: "Stängt",
+      abreA: (p: { dia: string; hora: string }): string =>
+        `Öppnar ${p.dia} kl. ${p.hora}`,
+      proximaHora: (p: { cuando: string }): string =>
+        `Nästa lediga tid: ${p.cuando}`,
+    },
+    secciones: {
+      reservarHora: "Boka tid",
+      profesionales: onboarding.pasos.equipo,
+      sobreNosotros: "Om oss",
+      horario: "Öppettider",
+      comoLlegar: email.comun.comoLlegar,
+      contacto: "Kontakt",
+    },
+    verRuta: "Vägbeskrivning →",
+    tabs: {
+      servicios: "Tjänster",
+      equipo: onboarding.pasos.equipo,
+      nosotros: "Om oss",
+      info: "Info",
+    },
+    reservar: CTA_BOKA,
+    reservarAhora: "Boka nu",
+    elegirHora: "Välj tid",
+    haceElServicio: (p: { nombre: string }): string => `Utförs av: ${p.nombre}`,
+    servicioDetalle: (p: { duracion: string; descripcion?: string }): string =>
+      p.descripcion ? `${p.duracion} · ${p.descripcion}` : p.duracion,
+    masRapido: "Snabbast in",
+    masRapidoDetalle: (p: { dia: string; servicio: string }): string =>
+      `${p.dia} · ${p.servicio}`,
+    nFotos: (p: { n: number }): string =>
+      `+${p.n} ${p.n === 1 ? "bild" : "bilder"}`,
+    instagramAria: (p: { negocio: string }): string =>
+      `Instagram för ${p.negocio}`,
+  },
+  ajustes: {
+    titulo: "Profil",
+    ayuda: "Så här ser dina kunder dig på din bokningssida.",
+    campos: {
+      sobreNosotrosLabel: "Om oss",
+      sobreNosotrosPlaceholder:
+        "Berätta för dina kunder vilka ni är, vad ni är bra på och vad de kan förvänta sig.",
+      sobreNosotrosAyuda: "Visas på din bokningssida.",
+      instagramLabel: "Instagram",
+      instagramPlaceholder: "@dittforetag",
+      instagramAyuda: "Bara ditt användarnamn, utan hela länken.",
+      portadaLabel: "Omslagsbild",
+      portadaAyuda: "Visas högst upp på din bokningssida.",
+      logoLabel: "Logga",
+      logoAyuda: "Laddar du inte upp en visar vi ditt företags initialer.",
+      galeriaLabel: "Galleri",
+      galeriaAyuda: "Upp till 12 bilder från din lokal eller ditt arbete.",
+    },
+    botones: {
+      subir: "Ladda upp bild",
+      cambiar: "Byt",
+      eliminar: "Ta bort",
+      moverArriba: "Flytta upp",
+      moverAbajo: "Flytta ner",
+    },
+    errores: {
+      tipoInvalido: "Den filen är inte en bild. Använd JPG, PNG eller WEBP.",
+      demasiadoGrande: "Bilden väger mer än 2 MB. Använd en lättare bild.",
+      maxImagenes:
+        "Du har redan 12 bilder i ditt galleri. Ta bort en för att lägga till en till.",
+      subidaFallida: "Vi kunde inte ladda upp bilden. Försök igen.",
+    },
+    toast: {
+      imagenSubida: "Bilden har lagts till.",
+      imagenEliminada: "Bilden har tagits bort.",
+      cambiosGuardados: ajustes.cambiosGuardados,
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
+// solicitudes: WP-45 (D-033), samma nycklar som Es.solicitudes.
+// ---------------------------------------------------------------------------
+
+export const solicitudes: Widen<typeof Es.solicitudes> = {
+  campana: {
+    titulo: inicio.solicitudes.titulo,
+    vacio: "Du har inga väntande förfrågningar.",
+  },
+  fila: (p: {
+    cliente: string;
+    servicio: string;
+    fecha: string;
+    hora: string;
+  }): string => `${p.cliente} · ${p.servicio} · ${p.fecha}, ${p.hora}`,
+  etiquetaCancelacion: "Vill avboka",
+  acciones: {
+    confirmar: "Bekräfta",
+    rechazar: "Neka",
+    aprobarCancelacion: "Godkänn avbokning",
+  },
+  rechazarDialog: {
+    titulo: "Neka den här förfrågan?",
+    cuerpo: "Kunden meddelas och kan boka en ny tid.",
+    motivoLabel: "Anledning (valfritt)",
+    motivoPlaceholder: "Till exempel: vi har ingen tid den dagen.",
+    ctaSi: "Ja, neka",
+    ctaNo: "Nej, behåll",
+  },
+  rechazarCancelacionDialog: {
+    titulo: "Neka den här avbokningen?",
+    cuerpo: "Bokningen gäller fortfarande och kunden meddelas.",
+    ctaSi: "Ja, neka",
+    ctaNo: "Nej, behåll",
+  },
+  toast: {
+    confirmada: "Förfrågan bekräftad.",
+    rechazada: "Förfrågan nekad.",
+    cancelacionAprobada: "Avbokning godkänd.",
+    cancelacionRechazada: "Avbokningen nekades.",
+  },
+  detalle: {
+    tituloSolicitud: "Bokningsförfrågan",
+    tituloCancelacion: "Avbokningsförfrågan",
+    campos: {
+      cliente: "Kund",
+      servicio: "Tjänst",
+      profesional: "Medarbetare",
+      hora: "Tid",
+    },
+    noEncontrada: "Den här förfrågan är inte längre tillgänglig.",
+    yaRespondida: "Den här förfrågan har redan besvarats.",
+    verAgenda: "Visa i agendan",
+    resultado: {
+      confirmada: "Du bekräftade förfrågan.",
+      rechazada: "Du nekade förfrågan.",
+      cancelacionAprobada: "Du godkände avbokningen. Tiden är nu ledig.",
+      cancelacionRechazada:
+        "Du nekade avbokningen. Bokningen gäller fortfarande.",
+    },
+  },
+};
+
+// ---------------------------------------------------------------------------
+// equipo: WP-46, samma nycklar som Es.equipo (personalkonton, Inställningar
+// → Team).
+// ---------------------------------------------------------------------------
+
+export const equipo: Widen<typeof Es.equipo> = {
+  miPerfil: "Min profil",
+  ctaInvitar: "Bjud in till kontot",
+  ctaPermisos: "Behörigheter",
+  estadoCuenta: {
+    ninguna: "Inget konto",
+    invitada: "Inbjuden",
+    activa: "Konto · Personal",
+  },
+  invitarDialog: {
+    titulo: "Bjud in till kontot",
+    emailLabel: "E-post",
+    emailPlaceholder: "namn@exempel.se",
+    profesionalLabel: "Medarbetare",
+    profesionalAyuda: "Kontot kopplas till den här medarbetaren i ditt team.",
+    permisosTitulo: "Vad personen får göra",
+    ctaEnviar: "Skicka inbjudan",
+    errores: {
+      emailInvalido: "Kontrollera e-postadressen.",
+      profesionalRequerido: "Välj vilken medarbetare kontot ska kopplas till.",
+      profesionalYaTieneCuenta:
+        "Den här medarbetaren har redan ett konto. Bara ett konto per medarbetare.",
+      emailYaEsMiembro: "Den e-postadressen har redan åtkomst till kontot.",
+      emailOtroNegocio:
+        "Den e-postadressen hör redan till ett annat företag. Den kan inte ha två just nu.",
+    },
+  },
+  permisos: {
+    manage_own_bookings: {
+      nombre: "Sina egna bokningar",
+      ayuda:
+        "Kan skapa, flytta och markera Kom eller Kom inte, bara på de bokningar som är hens egna.",
+    },
+    manage_all_bookings: {
+      nombre: "Alla bokningar",
+      ayuda:
+        "Kan skapa, flytta och markera Kom eller Kom inte på alla medarbetares bokningar.",
+    },
+    cancel_bookings: {
+      nombre: "Avboka eller neka bokningar",
+      ayuda:
+        "Kan avboka en bekräftad bokning eller neka en väntande förfrågan.",
+    },
+    edit_catalog: {
+      nombre: "Tjänster och priser",
+      ayuda: "Kan skapa och redigera tjänster, priser och kategorier.",
+    },
+    manage_team: {
+      nombre: "Personal och scheman",
+      ayuda:
+        "Kan lägga till medarbetare och ändra deras scheman. Gäller inte att bjuda in konton eller ändra behörigheter: det gör bara ägaren.",
+    },
+    view_reports: {
+      nombre: "Statistik och kassa",
+      ayuda: "Kan se intäkter, företagets statistik och kassahistorik.",
+    },
+    edit_settings: {
+      nombre: "Inställningar och profil",
+      ayuda: "Kan ändra öppettider, bokningsregler och företagets profil.",
+    },
+  },
+  invitaciones: {
+    titulo: "Väntande inbjudningar",
+    enviada: (p: { fecha: string }): string => `Skickad ${p.fecha}`,
+    ctaReenviar: "Skicka igen",
+    ctaRevocar: "Återkalla",
+    confirmarRevocar: {
+      titulo: "Återkalla den här inbjudan?",
+      cuerpo: "Personen kan inte längre acceptera den.",
+      ctaSi: "Ja, återkalla",
+      ctaNo: "Nej, behåll",
+    },
+    toast: {
+      reenviada: "Inbjudan skickad igen.",
+      revocada: "Inbjudan återkallad.",
+    },
+  },
+  miembros: {
+    titulo: "Medlemmar",
+    rol: {
+      owner: "Ägare",
+      staff: "Personal",
+    },
+    ctaEditarPermisos: "Ändra behörigheter",
+    ctaQuitarAcceso: "Ta bort åtkomst",
+    confirmarQuitar: {
+      titulo: "Ta bort åtkomsten till det här kontot?",
+      cuerpo:
+        "Personen kan inte längre logga in på ditt konto. Medarbetarens rad finns kvar bland din personal.",
+      ctaSi: "Ja, ta bort åtkomst",
+      ctaNo: "Nej, behåll",
+    },
+    toast: {
+      permisosGuardados: "Behörigheter sparade.",
+      accesoQuitado: "Åtkomst borttagen.",
+    },
+  },
+  vacio: "Du har inte bjudit in någon till kontot än.",
+  /** UX-granskning (fel 4): "Din plan har 1 konto. Byt till Equipo för att ge personalen
+   * egna inloggningar." i stället för det gamla, missvisande "tillåter bara en
+   * medarbetare" — det som begränsas är antal KONTON, inte medarbetare i kalendern. */
+  limiteDelPlan: {
+    titulo: "Konton i din plan",
+    texto: (p: { limit: number }): string =>
+      `Din plan har ${p.limit} ${p.limit === 1 ? "konto" : "konton"}. Byt till Team för att ge personalen egna inloggningar (Team 3, Företag 10).`,
+    cta: "Byt plan",
+  },
+  infoDelPlan: {
+    conEspacio: (p: { used: number; limit: number }): string =>
+      `Du använder ${p.used} av ${p.limit} konton i din plan.`,
+    completo: (p: { limit: number }): string =>
+      `Du använder alla ${p.limit} konton i din plan. Byt till Local för fler (upp till 10).`,
+  },
+};
+
+// ---------------------------------------------------------------------------
+// invitacion: WP-46, samma nycklar som Es.invitacion
+// (/app/invitacion/[token]).
+// ---------------------------------------------------------------------------
+
+export const invitacion: Widen<typeof Es.invitacion> = {
+  titulo: (p: { negocio: string }): string => `Gå med i ${p.negocio}`,
+  texto: (p: { negocio: string }): string =>
+    `Acceptera inbjudan för att logga in och se ${p.negocio}s hela kalender.`,
+  ctaAceptar: "Acceptera inbjudan",
+  errores: {
+    noEncontrada: "Vi hittade inte den här inbjudan.",
+    expirada: "Den här inbjudan har gått ut. Be ägaren skicka en ny.",
+    revocada:
+      "Den här inbjudan har återkallats. Be ägaren skicka en ny om det stämmer.",
+    yaUsada: "Den här inbjudan är redan använd.",
+    otroCorreo: (p: { email: string }): string =>
+      `Den här inbjudan gäller ${p.email}. Logga in med det kontot eller be om en ny inbjudan.`,
+    correoOtroNegocio:
+      "Den e-postadressen hör redan till ett annat företag. Just nu kan den bara ha ett konto.",
+    limiteDelPlan:
+      "Det här företagets plan tillåter inte fler personalkonton just nu.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// redesSociales: WP-51 — TikTok och Facebook, se es-CL.ts för motivering av
+// det egna blocket (i stället för att bygga ut `perfil`/`negocio`).
+// ---------------------------------------------------------------------------
+
+export const redesSociales: Widen<typeof Es.redesSociales> = {
+  campos: {
+    tiktokLabel: "TikTok",
+    tiktokPlaceholder: "dittforetag",
+    tiktokAyuda: "Bara ditt användarnamn, utan hela länken.",
+    facebookLabel: "Facebook",
+    facebookPlaceholder: "dittforetag",
+    facebookAyuda: "Bara ditt användarnamn, utan hela länken.",
+  },
+  tiktokAria: (p: { negocio: string }): string => `TikTok för ${p.negocio}`,
+  facebookAria: (p: { negocio: string }): string => `Facebook för ${p.negocio}`,
+};
+
+// ---------------------------------------------------------------------------
+// baja: `/baja/[token]` (WP-31, F14) — publik sida (utan inloggning) för
+// avregistreringslänken i ett marknadsföringsutskick.
+// ---------------------------------------------------------------------------
+
+export const baja: Widen<typeof Es.baja> = {
+  titulo: "Avregistrera dig",
+  cuerpo: (p: { negocio: string }): string =>
+    `Du slutar få erbjudanden och nyheter från ${p.negocio} via e-post eller sms. Du fortsätter att få avin om dina egna bokningar.`,
+  cta: "Avregistrera mig",
+  listo: (p: { negocio: string }): string =>
+    `Klart. Du kommer inte längre få erbjudanden från ${p.negocio}.`,
+  error: "Vi kunde inte genomföra det här. Försök igen.",
+};
+
+export const flashStory: Widen<typeof Es.flashStory> = {
+  badge: "Blixttid",
+  soloUnaHora: "Bara en tid",
+  cta: "Boka via länken i bion",
+};
+
+// ---------------------------------------------------------------------------
+// flash: `/app/flash` (WP-30, F13) — ägarens skärm: aktiva och tidigare
+// blixttider, dialogen "Ny blixttid", kortet för varje tid (storybild,
+// kopiera länk, skicka till kunder, avbryt).
+// ---------------------------------------------------------------------------
+
+export const flash: Widen<typeof Es.flash> = {
+  titulo: "Blixttider",
+  todosLosServicios: "Alla tjänster",
+  activas: {
+    titulo: "Aktiva",
+    vacio: "Du har inga aktiva blixttider än.",
+  },
+  vacio: {
+    explicacion:
+      "En blixttid är en ledig lucka med rabatt. Dela den med en länk och en bild till din story, eller skicka den till kunder som tackat ja till nyheter.",
+    huecosTitulo: "Lediga luckor idag och imorgon",
+    hoy: "Idag",
+    manana: "Imorgon",
+    hueco: (p: { dia: string; rango: string; profesional: string }): string =>
+      `${p.dia} ${p.rango} · ${p.profesional}`,
+    ctaConvertir: "Gör till blixttid",
+  },
+  reservadas: {
+    titulo: "Bokade",
+    vacio: "Du har inga bokade blixttider än.",
+  },
+  nueva: {
+    cta: "Ny blixttid",
+    titulo: "Ny blixttid",
+    campos: {
+      profesional: "Medarbetare",
+      dia: "Dag",
+      hora: "Starttid",
+      modo: "Hur vill du ange tiden?",
+      modoDuracion: "Fri längd",
+      modoServicios: "Specifika tjänster",
+      duracionLabel: "Längd",
+      serviciosLabel: "Tjänster",
+      descuentoLabel: "Rabatt (%)",
+    },
+    ctaGuardar: "Skapa blixttid",
+    errores: {
+      profesionalRequerido: "Välj en medarbetare.",
+      servicioRequerido: "Välj minst en tjänst.",
+      descuentoInvalido: "Ett tal mellan 1 % och 90 %.",
+      forbidden:
+        "Du har inte behörighet att skapa blixttider för den medarbetaren.",
+      not_free: "Den tiden är inte ledig i medarbetarens schema.",
+      overlap:
+        "Det finns redan en annan aktiv blixttid som krockar med den tiden.",
+      invalid_input: "Kontrollera uppgifterna och försök igen.",
+      unknown: "Vi kunde inte skapa blixttiden. Försök igen.",
+    },
+  },
+  tarjeta: {
+    descuento: (p: { porcentaje: number }): string => `−${p.porcentaje}%`,
+    reservada: "Bokad",
+    historiaTitulo: "Bild för story",
+    descargar: "Ladda ner",
+    copiarLink: "Kopiera länk",
+    linkCopiado: "Länk kopierad",
+    errorCopiar: "Vi kunde inte kopiera länken.",
+    enviarAClientes: "Skicka till kunder",
+    enviarErrorNoActiva:
+      "Den här blixttiden är inte längre aktiv, så den går inte att skicka.",
+    cancelar: "Avbryt",
+    cancelarDialogTitulo: "Avbryta den här blixttiden?",
+    cancelarDialogCuerpo:
+      "Tiden blir tillgänglig igen utan rabatt. Det går inte att ångra.",
+    cancelarConfirmarSi: "Ja, avbryt",
+    cancelarConfirmarNo: "Nej, behåll",
+    errorCancelar: "Vi kunde inte avbryta blixttiden. Försök igen.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// vOferta: `/v/[token]` (WP-23, F8) — publik sida (utan inloggning) för
+// väntelistans erbjudande ("En tid blev ledig").
+// ---------------------------------------------------------------------------
+
+export const vOferta: Widen<typeof Es.vOferta> = {
+  titulo: "En tid blev ledig",
+  campos: {
+    servicio: "Tjänst",
+    dia: "Dag",
+    hora: "Tid",
+    profesional: "Medarbetare",
+  },
+  expira: (p: { minutos: number; segundos: number }): string =>
+    `Du har ${p.minutos}:${p.segundos.toString().padStart(2, "0")} min på dig att bekräfta`,
+  ctaTomar: "Ta den här tiden",
+  tomando: "Bekräftar…",
+  confirmada: "Klart! Din tid är bokad.",
+  confirmadaAviso: "Bekräftelsen med alla detaljer kommer strax.",
+  yaTomada: "Den tiden togs av någon annan.",
+  yaTomadaAviso:
+    "Du står kvar på väntelistan: vi hör av oss om en ny tid blir ledig.",
+  vencida: "Tiden för att bekräfta den här tiden har gått ut.",
+  yaReservada: "Du har redan bokat den här tiden.",
+  linkInvalido: "Den här länken är inte giltig.",
+  error: "Vi kunde inte bekräfta din tid. Försök igen.",
+};
+
+// ---------------------------------------------------------------------------
+// Typkontroll: en nyckel som saknas eller ett fel i en funktionssignatur ger
+// typfel här (körs av `npm run typecheck`).
+// ---------------------------------------------------------------------------
+
+export const uxTextos: Widen<typeof Es.uxTextos> = {
+  etiquetaHabitual: "Stamkund",
+  etiquetaAceptaOfertas: "Tar emot erbjudanden",
+  etiquetas: "Taggar",
+  enviarCampanaN: (p: { n: number }): string => `Skicka utskick (${p.n})`,
+  seleccionarA: (p: { nombre: string }): string => `Välj ${p.nombre}`,
+  seleccionarTodos: "Välj alla",
+  marcarSocio: "Gör till medlem",
+  quitarSocio: "Ta bort som medlem",
+  consentTerminos: "Villkor",
+  consentOfertas: "Utskick och erbjudanden",
+  deReservado: (p: { monto: string }): string => `av ${p.monto} bokat`,
+  minimizarMenu: "Fäll ihop menyn",
+  expandirMenu: "Fäll ut menyn",
+};
+
+export const resenas: Widen<typeof Es.resenas> = {
+  formulario: {
+    titulo: "Hur var det?",
+    notaLabel: "Ditt betyg",
+    estrella: (p: { n: number }): string =>
+      p.n === 1 ? "1 stjärna" : `${p.n} stjärnor`,
+    notaRequerida: "Välj 1 till 5 stjärnor.",
+    comentarioLabel: "Berätta mer (valfritt)",
+    comentarioPlaceholder: "Vad var bra? Vad kan bli bättre?",
+    contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    publicaComo: (p: { nombre: string }): string =>
+      `Visas som ${p.nombre.replace(/\.$/, "")}.`,
+    enviar: "Publicera omdöme",
+    guardar: "Spara ändringar",
+    enviando: "Sparar…",
+    gracias: "Tack för ditt omdöme!",
+    graciasTexto: (p: { negocio: string }): string =>
+      `Det syns nu på ${p.negocio}s sida. Du kan ändra det i 7 dagar via samma länk.`,
+    editar: "Ändra mitt omdöme",
+    cerrada:
+      "Tack för ditt omdöme. Det har gått 7 dagar, så det kan inte längre ändras.",
+    error: "Vi kunde inte spara ditt omdöme. Försök igen.",
+    verPagina: "Visa sidan",
+    noEncontrada: "Länken är inte giltig eller inte längre tillgänglig.",
+  },
+  publico: {
+    titulo: "Omdömen",
+    cantidad: (p: { n: number }): string =>
+      `${p.n} ${p.n === 1 ? "omdöme" : "omdömen"}`,
+    notaAria: (p: { nota: string; n: number }): string =>
+      `Betyg ${p.nota} av 5, ${p.n} ${p.n === 1 ? "omdöme" : "omdömen"}`,
+    estrellasAria: (p: { n: number }): string => `${p.n} av 5 stjärnor`,
+    verificadas: "Bara kunder som haft en bokad tid kan lämna omdöme.",
+    anonimo: "Kund",
+    respuesta: (p: { negocio: string }): string => `Svar från ${p.negocio}`,
+    verMas: "Visa fler omdömen",
+  },
+  panel: {
+    titulo: "Omdömen",
+    filtrosLabel: "Filtrera omdömen",
+    filtros: {
+      todas: "Alla",
+      sinResponder: "Obesvarade",
+      bajas: "Låga betyg",
+    },
+    vacio:
+      "Du har inga omdömen än. Efter varje besök ber vi kunden om ett omdöme.",
+    vacioFiltro: "Inga omdömen med det här filtret.",
+    sinComentario: "Ingen kommentar.",
+    responder: "Svara",
+    editarRespuesta: "Ändra svar",
+    respuestaLabel: "Offentligt svar",
+    respuestaAyuda: "Visas under omdömet på din sida.",
+    publicarRespuesta: "Publicera svar",
+    cancelar: "Avbryt",
+    reportar: "Anmäl",
+    reportada: "Anmäld",
+    oculta: "Dold efter granskning",
+    reportarTitulo: "Anmäl omdöme",
+    reportarTexto:
+      "Vi granskar det och döljer det om det bryter mot reglerna. Omdömen kan inte raderas.",
+    motivoLabel: "Anledning",
+    motivos: {
+      offensive: "Kränkande språk",
+      false: "Felaktig information",
+      personal_data: "Personuppgifter",
+      not_customer: "Inte vår kund",
+      other: "Annat",
+    },
+    detalleLabel: "Detaljer (valfritt)",
+    enviarReporte: "Skicka anmälan",
+    error: "Vi kunde inte spara. Försök igen.",
+  },
+  ajustes: {
+    pedirResena: "Be om omdöme efter besöket",
+    pedirResenaAyuda:
+      "Vi skickar ett meddelande 2 timmar efter varje besök. Bara den som haft en tid hos dig kan lämna omdöme.",
+  },
+};
+
+export const importar: Widen<typeof Es.importar> = {
+  titulo: "Har du redan en bokningssida?",
+  intro:
+    "Klistra in länken så flyttar vi över tjänster, priser, öppettider och personal. Du granskar allt innan något sparas.",
+  tituloAjustes: "Flytta hit från ditt nuvarande bokningssystem",
+  introAjustes:
+    "Klistra in länken till din gamla bokningssida så hämtar vi tjänster, öppettider och personal. Du granskar allt innan något sparas.",
+  ctaAbrir: "Flytta över mina uppgifter",
+  linkLabel: "Länk till din bokningssida",
+  linkPlaceholder: "https://www.bokadirekt.se/places/…",
+  plataformas: (p: { lista: string }): string => `Fungerar med ${p.lista}.`,
+  ctaLeer: "Hämta mina uppgifter",
+  ctaPegarTexto: "Jag klistrar hellre in texten",
+  ctaUsarLink: "Jag använder länken i stället",
+  textoLabel: "Klistra in texten från din sida här",
+  textoAyuda:
+    "Öppna din sida, kopiera all text (tjänster, priser, öppettider) och klistra in den här.",
+  progreso: {
+    leyendo: "Läser din sida…",
+    servicios: "Hittar dina tjänster…",
+    precios: "Sorterar priser och öppettider…",
+    casi: "Snart klart…",
+  },
+  aviso: "Det kan ta upp till en minut. Stanna gärna kvar här.",
+  ctaCancelar: "Avbryt",
+  revisarTitulo: "Granska det vi hittade",
+  revisarIntro:
+    "Bocka ur det du inte vill ta med. Du kan ändra priser och längder.",
+  desde: (p: { plataforma: string }): string => `Från ${p.plataforma}`,
+  grupos: {
+    perfil: "Profil",
+    horario: "Öppettider",
+    servicios: "Kategorier och tjänster",
+    equipo: "Personal",
+  },
+  campos: {
+    nombre: "Namn",
+    sobre: "Om oss",
+    direccion: "Adress",
+    comuna: "Område",
+    telefono: "Telefon",
+    email: "E-post",
+    web: "Webbplats",
+    instagram: "Instagram",
+    tiktok: "TikTok",
+    facebook: "Facebook",
+    rubro: "Bransch",
+    duracion: "Längd (min)",
+    precio: "Pris",
+  },
+  cerrado: "Stängt",
+  todoElHorario: "Använd de här öppettiderna",
+  precioDesde: "”Från”-pris: kontrollera beloppet",
+  yaExiste: "Finns redan, rörs inte",
+  faltaDuracion: "Längd saknas",
+  faltaPrecio: "Pris saknas",
+  categoria: (p: { nombre: string }): string => `Kategori: ${p.nombre}`,
+  soloInfo: "Bara för info, sparas inte.",
+  imagenes:
+    "Logga och omslag importeras inte: ladda upp dem själv under Profil.",
+  verLogo: "Visa logga",
+  verPortada: "Visa omslag",
+  notasTitulo: "Det här hittade vi inte",
+  confianzaBaja:
+    "Din sida hade lite information: granska allt i lugn och ro innan du sparar.",
+  ctaImportar: (p: { n: number }): string => `Importera valda (${p.n})`,
+  ctaUsar: "Använd de här uppgifterna",
+  ctaDescartar: "Släng",
+  importando: "Importerar…",
+  listo: (p: { servicios: number; equipo: number }): string =>
+    `Klart: vi importerade ${p.servicios} tjänster och ${p.equipo} personer.`,
+  omitidos: (p: { lista: string }): string =>
+    `Fanns redan och rördes inte: ${p.lista}.`,
+  listoOnboarding:
+    "Klart, vi har fyllt i stegen med dina uppgifter. Kolla igenom dem innan du går vidare.",
+  ningunoSeleccionado: "Bocka i minst en sak att importera.",
+  errorEn: (p: { item: string; motivo: string }): string =>
+    `”${p.item}”: ${p.motivo}`,
+  errores: {
+    url_invalid:
+      "Länken ser inte rätt ut. Kopiera den direkt från webbläsaren.",
+    platform_unsupported:
+      "Vi kan inte läsa den plattformen än. Klistra in texten från din sida så fixar vi det ändå.",
+    text_too_short:
+      "Klistra in lite mer text: dina tjänster och priser räcker.",
+    text_too_long:
+      "Det är för mycket text. Klistra bara in tjänster, priser och öppettider.",
+    daily_limit: "Du har redan gjort 3 importer i dag. Försök igen i morgon.",
+    paused:
+      "Importen är pausad just nu. Du kan lägga in dina tjänster för hand.",
+    unavailable: "Importen är inte tillgänglig.",
+    fetch_failed:
+      "Vi kunde inte öppna din sida. Klistra in texten så fixar vi det ändå.",
+    empty:
+      "Vi hittade inga företagsuppgifter där. Kolla länken eller klistra in texten.",
+    refused:
+      "Vi kunde inte läsa den sidan. Klistra in texten så försöker vi igen.",
+    busy: "Det är hög belastning just nu. Försök igen om ett par minuter.",
+    failed: "Något gick fel när vi läste din sida. Försök igen.",
+    cancelled: "Du avbröt importen.",
+  },
+};
+
+// ---------------------------------------------------------------------------
+// planes (WP-73, D-048). Samma nycklar som `es-CL.planes`.
+// ---------------------------------------------------------------------------
+
+export const planes: Widen<typeof Es.planes> = {
+  nombres: {
+    free: "Gratis",
+    emprende: "Starta",
+    equipo: "Team",
+    local: "Företag",
+    custom: "Skräddarsytt",
+  },
+  funciones: {
+    unbranded: "Bokningssida utan vår märkning",
+    online_payment: "Betalning vid bokning",
+    waitlist: "Väntelista",
+    flash: "Blixttider",
+    campaigns: "Utskick, Vi saknar dig och medlemsrabatter",
+    full_reports: "Full kassa och rapporter",
+    staff_accounts: "Personalkonton med behörigheter",
+    offers: "Erbjudanden i Upptäck",
+    priority_support: "Prioriterad support",
+  },
+  bloqueo: {
+    titulo: (p: { funcion: string; plan: string }): string =>
+      `${p.funcion} ingår i ${p.plan}`,
+    ganchos: {
+      unbranded: "Uppgradera och visa bara ditt eget varumärke.",
+      online_payment: "Uppgradera och ta betalt redan när kunden bokar.",
+      waitlist: "Uppgradera och fyll avbokningar automatiskt.",
+      flash: "Uppgradera och fyll dina luckor.",
+      campaigns: "Uppgradera och få tillbaka kunder som inte bokat på länge.",
+      full_reports: "Uppgradera och se hela bilden av din ekonomi.",
+      staff_accounts: "Uppgradera och ge ditt team egna inloggningar.",
+      offers: "Uppgradera och sälj dina tjänster till nya kunder i Upptäck.",
+      priority_support: "Uppgradera så hjälper vi dig först.",
+    },
+    verPlanes: "Se planer",
+    bloqueado: "Låst",
+  },
+  ajustes: {
+    titulo: "Plan",
+    planActual: "Din plan",
+    usoTitulo: "Användning",
+    sms: "Sms skickade denna månad",
+    cuentas: "Anställda med konto",
+    servicios: "Aktiva tjänster",
+    deMax: (p: { usado: number; max: number }): string =>
+      `${p.usado} av ${p.max}`,
+    sinLimite: (p: { usado: number }): string => `${p.usado} · obegränsat`,
+    incluye: "Det här ingår i din plan",
+    noIncluye: "Ingår inte",
+    cambiarPlan: "Byt plan",
+    contacto: "Kontakta oss",
+    cambiarAyuda:
+      "Snart kan du byta plan direkt här. Tills vidare: titta på planerna och hör av dig, så byter vi åt dig.",
+    pausado:
+      "Nedgraderar du raderas ingenting: det som inte ingår i den nya planen pausas tills du uppgraderar igen.",
+    smsAgotados:
+      "Månadens sms är slut. Bekräftelser och påminnelser skickas via mejl till den 1:a nästa månad.",
+  },
+  errores: {
+    plan_locked:
+      "Din plan har inte den här funktionen. Se planerna för att låsa upp den.",
+    plan_limit_services:
+      "Din plan har plats för 3 aktiva tjänster. Uppgradera för att lägga till fler.",
+    sms_quota:
+      "Månadens sms i din plan är slut. Uppgradera eller vänta till nästa månad.",
+  },
+  creadoCon: (p: { marca: string }): string => `Skapad med ${p.marca}`,
+};

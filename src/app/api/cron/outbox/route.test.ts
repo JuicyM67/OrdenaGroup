@@ -38,7 +38,12 @@ vi.mock("@/server/payments/stripe/reconcile", () => ({
 }));
 // WP-68 (S4): geokodningen ska köras EFTER utkorgen.
 vi.mock("@/server/vouchers", () => ({
-  runVoucherSweep: async () => ({ orders: 0, expired: 0, redeemed: 0 }),
+  runVoucherSweep: async () => ({
+    orders: 0,
+    expired: 0,
+    redeemed: 0,
+    refunding: 0,
+  }),
 }));
 vi.mock("@/server/geocoding", () => ({
   runGeocodeSweep: async () => {
@@ -116,7 +121,7 @@ describe("POST /api/cron/outbox", () => {
       waitlistExpired: 0,
       reviewRequests: 0,
       stripe: { reconciled: 0, sessions: 0 },
-      vouchers: { orders: 0, expired: 0, redeemed: 0 },
+      vouchers: { orders: 0, expired: 0, redeemed: 0, refunding: 0 },
       geocoded: { ok: 0, notFound: 0, skipped: 0 },
     });
   });

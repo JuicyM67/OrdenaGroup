@@ -93,8 +93,9 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     });
   }
   // WP-69 (D-057): värdebevis — öppna köp som webhooken missat, utgångna
-  // värdebevis och genomförda besök. Före utkorgen (kvittomejlen köas här).
-  let vouchers = { orders: 0, expired: 0, redeemed: 0 };
+  // värdebevis, genomförda besök och "Ångra köp" som fastnat i `refunding`.
+  // Före utkorgen (kvittomejlen köas här).
+  let vouchers = { orders: 0, expired: 0, redeemed: 0, refunding: 0 };
   try {
     vouchers = await runVoucherSweep(systemClock());
   } catch (e) {
