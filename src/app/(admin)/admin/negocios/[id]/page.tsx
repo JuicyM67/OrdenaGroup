@@ -90,6 +90,17 @@ export default async function AdminBusinessDetailPage({
 
       <section className="flex flex-col gap-3 rounded-card bg-surface p-5">
         <h2 className="text-15 font-bold text-ink">Plan</h2>
+        {/* WP-78 (D-059): Stripe-abonnemanget (läses bara). `custom` kräver
+            att ett levande abonnemang sägs upp först (billing_custom_plan). */}
+        <p className="text-13 text-ink-soft">
+          {business.subscription
+            ? `Stripe-abonnemang: ${business.subscription.status} · ${business.subscription.plan ?? "–"}${
+                business.subscription.periodEnd
+                  ? ` · period till ${business.subscription.periodEnd.slice(0, 10)}`
+                  : ""
+              }${business.subscription.cancelAtPeriodEnd ? " · uppsagt" : ""}`
+            : "Inget Stripe-abonnemang"}
+        </p>
         <PlanForm
           plan={business.plan}
           overrideUntil={business.planOverrideUntil}

@@ -9,6 +9,7 @@ export {
 export { startSubscriptionCheckout } from "./checkout";
 export {
   cancelSubscription,
+  cancelSubscriptionForDeletion,
   changePlan,
   previewChange,
   resumeSubscription,

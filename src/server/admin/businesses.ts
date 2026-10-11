@@ -147,6 +147,13 @@ export type BusinessDetail = {
   };
   readonly lastActivityAt: string | null;
   readonly members: readonly BusinessMember[];
+  /** WP-78 (D-059): Stripe-abonnemangets status (`null` = inget). */
+  readonly subscription: {
+    readonly status: string;
+    readonly plan: string | null;
+    readonly periodEnd: string | null;
+    readonly cancelAtPeriodEnd: boolean;
+  } | null;
 };
 
 export async function getBusinessDetail(
@@ -194,8 +201,31 @@ export async function getBusinessDetail(
       [businessId],
     );
 
+    const subRes = await q.query<{
+      status: string | null;
+      plan: string | null;
+      current_period_end: string | null;
+      cancel_at_period_end: boolean;
+    }>(
+      `select status, plan::text as plan, current_period_end, cancel_at_period_end
+         from public.billing_subscriptions where business_id = $1`,
+      [businessId],
+    );
+    const sub = subRes.rows[0];
+
     return {
       business,
+      subscription:
+        sub?.status != null
+          ? {
+              status: sub.status,
+              plan: sub.plan,
+              periodEnd: sub.current_period_end
+                ? new Date(sub.current_period_end).toISOString()
+                : null,
+              cancelAtPeriodEnd: sub.cancel_at_period_end,
+            }
+          : null,
       bookings: Number(bookingsCount.rows[0]?.n ?? "0"),
       staff: Number(staffCount.rows[0]?.n ?? "0"),
       members: membersRes.rows,
@@ -224,6 +254,7 @@ export async function getBusinessDetail(
       members: data.members.length,
     },
     lastActivityAt: data.lastActivityAt,
+    subscription: data.subscription,
     members: data.members.map((m) => ({
       userId: m.user_id,
       role: m.role,
@@ -255,6 +286,29 @@ export async function setPlan(
     return { ok: false, code: "invalid_input" };
   }
   return withServiceTx(async (q) => {
+    // WP-78 (D-059): `custom` faktureras manuellt — har företaget ett levande
+    // Stripe-abonnemang måste admin först säga upp det (annars betalar
+    // företaget två gånger).
+    const before = await q.query<{
+      plan: BusinessPlan;
+      sub_status: string | null;
+    }>(
+      `select b.plan, s.status as sub_status
+         from public.businesses b
+         left join public.billing_subscriptions s on s.business_id = b.id
+        where b.id = $1
+        for update of b`,
+      [businessId],
+    );
+    const prev = before.rows[0];
+    if (!prev) return { ok: false, code: "not_found" };
+    if (
+      plan === "custom" &&
+      prev.sub_status !== null &&
+      ["trialing", "active", "past_due", "incomplete"].includes(prev.sub_status)
+    ) {
+      return { ok: false, code: "billing_custom_plan" };
+    }
     const r = await q.query(
       `update public.businesses
           set plan = $2, plan_override_until = $3,
@@ -268,6 +322,13 @@ export async function setPlan(
       ],
     );
     if (!r.rowCount) return { ok: false, code: "not_found" };
+    if (prev.plan !== plan) {
+      await q.query(
+        `insert into private.plan_changes (business_id, from_plan, to_plan, source)
+         values ($1, $2, $3, 'admin')`,
+        [businessId, prev.plan, plan],
+      );
+    }
     await writeAuditLog(q, {
       adminUserId,
       action: "set_plan",

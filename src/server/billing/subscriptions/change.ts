@@ -10,7 +10,7 @@ import {
   type PaidPlan,
   type PlanChangePreview,
 } from "@/lib/validation/billing";
-import { getStripe } from "@/server/payments/stripe/client";
+import { getStripe, stripeSecretKey } from "@/server/payments/stripe/client";
 
 import {
   billingVatRateId,
@@ -22,6 +22,7 @@ import {
 import {
   businessPlanState,
   guardOwner,
+  LIVE_STATUSES,
   loadBillingRow,
   type BillingRow,
 } from "./customer";
@@ -325,4 +326,30 @@ export async function resumeSubscription(input: {
     });
     return { ok: false, code: "failed" };
   }
+}
+
+/**
+ * Radering av företaget (`src/server/privacy/business.ts`): begärd radering →
+ * uppsägning vid periodens slut; faktisk radering → uppsägning direkt (ingen
+ * återbetalning för påbörjad period). Stripe-kunden och fakturorna ligger
+ * kvar (bokföringsunderlag). Utan abonnemang/Stripe: ingenting.
+ */
+export async function cancelSubscriptionForDeletion(
+  businessId: string,
+  mode: "period_end" | "now",
+): Promise<void> {
+  if (!stripeSecretKey()) return;
+  const row = await loadBillingRow(businessId);
+  if (!row?.stripe_subscription_id || !row.status) return;
+  if (!LIVE_STATUSES.has(row.status) && row.status !== "unpaid") return;
+  const stripe = getStripe();
+  if (mode === "now") {
+    await stripe.subscriptions.cancel(row.stripe_subscription_id, {
+      prorate: false,
+    });
+    return;
+  }
+  const sub = await retrieveSubscription(row.stripe_subscription_id);
+  await releaseSchedule(sub);
+  await stripe.subscriptions.update(sub.id, { cancel_at_period_end: true });
 }

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { cancelSubscriptionForDeletion } from "@/server/billing/subscriptions";
 import type { Queryable } from "@/server/db/pool";
 import { getStorageAdminClient } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
@@ -410,6 +411,25 @@ export async function requestBusinessDeletion(
   userId: string,
   businessId: string,
 ): Promise<MutationResult> {
+  const result = await requestBusinessDeletionTx(userId, businessId);
+  // WP-78 (D-059): abonnemanget sägs upp vid periodens slut. Ett Stripe-fel
+  // stoppar inte raderingsbegäran (`purgeBusiness` säger upp direkt ändå).
+  if (result.ok) {
+    try {
+      await cancelSubscriptionForDeletion(businessId, "period_end");
+    } catch {
+      console.error("privacy: uppsägning av abonnemang misslyckades", {
+        code: "billing_cancel_failed",
+      });
+    }
+  }
+  return result;
+}
+
+function requestBusinessDeletionTx(
+  userId: string,
+  businessId: string,
+): Promise<MutationResult> {
   return withServiceTx(async (q) => {
     const denied = await ownerDenial(q, userId, businessId);
     if (denied) return { ok: false, code: denied };
@@ -561,6 +581,10 @@ export async function purgeBusiness(businessId: string): Promise<PurgeResult> {
   if (!eligible.ok) return eligible;
 
   await purgeBusinessMedia(businessId);
+  // WP-78 (D-059): abonnemanget sägs upp direkt (ingen återbetalning för
+  // påbörjad period). Kastar vid Stripe-fel → raderingen körs om senare,
+  // hellre än att företaget fortsätter debiteras utan konto.
+  await cancelSubscriptionForDeletion(businessId, "now");
 
   return withServiceTx(async (q) => {
     const recheck = await checkPurgeEligible(q, businessId, true);
