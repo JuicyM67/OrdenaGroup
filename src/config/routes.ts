@@ -23,11 +23,9 @@ export type RouteId =
 export type IndustriaId =
   "barberias" | "peluquerias" | "estetica" | "kinesiologia";
 
-/** Id interno de cada documento legal (`/legal/[doc]`, WP-26 paso 6), con el mismo
- * nombre que su slug CL (`LEGAL_DOCS_CL` en `src/i18n/legal/`): la ruta del sistema de
- * archivos (`src/app/(marketing)/legal/[doc]/`) usa siempre estos tres valores, igual
- * que `/para/[industria]` usa siempre el id CL de `IndustriaId`. */
-export type LegalDocId = "privacidad" | "terminos" | "encargo";
+import { hrefLegal, SE_LEGAL_SLUGS, type LegalDocId } from "./legal-routes";
+
+export { hrefLegal, type LegalDocId };
 
 /** CL-sökvägen: exakt filsystemsrutten under `(marketing)/`, oavsett marknad. */
 const CL_ROUTES: Record<RouteId, string> = {
@@ -58,27 +56,12 @@ const ROUTES_BY_MARKET: Record<Market, Record<RouteId, string>> = {
   SE: SE_ROUTES,
 };
 
-/** Svensk slug per dokument-id, för `/legal/<slug>` (CL fortsätter använda `/legal/<id>`).
- * Samma strängar som nycklarna i `LEGAL_DOCS_SE` (`src/i18n/legal/index.ts`) — de råkar
- * sammanfalla, men den här listan är den enda källan för routingen. */
-const SE_LEGAL_SLUGS: Record<LegalDocId, string> = {
-  privacidad: "integritet",
-  terminos: "villkor",
-  encargo: "bitradesavtal",
-};
-
 /** Länk till en av de delade marknadssidorna, i den här installationens marknad.
  * `hash` läggs på utan `#` (t.ex. `href("funcionalidades", "agenda")` → `/funktioner#agenda`
  * på SE, `/funcionalidades#agenda` på CL). */
 export function href(id: RouteId, hash?: string): string {
   const path = ROUTES_BY_MARKET[market][id];
   return hash ? `${path}#${anchor(hash)}` : path;
-}
-
-/** Länk till en policysida (`/legal/[doc]`), i den här installationens marknad. */
-export function hrefLegal(id: LegalDocId): string {
-  if (market === "SE") return `/legal/${SE_LEGAL_SLUGS[id]}`;
-  return `/legal/${id}`;
 }
 
 /** Alla dokument-id:n med sin svenska slug, i en fast ordning — används av

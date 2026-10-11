@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
 import { market } from "@/config/brand";
-import { hrefLegal } from "@/config/routes";
+import { hrefLegal } from "@/config/legal-routes";
 import { comun, reserva } from "@/i18n";
 // WP-40 (D-031): `validateAnswers` är uttryckligen klientsäker (se
 // filkommentaren i `booking-questions.ts`) trots att den drar in Zod — en
