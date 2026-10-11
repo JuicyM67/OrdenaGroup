@@ -140,8 +140,12 @@ export function getPrivacidadCL(entity: LegalEntity): LegalDoc {
         heading: "Cookies",
         blocks: [
           p(
-            "Usamos una sola cookie, necesaria para que funcione la plataforma: la cookie de sesión, que mantiene iniciada la cuenta del negocio (dueños y equipo) mientras la usan. Esta cookie no sirve para hacer seguimiento publicitario y no se puede desactivar sin dejar de poder usar la plataforma.",
+            "Solo usamos cookies necesarias para que funcione la plataforma, nunca para seguimiento publicitario:",
           ),
+          list([
+            "La cookie de sesión, que mantiene tu sesión iniciada: la cuenta del negocio (dueños y equipo) o tu cuenta de cliente. Se borra al cerrar sesión.",
+            "Una cookie de corta duración (15 minutos) que recuerda si entras como cliente o como negocio, para llevarte al lugar correcto después del link de acceso.",
+          ]),
           p(
             "Los clientes que solo reservan una hora, sin iniciar sesión, no reciben cookies de seguimiento.",
           ),

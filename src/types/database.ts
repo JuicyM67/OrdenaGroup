@@ -486,6 +486,8 @@ export type Database = {
           about: string | null;
           accent_color: string | null;
           address: string | null;
+          area_name: string | null;
+          area_slug: string | null;
           auto_confirm_bookings: boolean;
           cancel_approval: string;
           cancel_window_hours: number;
@@ -496,9 +498,15 @@ export type Database = {
           custom_limits: NonNullable<Json>;
           deletion_requested_at: string | null;
           facebook: string | null;
+          geocode_address_hash: string | null;
+          geocode_status: string;
+          geocoded_at: string | null;
           id: string;
           instagram: string | null;
+          lat: number | null;
+          lng: number | null;
           logo_url: string | null;
+          marketplace_flash_visible: boolean;
           max_days_ahead: number;
           member_benefit_text: string | null;
           member_discount_pct: number | null;
@@ -529,6 +537,8 @@ export type Database = {
           about?: string | null;
           accent_color?: string | null;
           address?: string | null;
+          area_name?: string | null;
+          area_slug?: string | null;
           auto_confirm_bookings?: boolean;
           cancel_approval?: string;
           cancel_window_hours?: number;
@@ -539,9 +549,15 @@ export type Database = {
           custom_limits?: NonNullable<Json>;
           deletion_requested_at?: string | null;
           facebook?: string | null;
+          geocode_address_hash?: string | null;
+          geocode_status?: string;
+          geocoded_at?: string | null;
           id?: string;
           instagram?: string | null;
+          lat?: number | null;
+          lng?: number | null;
           logo_url?: string | null;
+          marketplace_flash_visible?: boolean;
           max_days_ahead?: number;
           member_benefit_text?: string | null;
           member_discount_pct?: number | null;
@@ -572,6 +588,8 @@ export type Database = {
           about?: string | null;
           accent_color?: string | null;
           address?: string | null;
+          area_name?: string | null;
+          area_slug?: string | null;
           auto_confirm_bookings?: boolean;
           cancel_approval?: string;
           cancel_window_hours?: number;
@@ -582,9 +600,15 @@ export type Database = {
           custom_limits?: NonNullable<Json>;
           deletion_requested_at?: string | null;
           facebook?: string | null;
+          geocode_address_hash?: string | null;
+          geocode_status?: string;
+          geocoded_at?: string | null;
           id?: string;
           instagram?: string | null;
+          lat?: number | null;
+          lng?: number | null;
           logo_url?: string | null;
+          marketplace_flash_visible?: boolean;
           max_days_ahead?: number;
           member_benefit_text?: string | null;
           member_discount_pct?: number | null;
@@ -1332,6 +1356,96 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "businesses";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      offers: {
+        Row: {
+          business_id: string;
+          category: string;
+          created_at: string;
+          currency: string;
+          description: string | null;
+          id: string;
+          image_url: string | null;
+          includes: string[];
+          offer_price_minor: number;
+          published_at: string | null;
+          quantity_sold: number;
+          quantity_total: number | null;
+          regular_price_minor: number;
+          sale_ends_at: string | null;
+          sale_starts_at: string | null;
+          service_id: string;
+          slug: string;
+          status: string;
+          terms: string | null;
+          title: string;
+          updated_at: string;
+          valid_months: number;
+        };
+        Insert: {
+          business_id: string;
+          category: string;
+          created_at?: string;
+          currency: string;
+          description?: string | null;
+          id?: string;
+          image_url?: string | null;
+          includes?: string[];
+          offer_price_minor: number;
+          published_at?: string | null;
+          quantity_sold?: number;
+          quantity_total?: number | null;
+          regular_price_minor: number;
+          sale_ends_at?: string | null;
+          sale_starts_at?: string | null;
+          service_id: string;
+          slug: string;
+          status?: string;
+          terms?: string | null;
+          title: string;
+          updated_at?: string;
+          valid_months?: number;
+        };
+        Update: {
+          business_id?: string;
+          category?: string;
+          created_at?: string;
+          currency?: string;
+          description?: string | null;
+          id?: string;
+          image_url?: string | null;
+          includes?: string[];
+          offer_price_minor?: number;
+          published_at?: string | null;
+          quantity_sold?: number;
+          quantity_total?: number | null;
+          regular_price_minor?: number;
+          sale_ends_at?: string | null;
+          sale_starts_at?: string | null;
+          service_id?: string;
+          slug?: string;
+          status?: string;
+          terms?: string | null;
+          title?: string;
+          updated_at?: string;
+          valid_months?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "offers_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "offers_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
           },
         ];
       };

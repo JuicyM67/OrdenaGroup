@@ -47,6 +47,17 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // WP-68 (B1, säkerhetsgranskning #110): marknadsplatsens bilder från projektets
+  // Supabase Storage går via Next bildoptimering (samma ursprung för besökaren).
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
   // Next skriver annars in egna regler i CLAUDE.md vid `next dev`.
   agentRules: false,
   // Dev-indikatorn ritas i nederkanten och hamnar annars i skärmdumparna

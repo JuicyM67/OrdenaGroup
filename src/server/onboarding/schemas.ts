@@ -46,6 +46,11 @@ export const RESERVED_SLUGS = [
   "legal",
   "terminos",
   "privacidad",
+  // WP-68 (D-055): marknadsplatsens toppsegment, båda språken.
+  "descubre",
+  "upptack",
+  "oferta",
+  "erbjudande",
   // WP-67: kundkonton (CL /cuenta, SE /konto).
   "cuenta",
   "konto",

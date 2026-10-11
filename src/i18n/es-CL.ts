@@ -3983,8 +3983,9 @@ export const resenas = {
     comentarioLabel: "Cuéntanos más (opcional)",
     comentarioPlaceholder: "¿Qué te gustó? ¿Qué podríamos mejorar?",
     contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    // "Elin K." slutar redan på punkt — ingen dubbel punkt.
     publicaComo: (p: { nombre: string }): string =>
-      `Se publica como ${p.nombre}.`,
+      `Se publica como ${p.nombre.replace(/\.$/, "")}.`,
     enviar: "Publicar reseña",
     guardar: "Guardar cambios",
     enviando: "Guardando…",
@@ -4162,6 +4163,7 @@ export const importar = {
 // WP-72: recorrido guiado.
 export { visita } from "./es-CL.visita";
 export { smsCreditos } from "./es-CL.sms-creditos";
+export { descubre } from "./es-CL.descubre";
 export { cuenta } from "./es-CL.cuenta";
 
 // ---------------------------------------------------------------------------

@@ -32,11 +32,12 @@ import {
 } from "./sv-SE.auth";
 
 import type * as Es from "./es-CL";
+import { descubre } from "./sv-SE.descubre";
 import { smsCreditos } from "./sv-SE.sms-creditos";
 import { visita } from "./sv-SE.visita";
 import { cuenta } from "./sv-SE.cuenta";
 
-export { smsCreditos, visita, cuenta };
+export { cuenta, descubre, smsCreditos, visita };
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för
  * literaler, och med stöd för readonly-listor (CAJA_METODOS_MANUALES,
@@ -2991,7 +2992,8 @@ export const resenas: Widen<typeof Es.resenas> = {
     comentarioLabel: "Berätta mer (valfritt)",
     comentarioPlaceholder: "Vad var bra? Vad kan bli bättre?",
     contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
-    publicaComo: (p: { nombre: string }): string => `Visas som ${p.nombre}.`,
+    publicaComo: (p: { nombre: string }): string =>
+      `Visas som ${p.nombre.replace(/\.$/, "")}.`,
     enviar: "Publicera omdöme",
     guardar: "Spara ändringar",
     enviando: "Sparar…",
@@ -3278,6 +3280,7 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   visita,
   planes,
   smsCreditos,
+  descubre,
   cuenta,
 };
 void _check;

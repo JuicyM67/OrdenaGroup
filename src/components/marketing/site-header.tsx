@@ -23,14 +23,17 @@ import { cn } from "@/components/ui/cn";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeNav } from "@/components/ui/icons";
 import { brand } from "@/config/brand";
+import { marketplaceEnabled } from "@/config/marketplace";
 import {
   funcionesDisponibles,
   href,
   hrefFuncion,
+  hrefMarketplace,
   hrefRubro,
   hrefRubros,
   RUBRO_IDS,
 } from "@/config/routes";
+import { descubre } from "@/i18n";
 import { copy } from "@/i18n/marketing";
 import { paginas } from "@/i18n/paginas";
 
@@ -137,6 +140,19 @@ export function SiteHeader({ className }: { className?: string }) {
                 </NavigationMenu.Content>
               </NavigationMenu.Item>
             ))}
+
+            {marketplaceEnabled() ? (
+              <NavigationMenu.Item>
+                <NavigationMenu.Link asChild>
+                  <Link
+                    href={hrefMarketplace("descubre")}
+                    className={navLinkClass}
+                  >
+                    {descubre.nav.descubre}
+                  </Link>
+                </NavigationMenu.Link>
+              </NavigationMenu.Item>
+            ) : null}
 
             <NavigationMenu.Item>
               <NavigationMenu.Link asChild>
@@ -295,6 +311,17 @@ export function SiteHeader({ className }: { className?: string }) {
                       </li>
                     </ul>
                   </details>
+
+                  {marketplaceEnabled() ? (
+                    <Dialog.Close asChild>
+                      <Link
+                        href={hrefMarketplace("descubre")}
+                        className={mobileRowClass}
+                      >
+                        {descubre.nav.descubre}
+                      </Link>
+                    </Dialog.Close>
+                  ) : null}
 
                   <Dialog.Close asChild>
                     <Link href={href("precios")} className={mobileRowClass}>

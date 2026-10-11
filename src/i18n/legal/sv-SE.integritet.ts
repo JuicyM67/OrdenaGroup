@@ -106,6 +106,8 @@ export function getIntegritetSE(entity: LegalEntity): LegalDoc {
             "Vercel — drift av plattformen. Servrar i Stockholm, Sverige (region arn1).",
             "Resend — utskick av bekräftelser och påminnelser via e-post.",
             "ClickSend — utskick av bekräftelser och påminnelser via sms. ClickSend har sitt huvudkontor i Australien; uppgifter kan behandlas utanför EU/EES enligt deras egna villkor.",
+            "OpenFreeMap — levererar kartbilderna på kartan i Upptäck. Din webbläsare hämtar bilderna direkt från OpenFreeMap, som då ser din IP-adress (inte din position eller vem du är).",
+            "OpenStreetMap Foundation (Nominatim) — omvandlar företagens adresser till koordinater så att de kan visas på kartan och sorteras efter avstånd. Bara företagets adress skickas, aldrig uppgifter om kunder eller besökare. Kartdata: OpenStreetMaps bidragsgivare.",
             "Stripe — om företaget betalar för sin plan med kort hanteras den betalningen av Stripe. Stripe behandlar inte dina uppgifter som kund hos företaget: i dag tar plattformen inte emot betalningar från företagets kunder i Sverige.",
           ]),
           p(
@@ -113,6 +115,18 @@ export function getIntegritetSE(entity: LegalEntity): LegalDoc {
           ),
           p(
             "Vi säljer aldrig dina uppgifter och delar dem inte med tredje part i marknadsföringssyfte utanför företaget där du bokade.",
+          ),
+        ],
+      },
+      {
+        id: "upptack",
+        heading: "Upptäck och kartan",
+        blocks: [
+          p(
+            'I Upptäck kan du se erbjudanden och blixttider nära dig. Om du väljer "Min position" avrundar din webbläsare positionen till ungefär en kilometer och sparar den i en cookie i 30 minuter. Positionen används bara för att sortera listan efter avstånd: den sparas aldrig i vår databas, skickas aldrig i adressfältet och loggas aldrig. Du kan sluta använda den när du vill.',
+          ),
+          p(
+            "Företagens adresser är offentliga uppgifter som företaget själv lagt in. Vi omvandlar dem till koordinater (se Nominatim nedan) och sparar resultatet för att kunna visa företaget på kartan.",
           ),
         ],
       },
@@ -132,8 +146,13 @@ export function getIntegritetSE(entity: LegalEntity): LegalDoc {
         heading: "Cookies",
         blocks: [
           p(
-            "Vi använder en enda cookie, som krävs för att plattformen ska fungera: sessionscookien som håller företagets konto, ägare och personal, inloggat. Den används inte för reklamspårning och går inte att stänga av utan att sluta kunna använda plattformen.",
+            "Vi använder bara cookies som krävs för att plattformen ska fungera, aldrig för reklamspårning:",
           ),
+          list([
+            "Sessionscookien, som håller dig inloggad — som företag (ägare och personal) eller med ditt kundkonto. Den försvinner när du loggar ut.",
+            "En kortlivad cookie (15 minuter) som minns om du loggar in som kund eller som företag, så att du hamnar rätt efter inloggningslänken.",
+            '"nara" — bara om du väljer "Min position" i Upptäck: din position avrundad till ungefär en kilometer, i 30 minuter, och bara på Upptäck-sidorna.',
+          ]),
           p(
             "Kunder som bara bokar en tid, utan att logga in, får inga spårningscookies.",
           ),

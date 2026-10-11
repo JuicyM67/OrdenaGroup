@@ -6,3 +6,4 @@ package-lock.json
 claude-config/
 supabase/
 CLAUDE.md
+public/vendor/

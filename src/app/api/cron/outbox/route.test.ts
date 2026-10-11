@@ -36,6 +36,13 @@ vi.mock("@/server/bookings/confirm", () => ({
 vi.mock("@/server/payments/stripe/reconcile", () => ({
   runStripeSweep: async () => ({ reconciled: 0, sessions: 0 }),
 }));
+// WP-68 (S4): geokodningen ska köras EFTER utkorgen.
+vi.mock("@/server/geocoding", () => ({
+  runGeocodeSweep: async () => {
+    calls.push("runGeocodeSweep");
+    return { ok: 0, notFound: 0, skipped: 0 };
+  },
+}));
 
 const { GET, POST } = await import("./route");
 
@@ -90,7 +97,11 @@ describe("POST /api/cron/outbox", () => {
     expect(res.status).toBe(200);
     expect(expireRequestsMock).toHaveBeenCalledTimes(1);
     expect(processOutboxMock).toHaveBeenCalledExactlyOnceWith({ limit: 50 });
-    expect(calls).toEqual(["expireRequests", "processOutbox"]);
+    expect(calls).toEqual([
+      "expireRequests",
+      "processOutbox",
+      "runGeocodeSweep",
+    ]);
     const body = (await res.json()) as unknown;
     expect(body).toEqual({
       claimed: 0,
@@ -102,6 +113,7 @@ describe("POST /api/cron/outbox", () => {
       waitlistExpired: 0,
       reviewRequests: 0,
       stripe: { reconciled: 0, sessions: 0 },
+      geocoded: { ok: 0, notFound: 0, skipped: 0 },
     });
   });
 });
@@ -117,7 +129,11 @@ describe("expireRequests kastar", () => {
     try {
       const res = await POST(req({ authorization: "Bearer s3cret-value" }));
       expect(res.status).toBe(200);
-      expect(calls).toEqual(["expireRequests", "processOutbox"]);
+      expect(calls).toEqual([
+        "expireRequests",
+        "processOutbox",
+        "runGeocodeSweep",
+      ]);
       expect(((await res.json()) as { expired: number }).expired).toBe(0);
       expect(spy).toHaveBeenCalledExactlyOnceWith(
         "outbox: expireRequests misslyckades",

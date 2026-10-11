@@ -68,6 +68,8 @@ const eslintConfig = [
       "test-results/**",
       ".visual-diff/**",
       "docs/**",
+      // WP-68: MapLibres webworker, kopierad oförändrad ur node_modules.
+      "public/vendor/**",
     ],
   },
   ...coreWebVitals,
