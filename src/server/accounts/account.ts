@@ -272,7 +272,9 @@ export async function linkAccountRows(userId: string): Promise<void> {
 
 /** Bokningen gjordes nyss inloggad av kontot på `/[slug]`: markera den som
  * kontots (`bookings.account_user_id`) och koppla kundraden. Databasen kräver
- * att bokningen är högst 10 min gammal och inte redan tillhör ett konto. */
+ * att bokningen är högst 10 min gammal, inte redan tillhör ett konto och
+ * angavs med kontots bekräftade e-post (eller utan e-post). `bookingId` får
+ * ALDRIG komma från klienten — bara id:t som servern nyss skapade. */
 export async function claimBookingForAccount(
   userId: string,
   businessId: string,

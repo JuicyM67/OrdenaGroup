@@ -14,7 +14,7 @@
 --   behåller auth-användaren; anonymisering tar bort kopplingar.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(41);
 \ir _helpers.psql
 
 -- Konsumenter: c1 (bekräftad e-post), c2 (annan person), c3 (obekräftad).
@@ -164,6 +164,12 @@ insert into public.bookings (id, business_id, staff_id, service_id, customer_id,
    tstzrange('2030-03-01 10:00+00', '2030-03-01 11:00+00', '[)'), tstzrange('2030-03-01 10:00+00', '2030-03-01 11:00+00', '[)'), 'confirmed', 'web', 20000, null);
 set local role authenticated;
 select is((select private.claim_booking('bbbbbbbb-0000-0000-0000-000000000002', 'bbbb0000-0000-0000-0000-0000000000c2')), true, 'claim_booking markerar en nyss gjord bokning');
+reset role;
+insert into public.bookings (id, business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, contact_email) values
+  ('bbbb0000-0000-0000-0000-0000000000c3', 'bbbbbbbb-0000-0000-0000-000000000002', '5bbb0000-0000-0000-0000-000000000001', '5e0b0000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-00000000000b',
+   tstzrange('2030-03-02 10:00+00', '2030-03-02 11:00+00', '[)'), tstzrange('2030-03-02 10:00+00', '2030-03-02 11:00+00', '[)'), 'confirmed', 'web', 20000, 'someone-else@example.com');
+set local role authenticated;
+select is((select private.claim_booking('bbbbbbbb-0000-0000-0000-000000000002', 'bbbb0000-0000-0000-0000-0000000000c3')), false, 'claim_booking nekar en annans färska bokning med annan e-post');
 reset role;
 
 -- 39. Anonymiserad kundrad → kopplingarna försvinner
