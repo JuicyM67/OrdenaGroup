@@ -3,7 +3,11 @@
 // WP-64 (D-044): server actions för fliken Betalningar. `userId`/`businessId`
 // läses ur den verifierade sessionen, aldrig från klienten; varje funktion i
 // `src/server/payments/stripe/settings.ts` kontrollerar att personen är ägare.
+import { redirect } from "next/navigation";
+
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { setGiftCardsEnabled } from "@/server/gift-cards/settings";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import {
   beginStripeOnboarding,
@@ -54,4 +58,21 @@ export async function openStripeDashboardAction(): Promise<PagosRedirectResult> 
   const s = await session();
   if (!s) return { ok: false, code: "unauthorized" };
   return openStripeDashboard(s.userId, s.businessId);
+}
+
+/** WP-77 (D-058): reglaget "Sälj presentkort" (vanligt formulär, ingen klient-JS). */
+export async function updateGiftCardsAction(
+  formData: FormData,
+): Promise<never> {
+  const s = await session();
+  const r = s
+    ? await setGiftCardsEnabled(
+        s.userId,
+        s.businessId,
+        formData.get("giftCards") === "on",
+      )
+    : { ok: false as const, code: "forbidden" as const };
+  redirect(
+    `${appHref("appAjustesPagos")}?presentkort=${r.ok ? "ok" : r.code}#presentkort`,
+  );
 }

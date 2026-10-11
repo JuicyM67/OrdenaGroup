@@ -34,6 +34,14 @@ export const customerFormSchema = z.object({
    * själv om betalning gäller (företagets inställning); "Obligatorisk"
    * ignorerar värdet. */
   payOnline: z.boolean().optional(),
+  /** WP-77 (D-058): presentkortets kod (valfri). Servern normaliserar och
+   * reserverar saldot i bokningens transaktion. */
+  giftCardCode: z
+    .string()
+    .trim()
+    .max(40)
+    .optional()
+    .transform((v) => (v ? v : undefined)),
   consentVersion: z.literal(reserva.consentimientos.version),
   idempotencyKey: z.uuid(),
   serviceId: z.string().min(1),

@@ -4,7 +4,13 @@
 "use client";
 
 import { ChevronLeft } from "lucide-react";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 
 import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
@@ -88,6 +94,8 @@ export function CustomerForm({
   onSubmitBooking,
   onSubmitWaitlist,
   initialErrors,
+  giftCardField,
+  giftCardError,
 }: {
   formId: string;
   data: BookingPageData;
@@ -106,6 +114,10 @@ export function CustomerForm({
   /** Bara till design lab (`?estado=datos-errores`): visar fältfel utan att
    * kunden behöver skicka formuläret först. */
   initialErrors?: FieldErrors;
+  /** WP-77 (D-058): "Har du ett presentkort?" — serverrenderat fält
+   * (`name="giftCardCode"`, texterna i RSC-svaret, inte i klientbunten). */
+  giftCardField?: ReactNode;
+  giftCardError?: string | null;
 }) {
   const isWaitlist = day?.state === "full";
   const service = data.services.find((s) => s.id === selection.serviceId);
@@ -232,7 +244,11 @@ export function CustomerForm({
     const answersPayload: Record<string, unknown> = {};
     for (const a of answerResult.value) answersPayload[a.questionId] = a.value;
 
+    const giftCode = new FormData(e.currentTarget).get("giftCardCode");
     const base = {
+      ...(!isWaitlist && typeof giftCode === "string" && giftCode.trim()
+        ? { giftCardCode: giftCode.trim() }
+        : {}),
       name: nameResult.value,
       phone: phoneResult.value,
       email: emailResult.value ?? "",
@@ -279,7 +295,8 @@ export function CustomerForm({
   // väntelistans kort (waitlist_duplicate) byter `step` i reducern innan den
   // här komponenten ens renderas igen — se `flow-state.ts` (qa-granskning,
   // item 3).
-  const generalError = serverErrorCode ? serverError(serverErrorCode) : null;
+  const generalError =
+    serverErrorCode && !giftCardError ? serverError(serverErrorCode) : null;
 
   return (
     <div className="flex flex-col gap-6 pb-35">
@@ -443,6 +460,17 @@ export function CustomerForm({
             {reserva.consentimientos.marketing({ negocio: data.business.name })}
           </ConsentCheckbox>
         </div>
+
+        {!isWaitlist && giftCardField ? (
+          <div className="flex flex-col gap-1.5">
+            {giftCardField}
+            {giftCardError ? (
+              <p role="alert" className="text-13 font-semibold text-ink">
+                {giftCardError}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {!isWaitlist && onlinePayment === "optional" ? (
           <div className="flex flex-col gap-1">

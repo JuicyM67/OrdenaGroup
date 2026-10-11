@@ -30,6 +30,8 @@ export type CreateCustomerBookingInput = {
   offerToken?: string | undefined;
   /** WP-69 (D-057): värdebeviset, bundet på servern (`page.tsx`). */
   voucher?: { id: string; userId: string } | undefined;
+  /** WP-77 (D-058): presentkortets kod. */
+  giftCardCode?: string | undefined;
   now: Date;
   /** Installationens marknad; injiceras bara i tester. */
   market?: Market | undefined;
@@ -116,6 +118,7 @@ export async function createCustomerBooking(
         ? { offerToken: input.offerToken }
         : {}),
       ...(input.voucher ? { voucher: input.voucher } : {}),
+      ...(input.giftCardCode ? { giftCardCode: input.giftCardCode } : {}),
     },
     {
       businessId: input.businessId,

@@ -67,6 +67,8 @@ export type CajaScreenProps = {
   myProfileActions?: MyProfileActions;
   /** WP-69 (D-057): länk till sålda värdebevis (bara SE, text från servern). */
   vouchersLink?: { href: string; label: string };
+  /** WP-77 (D-058): Kassa → Presentkort (bara SE). */
+  giftCardsLink?: { href: string; label: string };
 };
 
 type PeriodKind = "today" | "week" | "month" | "range";
@@ -123,6 +125,7 @@ export function CajaScreen({
   myProfile,
   myProfileActions,
   vouchersLink,
+  giftCardsLink,
 }: CajaScreenProps) {
   const [periodKind, setPeriodKind] = useState<PeriodKind>("today");
   const [rangeFrom, setRangeFrom] = useState("");
@@ -263,6 +266,11 @@ export function CajaScreen({
             {vouchersLink ? (
               <Button asChild variant="secondary" size="sm">
                 <Link href={vouchersLink.href}>{vouchersLink.label} →</Link>
+              </Button>
+            ) : null}
+            {giftCardsLink ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link href={giftCardsLink.href}>{giftCardsLink.label} →</Link>
               </Button>
             ) : null}
             <Button asChild variant="secondary" size="sm">
