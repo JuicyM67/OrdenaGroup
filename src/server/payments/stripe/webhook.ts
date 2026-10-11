@@ -9,6 +9,10 @@ import {
   voidSmsCreditsForDispute,
 } from "@/server/billing/sms-credits";
 import { withServiceTx } from "@/server/db/tx";
+import {
+  handleVoucherCheckoutEvent,
+  handleVoucherPaymentEvent,
+} from "@/server/vouchers";
 
 import { syncAccount } from "./accounts";
 import { getStripe } from "./client";
@@ -106,6 +110,9 @@ async function dispatch(event: Stripe.Event, now: Date): Promise<void> {
         await fulfillSmsCreditCheckout(obj.id, { now });
         return;
       }
+      // WP-69 (D-057): värdebevisköp (ordern finns på sessionen) först.
+      if (await handleVoucherCheckoutEvent("completed", obj.id, account, now))
+        return;
       await handleCheckoutCompleted(obj.id, account, now);
       return;
     }
@@ -115,6 +122,8 @@ async function dispatch(event: Stripe.Event, now: Date): Promise<void> {
         await expireSmsCreditCheckout(obj.id);
         return;
       }
+      if (await handleVoucherCheckoutEvent("expired", obj.id, account, now))
+        return;
       const s = await getStripe().checkout.sessions.retrieve(
         obj.id,
         {},
@@ -148,13 +157,27 @@ async function dispatch(event: Stripe.Event, now: Date): Promise<void> {
         (event.data.object as { payment_intent?: string | null })
           .payment_intent,
       );
-      if (account && pi) await handleChargeRefunded(pi, account);
+      if (account && pi) {
+        if (await handleVoucherPaymentEvent("refunded", pi, account, now))
+          return;
+        await handleChargeRefunded(pi, account);
+      }
       return;
     }
     case "charge.dispute.created": {
       // WP-76 (D-053): chargeback på ett sms-köp (plattformens händelse) →
-      // återstående krediter dras. Connect-tvister hanteras manuellt (D-044).
+      // återstående krediter dras. Connect-tvister på bokningar hanteras
+      // manuellt (D-044); på värdebevis (WP-69) spärras beviset (`disputed`).
       if (!account && obj.id) await voidSmsCreditsForDispute(obj.id);
+      if (account && obj.id) {
+        const dispute = await getStripe().disputes.retrieve(
+          obj.id,
+          {},
+          { stripeAccount: account },
+        );
+        const pi = idOf(dispute.payment_intent);
+        if (pi) await handleVoucherPaymentEvent("disputed", pi, account, now);
+      }
       return;
     }
     // payment_intent.payment_failed: kunden kan försöka igen i samma session;

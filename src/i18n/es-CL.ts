@@ -1701,6 +1701,24 @@ export const email = {
     ayuda: "Cuando se acaben, los recordatorios salen por correo.",
     cta: "Ver mi plan",
   },
+  /** WP-69 (D-057): al comprador, recibo del vale (cupón). En CL no se
+   * envía en v1 (marketplace oculto), solo paridad de tipos. */
+  valeComprado: {
+    asunto: (p: { titulo: string }): string => `Tu vale: ${p.titulo}`,
+    preheader: (p: { negocio: string }): string =>
+      `Tu código para ${p.negocio} y cómo reservar.`,
+    titulo: "Tu vale está listo",
+    texto: (p: { negocio: string }): string =>
+      `Gracias por tu compra. ${p.negocio} es quien te vende el vale y quien recibió el pago. Reserva tu hora cuando quieras, antes de que venza.`,
+    arrepentimiento:
+      "Tienes 14 días para arrepentirte de la compra desde tu cuenta, si aún no usaste el vale.",
+    codigo: "Código",
+    servicio: "Servicio",
+    valor: "Valor",
+    validoHasta: "Válido hasta",
+    vendidoPor: "Lo vende",
+    cta: "Elegir hora",
+  },
   /** WP-76 (D-053): al dueño, sin SMS (plan y créditos agotados). */
   smsAgotados: {
     asunto: "Se acabaron tus SMS",

@@ -37,9 +37,10 @@ select is(
 select is((select fee_minor from o1), 80, 'avgift = floor(belopp × bps / 10 000)');
 
 -- 5. Dubbelklick: samma köpare återanvänder den öppna ordern.
+update public.voucher_orders set session_id = 'cs_vb_1' where id = (select order_id from o1);
 select is(
   (select outcome from private.voucher_open_order('aaaaaaaa-6900-0000-0003-000000000001', 'c0000000-6900-0000-0000-000000000001', 100, 31, now())),
-  'reused', 'en öppen order återanvänds');
+  'reused', 'en öppen order med levande session återanvänds');
 
 -- 6. Företag utan Stripe-konto som kan ta betalt: inget köp.
 select is(

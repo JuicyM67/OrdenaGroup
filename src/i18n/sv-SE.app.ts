@@ -1351,6 +1351,22 @@ export const email: Widen<typeof Es.email> = {
       "När de är slut fortsätter påminnelserna från dina sms-krediter. Har du inga krediter skickas de som e-post i stället.",
     cta: "Fyll på sms",
   },
+  valeComprado: {
+    asunto: (p: { titulo: string }): string => `Ditt värdebevis: ${p.titulo}`,
+    preheader: (p: { negocio: string }): string =>
+      `Din kod hos ${p.negocio} och hur du bokar.`,
+    titulo: "Ditt värdebevis är klart",
+    texto: (p: { negocio: string }): string =>
+      `Tack för ditt köp. Det är ${p.negocio} som säljer värdebeviset och som har fått betalningen. Boka din tid när du vill, före sista giltighetsdag.`,
+    arrepentimiento:
+      "Du har 14 dagars ångerrätt. Ångra köpet under Mina värdebevis i ditt konto, så länge värdebeviset inte är använt.",
+    codigo: "Kod",
+    servicio: "Behandling",
+    valor: "Värde",
+    validoHasta: "Giltigt till",
+    vendidoPor: "Säljs av",
+    cta: "Välj tid",
+  },
   smsAgotados: {
     asunto: "Dina sms är slut — påminnelser går nu som e-post",
     preheader: "Fyll på med sms-krediter så att kunderna får sms igen.",

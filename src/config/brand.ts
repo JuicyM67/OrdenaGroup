@@ -12,6 +12,8 @@ const brands = {
     // WP-63 (D-043): demoföretaget som marknadssidan länkar till. Skapas och
     // rullas av `private.seed_demo('CL')`.
     demoSlug: "estudio-brisa",
+    // WP-69 (D-057): prefix på värdebevisens kod (`OC-XXXX-XXXX`).
+    voucherPrefix: "OC",
     supportWhatsapp: null,
     // TODO: fylls i före lansering (WP-26, "Ägarens svar" 2026-09-30) — samma
     // platshållarvärden som `src/i18n/legal/entity.ts` (PLACEHOLDER_ENTITY_CL),
@@ -28,6 +30,7 @@ const brands = {
     tagline: "Kalendern som fyller sig själv.",
     domain: "bookingbuddy.se",
     demoSlug: "salong-norrsken",
+    voucherPrefix: "BB",
     supportWhatsapp: null,
     // TODO: fylls i före lansering — samma platshållarvärden som
     // `src/i18n/legal/entity.ts` (PLACEHOLDER_ENTITY_SE).
@@ -59,6 +62,8 @@ export type Brand = {
   readonly domain: string | null;
   /** Sluggen för marknadens demoföretag (`/{demoSlug}`). */
   readonly demoSlug: string;
+  /** Två versaler före värdebevisens kod (WP-69). */
+  readonly voucherPrefix: string;
   readonly supportWhatsapp: string | null;
   readonly legal: LegalEntity;
 };

@@ -208,5 +208,14 @@ export function emailFixtures(market: Market): {
       max: 150,
       planUrl: "https://app.example.com/app/ajustes/plan",
     },
+    valeComprado: {
+      negocio: b.negocio,
+      titulo: "Klippning + styling",
+      codigo: "BB-7K2Q-94MZ",
+      valor: market === "SE" ? "890 kr" : "$8.900",
+      validoHasta: market === "SE" ? "24 okt. 2027" : "24 oct 2027",
+      direccion: "Storgatan 1",
+      reservarUrl: "https://app.example.com/barberia-norte?vardebevis=abc",
+    },
   };
 }

@@ -317,6 +317,7 @@ export type AppRouteId =
   | "appClientesResenas"
   | "appCaja"
   | "appCajaInformes"
+  | "appCajaVales"
   | "appFlash"
   | "appAjustes"
   | "appAjustesNegocio"
@@ -369,6 +370,7 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appClientesUtskickNytt: "/app/clientes/utskick/nytt",
   appCaja: "/app/caja",
   appCajaInformes: "/app/caja/informes",
+  appCajaVales: "/app/caja/vales",
   appFlash: "/app/flash",
   appAjustes: "/app/ajustes",
   appAjustesNegocio: "/app/ajustes/negocio",
@@ -402,6 +404,7 @@ const SE_APP_ROUTES: Record<AppRouteId, string> = {
   appClientesResenas: "/app/kunder/omdomen",
   appCaja: "/app/kassa",
   appCajaInformes: "/app/kassa/rapporter",
+  appCajaVales: "/app/kassa/vardebevis",
   appFlash: "/app/blixttider",
   appAjustes: "/app/installningar",
   appAjustesNegocio: "/app/installningar/foretag",
@@ -464,7 +467,8 @@ export type CuentaRouteId =
   | "cuentaReservas"
   | "cuentaFavoritos"
   | "cuentaPrivacidad"
-  | "cuentaResena";
+  | "cuentaResena"
+  | "cuentaVales";
 
 const CL_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
   cuenta: "/cuenta",
@@ -473,6 +477,7 @@ const CL_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
   cuentaFavoritos: "/cuenta/favoritos",
   cuentaPrivacidad: "/cuenta/privacidad",
   cuentaResena: "/cuenta/resena/[id]",
+  cuentaVales: "/cuenta/vales",
 };
 
 const SE_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
@@ -482,6 +487,7 @@ const SE_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
   cuentaFavoritos: "/konto/favoriter",
   cuentaPrivacidad: "/konto/integritet",
   cuentaResena: "/konto/recension/[id]",
+  cuentaVales: "/konto/vardebevis",
 };
 
 /** Länk till en kontosida, i den här installationens marknad. `param` ersätter

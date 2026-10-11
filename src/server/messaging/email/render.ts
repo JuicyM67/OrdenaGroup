@@ -65,6 +65,7 @@ import {
   smsCuota80Email,
   type SmsAvisoData,
 } from "./templates/sms-creditos";
+import { valeCompradoEmail, type ValeCompradoData } from "./templates/vale";
 import type { EmailKind, RenderedEmail } from "./types";
 
 /** En mall = { data, kind (`EMAIL_FROM_BOOKING`/`EMAIL_FROM_ACCOUNT`) }. */
@@ -104,6 +105,8 @@ export type EmailTemplateMap = {
   /** WP-76 (D-053): al dueño, avisos de SMS (80 % / agotados). */
   readonly smsCuota80: SmsAvisoData;
   readonly smsAgotados: SmsAvisoData;
+  /** WP-69 (D-057): al comprador, recibo del vale. */
+  readonly valeComprado: ValeCompradoData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -139,6 +142,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   solicitudResena: "booking",
   smsCuota80: "account",
   smsAgotados: "account",
+  valeComprado: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -167,6 +171,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "solicitudResena",
   "smsCuota80",
   "smsAgotados",
+  "valeComprado",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -230,6 +235,8 @@ export function renderEmail<T extends EmailTemplateName>(
       return smsCuota80Email(market, data as SmsAvisoData);
     case "smsAgotados":
       return smsAgotadosEmail(market, data as SmsAvisoData);
+    case "valeComprado":
+      return valeCompradoEmail(market, data as ValeCompradoData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

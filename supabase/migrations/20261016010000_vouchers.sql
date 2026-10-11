@@ -201,7 +201,8 @@ begin
     into v_existing
     from public.voucher_orders vo
    where vo.offer_id = p_offer_id and vo.user_id = p_user_id
-     and vo.status = 'open' and vo.expires_at > p_now + interval '2 minutes'
+     and vo.status = 'open' and vo.session_id is not null
+     and vo.expires_at > p_now + interval '2 minutes'
    order by vo.created_at desc
    limit 1;
   if found then

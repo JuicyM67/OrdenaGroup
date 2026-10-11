@@ -26,3 +26,19 @@ export function platformFeeMinor(amountMinor: number, plan: string): number {
   const fee = Math.floor((amountMinor * platformFeeBps(plan)) / 10_000);
   return Math.min(fee, amountMinor);
 }
+
+/** WP-69 (D-057, ägarens beslut 2026-10-10): marknadsplatsens avgift på köpta
+ * värdebevis, i baspunkter (100 = 1 %). Samma direct charge-modell som D-044:
+ * företaget är säljare, plattformen tar `application_fee_amount`. Ändras här. */
+export const MARKETPLACE_FEE_BPS = 100;
+
+/** Marknadsplatsavgiften i minsta enheten, avrundad nedåt och aldrig större än
+ * beloppet (samma regel som `platformFeeMinor`). Räknas också i databasen
+ * (`private.voucher_open_order`) med samma bps från servern. */
+export function marketplaceFeeMinor(
+  amountMinor: number,
+  bps: number = MARKETPLACE_FEE_BPS,
+): number {
+  if (!Number.isSafeInteger(amountMinor) || amountMinor <= 0) return 0;
+  return Math.min(Math.floor((amountMinor * bps) / 10_000), amountMinor);
+}
