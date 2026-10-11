@@ -61,7 +61,7 @@ export async function dispatchGiftCardEvent(
         : false;
     }
     case "charge.dispute.closed": {
-      // Vunnen tvist: spärren hävs (pengarna är kvar hos salongen).
+      // Vunnen tvist (eller stängd varning): spärren hävs (pengarna är kvar hos salongen).
       if (!obj.id) return false;
       const dispute = await getStripe().disputes.retrieve(
         obj.id,
@@ -70,7 +70,8 @@ export async function dispatchGiftCardEvent(
       );
       const pi = idOf(dispute.payment_intent);
       if (!pi) return false;
-      if (dispute.status !== "won") {
+      // `warning_closed` (förfrågan stängd utan chargeback) behandlas som vunnen.
+      if (dispute.status !== "won" && dispute.status !== "warning_closed") {
         // Förlorad tvist: kortet förblir spärrat (idempotent).
         return handleGiftCardPaymentEvent("disputed", pi, account, now);
       }

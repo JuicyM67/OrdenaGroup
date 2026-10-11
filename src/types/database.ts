@@ -1195,6 +1195,7 @@ export type Database = {
           personal_data_cleared_at: string | null;
           recipient_email: string | null;
           recipient_name: string | null;
+          refunded_minor: number;
           session_id: string | null;
           status: string;
           stripe_account_id: string;
@@ -1222,6 +1223,7 @@ export type Database = {
           personal_data_cleared_at?: string | null;
           recipient_email?: string | null;
           recipient_name?: string | null;
+          refunded_minor?: number;
           session_id?: string | null;
           status?: string;
           stripe_account_id: string;
@@ -1249,6 +1251,7 @@ export type Database = {
           personal_data_cleared_at?: string | null;
           recipient_email?: string | null;
           recipient_name?: string | null;
+          refunded_minor?: number;
           session_id?: string | null;
           status?: string;
           stripe_account_id?: string;
