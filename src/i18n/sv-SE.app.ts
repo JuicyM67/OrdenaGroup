@@ -34,8 +34,9 @@ import {
 import type * as Es from "./es-CL";
 import { smsCreditos } from "./sv-SE.sms-creditos";
 import { visita } from "./sv-SE.visita";
+import { cuenta } from "./sv-SE.cuenta";
 
-export { smsCreditos, visita };
+export { smsCreditos, visita, cuenta };
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för
  * literaler, och med stöd för readonly-listor (CAJA_METODOS_MANUALES,
@@ -3277,5 +3278,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   visita,
   planes,
   smsCreditos,
+  cuenta,
 };
 void _check;

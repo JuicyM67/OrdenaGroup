@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Lämna recension</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#16161A}a:hover{color:#3E3E46}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #F4F4F0; color: #16161A; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; padding: 20px 16px; display: flex; flex-direction: column; gap: 18px">
+
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 22px; background: #FFFFFF">
+<img src="/_blob/212036bbe6d0f20b7aba2512e2f677ad" alt="Kroppsrum" style="width: 52px; height: 52px; border-radius: 16px; object-fit: cover">
+<div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><b style="font-size: 15px">Klassisk massage 50 min</b><span style="font-size: 12px; color: #5E5E66">Kroppsrum · med Jonas · 8 okt</span></div>
+<span style="background: #D5EEDC; color: #1F6B3A; font-size: 11px; font-weight: 700; padding: 3px 7px; border-radius: 8px">Verifierad</span>
+</div>
+
+<h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; line-height: 1.05; font-weight: 600; letter-spacing: -0.02em">Hur var ditt besök?</h1>
+
+<fieldset style="border: 0; margin: 0; padding: 0">
+<legend style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Betyg</legend>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{stars}}" as="s" hint-placeholder-count="5">
+<button aria-label="{{s.label}}" aria-pressed="{{s.on}}" onClick="{{s.pick}}" style="flex: 1; height: 64px; border-radius: 18px; border: 0; background: {{s.bg}}; display: flex; align-items: center; justify-content: center">
+<svg width="30" height="30" viewBox="0 0 24 24" fill="{{s.fill}}" aria-hidden="true"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"></path></svg>
+</button>
+</sc-for>
+</div>
+<p style="margin: 10px 0 0; font-size: 14px; font-weight: 700; text-align: center">{{verdict}}</p>
+</fieldset>
+
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button aria-pressed="true" style="height: 40px; padding: 0 14px; border-radius: 14px; border: 0; background: #16161A; color: #FFFFFF; font: inherit; font-size: 13px; font-weight: 600">Trevligt bemötande</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 14px; border: 1px solid #E2E2DC; background: #FFFFFF; font: inherit; font-size: 13px; font-weight: 600">Punktlig</button>
+<button aria-pressed="true" style="height: 40px; padding: 0 14px; border-radius: 14px; border: 0; background: #16161A; color: #FFFFFF; font: inherit; font-size: 13px; font-weight: 600">Skickliga händer</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 14px; border: 1px solid #E2E2DC; background: #FFFFFF; font: inherit; font-size: 13px; font-weight: 600">Rent och fräscht</button>
+<button style="height: 40px; padding: 0 14px; border-radius: 14px; border: 1px solid #E2E2DC; background: #FFFFFF; font: inherit; font-size: 13px; font-weight: 600">Prisvärt</button>
+</div>
+
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600">Berätta mer (valfritt)
+<textarea rows="4" placeholder="Vad var bäst? Något som kunde varit bättre?" style="border-radius: 16px; border: 0; background: #FFFFFF; padding: 14px 16px; font: inherit; font-size: 15px; font-weight: 500; resize: none"></textarea>
+</label>
+
+<p style="margin: 0; font-size: 12px; color: #5E5E66; line-height: 1.45">Visas offentligt som <b style="color: #16161A">Elin K.</b> Du kan ändra recensionen i 7 dagar.</p>
+
+<button style="margin-top: auto; height: 56px; border-radius: 18px; border: 0; background: #16161A; color: #FFFFFF; font: inherit; font-size: 15px; font-weight: 700">Skicka recension</button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(props) { super(props); this.state = { rating: 4 }; }
+renderVals() {
+const words = ['Dåligt', 'Inte så bra', 'Okej', 'Riktigt bra', 'Fantastiskt!'];
+const r = this.state.rating;
+const stars = [1, 2, 3, 4, 5].map((n) => ({
+label: n + ' av 5 stjärnor',
+on: n <= r,
+bg: n <= r ? '#16161A' : '#FFFFFF',
+fill: n <= r ? '#E3F36B' : '#E2E2DC',
+pick: () => this.setState({ rating: n }),
+}));
+return { stars, verdict: words[r - 1] };
+}
+}
+</script>
+</body>
+</html>

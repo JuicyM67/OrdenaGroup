@@ -46,6 +46,9 @@ export const RESERVED_SLUGS = [
   "legal",
   "terminos",
   "privacidad",
+  // WP-67: kundkonton (CL /cuenta, SE /konto).
+  "cuenta",
+  "konto",
 ] as const;
 
 // Samma nycklar som `negocio.rubros` (src/i18n/es-CL.ts). Hålls i synk manuellt (som

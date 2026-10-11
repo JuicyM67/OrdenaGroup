@@ -23,8 +23,9 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import { appHref } from "@/config/routes";
+import { appHref, cuentaHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { hasAccount } from "@/server/accounts/account";
 import {
   getOwnerBusiness,
   isOnboardingDraft,
@@ -84,6 +85,11 @@ export default async function AppIndexPage() {
   }
 
   const business = await getOwnerBusiness(user.id);
+  // WP-67 (D-054, risk R1): en inloggad KONSUMENT utan företag ska inte
+  // hamna i onboarding och av misstag skapa ett företag — hen skickas till
+  // sitt kundkonto. Därifrån leder "¿Tienes un negocio?" direkt till
+  // onboarding (`appHref("appOnboarding")`), inte hit.
+  if (!business && (await hasAccount(user.id))) redirect(cuentaHref("cuenta"));
   if (!business || isOnboardingDraft(business))
     redirect(appHref("appOnboarding"));
   redirect(appHref("appInicio"));

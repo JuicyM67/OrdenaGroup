@@ -9,6 +9,33 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      account_consent_events: {
+        Row: {
+          created_at: string;
+          granted: boolean;
+          id: string;
+          kind: string;
+          user_id: string | null;
+          version: string;
+        };
+        Insert: {
+          created_at?: string;
+          granted: boolean;
+          id?: string;
+          kind: string;
+          user_id?: string | null;
+          version: string;
+        };
+        Update: {
+          created_at?: string;
+          granted?: boolean;
+          id?: string;
+          kind?: string;
+          user_id?: string | null;
+          version?: string;
+        };
+        Relationships: [];
+      };
       ai_import_runs: {
         Row: {
           business_id: string | null;
@@ -240,12 +267,14 @@ export type Database = {
       };
       bookings: {
         Row: {
+          account_user_id: string | null;
           blocked: unknown;
           business_id: string;
           campaign_recipient_id: string | null;
           cancel_reason: string | null;
           cancelled_at: string | null;
           confirmed_by_customer_at: string | null;
+          contact_email: string | null;
           created_at: string;
           customer_id: string;
           deposit_clp: number;
@@ -269,12 +298,14 @@ export type Database = {
           waitlist_entry_id: string | null;
         };
         Insert: {
+          account_user_id?: string | null;
           blocked: unknown;
           business_id: string;
           campaign_recipient_id?: string | null;
           cancel_reason?: string | null;
           cancelled_at?: string | null;
           confirmed_by_customer_at?: string | null;
+          contact_email?: string | null;
           created_at?: string;
           customer_id: string;
           deposit_clp?: number;
@@ -298,12 +329,14 @@ export type Database = {
           waitlist_entry_id?: string | null;
         };
         Update: {
+          account_user_id?: string | null;
           blocked?: unknown;
           business_id?: string;
           campaign_recipient_id?: string | null;
           cancel_reason?: string | null;
           cancelled_at?: string | null;
           confirmed_by_customer_at?: string | null;
+          contact_email?: string | null;
           created_at?: string;
           customer_id?: string;
           deposit_clp?: number;
@@ -758,6 +791,78 @@ export type Database = {
           },
         ];
       };
+      customer_account_links: {
+        Row: {
+          business_id: string;
+          customer_id: string;
+          linked_at: string;
+          linked_via: string;
+          user_id: string;
+        };
+        Insert: {
+          business_id: string;
+          customer_id: string;
+          linked_at?: string;
+          linked_via: string;
+          user_id: string;
+        };
+        Update: {
+          business_id?: string;
+          customer_id?: string;
+          linked_at?: string;
+          linked_via?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_account_links_customer_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_account_links_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "customer_accounts";
+            referencedColumns: ["user_id"];
+          },
+        ];
+      };
+      customer_accounts: {
+        Row: {
+          created_at: string;
+          display_name: string | null;
+          marketing_consent_at: string | null;
+          marketing_consent_version: string | null;
+          phone_e164: string | null;
+          phone_verified_at: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name?: string | null;
+          marketing_consent_at?: string | null;
+          marketing_consent_version?: string | null;
+          phone_e164?: string | null;
+          phone_verified_at?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string | null;
+          marketing_consent_at?: string | null;
+          marketing_consent_version?: string | null;
+          phone_e164?: string | null;
+          phone_verified_at?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       customer_answers: {
         Row: {
           business_id: string;
@@ -881,6 +986,39 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "businesses";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      favorites: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          user_id: string;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          user_id: string;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "favorites_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "customer_accounts";
+            referencedColumns: ["user_id"];
           },
         ];
       };

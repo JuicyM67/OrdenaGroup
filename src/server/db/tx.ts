@@ -96,6 +96,13 @@ export function withOwnerTx<T>(
   }, fn);
 }
 
+/**
+ * WP-67 (D-054): samma rollbyte för en inloggad KONSUMENT (kundkonto). Namnet
+ * gör anropet tydligt — det finns ingen ägarroll inblandad; RLS och
+ * `auth.uid()` gäller precis som för ägaren.
+ */
+export const withUserTx = withOwnerTx;
+
 let savepointSeq = 0;
 
 /**

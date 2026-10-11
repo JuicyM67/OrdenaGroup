@@ -23,7 +23,12 @@ import type {
   BookingActionOk,
   BookingActionResult,
 } from "@/components/booking/types";
+import { optionalAccount } from "@/app/(consumer)/cuenta/session";
 import { market } from "@/config/brand";
+import {
+  claimBookingForAccount,
+  linkAccountRows,
+} from "@/server/accounts/account";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import {
   createCustomerBooking,
@@ -143,6 +148,22 @@ export async function createBooking(
         sqlstate: pgErrorCode(e),
       },
     );
+  }
+
+  // WP-67 (D-054): inloggad med kundkonto → bokningen blir kontots
+  // (`account_user_id`) och kundraden kopplas. Fel här påverkar aldrig bokningen.
+  try {
+    const account = await optionalAccount();
+    if (account) {
+      await claimBookingForAccount(
+        account.userId,
+        business.id,
+        result.value.id,
+      );
+      await linkAccountRows(account.userId);
+    }
+  } catch {
+    // Kopplas ändå vid nästa besök i kontot (`loadMyBookings`).
   }
 
   // WP-64 (D-044): betalning online. Servern avgör (företagets läge + att kontot
