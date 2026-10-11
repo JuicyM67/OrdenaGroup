@@ -11,7 +11,8 @@ export class BillingError extends Error {
       | "unknown_price"
       | "metadata_missing"
       | "customer_mismatch"
-      | "no_customer",
+      | "no_customer"
+      | "duplicate_subscription",
     readonly ref: string,
   ) {
     super(`billing:${code}:${ref}`);

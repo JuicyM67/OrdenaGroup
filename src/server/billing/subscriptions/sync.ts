@@ -28,7 +28,7 @@ export type SyncOutcome =
       subscriptionStatus: string;
       plan: PaidPlan;
     }
-  | { status: "ignored" | "forbidden" | "duplicate_canceled" };
+  | { status: "ignored" | "forbidden" };
 
 function idOf(x: string | { id: string } | null | undefined): string | null {
   if (!x) return null;
@@ -110,7 +110,7 @@ export async function syncSubscription(
   if (!item || !plan) throw new BillingError("unknown_price", sub.id);
 
   // Dubbel Checkout (två flikar): det abonnemang som redan finns på raden
-  // behålls, det andra sägs upp direkt. Återbetalning görs manuellt (loggas).
+  // behålls, det andra sägs upp direkt.
   if (
     row.stripe_subscription_id &&
     row.stripe_subscription_id !== sub.id &&
@@ -119,11 +119,9 @@ export async function syncSubscription(
     LIVE_STATUSES.has(sub.status)
   ) {
     await getStripe().subscriptions.cancel(sub.id, { prorate: true });
-    console.error("billing: dubbelt abonnemang uppsagt", {
-      code: "duplicate_subscription",
-      subscription: sub.id,
-    });
-    return { status: "duplicate_canceled" };
+    // Synligt fel (500 → Stripe skickar igen; då är det uppsagt och
+    // ignoreras). Eventuell återbetalning görs manuellt i Stripe.
+    throw new BillingError("duplicate_subscription", sub.id);
   }
 
   const card = cardOf(sub);

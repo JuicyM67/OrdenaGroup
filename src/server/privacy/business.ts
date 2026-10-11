@@ -411,26 +411,7 @@ export async function requestBusinessDeletion(
   userId: string,
   businessId: string,
 ): Promise<MutationResult> {
-  const result = await requestBusinessDeletionTx(userId, businessId);
-  // WP-78 (D-059): abonnemanget sägs upp vid periodens slut. Ett Stripe-fel
-  // stoppar inte raderingsbegäran (`purgeBusiness` säger upp direkt ändå).
-  if (result.ok) {
-    try {
-      await cancelSubscriptionForDeletion(businessId, "period_end");
-    } catch {
-      console.error("privacy: uppsägning av abonnemang misslyckades", {
-        code: "billing_cancel_failed",
-      });
-    }
-  }
-  return result;
-}
-
-function requestBusinessDeletionTx(
-  userId: string,
-  businessId: string,
-): Promise<MutationResult> {
-  return withServiceTx(async (q) => {
+  const result = await withServiceTx(async (q): Promise<MutationResult> => {
     const denied = await ownerDenial(q, userId, businessId);
     if (denied) return { ok: false, code: denied };
     const r = await q.query(
@@ -450,6 +431,17 @@ function requestBusinessDeletionTx(
       ? { ok: false, code: "already_requested" }
       : { ok: false, code: "not_found" };
   });
+  // WP-78 (D-059): abonnemanget sägs upp vid periodens slut. Ett Stripe-fel
+  // stoppar inte raderingsbegäran (`purgeBusiness` säger upp direkt ändå,
+  // och kastar då vid fel).
+  if (result.ok) {
+    try {
+      await cancelSubscriptionForDeletion(businessId, "period_end");
+    } catch {
+      // se ovan
+    }
+  }
+  return result;
 }
 
 /** Ångrar en begärd radering inom fristen: återställer EXAKT det `status`-

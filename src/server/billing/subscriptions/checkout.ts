@@ -144,9 +144,6 @@ export async function startSubscriptionCheckout(input: {
     return { ok: true, url: session.url };
   } catch {
     // Ingen persondata i loggar; bara att det misslyckades.
-    console.error("billing: checkout misslyckades", {
-      code: "checkout_failed",
-    });
     return { ok: false, code: "failed" };
   }
 }

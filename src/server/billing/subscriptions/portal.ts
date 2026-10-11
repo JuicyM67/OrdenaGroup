@@ -33,7 +33,6 @@ export async function openPortal(input: {
     });
     return { ok: true, url: s.url };
   } catch {
-    console.error("billing: portal misslyckades", { code: "portal_failed" });
     return { ok: false, code: "failed" };
   }
 }

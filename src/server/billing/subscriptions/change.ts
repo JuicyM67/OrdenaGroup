@@ -272,7 +272,6 @@ export async function changePlan(input: {
     ) {
       return { ok: false, code: "billing_payment_required" };
     }
-    console.error("billing: planbyte misslyckades", { code: "change_failed" });
     return { ok: false, code: "failed" };
   }
 }
@@ -295,9 +294,6 @@ export async function cancelSubscription(input: {
     await syncSubscription(sub.id, { expectBusinessId: input.businessId });
     return { ok: true };
   } catch {
-    console.error("billing: uppsägning misslyckades", {
-      code: "cancel_failed",
-    });
     return { ok: false, code: "failed" };
   }
 }
@@ -321,9 +317,6 @@ export async function resumeSubscription(input: {
     await syncSubscription(sub.id, { expectBusinessId: input.businessId });
     return { ok: true };
   } catch {
-    console.error("billing: återupptag misslyckades", {
-      code: "resume_failed",
-    });
     return { ok: false, code: "failed" };
   }
 }
