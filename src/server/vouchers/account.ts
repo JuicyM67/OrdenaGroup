@@ -1,6 +1,8 @@
 import "server-only";
 
 import { APP_TZ, parseTimeZone, type TimeZone } from "@/lib/format/dates";
+
+const FALLBACK_TZ = APP_TZ;
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx, withServiceTx, withUserTx } from "@/server/db/tx";
 import { getStripe, stripeEnabled } from "@/server/payments/stripe/client";
@@ -27,6 +29,8 @@ export type MyVoucher = {
   offerSlug: string;
   imageUrl: string | null;
   bookingStart: string | null;
+  /** Företagets tidszon (giltighet och ångerrätt räknas i den). */
+  timeZone: TimeZone;
   /** Inom 14 dagar och oanvänt: "Ångra köp" visas. */
   canWithdraw: boolean;
 };
@@ -44,11 +48,12 @@ type MyVoucherRow = {
   offer_slug: string;
   image_url: string | null;
   booking_start: Date | null;
+  timezone: string;
 };
 
 function tzOrDefault(raw: string | null | undefined): TimeZone {
-  const r = parseTimeZone(raw ?? "Europe/Stockholm");
-  return r.ok ? r.value : ("Europe/Stockholm" as TimeZone);
+  const r = raw ? parseTimeZone(raw) : undefined;
+  return r?.ok ? r.value : FALLBACK_TZ;
 }
 
 export async function loadMyVouchers(
@@ -61,7 +66,6 @@ export async function loadMyVouchers(
     );
     return r.rows;
   });
-  const tz = APP_TZ;
   return rows.map((x) => ({
     id: x.id,
     code: x.code,
@@ -75,10 +79,11 @@ export async function loadMyVouchers(
     offerSlug: x.offer_slug,
     imageUrl: x.image_url,
     bookingStart: x.booking_start?.toISOString() ?? null,
+    timeZone: tzOrDefault(x.timezone),
     canWithdraw:
       stripeEnabled() &&
       x.status === "active" &&
-      canWithdraw(x.purchased_at, now, tz),
+      canWithdraw(x.purchased_at, now, tzOrDefault(x.timezone)),
   }));
 }
 
@@ -140,6 +145,9 @@ export async function withdrawVoucher(
   now: Date,
 ): Promise<WithdrawResult> {
   if (!stripeEnabled()) return { ok: false, code: "not_allowed" };
+  // Säkerhetsgranskning B1: först `active` → `refunding` (villkorad update med
+  // radlås — samma lås som en bokning tar). En samtidig bokning kräver
+  // `active` och nekas; hann bokningen före blir det 0 rader här.
   const row = await withServiceTx(async (q) => {
     const r = await q.query<{
       status: VoucherStatus;
@@ -153,23 +161,32 @@ export async function withdrawVoucher(
          from public.vouchers v
          join public.voucher_orders o on o.business_id = v.business_id and o.id = v.order_id
          join public.businesses b on b.id = v.business_id
-        where v.id = $1 and v.user_id = $2`,
+        where v.id = $1 and v.user_id = $2
+        for update of v`,
       [voucherId, userId],
     );
-    return r.rows[0];
+    const x = r.rows[0];
+    if (!x) return undefined;
+    if (
+      x.status !== "active" ||
+      !x.payment_intent_id ||
+      !canWithdraw(x.purchased_at, now, tzOrDefault(x.timezone))
+    ) {
+      return null;
+    }
+    const u = await q.query(
+      `update public.vouchers set status = 'refunding'
+        where id = $1 and user_id = $2 and status = 'active'`,
+      [voucherId, userId],
+    );
+    return (u.rowCount ?? 0) === 1 ? x : null;
   });
-  if (!row) return { ok: false, code: "not_found" };
-  if (
-    row.status !== "active" ||
-    !row.payment_intent_id ||
-    !canWithdraw(row.purchased_at, now, tzOrDefault(row.timezone))
-  ) {
-    return { ok: false, code: "not_allowed" };
-  }
+  if (row === undefined) return { ok: false, code: "not_found" };
+  if (row === null) return { ok: false, code: "not_allowed" };
   try {
     await getStripe().refunds.create(
       {
-        payment_intent: row.payment_intent_id,
+        payment_intent: row.payment_intent_id!,
         refund_application_fee: true,
         reason: "requested_by_customer",
       },
@@ -178,16 +195,26 @@ export async function withdrawVoucher(
         idempotencyKey: `voucher-refund:${voucherId}`,
       },
     );
-    await withServiceTx((q) =>
-      q.query(`select private.voucher_mark_payment($1, 'refunded', $2)`, [
-        row.payment_intent_id,
-        now,
-      ]),
-    );
-    return { ok: true };
   } catch {
+    // Ingen återbetalning: värdebeviset gäller igen.
+    await withServiceTx((q) =>
+      q.query(
+        `update public.vouchers set status = 'active'
+          where id = $1 and status = 'refunding'`,
+        [voucherId],
+      ),
+    ).catch(() => undefined);
     return { ok: false, code: "failed" };
   }
+  // Återbetalt hos Stripe; webhooken (`charge.refunded`) gör samma sak om
+  // det här steget skulle falla.
+  await withServiceTx((q) =>
+    q.query(`select private.voucher_mark_payment($1, 'withdrawn', $2)`, [
+      row.payment_intent_id,
+      now,
+    ]),
+  ).catch(() => undefined);
+  return { ok: true };
 }
 
 export type BusinessVoucher = {

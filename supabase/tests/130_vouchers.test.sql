@@ -4,7 +4,7 @@
 -- återlämning via bokningens status, utgång och återbetalning/tvist.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(31);
+select plan(36);
 \ir _helpers.psql
 
 insert into auth.users (id, email, role, aud) values
@@ -84,6 +84,7 @@ set local role authenticated;
 select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-6900-0000-0000-000000000002', 'role', 'authenticated')::text, true);
 select is((select count(*)::int from public.vouchers), 1, 'köparen ser sitt värdebevis');
 select is((select code from private.my_vouchers() limit 1), 'BB-7K2Q-94MZ', 'köparen ser koden via my_vouchers');
+select is(jsonb_array_length(private.export_my_account()->'vouchers'), 1, 'exporten tar med värdebeviset (S4)');
 select set_config('request.jwt.claims', json_build_object('sub', 'c0000000-6900-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 select is((select count(*)::int from public.vouchers), 0, 'en annan köpare ser inget');
 select is((select count(*)::int from private.my_vouchers()), 0, 'my_vouchers ger bara egna');
@@ -122,8 +123,20 @@ select is((select status from public.vouchers where code = 'BB-7K2Q-94MZ'), 'red
 select is(private.voucher_mark_payment('pi_vb_2', 'refunded', now()), 0, 'inlöst värdebevis ändras inte av återbetalning');
 select is(private.voucher_mark_payment('pi_vb_2', 'disputed', now()), 1, 'tvist märks');
 
+-- 32-35. Säkerhetsgranskning B1/S1: "Ångra köp" (`withdrawn`) bara från
+-- `refunding`; `refunding` kan inte ha en bokning; Stripe-återbetalning av ett
+-- bokat värdebevis nollar bokningens rabatt.
+update public.vouchers set status = 'active', booking_id = null, redeemed_at = null where code = 'BB-7K2Q-94MZ';
+select is(private.voucher_mark_payment('pi_vb_2', 'withdrawn', now()), 0, 'ångra kräver refunding (inte active)');
+select throws_ok(
+  $$ update public.vouchers set status = 'refunding', booking_id = 'aaaaaaaa-6900-0000-0004-000000000002' where code = 'BB-7K2Q-94MZ' $$,
+  '23514', null, 'refunding kan inte ha en bokning');
+update public.vouchers set status = 'reserved', booking_id = 'aaaaaaaa-6900-0000-0004-000000000002' where code = 'BB-7K2Q-94MZ';
+select is(private.voucher_mark_payment('pi_vb_2', 'refunded', now()), 1, 'Stripe-återbetalning av ett bokat värdebevis');
+select is((select discount_clp from public.bookings where id = 'aaaaaaaa-6900-0000-0004-000000000002'), 0, 'bokningen blir obetald (rabatt 0)');
+
 -- 30. Utgång: aktivt värdebevis efter giltighetstiden blir utgånget.
-update public.vouchers set status = 'active', booking_id = null, redeemed_at = null,
+update public.vouchers set status = 'active', booking_id = null, redeemed_at = null, refunded_at = null,
        expires_at = now() - interval '1 minute', purchased_at = now() - interval '13 months'
  where code = 'BB-7K2Q-94MZ';
 select is((select expired from private.voucher_sweep(now())), 1, 'utgånget värdebevis sveps');

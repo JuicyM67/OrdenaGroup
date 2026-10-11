@@ -7,7 +7,7 @@ import { marketplaceEnabled } from "@/config/marketplace";
 import { MARKETPLACE_FEE_BPS } from "@/config/platform-fee";
 import { valesHref } from "@/config/routes";
 import { pgErrorCode } from "@/server/db/errors";
-import { hitRateLimit } from "@/server/db/rate-limit";
+import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { savepoint, withServiceTx } from "@/server/db/tx";
 import { kickOutbox } from "@/server/messaging/outbox";
 import {
@@ -63,12 +63,22 @@ export async function createVoucherCheckout(input: {
   now: Date;
 }): Promise<VoucherCheckoutResult> {
   if (!vouchersEnabled()) return { ok: false, code: "unavailable" };
-  const allowed = await hitRateLimit({
-    scope: "voucher:checkout",
-    subject: input.userId,
-    windowSeconds: 10 * 60,
-    max: 10,
-  });
+  // Säkerhetsgranskning S5: per konto och per erbjudande + IP (5 / 10 min) —
+  // varje köpstart håller ett exemplar i 31 min.
+  const ip = await getClientIp();
+  const allowed =
+    (await hitRateLimit({
+      scope: "voucher:checkout:user",
+      subject: input.userId,
+      windowSeconds: 10 * 60,
+      max: 5,
+    })) &&
+    (await hitRateLimit({
+      scope: "voucher:checkout:offer-ip",
+      subject: `${input.offerId}:${ip}`,
+      windowSeconds: 10 * 60,
+      max: 5,
+    }));
   if (!allowed) return { ok: false, code: "rate_limited" };
 
   const opened = await withServiceTx(async (q) => {
@@ -96,6 +106,7 @@ export async function createVoucherCheckout(input: {
   const orderId = opened.order_id!;
   const accountId = opened.stripe_account_id!;
   const stripe = getStripe();
+  let createdSession: string | null = null;
 
   try {
     if (opened.outcome === "reused" && opened.session_id) {
@@ -151,6 +162,7 @@ export async function createVoucherCheckout(input: {
       },
       { stripeAccount: accountId, idempotencyKey: `voucher:${orderId}` },
     );
+    createdSession = session.id;
     if (!session.url) throw new Error("voucher: session utan url");
     await withServiceTx((q) =>
       q.query(
@@ -161,7 +173,17 @@ export async function createVoucherCheckout(input: {
     );
     return { ok: true, url: session.url };
   } catch {
-    // Ingen session: exemplaret lämnas tillbaka direkt. Ingen persondata loggas.
+    // K3: en session som hann skapas avslutas hos Stripe, så att ingen kan
+    // betala en order som vi släpper här.
+    if (createdSession) {
+      const expired = await stripe.checkout.sessions
+        .expire(createdSession, {}, { stripeAccount: accountId })
+        .then(() => true)
+        .catch(() => false);
+      // Gick den inte att avsluta låter vi svepet avgöra (betald → värdebevis).
+      if (!expired) return { ok: false, code: "failed" };
+    }
+    // Exemplaret lämnas tillbaka direkt. Ingen persondata loggas.
     await withServiceTx((q) =>
       q.query(`select private.voucher_release_order($1, 'failed')`, [orderId]),
     ).catch(() => undefined);
@@ -325,6 +347,7 @@ export async function handleVoucherPaymentEvent(
  * lämna tillbaka exemplaret. Hann kunden betala behandlas det som betalt. */
 export async function abandonVoucherOrder(
   orderId: string,
+  userId: string,
   now: Date,
 ): Promise<string | undefined> {
   if (!/^[0-9a-f-]{36}$/i.test(orderId)) return undefined;
@@ -334,8 +357,8 @@ export async function abandonVoucherOrder(
               vo.payment_intent_id, vo.status, o.slug as offer_slug
          from public.voucher_orders vo
          join public.offers o on o.business_id = vo.business_id and o.id = vo.offer_id
-        where vo.id = $1`,
-      [orderId],
+        where vo.id = $1 and vo.user_id = $2`,
+      [orderId, userId],
     );
     return r.rows[0];
   });

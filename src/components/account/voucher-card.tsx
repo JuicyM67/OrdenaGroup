@@ -6,7 +6,7 @@ import Link from "next/link";
 
 import { OfferImage } from "@/components/marketplace/offer-image";
 import { vales } from "@/i18n";
-import { APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
+import { formatDate, formatTime } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
 import type { MyVoucher } from "@/server/vouchers";
 import { formatVoucherDate } from "@/server/vouchers/rules";
@@ -32,7 +32,10 @@ export function VoucherCard({
   onWithdraw?: (formData: FormData) => Promise<void>;
 }) {
   const usable = voucher.status === "active";
-  const valid = formatVoucherDate(new Date(voucher.expiresAt), APP_TZ);
+  const valid = formatVoucherDate(
+    new Date(voucher.expiresAt),
+    voucher.timeZone,
+  );
   return (
     <li className="flex flex-col gap-3 rounded-card bg-surface p-4">
       <div className="flex items-center gap-3">
@@ -67,7 +70,7 @@ export function VoucherCard({
       {voucher.status === "reserved" && voucher.bookingStart ? (
         <p className="text-13 font-semibold text-ink-soft">
           {t.reservado({
-            fecha: `${formatDate(new Date(voucher.bookingStart), APP_TZ, "weekdayDayMonthShort")} ${formatTime(new Date(voucher.bookingStart), APP_TZ)}`,
+            fecha: `${formatDate(new Date(voucher.bookingStart), voucher.timeZone, "weekdayDayMonthShort")} ${formatTime(new Date(voucher.bookingStart), voucher.timeZone)}`,
           })}
         </p>
       ) : null}

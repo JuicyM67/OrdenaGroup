@@ -295,6 +295,7 @@ async function loadCajaIn(
         and not exists (
           select 1 from public.vouchers v
            where v.business_id = bk.business_id and v.booking_id = bk.id
+             and v.status in ('reserved', 'redeemed')
         )
       order by lower(bk.period)
       limit ${LIST_LIMIT}`,

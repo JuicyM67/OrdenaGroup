@@ -2,7 +2,23 @@
 // riktiga anslutningar (ingen översäljning), bokning med värdebevis (rabatt =
 // pris, reserverat i samma transaktion), samma värdebevis två gånger, nekad
 // förfrågan lämnar tillbaka värdebeviset, besök efter utgången nekas.
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+// Stripe är en fake: "Ångra köp" ska bara testa låsningen mot inlösen (B1).
+const refunds: string[] = [];
+vi.mock("@/server/payments/stripe/client", () => ({
+  stripeEnabled: () => true,
+  getStripe: () => ({
+    refunds: {
+      create: async (p: { payment_intent: string }) => {
+        await new Promise((r) => setTimeout(r, 30));
+        refunds.push(p.payment_intent);
+        return { id: "re_fake" };
+      },
+    },
+  }),
+  appBaseUrl: () => "http://localhost",
+}));
 
 import {
   fromLocal,
@@ -22,6 +38,9 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 import { createBooking } from "@/server/bookings/create";
+import { moveBooking } from "@/server/bookings/move";
+
+import { withdrawVoucher } from "./account";
 
 const at = (date: string, time: string) =>
   fromLocal(date as LocalDate, time as LocalTime, SANTIAGO);
@@ -126,7 +145,7 @@ describe("värdebevis (DB)", () => {
         [offerId],
       );
       await adminQuery(
-        `update public.offers set quantity_total = 3, quantity_sold = 0 where id = $1`,
+        `update public.offers set quantity_total = null, quantity_sold = 0 where id = $1`,
         [offerId],
       );
     }
@@ -169,5 +188,65 @@ describe("värdebevis (DB)", () => {
       [id, at(TUE, "10:00")],
     );
     expect((await book({ id, userId: buyer }, "12:00")).ok).toBe(false);
+  });
+
+  it("B1: ångra köp och inlösen samtidigt — bara en lyckas", async () => {
+    const id = await buyVoucher(buyer, "BB-DB00-0003");
+    refunds.length = 0;
+    const [w, b] = await Promise.all([
+      withdrawVoucher(buyer, id, NOW),
+      book({ id, userId: buyer }, "13:00"),
+    ]);
+    expect([w.ok, b.ok].filter(Boolean)).toHaveLength(1);
+    const v = await adminQuery<{ status: string }>(
+      `select status from public.vouchers where id = $1`,
+      [id],
+    );
+    expect(v.rows[0]?.status).toBe(w.ok ? "refunded" : "reserved");
+    expect(refunds).toHaveLength(w.ok ? 1 : 0);
+    // Efter ett lyckat ångrande går det aldrig att boka.
+    if (w.ok)
+      expect((await book({ id, userId: buyer }, "14:00")).ok).toBe(false);
+  });
+
+  it("S1: återbetalning från Stripe på ett bokat värdebevis gör bokningen obetald", async () => {
+    const id = await buyVoucher(buyer, "BB-DB00-0004");
+    const r = await book({ id, userId: buyer }, "16:00");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    await adminQuery(
+      `select private.voucher_mark_payment(o.payment_intent_id, 'refunded', now())
+         from public.vouchers v join public.voucher_orders o on o.id = v.order_id
+        where v.id = $1`,
+      [id],
+    );
+    const bk = await adminQuery<{ discount_clp: number }>(
+      `select discount_clp from public.bookings where id = $1`,
+      [r.value.id],
+    );
+    expect(bk.rows[0]?.discount_clp).toBe(0);
+  });
+
+  it("S2: en bokning betald med värdebevis kan inte flyttas förbi utgången", async () => {
+    const id = await buyVoucher(buyer, "BB-DB00-0005");
+    const r = await book({ id, userId: buyer }, "17:00");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    await adminQuery(
+      `update public.vouchers set expires_at = $2 where id = $1`,
+      [id, at("2026-10-07", "00:00")],
+    );
+    const moved = await moveBooking(
+      {
+        bookingId: r.value.id,
+        newStart: at("2026-10-07", "11:00").toISOString(),
+      },
+      {
+        businessId: biz.id,
+        actor: { kind: "owner", userId: biz.ownerUserId },
+        now: NOW,
+      },
+    );
+    expect(moved).toEqual({ ok: false, error: "too_far" });
   });
 });

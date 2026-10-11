@@ -176,6 +176,15 @@ export async function moveIn(
   };
 
   const start = input.newStart.getTime();
+  // WP-69 (D-057, säkerhetsgranskning S2): betald med värdebevis → den nya
+  // tiden måste ligga före värdebevisets utgång (raden låses). Annars samma
+  // vänliga besked som en tid för långt fram (`too_far`), ingen ny text.
+  const voucher = await q.query<{ expires: Date | null }>(
+    `select private.voucher_expiry_for_booking($1, $2) as expires`,
+    [input.businessId, b.id],
+  );
+  const expires = voucher.rows[0]?.expires ?? null;
+  if (expires !== null && start >= expires.getTime()) return err("too_far");
   const check = checkStart(
     {
       snapshot,
