@@ -433,3 +433,46 @@ export async function runVoucherSweep(
   }
   return { orders, ...swept };
 }
+
+/** Visas köpknappen för företaget? (SE, Stripe på, kontot kan ta betalt.) */
+export async function businessCanSellVouchers(
+  businessId: string,
+): Promise<boolean> {
+  if (!vouchersEnabled()) return false;
+  return withServiceTx(async (q) => {
+    const r = await q.query<{ ok: boolean }>(
+      `select coalesce(charges_enabled, false) as ok
+         from public.stripe_accounts where business_id = $1`,
+      [businessId],
+    );
+    return r.rows[0]?.ok ?? false;
+  });
+}
+
+/** Retursidan (`?kop=klart&session=…`): skapa värdebeviset direkt om webhooken
+ * inte hunnit, men bara för köparens egen order. */
+export async function confirmVoucherReturn(
+  userId: string,
+  sessionId: string,
+  now: Date,
+): Promise<FulfillOutcome> {
+  if (!stripeEnabled() || !/^cs_[A-Za-z0-9_]{1,250}$/.test(sessionId)) {
+    return "ignored";
+  }
+  const order = await withServiceTx(async (q) => {
+    const r = await q.query<{
+      stripe_account_id: string;
+      user_id: string;
+      status: string;
+    }>(
+      `select stripe_account_id, user_id, status
+         from public.voucher_orders where session_id = $1`,
+      [sessionId],
+    );
+    return r.rows[0];
+  });
+  if (order?.user_id !== userId) return "ignored";
+  // Webhooken hann före: inget anrop till Stripe behövs.
+  if (order.status === "paid") return "already";
+  return fulfillVoucherSession(sessionId, order.stripe_account_id, now);
+}

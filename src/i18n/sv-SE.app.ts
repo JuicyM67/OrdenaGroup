@@ -36,8 +36,9 @@ import { descubre } from "./sv-SE.descubre";
 import { smsCreditos } from "./sv-SE.sms-creditos";
 import { visita } from "./sv-SE.visita";
 import { cuenta } from "./sv-SE.cuenta";
+import { vales } from "./sv-SE.vales";
 
-export { cuenta, descubre, smsCreditos, visita };
+export { cuenta, descubre, smsCreditos, vales, visita };
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för
  * literaler, och med stöd för readonly-listor (CAJA_METODOS_MANUALES,
@@ -3298,5 +3299,6 @@ const _check: { [K in keyof typeof Es]: Widen<(typeof Es)[K]> } = {
   smsCreditos,
   descubre,
   cuenta,
+  vales,
 };
 void _check;

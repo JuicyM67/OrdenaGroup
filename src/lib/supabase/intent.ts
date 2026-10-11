@@ -23,3 +23,15 @@ export const authIntentCookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
 } as const;
+
+/** WP-69 (D-057): efter inloggning tillbaka till erbjudandet kunden ville
+ * köpa. Bara erbjudandesidor (whitelist, ingen öppen omdirigering, D-019). */
+export const ACCOUNT_RETURN_COOKIE = "account_return";
+
+const RETURN_PATH = /^\/(?:erbjudande|oferta)\/[a-z0-9-]{1,90}$/;
+
+export function parseAccountReturn(
+  raw: string | undefined | null,
+): string | null {
+  return typeof raw === "string" && RETURN_PATH.test(raw) ? raw : null;
+}

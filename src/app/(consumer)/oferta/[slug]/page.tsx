@@ -10,10 +10,28 @@ import { offerJsonLd } from "@/components/marketplace/offer-json-ld";
 import { discoverHref, safeDecode } from "@/components/marketplace/params";
 import { marketplaceEnabled, marketplaceIndexable } from "@/config/marketplace";
 import { href, hrefMarketplace } from "@/config/routes";
-import { descubre } from "@/i18n";
+import { descubre, vales } from "@/i18n";
 import { loadOffer } from "@/server/marketplace/public";
+import { businessCanSellVouchers } from "@/server/vouchers";
+
+import { buyOffer } from "./actions";
 
 type Params = Promise<{ slug: string }>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+/** WP-69: besked efter köpförsöket (`?kop=`). */
+function purchaseNotice(raw: unknown): string | undefined {
+  switch (raw) {
+    case "fel":
+      return vales.compra.error;
+    case "slut":
+      return vales.compra.agotado;
+    case "avbrutet":
+      return vales.compra.cancelado;
+    default:
+      return undefined;
+  }
+}
 
 const getOffer = cache(async (slug: string) => {
   if (!marketplaceEnabled()) notFound();
@@ -46,14 +64,28 @@ export async function generateMetadata({
   };
 }
 
-export default async function OfertaPage({ params }: { params: Params }) {
+export default async function OfertaPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { slug } = await params;
   const offer = await getOffer(slug);
   const url = hrefMarketplace("oferta", offer.slug);
+  // WP-69 (D-057): köpet finns när företaget kan ta betalt (Stripe Connect).
+  const purchasable = await businessCanSellVouchers(offer.business.id);
+  const notice = purchaseNotice((await searchParams).kop);
   return (
     <OfferDetail
       offer={offer}
-      jsonLd={offerJsonLd(offer, url, `/${offer.business.slug}`)}
+      purchase={
+        purchasable
+          ? { action: buyOffer, ...(notice ? { notice } : {}) }
+          : undefined
+      }
+      jsonLd={offerJsonLd(offer, url, `/${offer.business.slug}`, purchasable)}
       migas={[
         { nombre: descubre.migas.inicio, href: href("inicio") },
         { nombre: descubre.nav.descubre, href: hrefMarketplace("descubre") },

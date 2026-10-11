@@ -142,6 +142,8 @@ export type CreateInput = {
   offerToken?: string | undefined;
   /** WP-23: väntelisteposten som bokningen kommer från (`claimWaitlistOffer`). */
   waitlistEntryId?: string | undefined;
+  /** WP-69 (D-057): värdebeviset (köparens id från sessionen, aldrig klienten). */
+  voucher?: { id: string; userId: string } | undefined;
 };
 
 type IdempotencyRow = {
@@ -325,11 +327,41 @@ export async function createIn(
         now: input.now,
       })
     : undefined;
+  // WP-69 (D-057): bokning med värdebevis. Raden låses (två samtidiga
+  // bokningar med samma värdebevis serialiseras); köparens eget, aktivt,
+  // samma företag och tjänst, och besöket före utgången. Annars
+  // `invalid_input` (sidan visade bara giltiga värdebevis — det här är racet).
+  if (input.voucher) {
+    const v = await q.query<{ ok: boolean }>(
+      `select (status = 'active' and service_id = $4 and expires_at > $5) as ok
+         from public.vouchers
+        where business_id = $1 and id = $2 and user_id = $3
+        for update`,
+      [
+        input.businessId,
+        input.voucher.id,
+        input.voucher.userId,
+        input.serviceId,
+        new Date(start).toISOString(),
+      ],
+    );
+    if (!v.rows[0]?.ok) return err("invalid_input");
+  }
   const memberMinor = Math.max(0, memberDiscount?.discountMinor ?? 0);
   const offerMinor = offer?.discountMinor ?? 0;
   // Rabatten beror på profesionalen (flash-tiden gäller bara hens tid).
   const pricingFor = (staffId: string): Pricing => {
     const flash = flashByStaff.get(staffId);
+    // Värdebeviset betalar hela tjänsten (redan betald vid köpet): inget kvar
+    // att ta betalt för i kassan, ingen annan rabatt, intäkten räknas en gång.
+    if (input.voucher) {
+      return {
+        discountClp: priceClp,
+        discountReason: "voucher",
+        campaignRecipientId: null,
+        flashSlotId: flash?.id ?? null,
+      };
+    }
     return choosePricing({
       memberMinor,
       offerMinor,
@@ -437,6 +469,17 @@ export async function createIn(
         now: input.now,
       });
       if (!redeemed) throw new Error("createIn: erbjudandet redan inlöst");
+    }
+    if (input.voucher) {
+      // Raden är låst sedan valideringen ovan; villkoret är sista spärren.
+      const r = await q.query(
+        `update public.vouchers set status = 'reserved', booking_id = $3
+          where business_id = $1 and id = $2 and status = 'active'`,
+        [input.businessId, input.voucher.id, booked.id],
+      );
+      if ((r.rowCount ?? 0) !== 1) {
+        throw new Error("createIn: värdebeviset redan använt");
+      }
     }
     if (validated.value.length > 0) {
       await saveBookingAnswersIn(q, {

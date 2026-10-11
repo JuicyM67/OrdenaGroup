@@ -1,8 +1,9 @@
 // Erbjudandesidan (WP-68, Erbjudande.dc.html) i hemsidans designspråk: foto-hero
 // med glasbrickor, vita kort för "Det här ingår", "Så funkar det", villkor och
-// en verifierad recension med salongens svar (D-045). Köpet kopplas in i WP-69;
-// till dess visas "Köpet öppnar snart" och en länk till salongens lediga tider
-// (ordinarie pris) — ingen köpknapp (D-035).
+// en verifierad recension med salongens svar (D-045). WP-69 (D-057): när
+// företaget kan ta betalt visas köpet ("Köp och välj tid", ett vanligt
+// formulär mot en server action — ingen klient-JS); annars som förut "Köpet
+// öppnar snart" och en länk till salongens lediga tider (D-035).
 import { ArrowRight, Check, ChevronRight, Star } from "lucide-react";
 import Link from "next/link";
 
@@ -15,7 +16,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { strokeArrow } from "@/components/ui/icons";
 import { hrefMarketplace } from "@/config/routes";
-import { descubre } from "@/i18n";
+import { descubre, vales } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
 import { initialsOf } from "@/lib/format/initials";
 import { formatMoney } from "@/lib/format/money";
@@ -94,16 +95,111 @@ function BuySoon({
   );
 }
 
+export type OfferPurchase = {
+  action: (formData: FormData) => Promise<void>;
+  /** Besked efter retur (`?kop=fel|slut|avbrutet`), redan översatt. */
+  notice?: string;
+};
+
+const buyButton =
+  "flex items-center justify-center gap-2 rounded-control bg-ink text-15 font-bold text-on-dark hover:bg-ink-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+
+function BuyForm({
+  offer,
+  purchase,
+  className,
+  label,
+}: {
+  offer: OfferDetailData;
+  purchase: OfferPurchase;
+  className: string;
+  label: string;
+}) {
+  return (
+    <form action={purchase.action}>
+      <input type="hidden" name="oferta" value={offer.slug} />
+      <button type="submit" className={`${buyButton} ${className}`}>
+        {label}
+        <ArrowRight
+          aria-hidden="true"
+          className="size-4.5 text-lime"
+          strokeWidth={strokeArrow}
+        />
+      </button>
+    </form>
+  );
+}
+
+function BuyBox({
+  offer,
+  purchase,
+}: {
+  offer: OfferDetailData;
+  purchase: OfferPurchase;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-0.5">
+        <span className="text-13 text-muted">
+          {t.oferta.precioNormal} <s>{formatMoney(offer.regularMinor)}</s>
+        </span>
+        <b className="font-display text-40 leading-none font-semibold tracking-display">
+          {formatMoney(offer.priceMinor)}
+        </b>
+      </div>
+      {purchase.notice ? (
+        <p
+          role="status"
+          className="rounded-tile bg-canvas px-3 py-2 text-13 font-semibold text-ink"
+        >
+          {purchase.notice}
+        </p>
+      ) : null}
+      <BuyForm
+        offer={offer}
+        purchase={purchase}
+        className="h-14 w-full px-5"
+        label={vales.compra.comprar}
+      />
+      <p className="text-13 leading-relaxed text-muted">{vales.compra.texto}</p>
+      <ul className="flex flex-col gap-1.5 text-13 text-ink-soft">
+        <li className="flex items-start gap-2">
+          <Check
+            aria-hidden="true"
+            className="mt-0.5 size-3.5 shrink-0 text-success-fg"
+            strokeWidth={2.6}
+          />
+          {t.oferta.validez({ meses: offer.validMonths })}
+        </li>
+        <li className="flex items-start gap-2">
+          <Check
+            aria-hidden="true"
+            className="mt-0.5 size-3.5 shrink-0 text-success-fg"
+            strokeWidth={2.6}
+          />
+          {vales.compra.arrepentimiento}
+        </li>
+      </ul>
+      <p className="text-12 text-muted">
+        {vales.compra.vendido({ negocio: offer.business.name })}
+      </p>
+    </div>
+  );
+}
+
 export function OfferDetail({
   offer,
   migas,
   jsonLd,
   nav,
+  purchase,
 }: {
   offer: OfferDetailData;
   migas: Migas;
   jsonLd: Record<string, unknown>;
   nav: ConsumerNav;
+  /** WP-69: köpet (bara när företaget kan ta betalt, SE). */
+  purchase?: OfferPurchase;
 }) {
   const bookHref = `/${offer.business.slug}`;
   const categoria = t.categorias.nombres[offer.category];
@@ -314,7 +410,11 @@ export function OfferDetail({
           </div>
 
           <aside className="hidden w-95 shrink-0 rounded-card bg-surface p-6 shadow-soft lg:sticky lg:top-28 lg:block">
-            <BuySoon offer={offer} bookHref={bookHref} />
+            {purchase ? (
+              <BuyBox offer={offer} purchase={purchase} />
+            ) : (
+              <BuySoon offer={offer} bookHref={bookHref} />
+            )}
           </aside>
         </div>
       </main>
@@ -329,20 +429,31 @@ export function OfferDetail({
               {formatMoney(offer.priceMinor)}
             </b>
             <span className="mt-1 text-12 text-muted">
-              {t.oferta.proximamente}
+              {purchase
+                ? (purchase.notice ?? vales.compra.arrepentimiento)
+                : t.oferta.proximamente}
             </span>
           </div>
-          <Link
-            href={bookHref}
-            className="flex h-13 items-center gap-2 rounded-control bg-ink px-5 text-15 font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            {t.oferta.verHoras}
-            <ArrowRight
-              aria-hidden="true"
-              className="size-4.5 text-lime"
-              strokeWidth={strokeArrow}
+          {purchase ? (
+            <BuyForm
+              offer={offer}
+              purchase={purchase}
+              className="h-14 px-5"
+              label={vales.compra.comprar}
             />
-          </Link>
+          ) : (
+            <Link
+              href={bookHref}
+              className="flex h-13 items-center gap-2 rounded-control bg-ink px-5 text-15 font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              {t.oferta.verHoras}
+              <ArrowRight
+                aria-hidden="true"
+                className="size-4.5 text-lime"
+                strokeWidth={strokeArrow}
+              />
+            </Link>
+          )}
         </div>
       </div>
       <SiteFooter />

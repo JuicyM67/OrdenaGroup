@@ -28,6 +28,8 @@ export type CreateCustomerBookingInput = {
   answers?: Record<string, unknown> | undefined;
   /** WP-31: erbjudandelänkens token. Fel form ignoreras (ingen rabatt). */
   offerToken?: string | undefined;
+  /** WP-69 (D-057): värdebeviset, bundet på servern (`page.tsx`). */
+  voucher?: { id: string; userId: string } | undefined;
   now: Date;
   /** Installationens marknad; injiceras bara i tester. */
   market?: Market | undefined;
@@ -113,6 +115,7 @@ export async function createCustomerBooking(
       ...(isOfferTokenShape(input.offerToken)
         ? { offerToken: input.offerToken }
         : {}),
+      ...(input.voucher ? { voucher: input.voucher } : {}),
     },
     {
       businessId: input.businessId,

@@ -1,3 +1,5 @@
+import "server-only";
+
 // WP-69 (D-057): rena regler för värdebevis (inga I/O, enhetstestade).
 import {
   addLocalDays,

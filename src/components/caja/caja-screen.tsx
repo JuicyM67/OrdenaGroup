@@ -65,6 +65,8 @@ export type CajaScreenProps = {
   publicPageHref: string;
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-69 (D-057): länk till sålda värdebevis (bara SE, text från servern). */
+  vouchersLink?: { href: string; label: string };
 };
 
 type PeriodKind = "today" | "week" | "month" | "range";
@@ -120,6 +122,7 @@ export function CajaScreen({
   publicPageHref,
   myProfile,
   myProfileActions,
+  vouchersLink,
 }: CajaScreenProps) {
   const [periodKind, setPeriodKind] = useState<PeriodKind>("today");
   const [rangeFrom, setRangeFrom] = useState("");
@@ -256,11 +259,18 @@ export function CajaScreen({
             // (scroll horizontal) — w-20 angosta sin perder legibilidad.
             itemClassName="w-20"
           />
-          <Button asChild variant="secondary" size="sm">
-            <Link href={appHref("appCajaInformes")}>
-              {caja.tabs.informes} →
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {vouchersLink ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link href={vouchersLink.href}>{vouchersLink.label} →</Link>
+              </Button>
+            ) : null}
+            <Button asChild variant="secondary" size="sm">
+              <Link href={appHref("appCajaInformes")}>
+                {caja.tabs.informes} →
+              </Link>
+            </Button>
+          </div>
         </div>
         {periodKind === "range" ? (
           <div className="flex flex-wrap items-end gap-3">
