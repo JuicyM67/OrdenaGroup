@@ -5,6 +5,7 @@ import { copy } from "@/i18n/marketing";
 
 import { EmailForm } from "./email-form";
 import { TrustRow } from "./hero";
+import { Highlight } from "@/components/marketing/highlight";
 
 const t = copy.home.cta;
 
@@ -26,10 +27,7 @@ export function CtaFinal() {
         <div className="relative flex max-w-150 flex-col gap-5.5">
           <h2 className="font-display text-44 leading-none font-semibold tracking-headline sm:text-60">
             {t.tituloPre}
-            <br />
-            <span className="rounded-highlight bg-lime box-decoration-clone px-2.5 text-ink">
-              {t.tituloMarca}
-            </span>
+            <Highlight>{t.tituloMarca}</Highlight>
           </h2>
           <p className="text-16 leading-relaxed text-on-dark/90 sm:text-18">
             {t.texto}
