@@ -25,7 +25,10 @@ import type {
 } from "@/components/booking/types";
 import { optionalAccount } from "@/app/(consumer)/cuenta/session";
 import { market } from "@/config/brand";
-import { linkAccountRows } from "@/server/accounts/account";
+import {
+  claimBookingForAccount,
+  linkAccountRows,
+} from "@/server/accounts/account";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import {
   createCustomerBooking,
@@ -147,11 +150,18 @@ export async function createBooking(
     );
   }
 
-  // WP-67 (D-054): inloggad med kundkonto → koppla bokningen till kontot
-  // (på kontots bekräftade e-post). Fel här påverkar aldrig bokningen.
+  // WP-67 (D-054): inloggad med kundkonto → bokningen blir kontots
+  // (`account_user_id`) och kundraden kopplas. Fel här påverkar aldrig bokningen.
   try {
     const account = await optionalAccount();
-    if (account) await linkAccountRows(account.userId);
+    if (account) {
+      await claimBookingForAccount(
+        account.userId,
+        business.id,
+        result.value.id,
+      );
+      await linkAccountRows(account.userId);
+    }
   } catch {
     // Kopplas ändå vid nästa besök i kontot (`loadMyBookings`).
   }

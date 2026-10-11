@@ -269,3 +269,20 @@ export async function linkAccountRows(userId: string): Promise<void> {
     await q.query(`select private.link_customer_rows()`);
   });
 }
+
+/** Bokningen gjordes nyss inloggad av kontot på `/[slug]`: markera den som
+ * kontots (`bookings.account_user_id`) och koppla kundraden. Databasen kräver
+ * att bokningen är högst 10 min gammal och inte redan tillhör ett konto. */
+export async function claimBookingForAccount(
+  userId: string,
+  businessId: string,
+  bookingId: string,
+): Promise<void> {
+  if (!isUuid(businessId) || !isUuid(bookingId)) return;
+  await withUserTx(userId, async (q) => {
+    await q.query(`select private.claim_booking($1, $2)`, [
+      businessId,
+      bookingId,
+    ]);
+  });
+}

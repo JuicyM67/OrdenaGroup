@@ -8,9 +8,13 @@
 -- - delete_my_account: konsument raderas helt; ägare som också är konsument
 --   behåller auth-användaren (och företaget).
 -- - anon: inga grants.
+-- - Säkerhetsgranskning B1: synlighet per BOKNING (contact_email /
+--   account_user_id). Angripare som delar telefon med offret ser 0 av
+--   offrets bokningar; export utan notes/andras data; favoriter; adminspår
+--   behåller auth-användaren; anonymisering tar bort kopplingar.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(40);
 \ir _helpers.psql
 
 -- Konsumenter: c1 (bekräftad e-post), c2 (annan person), c3 (obekräftad).
@@ -37,13 +41,13 @@ insert into public.staff (id, business_id, name, color) values
 insert into public.services (id, business_id, name, duration_min, price_clp) values
   ('5e0a0000-0000-0000-0000-000000000001', 'aaaaaaaa-0000-0000-0000-000000000001', 'Corte', 30, 10000),
   ('5e0b0000-0000-0000-0000-000000000001', 'bbbbbbbb-0000-0000-0000-000000000002', 'Masaje', 60, 20000);
-insert into public.bookings (id, business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, notes) values
+insert into public.bookings (id, business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, notes, contact_email) values
   ('b1000000-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-000000000001', '5aaa0000-0000-0000-0000-000000000001', '5e0a0000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-00000000000a',
-   tstzrange('2030-01-10 10:00+00', '2030-01-10 10:30+00', '[)'), tstzrange('2030-01-10 10:00+00', '2030-01-10 10:30+00', '[)'), 'confirmed', 'manual', 10000, 'nota interna'),
+   tstzrange('2030-01-10 10:00+00', '2030-01-10 10:30+00', '[)'), tstzrange('2030-01-10 10:00+00', '2030-01-10 10:30+00', '[)'), 'confirmed', 'manual', 10000, 'nota interna', 'elin@example.com'),
   ('b1000000-0000-0000-0000-00000000000b', 'bbbbbbbb-0000-0000-0000-000000000002', '5bbb0000-0000-0000-0000-000000000001', '5e0b0000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-00000000000b',
-   tstzrange('2026-09-01 10:00+00', '2026-09-01 11:00+00', '[)'), tstzrange('2026-09-01 10:00+00', '2026-09-01 11:00+00', '[)'), 'completed', 'manual', 20000, null),
+   tstzrange('2026-09-01 10:00+00', '2026-09-01 11:00+00', '[)'), tstzrange('2026-09-01 10:00+00', '2026-09-01 11:00+00', '[)'), 'completed', 'manual', 20000, null, 'ELIN@example.com'),
   ('b2000000-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-000000000001', '5aaa0000-0000-0000-0000-000000000001', '5e0a0000-0000-0000-0000-000000000001', 'c2000000-0000-0000-0000-00000000000a',
-   tstzrange('2030-01-11 10:00+00', '2030-01-11 10:30+00', '[)'), tstzrange('2030-01-11 10:00+00', '2030-01-11 10:30+00', '[)'), 'confirmed', 'manual', 10000, null);
+   tstzrange('2030-01-11 10:00+00', '2030-01-11 10:30+00', '[)'), tstzrange('2030-01-11 10:00+00', '2030-01-11 10:30+00', '[)'), 'confirmed', 'manual', 10000, null, 'other@example.com');
 
 -- 1-6. c1 (konsument utan membership)
 select set_config('request.jwt.claims', json_build_object('sub', 'c1c1c1c1-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
@@ -110,7 +114,70 @@ select is((select count(*) from public.customers where business_id = 'bbbbbbbb-0
 select is((select private.delete_my_account()), false, 'ägare+konsument: auth-användaren behålls');
 reset role;
 
--- 29-30. Konsumentens radering
+-- 30-35. B1: angripare (atk) bokar först med offrets (vic) telefon + egen
+-- e-post; offret bokar sedan med samma telefon → samma kundrad (e-post =
+-- angriparens). Angriparen får ALDRIG se offrets bokning.
+insert into auth.users (id, email, role, aud, email_confirmed_at) values
+  ('a7a7a7a7-0000-0000-0000-000000000001', 'attacker@example.com', 'authenticated', 'authenticated', now()),
+  ('d1d1d1d1-0000-0000-0000-000000000001', 'victim@example.com', 'authenticated', 'authenticated', now());
+insert into public.customers (id, business_id, phone_e164, name, email) values
+  ('cccc0000-0000-0000-0000-00000000000a', 'aaaaaaaa-0000-0000-0000-000000000001', '+56922220001', 'Atk', 'attacker@example.com');
+insert into public.bookings (id, business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, contact_email) values
+  ('bbbb0000-0000-0000-0000-0000000000a1', 'aaaaaaaa-0000-0000-0000-000000000001', '5aaa0000-0000-0000-0000-000000000001', '5e0a0000-0000-0000-0000-000000000001', 'cccc0000-0000-0000-0000-00000000000a',
+   tstzrange('2030-02-01 10:00+00', '2030-02-01 10:30+00', '[)'), tstzrange('2030-02-01 10:00+00', '2030-02-01 10:30+00', '[)'), 'confirmed', 'web', 10000, 'attacker@example.com'),
+  ('bbbb0000-0000-0000-0000-0000000000d1', 'aaaaaaaa-0000-0000-0000-000000000001', '5aaa0000-0000-0000-0000-000000000001', '5e0a0000-0000-0000-0000-000000000001', 'cccc0000-0000-0000-0000-00000000000a',
+   tstzrange('2030-02-02 10:00+00', '2030-02-02 10:30+00', '[)'), tstzrange('2030-02-02 10:00+00', '2030-02-02 10:30+00', '[)'), 'confirmed', 'web', 10000, 'victim@example.com');
+
+select set_config('request.jwt.claims', json_build_object('sub', 'a7a7a7a7-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select private.ensure_customer_account(null);
+select private.link_customer_rows();
+select is((select count(*) from private.my_bookings() where booking_id = 'bbbb0000-0000-0000-0000-0000000000d1')::int, 0, 'B1: angriparen ser inte offrets bokning');
+select is((select count(*) from private.my_booking_ref('bbbb0000-0000-0000-0000-0000000000d1'))::int, 0, 'B1: angriparen kan inte avboka/recensera offrets bokning');
+select is((select count(*) from private.my_bookings())::int, 1, 'B1: angriparen ser bara sin egen bokning');
+select ok(position('bbbb0000-0000-0000-0000-0000000000d1' in private.export_my_account()::text) = 0
+  and position('2030-02-02' in private.export_my_account()::text) = 0, 'B1: exporten innehåller inte offrets bokning');
+reset role;
+
+select set_config('request.jwt.claims', json_build_object('sub', 'd1d1d1d1-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select private.ensure_customer_account(null);
+select private.link_customer_rows();
+select is((select count(*) from private.my_bookings())::int, 1, 'B1: offret ser sin egen bokning (koppling via contact_email)');
+select is((select booking_id from private.my_bookings()), 'bbbb0000-0000-0000-0000-0000000000d1'::uuid, 'B1: offret ser inte angriparens bokning');
+reset role;
+
+-- 36-37. Export utan notes; favoriter via my_favorites (c1 före radering)
+select set_config('request.jwt.claims', json_build_object('sub', 'c1c1c1c1-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select ok(position('nota interna' in private.export_my_account()::text) = 0, 'exporten innehåller aldrig notes');
+select is((select count(*) from private.my_favorites())::int, 1, 'my_favorites visar c1:s favorit');
+reset role;
+
+-- 38. Bokning gjord inloggad (claim) syns även utan matchande e-post
+select set_config('request.jwt.claims', json_build_object('sub', 'c2c2c2c2-0000-0000-0000-000000000002', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select private.ensure_customer_account(null);
+reset role;
+insert into public.bookings (id, business_id, staff_id, service_id, customer_id, period, blocked, status, source, price_clp, contact_email) values
+  ('bbbb0000-0000-0000-0000-0000000000c2', 'bbbbbbbb-0000-0000-0000-000000000002', '5bbb0000-0000-0000-0000-000000000001', '5e0b0000-0000-0000-0000-000000000001', 'c1000000-0000-0000-0000-00000000000b',
+   tstzrange('2030-03-01 10:00+00', '2030-03-01 11:00+00', '[)'), tstzrange('2030-03-01 10:00+00', '2030-03-01 11:00+00', '[)'), 'confirmed', 'web', 20000, null);
+set local role authenticated;
+select is((select private.claim_booking('bbbbbbbb-0000-0000-0000-000000000002', 'bbbb0000-0000-0000-0000-0000000000c2')), true, 'claim_booking markerar en nyss gjord bokning');
+reset role;
+
+-- 39. Anonymiserad kundrad → kopplingarna försvinner
+update public.customers set anonymized_at = now(), name = null, phone_e164 = null where id = 'cccc0000-0000-0000-0000-00000000000a';
+select is((select count(*) from public.customer_account_links where customer_id = 'cccc0000-0000-0000-0000-00000000000a')::int, 0, 'anonymisering tar bort kontokopplingar');
+
+-- 40. Plattformsadmin: bara konsumentdelen raderas
+insert into private.platform_admins (user_id) values ('d1d1d1d1-0000-0000-0000-000000000001');
+select set_config('request.jwt.claims', json_build_object('sub', 'd1d1d1d1-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select private.delete_my_account()), false, 'plattformsadmin: auth-användaren behålls');
+reset role;
+
+-- 39-40. Konsumentens radering
 select set_config('request.jwt.claims', json_build_object('sub', 'c1c1c1c1-0000-0000-0000-000000000001', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select private.delete_my_account()), true, 'c1 raderas helt');

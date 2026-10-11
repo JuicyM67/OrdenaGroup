@@ -259,12 +259,19 @@ async function accountTargetIn(
   ref: AccountBookingRef,
   now: Date,
 ): Promise<ReviewTarget | undefined> {
-  const r = await q.query<{ status: string; ended: boolean; recent: boolean }>(
-    `select status::text as status,
-            upper(period) <= $3 as ended,
-            lower(period) > $3::timestamptz - make_interval(days => $4::int) as recent
-       from public.bookings
-      where business_id = $1 and id = $2 and customer_id = $5`,
+  const r = await q.query<{
+    status: string;
+    ended: boolean;
+    recent: boolean;
+    enabled: boolean;
+  }>(
+    `select bk.status::text as status,
+            upper(bk.period) <= $3 as ended,
+            lower(bk.period) > $3::timestamptz - make_interval(days => $4::int) as recent,
+            b.review_requests_enabled as enabled
+       from public.bookings bk
+       join public.businesses b on b.id = bk.business_id
+      where bk.business_id = $1 and b.id = $1 and bk.id = $2 and bk.customer_id = $5`,
     [
       ref.businessId,
       ref.bookingId,
@@ -274,7 +281,8 @@ async function accountTargetIn(
     ],
   );
   const b = r.rows[0];
-  if (!b || !b.recent) return undefined;
+  // D-045: företaget kan stänga av recensioner (Ajustes → Reglas).
+  if (!b || !b.recent || !b.enabled) return undefined;
   const done =
     b.status === "completed" || (b.status === "confirmed" && b.ended);
   if (!done) return undefined;

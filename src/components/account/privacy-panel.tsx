@@ -55,7 +55,7 @@ export function PrivacyPanel({
   marketingConsent: boolean;
   onSaveMarketing: (granted: boolean) => Promise<{ ok: boolean }>;
   onExport: () => Promise<string | null>;
-  onDelete: (word: string) => Promise<{ ok: false }>;
+  onDelete: (word: string) => Promise<{ ok: false; code: "word" | "error" }>;
 }) {
   const t = cuenta.privacidad;
   const [marketing, setMarketing] = useState(marketingConsent);
@@ -65,7 +65,9 @@ export function PrivacyPanel({
   const [exporting, setExporting] = useState(false);
   const [word, setWord] = useState("");
   const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState(false);
+  const [deleteError, setDeleteError] = useState<false | "word" | "error">(
+    false,
+  );
   const marketingId = useId();
 
   async function saveMarketing() {
@@ -96,13 +98,13 @@ export function PrivacyPanel({
   async function remove() {
     setDeleteError(false);
     if (word.trim() !== t.palabra) {
-      setDeleteError(true);
+      setDeleteError("word");
       return;
     }
     setDeleting(true);
     try {
       const r = await onDelete(word);
-      if (!r.ok) setDeleteError(true);
+      if (!r.ok) setDeleteError(r.code);
     } finally {
       setDeleting(false);
     }
@@ -182,7 +184,13 @@ export function PrivacyPanel({
             value={word}
             autoComplete="off"
             onChange={(e) => setWord(e.target.value)}
-            error={deleteError ? t.eliminarError : undefined}
+            error={
+              deleteError === "word"
+                ? t.eliminarError
+                : deleteError === "error"
+                  ? comun.algoSalioMal
+                  : undefined
+            }
           />
           <button
             type="submit"

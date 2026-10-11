@@ -6,7 +6,7 @@
 // bara om kunden själv kryssade i rutan — `account_marketing=1` som sparas
 // när kontot skapas (aldrig förkryssat, regel 7). Egen rate limit per IP och
 // e-post (samma nivåer som `/login`).
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import type { RequestMagicLinkResult } from "@/app/(auth)/login/actions";
@@ -34,16 +34,10 @@ async function setIntent(marketing: boolean): Promise<void> {
   }
 }
 
-/** Basadressen för återkomsten: `NEXT_PUBLIC_APP_URL`, annars förfrågans egen
- * värd (lokalt på valfri port). */
-async function appOrigin(): Promise<string | undefined> {
-  const fixed = process.env.NEXT_PUBLIC_APP_URL;
-  if (fixed) return fixed;
-  const h = await headers();
-  const host = h.get("host");
-  if (!host) return undefined;
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  return `${proto}://${host}`;
+/** Basadressen för återkomsten: bara `NEXT_PUBLIC_APP_URL` (aldrig
+ * förfrågans Host-huvud). Saknas den används Supabase-projektets Site URL. */
+function appOrigin(): string | undefined {
+  return process.env.NEXT_PUBLIC_APP_URL || undefined;
 }
 
 export async function requestAccountMagicLink(input: {
@@ -73,7 +67,7 @@ export async function requestAccountMagicLink(input: {
   await setIntent(input.marketing === true);
   try {
     const supabase = await createSupabaseServerClient();
-    const origin = await appOrigin();
+    const origin = appOrigin();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: origin ? { emailRedirectTo: `${origin}/auth/confirm` } : {},
@@ -103,7 +97,7 @@ export async function signInWithGoogle(formData: FormData): Promise<void> {
     redirect(cuentaHref("cuentaIngresar"));
   }
   await setIntent(formData.get("marketing") === "1");
-  const origin = await appOrigin();
+  const origin = appOrigin();
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
