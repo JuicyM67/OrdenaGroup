@@ -334,7 +334,7 @@ export function OfferEditor({
   return (
     <div
       data-testid="offer-editor"
-      className="flex flex-col gap-4 rounded-tile bg-canvas p-4 lg:p-5"
+      className="flex flex-col gap-4 rounded-tile bg-surface p-5 fields-on-surface"
     >
       <div className="flex items-center justify-between gap-3">
         <h2 className="text-18 font-bold text-ink">
@@ -346,7 +346,7 @@ export function OfferEditor({
       {lockedForMe ? (
         <p
           role="note"
-          className="rounded-tile bg-surface p-3 text-13 text-muted"
+          className="rounded-tile bg-canvas p-3 text-13 text-muted"
         >
           {t.publicadaSoloDueno}
         </p>
@@ -465,7 +465,7 @@ export function OfferEditor({
             error={errors.offerPrice}
           />
           {service ? (
-            <div className="flex flex-col gap-1 rounded-tile bg-surface p-3">
+            <div className="flex flex-col gap-1 rounded-tile bg-canvas p-3">
               <div className="flex items-center justify-between gap-2">
                 <span className="text-13 text-ink">
                   {t.precioOrdinario({
@@ -651,33 +651,35 @@ export function OfferEditor({
       {/* Förhandsvisning: samma kort som i Upptäck. */}
       <div className="flex flex-col gap-2 border-t border-line pt-4">
         <span className="text-13 font-semibold text-ink">{t.vistaPrevia}</span>
-        <div inert className="max-w-80">
-          <OfferCard
-            offer={{
-              id: offerId ?? "nuevo",
-              slug: slug ?? "",
-              title: form.title || t.tituloPlaceholder,
-              imageUrl:
-                imagePreview && !imagePreview.startsWith("blob:")
-                  ? imagePreview
-                  : null,
-              category: form.category as MarketplaceCategoryId,
-              regularMinor: service?.lowestMinor ?? 0,
-              priceMinor: priceMinor || (service?.lowestMinor ?? 0),
-              discountPct: pct,
-              business: {
-                id: "",
-                name: business.name,
-                slug: business.slug,
-                areaName: business.areaName,
-                lat: null,
-                lng: null,
-              },
-              rating: null,
-              distanceKm: null,
-              flashToday: null,
-            }}
-          />
+        <div inert className="rounded-tile bg-canvas p-4">
+          <div className="max-w-80">
+            <OfferCard
+              offer={{
+                id: offerId ?? "nuevo",
+                slug: slug ?? "",
+                title: form.title || t.tituloPlaceholder,
+                imageUrl:
+                  imagePreview && !imagePreview.startsWith("blob:")
+                    ? imagePreview
+                    : null,
+                category: form.category as MarketplaceCategoryId,
+                regularMinor: service?.lowestMinor ?? 0,
+                priceMinor: priceMinor || (service?.lowestMinor ?? 0),
+                discountPct: pct,
+                business: {
+                  id: "",
+                  name: business.name,
+                  slug: business.slug,
+                  areaName: business.areaName,
+                  lat: null,
+                  lng: null,
+                },
+                rating: null,
+                distanceKm: null,
+                flashToday: null,
+              }}
+            />
+          </div>
         </div>
       </div>
     </div>

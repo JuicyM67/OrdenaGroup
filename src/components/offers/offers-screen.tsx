@@ -205,13 +205,14 @@ export function OffersScreen({
     >
       <OwnerPageHeader
         title={ofertas.titulo}
-        subtitle={ofertas.subtitulo}
+        subtitle={<span className="hidden lg:inline">{ofertas.subtitulo}</span>}
         actions={
-          canCreate && (offers.length > 0 || editing !== null) ? (
+          canCreate && offers.length > 0 && editing !== "new" ? (
             <Button
               type="button"
               variant="primary"
               size="lg"
+              className="hidden lg:inline-flex"
               onClick={() => open("new")}
             >
               {ofertas.nueva}
@@ -242,7 +243,19 @@ export function OffersScreen({
                 padding="lg"
                 className="flex min-w-0 flex-col gap-4"
               >
-                <h2 className="text-18 font-bold text-ink">{L.titulo}</h2>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className="text-18 font-bold text-ink">{L.titulo}</h2>
+                  {canCreate && editing !== "new" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      className="lg:hidden"
+                      onClick={() => open("new")}
+                    >
+                      {ofertas.nueva}
+                    </Button>
+                  ) : null}
+                </div>
                 <div className="flex flex-col gap-3">
                   {offers.map((o) => (
                     <button
@@ -283,7 +296,12 @@ export function OffersScreen({
             ) : null}
 
             {editing !== null ? (
-              <div className="flex flex-col gap-3 lg:sticky lg:top-0">
+              <div
+                className={cn(
+                  "flex flex-col gap-3 lg:sticky lg:top-0",
+                  offers.length === 0 && "max-w-180",
+                )}
+              >
                 <OfferEditor
                   key={session}
                   offer={current}

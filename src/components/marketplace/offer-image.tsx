@@ -22,7 +22,12 @@ export function OfferImage({
   className?: string;
 }) {
   if (!src || !ALLOWED.test(src)) {
-    return <div aria-hidden="true" className={cn("bg-lavender", className)} />;
+    return (
+      <div
+        aria-hidden="true"
+        className={cn("absolute inset-0 bg-lavender", className)}
+      />
+    );
   }
   return (
     <Image
