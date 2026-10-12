@@ -201,6 +201,8 @@ export const reserva = {
   dia: {
     llenoOculto: "Día lleno",
     flashOculto: "Con hora flash",
+    semanaAnterior: "Semana anterior",
+    semanaSiguiente: "Semana siguiente",
   },
   /** aria-label de cada botón de hora del paso 3 (`{{t.t}}` en
    * Reserva.dc.html solo muestra la hora, p. ej. "11:30"). */

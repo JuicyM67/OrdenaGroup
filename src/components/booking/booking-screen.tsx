@@ -47,6 +47,7 @@ import type {
   BookingActionResult,
   BookingPageData,
   CustomerContact,
+  StaffSelection,
 } from "./types";
 import { WaitlistCard } from "./waitlist-card";
 
@@ -279,6 +280,7 @@ export function BookingScreen({
       selection.date,
     );
     dispatch({ type: "select_service", serviceId, keepDay });
+    if (!keepDay) openFirstDay(serviceId, selection.staffId);
   }
 
   function selectStaff(staffId: string) {
@@ -290,6 +292,17 @@ export function BookingScreen({
         selection.date,
       );
     dispatch({ type: "select_staff", staffId, keepDay });
+    if (!keepDay && selection.serviceId) {
+      openFirstDay(selection.serviceId, staffId);
+    }
+  }
+
+  // Dagen öppnas direkt (idag, annars första dagen med lediga tider) så att
+  // tiderna syns utan ett extra tryck i dagväljaren.
+  function openFirstDay(serviceId: string, staffId: StaffSelection) {
+    const days = data.availability[serviceId]?.[staffId] ?? [];
+    const firstOpen = days.find((d) => d.state === "open") ?? days[0];
+    if (firstOpen) dispatch({ type: "select_day", date: firstOpen.date });
   }
 
   // try/catch (qa-granskning, item 2): ett avbrutet/nätverksfel (t.ex.

@@ -71,6 +71,8 @@ export interface GuidedTourProps {
   readonly onStepChange?: (id: string | null) => void;
   /** Placering av "Visa mig runt igen" (klasser för position). */
   readonly restartClassName?: string;
+  /** Klasser på knapptexten, t.ex. `max-lg:sr-only` för en kompakt "?"-knapp på mobil. */
+  readonly restartLabelClassName?: string;
 }
 
 interface Box {
@@ -134,6 +136,7 @@ export function GuidedTour({
   doneAria,
   onStepChange,
   restartClassName,
+  restartLabelClassName,
 }: GuidedTourProps) {
   // Steg utan mål på sidan (t.ex. omdömen när företaget inte har några) hoppas över.
   const [steps] = useState<readonly TourStep[]>(() =>
@@ -323,7 +326,7 @@ export function GuidedTour({
         >
           ?
         </span>
-        {copy.restart}
+        <span className={restartLabelClassName}>{copy.restart}</span>
       </button>
     );
   }

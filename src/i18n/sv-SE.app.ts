@@ -196,6 +196,8 @@ export const reserva: Widen<typeof Es.reserva> = {
   dia: {
     llenoOculto: "Fullbokad dag",
     flashOculto: "Har blixttid",
+    semanaAnterior: "Föregående vecka",
+    semanaSiguiente: "Nästa vecka",
   },
   horaAria: (p: { hora: string }): string => `Välj tiden ${p.hora}`,
   descuento: (p: { porcentaje: number }): string => `−${p.porcentaje}%`,

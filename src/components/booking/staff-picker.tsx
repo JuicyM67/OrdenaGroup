@@ -1,5 +1,5 @@
 // StaffPicker — Reserva.dc.html rad 51–58 (R8 av WP-02: Pill + "Cualquiera").
-// Full bredd, scrollar horisontellt i stället för att bryta rad (planens steg 2).
+// Radbryts i stället för att scrolla i sidled (sidledsscrollen gjorde mobilsidan bredare än skärmen).
 import { Pill } from "@/components/ui/pill";
 import { reserva } from "@/i18n";
 
@@ -15,13 +15,12 @@ export function StaffPicker({
   onSelect: (staffId: string) => void;
 }) {
   return (
-    <div className="-mx-5 flex snap-x gap-2 overflow-x-auto px-5">
+    <div className="flex flex-wrap gap-2">
       <Pill
         selected={selectedId === "any"}
         onClick={() => {
           onSelect("any");
         }}
-        className="snap-start"
       >
         {reserva.pasos.cualquiera}
       </Pill>
@@ -32,7 +31,6 @@ export function StaffPicker({
           onClick={() => {
             onSelect(p.id);
           }}
-          className="snap-start"
         >
           {p.name}
         </Pill>

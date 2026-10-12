@@ -1,7 +1,7 @@
 // CategoryTabs — WP-40 (D-031): tjänsterna grupperade i kategoriflikar på
-// bokningssidan. Samma Pill-komponent och scroll-mönster som StaffPicker
-// (`staff-picker.tsx`): full bredd, scrollar horisontellt i stället för att
-// bryta rad. Se `.visual-diff/ref/falt-kategorier.html` (telefonmockupen)
+// bokningssidan. Samma Pill-komponent och radmönster som StaffPicker
+// (`staff-picker.tsx`): radbryts i stället för att scrolla i sidled (sidledsscrollen
+// gjorde mobilsidan bredare än skärmen). Se `.visual-diff/ref/falt-kategorier.html` (telefonmockupen)
 // för formspråket — ingen skalenlig mobilreferens finns för den här raden,
 // så den återanvänder StaffPickers redan godkända Pill-mönster i stället
 // för mockupens `role="tablist"` (som skulle krocka med Pills egna
@@ -20,7 +20,7 @@ export function CategoryTabs({
   onSelect: (id: string) => void;
 }) {
   return (
-    <div className="-mx-5 flex snap-x gap-2 overflow-x-auto px-5">
+    <div className="flex flex-wrap gap-2">
       {tabs.map((tab) => (
         <Pill
           key={tab.id}
@@ -28,7 +28,6 @@ export function CategoryTabs({
           onClick={() => {
             onSelect(tab.id);
           }}
-          className="snap-start"
         >
           {tab.name}
         </Pill>

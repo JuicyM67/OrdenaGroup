@@ -55,7 +55,10 @@ export default function CustomerTour({
       storageKey="tour-cliente"
       doneAria={c.final.aria}
       onStepChange={onStepChange}
-      restartClassName="bottom-28 left-3 lg:bottom-6 lg:left-10"
+      // Mobil: bara "?"-cirkeln uppe till höger, så den inte täcker tjänstelistan
+      // eller "Nästa lediga tid"-fältet i botten.
+      restartClassName="max-lg:top-3 max-lg:right-3 max-lg:size-12 max-lg:justify-center max-lg:px-0 lg:bottom-6 lg:left-10"
+      restartLabelClassName="max-lg:sr-only"
       copy={{
         skip: v.comun.saltar,
         back: v.comun.atras,
