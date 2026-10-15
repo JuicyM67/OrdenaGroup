@@ -2,11 +2,17 @@
 // namnen finns i `src/i18n/*.descubre.ts`. Ruttsökvägarna finns i `routes.ts`.
 import { market, type Market } from "./brand";
 
-/** Ägarens beslut 2026-10-10: Chile helt dold tills Mercado Pago finns. SE kan stängas
- * med `NEXT_PUBLIC_MARKETPLACE=0` (nödbroms, bakas in i klientbygget). */
-export function marketplaceEnabled(m: Market = market): boolean {
-  if (m !== "SE") return false;
+/** Marknadsplatsen (listning, erbjudanden, karta) finns i båda marknaderna (D-060;
+ * Chile var dold enligt D-055). Kan stängas med `NEXT_PUBLIC_MARKETPLACE=0`
+ * (nödbroms, bakas in i klientbygget). */
+export function marketplaceEnabled(): boolean {
   return process.env.NEXT_PUBLIC_MARKETPLACE !== "0";
+}
+
+/** Köp av värdebevis i marknadsplatsen (WP-69, D-057) kräver Stripe och finns bara
+ * i SE. I CL visar erbjudandet "Ver horas" (vanlig bokning) tills Mercado Pago finns. */
+export function vouchersMarket(m: Market = market): boolean {
+  return m === "SE" && marketplaceEnabled();
 }
 
 /** Indexering (robots + sitemap) först när ägaren sätter `MARKETPLACE_INDEXABLE=1`

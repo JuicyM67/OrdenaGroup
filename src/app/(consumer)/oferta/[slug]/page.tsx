@@ -12,6 +12,7 @@ import { marketplaceEnabled, marketplaceIndexable } from "@/config/marketplace";
 import { href, hrefMarketplace } from "@/config/routes";
 import { descubre, vales } from "@/i18n";
 import { loadOffer } from "@/server/marketplace/public";
+import { marketplaceOfferBookingEnabled } from "@/server/bookings/marketplace-offer";
 import { businessCanSellVouchers } from "@/server/vouchers";
 
 import { buyOffer } from "./actions";
@@ -85,6 +86,7 @@ export default async function OfertaPage({
           ? { action: buyOffer, ...(notice ? { notice } : {}) }
           : undefined
       }
+      bookAtOfferPrice={marketplaceOfferBookingEnabled()}
       jsonLd={offerJsonLd(offer, url, `/${offer.business.slug}`, purchasable)}
       migas={[
         { nombre: descubre.migas.inicio, href: href("inicio") },

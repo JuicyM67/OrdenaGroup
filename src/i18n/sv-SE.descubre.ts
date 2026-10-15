@@ -159,6 +159,11 @@ export const descubre: Widen<typeof EsDescubre> = {
     proximamenteTexto:
       "Snart kan du köpa erbjudandet här och välja tid direkt. Till dess kan du boka hos salongen till ordinarie pris.",
     verHoras: "Se lediga tider",
+    enLocal: "Du betalar på plats",
+    enLocalTexto:
+      "Boka din tid och betala erbjudandepriset direkt hos salongen. Ingen betalning online.",
+    reservarOferta: "Boka till erbjudandepris",
+    pasosLocal: ["Välj tid", "Kom till salongen", "Betala erbjudandepriset"],
     masDe: (p: { negocio: string }): string =>
       `Fler erbjudanden från ${p.negocio}`,
     precioNormal: "Ordinarie pris",

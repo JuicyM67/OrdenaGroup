@@ -16,6 +16,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { strokeArrow } from "@/components/ui/icons";
 import { hrefMarketplace } from "@/config/routes";
+import { queryString } from "@/config/url-params";
 import { descubre, vales } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
 import { initialsOf } from "@/lib/format/initials";
@@ -60,9 +61,12 @@ function Stars({ n }: { n: number }) {
 function BuySoon({
   offer,
   bookHref,
+  atOfferPrice,
 }: {
   offer: OfferDetailData;
   bookHref: string;
+  /** D-060: bokning till erbjudandepris, betalning i salongen (CL). */
+  atOfferPrice: boolean;
 }) {
   return (
     <div className="flex flex-col gap-4">
@@ -75,16 +79,16 @@ function BuySoon({
         </b>
       </div>
       <span className="flex h-12 items-center justify-center rounded-control bg-canvas px-4 text-14 font-bold text-muted">
-        {t.oferta.proximamente}
+        {atOfferPrice ? t.oferta.enLocal : t.oferta.proximamente}
       </span>
       <p className="text-13 leading-relaxed text-muted">
-        {t.oferta.proximamenteTexto}
+        {atOfferPrice ? t.oferta.enLocalTexto : t.oferta.proximamenteTexto}
       </p>
       <Link
         href={bookHref}
         className="flex h-12 items-center justify-center gap-2 rounded-control bg-ink px-4 text-15 font-bold text-on-dark hover:bg-ink-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
       >
-        {t.oferta.verHoras}
+        {atOfferPrice ? t.oferta.reservarOferta : t.oferta.verHoras}
         <ArrowRight
           aria-hidden="true"
           className="size-4.5 text-lime"
@@ -193,6 +197,7 @@ export function OfferDetail({
   jsonLd,
   nav,
   purchase,
+  bookAtOfferPrice,
 }: {
   offer: OfferDetailData;
   migas: Migas;
@@ -200,8 +205,15 @@ export function OfferDetail({
   nav: ConsumerNav;
   /** WP-69: köpet (bara när företaget kan ta betalt, SE). */
   purchase?: OfferPurchase;
+  /** D-060: utan köp bokar kunden till erbjudandepris (`?oferta=`) och
+   * betalar i salongen (CL). Annars "köp kommer snart" + vanlig bokning. */
+  bookAtOfferPrice?: boolean;
 }) {
   const bookHref = `/${offer.business.slug}`;
+  const atOfferPrice = !purchase && bookAtOfferPrice === true;
+  const offerBookHref = atOfferPrice
+    ? `${bookHref}${queryString("oferta", offer.id)}`
+    : bookHref;
   const categoria = t.categorias.nombres[offer.category];
   const ratingParts = [
     offer.rating ? t.oferta.verificadas({ n: offer.rating.count }) : null,
@@ -318,22 +330,27 @@ export function OfferDetail({
             <section className={card}>
               <h2 className={cardTitle}>{t.oferta.comoFunciona}</h2>
               <ol className="mt-3 grid grid-cols-3 gap-2">
-                {t.oferta.pasos.map((paso, i) => (
-                  <li
-                    key={paso}
-                    className="flex flex-col gap-1 rounded-tile bg-canvas p-3"
-                  >
-                    <b className="font-display text-24 font-semibold">
-                      {i + 1}
-                    </b>
-                    <span className="text-13 leading-snug text-ink-soft">
-                      {paso}
-                    </span>
-                  </li>
-                ))}
+                {(atOfferPrice ? t.oferta.pasosLocal : t.oferta.pasos).map(
+                  (paso, i) => (
+                    <li
+                      key={paso}
+                      className="flex flex-col gap-1 rounded-tile bg-canvas p-3"
+                    >
+                      <b className="font-display text-24 font-semibold">
+                        {i + 1}
+                      </b>
+                      <span className="text-13 leading-snug text-ink-soft">
+                        {paso}
+                      </span>
+                    </li>
+                  ),
+                )}
               </ol>
               <p className="mt-3 text-13 text-muted">
-                {t.oferta.validez({ meses: offer.validMonths })}{" "}
+                {/* Giltighetstiden gäller värdebeviset (köpet), inte bokningen. */}
+                {atOfferPrice
+                  ? null
+                  : t.oferta.validez({ meses: offer.validMonths })}{" "}
                 {t.oferta.duracion({
                   duracion: formatDuration(offer.durationMin),
                 })}
@@ -413,7 +430,11 @@ export function OfferDetail({
             {purchase ? (
               <BuyBox offer={offer} purchase={purchase} />
             ) : (
-              <BuySoon offer={offer} bookHref={bookHref} />
+              <BuySoon
+                offer={offer}
+                bookHref={offerBookHref}
+                atOfferPrice={atOfferPrice}
+              />
             )}
           </aside>
         </div>
@@ -436,7 +457,7 @@ export function OfferDetail({
               ) : null
             ) : (
               <span className="mt-1 text-12 text-muted">
-                {t.oferta.proximamente}
+                {atOfferPrice ? t.oferta.enLocal : t.oferta.proximamente}
               </span>
             )}
           </div>
@@ -449,10 +470,10 @@ export function OfferDetail({
             />
           ) : (
             <Link
-              href={bookHref}
+              href={offerBookHref}
               className="flex h-13 items-center gap-2 rounded-control bg-ink px-5 text-15 font-bold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
-              {t.oferta.verHoras}
+              {atOfferPrice ? t.oferta.reservarOferta : t.oferta.verHoras}
               <ArrowRight
                 aria-hidden="true"
                 className="size-4.5 text-lime"

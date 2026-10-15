@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 
 import { AccountShell } from "@/components/account/account-shell";
 import { VoucherCard } from "@/components/account/voucher-card";
-import { marketplaceEnabled } from "@/config/marketplace";
+import { vouchersMarket } from "@/config/marketplace";
 import { hrefMarketplace } from "@/config/routes";
 import { vales } from "@/i18n";
 import { systemClock } from "@/server/scheduling/clock";
@@ -30,7 +30,7 @@ export default async function CuentaValesPage({
 }: {
   searchParams: SearchParams;
 }) {
-  if (!marketplaceEnabled()) notFound();
+  if (!vouchersMarket()) notFound();
   const session = await requireAccount();
   const sp = await searchParams;
   const now = systemClock();

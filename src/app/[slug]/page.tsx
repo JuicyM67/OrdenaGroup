@@ -17,10 +17,19 @@ import type {
 import type { BookingActionResult } from "@/components/booking/types";
 import { brand, market } from "@/config/brand";
 import { href, regaloHref } from "@/config/routes";
-import { marketplaceEnabled } from "@/config/marketplace";
+import { vouchersMarket } from "@/config/marketplace";
 import { planes, regalo, reserva, vales, visita } from "@/i18n";
+import { formatMoney } from "@/lib/format/money";
 import { isFavorite } from "@/server/accounts/account";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
+import {
+  findBookableMarketplaceOfferIn,
+  isMarketplaceOfferIdShape,
+} from "@/server/bookings/marketplace-offer";
+import {
+  marketplaceOfferPageData,
+  marketplaceOfferSelection,
+} from "@/server/bookings/marketplace-offer-page";
 import { findValidOfferIn, isOfferTokenShape } from "@/server/bookings/offer";
 import {
   flashSelection,
@@ -124,10 +133,16 @@ export default async function ReservaPage({
   // den inloggade köparen (annars sidan som vanligt), servervalidering här och
   // igen i bokningens transaktion.
   const rawVoucher = readParam(sp, "vardebevis");
+  // D-060: `?oferta=<id>` — boka marknadsplatsens erbjudande till
+  // erbjudandepris (CL, betalning i salongen). Ogiltigt = sidan som vanligt.
+  const rawMarketOffer = readParam(sp, "oferta");
+  const marketOfferId = isMarketplaceOfferIdShape(rawMarketOffer)
+    ? rawMarketOffer
+    : undefined;
   const voucherAccount =
-    marketplaceEnabled() && isUuid(rawVoucher) ? await accountPromise : null;
-  const [rawData, offer, flash, reviews, voucher] = await withServiceTx(
-    async (q) => {
+    vouchersMarket() && isUuid(rawVoucher) ? await accountPromise : null;
+  const [rawData, offer, flash, reviews, voucher, marketOffer] =
+    await withServiceTx(async (q) => {
       const d = await loadReservaPageData(q, {
         businessId: business.id,
         slug,
@@ -155,10 +170,23 @@ export default async function ReservaPage({
               now,
             })
           : undefined;
-      return [d, o, f, r, v] as const;
-    },
-  );
-  const data = rawData && voucher ? voucherPageData(rawData, voucher) : rawData;
+      const m = marketOfferId
+        ? await findBookableMarketplaceOfferIn(q, {
+            businessId: business.id,
+            offerId: marketOfferId,
+            now,
+          })
+        : undefined;
+      return [d, o, f, r, v, m] as const;
+    });
+  // Värdebeviset går före (det betalar redan hela tjänsten).
+  const activeMarketOffer = voucher ? undefined : marketOffer;
+  const data =
+    rawData && voucher
+      ? voucherPageData(rawData, voucher)
+      : rawData && activeMarketOffer
+        ? marketplaceOfferPageData(rawData, activeMarketOffer)
+        : rawData;
   // Bara en skyddsnät mot en race (företaget togs bort mellan de två
   // frågorna ovan) — `resolveBusinessBySlug` hittade det just innan.
   if (!data) notFound();
@@ -213,7 +241,9 @@ export default async function ReservaPage({
     ? voucherSelection(data, voucher.serviceId)
     : flash
       ? flashSelection(data, flash)
-      : undefined;
+      : activeMarketOffer
+        ? marketplaceOfferSelection(data, activeMarketOffer.serviceId)
+        : undefined;
   const voucherNotice = voucher ? (
     <p
       role="note"
@@ -230,6 +260,21 @@ export default async function ReservaPage({
     >
       <span>{reserva.oferta.aviso({ pct: offer.pct })}</span>
       {offer.text ? <span className="font-normal">{offer.text}</span> : null}
+    </p>
+  ) : undefined;
+
+  const marketOfferNotice = activeMarketOffer ? (
+    <p
+      role="note"
+      className="flex flex-col gap-0.5 self-start rounded-control bg-lime px-3 py-2 text-13 font-semibold text-ink"
+    >
+      <span>
+        {reserva.ofertaDescubre.aviso({
+          titulo: activeMarketOffer.title,
+          precio: formatMoney(activeMarketOffer.priceMinor),
+        })}
+      </span>
+      <span className="font-normal">{reserva.ofertaDescubre.texto}</span>
     </p>
   ) : undefined;
 
@@ -254,9 +299,11 @@ export default async function ReservaPage({
     // WP-31: token binds här på servern (krypterad closure-variabel), bara
     // när sidan själv godkände den — aldrig ur klientens formulär.
     // WP-69: värdebeviset (id + köparens id) binds likadant, aldrig ur formuläret.
+    // D-060: erbjudandets id binds likadant (bara när sidan godkände det).
     return createBooking(slug, input, {
       offerToken: boundOfferToken,
       voucher: boundVoucher,
+      marketplaceOfferId: activeMarketOffer?.id,
     });
   }
 
@@ -347,7 +394,9 @@ export default async function ReservaPage({
       <BookingScreen
         profileContent={profileContent}
         tour={isDemo}
-        offerNotice={voucherNotice ?? pagoNotice ?? offerNotice}
+        offerNotice={
+          voucherNotice ?? pagoNotice ?? marketOfferNotice ?? offerNotice
+        }
         data={data}
         initialSelection={initialSelection}
         submitBooking={submitBooking}

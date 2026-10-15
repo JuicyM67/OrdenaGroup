@@ -31,6 +31,10 @@ import { actorMember, canManageStaffBookings } from "./authz";
 import { findOrCreateCustomer } from "./customers";
 import { emitBookingEvent } from "./events";
 import { memberDiscountIn, memberDiscountMinor } from "./member";
+import {
+  findBookableMarketplaceOfferIn,
+  marketplaceOfferDiscountMinor,
+} from "./marketplace-offer";
 import { offerDiscountIn, redeemOfferIn } from "./offer";
 import { createManageToken } from "./token";
 import type { BookingError, CreatedBooking } from "./types";
@@ -86,6 +90,11 @@ function sourceFor(
  * (`booking_id`) i samma transaktion; `bookings.flash_slot_id` sätts.
  * Rabatten = största av medlem/flash/erbjudande (lika: medlem, flash,
  * erbjudande — token förbrukas bara när erbjudandet ensamt är störst).
+ *
+ * D-060: `marketplaceOfferId` (marknadsplatsens erbjudande, CL) valideras i
+ * transaktionen (`./marketplace-offer.ts`). Gäller bara erbjudandets egen
+ * tjänst; rabatten = ordinarie pris − erbjudandepris och tävlar med de andra
+ * (största vinner). `bookings.marketplace_offer_id` sätts när den vinner.
  */
 export async function createBooking(
   request: CreateBookingRequest,
@@ -144,6 +153,8 @@ export type CreateInput = {
   waitlistEntryId?: string | undefined;
   /** WP-69 (D-057): värdebeviset (köparens id från sessionen, aldrig klienten). */
   voucher?: { id: string; userId: string } | undefined;
+  /** D-060: marknadsplatsens erbjudande (binds på servern, aldrig ur formuläret). */
+  marketplaceOfferId?: string | undefined;
   /** WP-77 (D-058): presentkortets kod (kunden anger den i formuläret). */
   giftCardCode?: string | undefined;
 };
@@ -160,6 +171,7 @@ type IdempotencyRow = {
   discount_clp: number;
   campaign_recipient_id: string | null;
   flash_slot_id: string | null;
+  marketplace_offer_id: string | null;
 };
 
 /**
@@ -177,7 +189,8 @@ async function findByIdempotencyKey(
 ): Promise<CreatedBooking | undefined> {
   const r = await q.query<IdempotencyRow>(
     `select id, staff_id, service_id, customer_id, price_clp, discount_clp,
-            campaign_recipient_id, flash_slot_id, status::text as status,
+            campaign_recipient_id, flash_slot_id, marketplace_offer_id,
+            status::text as status,
             extract(epoch from lower(period))::float8 * 1000 as s,
             extract(epoch from upper(period))::float8 * 1000 as pe
        from public.bookings
@@ -203,7 +216,9 @@ async function findByIdempotencyKey(
               ? ("offer" as const)
               : x.flash_slot_id !== null
                 ? ("flash" as const)
-                : ("member" as const),
+                : x.marketplace_offer_id !== null
+                  ? ("marketplace" as const)
+                  : ("member" as const),
         }
       : {}),
     depositClp: 0,
@@ -349,6 +364,17 @@ export async function createIn(
     );
     if (!v.rows[0]?.ok) return err("invalid_input");
   }
+  const marketplaceOffer = input.marketplaceOfferId
+    ? await findBookableMarketplaceOfferIn(q, {
+        businessId: input.businessId,
+        offerId: input.marketplaceOfferId,
+        now: input.now,
+      })
+    : undefined;
+  const marketplaceMinor =
+    marketplaceOffer && marketplaceOffer.serviceId === input.serviceId
+      ? marketplaceOfferDiscountMinor(priceClp, marketplaceOffer.priceMinor)
+      : 0;
   const memberMinor = Math.max(0, memberDiscount?.discountMinor ?? 0);
   const offerMinor = offer?.discountMinor ?? 0;
   // Rabatten beror på profesionalen (flash-tiden gäller bara hens tid).
@@ -362,6 +388,7 @@ export async function createIn(
         discountReason: "voucher",
         campaignRecipientId: null,
         flashSlotId: flash?.id ?? null,
+        marketplaceOfferId: null,
       };
     }
     return choosePricing({
@@ -370,6 +397,8 @@ export async function createIn(
       flashMinor: flash ? memberDiscountMinor(priceClp, flash.pct) : 0,
       flashSlotId: flash?.id ?? null,
       offerRecipientId: offer?.recipientId ?? null,
+      marketplaceMinor,
+      marketplaceOfferId: marketplaceOffer?.id ?? null,
     });
   };
   const { token, hash } = createManageToken();
@@ -387,10 +416,10 @@ export async function createIn(
               status, source, price_clp, discount_clp, deposit_clp,
               manage_token_hash, notes, idempotency_key, created_at,
               campaign_recipient_id, flash_slot_id, waitlist_entry_id,
-              contact_email)
+              contact_email, marketplace_offer_id)
            values ($1, $2, $3, $4, $5::tstzrange, $6::tstzrange,
                    $12::public.booking_status, $7::public.booking_source,
-                   $8, $14, 0, $9, $10, $11, $13, $15, $16, $17, $18)
+                   $8, $14, 0, $9, $10, $11, $13, $15, $16, $17, $18, $19)
            returning id`,
           [
             input.businessId,
@@ -415,6 +444,7 @@ export async function createIn(
             // JUST den här bokningen — kundkonton ser bokningar per bokning,
             // inte per kundrad (som matchas på telefon).
             input.customer.email?.trim() || null,
+            pricing.marketplaceOfferId,
           ],
         );
         return r.rows[0]!.id;
@@ -561,11 +591,13 @@ type Pricing = {
   discountReason: CreatedBooking["discountReason"];
   campaignRecipientId: string | null;
   flashSlotId: string | null;
+  marketplaceOfferId: string | null;
 };
 
 /**
- * Största rabatten vinner, aldrig summan. Lika → medlem, sedan flash, sist
- * erbjudandet (token förbrukas bara när erbjudandet ensamt är störst).
+ * Största rabatten vinner, aldrig summan. Lika → medlem, sedan flash, sedan
+ * erbjudandet (token förbrukas bara när erbjudandet ensamt är störst), sist
+ * marknadsplatsens erbjudande (D-060).
  * `flashSlotId` sätts alltid när bokningen träffar en flash-tid (tiden är
  * förbrukad även om en annan rabatt var större).
  */
@@ -575,8 +607,17 @@ export function choosePricing(x: {
   flashMinor: number;
   flashSlotId: string | null;
   offerRecipientId: string | null;
+  marketplaceMinor?: number;
+  marketplaceOfferId?: string | null;
 }): Pricing {
-  const best = Math.max(0, x.memberMinor, x.offerMinor, x.flashMinor);
+  const marketplaceMinor = x.marketplaceMinor ?? 0;
+  const best = Math.max(
+    0,
+    x.memberMinor,
+    x.offerMinor,
+    x.flashMinor,
+    marketplaceMinor,
+  );
   const reason: CreatedBooking["discountReason"] =
     best === 0
       ? undefined
@@ -584,12 +625,16 @@ export function choosePricing(x: {
         ? "member"
         : x.flashMinor === best
           ? "flash"
-          : "offer";
+          : x.offerMinor === best
+            ? "offer"
+            : "marketplace";
   return {
     discountClp: best,
     discountReason: reason,
     campaignRecipientId: reason === "offer" ? x.offerRecipientId : null,
     flashSlotId: x.flashSlotId,
+    marketplaceOfferId:
+      reason === "marketplace" ? (x.marketplaceOfferId ?? null) : null,
   };
 }
 

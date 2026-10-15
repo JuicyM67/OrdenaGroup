@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { MainNav } from "./main-nav";
 
 describe("MainNav", () => {
-  it("bara Inicio har aria-current=page; 8 enlaces (logo + 7 rutas) con nombre accesible", () => {
+  it("bara Inicio har aria-current=page; 9 enlaces (logo + 8 rutas) con nombre accesible", () => {
     render(<MainNav active="inicio" />);
 
     // WP-57: Hoy se agrega entre Agenda y Clientes — logo (/app/inicio), Inicio,
-    // Agenda, Hoy, Clientes, Horas flash, Caja, Ajustes.
+    // Agenda, Hoy, Clientes, Horas flash, Ofertas (D-060: también en CL), Caja,
+    // Ajustes.
     const links = screen.getAllByRole("link");
-    expect(links).toHaveLength(8);
+    expect(links).toHaveLength(9);
     for (const link of links) {
       expect(link).toHaveAccessibleName();
     }

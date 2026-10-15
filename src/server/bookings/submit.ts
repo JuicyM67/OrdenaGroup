@@ -7,6 +7,7 @@ import { recordConsent } from "@/server/privacy/consent";
 import { err, type Result } from "@/server/scheduling/result";
 
 import { createBooking } from "./create";
+import { isMarketplaceOfferIdShape } from "./marketplace-offer";
 import { isOfferTokenShape } from "./offer";
 import type { CreatedBooking, CustomerBookingError } from "./types";
 
@@ -30,6 +31,8 @@ export type CreateCustomerBookingInput = {
   offerToken?: string | undefined;
   /** WP-69 (D-057): värdebeviset, bundet på servern (`page.tsx`). */
   voucher?: { id: string; userId: string } | undefined;
+  /** D-060: marknadsplatsens erbjudande (CL), bundet på servern. */
+  marketplaceOfferId?: string | undefined;
   /** WP-77 (D-058): presentkortets kod. */
   giftCardCode?: string | undefined;
   now: Date;
@@ -118,6 +121,9 @@ export async function createCustomerBooking(
         ? { offerToken: input.offerToken }
         : {}),
       ...(input.voucher ? { voucher: input.voucher } : {}),
+      ...(isMarketplaceOfferIdShape(input.marketplaceOfferId)
+        ? { marketplaceOfferId: input.marketplaceOfferId }
+        : {}),
       ...(input.giftCardCode ? { giftCardCode: input.giftCardCode } : {}),
     },
     {
