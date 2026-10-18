@@ -812,6 +812,17 @@ export const email: Widen<typeof Es.email> = {
   /** Inbjudan att skapa ett företag, skickad av en plattformsadmin
    * (F19/WP-36, `/admin` → "Nytt företag"). Länken går till
    * `/app/bienvenida/[token]`. */
+  invitacionAdmin: {
+    asunto: (p: { marca: string }): string =>
+      `Du har lagts till som administratör för ${p.marca}`,
+    preheader: "Logga in och aktivera tvåstegsverifiering.",
+    titulo: "Nu är du administratör",
+    texto: (p: { marca: string }): string =>
+      `Du har lagts till som plattformsadministratör för ${p.marca}. Logga in med knappen; länken fungerar en gång.`,
+    mfa: (p: { url: string }): string =>
+      `Öppna sedan ${p.url} och aktivera tvåstegsverifiering — utan den kan du inte använda adminpanelen.`,
+    cta: "Logga in",
+  },
   invitacionNegocio: {
     asunto: (p: { marca: string }): string => `Du är inbjuden till ${p.marca}`,
     preheader: "Acceptera inbjudan och skapa din kalender på några minuter.",
@@ -2831,6 +2842,8 @@ export const planes: Widen<typeof Es.planes> = {
     noIncluye: "Ingår inte",
     cambiarPlan: "Byt plan",
     contacto: "Kontakta oss",
+    administrado: (p: { marca: string }): string =>
+      `Din plan hanteras av ${p.marca}. Kontakta oss för ändringar.`,
     cambiarAyuda:
       "Snart kan du byta plan direkt här. Tills vidare: titta på planerna och hör av dig, så byter vi åt dig.",
     pausado:

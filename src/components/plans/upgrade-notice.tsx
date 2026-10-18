@@ -7,16 +7,21 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { strokeCard } from "@/components/ui/icons";
 import { minPlanFor, type Feature } from "@/config/plans";
-import { appHref } from "@/config/routes";
+import { brand } from "@/config/brand";
+import { appHref, href } from "@/config/routes";
 import { planes } from "@/i18n";
 
 export function UpgradeNotice({
   feature,
   linkHref = appHref("appAjustesPlan"),
+  manualBilling = false,
 }: {
   feature: Feature;
   /** Standard: Inställningar → Plan. Personal (utan Plan-fliken) → prissidan. */
   linkHref?: string;
+  /** WP-80 (D-061): "Facturación manual" — ingen uppgraderingskrok, bara
+   * "Contáctanos" (planen styrs av plattformsadmin). */
+  manualBilling?: boolean;
 }) {
   const plan = planes.nombres[minPlanFor(feature)];
   return (
@@ -32,7 +37,9 @@ export function UpgradeNotice({
           {planes.bloqueo.titulo({ funcion: planes.funciones[feature], plan })}
         </p>
         <p className="text-14 leading-body text-muted">
-          {planes.bloqueo.ganchos[feature]}
+          {manualBilling
+            ? planes.ajustes.administrado({ marca: brand.name })
+            : planes.bloqueo.ganchos[feature]}
         </p>
       </div>
       <Button
@@ -41,7 +48,11 @@ export function UpgradeNotice({
         size="md"
         className="self-start sm:self-center"
       >
-        <Link href={linkHref}>{planes.bloqueo.verPlanes}</Link>
+        {manualBilling ? (
+          <Link href={href("contacto")}>{planes.ajustes.contacto}</Link>
+        ) : (
+          <Link href={linkHref}>{planes.bloqueo.verPlanes}</Link>
+        )}
       </Button>
     </div>
   );

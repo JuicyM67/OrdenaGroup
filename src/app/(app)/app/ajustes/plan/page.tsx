@@ -198,6 +198,7 @@ export default async function AjustesPlanPage({
       <PlanSection
         data={{
           plan: usage.plan,
+          billingMode: usage.billingMode,
           staff: usage.staff,
           services: usage.services,
           sms: usage.sms,

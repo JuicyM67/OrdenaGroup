@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { strokeCard } from "@/components/ui/icons";
-import { market } from "@/config/brand";
+import { brand, market } from "@/config/brand";
 import { can, type BusinessPlan, type Feature } from "@/config/plans";
 import { href } from "@/config/routes";
 import { planes } from "@/i18n";
@@ -19,6 +19,9 @@ export type PlanSectionData = {
   staff: { used: number; limit: number | null };
   services: { used: number; limit: number | null };
   sms: { used: number; limit: number | null };
+  /** WP-80 (D-061): 'manual' = faktureras utanför programmet; inga planköp
+   * eller uppgraderingsknappar, bara "kontakta oss". */
+  billingMode?: "app" | "manual";
 };
 
 const FEATURES: readonly Feature[] = [
@@ -141,22 +144,35 @@ export function PlanSection({
         </ul>
       </Card>
 
-      <Card radius="tile" padding="lg" className="flex flex-col gap-4">
-        <p className="text-14 leading-body text-ink">
-          {planes.ajustes.cambiarAyuda}
-        </p>
-        <p className="text-13 leading-body text-muted">
-          {planes.ajustes.pausado}
-        </p>
-        <div className="flex flex-wrap gap-3">
-          <Button asChild variant="primary" size="md">
-            <Link href={href("precios")}>{planes.ajustes.cambiarPlan}</Link>
-          </Button>
-          <Button asChild variant="secondary" size="md">
-            <Link href={href("contacto")}>{planes.ajustes.contacto}</Link>
-          </Button>
-        </div>
-      </Card>
+      {data.billingMode === "manual" ? (
+        <Card radius="tile" padding="lg" className="flex flex-col gap-4">
+          <p className="text-14 leading-body text-ink">
+            {planes.ajustes.administrado({ marca: brand.name })}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild variant="secondary" size="md">
+              <Link href={href("contacto")}>{planes.ajustes.contacto}</Link>
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <Card radius="tile" padding="lg" className="flex flex-col gap-4">
+          <p className="text-14 leading-body text-ink">
+            {planes.ajustes.cambiarAyuda}
+          </p>
+          <p className="text-13 leading-body text-muted">
+            {planes.ajustes.pausado}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild variant="primary" size="md">
+              <Link href={href("precios")}>{planes.ajustes.cambiarPlan}</Link>
+            </Button>
+            <Button asChild variant="secondary" size="md">
+              <Link href={href("contacto")}>{planes.ajustes.contacto}</Link>
+            </Button>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

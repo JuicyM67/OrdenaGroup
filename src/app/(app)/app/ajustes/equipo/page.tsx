@@ -87,7 +87,11 @@ export default async function AjustesEquipoPage() {
       myProfileActions={ctx.myProfileActions}
     >
       {planCan(ctx.plan, "staff_accounts") ? null : (
-        <UpgradeNotice feature="staff_accounts" linkHref={ctx.plansHref} />
+        <UpgradeNotice
+          feature="staff_accounts"
+          linkHref={ctx.plansHref}
+          manualBilling={ctx.plan.billingMode === "manual"}
+        />
       )}
       <TeamSection
         staff={staff}

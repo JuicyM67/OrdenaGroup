@@ -29,6 +29,9 @@ import {
 export type PlanInfo = {
   plan: BusinessPlan;
   customLimits: CustomLimits;
+  /** WP-80 (D-061): 'manual' = planen styrs av plattformsadmin (faktureras
+   * utanför programmet) — ingen självbetjäning för planköp i appen. */
+  billingMode: "app" | "manual";
 };
 
 export class PlanLockedError extends Error {
@@ -41,8 +44,12 @@ export async function loadPlanIn(
   q: Queryable,
   businessId: string,
 ): Promise<PlanInfo> {
-  const r = await q.query<{ plan: string; custom_limits: unknown }>(
-    `select plan::text as plan, custom_limits
+  const r = await q.query<{
+    plan: string;
+    custom_limits: unknown;
+    billing_mode?: string;
+  }>(
+    `select plan::text as plan, custom_limits, billing_mode
        from public.businesses where id = $1`,
     [businessId],
   );
@@ -50,6 +57,7 @@ export async function loadPlanIn(
   return {
     plan: row && isBusinessPlan(row.plan) ? row.plan : "free",
     customLimits: parseCustomLimits(row?.custom_limits),
+    billingMode: row?.billing_mode === "manual" ? "manual" : "app",
   };
 }
 

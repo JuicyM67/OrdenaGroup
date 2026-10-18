@@ -51,7 +51,9 @@ import {
   type InvitacionEquipoData,
 } from "./templates/invitacion-equipo";
 import {
+  invitacionAdminEmail,
   invitacionNegocioEmail,
+  type InvitacionAdminData,
   type InvitacionNegocioData,
 } from "./templates/invitacion";
 import {
@@ -81,6 +83,8 @@ export type EmailTemplateMap = {
   readonly bienvenida: BienvenidaData;
   /** F19/WP-36: invitación a crear un negocio desde `/admin`. */
   readonly invitacionNegocio: InvitacionNegocioData;
+  /** WP-80 (D-061): agregado como administrador de la plataforma. */
+  readonly invitacionAdmin: InvitacionAdminData;
   readonly reservaConfirmada: ReservaConfirmadaData;
   readonly recordatorio: RecordatorioData;
   readonly reservaMovida: ReservaMovidaData;
@@ -128,6 +132,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   confirmation: "account",
   bienvenida: "account",
   invitacionNegocio: "account",
+  invitacionAdmin: "account",
   reservaConfirmada: "booking",
   recordatorio: "booking",
   reservaMovida: "booking",
@@ -161,6 +166,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "confirmation",
   "bienvenida",
   "invitacionNegocio",
+  "invitacionAdmin",
   "reservaConfirmada",
   "recordatorio",
   "reservaMovida",
@@ -203,6 +209,8 @@ export function renderEmail<T extends EmailTemplateName>(
       return bienvenidaEmail(market, data as BienvenidaData);
     case "invitacionNegocio":
       return invitacionNegocioEmail(market, data as InvitacionNegocioData);
+    case "invitacionAdmin":
+      return invitacionAdminEmail(market, data as InvitacionAdminData);
     case "reservaConfirmada":
       return reservaConfirmadaEmail(market, data as ReservaConfirmadaData);
     case "recordatorio":

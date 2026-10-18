@@ -989,6 +989,17 @@ export const email = {
   /** Invitación a crear un negocio, enviada por un admin de la plataforma
    * (F19/WP-36, `/admin` → "Nuevo negocio"). El link lleva a
    * `/app/bienvenida/[token]`. */
+  invitacionAdmin: {
+    asunto: (p: { marca: string }): string =>
+      `Te agregaron como administrador de ${p.marca}`,
+    preheader: "Entra y activa la verificación en dos pasos.",
+    titulo: "Ahora eres administrador",
+    texto: (p: { marca: string }): string =>
+      `Te agregaron como administrador de la plataforma ${p.marca}. Entra con el botón; el enlace sirve una sola vez.`,
+    mfa: (p: { url: string }): string =>
+      `Después abre ${p.url} y activa la verificación en dos pasos: sin ella no puedes usar el panel de administración.`,
+    cta: "Entrar",
+  },
   invitacionNegocio: {
     asunto: (p: { marca: string }): string => `Te invitamos a ${p.marca}`,
     preheader: "Acepta la invitación y arma tu agenda en minutos.",
@@ -3651,6 +3662,9 @@ export const planes = {
     noIncluye: "No incluido",
     cambiarPlan: "Cambiar plan",
     contacto: "Contáctanos",
+    /** WP-80 (D-061): facturación manual — sin compra de plan en la app. TODO_COPY */
+    administrado: (p: { marca: string }): string =>
+      `Tu plan lo administra ${p.marca}. Para cambios, contáctanos.`,
     cambiarAyuda:
       "Muy pronto podrás cambiar de plan desde acá. Por ahora, revisa los planes y escríbenos: lo cambiamos por ti.",
     pausado:

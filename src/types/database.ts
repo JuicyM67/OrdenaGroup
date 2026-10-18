@@ -489,6 +489,7 @@ export type Database = {
           area_name: string | null;
           area_slug: string | null;
           auto_confirm_bookings: boolean;
+          billing_mode: string;
           cancel_approval: string;
           cancel_window_hours: number;
           category: string;
@@ -541,6 +542,7 @@ export type Database = {
           area_name?: string | null;
           area_slug?: string | null;
           auto_confirm_bookings?: boolean;
+          billing_mode?: string;
           cancel_approval?: string;
           cancel_window_hours?: number;
           category: string;
@@ -593,6 +595,7 @@ export type Database = {
           area_name?: string | null;
           area_slug?: string | null;
           auto_confirm_bookings?: boolean;
+          billing_mode?: string;
           cancel_approval?: string;
           cancel_window_hours?: number;
           category?: string;

@@ -4,6 +4,7 @@
 import { BUSINESS_PLANS } from "@/config/plans";
 import Link from "next/link";
 
+import { adminPanel } from "@/i18n";
 import { requireAdminPage } from "@/server/admin/auth";
 import {
   listBusinesses,
@@ -19,19 +20,37 @@ const STATUSES: readonly BusinessStatus[] = ["active", "frozen"];
 export default async function AdminBusinessesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; plan?: string; status?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    plan?: string;
+    status?: string;
+    facturacion?: string;
+  }>;
 }) {
   await requireAdminPage();
   const sp = await searchParams;
   const plan = PLANS.find((p) => p === sp.plan);
   const status = STATUSES.find((s) => s === sp.status);
-  const businesses = await listBusinesses({ q: sp.q, plan, status });
+  // WP-80 (D-061): filtret "Todos / Facturación manual".
+  const billingMode = sp.facturacion === "manual" ? "manual" : undefined;
+  const businesses = await listBusinesses({
+    q: sp.q,
+    plan,
+    status,
+    billingMode,
+  });
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-22 font-bold text-ink">Företag</h1>
         <div className="flex gap-3">
+          <Link
+            href="/admin/administradores"
+            className="text-13 font-semibold text-ink underline"
+          >
+            {adminPanel.nav.administradores}
+          </Link>
           <Link
             href="/admin/resenas"
             className="text-13 font-semibold text-ink underline"
@@ -94,6 +113,17 @@ export default async function AdminBusinessesPage({
             ))}
           </select>
         </label>
+        <label className="flex flex-col gap-1 text-13 text-ink">
+          {adminPanel.facturacion.filtro}
+          <select
+            name="facturacion"
+            defaultValue={billingMode ?? ""}
+            className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
+          >
+            <option value="">{adminPanel.facturacion.todos}</option>
+            <option value="manual">{adminPanel.facturacion.manual}</option>
+          </select>
+        </label>
         <button
           type="submit"
           className="h-10 rounded-control bg-ink px-4 text-13 font-bold text-on-dark"
@@ -133,6 +163,11 @@ export default async function AdminBusinessesPage({
                   {b.planOverrideUntil
                     ? ` (till ${new Date(b.planOverrideUntil).toLocaleDateString("sv-SE")})`
                     : ""}
+                  {b.billingMode === "manual" ? (
+                    <span className="ml-2 rounded-control bg-canvas px-2 py-0.5 text-12 font-semibold text-ink">
+                      {adminPanel.facturacion.etiqueta}
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-4 py-3 text-ink-soft">
                   {b.status === "frozen" ? "Fryst" : "Aktiv"}

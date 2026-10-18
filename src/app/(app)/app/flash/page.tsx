@@ -192,6 +192,7 @@ export default async function FlashPage({
   const plan = await loadBusinessPlan(businessId);
   const planNotice = planCan(plan, "flash") ? undefined : (
     <UpgradeNotice
+      manualBilling={plan.billingMode === "manual"}
       feature="flash"
       linkHref={current.view.role === "owner" ? undefined : href("precios")}
     />

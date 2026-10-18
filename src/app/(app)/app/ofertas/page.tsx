@@ -103,6 +103,7 @@ export default async function OfertasPage() {
   const planNotice = data.planOk ? undefined : (
     <UpgradeNotice
       feature="offers"
+      manualBilling={data.manualBilling}
       linkHref={current.view.role === "owner" ? undefined : href("precios")}
     />
   );
