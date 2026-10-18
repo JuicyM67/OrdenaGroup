@@ -56,7 +56,11 @@ export default async function AjustesReglasPage() {
       myProfileActions={ctx.myProfileActions}
     >
       {planCan(ctx.plan, "waitlist") ? null : (
-        <UpgradeNotice feature="waitlist" linkHref={ctx.plansHref} />
+        <UpgradeNotice
+          feature="waitlist"
+          linkHref={ctx.plansHref}
+          manualBilling={ctx.plan.billingMode === "manual"}
+        />
       )}
       <BookingRulesSection
         business={business}

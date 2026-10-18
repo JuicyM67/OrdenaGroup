@@ -46,6 +46,11 @@ export function emailFixtures(market: Market): {
       negocio: b.negocio,
       aceptarUrl: "https://app.example.com/app/bienvenida/abc123",
     },
+    invitacionAdmin: {
+      ingresarUrl:
+        "https://app.example.com/auth/confirm?token_hash=abc&type=magiclink",
+      adminUrl: "https://app.example.com/admin",
+    },
     reservaConfirmada: {
       cliente: b.cliente,
       negocio: b.negocio,

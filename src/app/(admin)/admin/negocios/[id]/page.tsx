@@ -2,9 +2,11 @@
 // text (bara ägaren använder ytan).
 import { notFound } from "next/navigation";
 
+import { BillingForm } from "@/components/admin/billing-form";
 import { ConfirmActionButton } from "@/components/admin/confirm-action-button";
 import { MemberActions } from "@/components/admin/member-actions";
 import { PlanForm } from "@/components/admin/plan-form";
+import { adminPanel } from "@/i18n";
 import { listAuditLog } from "@/server/admin/audit";
 import { requireAdminPage } from "@/server/admin/auth";
 import { getBusinessDetail } from "@/server/admin/businesses";
@@ -15,6 +17,7 @@ import {
   freezeAction,
   requestDeletionAction,
   sendLoginLinkAction,
+  setBillingModeAction,
   setPlanAction,
   unfreezeAction,
 } from "./actions";
@@ -90,11 +93,27 @@ export default async function AdminBusinessDetailPage({
 
       <section className="flex flex-col gap-3 rounded-card bg-surface p-5">
         <h2 className="text-15 font-bold text-ink">Plan</h2>
+        {business.billingMode === "manual" ? (
+          <p className="text-13 text-ink-soft">
+            {adminPanel.facturacion.planBloqueado}
+          </p>
+        ) : null}
         <PlanForm
           plan={business.plan}
           overrideUntil={business.planOverrideUntil}
           customLimits={business.customLimits}
           onSubmit={setPlanAction.bind(null, business.id)}
+        />
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-card bg-surface p-5">
+        <h2 className="text-15 font-bold text-ink">
+          {adminPanel.facturacion.filtro}
+        </h2>
+        <BillingForm
+          billingMode={business.billingMode}
+          billingNote={business.billingNote}
+          onSubmit={setBillingModeAction.bind(null, business.id)}
         />
       </section>
 

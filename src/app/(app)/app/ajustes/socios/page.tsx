@@ -55,7 +55,11 @@ export default async function AjustesSociosPage() {
       myProfileActions={ctx.myProfileActions}
     >
       {planCan(ctx.plan, "campaigns") ? null : (
-        <UpgradeNotice feature="campaigns" linkHref={ctx.plansHref} />
+        <UpgradeNotice
+          feature="campaigns"
+          linkHref={ctx.plansHref}
+          manualBilling={ctx.plan.billingMode === "manual"}
+        />
       )}
       <MemberSection business={business} action={updateMemberSettingsAction} />
       <WinbackSection

@@ -18,6 +18,8 @@ export type ConfirmActionButtonProps = {
   cancelLabel?: string;
   variant?: ButtonProps["variant"];
   action: () => Promise<AdminActionResult>;
+  /** WP-80: översätter felkoden (standard: "Det gick inte (kod)"). */
+  errorText?: (code: string) => string;
 };
 
 export function ConfirmActionButton({
@@ -28,6 +30,7 @@ export function ConfirmActionButton({
   cancelLabel = "Avbryt",
   variant = "secondary",
   action,
+  errorText,
 }: ConfirmActionButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -65,7 +68,7 @@ export function ConfirmActionButton({
             {body}
             {error ? (
               <span className="mt-2 block text-13 text-alert">
-                Det gick inte ({error}).
+                {errorText ? errorText(error) : `Det gick inte (${error}).`}
               </span>
             ) : null}
           </>

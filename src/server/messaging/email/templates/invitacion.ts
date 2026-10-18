@@ -28,3 +28,30 @@ export function invitacionNegocioEmail(
     footerLines: [],
   });
 }
+
+export type InvitacionAdminData = {
+  /** Magisk länk (`/auth/confirm?token_hash=…&type=magiclink`), WP-80. */
+  readonly ingresarUrl: string;
+  /** `${APP_URL}/admin` — där MFA aktiveras efter inloggningen. */
+  readonly adminUrl: string;
+};
+
+/** WP-80 (D-061): en plattformsadmin lade till mottagaren som admin. */
+export function invitacionAdminEmail(
+  market: Market,
+  data: InvitacionAdminData,
+): RenderedEmail {
+  const ns = emailNs(market).invitacionAdmin;
+  return composeSimpleEmail({
+    market,
+    subject: ns.asunto({ marca: brand.name }),
+    preheader: ns.preheader,
+    titulo: ns.titulo,
+    paragraphs: [
+      ns.texto({ marca: brand.name }),
+      ns.mfa({ url: data.adminUrl }),
+    ],
+    cta: { label: ns.cta, href: data.ingresarUrl },
+    footerLines: [],
+  });
+}

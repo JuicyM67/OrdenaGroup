@@ -93,7 +93,11 @@ export default async function AjustesPagosPage({
       myProfileActions={ctx.myProfileActions}
     >
       {planCan(ctx.plan, "online_payment") ? null : (
-        <UpgradeNotice feature="online_payment" linkHref={ctx.plansHref} />
+        <UpgradeNotice
+          feature="online_payment"
+          linkHref={ctx.plansHref}
+          manualBilling={ctx.plan.billingMode === "manual"}
+        />
       )}
       <PaymentsSection
         status={status}

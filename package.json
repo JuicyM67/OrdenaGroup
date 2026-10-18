@@ -23,7 +23,8 @@
     "db:reset": "supabase db reset",
     "test:db": "supabase test db",
     "db:types": "supabase gen types typescript --local > src/types/database.ts.tmp && mv src/types/database.ts.tmp src/types/database.ts && prettier --write src/types/database.ts",
-    "test:integration": "vitest run --config vitest.db.config.mts"
+    "test:integration": "vitest run --config vitest.db.config.mts",
+    "admin:add": "node --env-file-if-exists=.env.local scripts/admin-add.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.133.0",

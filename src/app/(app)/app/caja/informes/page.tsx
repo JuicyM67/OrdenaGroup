@@ -49,6 +49,7 @@ export default async function CajaInformesPage() {
       planNotice={
         planCan(plan, "full_reports") ? undefined : (
           <UpgradeNotice
+            manualBilling={plan.billingMode === "manual"}
             feature="full_reports"
             linkHref={
               current.view.role === "owner" ? undefined : href("precios")

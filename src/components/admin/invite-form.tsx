@@ -6,10 +6,15 @@ import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
+import { Textarea } from "@/components/ui/textarea";
+import { BILLING_NOTE_MAX } from "@/config/billing-mode";
+import { adminPanel } from "@/i18n";
 import type {
   InviteBusinessInput,
   InviteBusinessResult,
 } from "@/app/(admin)/admin/nuevo/actions";
+
+import { BillingModeCheckbox } from "./billing-form";
 
 const PLANS = ["free", "emprende", "equipo", "local"] as const;
 
@@ -23,6 +28,9 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
   const [businessName, setBusinessName] = useState("");
   const [plan, setPlan] = useState<InviteBusinessInput["plan"]>("free");
   const [until, setUntil] = useState("");
+  // WP-80 (D-061): av som standard, men tydligt synlig.
+  const [manual, setManual] = useState(false);
+  const [note, setNote] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -38,6 +46,8 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
       planOverrideUntil: until
         ? new Date(`${until}T00:00:00.000Z`).toISOString()
         : null,
+      billingMode: manual ? "manual" : "app",
+      billingNote: note.trim() ? note : null,
     });
     setPending(false);
     if (result.ok) {
@@ -61,6 +71,8 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
             setEmail("");
             setBusinessName("");
             setUntil("");
+            setManual(false);
+            setNote("");
           }}
         >
           Bjud in en till
@@ -112,6 +124,16 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
           className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
         />
       </label>
+      <BillingModeCheckbox checked={manual} onChange={setManual} />
+      {manual ? (
+        <Textarea
+          label={adminPanel.facturacion.nota}
+          hint={adminPanel.facturacion.notaAyuda({ max: BILLING_NOTE_MAX })}
+          maxLength={BILLING_NOTE_MAX}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+        />
+      ) : null}
       {error ? (
         <p className="text-13 text-alert">Det gick inte ({error}).</p>
       ) : null}

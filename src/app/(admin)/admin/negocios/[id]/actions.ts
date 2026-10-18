@@ -14,9 +14,11 @@ import {
   changeEmail,
   freezeBusiness,
   sendLoginLink,
+  setBillingMode,
   setPlan,
   unfreezeBusiness,
   type AdminActionResult,
+  type BillingMode,
   type BusinessPlan,
 } from "@/server/admin/businesses";
 
@@ -39,6 +41,18 @@ export async function setPlanAction(
     overrideUntil,
     customLimits,
   );
+  await afterAction(businessId);
+  return result;
+}
+
+/** WP-80 (D-061): "Facturación manual" + intern anteckning. */
+export async function setBillingModeAction(
+  businessId: string,
+  mode: BillingMode,
+  note: string | null,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminForAction();
+  const result = await setBillingMode(admin.userId, businessId, mode, note);
   await afterAction(businessId);
   return result;
 }

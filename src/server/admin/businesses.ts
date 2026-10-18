@@ -15,6 +15,11 @@ import {
   type BusinessPlan,
   type CustomLimits,
 } from "@/config/plans";
+import {
+  BILLING_NOTE_MAX,
+  isBillingMode,
+  type BillingMode,
+} from "@/config/billing-mode";
 import { getStorageAdminClient } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail } from "@/server/messaging/email/send";
@@ -23,6 +28,7 @@ import { writeAuditLog } from "./audit";
 
 export type { BusinessPlan } from "@/config/plans";
 export type BusinessStatus = "active" | "frozen";
+export type { BillingMode } from "@/config/billing-mode";
 
 export type BusinessListItem = {
   readonly id: string;
@@ -31,6 +37,7 @@ export type BusinessListItem = {
   readonly plan: BusinessPlan;
   readonly planOverrideUntil: string | null;
   readonly status: BusinessStatus;
+  readonly billingMode: BillingMode;
   readonly deletionRequestedAt: string | null;
   readonly ownerEmail: string | null;
   readonly createdAt: string;
@@ -43,7 +50,7 @@ export type BusinessListItem = {
  * e-postfiltrering i supabase-js `admin.listUsers()`), och listan med
  * företag är ändå liten i den här fasen (en handfull pilotkunder).
  */
-async function emailsByUserId(): Promise<Map<string, string>> {
+export async function emailsByUserId(): Promise<Map<string, string>> {
   const client = getStorageAdminClient();
   const map = new Map<string, string>();
   for (let page = 1; page <= 10; page += 1) {
@@ -64,6 +71,7 @@ export type ListBusinessesFilter = {
   q?: string;
   plan?: BusinessPlan;
   status?: BusinessStatus;
+  billingMode?: BillingMode;
 };
 
 export async function listBusinesses(
@@ -77,12 +85,13 @@ export async function listBusinesses(
       plan: BusinessPlan;
       plan_override_until: string | null;
       status: BusinessStatus;
+      billing_mode: string;
       deletion_requested_at: string | null;
       owner_user_id: string | null;
       created_at: string;
     }>(
       `select b.id, b.name, b.slug, b.plan, b.plan_override_until, b.status,
-              b.deletion_requested_at, b.created_at,
+              b.billing_mode, b.deletion_requested_at, b.created_at,
               (select m.user_id from public.memberships m
                 where m.business_id = b.id and m.role = 'owner'
                 order by m.created_at limit 1) as owner_user_id
@@ -101,6 +110,7 @@ export async function listBusinesses(
     plan: row.plan,
     planOverrideUntil: row.plan_override_until,
     status: row.status,
+    billingMode: row.billing_mode === "manual" ? "manual" : "app",
     deletionRequestedAt: row.deletion_requested_at,
     ownerEmail: row.owner_user_id
       ? (emails.get(row.owner_user_id) ?? null)
@@ -112,6 +122,8 @@ export async function listBusinesses(
   return items.filter((item) => {
     if (filter.plan && item.plan !== filter.plan) return false;
     if (filter.status && item.status !== filter.status) return false;
+    if (filter.billingMode && item.billingMode !== filter.billingMode)
+      return false;
     if (!q) return true;
     return (
       item.name.toLowerCase().includes(q) ||
@@ -138,6 +150,9 @@ export type BusinessDetail = {
   /** WP-73 (D-048): avtalade gränser för plan `custom`. */
   readonly customLimits: CustomLimits;
   readonly status: BusinessStatus;
+  readonly billingMode: BillingMode;
+  /** Intern anteckning (private.business_billing_notes), bara /admin. */
+  readonly billingNote: string | null;
   readonly deletionRequestedAt: string | null;
   readonly createdAt: string;
   readonly counts: {
@@ -163,12 +178,17 @@ export async function getBusinessDetail(
       plan_override_until: string | null;
       custom_limits: unknown;
       status: BusinessStatus;
+      billing_mode: string;
+      billing_note: string | null;
       deletion_requested_at: string | null;
       created_at: string;
     }>(
-      `select id, name, slug, comuna, category, plan, plan_override_until, custom_limits,
-              status, deletion_requested_at, created_at
-         from public.businesses where id = $1`,
+      `select b.id, b.name, b.slug, b.comuna, b.category, b.plan, b.plan_override_until,
+              b.custom_limits, b.status, b.billing_mode, n.note as billing_note,
+              b.deletion_requested_at, b.created_at
+         from public.businesses b
+         left join private.business_billing_notes n on n.business_id = b.id
+        where b.id = $1`,
       [businessId],
     );
     const business = businessRes.rows[0];
@@ -216,6 +236,8 @@ export async function getBusinessDetail(
     planOverrideUntil: data.business.plan_override_until,
     customLimits: parseCustomLimits(data.business.custom_limits),
     status: data.business.status,
+    billingMode: data.business.billing_mode === "manual" ? "manual" : "app",
+    billingNote: data.business.billing_note,
     deletionRequestedAt: data.business.deletion_requested_at,
     createdAt: data.business.created_at,
     counts: {
@@ -277,6 +299,52 @@ export async function setPlan(
         override_until: overrideUntil,
         ...(customLimits ? { custom_limits: customLimits } : {}),
       },
+    });
+    return { ok: true };
+  });
+}
+
+/**
+ * WP-80 (D-061): "Facturación manual". Sätter `businesses.billing_mode` och
+ * den interna anteckningen (tom = ingen) i en transaktion med loggraden.
+ * Loggen får bara läget och om en anteckning finns — aldrig själva texten
+ * (fritext kan innehålla persondata, regel 7).
+ */
+export async function setBillingMode(
+  adminUserId: string,
+  businessId: string,
+  mode: BillingMode,
+  rawNote: string | null,
+): Promise<AdminActionResult> {
+  if (!isBillingMode(mode)) return { ok: false, code: "invalid_input" };
+  const note = rawNote?.trim() ? rawNote.trim() : null;
+  if (note && note.length > BILLING_NOTE_MAX)
+    return { ok: false, code: "note_too_long" };
+  return withServiceTx(async (q) => {
+    const r = await q.query(
+      `update public.businesses set billing_mode = $2 where id = $1`,
+      [businessId, mode],
+    );
+    if (!r.rowCount) return { ok: false, code: "not_found" };
+    if (note) {
+      await q.query(
+        `insert into private.business_billing_notes (business_id, note, updated_by)
+         values ($1, $2, $3)
+         on conflict (business_id) do update
+           set note = excluded.note, updated_by = excluded.updated_by, updated_at = now()`,
+        [businessId, note, adminUserId],
+      );
+    } else {
+      await q.query(
+        `delete from private.business_billing_notes where business_id = $1`,
+        [businessId],
+      );
+    }
+    await writeAuditLog(q, {
+      adminUserId,
+      action: "set_billing_mode",
+      businessId,
+      details: { billing_mode: mode, has_note: note !== null },
     });
     return { ok: true };
   });

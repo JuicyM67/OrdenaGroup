@@ -60,6 +60,7 @@ export default async function UtskickPage({
       planNotice={
         planCan(plan, "campaigns") ? undefined : (
           <UpgradeNotice
+            manualBilling={plan.billingMode === "manual"}
             feature="campaigns"
             linkHref={
               current.view.role === "owner" ? undefined : href("precios")

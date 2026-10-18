@@ -98,6 +98,8 @@ export type OffersEditorData = {
   canEdit: boolean;
   canPublish: boolean;
   planOk: boolean;
+  /** WP-80 (D-061): faktureras utanför programmet. */
+  manualBilling: boolean;
   defaultCategory: string;
   /** Till förhandsvisningen (samma kort som i Upptäck). */
   business: { name: string; slug: string; areaName: string | null };
@@ -330,6 +332,7 @@ export async function loadOffersEditor(
       canEdit: true,
       canPublish: isOwner(member),
       planOk: planCan(plan, "offers"),
+      manualBilling: plan.billingMode === "manual",
       defaultCategory: categoryForRubro(biz.rows[0]?.category ?? ""),
       business: {
         name: biz.rows[0]?.name ?? "",

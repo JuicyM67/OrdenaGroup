@@ -85,6 +85,7 @@ export { smsCreditos } from "./sv-SE.sms-creditos";
 export { vales } from "./sv-SE.vales";
 export { regalo } from "./sv-SE.regalo";
 export { visita } from "./sv-SE.visita";
+export { adminPanel } from "./sv-SE.admin";
 
 // ---------------------------------------------------------------------------
 // comun
