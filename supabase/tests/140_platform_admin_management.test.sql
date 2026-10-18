@@ -6,7 +6,7 @@
 -- Fungerar oavsett hur många admins den lokala databasen redan har.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(10);
+select plan(12);
 
 insert into auth.users (id, email, role, aud) values
   ('e1400000-0000-4000-8000-000000000001', 'admin1-140@example.com', 'authenticated', 'authenticated'),
@@ -74,6 +74,22 @@ select throws_ok(
 select ok(
   exists (select 1 from private.platform_admins where user_id = 'e1400000-0000-4000-8000-000000000001'),
   'adminen finns kvar'
+);
+
+-- 11–12. Utan admins (ny miljö) blockeras inte vanliga kontoraderingar: spärren
+-- gäller bara när en admin faktiskt tas bort (rättelse 20261020010200).
+alter table private.platform_admins disable trigger platform_admins_keep_one;
+delete from private.platform_admins;
+alter table private.platform_admins enable trigger platform_admins_keep_one;
+insert into auth.users (id, email, role, aud) values
+  ('e1400000-0000-4000-8000-0000000000ff', 'vanlig-140@example.test', 'authenticated', 'authenticated');
+select lives_ok(
+  $$ delete from auth.users where id = 'e1400000-0000-4000-8000-0000000000ff' $$,
+  'kontoradering fungerar när det inte finns någon admin'
+);
+select lives_ok(
+  $$ delete from private.platform_admins where false $$,
+  'en delete som inte tar bort någon admin blockeras inte'
 );
 
 select * from finish();
