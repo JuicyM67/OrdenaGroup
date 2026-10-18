@@ -45,7 +45,7 @@ export type CreatedBooking = {
   /** WP-31/WP-30: varför `discountClp > 0` — medlemsrabatt,
    * erbjudandelänk eller flash-tid (största vinner, aldrig summan). Saknas
    * när `discountClp === 0`. */
-  discountReason?: "member" | "offer" | "flash" | "voucher";
+  discountReason?: "member" | "offer" | "flash" | "voucher" | "marketplace";
   /** WP-54: finns bara när `discountClp` kommer från medlemskap i just det
    * här anropet (inte vid ett idempotent omförsök). `null` = företaget har
    * ingen förmånstext (visa då bara rabatten). */

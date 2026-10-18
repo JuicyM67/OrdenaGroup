@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { CajaScreen } from "@/components/caja/caja-screen";
-import { marketplaceEnabled } from "@/config/marketplace";
+import { vouchersMarket } from "@/config/marketplace";
 import { giftCardsMarket } from "@/config/gift-cards";
 import { appHref, regalosHref, valesHref } from "@/config/routes";
 import { regalo, vales } from "@/i18n";
@@ -59,7 +59,7 @@ export default async function CajaPage() {
       ownerName={owner.name}
       publicPageHref={`/${current.business.slug}`}
       vouchersLink={
-        marketplaceEnabled()
+        vouchersMarket()
           ? { href: valesHref("caja"), label: vales.caja.enlace }
           : undefined
       }

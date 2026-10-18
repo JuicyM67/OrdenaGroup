@@ -296,6 +296,11 @@ export const reserva: Widen<typeof Es.reserva> = {
   oferta: {
     aviso: (p: { pct: number }): string => `${p.pct} % rabatt via erbjudande`,
   },
+  ofertaDescubre: {
+    aviso: (p: { titulo: string; precio: string }): string =>
+      `Erbjudande: ${p.titulo} för ${p.precio}`,
+    texto: "Du betalar på plats. Erbjudandepriset sparas i din bokning.",
+  },
   confirmacionSolicitud: {
     titulo: "Förfrågan skickad!",
     resumenTitulo: "Sammanfattning av din förfrågan",

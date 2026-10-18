@@ -1,6 +1,7 @@
 /**
  * WP-68 (D-055): marketplace "Descubre" (ofertas cerca de ti, mapa, página de
- * oferta). En CL la sección está oculta hasta que exista Mercado Pago (decisión
+ * oferta). En CL se reserva a precio de oferta y se paga en el local (D-060;
+ * antes la sección estaba oculta hasta que exista Mercado Pago, decisión
  * del dueño 2026-10-10); estos textos mantienen la paridad de tipos con
  * `sv-SE.descubre.ts`. Archivo propio (como `es-CL.visita.ts`) para que no
  * entren en el chunk de i18n de la página de reservas. TODO_COPY: revisión de
@@ -145,6 +146,12 @@ export const descubre = {
     proximamenteTexto:
       "Muy pronto podrás comprar esta oferta aquí y elegir hora al tiro. Mientras tanto puedes reservar en el salón a precio normal.",
     verHoras: "Ver horas libres",
+    /** D-060: reservar a precio de oferta y pagar en el local (sin pago online). */
+    enLocal: "Pagas en el local",
+    enLocalTexto:
+      "Reserva tu hora y paga el precio de oferta directo en el local. Sin pago online.",
+    reservarOferta: "Reservar a precio de oferta",
+    pasosLocal: ["Elige tu hora", "Ven al local", "Paga el precio de oferta"],
     masDe: (p: { negocio: string }): string => `Más ofertas de ${p.negocio}`,
     precioNormal: "Precio normal",
     mapa: "© OpenStreetMap",

@@ -93,6 +93,8 @@ export async function createBooking(
     offerToken?: string | undefined;
     /** WP-69 (D-057): värdebeviset, bundet på servern (`page.tsx`). */
     voucher?: { id: string; userId: string } | undefined;
+    /** D-060: marknadsplatsens erbjudande (CL), bundet på servern (`page.tsx`). */
+    marketplaceOfferId?: string | undefined;
   } = {},
 ): Promise<CreateBookingActionResult> {
   const parsed = customerFormSchemaFor(market).safeParse(input);
@@ -155,6 +157,9 @@ export async function createBooking(
     answers: parsed.data.answers,
     offerToken: opts.offerToken,
     ...(opts.voucher ? { voucher: opts.voucher } : {}),
+    ...(opts.marketplaceOfferId && !opts.voucher
+      ? { marketplaceOfferId: opts.marketplaceOfferId }
+      : {}),
     ...(giftCardCode && !opts.voucher ? { giftCardCode } : {}),
     now,
   });
@@ -294,7 +299,9 @@ export async function createBooking(
     return {
       ok: true,
       memberDiscountMinor: discountClp,
-      discountReason: discountReason ?? "member",
+      // D-060: marknadsplatsens erbjudande visas som "erbjudande" i bekräftelsen.
+      discountReason:
+        discountReason === "marketplace" ? "offer" : (discountReason ?? "member"),
       memberBenefitText: memberBenefitText ?? null,
       manageToken: manageTokenOrUndefined,
       ...(checkoutUrl ? { checkoutUrl } : {}),

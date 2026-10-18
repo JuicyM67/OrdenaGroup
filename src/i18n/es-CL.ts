@@ -342,6 +342,13 @@ export const reserva = {
     aviso: (p: { pct: number }): string =>
       `Tienes ${p.pct}% de descuento con tu oferta`,
   },
+  /** D-060: reserva desde una oferta de Descubre (sin pago online). */
+  ofertaDescubre: {
+    aviso: (p: { titulo: string; precio: string }): string =>
+      `Oferta: ${p.titulo} a ${p.precio}`,
+    texto:
+      "Pagas en el local. El precio de oferta queda guardado en tu reserva.",
+  },
   /** WP-45 (D-033): pantalla de confirmación cuando la reserva nace
    * `requested` (el negocio no confirma automático), en vez de
    * `reserva.confirmacion`. */

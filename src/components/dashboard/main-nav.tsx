@@ -80,7 +80,7 @@ const VISIBLE_KEYS: readonly MainNavKey[] = [
   "hoy",
   "clientes",
   "horasFlash",
-  // WP-70 (D-056): bara där marknadsplatsen finns (SE, D-055).
+  // WP-70 (D-056): bara där marknadsplatsen finns (D-055, CL sedan D-060).
   ...(marketplaceEnabled() ? (["ofertas"] as const) : []),
   "caja",
   "ajustes",

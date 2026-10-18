@@ -16,7 +16,7 @@ import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
 import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
-import { marketplaceEnabled } from "@/config/marketplace";
+import { vouchersMarket } from "@/config/marketplace";
 import { appHref } from "@/config/routes";
 import { comun, vales } from "@/i18n";
 import { APP_TZ, formatDate, formatTime } from "@/lib/format/dates";
@@ -47,7 +47,7 @@ function day(iso: string): string {
 }
 
 export default async function CajaValesPage() {
-  if (!marketplaceEnabled()) notFound();
+  if (!vouchersMarket()) notFound();
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },

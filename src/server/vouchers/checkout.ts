@@ -3,7 +3,7 @@ import "server-only";
 import { randomInt } from "node:crypto";
 
 import { brand } from "@/config/brand";
-import { marketplaceEnabled } from "@/config/marketplace";
+import { vouchersMarket } from "@/config/marketplace";
 import { MARKETPLACE_FEE_BPS } from "@/config/platform-fee";
 import { valesHref } from "@/config/routes";
 import { pgErrorCode } from "@/server/db/errors";
@@ -42,7 +42,7 @@ export type VoucherCheckoutResult =
 
 /** Köpet finns på den här installationen (SE, marknadsplatsen på, Stripe-nyckel). */
 export function vouchersEnabled(): boolean {
-  return marketplaceEnabled() && stripeEnabled();
+  return vouchersMarket() && stripeEnabled();
 }
 
 type OpenOrderRow = {

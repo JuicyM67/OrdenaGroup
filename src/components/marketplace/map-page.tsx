@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { SiteHeader } from "@/components/marketing/site-header";
 import { cn } from "@/components/ui/cn";
+import { market } from "@/config/brand";
 import {
   categorySlug,
   MARKETPLACE_CATEGORY_IDS,
@@ -29,7 +30,12 @@ import { ViewToggle } from "./view-toggle";
 const t = descubre;
 
 /** Stadens mitt när varken position eller träffar finns. */
-const FALLBACK_CENTER = { lat: 59.3293, lng: 18.0686 };
+// Utan position och utan träffar: installationens huvudstad (Stockholm /
+// Santiago centrum).
+const FALLBACK_CENTER =
+  market === "SE"
+    ? { lat: 59.3293, lng: 18.0686 }
+    : { lat: -33.4372, lng: -70.6506 };
 
 const chip =
   "flex h-10 shrink-0 items-center gap-1.5 rounded-control px-4 text-13 font-bold shadow-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";

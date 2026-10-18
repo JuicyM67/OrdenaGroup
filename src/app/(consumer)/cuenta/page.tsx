@@ -12,7 +12,7 @@ import { NextBookingCard } from "@/components/account/booking-cards";
 import { FavoriteTile } from "@/components/account/favorite-tile";
 import { VoucherCard } from "@/components/account/voucher-card";
 import { giftCardsMarket } from "@/config/gift-cards";
-import { marketplaceEnabled } from "@/config/marketplace";
+import { vouchersMarket } from "@/config/marketplace";
 import { appHref, cuentaHref, regalosHref, valesHref } from "@/config/routes";
 import { cuenta, regalo, vales } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
@@ -39,7 +39,7 @@ const rowClass =
 export default async function CuentaPage() {
   const session = await requireAccount();
   const now = systemClock();
-  const withVouchers = marketplaceEnabled();
+  const withVouchers = vouchersMarket();
   const [bookings, favorites, business, vouchers] = await Promise.all([
     loadMyBookings(session.userId, now),
     loadMyFavorites(session.userId),
