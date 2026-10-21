@@ -10,8 +10,8 @@ describe("storage-url (WP-70, #111 S2/S3)", () => {
   it("bygger full URL från projektets egen bas", () => {
     expect(BASE).toBe("http://127.0.0.1:54321/storage/v1/object/public/");
     expect(offerImageSrc(REF, BASE)).toBe(BASE + REF);
-    expect(offerImageSrc("/demo/se/klipp.webp", BASE)).toBe(
-      "/demo/se/klipp.webp",
+    expect(offerImageSrc("/demo/cl/cover.webp", BASE)).toBe(
+      "/demo/cl/cover.webp",
     );
   });
 

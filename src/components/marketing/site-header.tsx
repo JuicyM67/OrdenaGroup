@@ -25,7 +25,7 @@ import { strokeNav } from "@/components/ui/icons";
 import { brand } from "@/config/brand";
 import { marketplaceEnabled } from "@/config/marketplace";
 import {
-  funcionesDisponibles,
+  FUNCION_IDS,
   href,
   hrefFuncion,
   hrefMarketplace,
@@ -96,7 +96,7 @@ export function SiteHeader({ className }: { className?: string }) {
           href={href("inicio")}
           className="flex shrink-0 items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <BrandLogo size="sm" badge decorative />
+          <BrandLogo size="sm" decorative />
         </Link>
 
         <NavigationMenu.Root
@@ -222,7 +222,7 @@ export function SiteHeader({ className }: { className?: string }) {
                 <div className="flex items-center justify-between pb-2">
                   <Dialog.Title asChild>
                     <span>
-                      <BrandLogo size="sm" badge decorative />
+                      <BrandLogo size="sm" decorative />
                     </span>
                   </Dialog.Title>
                   <Dialog.Close asChild>
@@ -250,7 +250,7 @@ export function SiteHeader({ className }: { className?: string }) {
                       />
                     </summary>
                     <ul className="flex flex-col pb-2">
-                      {funcionesDisponibles().map((id) => {
+                      {FUNCION_IDS.map((id) => {
                         const ft = paginas.funciones[id]!;
                         const ui = FUNCION_UI[id];
                         return (

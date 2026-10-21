@@ -1,12 +1,11 @@
-// Bilder för marknadens demoföretag (Salong Norrsken / Estudio Brisa, `brand.demoSlug`),
+// Bilder för demoföretaget (Estudio Brisa, `brand.demoSlug`),
 // delade av flytt-, showcase- och hero-förhandsvisningarna på startsidan (WP-71).
 import Image from "next/image";
 
 import { cn } from "@/components/ui/cn";
-import { market } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
 
-export const DEMO_DIR = `/demo/${market.toLowerCase()}`;
+export const DEMO_DIR = "/demo/cl";
 
 export function DemoCover({
   sizes,

@@ -1,9 +1,9 @@
 # Demobilder (WP-63, D-043)
 
-Bilderna i `public/demo/<cl|se>/` används av demoföretagen som marknadssidan
+Bilderna i `public/demo/cl/` används av demoföretaget som marknadssidan
 länkar till (`brand.demoSlug`, skapas av `private.seed_demo`).
 
-- `logo.svg` (båda marknaderna): egna, ritade för projektet.
+- `logo.svg`: egen, ritad för projektet.
 - Övriga foton: [Unsplash](https://unsplash.com), under
   [Unsplash-licensen](https://unsplash.com/license) (fri användning, även
   kommersiellt, utan krav på tillstånd eller namngivning). Nedskalade och
@@ -20,11 +20,3 @@ länkar till (`brand.demoSlug`, skapas av `private.seed_demo`).
 | cl/gallery-1.webp | Agustin Fernandez | https://unsplash.com/photos/1Pmp9uxK8X8 |
 | cl/gallery-2.webp | Gulom Nazarov     | https://unsplash.com/photos/DrG4V5skbMY |
 | cl/gallery-3.webp | Andrea Donato     | https://unsplash.com/photos/MNu0n-3BIKs |
-| se/cover.webp     | Benyamin Bohlouli | https://unsplash.com/photos/LGXN4OSQSa4 |
-| se/staff-1.webp   | Tommy van Kessel  | https://unsplash.com/photos/F0u0q8f2VvY |
-| se/staff-2.webp   | Nathan Dumlao     | https://unsplash.com/photos/26rK1-bH9Ls |
-| se/staff-3.webp   | Vladimir Fedotov  | https://unsplash.com/photos/zbNl9wvjMcU |
-| se/staff-4.webp   | Olena Bohovyk     | https://unsplash.com/photos/6eFmG1qWxJI |
-| se/gallery-1.webp | Lindsay Cash      | https://unsplash.com/photos/Md_DhaFsnCQ |
-| se/gallery-2.webp | Adam Winger       | https://unsplash.com/photos/FkAZqQJTbXM |
-| se/gallery-3.webp | Adam Winger       | https://unsplash.com/photos/KVVjmb3IIL8 |
