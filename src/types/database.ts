@@ -1525,18 +1525,23 @@ export type Database = {
           channel: Database["public"]["Enums"]["message_channel"];
           created_at: string;
           dedupe_key: string;
+          delivered_at: string | null;
           error: string | null;
+          fallback_reason: string | null;
           id: string;
           next_attempt_at: string;
           payload: NonNullable<Json>;
           provider_message_id: string | null;
           quota_reserved_at: string | null;
+          read_at: string | null;
           recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at: string | null;
           sms_segments: number | null;
           status: Database["public"]["Enums"]["message_outbox_status"];
           template: string;
           updated_at: string;
+          wa_message_id: string | null;
+          waitlist_entry_id: string | null;
         };
         Insert: {
           attempts?: number;
@@ -1546,18 +1551,23 @@ export type Database = {
           channel: Database["public"]["Enums"]["message_channel"];
           created_at?: string;
           dedupe_key: string;
+          delivered_at?: string | null;
           error?: string | null;
+          fallback_reason?: string | null;
           id?: string;
           next_attempt_at?: string;
           payload?: NonNullable<Json>;
           provider_message_id?: string | null;
           quota_reserved_at?: string | null;
+          read_at?: string | null;
           recipient_kind: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at?: string | null;
           sms_segments?: number | null;
           status?: Database["public"]["Enums"]["message_outbox_status"];
           template: string;
           updated_at?: string;
+          wa_message_id?: string | null;
+          waitlist_entry_id?: string | null;
         };
         Update: {
           attempts?: number;
@@ -1567,18 +1577,23 @@ export type Database = {
           channel?: Database["public"]["Enums"]["message_channel"];
           created_at?: string;
           dedupe_key?: string;
+          delivered_at?: string | null;
           error?: string | null;
+          fallback_reason?: string | null;
           id?: string;
           next_attempt_at?: string;
           payload?: NonNullable<Json>;
           provider_message_id?: string | null;
           quota_reserved_at?: string | null;
+          read_at?: string | null;
           recipient_kind?: Database["public"]["Enums"]["message_recipient_kind"];
           sent_at?: string | null;
           sms_segments?: number | null;
           status?: Database["public"]["Enums"]["message_outbox_status"];
           template?: string;
           updated_at?: string;
+          wa_message_id?: string | null;
+          waitlist_entry_id?: string | null;
         };
         Relationships: [
           {
@@ -1594,6 +1609,13 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "businesses";
             referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "message_outbox_waitlist_entry_fk";
+            columns: ["business_id", "waitlist_entry_id"];
+            isOneToOne: false;
+            referencedRelation: "waitlist_entries";
+            referencedColumns: ["business_id", "id"];
           },
         ];
       };
@@ -2731,13 +2753,14 @@ export type Database = {
       business_status: "active" | "frozen";
       campaign_status: "draft" | "sent";
       consent_channel: "web" | "whatsapp" | "manual";
-      consent_kind: "terms" | "marketing" | "waitlist" | "owner_terms" | "dpa";
+      consent_kind:
+        "terms" | "marketing" | "waitlist" | "owner_terms" | "dpa" | "whatsapp";
       consent_subject: "customer" | "owner";
       deposit_kind: "none" | "fixed" | "percent";
       flash_slot_status: "active" | "booked" | "cancelled";
       member_role: "owner" | "staff" | "vendor" | "admin";
       message_category: "utility" | "marketing" | "service";
-      message_channel: "email" | "sms";
+      message_channel: "email" | "sms" | "whatsapp";
       message_outbox_status:
         "queued" | "sending" | "sent" | "failed" | "dead" | "cancelled";
       message_recipient_kind: "customer" | "owner" | "invitee";
@@ -2904,13 +2927,20 @@ export const Constants = {
       business_status: ["active", "frozen"],
       campaign_status: ["draft", "sent"],
       consent_channel: ["web", "whatsapp", "manual"],
-      consent_kind: ["terms", "marketing", "waitlist", "owner_terms", "dpa"],
+      consent_kind: [
+        "terms",
+        "marketing",
+        "waitlist",
+        "owner_terms",
+        "dpa",
+        "whatsapp",
+      ],
       consent_subject: ["customer", "owner"],
       deposit_kind: ["none", "fixed", "percent"],
       flash_slot_status: ["active", "booked", "cancelled"],
       member_role: ["owner", "staff", "vendor", "admin"],
       message_category: ["utility", "marketing", "service"],
-      message_channel: ["email", "sms"],
+      message_channel: ["email", "sms", "whatsapp"],
       message_outbox_status: [
         "queued",
         "sending",
