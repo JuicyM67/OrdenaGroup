@@ -301,7 +301,9 @@ export async function createBooking(
       memberDiscountMinor: discountClp,
       // D-060: marknadsplatsens erbjudande visas som "erbjudande" i bekräftelsen.
       discountReason:
-        discountReason === "marketplace" ? "offer" : (discountReason ?? "member"),
+        discountReason === "marketplace"
+          ? "offer"
+          : (discountReason ?? "member"),
       memberBenefitText: memberBenefitText ?? null,
       manageToken: manageTokenOrUndefined,
       ...(checkoutUrl ? { checkoutUrl } : {}),
