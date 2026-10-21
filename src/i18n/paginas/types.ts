@@ -1,5 +1,5 @@
-// Form för texterna på funktions- och branschsidorna (WP-75). Båda marknadernas filer
-// (`sv-SE.ts`, `es-CL.ts`) måste uppfylla den; sidorna läser via `./index.ts`.
+// Form för texterna på funktions- och branschsidorna (WP-75). `es-CL.ts` uppfyller
+// den; sidorna läser via `./index.ts`.
 import type { FuncionId, RubroId } from "@/config/routes";
 
 export interface Par {
@@ -12,7 +12,7 @@ export interface Pregunta {
   readonly respuesta: string;
 }
 
-/** Rad i UI-mockupen ("Stripe-konto · Aktivt"). `ok` färgar värdet grönt. */
+/** Rad i UI-mockupen ("Recordatorio · Enviado"). `ok` färgar värdet grönt. */
 export interface MockFila {
   readonly k: string;
   readonly v: string;
@@ -167,19 +167,6 @@ export interface PaginasCopy {
       readonly marca: string;
     };
   };
-  /** SMS-krediter (bara SE): sektion på Priser, FAQ-rad och punkt på Varför oss. */
-  readonly sms?: {
-    readonly etiqueta: string;
-    readonly titulo: { readonly pre: string; readonly marca: string };
-    readonly texto: string;
-    readonly perMes: string;
-    readonly paquete: (p: { n: number; precio: string }) => string;
-    readonly ahorro: (p: { monto: string }) => string;
-    readonly notas: readonly string[];
-    readonly faq: Pregunta;
-    readonly ventaja: Par;
-  };
-  readonly funciones: Readonly<Partial<Record<FuncionId, FuncionTexto>>> &
-    Readonly<Record<Exclude<FuncionId, "pagos">, FuncionTexto>>;
+  readonly funciones: Readonly<Record<FuncionId, FuncionTexto>>;
   readonly rubros: Readonly<Record<RubroId, RubroTexto>>;
 }

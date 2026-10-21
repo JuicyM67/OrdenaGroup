@@ -90,9 +90,6 @@ export const errores = {
      * desde el mismo IP, o ya hay demasiadas reservas futuras con este
      * número de teléfono en este negocio. */
     rate_limited: "Demasiados intentos. Prueba de nuevo en unos minutos.",
-    /** WP-64: el pago online no se pudo iniciar; la reserva no quedó hecha. */
-    payment_unavailable:
-      "No pudimos iniciar el pago. Tu reserva no se hizo, inténtalo de nuevo.",
     nombreVacio: "Escribe tu nombre.",
     emailInvalido: "Revisa tu correo electrónico.",
     consentimientoRequerido: "Acepta los términos para continuar.",
@@ -273,20 +270,6 @@ export const reserva = {
     emailLabel: "Correo",
     emailAyuda: "Aquí te llegan la confirmación y el recordatorio.",
     emailPlaceholder: "tucorreo@ejemplo.cl",
-  },
-  /** WP-64 (D-044): pago online al reservar (Stripe Checkout). */
-  pago: {
-    opcionalLabel: "Pagar ahora con tarjeta",
-    opcionalAyuda: "Pagas de forma segura en Stripe. Si no, pagas en el local.",
-    obligatorioAviso:
-      "Para reservar esta hora pagas con tarjeta. Al enviar te llevamos a la página de pago.",
-    reservadoAviso:
-      "El monto se reserva en tu tarjeta y se cobra cuando el negocio confirme tu hora. Si no la confirma, no se cobra nada.",
-    okAviso: "Listo, recibimos tu pago. Te llega la confirmación por correo.",
-    canceladoAviso:
-      "No se hizo el pago. Tu solicitud sigue enviada y pagas en el local.",
-    liberadaAviso:
-      "No se hizo el pago, así que la hora quedó libre. Puedes reservar de nuevo.",
   },
   antesDeConfirmar: {
     politicaCancelacion: (p: { horas: number }): string =>
@@ -609,12 +592,9 @@ export const formulario = {
 
 // WP-72: recorrido guiado.
 export { visita } from "./es-CL.visita";
-export { smsCreditos } from "./es-CL.sms-creditos";
 export { descubre } from "./es-CL.descubre";
 export { paraClientes } from "./es-CL.clientes";
 export { cuenta } from "./es-CL.cuenta";
-export { vales } from "./es-CL.vales";
-export { regalo } from "./es-CL.regalo";
 export { ofertas } from "./es-CL.ofertas";
 // WP-80: panel de plataforma (administradores, facturación manual).
 export { adminPanel } from "./es-CL.admin";
@@ -645,7 +625,6 @@ export {
   CAJA_METODOS_MANUALES,
   caja,
   abono,
-  sms,
   perfil,
   solicitudes,
   equipo,

@@ -8,7 +8,7 @@
  *
  * Este módulo no importa `@/config/brand`: ningún documento legal nombra
  * la marca (regla dura 10; `src/config/brand.test.ts` ya lo comprueba
- * para todo `src/`, igual que en `sv-SE.app.ts`). La razón social de la
+ * para todo `src/`). La razón social de la
  * entidad legal viaja siempre como parámetro (`LegalEntity`, ver
  * `./entity.ts`), nunca escrita a mano.
  */

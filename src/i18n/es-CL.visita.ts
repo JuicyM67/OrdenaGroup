@@ -63,18 +63,6 @@ export const visita = {
         corto: "Solo clientes reales pueden dejar reseña.",
         chips: ["Solo clientes reales", "Puedes responder"],
       },
-      pago: {
-        titulo: "Pago al reservar",
-        texto:
-          "Tu cliente paga con tarjeta, Apple Pay o Google Pay al reservar y la plata llega a tu cuenta. Las inasistencias ya no te cuestan una hora entera, y las cancelaciones se reembolsan solas.",
-        corto:
-          "Tarjeta o Apple Pay con Stripe: la plata llega a tu cuenta y las inasistencias no te cuestan.",
-        chips: [
-          "Seguro con Stripe",
-          "La plata directo a ti",
-          "1 %, sin comisión",
-        ],
-      },
       reservar: {
         titulo: "Reservado en un minuto",
         texto:
@@ -96,10 +84,6 @@ export const visita = {
       cta: "Sí, crear mi página",
       seguir: "Seguir mirando",
       negocio: "Ver cómo se ve para ti como dueña o dueño",
-    },
-    pagoNota: {
-      texto: "Paga directo · tarjeta, Apple Pay, Google Pay",
-      via: "Stripe",
     },
   },
   negocio: {
@@ -123,7 +107,6 @@ export const visita = {
     nuevaReserva: "+ Nueva reserva",
     campanaAria: "Solicitudes pendientes",
     dias: ["Lun 13", "Mar 14", "Mié 15", "Jue 16", "Vie 17"],
-    pagada: "Pagada",
     flashLibre: "Hora flash 16:30",
     flashLibreSub: "−25 % · 12 en lista",
     flashTomada: "Hora flash · ¡reservada!",
@@ -147,12 +130,6 @@ export const visita = {
       rechazar: "Rechazar",
       dos: "Jonás K. quiere cancelar jue 10:00 ·",
       aprobar: "¿Aprobar?",
-    },
-    pagos: {
-      titulo: "PAGOS DE HOY",
-      via: "con Stripe",
-      monto: "$32.500",
-      detalle: "5 pagos con tarjeta · depósito a tu cuenta mañana",
     },
     resenas: {
       titulo: "Reseñas",
@@ -195,12 +172,6 @@ export const visita = {
         texto:
           "¿Se liberó una hora? Ofrécela con descuento: la lista de espera recibe un aviso y reserva quien llegue primero.",
         chips: ["Descuento a tu gusto", "Lista de espera"],
-      },
-      pagos: {
-        titulo: "Pagado antes de que llegue",
-        texto:
-          "Tus clientes pagan con tarjeta o Apple Pay al reservar. La plata va directo a tu cuenta con Stripe: nosotros solo cobramos un 1 %, sin comisión por reserva.",
-        chips: ["Menos inasistencias", "Reembolso automático"],
       },
       resenas: {
         titulo: "Reseñas que venden por ti",
