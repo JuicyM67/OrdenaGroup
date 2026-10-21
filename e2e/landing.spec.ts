@@ -5,7 +5,9 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
 import { brand } from "../src/config/brand";
+import { paraClientes } from "../src/i18n";
 import { home, landing } from "../src/i18n/es-CL.marketing";
+import { paginas } from "../src/i18n/paginas";
 
 test("renderar med rubrik, nav och CTA:er", async ({ page, isMobile }) => {
   const response = await page.goto("/");
@@ -39,15 +41,24 @@ test("hero: foto, pill med bransch och USP-karusell", async ({ page }) => {
   ).toBeVisible();
 });
 
-test('"Entrar" lleva a /login', async ({ page, isMobile }) => {
+test('"Entrar" → "Tengo un negocio" lleva a /login', async ({
+  page,
+  isMobile,
+}) => {
   test.skip(
     isMobile,
-    'El link "Entrar" del header se oculta en mobil (< sm), el CTA cubre la misma acción',
+    'El botón "Entrar" del header se oculta en mobil (< sm), el CTA cubre la misma acción',
   );
   await page.goto("/");
+  // Med marknadsplatsen på (D-060) är "Entrar" en meny med kund- och företagsinloggning.
   await page
     .getByRole("banner")
-    .getByRole("link", { name: landing.nav.entrar })
+    .getByRole("button", { name: paginas.nav.entrar })
+    .click();
+  // Länken i popovern (sidfoten har en likadan textlänk).
+  await page
+    .getByRole("dialog")
+    .getByRole("link", { name: paraClientes.nav.tengoNegocio })
     .click();
   await page.waitForURL("**/login");
 });

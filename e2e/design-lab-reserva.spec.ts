@@ -46,8 +46,16 @@ async function selectService(page: Page, name: RegExp) {
   await page.getByRole("button", { name }).first().click();
 }
 
+/** Väljer dagen. DayPicker visar en vecka i taget (4c84ced), så dagar i senare veckor
+ * nås via "Semana siguiente" först. */
 async function selectDay(page: Page, ariaLabel: string) {
-  await page.getByRole("button", { name: ariaLabel, exact: false }).click();
+  const day = page.getByRole("button", { name: ariaLabel, exact: false });
+  for (let i = 0; i < 6 && (await day.count()) === 0; i++) {
+    await page
+      .getByRole("button", { name: reserva.dia.semanaSiguiente })
+      .click();
+  }
+  await day.click();
 }
 
 test.describe("Reserva (fixturer) — flödet", () => {
@@ -468,8 +476,12 @@ test.describe("Reserva (fixturer) — design lab", () => {
       page,
     }) => {
       await page.goto(`/design-lab/reserva?estado=${estado}`);
+      // `[aria-hidden="true"]` undantas: DayPicker visar dagar utan bokningsbara tider
+      // (passerade/stängda) som tonade, dekorativa rutor (4c84ced) — inaktiva och
+      // dolda för hjälpmedel, och därför undantagna från kontrastkravet (WCAG 1.4.3).
       const results = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
+        .exclude('[aria-hidden="true"]')
         .analyze();
       expect(results.violations).toEqual([]);
     });
