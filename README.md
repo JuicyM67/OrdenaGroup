@@ -2,6 +2,8 @@
 
 _Arbetsnamn. "Tu agenda se llena sola."_
 
+Repot gäller bara Chile (Ordena Calendar). Den svenska verksamheten utvecklas i ett eget repo sedan uppdelningen 2026-10-21 (D-062). Migrationerna i `supabase/migrations/` fram till uppdelningen delas med det repot och får aldrig ändras.
+
 Den här mappen innehåller allt Claude Code behöver för att bygga produkten: tankesätt, analys, specifikation, design, teknisk arkitektur, beslut, backlog och färdiga agenter. Projektgrunden (WP-00) är byggd; resten byggs av agenterna i tur och ordning.
 
 ## Innehåll

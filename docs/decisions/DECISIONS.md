@@ -4,6 +4,17 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-062 · 2026-10-21 · Uppdelning i två repon: OrdenaGroup (CL) och BookingBuddy (SE)
+**Varför:** ägarens beslut 2026-10-21: Chile (Ordena Calendar) och Sverige (Booking Buddy) är två olika verksamheter med egna prioriteringar, leverantörer och regelverk. En gemensam kodbas med marknadsväxlar (`NEXT_PUBLIC_MARKET`) gjorde varje ändring dyrare och riskerade att svenska funktioner påverkade Chile och tvärtom. **Konsekvens:**
+- **Ersätter D-025:s "en kodbas för båda marknaderna".** Det här repot (OrdenaGroup) är bara Chile. Sverige har flyttat till repot `JuicyM67/BookingBuddy`, som utgår från commit `0a1f7be` i det här repot. D-026 (varumärke per marknad), D-027 (Stripe-abonnemang i SE) och D-028 (SMS via ClickSend i SE) gäller inte längre här, liksom de rena SE-besluten D-044, D-047, D-049, D-053, D-057 och D-058 — de lever vidare i BookingBuddy.
+- **Inget marknadsval.** `NEXT_PUBLIC_MARKET`, typen `Market` och alla `"SE"`-grenar är borttagna. Chiles värden är de enda: varumärket "Ordena Calendar" i `src/config/brand.ts` (regel 10 gäller fortsatt), texter bara på es-CL (som D-016 före D-025), CLP i hela pesos, `America/Santiago`, telefon +56. De svenska slugsen och rewrites/redirects för dem är borttagna; Chiles egna redirects (`clLegacyRedirects`) finns kvar.
+- **Borttaget ur koden** (fanns bara i SE): Stripe Connect/onlinebetalning och Stripe-webhooken, värdebevis (WP-69), presentkort (WP-77), sms via ClickSend och sms-krediter (WP-76), sms-val i utskick/blixttider, svenska importplattformar och Booking Buddys logotyp/ikoner. Marknadsplatsen finns kvar i CL enligt D-060 (bokning till erbjudandepris via `?oferta=`, betalning i salongen).
+- **Migrationerna får aldrig ändras.** Filerna i `supabase/migrations/` fram till `0a1f7be` är identiska i båda repona och är applicerade i databaserna i drift. De ändras, tas bort och döps aldrig om (annars vägrar `supabase db push`), även de som skapar svenska funktioner. Nya migrationer skrivs per repo från och med nu.
+- **Databasobjekt för svenska funktioner ligger kvar oanvända** i Chiles databas: tabeller, kolumner, funktioner och enum-värden för presentkort, värdebevis, sms-krediter och Stripe (t.ex. `gift_cards`, `vouchers`, `voucher_orders`, `sms_credit_purchases`, `stripe_checkouts`, kanalen `'sms'`), liksom deras typer i `src/types/database.ts` (genereras, CI kontrollerar att filen stämmer) och pgTAP-testerna som testar dem. Att ta bort dem kräver en ny migration och ett eget beslut.
+- **Drift:** staging-workflowen kör bara GitHub Environment `staging` (Chile); `staging-se` hör till BookingBuddy. Cron-workflowerna anropar bara Chile och behåller hemlighetsnamnen `CRON_SECRET`, `OUTBOX_CRON_URL_CL` och `RETENTION_CRON_URL_CL`. Demoföretaget är `estudio-brisa` (`private.seed_demo('CL')`, D-043).
+
+---
+
 ### D-061 · 2026-10-18 · Admins hanteras i /admin + "Facturación manual" per företag (WP-80)
 **Varför:** ägarens beslut 2026-10-18: två plattformsadmins ska kunna hantera varandra utan SQL, och företag som faktureras utanför programmet (avtal/faktura från oss, Chile först — där finns ingen planbetalning i appen) ska märkas så att ägaren inte erbjuds självbetjäning. Kompletterar D-038 (som sa att *alla* admins läggs in med SQL) och D-048. **Konsekvens:**
 - **Admins:** `/admin/administradores` (admin + aal2 som resten av `/admin`) listar admins (e-post, MFA aktiv/saknas, sedan), lägger till via e-post och tar bort. Servern (`src/server/admin/admins.ts`) vägrar ta bort sig själv och den sista adminen (låser alla rader `for update`), och databasen vägrar själv tömma `private.platform_admins` (statement-trigger `platform_admins_keep_one`, 23514 — gäller även kaskaden från `auth.users`). Varje ändring loggas i `admin_audit_log` (`add_admin`/`remove_admin`, bara id:n) i samma transaktion. `service_role` får `insert, delete` på tabellen (fortfarande ingen grant till authenticated/anon, ingen policy). Ny kolumn `added_by`.
@@ -21,6 +32,8 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 ---
 
 ### D-058 · 2026-10-11 · Presentkort i SE: värdebaserat, alla tjänster, 24 månader, delinlösen, flerfunktionsvoucher (WP-77)
+> Gäller bara Sverige; flyttat till BookingBuddy (D-062).
+
 **Varför:** ägarens beslut 2026-10-11 (WP-77-planen, "Ägarens beslut"): salonger ska kunna sälja presentkort på sin egen sida — värdebaserat, gäller alla tjänster, 24 månader, 1 % avgift, gästköp, från Starta. **Konsekvens:**
 - **Köp:** bara på salongens egen rutt `/<slug>/presentkort` (CL `/[slug]/tarjeta-regalo`, dold i CL — 404). Egen layout som inte importerar bokningsflödets klientkomponenter (D-039). Stripe Checkout som direct charge på företagets konto (`stripeAccount`, som D-057) med `application_fee_amount = floor(belopp × MARKETPLACE_FEE_BPS / 10 000)` (1 %) och **utan skattesats**: presentkortet är en flerfunktionsvoucher, salongen redovisar moms vid inlösen (`payment_intent_data.description` och radtexten säger det). Gäst (namn + e-post) eller inloggad köpare (kortet kopplas till kontot, `/konto/presentkort`). Belopp 300/500/1 000 kr eller valfritt 100–5 000 kr i hela kronor; beloppet och avgiften räknas på servern (`private.gift_card_open_order`), en öppen order med samma innehåll och levande session återanvänds. Kräver reglaget "Sälj presentkort" (Inställningar → Betalningar, ägaren, av som standard), planfunktionen `online_payment` (Starta och uppåt, D-048) och `charges_enabled`.
 - **Design:** Lime / Lila / Foto (företagets omslagsbild) enligt `docs/design/reference/presentkort/`; mejlet visar Foto som mörkt kort (inga externa bilder i mejl).
@@ -42,6 +55,8 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 ---
 
 ### D-057 · 2026-10-11 · Värdebevis i marknadsplatsen via Stripe Connect (SE, WP-69; planens förslag D-052)
+> Gäller bara Sverige; flyttat till BookingBuddy (D-062).
+
 **Varför:** ägarens beslut 2026-10-10 (WP-69-planen, "Ägarens beslut"): konsumenter ska kunna köpa ett erbjudande som värdebevis och lösa in det vid bokning; 1 % avgift, köp kräver konto, besöket före utgången, Chile dolt. Numret D-052 var redan taget (D-056 = erbjudanderedigeraren). **Konsekvens:**
 - **Köp:** "Köp och välj tid" på `/erbjudande/<slug>` är ett vanligt formulär mot en server action (ingen klient-JS). Kräver kundkonto (D-054): utloggad → `/konto/logga-in`, och efter inloggningen tillbaka till erbjudandet via cookien `account_return` (whitelist `/erbjudande|oferta/<slug>`, 15 min; ingen `next`-parameter, D-019). Knappen visas bara när företagets Stripe-konto har `charges_enabled` (annars "Köpet öppnar snart" som förut). JSON-LD får pris + `availability` när köpet finns.
 - **Betalning:** Stripe Checkout som **direct charge på företagets anslutna konto** (`stripeAccount`, D-044/D-008: företaget är säljare), `application_fee_amount = floor(belopp × MARKETPLACE_FEE_BPS / 10 000)` med `MARKETPLACE_FEE_BPS = 100` (`src/config/platform-fee.ts`), `metadata.kind = voucher`, idempotensnyckel = order-id, session 31 min. Beloppet räknas i databasen ur erbjudandet, aldrig från klienten.
@@ -93,6 +108,8 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 - **Integritet:** erbjudande-samtycket aldrig förkryssat, loggas i `account_consent_events` (oföränderlig, `user_id` nollas vid radering). Export som JSON. Radering tar bort konto, kopplingar och favoriter, nollar visningsnamn och kommentar på kontots egna recensioner (betyget kvar) och raderar auth-användaren — utom om personen är medlem i ett företag, plattformsadmin eller har andra spår med FK utan kaskad (inbjudningar, utskick, blixttider, adminlogg; fångas som 23503) — då raderas bara konsumentdelen. Företagens `customers`-rader rörs inte (företaget ansvarar, WP-26). Plattformen är personuppgiftsansvarig för kontona (RAT rad 9).
 
 ### D-053 · 2026-10-10 · SMS-krediter i SE: förbetalda paket, 1 kredit = 1 segment, används efter månadskvoten (WP-76)
+> Gäller bara Sverige; flyttat till BookingBuddy (D-062).
+
 **Varför:** ägaren vill att alla planer, även Gratis, kan "ladda upp kontot" med sms (som hos Bokadirekt), så att påminnelser fortsätter som sms när planens kvot (D-048) är slut. **Konsekvens:**
 - **Paket** (exkl. moms, `src/config/sms-credits.ts`, servern bestämmer priset): 100 sms = 100 kr, 250 = 250 kr, 500 = 450 kr, 1 000 = 900 kr. Moms 25 % läggs på i Stripe Checkout med en **fast skattesats** (`STRIPE_SMS_VAT_RATE_ID`, exklusiv). Saknas variabeln (eller `STRIPE_SECRET_KEY`) visas inte köpet alls — det enklaste säkra alternativet; saldo, förbrukning och marknadsföringskortet syns ändå i SE. Ingen egen momsberäkning mot Stripe.
 - **Köp:** Stripe Checkout på **plattformens eget konto** (`mode: "payment"`, inget `stripeAccount`; plattformen är säljare, till skillnad från D-044), `invoice_creation` + `tax_id_collection` (Stripes kvitto/faktura är underlaget; organisationsnummer/momsnummer kan anges). Bekräftelsedialog före Checkout, kvittodialog vid retur `?sms=klart`.
@@ -121,11 +138,15 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 ---
 
 ### D-049 · 2026-10-10 · Ny logotyp för Booking Buddy (SE): "b-klockan" (WP-74)
+> Gäller bara Sverige; flyttat till BookingBuddy (D-062).
+
 **Varför:** ägaren valde ett gement b vars rundel är en urtavla; den ersätter lime-pillen "Booking [Buddy]". **Konsekvens:** SE använder `BbMark`/`BrandLogo` (ordmärke "booking"600 + "buddy"800, Bricolage) överallt; CL (Ordena Calendar) behåller sin logotyp. Favicon/appikoner/manifest väljs per marknad (`icon.tsx`, `apple-icon.tsx`, `manifest.ts`), PNG genereras med `scripts/gen-brand-icons.mjs` till `public/brand/`. Mejl-layouten (alla mallar) fick lime-accentlist, tydligare rubrik och företagsuppgifter i sidfoten. Se DESIGN.md §14.
 
 ---
 
 ### D-047 · 2026-10-10 · Plattformsavgift 1 % på alla planer (ersätter D-044:s 0 % på Företag)
+> Gäller bara Sverige; flyttat till BookingBuddy (D-062).
+
 **Varför:** ägarens beslut — samma enkla regel för alla: 1 % per onlinebetalning, oavsett plan. **Konsekvens:** `PLATFORM_FEE_BPS` i `src/config/platform-fee.ts` är 100 bps för alla planer, även `local` (Företag), som tidigare var 0. Inga texter får påstå att Företag är avgiftsfri. Övrigt i D-044 gäller oförändrat.
 
 ---
@@ -155,6 +176,8 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 ---
 
 ### D-044 · 2026-10-11 · Stripe Connect: kunder betalar behandlingen online till företaget (bara SE, WP-64)
+> Gäller bara Sverige; flyttat till BookingBuddy (D-062).
+
 **Varför:** ägaren vill att Booking Buddy-företag kan ta betalt vid bokning, och att plattformen tar en liten avgift. Utökar D-027 (där Stripe bara gällde abonnemang): kundbetalning online finns nu i SE; CL är oförändrat (Mercado Pago senare, D-008/D-035). **Konsekvens:** (1) **Express-konton** med Stripe-värd onboarding (Account Links); företaget ser status (ej kopplad / pågår / aktiv / åtgärd krävs) och öppnar Stripe-översikten via login link. Fliken Betalningar syns bara för ägaren, bara i SE och bara när `STRIPE_SECRET_KEY` finns. (2) **Direct charge** på företagets konto via **Stripe Checkout (hostad redirect, ingen Stripe.js på `/[slug]`, D-039)** med `application_fee_amount`; företaget är säljare, plattformen är inte mellanhand för pengarna. (3) **Förfrågningsflödet (D-036):** bokningen skapas som vanligt, kunden skickas till Checkout, kortet *reserveras* (`capture_method=manual`). Bekräftas bokningen (ägaren eller autobekräftelse) dras beloppet; nekas/utgår den släpps reservationen (inget dras, ingen Stripe-avgift); avbokas den efter dragning görs en `refund` med återbetald plattformsavgift. Förfrågan avgörs inom 24 h, långt före kortreservationens 7 dagar. No-show behåller betalningen. (4) Inställning per företag `businesses.online_payment`: Av / Valfri / Obligatorisk. Vid *Obligatorisk* släpps bokningen om betalningen inte görs (sessionen går ut efter 31 min eller kunden trycker tillbaka). (5) Belopp = serverns pris minus rabatt i öre (SEK minor = vår lagringsenhet), aldrig från klienten; minst 5 kr. (6) **Avgift** i `src/config/platform-fee.ts`: 1 % på free/emprende/equipo, 0 % på local. **Ägaren kan ändra nivån** i den filen. OBS: med Express-konton kan det vara plattformen som bär Stripes korthanteringsavgift (kontrollera i Stripe Dashboard vem som är "fee payer"); är så fallet täcker 1 % inte kostnaden och nivån bör höjas. (7) Webhook `/api/webhooks/stripe`: signatur över rå body (`constructEvent`), idempotens i `inbound_events (provider, event_id)`, betalningsdata hämtas alltid från Stripes API; ett fel ger 500 så att Stripe skickar igen. `reconcileBookingPayment` är idempotent och körs även efter bekräfta/neka/avboka och av cron-passet som säkerhetsnät. (8) Onlinebetalning loggas i `payments` med metod `stripe` när beloppet dras (Caja visar "Online (kort)"); återbetalning ger `refunded`. (9) Nya tabeller `stripe_accounts` (ägaren läser, servern skriver), `stripe_checkouts`, `inbound_events`, alla med RLS och pgTAP (`112_stripe_connect`). **Begränsning v1:** SMS nämner inte betalningen (bara e-post); delåterbetalningar i Stripe-dashboarden speglas inte i Caja.
 
 ---
@@ -196,15 +219,23 @@ Kundens bokning skapas som `requested` och blockerar tiden tills företaget bekr
 **Varför:** databasen sparar bara hashen av kundens token, men påminnelser och flyttmeddelanden behöver länken. **Konsekvens:** klartext-token ligger i `message_outbox.payload` bara tills raden är `sent`/`dead`/`cancelled` och töms då; tabellen är oläsbar för `anon` och `authenticated` ser bara det egna företaget. En flytt roterar token (gamla länkar slutar gälla). `/r/[token]` slår upp på `manage_token_hash`.
 
 ### D-028 · 2026-09-28 · SMS via ClickSend i Sverige
+> Gäller bara Sverige; flyttat till BookingBuddy (D-062).
+
 **Varför:** i Sverige används SMS snarare än WhatsApp för bekräftelser och påminnelser. **Konsekvens:** utkorgen (regel 4) får en SMS-leverantör (ClickSend) för marknaden SE; WhatsApp gäller CL. Samma mallar per händelse, text per språk.
 
 ### D-027 · 2026-09-28 · Stripe för abonnemang i Sverige, inga kundbetalningar i Sverige
+> Gäller bara Sverige; flyttat till BookingBuddy (D-062).
+
 **Varför:** Stripe används bara för att företag i Sverige ska kunna gå med och betala för sin plan. **Konsekvens:** abonnemang: Flow i CL (oförändrat), Stripe i SE. Handpenning via Mercado Pago (D-008, D-022) gäller bara CL; i SE finns ingen betalning från kunder.
 
 ### D-026 · 2026-09-28 · Varumärke per marknad
+> Ersatt av D-062: det här repot har bara varumärket "Ordena Calendar".
+
 **Varför:** ett spanskt namn fungerar inte i Sverige. **Konsekvens:** CL = "Ordena Calendar", SE = "Booking Buddy" (domänen bookingbuddy.se ägs redan; varumärket kontrolleras hos INAPI respektive PRV/EUIPO). `src/config/brand.ts` väljer varumärke utifrån marknaden; namnet finns fortfarande bara där (regel 10). Ersätter arbetsnamnet i D-001.
 
 ### D-025 · 2026-09-28 · En kodbas, flera marknader, en installation per region
+> Ersatt av D-062 (uppdelning i två repon).
+
 **Varför:** ägaren vill driva tjänsten i både Chile och Sverige; två kopior av koden vore dubbelt underhåll, och data ska stanna i respektive region (Ley 21.719, GDPR). **Konsekvens:** miljövariabeln `MARKET` (`CL`/`SE`) styr språk, valuta, telefon, id-nummer, tidszon, varumärke och leverantörer per installation. CL: Vercel `gru1` + Supabase `sa-east-1` + domän `.cl`. SE: Vercel `arn1` + Supabase `eu-north-1` + domän `.se`. Belopp lagras i minsta enhet med valuta (CLP heltal, SEK öre). Ersätter "bara es-CL" i D-016: texter per språk (`es-CL`, `sv-SE`) med samma typade nycklar.
 
 ### D-024 · 2026-09-28 · D-020s grind tas bort för `/[slug]`, kvar för `/app/inicio|agenda|hoy`

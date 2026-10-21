@@ -1,5 +1,7 @@
 # Idéer utanför scope
 
+> Idéer som bara gällde Sverige (svenska slugs, ClickSend, sms-paket, presentkort) följde med till repot `JuicyM67/BookingBuddy` vid uppdelningen (D-062).
+
 Agenter och människor skriver hit idéer som dyker upp under arbetet, så att de inte byggs i fel arbetspaket. Planeraren går igenom listan varje vecka.
 
 | Datum | Idé | Från | Varför intressant | Förslag på fas |
@@ -60,11 +62,9 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-28 | Rate limiting på publik bokning (per IP och telefon) | security-reviewer (WP-20) | Annars kan vem som helst fylla en agenda med falska bokningar | 1 (före pilot) |
 | 2026-09-28 | Samtycke från publik bokning ska inte skriva över ägarens register (`manual`) på befintlig kundrad med obekräftat nummer | security-reviewer (WP-20) | Tredje part kan annars ändra någon annans samtycke | 1 (WP-26) |
 | 2026-09-28 | Egna felmeddelanden för regelfälten i Ajustes (framförhållning, dagar framåt, avbokningsfönster, rutnät) i stället för `comun.algoSalioMal` | ui-engineer (WP-15b) | Tydligare för ägaren | 1 (copywriter) |
-| 2026-09-28 | Svenska URL-slugs för sitio-webben (`/tjanster`, `/priser`, `/for/[bransch]`, `/vanliga-fragor`, `/kontakt`) i stället för de spanska rutterna som WP-hemsida byggde | ui-engineer (WP-hemsida) | `src/app/(marketing)/**` har i dag fasta spanska segment (`/funcionalidades`, `/precios`, `/para/[industria]`, `/preguntas`, `/contacto`); SE-marknaden (Booking Buddy) behöver troligen egna slugs, vilket kräver per-marknads routing (t.ex. rewrites eller en `[locale]`-nivå) | 2 (efter sv-SE.ts) |
-| 2026-09-28 | Riktig WhatsApp-supportlänk och supportmejl per marknad i `src/config/brand.ts` (`supportWhatsapp`/`domain` är `null` för både CL och SE) | ui-engineer (WP-hemsida) | `/contacto` visar i dag inaktiverade knappar i stället för en påhittad länk — ops behöver fylla i riktiga värden | 1 (ops, före pilot) |
+| 2026-09-28 | Riktig WhatsApp-supportlänk och supportmejl i `src/config/brand.ts` (`supportWhatsapp`/`domain` är `null`) | ui-engineer (WP-hemsida) | `/contacto` visar i dag inaktiverade knappar i stället för en påhittad länk — ops behöver fylla i riktiga värden | 1 (ops, före pilot) |
 
 ## Från säkerhetsgranskningen av WP-16 (2026-09-29, icke-blockerande)
-- SMS-dubbletter möjliga: ClickSends `custom_string` är ingen idempotens. Spara leverantörens id före finalize eller kolla historik innan omsändning.
 - Avbokning/flytt avbryter bara köade `recordatorio`; avbryt även köade `reservaConfirmada`/`reservaMovida` för samma bokning.
 - `/r/[token]`: `loadBookingByToken` anropas två gånger (metadata + sida) – använd React `cache()`; rate limit när den finns för publika bokningen.
 - `ManageScreen` får `businessId`/`bookingId` i klientpayload – skicka bara det som visas.
@@ -124,12 +124,10 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Admin-vy över `ai_import_runs` (kostnad per månad, andel lyckade per plattform).
 
 ## Uppskjutet från WP-73 (planspärrar, 2026-10-11)
-- Byt plan själv i appen: Stripe Billing (SE) / Flow (CL) med Checkout + kundportal, webhook som sätter `businesses.plan`. Tills dess går "Byt plan" till prissidan och "Kontakta oss" till kontaktsidan, och admin sätter planen i `/admin`.
-- Extra sms-paket (köp fler sms när kvoten tar slut) i stället för bara uppgradering.
+- Byt plan själv i appen: Flow med Checkout + kundportal, webhook som sätter `businesses.plan`. Tills dess går "Byt plan" till prissidan och "Kontakta oss" till kontaktsidan, och admin sätter planen i `/admin`.
 - Låsikon på låsta poster även i huvudmenyn (Blixttider) och i Mer-arket — i dag bara i Inställningar-flikarna och som ruta på sidan.
-- Varning till ägaren (e-post/klocka) när 80 % av månadens sms-kvot är använd.
 - Kontaktformulär för Skräddarsytt (via outbox till plattformsägaren) i stället för länk till kontaktsidan.
-- Plan-texterna i `planes` (es-CL/sv-SE) granskas av copywriter-es-cl.
+- Plan-texterna i `planes` (es-CL) granskas av copywriter-es-cl.
 
 ## Uppskjutet från planerna WP-67–69 (marknadsplats och kundkonton, 2026-10-10)
 - Apple-inloggning för kundkonton (kräver Apple Developer-konto, 99 USD/år).
@@ -137,7 +135,6 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 - Flytta bokning direkt från kundkontot (v1: se + avboka).
 - Telefonverifiering i CL (när WhatsApp/SMS finns där).
 - Marknadsplatsköp i CL via Mercado Pago (värdebevis).
-- Presentkort med fritt belopp/saldo och delinlösen; köp som gåva till annan mottagare; QR-kod på värdebeviset.
 - Fritextsök med rankning/synonymer och personliga rekommendationer på Upptäck.
 - Betald exponering ("utvalt erbjudande") som intäktskälla.
 - Push-notiser till konsumenter (nya erbjudanden från favoriter) — kräver samtycke.
@@ -145,5 +142,3 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 
 - 2026-10-11 (WP-67): Snabbtaggar i recensionen ("Trevligt bemötande", "Punktlig" … i `Recension.dc.html`) — finns inte i D-045, inte byggt. Dessutom: "Visas som Elin K.." (dubbel punkt när visningsnamnet slutar på initial-punkt, `resenas`-texten från WP-65).
 - 2026-10-11 (WP-67): Hjärtat (favorit) på `/[slug]` för utloggade besökare (länk till Skapa konto) — i v1 visas det bara för inloggade med kundkonto, så `/[slug]`-referenserna inte ändras.
-- 2026-10-11 (WP-77, D-058): Presentkort utanför v1 — i marknadsplatsen (`/upptack`, `/erbjudande`) och för flera salonger; fysiska/förtryckta koder som säljs i salongen; QR-kod och Apple/Google Wallet; PDF-bilaga i mejlet; ändra mottagare/leveransdag efter köpet; "Skicka igen" till köparens/mottagarens adress (en gång per dygn); påminnelse före utgång; företagets "Återbetala" i appen; tema per företag; momsrapport i kassan och momsklassning per företag (om juristfråga 22 kräver det); förlängd giltighet, överlåtelse mellan konton, kampanjer ("köp för 500, få 600"); mottagaren lägger kortet i sitt konto; publik saldosida med kod; Checkout för resten när onlinebetalning är "Obligatorisk".
-- 2026-10-11 (WP-77, omverifiering #116): Kassans rapporter visar presentkortsbetalningar (`gift_card`) på besöksdatum i stället för bokningsdatum (`paid_at`).
