@@ -283,6 +283,7 @@ export type Database = {
           id: string;
           idempotency_key: string | null;
           manage_token_hash: string | null;
+          marketplace_offer_id: string | null;
           notes: string | null;
           pending_expires_at: string | null;
           period: unknown;
@@ -314,6 +315,7 @@ export type Database = {
           id?: string;
           idempotency_key?: string | null;
           manage_token_hash?: string | null;
+          marketplace_offer_id?: string | null;
           notes?: string | null;
           pending_expires_at?: string | null;
           period: unknown;
@@ -345,6 +347,7 @@ export type Database = {
           id?: string;
           idempotency_key?: string | null;
           manage_token_hash?: string | null;
+          marketplace_offer_id?: string | null;
           notes?: string | null;
           pending_expires_at?: string | null;
           period?: unknown;
@@ -400,6 +403,13 @@ export type Database = {
             columns: ["business_id", "flash_slot_id"];
             isOneToOne: false;
             referencedRelation: "flash_slots";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "bookings_marketplace_offer_id_fkey";
+            columns: ["business_id", "marketplace_offer_id"];
+            isOneToOne: false;
+            referencedRelation: "offers";
             referencedColumns: ["business_id", "id"];
           },
           {
