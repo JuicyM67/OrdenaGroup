@@ -179,7 +179,7 @@ export function GuidedTour({
     setPhase((p) => Math.max(0, p - 1));
   }, []);
 
-  // Markera sidan som "i visningsläge" (visar t.ex. betalningsraden, tour-note).
+  // Markera sidan som "i visningsläge" (`data-tour-on`, se `tour-note` i tokens.css).
   useEffect(() => {
     const root = document.documentElement;
     if (isOff) root.removeAttribute("data-tour-on");

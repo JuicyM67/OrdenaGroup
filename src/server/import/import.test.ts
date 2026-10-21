@@ -10,10 +10,9 @@ import { toPreview } from "./preview";
 
 describe("importUrlSchema (allowlist)", () => {
   it.each([
-    ["https://www.bokadirekt.se/places/salong-lovet-12345", "bokadirekt"],
-    ["bokadirekt.se/places/x", "bokadirekt"],
-    ["https://www.fresha.com/a/salon-stockholm-abc", "fresha"],
-    ["https://booksy.com/sv-se/1234_salong", "booksy"],
+    ["https://www.fresha.com/a/barberia-santiago-abc", "fresha"],
+    ["fresha.com/a/x", "fresha"],
+    ["https://booksy.com/es-cl/1234_barberia", "booksy"],
     ["https://elroble.agendapro.com/cl", "agendapro"],
     ["https://reservo.cl/elroble#tab", "reservo"],
   ])("godtar %s", (raw, key) => {
@@ -27,14 +26,16 @@ describe("importUrlSchema (allowlist)", () => {
   });
 
   it.each([
-    ["http://www.bokadirekt.se/places/x", "import.url_invalid"],
-    ["https://user:pw@bokadirekt.se/x", "import.url_invalid"],
-    ["https://bokadirekt.se:8443/x", "import.url_invalid"],
+    ["http://www.fresha.com/a/x", "import.url_invalid"],
+    ["https://user:pw@fresha.com/x", "import.url_invalid"],
+    ["https://fresha.com:8443/x", "import.url_invalid"],
     ["inte en länk med mellanslag", "import.url_invalid"],
     ["", "import.url_invalid"],
     ["https://example.com/salong", "import.platform_unsupported"],
-    ["https://bokadirekt.se.evil.com/x", "import.platform_unsupported"],
-    ["https://evilbokadirekt.se/x", "import.platform_unsupported"],
+    ["https://reservo.cl.evil.com/x", "import.platform_unsupported"],
+    ["https://evilreservo.cl/x", "import.platform_unsupported"],
+    // Svenska plattformar finns inte längre i listan (D-062).
+    ["https://www.bokadirekt.se/places/x", "import.platform_unsupported"],
     ["https://127.0.0.1/x", "import.platform_unsupported"],
   ])("avvisar %s", (raw, code) => {
     const r = importUrlSchema.safeParse(raw);
@@ -51,30 +52,38 @@ describe("importUrlSchema (allowlist)", () => {
 
 describe("toPreview (extraktion → förhandsgranskning → import)", () => {
   it("fixturerna följer extraktionsschemat", () => {
-    expect(extractionSchema.safeParse(fakeExtraction("SE")).success).toBe(true);
-    expect(extractionSchema.safeParse(fakeExtraction("CL")).success).toBe(true);
+    expect(extractionSchema.safeParse(fakeExtraction()).success).toBe(true);
   });
 
   it("sanerar, kompletterar veckan och markerar dubbletter", () => {
-    const e = fakeExtraction("SE");
-    e.services.push({ ...e.services[0]!, name: "  damklippning " });
+    const e = fakeExtraction();
+    e.services.push({ ...e.services[1]!, name: "  corte fade " });
+    e.services.push({
+      name: "Asesoría de estilo",
+      description: "Conversamos sobre el corte que quieres.",
+      durationMin: null,
+      price: null,
+      priceFrom: false,
+      category: null,
+    });
+    e.images.logoUrl = "https://elroble.example/logo.png";
     e.hours = [
       { weekday: 1, open: true, start: "09:00", end: "18:00" },
       { weekday: 2, open: true, start: "18:00", end: "09:00" },
       { weekday: 9, open: true, start: "09:00", end: "18:00" },
     ];
-    const p = toPreview(e, "Bokadirekt", {
-      services: ["HERRKLIPPNING"],
-      staff: ["maja"],
+    const p = toPreview(e, "AgendaPro", {
+      services: ["CORTE CLÁSICO"],
+      staff: ["nico"],
     });
-    expect(p.platformName).toBe("Bokadirekt");
+    expect(p.platformName).toBe("AgendaPro");
     expect(
-      p.services.filter((s) => s.name.toLowerCase() === "damklippning"),
+      p.services.filter((s) => s.name.toLowerCase() === "corte fade"),
     ).toHaveLength(1);
-    expect(p.services.find((s) => s.name === "Herrklippning")?.exists).toBe(
+    expect(p.services.find((s) => s.name === "Corte clásico")?.exists).toBe(
       true,
     );
-    expect(p.staff.find((s) => s.name === "Maja")?.exists).toBe(true);
+    expect(p.staff.find((s) => s.name === "Nico")?.exists).toBe(true);
     expect(p.hours).toHaveLength(7);
     expect(p.hours[0]).toEqual({
       weekday: 1,
@@ -83,16 +92,16 @@ describe("toPreview (extraktion → förhandsgranskning → import)", () => {
       end: "18:00",
     });
     expect(p.hours[1]?.open).toBe(false);
-    const konsultation = p.services.find((s) => s.name === "Konsultation");
-    expect(konsultation?.durationMin).toBe("");
-    expect(konsultation?.price).toBe("");
-    expect(p.categories).toContain("Färg");
-    expect(p.profile.category).toBe("peluqueria");
+    const asesoria = p.services.find((s) => s.name === "Asesoría de estilo");
+    expect(asesoria?.durationMin).toBe("");
+    expect(asesoria?.price).toBe("");
+    expect(p.categories).toContain("Barba");
+    expect(p.profile.category).toBe("barberia");
     expect(p.images.logoUrl).toMatch(/^https:/);
   });
 
   it("en förvald tjänst passerar urvalsschemat och Ajustes tjänsteschema", () => {
-    const p = toPreview(fakeExtraction("CL"), null);
+    const p = toPreview(fakeExtraction(), null);
     const sel = importSelectionSchema.parse({
       profile: { about: p.profile.about, instagram: p.profile.instagram },
       hours: p.hours,

@@ -1,14 +1,12 @@
-// /funcionalidades/[funcion] (SE: /funktioner/<slug>), en sida per funktion i mallen
-// Funktion.dc.html (WP-75). Blixttider (`/horas-flash`) och flytt (`/migracion`) har egna
-// sidfiler men använder samma mall. Funktioner som inte finns på marknaden (betalning på
-// CL) ger 404.
+// /funcionalidades/[funcion], en sida per funktion i mallen Funktion.dc.html (WP-75).
+// Blixttider (`/horas-flash`) och flytt (`/migracion`) har egna sidfiler men använder
+// samma mall. Okända slugs ger 404 (`dynamicParams = false`).
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { FuncionPage } from "@/components/marketing/paginas/funcion-page";
 import { pageMetadata } from "@/components/marketing/paginas/metadata";
 import {
-  funcionAvailable,
   funcionFromParam,
   funcionParamSlugs,
   hrefFuncion,
@@ -25,7 +23,7 @@ export function generateStaticParams(): PageParams[] {
 
 function resolve(slug: string) {
   const id = funcionFromParam(slug);
-  return id && funcionAvailable(id) ? id : undefined;
+  return id;
 }
 
 export async function generateMetadata({

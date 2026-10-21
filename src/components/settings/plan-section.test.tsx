@@ -12,7 +12,6 @@ const base: PlanSectionData = {
   plan: "free",
   staff: { used: 1, limit: 1 },
   services: { used: 1, limit: 3 },
-  sms: { used: 0, limit: 0 },
 };
 
 describe("PlanSection · billingMode", () => {

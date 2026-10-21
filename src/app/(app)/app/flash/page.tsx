@@ -15,7 +15,6 @@ import { logout } from "@/app/auth/actions";
 import type { FlashCatalogService, FlashStaff } from "@/components/flash/types";
 import { FlashScreen } from "@/components/flash/flash-screen";
 import { UpgradeNotice } from "@/components/plans/upgrade-notice";
-import { market } from "@/config/brand";
 import { appHref, href } from "@/config/routes";
 import { flash as flashCopy } from "@/i18n";
 import { APP_TZ, toLocalDate, toWallClock } from "@/lib/format/dates";
@@ -209,7 +208,6 @@ export default async function FlashPage({
       gaps={gaps}
       publicBase={`${appUrl()}/${current.business.slug}`}
       onSend={canManageCampaigns ? sendFlashCampaignAction : undefined}
-      smsAvailable={market === "SE"}
       canViewReports={current.view.perms.can_view_reports}
       onLogout={logout}
       onCreate={createFlashSlotAction}

@@ -164,17 +164,16 @@ workflowen första gången:
 - Sentry och PostHog ingår **inte** i den här staging-uppsättningen (se
   `docs/tasks/plans/WP-05.md`) — läggs till i ett senare arbetspaket.
 
-## Sverige (Booking Buddy, D-025)
+## Projekt och adresser
 
-| | Chile | Sverige |
-|---|---|---|
-| Supabase | `bligjpmisejtdnbfwhqx` (sa-east-1) | eget projekt i eu-north-1 (Stockholm) |
-| GitHub Environment | `staging` | `staging-se` (bara `main`) |
-| Vercel-projekt | `ordenagroup` (funktioner i gru1) | `bookingbuddy` (funktioner i arn1, `NEXT_PUBLIC_MARKET=SE`) |
-| Publik adress | https://ordenacalendar.vercel.app | https://bookingbuddy-se.vercel.app |
+| | Chile |
+|---|---|
+| Supabase | `bligjpmisejtdnbfwhqx` (sa-east-1) |
+| GitHub Environment | `staging` (bara `main`) |
+| Vercel-projekt | `ordenagroup` (funktioner i gru1) |
+| Publik adress | https://ordenacalendar.vercel.app |
 
-Koppla Sverige: skapa projektet i Supabase, lägg `STAGING_SUPABASE_ACCESS_TOKEN`,
-`STAGING_SUPABASE_DB_PASSWORD` och `STAGING_SUPABASE_PROJECT_REF` i Environment
-`staging-se`, kör `bash scripts/setup-staging-env.sh se` och sedan workflowen
-"Deploy staging" manuellt med reseed. Funktionsregionen sätts per Vercel-projekt
-(inte i `vercel.json`).
+Sveriges staging (Environment `staging-se`, Vercel-projektet för Booking Buddy) hör till
+repot `Effektiv-Media/BookingBuddy` sedan uppdelningen (D-062) och körs inte längre härifrån.
+Environment `staging-se` i det här repots GitHub-inställningar används inte längre och kan
+tas bort av ägaren.

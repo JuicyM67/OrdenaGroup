@@ -19,7 +19,7 @@ export const extractionSchema = z.strictObject({
     about: nullableText,
     address: nullableText,
     city: nullableText,
-    /** Comuna (CL) eller stadsdel/ort (SE). */
+    /** Comuna. */
     district: nullableText,
     phone: nullableText,
     email: nullableText,

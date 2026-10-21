@@ -33,27 +33,7 @@ vi.mock("@/server/bookings/confirm", () => ({
     (expireRequestsMock as (...a: unknown[]) => unknown)(...args),
 }));
 
-vi.mock("@/server/payments/stripe/reconcile", () => ({
-  runStripeSweep: async () => ({ reconciled: 0, sessions: 0 }),
-}));
 // WP-68 (S4): geokodningen ska köras EFTER utkorgen.
-vi.mock("@/server/vouchers", () => ({
-  runVoucherSweep: async () => ({
-    orders: 0,
-    expired: 0,
-    redeemed: 0,
-    refunding: 0,
-  }),
-}));
-// WP-77 (D-058): presentkortssvepet.
-vi.mock("@/server/gift-cards", () => ({
-  runGiftCardSweep: async () => ({
-    orders: 0,
-    expired: 0,
-    settled: 0,
-    cleared: 0,
-  }),
-}));
 vi.mock("@/server/geocoding", () => ({
   runGeocodeSweep: async () => {
     calls.push("runGeocodeSweep");
@@ -129,9 +109,6 @@ describe("POST /api/cron/outbox", () => {
       expired: 0,
       waitlistExpired: 0,
       reviewRequests: 0,
-      stripe: { reconciled: 0, sessions: 0 },
-      vouchers: { orders: 0, expired: 0, redeemed: 0, refunding: 0 },
-      giftCards: { orders: 0, expired: 0, settled: 0, cleared: 0 },
       geocoded: { ok: 0, notFound: 0, skipped: 0 },
     });
   });

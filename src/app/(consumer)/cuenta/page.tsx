@@ -1,8 +1,6 @@
-// WP-67 (D-054): Min profil (CL `/cuenta`, SE `/konto`). Referens
+// WP-67 (D-054): Min profil (`/cuenta`). Referens
 // `docs/design/reference/marketplace/Profil.dc.html` (riktning A): hälsning,
 // nästa bokning (mörkt kort), recensionspåminnelse, favoriter och kontomenyn.
-// "Mina värdebevis" (WP-69, D-057): första aktiva värdebeviset + "Alla (n)",
-// bara där marknadsplatsen finns (SE).
 import { ChevronRight, Settings, Star } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -10,20 +8,15 @@ import Link from "next/link";
 import { AccountShell } from "@/components/account/account-shell";
 import { NextBookingCard } from "@/components/account/booking-cards";
 import { FavoriteTile } from "@/components/account/favorite-tile";
-import { VoucherCard } from "@/components/account/voucher-card";
-import { giftCardsMarket } from "@/config/gift-cards";
-import { vouchersMarket } from "@/config/marketplace";
-import { appHref, cuentaHref, regalosHref, valesHref } from "@/config/routes";
-import { cuenta, regalo, vales } from "@/i18n";
+import { appHref, cuentaHref } from "@/config/routes";
+import { cuenta } from "@/i18n";
 import { initialsOf } from "@/lib/format/initials";
 import { loadMyBookings, loadMyFavorites } from "@/server/accounts/account";
 import { splitBookings } from "@/server/accounts/view";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 import { systemClock } from "@/server/scheduling/clock";
-import { loadMyVouchers } from "@/server/vouchers";
 
 import { cancelAccountBooking, logoutAccount } from "./actions";
-import { withdrawVoucherAction } from "./vales/actions";
 import { requireAccount } from "./session";
 
 export const metadata: Metadata = {
@@ -39,16 +32,11 @@ const rowClass =
 export default async function CuentaPage() {
   const session = await requireAccount();
   const now = systemClock();
-  const withVouchers = vouchersMarket();
-  const [bookings, favorites, business, vouchers] = await Promise.all([
+  const [bookings, favorites, business] = await Promise.all([
     loadMyBookings(session.userId, now),
     loadMyFavorites(session.userId),
     getOwnerBusiness(session.userId),
-    withVouchers ? loadMyVouchers(session.userId, now) : Promise.resolve([]),
   ]);
-  const usableVouchers = vouchers.filter(
-    (v) => v.status === "active" || v.status === "reserved",
-  );
   const { upcoming, past } = splitBookings(bookings);
   const next = upcoming[0];
   const toReview = past.find((b) => b.reviewable && b.reviewRating === null);
@@ -132,28 +120,6 @@ export default async function CuentaPage() {
             </Link>
           ) : null}
 
-          {usableVouchers[0] ? (
-            <section className="flex flex-col gap-2.5">
-              <div className="flex items-baseline justify-between">
-                <h2 className="font-display text-20 font-semibold text-ink">
-                  {vales.cuenta.titulo}
-                </h2>
-                <Link
-                  href={valesHref("cuenta")}
-                  className="text-13 font-semibold text-ink underline underline-offset-4"
-                >
-                  {vales.cuenta.verTodos({ n: vouchers.length })}
-                </Link>
-              </div>
-              <ul>
-                <VoucherCard
-                  voucher={usableVouchers[0]}
-                  onWithdraw={withdrawVoucherAction}
-                />
-              </ul>
-            </section>
-          ) : null}
-
           <nav
             aria-label={t.menuAria}
             className="flex flex-col divide-y divide-line overflow-hidden rounded-card bg-surface"
@@ -165,24 +131,6 @@ export default async function CuentaPage() {
                 aria-hidden="true"
               />
             </Link>
-            {withVouchers ? (
-              <Link href={valesHref("cuenta")} className={rowClass}>
-                {vales.cuenta.menu}
-                <ChevronRight
-                  className="size-4.5 text-muted"
-                  aria-hidden="true"
-                />
-              </Link>
-            ) : null}
-            {giftCardsMarket() ? (
-              <Link href={regalosHref("cuenta")} className={rowClass}>
-                {regalo.cuenta.menu}
-                <ChevronRight
-                  className="size-4.5 text-muted"
-                  aria-hidden="true"
-                />
-              </Link>
-            ) : null}
             <Link href={cuentaHref("cuentaFavoritos")} className={rowClass}>
               {t.menuFavoritos}
               <ChevronRight

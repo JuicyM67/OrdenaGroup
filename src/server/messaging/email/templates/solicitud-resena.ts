@@ -1,6 +1,6 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailNs } from "../content";
 import { composeSimpleEmail } from "../layout";
@@ -15,14 +15,10 @@ export type SolicitudResenaData = {
 };
 
 /** WP-65 (D-045): al cliente, 2 h después de una cita realizada. */
-export function solicitudResenaEmail(
-  market: Market,
-  data: SolicitudResenaData,
-): RenderedEmail {
-  const ns = emailNs(market).solicitudResena;
-  const comun = emailNs(market).comun;
+export function solicitudResenaEmail(data: SolicitudResenaData): RenderedEmail {
+  const ns = emailNs().solicitudResena;
+  const comun = emailNs().comun;
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ negocio: data.negocio }),
     preheader: ns.preheader,
     titulo: ns.titulo,

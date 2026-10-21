@@ -8,7 +8,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 
-import { clientSmsLengthInfo } from "@/components/customers/sms-length";
 import { campanaErrorText } from "@/components/campaigns/error-text";
 import { Button } from "@/components/ui/button";
 import { IconButton } from "@/components/ui/icon-button";
@@ -21,7 +20,6 @@ import { campanas, comun, flash } from "@/i18n";
 import type {
   FlashCampaignAudience,
   FlashCampaignAudienceKind,
-  FlashCampaignChannel,
   SendFlashCampaignInput,
   SendFlashCampaignResult,
 } from "./types";
@@ -30,8 +28,6 @@ export type SendFlashDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   flashSlotId: string;
-  /** SMS bara en SE (D-025/D-026), samma spärr som Campañas. */
-  smsAvailable: boolean;
   onSend: (input: SendFlashCampaignInput) => Promise<SendFlashCampaignResult>;
 };
 
@@ -41,10 +37,7 @@ const AUDIENCE_KINDS: readonly FlashCampaignAudienceKind[] = [
   "regulars",
   "inactive",
 ];
-const MESSAGE_MAX: Record<FlashCampaignChannel, number> = {
-  email: 1000,
-  sms: 320,
-};
+const MESSAGE_MAX = 1000;
 const DEFAULT_INACTIVE_DAYS = 60;
 
 function flashCampaignErrorText(code: string): string {
@@ -56,7 +49,6 @@ export function SendFlashDialog({
   open,
   onOpenChange,
   flashSlotId,
-  smsAvailable,
   onSend,
 }: SendFlashDialogProps) {
   const descriptionId = useId();
@@ -68,7 +60,6 @@ export function SendFlashDialog({
   const [inactiveDays, setInactiveDays] = useState(
     String(DEFAULT_INACTIVE_DAYS),
   );
-  const [channel, setChannel] = useState<FlashCampaignChannel>("email");
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [sent, setSent] = useState<number | null>(null);
@@ -77,15 +68,13 @@ export function SendFlashDialog({
   function reset() {
     setAudienceKind("all");
     setInactiveDays(String(DEFAULT_INACTIVE_DAYS));
-    setChannel("email");
     setMessage("");
     setSubmitting(false);
     setSent(null);
     setError(null);
   }
 
-  const messageMax = MESSAGE_MAX[channel];
-  const smsInfo = channel === "sms" ? clientSmsLengthInfo(message) : null;
+  const messageMax = MESSAGE_MAX;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -103,7 +92,7 @@ export function SendFlashDialog({
     setError(null);
     const result = await onSend({
       flashSlotId,
-      channel,
+      channel: "email",
       audience,
       message: trimmed,
     });
@@ -190,28 +179,6 @@ export function SendFlashDialog({
                   ) : null}
                 </div>
 
-                {smsAvailable ? (
-                  <div className="flex flex-col gap-2">
-                    <span className="text-13 font-semibold text-ink">
-                      {campanas.nueva.canalLabel}
-                    </span>
-                    <div className="flex gap-2">
-                      <Pill
-                        selected={channel === "email"}
-                        onClick={() => setChannel("email")}
-                      >
-                        {campanas.canal.email}
-                      </Pill>
-                      <Pill
-                        selected={channel === "sms"}
-                        onClick={() => setChannel("sms")}
-                      >
-                        {campanas.canal.sms}
-                      </Pill>
-                    </div>
-                  </div>
-                ) : null}
-
                 <Textarea
                   label={campanas.nueva.mensajeLabel}
                   placeholder={campanas.nueva.mensajePlaceholder}
@@ -219,14 +186,10 @@ export function SendFlashDialog({
                   onChange={(e) => setMessage(e.target.value)}
                   maxLength={messageMax}
                   rows={5}
-                  hint={
-                    smsInfo
-                      ? `${campanas.nueva.contador({ n: message.length, max: messageMax })} · ${campanas.nueva.segmentosSms({ n: smsInfo.segments })}`
-                      : campanas.nueva.contador({
-                          n: message.length,
-                          max: messageMax,
-                        })
-                  }
+                  hint={campanas.nueva.contador({
+                    n: message.length,
+                    max: messageMax,
+                  })}
                   required
                 />
 

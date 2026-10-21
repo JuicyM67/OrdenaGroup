@@ -66,7 +66,7 @@ function makeData(days: DayAvailability[]): BookingPageData {
 
 describe("summaryText", () => {
   beforeEach(() => {
-    process.env.TZ = "Europe/Stockholm";
+    process.env.TZ = "Europe/Madrid";
   });
   afterEach(() => {
     delete process.env.TZ;

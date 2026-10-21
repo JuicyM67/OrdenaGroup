@@ -3,7 +3,6 @@
 // kolumner), 2 kolumner på mobil. Bilderna är dekorativa; etiketten är texten.
 import Image from "next/image";
 
-import { anchor } from "@/config/url-params";
 import { copy } from "@/i18n/marketing";
 
 import { HomeHeading } from "./home-heading";
@@ -37,7 +36,7 @@ const COLUMNS: readonly (readonly Tile[])[] = [
 export function Para() {
   const labels = new Map(t.rubros.map((r) => [r.id, r.label]));
   return (
-    <section id={anchor("para-quien")} className="scroll-mt-24 bg-canvas">
+    <section id="para-quien" className="scroll-mt-24 bg-canvas">
       <div className="mx-auto flex max-w-360 flex-col gap-10 px-4 py-16 sm:px-8 lg:px-22 lg:py-30">
         <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end lg:gap-10">
           <HomeHeading

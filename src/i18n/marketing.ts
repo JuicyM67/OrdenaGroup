@@ -1,13 +1,10 @@
 /**
- * Texterna för den publika hemsidan, valda per marknad (D-025, D-026).
- * Sidorna under (marketing) importerar härifrån, aldrig direkt från es-CL.
- * Beloppen kommer från `src/config/pricing.ts`, inte från texterna.
+ * Texterna för den publika hemsidan (D-026). Sidorna under (marketing)
+ * importerar härifrån, aldrig direkt från es-CL. Beloppen kommer från
+ * `src/config/pricing.ts`, inte från texterna.
  */
-import { market } from "@/config/brand";
-
 import { estados, hoy, nav } from "./es-CL";
 import * as esCLSitio from "./es-CL.marketing";
-import * as svSE from "./sv-SE";
 
 /** Samma form som es-CL men med vanliga string/number/boolean i stället för literaler. */
 type Widen<T> = T extends string
@@ -49,11 +46,8 @@ const cl: MarketingCopy = {
   ...esCLSitio,
   PLANES: esCLSitio.PLANES_LANDING,
 };
-const se: MarketingCopy = { ...svSE };
 
-const copies: Record<typeof market, MarketingCopy> = { CL: cl, SE: se };
+export const copy: MarketingCopy = cl;
 
-export const copy: MarketingCopy = copies[market];
-
-/** HTML-attributet lang för marknaden. */
-export const lang = market === "SE" ? "sv" : "es-CL";
+/** HTML-attributet lang. */
+export const lang = "es-CL";

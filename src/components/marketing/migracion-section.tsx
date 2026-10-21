@@ -8,7 +8,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { strokeCard } from "@/components/ui/icons";
-import { anchor } from "@/config/url-params";
 import { copy } from "@/i18n/marketing";
 
 const t = copy.sitio.inicio.migracion;
@@ -72,7 +71,7 @@ function MigracionVisual() {
 export function MigracionSection() {
   return (
     <section
-      id={anchor("migracion-facil")}
+      id="migracion-facil"
       className="mx-auto max-w-6xl scroll-mt-24 px-4 py-10 sm:px-8 sm:py-14"
     >
       <div className="flex flex-col items-center gap-10 rounded-hero bg-lilac p-6 sm:p-10 lg:flex-row">

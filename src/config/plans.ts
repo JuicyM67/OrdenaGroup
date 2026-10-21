@@ -21,8 +21,6 @@ export function isBusinessPlan(v: unknown): v is BusinessPlan {
 export type Feature =
   /** Ta bort "Skapad med …"-märkningen på bokningssidan. */
   | "unbranded"
-  /** Betalning vid bokning (Stripe Connect, bara SE). */
-  | "online_payment"
   | "waitlist"
   | "flash"
   /** Utskick, "Vi saknar dig" och medlemsrabatter. */
@@ -35,14 +33,14 @@ export type Feature =
   | "offers"
   | "priority_support";
 
-export type LimitKind = "staff" | "services" | "sms";
+export type LimitKind = "staff" | "services";
 
-/** Överstyrningar för `custom` (sätts av plattformsadmin, `businesses.custom_limits`). */
-export type CustomLimits = { staff?: number; sms?: number };
+/** Överstyrningar för `custom` (sätts av plattformsadmin, `businesses.custom_limits`).
+ * Äldre rader kan ha nyckeln `sms` (D-062); den ignoreras. */
+export type CustomLimits = { staff?: number };
 
 const ALL_FEATURES: readonly Feature[] = [
   "unbranded",
-  "online_payment",
   "waitlist",
   "flash",
   "campaigns",
@@ -54,10 +52,9 @@ const ALL_FEATURES: readonly Feature[] = [
 
 const FEATURES: Record<BusinessPlan, ReadonlySet<Feature>> = {
   free: new Set<Feature>([]),
-  emprende: new Set<Feature>(["unbranded", "online_payment", "waitlist"]),
+  emprende: new Set<Feature>(["unbranded", "waitlist"]),
   equipo: new Set<Feature>([
     "unbranded",
-    "online_payment",
     "waitlist",
     "flash",
     "campaigns",
@@ -71,12 +68,12 @@ const FEATURES: Record<BusinessPlan, ReadonlySet<Feature>> = {
 
 /** `null` = obegränsat. Konton räknas inklusive ägaren (D-037). */
 const LIMITS: Record<BusinessPlan, Record<LimitKind, number | null>> = {
-  free: { staff: 1, services: 3, sms: 0 },
-  emprende: { staff: 1, services: null, sms: 50 },
-  equipo: { staff: 3, services: null, sms: 150 },
-  local: { staff: 10, services: null, sms: 300 },
+  free: { staff: 1, services: 3 },
+  emprende: { staff: 1, services: null },
+  equipo: { staff: 3, services: null },
+  local: { staff: 10, services: null },
   // Standard för `custom` tills admin avtalat annat (= Företag).
-  custom: { staff: 10, services: null, sms: 300 },
+  custom: { staff: 10, services: null },
 };
 
 /** Lägsta plan som har funktionen — för uppgraderingsrutan. */
@@ -111,7 +108,7 @@ export function parseCustomLimits(raw: unknown): CustomLimits {
   if (!raw || typeof raw !== "object") return {};
   const o = raw as Record<string, unknown>;
   const out: CustomLimits = {};
-  for (const k of ["staff", "sms"] as const) {
+  for (const k of ["staff"] as const) {
     const v = o[k];
     if (typeof v === "number" && Number.isInteger(v) && v >= 0) out[k] = v;
   }

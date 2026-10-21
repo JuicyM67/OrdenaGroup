@@ -65,7 +65,7 @@ export const nominatimGeocoder: Geocoder = {
     const res = await fetch(url, {
       headers: {
         "User-Agent": userAgent(),
-        "Accept-Language": query.country === "se" ? "sv" : "es",
+        "Accept-Language": "es",
       },
       signal: AbortSignal.timeout(5000),
       cache: "no-store",

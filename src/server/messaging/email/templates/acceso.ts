@@ -1,6 +1,6 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailNs } from "../content";
 import {
@@ -42,11 +42,7 @@ type AccesoNs = {
   readonly expira: string;
 };
 
-function render(
-  market: Market,
-  data: AccesoEmailData,
-  ns: AccesoNs,
-): RenderedEmail {
+function render(data: AccesoEmailData, ns: AccesoNs): RenderedEmail {
   const asunto = ns.asunto({ marca: brand.name });
   const bodyHtml =
     heading(ns.titulo) +
@@ -70,7 +66,6 @@ function render(
   ].join("\n\n");
 
   const { html, text } = renderLayout({
-    market,
     preheader: ns.preheader,
     bodyHtml,
     bodyText,
@@ -80,16 +75,10 @@ function render(
   return { subject: asunto, preheader: ns.preheader, html, text };
 }
 
-export function magicLinkEmail(
-  market: Market,
-  data: AccesoEmailData,
-): RenderedEmail {
-  return render(market, data, emailNs(market).acceso.magicLink);
+export function magicLinkEmail(data: AccesoEmailData): RenderedEmail {
+  return render(data, emailNs().acceso.magicLink);
 }
 
-export function confirmationEmail(
-  market: Market,
-  data: AccesoEmailData,
-): RenderedEmail {
-  return render(market, data, emailNs(market).acceso.confirmation);
+export function confirmationEmail(data: AccesoEmailData): RenderedEmail {
+  return render(data, emailNs().acceso.confirmation);
 }

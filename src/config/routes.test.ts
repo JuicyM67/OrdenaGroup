@@ -1,15 +1,24 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+
+import {
+  appHref,
+  appRoutePrefix,
+  clLegacyRedirects,
+  cuentaHref,
+  FUNCION_IDS,
+  funcionFromParam,
+  funcionParamSlugs,
+  hrefFuncion,
+  hrefIndustria,
+  hrefLegal,
+  hrefMarketplace,
+  hrefRubro,
+  href,
+  sitemapPaths,
+} from "./routes";
 
 describe("routes.ts", () => {
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.resetModules();
-  });
-
-  it("CL: href() ger de spanska sökvägarna, oförändrade", async () => {
-    vi.stubEnv("NEXT_PUBLIC_MARKET", "CL");
-    vi.resetModules();
-    const { href, hrefIndustria, hrefLegal } = await import("./routes");
+  it("href() ger filsystemets sökvägar", () => {
     expect(href("inicio")).toBe("/");
     expect(href("precios")).toBe("/precios");
     expect(href("funcionalidades")).toBe("/funcionalidades");
@@ -18,6 +27,8 @@ describe("routes.ts", () => {
     expect(href("ventajas")).toBe("/ventajas");
     expect(href("preguntas")).toBe("/preguntas");
     expect(href("contacto")).toBe("/contacto");
+    expect(href("ejemploNegocio")).toBe("/demo/negocio");
+    expect(href("paraClientes")).toBe("/para-clientes");
     expect(hrefIndustria("barberias")).toBe("/rubros/barberias");
     expect(hrefIndustria("peluquerias")).toBe("/rubros/peluquerias");
     expect(hrefIndustria("estetica")).toBe("/rubros/estetica");
@@ -27,101 +38,18 @@ describe("routes.ts", () => {
     expect(hrefLegal("encargo")).toBe("/legal/encargo");
   });
 
-  it("SE: href() ger de svenska sökvägarna", async () => {
-    vi.stubEnv("NEXT_PUBLIC_MARKET", "SE");
-    vi.resetModules();
-    const { href, hrefIndustria, hrefLegal } = await import("./routes");
-    expect(href("inicio")).toBe("/");
-    expect(href("precios")).toBe("/priser");
-    expect(href("funcionalidades")).toBe("/funktioner");
-    expect(href("funcionalidades", "agenda")).toBe("/funktioner#kalender");
-    expect(href("horasFlash")).toBe("/blixttider");
-    expect(href("ventajas")).toBe("/fordelar");
-    expect(href("preguntas")).toBe("/vanliga-fragor");
-    expect(href("contacto")).toBe("/kontakt");
-    expect(hrefIndustria("barberias")).toBe("/branscher/barberare");
-    expect(hrefIndustria("peluquerias")).toBe("/branscher/frisor");
-    expect(hrefIndustria("estetica")).toBe("/branscher/hudvard");
-    expect(hrefIndustria("kinesiologia")).toBe("/branscher/naprapat-och-fysio");
-    expect(hrefLegal("privacidad")).toBe("/legal/integritet");
-    expect(hrefLegal("terminos")).toBe("/legal/villkor");
-    expect(hrefLegal("encargo")).toBe("/legal/bitradesavtal");
+  it("funktions- och branschsidorna (WP-75)", () => {
+    expect(hrefFuncion("reservas")).toBe("/funcionalidades/reservas-online");
+    expect(hrefFuncion("horasFlash")).toBe("/horas-flash");
+    expect(hrefFuncion("migracion")).toBe("/migracion");
+    expect(funcionFromParam("reservas-online")).toBe("reservas");
+    expect(funcionFromParam("pagos")).toBeUndefined();
+    expect(funcionParamSlugs()).not.toContain("pagos");
+    expect(FUNCION_IDS).toHaveLength(8);
+    expect(hrefRubro("naglar")).toBe("/rubros/unas");
   });
 
-  it("seRouteRewrites(): en svensk slug per rutt/industri, mot rätt sidfil", async () => {
-    const { seRouteRewrites } = await import("./routes");
-    const rewrites = seRouteRewrites();
-    const bySource = Object.fromEntries(
-      rewrites.map((r) => [r.source, r.destination]),
-    );
-    expect(bySource["/priser"]).toBe("/precios");
-    expect(bySource["/funktioner"]).toBe("/funcionalidades");
-    expect(bySource["/blixttider"]).toBe("/horas-flash");
-    expect(bySource["/fordelar"]).toBe("/ventajas");
-    expect(bySource["/vanliga-fragor"]).toBe("/preguntas");
-    expect(bySource["/kontakt"]).toBe("/contacto");
-    expect(bySource["/branscher/barberare"]).toBe("/rubros/barberias");
-    expect(bySource["/branscher/frisor"]).toBe("/rubros/peluquerias");
-    expect(bySource["/branscher/hudvard"]).toBe("/rubros/estetica");
-    expect(bySource["/branscher/naprapat-och-fysio"]).toBe(
-      "/rubros/kinesiologia",
-    );
-    expect(bySource["/branscher"]).toBe("/rubros");
-    expect(bySource["/funktioner/betalning"]).toBe("/funcionalidades/pagos");
-    expect(bySource["/flytt"]).toBe("/migracion");
-    expect(bySource["/legal/integritet"]).toBe("/legal/privacidad");
-    expect(bySource["/legal/villkor"]).toBe("/legal/terminos");
-    expect(bySource["/legal/bitradesavtal"]).toBe("/legal/encargo");
-    // "/" rörs inte (rewrite av startsidan till sig själv är onödigt och kan krocka).
-    expect(rewrites.some((r) => r.source === "/")).toBe(false);
-  });
-
-  it("seRouteRedirects(): 308 från varje gammal spansk sökväg till dess svenska motsvarighet", async () => {
-    const { seRouteRedirects } = await import("./routes");
-    const redirects = seRouteRedirects();
-    const bySource = Object.fromEntries(
-      redirects.map((r) => [r.source, r.destination]),
-    );
-    expect(bySource["/precios"]).toBe("/priser");
-    expect(bySource["/funcionalidades"]).toBe("/funktioner");
-    expect(bySource["/horas-flash"]).toBe("/blixttider");
-    expect(bySource["/ventajas"]).toBe("/fordelar");
-    expect(bySource["/preguntas"]).toBe("/vanliga-fragor");
-    expect(bySource["/contacto"]).toBe("/kontakt");
-    expect(bySource["/rubros/barberias"]).toBe("/branscher/barberare");
-    expect(bySource["/rubros/peluquerias"]).toBe("/branscher/frisor");
-    expect(bySource["/rubros/estetica"]).toBe("/branscher/hudvard");
-    expect(bySource["/rubros/kinesiologia"]).toBe(
-      "/branscher/naprapat-och-fysio",
-    );
-    expect(bySource["/funcionalidades/pagos"]).toBe("/funktioner/betalning");
-    expect(bySource["/legal/privacidad"]).toBe("/legal/integritet");
-    expect(bySource["/legal/terminos"]).toBe("/legal/villkor");
-    expect(bySource["/legal/encargo"]).toBe("/legal/bitradesavtal");
-    expect(redirects.every((r) => r.permanent === true)).toBe(true);
-    expect(redirects.some((r) => r.source === "/")).toBe(false);
-  });
-
-  it("seRouteRewrites() och seRouteRedirects() är exakta motsatser av varandra", async () => {
-    const { seRouteRewrites, seRouteRedirects } = await import("./routes");
-    const rewrites = seRouteRewrites();
-    const redirects = seRouteRedirects();
-    expect(redirects).toHaveLength(rewrites.length);
-    for (const rw of rewrites) {
-      expect(
-        redirects.some(
-          (rd) => rd.source === rw.destination && rd.destination === rw.source,
-        ),
-      ).toBe(true);
-    }
-  });
-
-  // WP-58: app-rutterna (/app/*, /baja/[token]) har svenska permalänkar på SE,
-  // oförändrade på CL.
-  it("CL: appHref() ger de spanska (filsystemets) app-sökvägarna, oförändrade", async () => {
-    vi.stubEnv("NEXT_PUBLIC_MARKET", "CL");
-    vi.resetModules();
-    const { appHref } = await import("./routes");
+  it("appHref() ger filsystemets app-sökvägar", () => {
     expect(appHref("appInicio")).toBe("/app/inicio");
     expect(appHref("appAgenda")).toBe("/app/agenda");
     expect(appHref("appHoy")).toBe("/app/hoy");
@@ -144,89 +72,44 @@ describe("routes.ts", () => {
     expect(appHref("appAjustesSocios")).toBe("/app/ajustes/socios");
     expect(appHref("appAjustesEquipo")).toBe("/app/ajustes/equipo");
     expect(appHref("appAjustesPrivacidad")).toBe("/app/ajustes/privacidad");
+    expect(appHref("appAjustesPlan")).toBe("/app/ajustes/plan");
     expect(appHref("appSolicitud", "abc")).toBe("/app/solicitudes/abc");
     expect(appHref("appInvitacion", "tok")).toBe("/app/invitacion/tok");
     expect(appHref("appBienvenida", "tok")).toBe("/app/bienvenida/tok");
     expect(appHref("appOnboarding")).toBe("/app/onboarding");
     expect(appHref("baja", "tok")).toBe("/baja/tok");
+    expect(appHref("resena", "tok")).toBe("/resena/tok");
   });
 
-  it("SE: appHref() ger de svenska app-sökvägarna", async () => {
-    vi.stubEnv("NEXT_PUBLIC_MARKET", "SE");
-    vi.resetModules();
-    const { appHref } = await import("./routes");
-    expect(appHref("appInicio")).toBe("/app/start");
-    expect(appHref("appAgenda")).toBe("/app/kalender");
-    expect(appHref("appHoy")).toBe("/app/idag");
-    expect(appHref("appClientes")).toBe("/app/kunder");
-    expect(appHref("appClienteDetail", "123")).toBe("/app/kunder/123");
-    expect(appHref("appClientesUtskick")).toBe("/app/kunder/utskick");
-    expect(appHref("appClientesUtskickNytt")).toBe("/app/kunder/utskick/nytt");
-    expect(appHref("appCaja")).toBe("/app/kassa");
-    expect(appHref("appCajaInformes")).toBe("/app/kassa/rapporter");
-    expect(appHref("appFlash")).toBe("/app/blixttider");
-    expect(appHref("appAjustes")).toBe("/app/installningar");
-    expect(appHref("appAjustesNegocio")).toBe("/app/installningar/foretag");
-    expect(appHref("appAjustesPerfil")).toBe("/app/installningar/profil");
-    expect(appHref("appAjustesReglas")).toBe(
-      "/app/installningar/bokningsregler",
-    );
-    expect(appHref("appAjustesServicios")).toBe("/app/installningar/tjanster");
-    expect(appHref("appAjustesFormulario")).toBe(
-      "/app/installningar/bokningsformular",
-    );
-    expect(appHref("appAjustesHorario")).toBe("/app/installningar/oppettider");
-    expect(appHref("appAjustesSocios")).toBe("/app/installningar/medlemmar");
-    expect(appHref("appAjustesEquipo")).toBe("/app/installningar/team");
-    expect(appHref("appAjustesPrivacidad")).toBe(
-      "/app/installningar/integritet",
-    );
-    expect(appHref("appSolicitud", "abc")).toBe("/app/forfragningar/abc");
-    expect(appHref("appInvitacion", "tok")).toBe("/app/inbjudan/tok");
-    expect(appHref("appBienvenida", "tok")).toBe("/app/valkommen/tok");
-    expect(appHref("appOnboarding")).toBe("/app/kom-igang");
-    expect(appHref("baja", "tok")).toBe("/avregistrera/tok");
+  it("appRoutePrefix(): prefixet (utan id/token) för en dynamisk app-rutt", () => {
+    expect(appRoutePrefix("appInvitacion")).toBe("/app/invitacion/");
+    expect(appRoutePrefix("appBienvenida")).toBe("/app/bienvenida/");
+    expect(appRoutePrefix("appSolicitud")).toBe("/app/solicitudes/");
   });
 
-  it("appRoutePrefixes(): prefixet (utan id/token) för en dynamisk app-rutt, i båda marknadernas form", async () => {
-    const { appRoutePrefixes } = await import("./routes");
-    expect(appRoutePrefixes("appInvitacion")).toEqual([
-      "/app/invitacion/",
-      "/app/inbjudan/",
-    ]);
-    expect(appRoutePrefixes("appBienvenida")).toEqual([
-      "/app/bienvenida/",
-      "/app/valkommen/",
-    ]);
-    expect(appRoutePrefixes("appSolicitud")).toEqual([
-      "/app/solicitudes/",
-      "/app/forfragningar/",
-    ]);
+  it("kontot och marknadsplatsen", () => {
+    expect(cuentaHref("cuenta")).toBe("/cuenta");
+    expect(cuentaHref("cuentaResena", "b1")).toBe("/cuenta/resena/b1");
+    expect(hrefMarketplace("descubre", "cabello", "providencia")).toBe(
+      "/descubre/cabello/providencia",
+    );
+    expect(hrefMarketplace("oferta", "corte")).toBe("/oferta/corte");
   });
 
-  it("seRouteRewrites()/seRouteRedirects(): inkluderar app-rutterna, inkl. dynamiska segment", async () => {
-    const { seRouteRewrites, seRouteRedirects } = await import("./routes");
-    const rewrites = seRouteRewrites();
-    const redirects = seRouteRedirects();
+  it("clLegacyRedirects(): 308 från gamla sökvägar", () => {
     const bySource = Object.fromEntries(
-      rewrites.map((r) => [r.source, r.destination]),
+      clLegacyRedirects().map((r) => [r.source, r.destination]),
     );
-    expect(bySource["/app/start"]).toBe("/app/inicio");
-    expect(bySource["/app/kalender"]).toBe("/app/agenda");
-    expect(bySource["/app/installningar/team"]).toBe("/app/ajustes/equipo");
-    expect(bySource["/app/kunder/:id"]).toBe("/app/clientes/:id");
-    expect(bySource["/app/forfragningar/:id"]).toBe("/app/solicitudes/:id");
-    expect(bySource["/app/inbjudan/:token"]).toBe("/app/invitacion/:token");
-    expect(bySource["/app/valkommen/:token"]).toBe("/app/bienvenida/:token");
-    expect(bySource["/app/kom-igang"]).toBe("/app/onboarding");
-    expect(bySource["/avregistrera/:token"]).toBe("/baja/:token");
+    expect(bySource["/ejemplo/negocio"]).toBe("/demo/negocio");
+    expect(bySource["/para/barberias"]).toBe("/rubros/barberias");
+    expect(bySource["/para/kinesiologia"]).toBe("/rubros/kinesiologia");
+    expect(clLegacyRedirects().every((r) => r.permanent === true)).toBe(true);
+  });
 
-    const redirectsBySource = Object.fromEntries(
-      redirects.map((r) => [r.source, r.destination]),
-    );
-    expect(redirectsBySource["/app/inicio"]).toBe("/app/start");
-    expect(redirectsBySource["/app/clientes/:id"]).toBe("/app/kunder/:id");
-    expect(redirectsBySource["/baja/:token"]).toBe("/avregistrera/:token");
-    expect(redirects.every((r) => r.permanent === true)).toBe(true);
+  it("sitemapPaths(): unika sökvägar, utan /funcionalidades/pagos", () => {
+    const paths = sitemapPaths();
+    expect(new Set(paths).size).toBe(paths.length);
+    expect(paths).toContain("/precios");
+    expect(paths).not.toContain("/funcionalidades/pagos");
   });
 });

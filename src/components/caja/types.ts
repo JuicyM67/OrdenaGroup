@@ -11,8 +11,7 @@ import type { LocalDate } from "@/lib/format/dates";
 // Markera betald / ångra (src/server/payments/mark-paid.ts)
 // ---------------------------------------------------------------------------
 
-export type ManualPaymentMethod =
-  "cash" | "card_terminal" | "transfer" | "swish";
+export type ManualPaymentMethod = "cash" | "card_terminal" | "transfer";
 
 export type MarkBookingPaidInput = {
   bookingId: string;

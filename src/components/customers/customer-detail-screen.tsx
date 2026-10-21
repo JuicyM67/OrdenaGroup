@@ -44,7 +44,6 @@ import { strokeArrow } from "@/components/ui/icons";
 import { initialsOf } from "@/lib/format/initials";
 import { Menu, MenuButtonItem, MenuLinkItem } from "@/components/ui/menu";
 import { Textarea } from "@/components/ui/textarea";
-import { marketConfig } from "@/config/market";
 import { appHref } from "@/config/routes";
 import { ajustes, clientes, comun, estados, nav } from "@/i18n";
 import {
@@ -68,7 +67,6 @@ import type {
   CustomerBookingRow,
   CustomerDetail,
   NotifyMemberResult,
-  SendMessageResult,
   SetMemberResult,
 } from "./types";
 import { uxTextos } from "@/i18n";
@@ -90,10 +88,6 @@ export type CustomerDetailScreenProps = {
   /** WP-54: "Avisar al cliente" — köar `bienvenidaMiembro`. `undefined`
    * döljer menyposten. */
   onNotifyMember?: () => Promise<NotifyMemberResult>;
-  /** WP-55: "Enviar mensaje" (`MessageDialog`). Bara SE (`sendCustomerMessage`,
-   * SMS via ClickSend) — `undefined` i CL, vars dialog öppnar `wa.me` utan
-   * servern (se `message-dialog.tsx`). */
-  onSendMessage?: (text: string) => Promise<SendMessageResult>;
   /** WP-57 punkt 7: `<OwnerPageHeader>` (klocka + profilmeny), samma data
    * som Inicio skickar till `AppShell` (`owner-chrome.tsx`). */
   ownerName: string;
@@ -206,7 +200,6 @@ export function CustomerDetailScreen({
   onAnonymizeCustomer,
   onSetMember,
   onNotifyMember,
-  onSendMessage,
   ownerName,
   publicPageHref,
   myProfile,
@@ -230,7 +223,6 @@ export function CustomerDetailScreen({
 
   const phone =
     customer.phone && isE164(customer.phone) ? customer.phone : null;
-  const isCl = marketConfig.phoneCountry === "CL";
   const hasAnswers =
     customer.answers.latest.length > 0 || customer.answers.history.length > 0;
   const hasUpcoming = customer.upcoming.length > 0;
@@ -437,7 +429,7 @@ export function CustomerDetailScreen({
                 className="size-4"
                 strokeWidth={strokeArrow}
               />
-              {isCl ? clientes.ficha.ctaWhatsapp : clientes.ficha.ctaSms}
+              {clientes.ficha.ctaWhatsapp}
             </Button>
           ) : null}
           {phone ? (
@@ -569,8 +561,6 @@ export function CustomerDetailScreen({
           onOpenChange={setMessageDialogOpen}
           customerName={customer.name}
           phone={phone}
-          channel={isCl ? "whatsapp" : "sms"}
-          onSend={onSendMessage}
         />
       ) : null}
 

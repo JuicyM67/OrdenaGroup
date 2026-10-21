@@ -32,7 +32,6 @@ import type {
 import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { cn } from "@/components/ui/cn";
 import { nav } from "@/i18n";
-import type { SmsBellNotice } from "@/lib/validation/sms-credits";
 
 import type { AjustesTabItem, AjustesTabKey } from "./ajustes-tabs";
 
@@ -76,8 +75,6 @@ export type AjustesShellProps = {
   canViewReports?: boolean;
   /** WP-45 (D-033): klockan i topprraden. `undefined` döljer den. */
   pendingRequests?: readonly PendingRequestItem[];
-  /** WP-76 (D-053): sms-varningar i klockan. */
-  notices?: readonly SmsBellNotice[];
   onConfirmRequest?: (bookingId: string) => Promise<NotificationBellResult>;
   onDeclineRequest?: (
     bookingId: string,
@@ -105,7 +102,6 @@ export function AjustesShell({
   onLogout,
   canViewReports,
   pendingRequests,
-  notices,
   onConfirmRequest,
   onDeclineRequest,
   onApproveCancelRequest,
@@ -134,7 +130,6 @@ export function AjustesShell({
       }
       onLogout={onLogout}
       pendingRequests={pendingRequests}
-      notices={notices}
       onConfirmRequest={onConfirmRequest}
       onDeclineRequest={onDeclineRequest}
       onApproveCancelRequest={onApproveCancelRequest}

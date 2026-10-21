@@ -30,13 +30,6 @@
  *   productos", "¿Traes una foto de referencia?"), comparten el mismo
  *   `key`, aunque cada rubro tiene su propia copia del objeto completo (el
  *   dueño de un rubro puede editar/apagar la suya sin afectar al otro).
- *
- * `src/i18n/presets/booking-questions.sv-SE.ts` es el espejo en sueco:
- * mismas claves de rubro, mismos `key` de pregunta, mismo `type`,
- * `required`, `saveToCustomer` y `enabledByDefault` (impuesto por el tipo
- * `Record<BookingQuestionIndustry, readonly BookingQuestionPreset[]>` que
- * ese archivo usa contra los tipos de acá, mismo patrón que `Widen<typeof
- * Es.…>` en `sv-SE.app.ts`) — solo cambian `label`, `help` y `options`.
  */
 
 /** Los siete tipos de pregunta (F-WP-40, paso 1 del plan): mismo nombre que

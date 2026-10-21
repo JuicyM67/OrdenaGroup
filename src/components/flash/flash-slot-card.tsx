@@ -28,8 +28,6 @@ export type FlashSlotCardProps = {
   publicUrl: string;
   /** `undefined` döljer "Enviar a clientes" (ingen behörighet att skicka utskick). */
   onSend?: (input: SendFlashCampaignInput) => Promise<SendFlashCampaignResult>;
-  /** SMS bara en SE (D-025/D-026) — vidarebefordras till `SendFlashDialog`. */
-  smsAvailable?: boolean;
   /** `undefined` döljer "Cancelar" (ingen behörighet, eller redan reservada). */
   onCancel?: (id: string) => Promise<CancelFlashResult>;
 };
@@ -38,7 +36,6 @@ export function FlashSlotCard({
   slot,
   publicUrl,
   onSend,
-  smsAvailable = false,
   onCancel,
 }: FlashSlotCardProps) {
   const [copied, setCopied] = useState(false);
@@ -174,7 +171,6 @@ export function FlashSlotCard({
           open={sendOpen}
           onOpenChange={setSendOpen}
           flashSlotId={slot.id}
-          smsAvailable={smsAvailable}
           onSend={onSend}
         />
       ) : null}

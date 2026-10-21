@@ -1,10 +1,9 @@
 import "server-only";
 
-import { market } from "@/config/brand";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 
-import { customerChannelsFor } from "./enqueue";
+import { customerChannels } from "./enqueue";
 import type { OutboxChannel, WaitlistEvent } from "./types";
 
 /**
@@ -97,7 +96,7 @@ export async function enqueueWaitlistEventIn(
   const { hasEmail, updatedAtMs } = ctx;
 
   if (e.type === "waitlist_offer") {
-    for (const channel of customerChannelsFor(market, hasEmail)) {
+    for (const channel of customerChannels(hasEmail)) {
       await insertRow(q, e.businessId, e.entryId, updatedAtMs, {
         channel,
         template: "listaEsperaCupo",
@@ -108,7 +107,7 @@ export async function enqueueWaitlistEventIn(
   }
 
   // waitlist_taken
-  for (const channel of customerChannelsFor(market, hasEmail)) {
+  for (const channel of customerChannels(hasEmail)) {
     await insertRow(q, e.businessId, e.entryId, updatedAtMs, {
       channel,
       template: "listaEsperaTomada",

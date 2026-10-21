@@ -55,14 +55,7 @@ export function AccountAuthShell({ children }: { children: ReactNode }) {
             href={href("inicio")}
             className="flex h-11 shrink-0 items-center rounded-full border border-surface/60 bg-surface/80 px-3 shadow-glass backdrop-blur-glass focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
           >
-            <BrandLogo size="sm" badge decorative className="max-sm:hidden" />
-            <BrandLogo
-              variant="mark"
-              size="sm"
-              badge
-              decorative
-              className="sm:hidden"
-            />
+            <BrandLogo size="sm" decorative />
           </Link>
           <Link
             href={href("inicio")}

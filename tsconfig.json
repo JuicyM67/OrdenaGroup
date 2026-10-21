@@ -21,8 +21,7 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"],
-      "i18n-locale": ["./src/i18n/es-CL.ts"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [

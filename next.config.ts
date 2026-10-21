@@ -1,13 +1,6 @@
 import type { NextConfig } from "next";
 
-import {
-  clLegacyRedirects,
-  seLegacyRedirects,
-  seRouteRedirects,
-  seRouteRewrites,
-} from "./src/config/routes";
-
-const MARKET = process.env.NEXT_PUBLIC_MARKET ?? "CL";
+import { clLegacyRedirects } from "./src/config/routes";
 
 function supabaseImageConfig(): NonNullable<NextConfig["images"]> {
   const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -29,20 +22,10 @@ function supabaseImageConfig(): NonNullable<NextConfig["images"]> {
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Marknaden bakas alltid in (CL som standard) så att `process.env.NEXT_PUBLIC_MARKET`
-  // blir en konstant i klientkoden och bara ett språk följer med (D-025).
-  env: { NEXT_PUBLIC_MARKET: MARKET },
-  // Svenska permalänkar (D-025, en installation per marknad): SE skriver om svenska
-  // slugs (`/priser` osv, se `src/config/routes.ts`) till samma sidfiler som CL, och
-  // gör permanenta redirects från de gamla spanska sökvägarna så delade länkar
-  // fortsätter fungera. CL rörs inte — dess sökvägar är redan filsystemets.
-  async rewrites() {
-    return MARKET === "SE" ? seRouteRewrites() : [];
-  },
+  // Permanenta redirects (308) från gamla sökvägar, så att delade länkar fortsätter
+  // fungera (se `src/config/routes.ts`).
   async redirects() {
-    return MARKET === "SE"
-      ? [...seRouteRedirects(), ...seLegacyRedirects()]
-      : clLegacyRedirects();
+    return clLegacyRedirects();
   },
   // WP-27: grundläggande säkerhetsheaders (ingen inbäddning → ingen clickjacking
   // av /app eller avbokningen i /r/[token]). Full CSP med img-src kommer senare (IDEAS).
@@ -77,11 +60,6 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   turbopack: {
     root: import.meta.dirname,
-    // Språkfil per marknad, se src/i18n/index.ts.
-    resolveAlias: {
-      "i18n-locale":
-        MARKET === "SE" ? "./src/i18n/sv-SE.app.ts" : "./src/i18n/es-CL.ts",
-    },
   },
 };
 

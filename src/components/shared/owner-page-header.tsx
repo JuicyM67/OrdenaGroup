@@ -63,7 +63,6 @@ export function OwnerPageHeader({
     onConfirmRequest && onDeclineRequest ? (
       <NotificationBell
         requests={chrome.pendingRequests}
-        notices={chrome.notices}
         onConfirm={async (bookingId) => {
           const result = await onConfirmRequest(bookingId);
           if (result.ok) router.refresh();

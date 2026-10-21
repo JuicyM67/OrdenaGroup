@@ -1,6 +1,6 @@
 // WP-16 steg 2: schemaläggaren är GitHub Actions (D-030), inte pg_cron/
 // pg_net — `.github/workflows/outbox-cron.yml` anropar den här routen var
-// 5:e minut per marknad (matrix, två repo-hemligheter) med `CRON_SECRET`.
+// 5:e minut med `CRON_SECRET`.
 // Bekräftelser går ändå ut inom 1 min via `kickOutbox` (oberoende av cronen);
 // det här passet tar hand om påminnelser (24 h) och rader som misslyckades
 // första gången (backoff).
@@ -20,10 +20,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { expireRequests } from "@/server/bookings/confirm";
 import { pgErrorCode } from "@/server/db/errors";
 import { runGeocodeSweep } from "@/server/geocoding";
-import { runGiftCardSweep } from "@/server/gift-cards";
 import { processOutbox } from "@/server/messaging/outbox";
-import { runStripeSweep } from "@/server/payments/stripe/reconcile";
-import { runVoucherSweep } from "@/server/vouchers";
 import { queueReviewRequests } from "@/server/reviews/requests";
 import { systemClock } from "@/server/scheduling/clock";
 import { expireWaitlistOffers } from "@/server/waitlist";
@@ -83,38 +80,6 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
-  // WP-64 (D-044): stäm av Stripe-betalningar (dra / släpp / återbetala) efter
-  // att förfrågningar gått ut. Ett fel här stoppar aldrig utkorgen.
-  let stripe = { reconciled: 0, sessions: 0 };
-  try {
-    stripe = await runStripeSweep(systemClock());
-  } catch (e) {
-    console.error("outbox: runStripeSweep misslyckades", {
-      code: pgErrorCode(e) ?? "unknown",
-    });
-  }
-  // WP-69 (D-057): värdebevis — öppna köp som webhooken missat, utgångna
-  // värdebevis, genomförda besök och "Ångra köp" som fastnat i `refunding`.
-  // Före utkorgen (kvittomejlen köas här).
-  let vouchers = { orders: 0, expired: 0, redeemed: 0, refunding: 0 };
-  try {
-    vouchers = await runVoucherSweep(systemClock());
-  } catch (e) {
-    console.error("outbox: runVoucherSweep misslyckades", {
-      code: pgErrorCode(e) ?? "unknown",
-    });
-  }
-  // WP-77 (D-058): presentkort — utgångna kort, reservationer på passerade
-  // besök blir betalning, öppna köp som webhooken missat, persondata efter
-  // 90 dagar. Före utkorgen (kvitto- och leveransmejlen köas här).
-  let giftCards = { orders: 0, expired: 0, settled: 0, cleared: 0 };
-  try {
-    giftCards = await runGiftCardSweep(systemClock());
-  } catch (e) {
-    console.error("outbox: runGiftCardSweep misslyckades", {
-      code: pgErrorCode(e) ?? "unknown",
-    });
-  }
   // WP-65 (D-045): recensionsförfrågningar för bokningar som slutade för
   // 2 h–3 dygn sedan — köas före utkorgen töms, samma felhantering.
   let reviewRequests = 0;
@@ -142,9 +107,6 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     expired,
     waitlistExpired,
     reviewRequests,
-    stripe,
-    vouchers,
-    giftCards,
     geocoded,
     ...result,
   });
@@ -153,9 +115,6 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     expired,
     waitlistExpired,
     reviewRequests,
-    stripe,
-    vouchers,
-    giftCards,
     geocoded,
   });
 }

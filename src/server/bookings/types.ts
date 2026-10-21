@@ -18,12 +18,7 @@ export type BookingError =
   | "not_found" // bokningen finns inte i företaget, eller fel token (move/cancel)
   | "invalid_status" // move/cancel på annat än requested/confirmed/pending_payment; confirm/decline på annat än requested (WP-45)
   | "outside_cancel_window" // kund senare än cancel_window_hours före start
-  | "forbidden" // WP-46: medlemmen saknar behörighet (flaggorna i memberships)
-  | "gift_card_invalid" // WP-77: okänd/utgången kod eller annat företag (samma fel)
-  | "gift_card_empty"; // WP-77: presentkortet har inget saldo
-
-/** WP-77: bara bokningssidans skapa-flöde med presentkortskod. */
-export type GiftCardBookingError = "gift_card_invalid" | "gift_card_empty";
+  | "forbidden"; // WP-46: medlemmen saknar behörighet (flaggorna i memberships)
 
 /** Kundens flöden (token/bokningssidan) returnerar aldrig `forbidden`. */
 export type CustomerBookingError = Exclude<BookingError, "forbidden">;
@@ -45,7 +40,7 @@ export type CreatedBooking = {
   /** WP-31/WP-30: varför `discountClp > 0` — medlemsrabatt,
    * erbjudandelänk eller flash-tid (största vinner, aldrig summan). Saknas
    * när `discountClp === 0`. */
-  discountReason?: "member" | "offer" | "flash" | "voucher" | "marketplace";
+  discountReason?: "member" | "offer" | "flash" | "marketplace";
   /** WP-54: finns bara när `discountClp` kommer från medlemskap i just det
    * här anropet (inte vid ett idempotent omförsök). `null` = företaget har
    * ingen förmånstext (visa då bara rabatten). */
@@ -56,8 +51,6 @@ export type CreatedBooking = {
   status: "requested" | "confirmed";
   /** Klartext, returneras EN gång; bara SHA-256 sparas. Loggas aldrig. */
   manageToken: string;
-  /** WP-77 (D-058): reserverat från presentkortet (betalning, inte rabatt). */
-  giftCard?: { heldMinor: number; balanceMinor: number };
 };
 
 export type MovedBooking = {

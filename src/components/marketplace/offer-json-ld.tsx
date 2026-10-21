@@ -1,19 +1,15 @@
 // JSON-LD för erbjudandesidan (WP-68): `Offer` med säljaren som `LocalBusiness`
 // (adress, `geo`) och `AggregateRating` bara när det finns synliga recensioner
-// (D-045). Pris, valuta och `availability` tas med först när erbjudandet går att
-// köpa (WP-69, `purchasable`) — annars lovar sidan något som inte kan köpas (K8). `<` escapas så att texten aldrig kan stänga taggen.
+// (D-045). Inget pris, ingen valuta och ingen `availability`: erbjudandet går inte
+// att köpa online, och sidan ska inte lova något som inte kan köpas (K8). `<`
+// escapas så att texten aldrig kan stänga taggen.
 import { absoluteUrl } from "@/config/site-url";
 import type { OfferDetail } from "@/server/marketplace/public";
-
-function minorToDecimal(minor: number, currency: string): string {
-  return currency === "SEK" ? (minor / 100).toFixed(2) : String(minor);
-}
 
 export function offerJsonLd(
   offer: OfferDetail,
   url: string,
   businessUrl: string,
-  purchasable = false,
 ): Record<string, unknown> {
   const business: Record<string, unknown> = {
     "@type": "LocalBusiness",
@@ -25,7 +21,7 @@ export function offerJsonLd(
             "@type": "PostalAddress",
             streetAddress: offer.business.address,
             addressLocality: offer.business.areaName ?? offer.business.comuna,
-            addressCountry: offer.currency === "SEK" ? "SE" : "CL",
+            addressCountry: "CL",
           },
         }
       : {}),
@@ -61,16 +57,6 @@ export function offerJsonLd(
           image: /^https?:\/\//.test(offer.imageUrl)
             ? offer.imageUrl
             : absoluteUrl(offer.imageUrl),
-        }
-      : {}),
-    ...(purchasable
-      ? {
-          price: minorToDecimal(offer.priceMinor, offer.currency),
-          priceCurrency: offer.currency,
-          availability: "https://schema.org/InStock",
-          ...(offer.saleEndsAt
-            ? { priceValidUntil: offer.saleEndsAt.slice(0, 10) }
-            : {}),
         }
       : {}),
     ...(offer.publishedAt ? { validFrom: offer.publishedAt } : {}),

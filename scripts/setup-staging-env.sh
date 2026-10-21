@@ -1,29 +1,18 @@
 #!/usr/bin/env bash
 # Kopplar staging (Supabase) till Vercel. Körs av ägaren i egen terminal:
-#   bash scripts/setup-staging-env.sh        # Chile (Ordena Calendar, projekt ordenagroup)
-#   bash scripts/setup-staging-env.sh se     # Sverige (Booking Buddy, projekt bookingbuddy)
+#   bash scripts/setup-staging-env.sh        # Ordena Calendar, projekt ordenagroup
 # Frågar efter Supabase access token och databaslösenord (visas inte).
 # Skriver aldrig ut hemligheter, bara förkortade värden.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-MARKET="${1:-cl}"
 SCOPE="matias-lopezs-projects-c1b12c12"
-if [ "$MARKET" = "se" ]; then
-  read -rp "Supabase project ref för Booking Buddy (Settings → General): " REF
-  APP_URL="https://bookingbuddy-se.vercel.app"
-  VERCEL_PROJECT="bookingbuddy"
-  TEMPLATE_DIR="sv-SE"
-  SMTP_ADMIN_EMAIL="onboarding@bookingbuddy.se"
-  SMTP_SENDER_NAME="Booking Buddy"
-else
-  REF="bligjpmisejtdnbfwhqx"
-  APP_URL="https://ordenagroup-matias-lopezs-projects-c1b12c12.vercel.app"
-  VERCEL_PROJECT="ordenagroup"
-  TEMPLATE_DIR="es-CL"
-  SMTP_ADMIN_EMAIL="administracion@ordenagroup.cl"
-  SMTP_SENDER_NAME="Ordena Calendar"
-fi
+REF="bligjpmisejtdnbfwhqx"
+APP_URL="https://ordenagroup-matias-lopezs-projects-c1b12c12.vercel.app"
+VERCEL_PROJECT="ordenagroup"
+TEMPLATE_DIR="es-CL"
+SMTP_ADMIN_EMAIL="administracion@ordenagroup.cl"
+SMTP_SENDER_NAME="Ordena Calendar"
 API="https://api.supabase.com/v1/projects/$REF"
 # Vercel-kommandona körs i en tillfällig mapp länkad till rätt projekt.
 LINK=$(mktemp -d)
@@ -35,14 +24,6 @@ read -rsp "Databaslösenord (tom = hoppa över databas, t.ex. bara mejl/SMTP): "
 HDR=$(mktemp); chmod 600 "$HDR"; trap 'rm -rf "$HDR" "$LINK"' EXIT
 printf 'Authorization: Bearer %s\n' "$TOKEN" > "$HDR"
 
-# Sverige: lägg även hemligheterna i GitHub Environment `staging-se` (värdena går via
-# stdin till gh, aldrig som argument eller i loggen).
-if [ "$MARKET" = "se" ] && [ -n "$DBPASS" ]; then
-  echo "0/4 Lägger hemligheter i GitHub (staging-se)…"
-  printf '%s' "$TOKEN" | gh secret set STAGING_SUPABASE_ACCESS_TOKEN --env staging-se
-  printf '%s' "$DBPASS" | gh secret set STAGING_SUPABASE_DB_PASSWORD --env staging-se
-  printf '%s' "$REF" | gh secret set STAGING_SUPABASE_PROJECT_REF --env staging-se
-fi
 unset TOKEN
 auth=(-H "@$HDR")
 
@@ -161,9 +142,4 @@ else
 fi
 fi
 
-if [ "$MARKET" = "se" ] && [ -n "$DBURL" ]; then
-  echo "Startar migrationer + seed mot Sveriges staging (GitHub Actions)…"
-  gh workflow run deploy-staging.yml -f reseed=true -f target=staging-se
-  echo "   Följ körningen: gh run watch  (eller GitHub → Actions)"
-fi
 echo "Klart ($VERCEL_PROJECT). Vercel-värdena gäller från nästa deploy."

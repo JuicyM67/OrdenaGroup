@@ -1,32 +1,24 @@
 import "server-only";
 
-import type { Market } from "@/config/brand";
-
 import type { EmailTemplateMap, EmailTemplateName } from "./render";
 
-/** Exempeldata per mall och marknad — används av testerna och av
+/** Exempeldata per mall — används av testerna och av
  * `/design-lab/email`. Beloppen är redan formaterade (`formatMoney` körs av
  * anroparen i riktig kod, se `types.ts`), samma som resten av `email.*`. */
-function base(market: Market) {
-  const isSe = market === "SE";
-  return {
-    negocio: isSe ? "Klipp & Skägg" : "Barbería Norte",
-    cliente: isSe ? "Erik" : "Joaquín",
-    servicio: isSe ? "Klippning + skägg" : "Corte + barba",
-    profesional: isSe ? "Alex" : "Diego",
-    fecha: isSe ? "fredag 2 oktober" : "viernes 2 de octubre",
-    hora: "15:00",
-    direccion: isSe
-      ? "Götgatan 12, Stockholm"
-      : "Av. Providencia 1234, Providencia",
-    precio: isSe ? "450 kr" : "$18.000",
-  };
-}
+const b = {
+  negocio: "Barbería Norte",
+  cliente: "Joaquín",
+  servicio: "Corte + barba",
+  profesional: "Diego",
+  fecha: "viernes 2 de octubre",
+  hora: "15:00",
+  direccion: "Av. Providencia 1234, Providencia",
+  precio: "$18.000",
+};
 
-export function emailFixtures(market: Market): {
+export function emailFixtures(): {
   [K in EmailTemplateName]: EmailTemplateMap[K];
 } {
-  const b = base(market);
   return {
     magicLink: {
       confirmUrl:
@@ -159,7 +151,7 @@ export function emailFixtures(market: Market): {
     },
     invitacionEquipo: {
       negocio: b.negocio,
-      invitadoPor: market === "SE" ? "Maria" : "María",
+      invitadoPor: "María",
       acceptUrl: "https://app.example.com/app/invitacion/abc123",
     },
     bienvenidaMiembro: {
@@ -182,16 +174,13 @@ export function emailFixtures(market: Market): {
       negocio: b.negocio,
       fecha: b.fecha,
       hora: b.hora,
-      telefono: market === "SE" ? "+46 70 123 45 67" : "+56 9 1234 5678",
+      telefono: "+56 9 1234 5678",
     },
     campanaMarketing: {
       negocio: b.negocio,
-      texto:
-        market === "SE"
-          ? "Vi har öppet lite längre den här veckan. Passa på att boka en tid!"
-          : "Tenemos horario extendido esta semana. ¡Aprovecha de reservar!",
+      texto: "Tenemos horario extendido esta semana. ¡Aprovecha de reservar!",
       offerPct: 20,
-      offerValidUntil: market === "SE" ? "31 oktober" : "31 de octubre",
+      offerValidUntil: "31 de octubre",
       reservarUrl: "https://app.example.com/barberia-norte?o=abc123",
       bajaUrl: "https://app.example.com/baja/abc123",
     },
@@ -200,53 +189,6 @@ export function emailFixtures(market: Market): {
       negocio: b.negocio,
       servicio: b.servicio,
       resenaUrl: "https://app.example.com/resena/abc123",
-    },
-    smsCuota80: {
-      negocio: b.negocio,
-      usado: 120,
-      max: 150,
-      planUrl: "https://app.example.com/app/ajustes/plan",
-    },
-    smsAgotados: {
-      negocio: b.negocio,
-      usado: 150,
-      max: 150,
-      planUrl: "https://app.example.com/app/ajustes/plan",
-    },
-    valeComprado: {
-      negocio: b.negocio,
-      titulo: "Klippning + styling",
-      codigo: "BB-7K2Q-94MZ",
-      valor: market === "SE" ? "890 kr" : "$8.900",
-      validoHasta: market === "SE" ? "24 okt. 2027" : "24 oct 2027",
-      direccion: "Storgatan 1",
-      reservarUrl: "https://app.example.com/barberia-norte?vardebevis=abc",
-    },
-    presentkortKvitto: {
-      negocio: b.negocio,
-      valor: market === "SE" ? "500 kr" : "$5.000",
-      codigo: "PK-7QXM-4HRT-9KZ2",
-      para: "Sara",
-      fechaEnvio: market === "SE" ? "24 december 2026" : "24 de diciembre 2026",
-      validoHasta: market === "SE" ? "24 oktober 2028" : "24 de octubre 2028",
-      direccion: "Storgatan 1",
-      verUrl: "https://app.example.com/barberia-norte/presentkort/kort?t=abc",
-    },
-    presentkortLeverans: {
-      nombre: "Sara",
-      de: "Ella",
-      negocio: b.negocio,
-      valor: market === "SE" ? "500 kr" : "$5.000",
-      validoHasta: market === "SE" ? "24 oktober 2028" : "24 de octubre 2028",
-      codigo: "PK-7QXM-4HRT-9KZ2",
-      saludo:
-        market === "SE"
-          ? "Grattis på födelsedagen! Unna dig något riktigt skönt. Kram, Ella"
-          : "¡Feliz cumpleaños! Date un gustito. Abrazo, Ella",
-      tema: "lilac",
-      reservarUrl: "https://app.example.com/barberia-norte",
-      verUrl: "https://app.example.com/barberia-norte/presentkort/kort?t=def",
-      direccion: "Storgatan 1",
     },
   };
 }

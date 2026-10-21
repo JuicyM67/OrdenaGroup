@@ -1,8 +1,6 @@
 /**
  * "Para clientes" (landing de la cuenta de cliente) y selector de ingreso del header.
- * En CL la página está oculta hasta que exista Mercado Pago (igual que Descubre); estos
- * textos mantienen la paridad de tipos con `sv-SE.clientes.ts`. Archivo propio para que
- * no entren en el chunk de i18n de la página de reservas. TODO_COPY: revisión de
+ * Se muestra junto con Descubre (D-060). Archivo propio para que no entren en el chunk de i18n de la página de reservas. TODO_COPY: revisión de
  * copywriter-es-cl. La marca entra siempre como `{ nombre }`.
  */
 export const paraClientes = {

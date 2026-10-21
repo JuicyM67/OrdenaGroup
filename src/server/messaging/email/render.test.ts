@@ -7,49 +7,42 @@ import {
   renderEmail,
 } from "./render";
 
-const MARKETS = ["CL", "SE"] as const;
-
 describe("renderEmail", () => {
-  for (const market of MARKETS) {
-    const fixtures = emailFixtures(market);
+  const fixtures = emailFixtures();
 
-    for (const template of EMAIL_TEMPLATE_NAMES) {
-      it(`${template} (${market}): asunto, preheader, html y text sin huecos`, () => {
-        const data = fixtures[template];
-        const rendered = renderEmail(template, market, data);
+  for (const template of EMAIL_TEMPLATE_NAMES) {
+    it(`${template}: asunto, preheader, html y text sin huecos`, () => {
+      const data = fixtures[template];
+      const rendered = renderEmail(template, data);
 
-        expect(rendered.subject.length).toBeGreaterThan(0);
-        expect(rendered.preheader.length).toBeGreaterThan(0);
-        expect(rendered.html.length).toBeGreaterThan(0);
-        expect(rendered.text.length).toBeGreaterThan(0);
+      expect(rendered.subject.length).toBeGreaterThan(0);
+      expect(rendered.preheader.length).toBeGreaterThan(0);
+      expect(rendered.html.length).toBeGreaterThan(0);
+      expect(rendered.text.length).toBeGreaterThan(0);
 
-        // Con datos de ejemplo reales, ningún placeholder de plantilla
-        // debería quedar sin interpolar.
-        expect(rendered.html).not.toContain("{{");
-        expect(rendered.text).not.toContain("{{");
-        expect(rendered.html).not.toMatch(/\bundefined\b/);
-        expect(rendered.text).not.toMatch(/\bundefined\b/);
+      // Con datos de ejemplo reales, ningún placeholder de plantilla
+      // debería quedar sin interpolar.
+      expect(rendered.html).not.toContain("{{");
+      expect(rendered.text).not.toContain("{{");
+      expect(rendered.html).not.toMatch(/\bundefined\b/);
+      expect(rendered.text).not.toMatch(/\bundefined\b/);
 
-        // < 100 kB (INTEGRATIONS/spec de este WP).
-        expect(Buffer.byteLength(rendered.html, "utf8")).toBeLessThan(100_000);
+      // < 100 kB (INTEGRATIONS/spec de este WP).
+      expect(Buffer.byteLength(rendered.html, "utf8")).toBeLessThan(100_000);
 
-        // Documento HTML válido a grandes rasgos.
-        expect(rendered.html).toContain("<!DOCTYPE html>");
-        expect(rendered.html).toContain("</html>");
-      });
-    }
-
-    it(`(${market}) el idioma del documento coincide con la marca`, () => {
-      const rendered = renderEmail(
-        "reservaConfirmada",
-        market,
-        fixtures.reservaConfirmada,
-      );
-      expect(rendered.html).toContain(
-        market === "SE" ? 'lang="sv-SE"' : 'lang="es-CL"',
-      );
+      // Documento HTML válido a grandes rasgos.
+      expect(rendered.html).toContain("<!DOCTYPE html>");
+      expect(rendered.html).toContain("</html>");
     });
   }
+
+  it("el idioma del documento es es-CL", () => {
+    const rendered = renderEmail(
+      "reservaConfirmada",
+      fixtures.reservaConfirmada,
+    );
+    expect(rendered.html).toContain('lang="es-CL"');
+  });
 
   it("todas las plantillas tienen un kind asignado (booking/account)", () => {
     for (const template of EMAIL_TEMPLATE_NAMES) {
@@ -58,15 +51,15 @@ describe("renderEmail", () => {
   });
 
   it("magicLink/confirmation: el botón apunta a confirmUrl, no a un placeholder de Supabase", () => {
-    const fixtures = emailFixtures("CL");
-    const rendered = renderEmail("magicLink", "CL", fixtures.magicLink);
+    const fixtures = emailFixtures();
+    const rendered = renderEmail("magicLink", fixtures.magicLink);
     // href="…" escapa entidades HTML (correcto), el texto plano no.
     expect(rendered.text).toContain(fixtures.magicLink.confirmUrl);
     expect(rendered.html).not.toContain("{{ .ConfirmationURL }}");
   });
 
   it("magicLink/confirmation: aceptan literales de Supabase para las plantillas estáticas", () => {
-    const rendered = renderEmail("magicLink", "CL", {
+    const rendered = renderEmail("magicLink", {
       confirmUrl:
         "{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink",
       token: "{{ .Token }}",
@@ -82,10 +75,9 @@ describe("renderEmail", () => {
   });
 
   it("reservaConfirmada: el bokningskort muestra servicio, hora, profesional, dirección y precio", () => {
-    const fixtures = emailFixtures("CL");
+    const fixtures = emailFixtures();
     const rendered = renderEmail(
       "reservaConfirmada",
-      "CL",
       fixtures.reservaConfirmada,
     );
     for (const value of [

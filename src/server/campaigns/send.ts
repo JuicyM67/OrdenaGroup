@@ -2,14 +2,11 @@ import "server-only";
 
 import { randomBytes } from "node:crypto";
 
-import { market } from "@/config/brand";
-import { appHref } from "@/config/routes";
 import { hashOfferToken } from "@/server/bookings/offer";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx, withServiceTx } from "@/server/db/tx";
 import { hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
-import { renderSms } from "@/server/messaging/sms";
 import { checkCampaignPlan } from "@/server/plans/entitlements";
 
 import { audienceStatsIn, resolveAudienceIn } from "./audience";
@@ -27,8 +24,8 @@ import {
  *
  * Säkerhet: inget skickas från en agent (regel hård 8) — `sendCampaign`
  * skriver bara `message_outbox`-rader, den riktiga sändningen sker i
- * workern (`/api/cron/outbox`, fejk-läge tills ClickSend/Resend-nycklarna
- * finns, se `src/server/messaging/{email,sms}/send.ts`).
+ * workern (`/api/cron/outbox`, fejk-läge tills Resend-nyckeln finns, se
+ * `src/server/messaging/email/send.ts`).
  */
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -47,8 +44,6 @@ export type PreviewCampaignResult =
       ok: true;
       recipients: number;
       skippedNoConsent: number;
-      smsPartsPerMessage: number | null;
-      smsTotal: number | null;
     }
   | { ok: false; code: "forbidden" | "invalid_input" };
 
@@ -56,10 +51,8 @@ export type SendCampaignError =
   | "forbidden"
   | "invalid_input"
   | "no_recipients"
-  | "sms_not_available"
   | "rate_limited"
   | "plan_locked"
-  | "sms_quota"
   | "unexpected";
 
 export type SendCampaignResult =
@@ -86,34 +79,6 @@ export async function loadPermissionAndBusiness(
   });
 }
 
-function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "http://127.0.0.1:3000").replace(
-    /\/$/,
-    "",
-  );
-}
-
-/** En placeholder-token (samma längd som den riktiga, base64url av 32 byte,
- * 43 tecken) — bara för att räkna tecken/segment i förhandsvisningen; den
- * riktiga token:en skapas i `sendCampaign` per mottagare. */
-const PLACEHOLDER_TOKEN = "A".repeat(43);
-
-function smsPreviewParts(
-  negocio: string,
-  slug: string,
-  message: string,
-): number {
-  const reservarUrl = `${appUrl()}/${slug}?o=${PLACEHOLDER_TOKEN}`;
-  const bajaUrl = `${appUrl()}${appHref("baja", PLACEHOLDER_TOKEN)}`;
-  const rendered = renderSms("campanaMarketing", market, {
-    negocio,
-    texto: message,
-    link: reservarUrl,
-    bajaLink: bajaUrl,
-  });
-  return rendered.segments;
-}
-
 export async function previewCampaign(
   userId: string,
   businessId: string,
@@ -128,21 +93,12 @@ export async function previewCampaign(
   if (!perm?.allowed) return { ok: false, code: "forbidden" };
 
   const stats = await withOwnerTx(userId, (q) =>
-    audienceStatsIn(q, businessId, parsed.data.audience, parsed.data.channel),
+    audienceStatsIn(q, businessId, parsed.data.audience),
   );
-  const smsPartsPerMessage =
-    parsed.data.channel === "sms"
-      ? smsPreviewParts(perm.negocio, perm.slug, parsed.data.message)
-      : null;
   return {
     ok: true,
     recipients: stats.recipients,
     skippedNoConsent: stats.skippedNoConsent,
-    smsPartsPerMessage,
-    smsTotal:
-      smsPartsPerMessage === null
-        ? null
-        : smsPartsPerMessage * stats.recipients,
   };
 }
 
@@ -270,9 +226,6 @@ export async function sendCampaign(
   }
   const parsed = campaignInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
-  if (parsed.data.channel === "sms" && market !== "SE") {
-    return { ok: false, code: "sms_not_available" };
-  }
   const perm = await loadPermissionAndBusiness(userId, businessId);
   if (!perm?.allowed) return { ok: false, code: "forbidden" };
 
@@ -285,25 +238,14 @@ export async function sendCampaign(
   if (!allowed) return { ok: false, code: "rate_limited" };
 
   const customerIds = await withOwnerTx(userId, (q) =>
-    resolveAudienceIn(
-      q,
-      businessId,
-      parsed.data.audience,
-      parsed.data.channel,
-      MAX_RECIPIENTS + 1,
-    ),
+    resolveAudienceIn(q, businessId, parsed.data.audience, MAX_RECIPIENTS + 1),
   );
   if (customerIds.length === 0) return { ok: false, code: "no_recipients" };
   if (customerIds.length > MAX_RECIPIENTS) {
     return { ok: false, code: "rate_limited" };
   }
-  // WP-73 (D-048): planspärr + sms-kvot.
-  const planBlock = await checkCampaignPlan(
-    businessId,
-    "campaigns",
-    parsed.data.channel,
-    customerIds.length,
-  );
+  // WP-73 (D-048): planspärr.
+  const planBlock = await checkCampaignPlan(businessId, "campaigns");
   if (planBlock) return { ok: false, code: planBlock };
 
   try {

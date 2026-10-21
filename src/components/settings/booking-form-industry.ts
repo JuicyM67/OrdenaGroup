@@ -1,23 +1,12 @@
-// Branschförslag för formuläret (WP-40 steg 6–7, D-031): väljer förslagslistan
-// utifrån installationens marknad, samma sätt som `presetsFor` i
-// `src/server/owner/booking-questions.ts` — det finns ingen `i18n-locale`-alias
-// för presets (de är produktdata, inte UI-text), så filen väljs manuellt här
-// precis som på serversidan.
-import { market } from "@/config/brand";
+// Branschförslag för formuläret (WP-40 steg 6–7, D-031): samma förslagslista som
+// `findPreset` i `src/server/owner/booking-questions.ts`.
 import * as presetsEs from "@/i18n/presets/booking-questions.es-CL";
-import * as presetsSv from "@/i18n/presets/booking-questions.sv-SE";
 
 export type BookingQuestionIndustry = presetsEs.BookingQuestionIndustry;
 export type BookingQuestionPreset = presetsEs.BookingQuestionPreset;
 
-const PRESETS =
-  market === "SE"
-    ? presetsSv.BOOKING_QUESTION_PRESETS
-    : presetsEs.BOOKING_QUESTION_PRESETS;
-const LABELS =
-  market === "SE"
-    ? presetsSv.BOOKING_QUESTION_INDUSTRY_LABELS
-    : presetsEs.BOOKING_QUESTION_INDUSTRY_LABELS;
+const PRESETS = presetsEs.BOOKING_QUESTION_PRESETS;
+const LABELS = presetsEs.BOOKING_QUESTION_INDUSTRY_LABELS;
 
 /** `businesses.category` (rubro, `negocio.rubros`/`RUBRO_KEYS`) → rubro de
  * sugerencias de preguntas (`BookingQuestionIndustry`). No son los mismos

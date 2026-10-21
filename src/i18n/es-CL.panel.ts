@@ -133,13 +133,6 @@ export const gestion = {
   /** WP-45: aviso en `r/[token]` cuando la reserva todavía está `requested`
    * (el negocio no la confirmó ni la rechazó). El chip de estado usa
    * `estados.porConfirmar`; esto es el texto largo debajo del chip. */
-  /** WP-64 (D-044): estado del pago online en `r/[token]`. */
-  pago: {
-    reservado:
-      "El monto está reservado en tu tarjeta y se cobra cuando el negocio confirme.",
-    pagado: "Pagado online.",
-    reembolso: "Tu pago se devuelve a tu tarjeta.",
-  },
   pendienteAviso:
     "El negocio todavía no confirma esta hora. Te avisaremos apenas lo haga.",
   /** WP-56: aviso bajo el chip `estados.cancelacionPendiente`, cuando el
@@ -1218,8 +1211,7 @@ export const email = {
    * en este archivo (a diferencia de la versión anterior de este bloque):
    * son sintaxis de plantilla de Supabase, no interpolación de `es-CL.ts`.
    * `asunto` recibe `marca` como parámetro en vez de interpolar `brand.name`
-   * directo (mismo criterio que `sv-SE.app.ts`, para que las dos plantillas
-   * tengan la misma forma; ver la nota de WP-M2 al inicio de ese archivo). */
+   * directo. */
   acceso: {
     magicLink: {
       asunto: (p: { marca: string }): string =>
@@ -1281,15 +1273,6 @@ export const email = {
   /** WP-54: precio con descuento de socio, en la tarjeta de la reserva
    * (`reservaConfirmada`/`solicitudRecibida`) en vez de la fila "Precio".
    * `descuento` ya viene formateado, sin signo. */
-  /** WP-64 (D-044): línea "Pago" en la tarjeta de la reserva y aviso de reembolso. */
-  pago: {
-    label: "Pago",
-    reservado: "Reservado en tu tarjeta, se cobra al confirmar",
-    pagado: "Pagado online",
-    reembolso: "Se devuelve a tu tarjeta",
-    reembolsoNota:
-      "El pago online que hiciste se devuelve a tu tarjeta. Puede tardar unos días en verse.",
-  },
   miembro: {
     precioLabel: "Precio socio",
     /** WP-31: mismo formato, cuando el descuento viene de una oferta. */
@@ -1328,45 +1311,6 @@ export const email = {
     ayuda:
       "Tu reseña se publica en su página de reservas solo con tu nombre y la inicial de tu apellido. Puedes editarla durante 7 días.",
     cta: "Dejar mi reseña",
-  },
-  /** WP-76 (D-053): al dueño, sms del plan casi agotados (80 %). En CL no
-   * se envía en v1 (sin créditos SMS), solo paridad de tipos. */
-  smsCuota80: {
-    asunto: "Usaste el 80 % de tus SMS del mes",
-    preheader: "Cuando se acaben, los recordatorios salen por correo.",
-    titulo: "Te quedan pocos SMS este mes",
-    texto: (p: { usado: number; max: number }): string =>
-      `Llevas ${p.usado} de ${p.max} SMS de tu plan este mes.`,
-    ayuda: "Cuando se acaben, los recordatorios salen por correo.",
-    cta: "Ver mi plan",
-  },
-  /** WP-69 (D-057): al comprador, recibo del vale (cupón). En CL no se
-   * envía en v1 (marketplace oculto), solo paridad de tipos. */
-  valeComprado: {
-    asunto: (p: { titulo: string }): string => `Tu vale: ${p.titulo}`,
-    preheader: (p: { negocio: string }): string =>
-      `Tu código para ${p.negocio} y cómo reservar.`,
-    titulo: "Tu vale está listo",
-    texto: (p: { negocio: string }): string =>
-      `Gracias por tu compra. ${p.negocio} es quien te vende el vale y quien recibió el pago. Reserva tu hora cuando quieras, antes de que venza.`,
-    arrepentimiento:
-      "Tienes 14 días para arrepentirte de la compra desde tu cuenta, si aún no usaste el vale.",
-    codigo: "Código",
-    servicio: "Servicio",
-    valor: "Valor",
-    validoHasta: "Válido hasta",
-    vendidoPor: "Lo vende",
-    cta: "Elegir hora",
-  },
-  /** WP-76 (D-053): al dueño, sin SMS (plan y créditos agotados). */
-  smsAgotados: {
-    asunto: "Se acabaron tus SMS",
-    preheader: "Los recordatorios ahora salen por correo.",
-    titulo: "Se acabaron tus SMS",
-    texto: (p: { usado: number; max: number }): string =>
-      `Usaste ${p.usado} de ${p.max} SMS de tu plan este mes.`,
-    ayuda: "Los recordatorios ahora salen por correo.",
-    cta: "Ver mi plan",
   },
 } as const satisfies Trad;
 
@@ -1860,7 +1804,6 @@ export const ajustes = {
     /** Sección nueva (WP-26 paso 7, F12): exportar los datos del negocio y
      * eliminar la cuenta. */
     privacidad: "Privacidad y datos",
-    pagos: "Pagos online",
     /** Sección nueva (WP-54): el beneficio para clientes marcados como
      * `is_member` ("socios", ver `estados.socio`). WP-31: renombrada — ahora
      * también vive acá el recordatorio automático "Te echamos de menos"
@@ -1869,57 +1812,6 @@ export const ajustes = {
   },
   /** Sección "Socios" (WP-54): `businesses.member_discount_pct`/
    * `member_benefit_text`. Apagado = `member_discount_pct` es `null`. */
-  /** WP-64 (D-044): pestaña "Pagos online" (Stripe Connect). Solo SE por ahora. */
-  pagos: {
-    titulo: "Pagos online",
-    intro:
-      "Tus clientes pueden pagar su hora con tarjeta al reservar. El dinero llega directo a tu cuenta de Stripe.",
-    estadoLabel: "Estado de la conexión",
-    estado: {
-      none: "Sin conectar",
-      onboarding: "Conexión en curso",
-      active: "Activa",
-      action_required: "Falta información",
-    },
-    estadoAyuda: {
-      none: "Conecta tu cuenta de Stripe para recibir pagos.",
-      onboarding: "Termina la conexión en Stripe para empezar a cobrar.",
-      active: "Tu cuenta está lista para cobrar.",
-      action_required:
-        "Stripe necesita más información para que puedas seguir cobrando.",
-    },
-    conectar: "Conectar con Stripe",
-    continuar: "Continuar en Stripe",
-    completar: "Completar información en Stripe",
-    abrirPanel: "Abrir mi panel de Stripe",
-    modoTitulo: "Pago al reservar",
-    modo: {
-      off: "Desactivado",
-      optional: "Opcional",
-      required: "Obligatorio",
-    },
-    modoAyuda: {
-      off: "El cliente paga en el local.",
-      optional: "El cliente elige si paga online o en el local.",
-      required: "El cliente tiene que pagar online para reservar.",
-    },
-    modoRequiereCuenta:
-      "Conecta y activa tu cuenta para elegir Opcional u Obligatorio.",
-    comision: (p: { monto: string }): string =>
-      `Comisión de la plataforma: ${p.monto} de cada pago online.`,
-    sinComision: "Tu plan no tiene comisión de la plataforma.",
-    reembolsos:
-      "Si rechazas, no alcanzas a responder o se cancela una reserva pagada, el dinero se devuelve al cliente automáticamente.",
-    guardar: "Guardar",
-    guardado: "Guardado",
-    errores: {
-      unavailable: "Los pagos online no están disponibles ahora.",
-      failed: "No pudimos conectar con Stripe. Inténtalo de nuevo.",
-      needs_account: "Primero conecta tu cuenta de Stripe.",
-      forbidden: "No tienes permiso para cambiar esto.",
-      unknown: "Algo salió mal. Inténtalo de nuevo.",
-    },
-  },
   socios: {
     activar: "Activar beneficio para socios",
     activarAyuda:
@@ -2117,9 +2009,6 @@ export const clientes = {
     ctaNuevaReserva: "Nueva reserva",
     ctaLlamar: "Llamar",
     ctaWhatsapp: "Escribir por WhatsApp",
-    /** WP-24: enlaces de contacto alternativos, junto a `ctaLlamar`/
-     * `ctaWhatsapp` (plan: "ring/SMS/mejl-länkar"). */
-    ctaSms: "Enviar SMS",
     ctaEmail: "Enviar correo",
     ctaVerFicha: "Ver ficha",
     /** WP-31 (F14): botón "Enviar oferta" en la ficha del cliente — lleva a
@@ -2144,22 +2033,16 @@ export const clientes = {
     /** `queued: false` — `dedupe_key` ya tenía un envío para este
      * membresía (mismo `member_since`). */
     notificarYaEnviado: "Ya le avisamos de su beneficio de socio.",
-    /** WP-55: diálogo "Enviar mensaje" (botón único, junto a `ctaWhatsapp`/
-     * `ctaSms` de arriba — ese botón ahora abre este diálogo en vez de un
-     * enlace directo). CL: `wa.me` del lado del cliente (WhatsApp Cloud API
-     * todavía no existe, D-006/D-007 — TODO: reemplazar por un envío real
-     * cuando exista esa integración). SE: `sendCustomerMessage`, SMS por
-     * ClickSend (D-028). */
+    /** WP-55: diálogo "Enviar mensaje" (botón junto a `ctaWhatsapp`, que
+     * abre este diálogo en vez de un enlace directo): `wa.me` del lado del
+     * cliente (WhatsApp Cloud API todavía no existe, D-006/D-007 — TODO:
+     * reemplazar por un envío real cuando exista esa integración). */
     mensaje: {
       titulo: "Enviar mensaje",
       paraLabel: "Para",
       textoLabel: "Mensaje",
       textoPlaceholder: "Escribe tu mensaje…",
       contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
-      /** Solo SE: cuántos SMS ocupa el texto (ClickSend cobra por
-       * segmento). CL no lo muestra (WhatsApp no tiene ese límite). */
-      segmentosSms: (p: { n: number }): string =>
-        `${p.n} ${p.n === 1 ? "SMS" : "SMS (varios mensajes)"}`,
       /** Solo CL: aclara que el envío sale del WhatsApp del propio negocio
        * (número compartido de la plataforma, D-007), no de la plataforma. */
       notaWhatsapp:
@@ -2167,17 +2050,6 @@ export const clientes = {
       /** GUIA §5: nunca "Cancelar" a secas. */
       ctaCancelar: "Volver",
       ctaEnviar: "Enviar",
-      enviando: "Enviando…",
-      enviado: "Mensaje enviado.",
-      error: {
-        vacio: "Escribe un mensaje.",
-        forbidden: "No tienes permiso para enviar mensajes a este cliente.",
-        no_phone: "Este cliente no tiene un celular válido.",
-        too_long: "El mensaje no puede tener más de 320 caracteres.",
-        rate_limited:
-          "Enviaste muchos mensajes. Espera un momento y prueba de nuevo.",
-        generico: "No pudimos enviar el mensaje. Inténtalo de nuevo.",
-      },
     },
   },
   notas: {
@@ -2310,14 +2182,9 @@ export const campanas = {
      * ficha del cliente) en vez de elegirse acá. */
     audienciaSeleccionadosResumen: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "cliente elegido" : "clientes elegidos"}`,
-    canalLabel: "Canal",
     mensajeLabel: "Mensaje",
     mensajePlaceholder: "Escribe tu mensaje…",
     contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
-    /** Solo SMS (igual que `clientes.ficha.mensaje.segmentosSms`): cuántos
-     * SMS ocupa el texto. */
-    segmentosSms: (p: { n: number }): string =>
-      `${p.n} ${p.n === 1 ? "SMS" : "SMS (varios mensajes)"}`,
     ofertaActivar: "Agregar un descuento",
     ofertaActivarAyuda:
       "Opcional: un porcentaje de descuento, con un texto corto y una fecha de vencimiento.",
@@ -2333,8 +2200,6 @@ export const campanas = {
         `${p.n} ${p.n === 1 ? "cliente va a recibir este mensaje" : "clientes van a recibir este mensaje"}`,
       sinConsentimiento: (p: { n: number }): string =>
         `${p.n} ${p.n === 1 ? "cliente no lo recibe" : "clientes no lo reciben"} porque no aceptó recibir ofertas.`,
-      sms: (p: { porMensaje: number; total: number }): string =>
-        `${p.porMensaje} SMS por mensaje · ${p.total} SMS en total`,
       vacio: "Elige a quién le llega para ver cuántos clientes lo recibirán.",
     },
     ctaEnviar: "Enviar",
@@ -2350,7 +2215,6 @@ export const campanas = {
       forbidden: "No tienes permiso para enviar campañas.",
       invalid_input: "Revisa los datos del formulario.",
       no_recipients: "No hay clientes que reciban este envío.",
-      sms_not_available: "El SMS no está disponible en tu instalación.",
       rate_limited:
         "Enviaste muchas campañas. Espera un momento y prueba de nuevo.",
       unexpected: "No pudimos enviar la campaña. Inténtalo de nuevo.",
@@ -2438,10 +2302,9 @@ export const caja = {
   /** `payment_method` (DB enum): las etiquetas, para mostrar cómo quedó
    * pagada una reserva (incluida una ya pagada por Mercado Pago). El
    * selector de "Marcar como pagada" solo debe ofrecer
-   * `CAJA_METODOS_MANUALES` (sin `mercadopago`, D-022). `swish` se agrega
-   * para el mercado SE (WP-24, plan §Caja: nuevo valor del enum); en CL
-   * nunca se ofrece como opción, pero la etiqueta existe porque el enum es
-   * el mismo para las dos marcas. */
+   * `CAJA_METODOS_MANUALES` (sin `mercadopago`, D-022). `swish`, `stripe`
+   * y `gift_card` siguen en el enum de la base de datos (D-062); nunca se
+   * ofrecen, pero la etiqueta existe porque el tipo cubre todo el enum. */
   metodo: {
     cash: "Efectivo",
     card_terminal: "Débito o crédito",
@@ -2632,165 +2495,6 @@ export const abono = {
     abonoPorDevolver: "Abono por devolver",
     devolverEnMercadopago: "Devuélvelo desde tu cuenta de Mercado Pago.",
   },
-} as const satisfies Trad;
-
-// ---------------------------------------------------------------------------
-// sms: los mismos nueve avisos que las plantillas de WhatsApp/correo, en una
-// variante pensada para un solo SMS (≤ 160 caracteres GSM-7, sin botones, sin
-// emoji, un solo link corto por mensaje). El nombre del remitente lo pone la
-// operadora/el proveedor de SMS (no va en el texto): acá nunca se interpola
-// `brand.name` ni se pide `marca` como parámetro, a diferencia de `email`.
-// `pie` es la línea de baja: se agrega solo a los SMS de marketing (hoy,
-// `horaFlash`); los de utilidad (confirmación, recordatorio, cambio,
-// cancelación, lista de espera, aviso al dueño, código de acceso) no la
-// llevan (Meta/D-016: la misma regla de "utility sin marketing" que las
-// plantillas de WhatsApp, aunque acá no hay revisión de Meta de por medio).
-// ---------------------------------------------------------------------------
-
-export const sms = {
-  reservaConfirmada: (p: {
-    negocio: string;
-    fecha: string;
-    hora: string;
-    link: string;
-    /** WP-54: "$16.200 (-$1.800)" — con "-" ASCII (GSM-7), no "−". */
-    precioSocio?: string;
-    /** WP-31: igual que `precioSocio`, cuando el descuento es de una oferta. */
-    precioOferta?: string;
-  }): string =>
-    `Tu hora en ${p.negocio} quedó confirmada: ${p.fecha} a las ${p.hora}.${p.precioSocio ? ` Precio socio: ${p.precioSocio}.` : ""}${p.precioOferta ? ` Precio con oferta: ${p.precioOferta}.` : ""} Detalle: ${p.link}`,
-  /** Recordatorio del día anterior (mismo momento que la plantilla de
-   * WhatsApp `recordatorio_24h`). */
-  recordatorio: (p: {
-    negocio: string;
-    fecha: string;
-    hora: string;
-    link: string;
-  }): string =>
-    `Recordatorio de ${p.negocio}: tu hora es el ${p.fecha} a las ${p.hora}. Detalle: ${p.link}`,
-  /** Recordatorio del mismo día (~2 h antes): sin `fecha`, porque "hoy" ya
-   * dice todo y deja más caracteres libres para el link. */
-  recordatorioHoy: (p: {
-    negocio: string;
-    hora: string;
-    link: string;
-  }): string =>
-    `Recordatorio de ${p.negocio}: tu hora es hoy a las ${p.hora}. Detalle: ${p.link}`,
-  reservaMovida: (p: {
-    negocio: string;
-    fecha: string;
-    hora: string;
-    link: string;
-  }): string =>
-    `Tu hora en ${p.negocio} cambió: ahora es el ${p.fecha} a las ${p.hora}. Detalle: ${p.link}`,
-  reservaCancelada: (p: {
-    negocio: string;
-    fecha: string;
-    hora: string;
-    link: string;
-  }): string =>
-    `Tu hora en ${p.negocio} del ${p.fecha} a las ${p.hora} quedó cancelada. Reserva otra: ${p.link}`,
-  /** Solicitud rechazada/vencida (WP-45): mismo patrón que
-   * `reservaCancelada`. En CL no se envían todavía (solo por correo hasta
-   * que exista una plantilla de WhatsApp para esto, WP-22); quedan acá por
-   * paridad de tipo con `sv-SE.app.ts`, donde sí se usan junto al correo
-   * (D-028, "Ägarens svar" 2). */
-  solicitudRechazada: (p: {
-    negocio: string;
-    fecha: string;
-    hora: string;
-    link: string;
-  }): string =>
-    `Tu solicitud de hora en ${p.negocio} del ${p.fecha} a las ${p.hora} no se pudo confirmar. Reserva otra: ${p.link}`,
-  solicitudVencida: (p: {
-    negocio: string;
-    fecha: string;
-    hora: string;
-    link: string;
-  }): string =>
-    `Tu solicitud de hora en ${p.negocio} del ${p.fecha} a las ${p.hora} venció. Reserva otra: ${p.link}`,
-  listaEsperaCupo: (p: {
-    negocio: string;
-    servicio: string;
-    fecha: string;
-    hora: string;
-    link: string;
-    minutos: number;
-  }): string =>
-    `¡Hora libre en ${p.negocio}! ${p.servicio}, el ${p.fecha} ${p.hora}. Tienes ${p.minutos} min: ${p.link}`,
-  /** WP-23: al cliente, la hora que se le ofreció ya fue tomada por otra
-   * persona. */
-  listaEsperaTomada: (p: { negocio: string; fecha: string }): string =>
-    `Esa hora en ${p.negocio} ya fue tomada. Sigues en la lista de espera para el ${p.fecha}.`,
-  /** Marketing: se manda junto con `pie` (línea de baja), como mensaje
-   * aparte o al final del mismo SMS (lo decide quien arma el envío). */
-  horaFlash: (p: {
-    negocio: string;
-    hora: string;
-    pct: number;
-    link: string;
-  }): string =>
-    `Hora flash en ${p.negocio}: -${p.pct}% si reservas hoy a las ${p.hora}. ${p.link}`,
-  /** Al dueño: sin link, porque revisa la reserva desde la propia app. */
-  nuevaReservaDueno: (p: {
-    cliente: string;
-    servicio: string;
-    fecha: string;
-    hora: string;
-  }): string =>
-    `Nueva reserva: ${p.cliente} reservó ${p.servicio} el ${p.fecha} a las ${p.hora}.`,
-  /** WP-56: al dueño (solo se envía en SE por ahora; acá por paridad de
-   * tipo). `link` = `/app/solicitudes/{id}`. */
-  nuevaSolicitudDueno: (p: {
-    cliente: string;
-    fecha: string;
-    hora: string;
-    link: string;
-  }): string =>
-    `Nueva solicitud: ${p.cliente}, ${p.fecha} a las ${p.hora}. Responde aquí: ${p.link}`,
-  solicitudCancelacionDueno: (p: {
-    cliente: string;
-    fecha: string;
-    hora: string;
-    link: string;
-  }): string =>
-    `Solicitud de cancelación: ${p.cliente}, ${p.fecha} a las ${p.hora}. Responde aquí: ${p.link}`,
-  /** WP-56: al cliente, cancelación no aceptada. */
-  cancelacionRechazada: (p: {
-    negocio: string;
-    fecha: string;
-    hora: string;
-    telefono?: string;
-  }): string =>
-    `${p.negocio} no aceptó tu cancelación del ${p.fecha} a las ${p.hora}. Contacta a ${p.negocio}${p.telefono ? ` al ${p.telefono}` : ""}.`,
-  /** Código de acceso (login sin contraseña): alternativa por SMS al correo
-   * de `email.acceso`. */
-  codigoAcceso: (p: { codigo: string }): string =>
-    `Tu código para entrar es ${p.codigo}. No lo compartas con nadie.`,
-  /** WP-55: mensaje libre desde la ficha del cliente (`/app/clientes/[id]`,
-   * `sendCustomerMessage`). `texto` es lo que escribió el dueño/staff (hasta
-   * 320 caracteres); `negocio` va siempre como prefijo, como remitente,
-   * porque el SMS no tiene un nombre de remitente visible como WhatsApp. Sin
-   * `pie` (no es marketing, no está en `SMS_MARKETING_TEMPLATES`). */
-  mensajeLibre: (p: { negocio: string; texto: string }): string =>
-    `${p.negocio}: ${p.texto}`,
-  /** WP-65 (D-045): reseña después de una cita realizada. */
-  solicitudResena: (p: { negocio: string; link: string }): string =>
-    `¿Cómo te fue en ${p.negocio}? Deja tu reseña: ${p.link}`,
-  /** WP-31 (F14): campaña de marketing (`/app/clientes/utskick`, mismo
-   * mensaje libre que escribió el dueño, hasta 320 caracteres). `link` =
-   * `/{slug}?o=<token>`, `bajaLink` = `/baja/<token>` — la baja va SIEMPRE
-   * en el propio texto (no vía `pie`/"Responde STOP", pensada para
-   * WhatsApp, ni vía `SMS_MARKETING_TEMPLATES`). */
-  campanaMarketing: (p: {
-    negocio: string;
-    texto: string;
-    link: string;
-    bajaLink: string;
-  }): string =>
-    `${p.negocio}: ${p.texto} Reserva: ${p.link} Baja: ${p.bajaLink}`,
-  /** Línea de baja: ver la nota del bloque de arriba sobre cuándo se usa. */
-  pie: "Responde STOP para no recibir más.",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -3621,7 +3325,6 @@ export const planes = {
   },
   funciones: {
     unbranded: "Página de reservas sin nuestra marca",
-    online_payment: "Pago al reservar",
     waitlist: "Lista de espera",
     flash: "Horas flash",
     campaigns: "Envíos, Te echamos de menos y socios",
@@ -3635,7 +3338,6 @@ export const planes = {
       `${p.funcion} viene en el plan ${p.plan}`,
     ganchos: {
       unbranded: "Mejora tu plan y muestra solo tu marca.",
-      online_payment: "Mejora tu plan y cobra al reservar.",
       waitlist:
         "Mejora tu plan y no pierdas a nadie cuando se libere una hora.",
       flash: "Mejora tu plan y llena tus horas vacías.",
@@ -3652,7 +3354,6 @@ export const planes = {
     titulo: "Tu plan",
     planActual: "Plan actual",
     usoTitulo: "Uso",
-    sms: "SMS enviados este mes",
     cuentas: "Cuentas",
     servicios: "Servicios activos",
     deMax: (p: { usado: number; max: number }): string =>
@@ -3669,16 +3370,12 @@ export const planes = {
       "Muy pronto podrás cambiar de plan desde acá. Por ahora, revisa los planes y escríbenos: lo cambiamos por ti.",
     pausado:
       "Si bajas de plan, no se borra nada: lo que no viene en el nuevo plan queda en pausa hasta que vuelvas a subir.",
-    smsAgotados:
-      "Se acabaron los SMS de este mes. Las confirmaciones y recordatorios salen por correo hasta el 1 del próximo mes.",
   },
   errores: {
     plan_locked:
       "Tu plan no incluye esta función. Revisa los planes para activarla.",
     plan_limit_services:
       "Tu plan permite hasta 3 servicios activos. Mejora tu plan para agregar más.",
-    sms_quota:
-      "Se acabaron los SMS de tu plan este mes. Mejora tu plan o espera al próximo mes.",
   },
   creadoCon: (p: { marca: string }): string => `Creado con ${p.marca}`,
 } as const satisfies Trad;

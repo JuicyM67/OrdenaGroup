@@ -16,7 +16,7 @@ import {
 import { strokeArrow } from "@/components/ui/icons";
 import { brand } from "@/config/brand";
 import {
-  funcionesDisponibles,
+  FUNCION_IDS,
   href,
   hrefFuncion,
   hrefRubro,
@@ -38,30 +38,28 @@ export function FuncionesPanel() {
       <div className="col-span-8 flex flex-col gap-1.5">
         <span className={`${eyebrow} px-3`}>{t.menuFunciones.titulo}</span>
         <ul className="grid grid-cols-2 gap-0.5">
-          {funcionesDisponibles()
-            .filter((id) => id !== "migracion")
-            .map((id) => {
-              const ft = paginas.funciones[id]!;
-              const ui = FUNCION_UI[id];
-              return (
-                <li key={id}>
-                  <NavigationMenu.Link asChild>
-                    <Link href={hrefFuncion(id)} className={itemClass}>
-                      <span
-                        aria-hidden="true"
-                        className={`flex size-11 shrink-0 items-center justify-center rounded-full ${TONE_CLASS[ui.tone]}`}
-                      >
-                        <ui.icon className="size-4.5" strokeWidth={2} />
-                      </span>
-                      <span className="flex flex-col gap-0.5">
-                        <b className="text-15">{ft.nombre}</b>
-                        <span className="text-13 text-muted">{ft.resumen}</span>
-                      </span>
-                    </Link>
-                  </NavigationMenu.Link>
-                </li>
-              );
-            })}
+          {FUNCION_IDS.filter((id) => id !== "migracion").map((id) => {
+            const ft = paginas.funciones[id]!;
+            const ui = FUNCION_UI[id];
+            return (
+              <li key={id}>
+                <NavigationMenu.Link asChild>
+                  <Link href={hrefFuncion(id)} className={itemClass}>
+                    <span
+                      aria-hidden="true"
+                      className={`flex size-11 shrink-0 items-center justify-center rounded-full ${TONE_CLASS[ui.tone]}`}
+                    >
+                      <ui.icon className="size-4.5" strokeWidth={2} />
+                    </span>
+                    <span className="flex flex-col gap-0.5">
+                      <b className="text-15">{ft.nombre}</b>
+                      <span className="text-13 text-muted">{ft.resumen}</span>
+                    </span>
+                  </Link>
+                </NavigationMenu.Link>
+              </li>
+            );
+          })}
         </ul>
         <NavigationMenu.Link asChild>
           <Link

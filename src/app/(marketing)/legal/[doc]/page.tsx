@@ -1,9 +1,6 @@
 // /legal/[doc] (offentlig, WP-26 steg 6, D-034: ingen egen referensdesign). Statiska
-// sidor för de tre policydokumenten (`LegalDocId`, `@/config/routes`), en per marknad:
-// CL läser `privacidad`/`terminos`/`encargo` direkt, SE:s `/legal/integritet` osv.
-// skrivs om (`next.config.ts`, `seRouteRewrites`) till samma sidfil med samma id, så
-// `params.doc` är alltid en av de tre CL-namnen oavsett marknad (samma mönster som
-// `/para/[industria]`). 404 för ett okänt dokument-id.
+// sidor för de tre policydokumenten (`LegalDocId`, `@/config/routes`):
+// `privacidad`/`terminos`/`encargo`. 404 för ett okänt dokument-id.
 import { copy } from "@/i18n/marketing";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -12,7 +9,7 @@ import { LegalPage } from "@/components/legal/legal-page";
 import { LEGAL_DOC_IDS, resolveLegalDoc } from "@/components/legal/resolve-doc";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
-import { brand, market } from "@/config/brand";
+import { brand } from "@/config/brand";
 import type { LegalDocId } from "@/config/routes";
 import { LEGAL_DRAFT_BANNER } from "@/i18n/legal";
 
@@ -43,9 +40,7 @@ export default async function LegalDocPage({
   if (!doc) notFound();
 
   const draftBanner =
-    doc.status === "draft"
-      ? LEGAL_DRAFT_BANNER[market === "SE" ? "sv-SE" : "es-CL"]
-      : null;
+    doc.status === "draft" ? LEGAL_DRAFT_BANNER["es-CL"] : null;
   const tocLabel = copy.sitio.footer2.legal.contenido;
 
   return (

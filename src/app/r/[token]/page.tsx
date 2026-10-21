@@ -10,7 +10,7 @@ import { notFound } from "next/navigation";
 
 import { ManageScreen } from "@/components/booking/manage-screen";
 import type { ManageCancelResult } from "@/components/booking/manage-view";
-import { gestion, reserva } from "@/i18n";
+import { gestion } from "@/i18n";
 import { cancelByToken, loadBookingByToken } from "@/server/bookings/manage";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
@@ -43,15 +43,8 @@ export async function generateMetadata({
   };
 }
 
-export default async function ManagePage({
-  params,
-  searchParams,
-}: {
-  params: Params;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function ManagePage({ params }: { params: Params }) {
   const { token } = await params;
-  const sp = await searchParams;
   const now = systemClock();
   const booking = await loadBookingByToken(token, now);
   if (!booking) notFound();
@@ -81,7 +74,6 @@ export default async function ManagePage({
       booking={booking}
       now={now.toISOString()}
       onCancel={cancelReservation}
-      notice={sp.pago === "ok" ? reserva.pago.okAviso : undefined}
     />
   );
 }

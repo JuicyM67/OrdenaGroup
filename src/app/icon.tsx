@@ -1,28 +1,13 @@
 // WP-47 (tillägg E): app-ikon (favicon), samma glyf som `LogoMark`
 // (`src/components/ui/logo-mark.tsx`) — en cirkel med fylld nederhalva i en lime-ruta.
-// Väljs automatiskt per marknad: bygget sätter `NEXT_PUBLIC_MARKET` (CL/SE, se
-// `src/config/brand.ts`), och den här filen läser samma `brand`-export, så en framtida
-// marknadsspecifik glyf (om märkena någonsin skiljer sig visuellt) bara byts här.
-//
 // Route handler-ikoner (Satori/`ImageResponse`) har ingen DOM/CSS-kaskad — Tailwind-klasser
 // och CSS-variabler (`src/styles/tokens.css`) går inte att använda här, bara inline-`style`.
 // Hex-värdena nedan är kopior av `--color-lime`/`--color-ink` (tokens.css), inte nya
 // godtyckliga värden — samma undantag som gäller för `src/components/agenda/**`s geometri
 // (D-021).
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
 import { ImageResponse } from "next/og";
 
-import { brand, market } from "@/config/brand";
-
-// WP-74 (D-049): SE har b-klockan som incheckad PNG (scripts/gen-brand-icons.mjs).
-async function seIcon(): Promise<Response> {
-  const file = path.join(process.cwd(), "public", "brand", "bb-favicon-32.png");
-  return new Response(new Uint8Array(await readFile(file)), {
-    headers: { "Content-Type": "image/png" },
-  });
-}
+import { brand } from "@/config/brand";
 
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
@@ -34,8 +19,7 @@ const LIME = "#E3F36B";
 // eslint-disable-next-line no-restricted-syntax -- se motiveringen ovan (kopia av --color-ink)
 const INK = "#16161A";
 
-export default async function Icon() {
-  if (market === "SE") return seIcon();
+export default function Icon() {
   return new ImageResponse(
     <div
       role="img"

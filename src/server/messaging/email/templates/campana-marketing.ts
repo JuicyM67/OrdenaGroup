@@ -1,6 +1,6 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailNs } from "../content";
 import {
@@ -43,11 +43,10 @@ export type CampanaMarketingData = {
  * textrad (`footerHtml`).
  */
 export function campanaMarketingEmail(
-  market: Market,
   data: CampanaMarketingData,
 ): RenderedEmail {
-  const ns = emailNs(market).campanaMarketing;
-  const comun = emailNs(market).comun;
+  const ns = emailNs().campanaMarketing;
+  const comun = emailNs().comun;
 
   const ofertaRows: BookingCardRow[] =
     data.offerPct === undefined
@@ -84,7 +83,6 @@ export function campanaMarketingEmail(
   ];
 
   const { html, text } = renderLayout({
-    market,
     preheader: ns.preheader,
     bodyHtml,
     bodyText,

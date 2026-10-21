@@ -1,7 +1,6 @@
 // Sektion 1 efter heron: "Smärtfri flytt" (WP-71, Flytt.dc.html). Servern bygger
 // förhandsvisningens bilder (marknadens demoföretag) och skickar texten som props till
 // den interaktiva klientdelen. Ersätter `migracion-section.tsx` på startsidan.
-import { anchor } from "@/config/url-params";
 import { brand } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
 
@@ -13,7 +12,7 @@ const d = copy.home.demo;
 
 export function FlyttSection() {
   return (
-    <div id={anchor("migracion-facil")} className="scroll-mt-24">
+    <div id="migracion-facil" className="scroll-mt-24">
       <FlyttDemo
         etiqueta={t.etiqueta}
         tituloPre={t.tituloPre}

@@ -10,14 +10,14 @@ export type GeocodeQuery = {
   address: string;
   /** Kommun/stadsdel/comuna (`businesses.comuna`). */
   comuna: string;
-  /** ISO 3166-1 alfa-2, gemener (`se`/`cl`). */
-  country: "se" | "cl";
+  /** ISO 3166-1 alfa-2, gemener (bara Chile). */
+  country: "cl";
 };
 
 export type GeocodeHit = {
   lat: number;
   lng: number;
-  /** Stadsdel/ort att visa ("Södermalm", "Providencia"). */
+  /** Stadsdel/ort att visa ("Providencia"). */
   areaName: string;
 };
 

@@ -1,12 +1,12 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailColors as c } from "./colors";
 
 /**
  * Byggstenar för HTML-mejl: tabellbaserad layout, inline-CSS, max 600 px.
- * Inga externa bilder (utom SE:s märke, D-049): loggan är text/HTML (D-026, se `BrandLogo`-mönstret
+ * Inga externa bilder: loggan är text/HTML (D-026, se `BrandLogo`-mönstret
  * i src/components/marketing/).
  *
  * Mörkt läge (WP-49): vi kör `color-scheme: light only` (meta +
@@ -97,33 +97,13 @@ const FONT_DISPLAY =
 const FONT_SANS =
   "'Plus Jakarta Sans','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
-/** Ordmärket, samma innehåll som `BrandLogo` (CL: limecirkel + namn, SE:
- * "Booking" + limebricka "Buddy") men som tabellbaserad HTML utan bilder.
+/** Ordmärket, samma innehåll som `BrandLogo` (limecirkel + namn) men som
+ * tabellbaserad HTML utan bilder.
  * Text på en explicit ljus botten (`bgcolor` + `background-color` på
  * cellen, inte bara på `<body>`) — det var just den okantade "Booking"-
  * texten (ingen egen bakgrund, ingen klass) som blev osynlig i mörkt läge
  * innan WP-49, se filkommentaren ovan. */
-function wordmarkHtml(market: Market): string {
-  if (market === "SE") {
-    // D-049: b-klockan som hostad PNG (public/brand/bb-mark-email.png, 2x) + "booking" (600)
-    // och "buddy" (800) som text. Bilden har alt-text så att namnet syns även utan bilder.
-    const words = brand.name.toLowerCase().split(" ");
-    const first = words[0] ?? brand.name;
-    const rest = words.slice(1).join(" ");
-    // Basen är installationens APP_URL (samma som övriga mejllänkar); domänen är bara
-    // reserv, eftersom den kan vara okopplad (staging kör på vercel.app).
-    const base = (
-      process.env.NEXT_PUBLIC_APP_URL ?? `https://${brand.domain ?? ""}`
-    ).replace(/\/$/, "");
-    const src = `${base}/brand/bb-mark-email.png`;
-    return `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.canvas}">
-      <tr>
-        <td bgcolor="${c.canvas}" style="background-color:${c.canvas};padding:0 8px 0 0;vertical-align:middle;"><img src="${src}" width="28" height="28" alt="" style="display:block;width:28px;height:28px;border:0;" /></td>
-        <td bgcolor="${c.canvas}" style="background-color:${c.canvas};vertical-align:middle;font-family:${FONT_DISPLAY};font-size:21px;letter-spacing:-0.03em;color:${c.ink};"><span style="font-weight:600;">${escapeHtml(first)}</span>${rest ? `<span style="font-weight:800;">${escapeHtml(rest)}</span>` : ""}</td>
-      </tr>
-    </table>`;
-  }
+function wordmarkHtml(): string {
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.canvas}">
       <tr>
@@ -214,7 +194,6 @@ export function stepList(items: readonly string[]): string {
 }
 
 export type EmailLayoutInput = {
-  readonly market: Market;
   readonly preheader: string;
   readonly bodyHtml: string;
   readonly bodyText: string;
@@ -240,7 +219,7 @@ export function renderLayout(input: EmailLayoutInput): {
   text: string;
 } {
   const html = `<!DOCTYPE html>
-<html lang="${input.market === "SE" ? "sv-SE" : "es-CL"}" style="color-scheme:light only;supported-color-schemes:light only;">
+<html lang="es-CL" style="color-scheme:light only;supported-color-schemes:light only;">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -268,7 +247,7 @@ export function renderLayout(input: EmailLayoutInput): {
         <td align="center" style="padding:32px 16px;background-color:${c.canvas};" bgcolor="${c.canvas}">
           <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="container" style="width:600px;max-width:600px;background-color:${c.canvas};" bgcolor="${c.canvas}">
             <tr>
-              <td class="px" style="padding:0 8px 24px;background-color:${c.canvas};" bgcolor="${c.canvas}">${wordmarkHtml(input.market)}</td>
+              <td class="px" style="padding:0 8px 24px;background-color:${c.canvas};" bgcolor="${c.canvas}">${wordmarkHtml()}</td>
             </tr>
             <tr>
               <td style="background-color:${c.lime};height:6px;line-height:6px;font-size:0;border-radius:24px 24px 0 0;" bgcolor="${c.lime}">&nbsp;</td>
@@ -304,7 +283,6 @@ export function footerHtml(lines: readonly string[]): string {
 }
 
 export type SimpleEmailContent = {
-  readonly market: Market;
   readonly subject: string;
   readonly preheader: string;
   readonly titulo: string;
@@ -346,7 +324,6 @@ export function composeSimpleEmail(content: SimpleEmailContent): {
   ].join("\n\n");
 
   const { html, text } = renderLayout({
-    market: content.market,
     preheader: content.preheader,
     bodyHtml,
     bodyText,

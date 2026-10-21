@@ -1,20 +1,9 @@
 // WP-47 (tillägg E): apple-touch-icon (iOS-hemskärm), samma glyf som `icon.tsx` fast större
 // (Apples rekommenderade 180×180) och utan rundade hörn i själva bilden (iOS rundar hörnen
 // på hemskärmen automatiskt, en dubbel radie ger synligt "kantfel").
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
 import { ImageResponse } from "next/og";
 
-import { brand, market } from "@/config/brand";
-
-// WP-74 (D-049): SE har b-klockan som incheckad PNG (scripts/gen-brand-icons.mjs).
-async function seIcon(): Promise<Response> {
-  const file = path.join(process.cwd(), "public", "brand", "bb-apple-180.png");
-  return new Response(new Uint8Array(await readFile(file)), {
-    headers: { "Content-Type": "image/png" },
-  });
-}
+import { brand } from "@/config/brand";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
@@ -26,8 +15,7 @@ const LIME = "#E3F36B";
 // eslint-disable-next-line no-restricted-syntax -- se motiveringen ovan (kopia av --color-ink)
 const INK = "#16161A";
 
-export default async function AppleIcon() {
-  if (market === "SE") return seIcon();
+export default function AppleIcon() {
   return new ImageResponse(
     <div
       role="img"

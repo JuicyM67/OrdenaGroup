@@ -2,7 +2,6 @@
 // bor i `src/i18n/paginas/*`; adresserna i `src/config/routes.ts`.
 import {
   BadgeCheck,
-  Banknote,
   Bell,
   BellRing,
   CalendarCheck,
@@ -50,7 +49,8 @@ export type FuncionUi = {
   readonly fotoPos: string;
   /** Ikoner för de tre fördelarna. */
   readonly beneficios: readonly [LucideIcon, LucideIcon, LucideIcon];
-  readonly relacionadas: readonly [FuncionId, FuncionId, FuncionId];
+  /** Upp till tre relaterade funktioner. */
+  readonly relacionadas: readonly FuncionId[];
 };
 
 export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
@@ -60,16 +60,9 @@ export const FUNCION_UI: Record<FuncionId, FuncionUi> = {
     foto: "reservas",
     fotoPos: "object-top",
     beneficios: [Clock, Globe, ShieldCheck],
-    relacionadas: ["recordatorios", "listaEspera", "pagos"],
+    relacionadas: ["recordatorios", "listaEspera"],
   },
-  pagos: {
-    icon: CreditCard,
-    tone: "mint",
-    foto: "pagos",
-    fotoPos: "object-center",
-    beneficios: [UserCheck, Banknote, Repeat],
-    relacionadas: ["resenas", "horasFlash", "recordatorios"],
-  },
+
   resenas: {
     icon: Star,
     tone: "peach",

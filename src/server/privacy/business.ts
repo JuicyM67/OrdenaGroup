@@ -462,7 +462,7 @@ export type PurgeResult =
   | { ok: true }
   | {
       ok: false;
-      code: "not_found" | "not_requested" | "too_early" | "open_vouchers";
+      code: "not_found" | "not_requested" | "too_early";
     };
 
 type EligibilityCheck = PurgeResult;
@@ -492,20 +492,6 @@ async function checkPurgeEligible(
   if (!business.deletion_requested_at)
     return { ok: false, code: "not_requested" };
   if (!business.overdue) return { ok: false, code: "too_early" };
-  // WP-69 (D-057, säkerhetsgranskning S3): oanvända värdebevis är kundernas
-  // pengar hos företaget — de måste återbetalas innan företaget raderas.
-  const open = await q.query(
-    `select 1 from public.vouchers
-      where business_id = $1 and status in ('active', 'reserved', 'refunding')
-     union all
-     -- WP-77 (D-058): presentkort med saldo som inte gått ut (samma kod).
-     select 1 from public.gift_cards
-      where business_id = $1 and status in ('active', 'refunding', 'disputed')
-        and balance_minor > 0 and expires_at > now()
-      limit 1`,
-    [businessId],
-  );
-  if (open.rows.length > 0) return { ok: false, code: "open_vouchers" };
   return { ok: true };
 }
 
@@ -574,14 +560,6 @@ export async function purgeBusiness(businessId: string): Promise<PurgeResult> {
     const ownersRes = await q.query<{ user_id: string }>(
       `select user_id from public.memberships
         where business_id = $1 and role = 'owner'`,
-      [businessId],
-    );
-
-    // WP-69 (S3): värdebevisens koppling till bokningen släpps först
-    // (FK utan kaskad); värdebevisen själva kaskaderar med företaget.
-    await q.query(
-      `update public.vouchers set booking_id = null
-        where business_id = $1 and booking_id is not null`,
       [businessId],
     );
 

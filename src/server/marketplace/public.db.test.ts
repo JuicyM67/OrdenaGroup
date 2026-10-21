@@ -21,10 +21,7 @@ describe("listOffersIn", () => {
     const c = await createTestClient();
     try {
       await c.query("begin");
-      const tz =
-        process.env.NEXT_PUBLIC_MARKET === "SE"
-          ? "Europe/Stockholm"
-          : "America/Santiago";
+      const tz = "America/Santiago";
       const biz = (
         await c.query<{ id: string }>(
           // WP-70 (D-056): erbjudanden visas bara när planen har `offers`.

@@ -21,7 +21,6 @@ import {
   nav,
   plantillasWhatsapp,
   reserva,
-  sms,
   whatsappSesion,
 } from "./es-CL";
 import {
@@ -164,8 +163,8 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   linkGestion: "https://ejemplo.cl/r/abc123",
   linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
   plataforma: "la plataforma",
-  /** Agregados por copywriter-es-cl junto con `email.bienvenida`/`acceso` y
-   * `sms` (paso de correos completos + plantillas de SMS): mismo patrón que
+  /** Agregados por copywriter-es-cl junto con `email.bienvenida`/`acceso`
+   * (paso de correos completos): mismo patrón que
    * el resto, un valor cualquiera del tipo correcto para detectar restos
    * rotos, no para verificar el texto exacto. */
   marca: "la plataforma",
@@ -177,14 +176,10 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
    * `email.invitacionEquipo` (WP-46, D-034). */
   accion: "cancelar esta reserva",
   invitadoPor: "Diego",
-  /** WP-55: `sms.mensajeLibre`. */
   texto: "Recuerda traer tu carnet.",
-  /** WP-31 (F14): `sms.campanaMarketing`. */
   bajaLink: "https://ejemplo.cl/baja/abc123",
-  /** WP-76 (D-053): `email.smsCuota80`/`smsAgotados`. */
   usado: 120,
   max: 150,
-  /** WP-69 (D-057): `email.valeComprado`. */
   titulo: "Corte + barba",
 };
 
@@ -213,7 +208,6 @@ describe("cada función soporta parámetros genéricos sin dejar restos rotos", 
     ...AREAS,
     email,
     whatsappSesion,
-    sms,
   };
   for (const [nombre, raiz] of Object.entries(raices)) {
     it(`${nombre}: ninguna función deja undefined/NaN/null/[object/llaves sueltas`, () => {
@@ -671,8 +665,8 @@ const EJEMPLO = {
   linkNuevaReserva: "https://ejemplo.cl/barberia-norte",
   telefonoNegocio: "+56 9 1234 5678",
   plataforma: "la plataforma",
-  /** Para los correos y SMS nuevos (`email.bienvenida`/`nuevaReservaDueno`/
-   * `cancelacionDueno`/`listaEsperaCupo`/`horaFlash`, `sms.*`): "la
+  /** Para los correos nuevos (`email.bienvenida`/`nuevaReservaDueno`/
+   * `cancelacionDueno`/`listaEsperaCupo`/`horaFlash`): "la
    * plataforma" en vez de `brand.name`, para no interferir con la prueba de
    * "marca" de abajo (que exige que `brand.name` no aparezca fuera de
    * `muestras`, la tabla de textos de UI). */
@@ -774,17 +768,6 @@ const muestrasSesionYCorreo: string[] = [
     hora: EJEMPLO.hora,
   }),
   email.horaFlash.cta,
-  // sms: los nueve mensajes más `pie` (línea de baja).
-  sms.reservaConfirmada({ ...EJEMPLO }),
-  sms.recordatorio({ ...EJEMPLO }),
-  sms.recordatorioHoy({ ...EJEMPLO }),
-  sms.reservaMovida({ ...EJEMPLO }),
-  sms.reservaCancelada({ ...EJEMPLO }),
-  sms.listaEsperaCupo({ ...EJEMPLO }),
-  sms.horaFlash({ ...EJEMPLO }),
-  sms.nuevaReservaDueno({ ...EJEMPLO }),
-  sms.codigoAcceso({ codigo: EJEMPLO.codigo }),
-  sms.pie,
 ];
 
 const textosPlantillas: string[] = [];
@@ -855,47 +838,6 @@ describe("email.acceso: ya no tiene sintaxis de plantilla de Supabase", () => {
       condiciones: "Si cancelas...",
     });
     expect(texto).not.toContain("{{");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// sms: cada mensaje cabe en un solo SMS (≤ 160 caracteres, el límite de un
-// segmento GSM-7). Valores de ejemplo largos y realistas (nombre de negocio
-// y de servicio más largos que los de `MUESTRA_GENERICA`), para no dejar
-// pasar una plantilla que solo funciona con nombres cortos.
-// ---------------------------------------------------------------------------
-
-const EJEMPLO_SMS = {
-  negocio: "Barbería y Estética del Centro",
-  servicio: "Corte + barba y diseño",
-  fecha: "viernes 2 de octubre",
-  hora: "15:00",
-  link: "https://ejemplo.cl/r/aB3xQ9Lm2P7k",
-  cliente: "Francisca Muñoz Vidal",
-  minutos: 15,
-  pct: 20,
-  codigo: "482913",
-} as const;
-
-describe("sms: cada mensaje cabe en un solo SMS (≤ 160 caracteres)", () => {
-  const mensajes: Array<[string, string]> = [
-    ["reservaConfirmada", sms.reservaConfirmada({ ...EJEMPLO_SMS })],
-    ["recordatorio", sms.recordatorio({ ...EJEMPLO_SMS })],
-    ["recordatorioHoy", sms.recordatorioHoy({ ...EJEMPLO_SMS })],
-    ["reservaMovida", sms.reservaMovida({ ...EJEMPLO_SMS })],
-    ["reservaCancelada", sms.reservaCancelada({ ...EJEMPLO_SMS })],
-    ["listaEsperaCupo", sms.listaEsperaCupo({ ...EJEMPLO_SMS })],
-    ["horaFlash", sms.horaFlash({ ...EJEMPLO_SMS })],
-    ["nuevaReservaDueno", sms.nuevaReservaDueno({ ...EJEMPLO_SMS })],
-    ["codigoAcceso", sms.codigoAcceso({ codigo: EJEMPLO_SMS.codigo })],
-  ];
-
-  it.each(mensajes)("%s cabe en 160 caracteres", (_nombre, texto) => {
-    expect(texto.length).toBeLessThanOrEqual(160);
-  });
-
-  it("pie (línea de baja) es corto, para dejar margen cuando se agrega al final de un mensaje de marketing", () => {
-    expect(sms.pie.length).toBeLessThanOrEqual(60);
   });
 });
 

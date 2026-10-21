@@ -15,7 +15,6 @@
 import * as Dialog from "@radix-ui/react-dialog";
 import * as Popover from "@radix-ui/react-popover";
 import { Bell, X } from "lucide-react";
-import Link from "next/link";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -24,8 +23,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconButton, type IconButtonProps } from "@/components/ui/icon-button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
-import { appHref } from "@/config/routes";
-import { comun, nav, smsCreditos, solicitudes } from "@/i18n";
+import { comun, nav, solicitudes } from "@/i18n";
 import {
   APP_TZ,
   formatLocalDate,
@@ -34,7 +32,6 @@ import {
   toLocalDate,
 } from "@/lib/format/dates";
 import type { PendingRequestItem } from "@/lib/validation/requests";
-import type { SmsBellNotice } from "@/lib/validation/sms-credits";
 
 import { RechazarDialog } from "./rechazar-dialog";
 import { useCompactViewport } from "./use-compact-viewport";
@@ -48,9 +45,6 @@ export type NotificationBellResult = { ok: boolean };
 
 export type NotificationBellProps = {
   requests: readonly PendingRequestItem[];
-  /** WP-76 (D-053): sms-varningar (80 % / slut), överst i listan med en länk
-   * till Inställningar → Plan. Härleds på servern (`loadSmsBellNotices`). */
-  notices?: readonly SmsBellNotice[];
   onConfirm: (bookingId: string) => Promise<NotificationBellResult>;
   /** `reason`: ägarens valfria motiv (`RechazarDialog`), ≤ 300 tecken,
    * skickas som `motivo` i mejlet till kunden (`declineBooking`,
@@ -94,7 +88,6 @@ function notificationsLabel(count: number): string {
 
 export function NotificationBell({
   requests,
-  notices = [],
   onConfirm,
   onDecline,
   onApproveCancel,
@@ -105,7 +98,7 @@ export function NotificationBell({
   className,
 }: NotificationBellProps) {
   const sheetDescId = useId();
-  const count = requests.length + notices.length;
+  const count = requests.length;
   const [open, setOpen] = useState(false);
   // WP-47 (tillägg D): dra-för-att-stänga på mobil (bottenark), samma hook som
   // move-dialog.tsx/manual-booking-dialog.tsx.
@@ -212,28 +205,9 @@ export function NotificationBell({
     </IconButton>
   );
 
-  const noticeRows = notices.map((n) => (
-    <div
-      key={n.kind}
-      className="flex flex-col gap-2 border-b border-line-strong px-1 py-3 last:border-b-0"
-    >
-      <p className="text-13 font-semibold text-ink">
-        {n.kind === "smsAgotados"
-          ? smsCreditos.campana.agotados
-          : smsCreditos.campana.cuota80}
-      </p>
-      <Button asChild variant="primary" size="xs" className="self-start">
-        <Link href={appHref("appAjustesPlan")} onClick={() => setOpen(false)}>
-          {smsCreditos.campana.cta}
-        </Link>
-      </Button>
-    </div>
-  ));
-
   const list = (
     <div className="flex max-h-96 flex-col gap-1 overflow-y-auto">
-      {noticeRows}
-      {items.length === 0 && notices.length > 0 ? null : items.length === 0 ? (
+      {items.length === 0 ? (
         <p className="px-1 py-4 text-13 text-muted">
           {solicitudes.campana.vacio}
         </p>

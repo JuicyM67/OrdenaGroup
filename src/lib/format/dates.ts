@@ -26,12 +26,10 @@ export type Disambiguation = "compatible" | "earlier" | "later";
 
 /** Chiles tidszon. För tester/fixtures; logik använder `APP_TZ`. */
 export const SANTIAGO = "America/Santiago" as TimeZone;
-/** Sveriges tidszon. För tester/fixtures; logik använder `APP_TZ`. */
-export const STOCKHOLM = "Europe/Stockholm" as TimeZone;
 
 /**
- * Installationens tidszon (`marketConfig.timeZone`, D-025). Används där
- * företagets egen `businesses.timezone` inte finns till hands.
+ * Appens tidszon (`marketConfig.timeZone`, D-025). Används där företagets
+ * egen `businesses.timezone` inte finns till hands.
  */
 export const APP_TZ = marketConfig.timeZone as TimeZone;
 
@@ -418,7 +416,7 @@ export function localDayRange(
   };
 }
 
-/** 23, 24 eller 25 dagar med sommartidsbyte (Santiago, Stockholm). */
+/** 23, 24 eller 25 dagar med sommartidsbyte (Santiago). */
 export function localDayLengthHours(date: LocalDate, tz: TimeZone): number {
   const { start, end } = localDayRange(date, tz);
   return (end.getTime() - start.getTime()) / 3_600_000;
@@ -485,7 +483,7 @@ export function minutesBetween(a: Date, b: Date): number {
 }
 
 // ---------------------------------------------------------------------------
-// Visning (es-CL/sv-SE, 24 h, egna namntabeller, ingen ICU-text)
+// Visning (es-CL, 24 h, egna namntabeller, ingen ICU-text)
 // ---------------------------------------------------------------------------
 
 export type DatePreset =
@@ -512,9 +510,9 @@ function pick(table: readonly string[], index: number): string {
   return v;
 }
 
-/** "2 de octubre" (es-CL) / "2 oktober" (sv-SE). */
-function dayMonth(day: number, monthLong: string, locale: CalendarLocale) {
-  return locale === "es-CL" ? `${day} de ${monthLong}` : `${day} ${monthLong}`;
+/** "2 de octubre". */
+function dayMonth(day: number, monthLong: string) {
+  return `${day} de ${monthLong}`;
 }
 
 export function formatLocalDate(
@@ -533,13 +531,13 @@ export function formatLocalDate(
     case "weekdayDayMonthShort":
       return `${wShort} ${day} ${mShort}`;
     case "weekdayDayMonthLong":
-      return `${wLong} ${dayMonth(day, mLong, locale)}`;
+      return `${wLong} ${dayMonth(day, mLong)}`;
     case "weekdayDayShort":
       return `${wShort} ${day}`;
     case "weekdayDayLong":
       return `${wLong} ${day}`;
     case "dayMonthLong":
-      return dayMonth(day, mLong, locale);
+      return dayMonth(day, mLong);
     case "monthYear":
       return `${capitalize(mLong)} ${year}`;
     case "month":
@@ -553,7 +551,7 @@ export function formatLocalDate(
     case "weekdayLongLower":
       return wLong.toLowerCase();
     case "weekdayDayMonthLongLower":
-      return `${wLong.toLowerCase()} ${dayMonth(day, mLong, locale)}`;
+      return `${wLong.toLowerCase()} ${dayMonth(day, mLong)}`;
   }
 }
 

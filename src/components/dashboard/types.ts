@@ -4,7 +4,6 @@
 // initialer (`initialsOf`) och procent (`formatPercent`) räknas alltid ur `name`/`noShowPct`
 // vid renderingen, aldrig lagrade som text i datan.
 // Riktig tillgänglighet/priser kommer från servern (WP-21), inte uträknat i UI (hård regel 2).
-import type { SmsBellNotice } from "@/lib/validation/sms-credits";
 import type { AvatarProps } from "@/components/ui/avatar";
 import type { PendingRequestItem } from "@/components/shared/notification-bell";
 import type { LocalDate } from "@/lib/format/dates";
@@ -74,8 +73,6 @@ export type InicioData = {
    * bekräfta" arriba de todo en Inicio (se oculta cuando está vacía). */
   notifications: {
     items: PendingRequestItem[];
-    /** WP-76 (D-053): sms-varningar i klockan (bara ägaren i SE). */
-    notices?: SmsBellNotice[];
   };
   week: {
     recoveredHours: number;

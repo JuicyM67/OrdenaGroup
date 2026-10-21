@@ -15,10 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html
-      lang={process.env.NEXT_PUBLIC_MARKET === "SE" ? "sv" : "es-CL"}
-      className={`${display.variable} ${sans.variable}`}
-    >
+    <html lang="es-CL" className={`${display.variable} ${sans.variable}`}>
       <body>{children}</body>
     </html>
   );

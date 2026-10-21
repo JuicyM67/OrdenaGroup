@@ -3,7 +3,7 @@
 // människa mot lokal databas eller staging — aldrig mot produktion från en
 // agent (regel hård 8). Samma kod som cron-svepet (`runGeocodeSweep`).
 //
-//   NEXT_PUBLIC_MARKET=SE GEOCODING_PROVIDER=nominatim \
+//   GEOCODING_PROVIDER=nominatim \
 //   NOMINATIM_CONTACT_EMAIL=du@example.com DATABASE_URL=... \
 //   NODE_OPTIONS="--conditions=react-server" npx tsx scripts/geocode-backfill.ts
 import { runGeocodeSweep } from "@/server/geocoding";

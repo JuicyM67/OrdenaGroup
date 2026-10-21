@@ -20,21 +20,12 @@ import {
   type ManagedBooking,
 } from "./manage-view";
 
-const PAGO_KEY = {
-  reserved: "reservado",
-  paid: "pagado",
-  refund: "reembolso",
-} as const;
-
 export function ManageScreen({
   booking,
   now,
   onCancel,
-  notice,
 }: {
   booking: ManagedBooking;
-  /** WP-64 (D-044): "betalningen mottagen" när kunden kommer tillbaka från Stripe. */
-  notice?: string | undefined;
   /** Instant (ISO, med offset) för "nu", injicerad av `page.tsx` — aldrig
    * `new Date()` här. */
   now: string;
@@ -82,15 +73,6 @@ export function ManageScreen({
         </h1>
       </div>
 
-      {notice ? (
-        <p
-          role="status"
-          className="self-start rounded-control bg-lime px-3 py-2 text-13 font-semibold text-ink"
-        >
-          {notice}
-        </p>
-      ) : null}
-
       <Card radius="tile" padding="lg" className="flex flex-col gap-3">
         <Row label={gestion.campos.servicio} value={fields.servicio} />
         <Row label={gestion.campos.dia} value={fields.dia} />
@@ -101,12 +83,6 @@ export function ManageScreen({
           {fields.precio}
         </div>
       </Card>
-
-      {booking.payment ? (
-        <p className="text-13 text-muted">
-          {gestion.pago[PAGO_KEY[booking.payment]]}
-        </p>
-      ) : null}
 
       {booking.status === "requested" ? (
         <div className="flex flex-col gap-2">

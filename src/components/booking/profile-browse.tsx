@@ -10,7 +10,6 @@
 // "Boka"-knapparna är klientöar (`profile-interactive.tsx`) som läser
 // `ProfileFlowContext` för att nå tillbaka till `BookingScreen`s tillstånd
 // (kategoriflik, mobilflik, vilken tjänst som startar bokningsflödet).
-import { anchor } from "@/config/url-params";
 import type { ReactNode } from "react";
 
 import {
@@ -18,7 +17,6 @@ import {
   ReviewsSection,
   type PublicReviewsView,
 } from "@/components/reviews/public-reviews";
-import { CreditCard, Lock } from "lucide-react";
 
 import { formulario, perfil, resenas } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
@@ -64,15 +62,8 @@ export function ProfileBrowse({
   social,
   reviews,
   reviewsMoreHref,
-  paymentNote,
-  giftCardLink,
 }: {
   data: BookingPageData;
-  /** WP-77 (D-058): "Köp presentkort" (serverrenderad länk, bara när
-   * företaget säljer presentkort). */
-  giftCardLink?: ReactNode;
-  /** WP-72: info-raden "Betala direkt …" som bara syns i visningsläget (SE-demon). */
-  paymentNote?: { texto: string; via: string };
   profile: BookingProfile;
   social?: ProfileSocialSlots;
   /** WP-65 (D-045): `undefined` = inga recensioner, allt om dem döljs. */
@@ -94,8 +85,6 @@ export function ProfileBrowse({
     profile.instagramUrl || profile.tiktokUrl || profile.facebookUrl,
   );
 
-  const payNote = paymentNote ? <PaymentNote {...paymentNote} /> : null;
-
   const infoPanel = (
     <div className="flex flex-col gap-3.5">
       <HoursCard profile={profile} />
@@ -105,7 +94,6 @@ export function ProfileBrowse({
         hasSocial={hasSocial}
         social={social?.contact}
       />
-      {giftCardLink}
     </div>
   );
 
@@ -140,10 +128,7 @@ export function ProfileBrowse({
               rating={
                 reviews ? (
                   <span data-tour="rating" className="inline-flex">
-                    <RatingChip
-                      reviews={reviews}
-                      href={`#${anchor("resenas")}`}
-                    />
+                    <RatingChip reviews={reviews} href="#resenas" />
                   </span>
                 ) : undefined
               }
@@ -152,7 +137,6 @@ export function ProfileBrowse({
               {perfil.publico.secciones.reservarHora}
             </h2>
             {tabs.length > 0 ? <ProfileCategoryTabs tabs={tabs} /> : null}
-            {payNote}
             <ProfileServiceList
               rows={rows}
               emptyLabel={formulario.categorias.vacia}
@@ -204,7 +188,6 @@ export function ProfileBrowse({
               hasSocial={hasSocial}
               social={social?.contact}
             />
-            {giftCardLink}
           </aside>
         </div>
       </div>
@@ -218,7 +201,6 @@ export function ProfileBrowse({
             servicios: (
               <>
                 {tabs.length > 0 ? <ProfileCategoryTabs tabs={tabs} /> : null}
-                {payNote}
                 <ProfileServiceList
                   rows={rows}
                   emptyLabel={formulario.categorias.vacia}
@@ -234,7 +216,7 @@ export function ProfileBrowse({
             ) : null,
             resenas: reviews ? (
               <ReviewsSection
-                id={anchor("resenas-movil")}
+                id="resenas-movil"
                 reviews={reviews}
                 negocio={business.name}
                 moreHref={reviewsMoreHref}
@@ -291,24 +273,5 @@ function MobileBookBar({
         {perfil.publico.reservarAhora}
       </ProfileBookNowButton>
     </div>
-  );
-}
-
-/** Info-rad nära Boka-knappen, bara synlig i visningsläget (`tour-note`, tokens.css). */
-function PaymentNote({ texto, via }: { texto: string; via: string }) {
-  return (
-    <p
-      data-tour="payment"
-      className="tour-note items-center justify-between gap-3 rounded-event bg-surface px-3 py-2.5 text-12 font-semibold text-ink"
-    >
-      <span className="flex items-center gap-2">
-        <CreditCard aria-hidden="true" className="size-4" strokeWidth={2} />
-        {texto}
-      </span>
-      <span className="flex items-center gap-1 text-11 font-normal text-muted">
-        <Lock aria-hidden="true" className="size-2.75" strokeWidth={2.5} />
-        {via}
-      </span>
-    </p>
   );
 }

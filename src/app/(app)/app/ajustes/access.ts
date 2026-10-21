@@ -16,16 +16,10 @@ import {
 import type { Feature } from "@/config/plans";
 import { appHref, href } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { SmsBellNotice } from "@/lib/validation/sms-credits";
-import {
-  loadSmsBellNotices,
-  smsCreditsMarket,
-} from "@/server/billing/sms-credits";
 import {
   getCurrentMember,
   type CurrentMember,
 } from "@/server/onboarding/owner-business";
-import { stripeEnabled } from "@/server/payments/stripe/client";
 import {
   listPendingRequests,
   type PendingRequestItem,
@@ -54,8 +48,6 @@ export type AjustesPageContext = {
    * som förut (`ajustes-screen.tsx`). */
   myProfileActions: MyProfileActions | undefined;
   pendingRequests: PendingRequestItem[];
-  /** WP-76 (D-053): sms-varningar i klockan (bara ägaren i SE). */
-  notices: SmsBellNotice[];
   tabs: AjustesTabItem[];
   /** WP-73 (D-048): företagets plan, för uppgraderingsrutorna. */
   plan: PlanInfo;
@@ -71,7 +63,6 @@ export type AjustesPageContext = {
 const TAB_FEATURE: Partial<Record<AjustesTabKey, Feature>> = {
   socios: "campaigns",
   equipo: "staff_accounts",
-  pagos: "online_payment",
 };
 
 function lockedTabs(plan: PlanInfo): Set<AjustesTabKey> {
@@ -95,16 +86,11 @@ export async function requireAjustesTab(
   const current = await getCurrentMember(user.id);
   if (!current) redirect(appHref("appOnboarding"));
   if (!ajustesTabVisible(tab, current.view)) redirect(appHref("appAgenda"));
-  // WP-64 (D-044): Betalningar finns bara när Stripe är konfigurerat.
-  if (tab === "pagos" && !stripeEnabled()) redirect(appHref("appAgenda"));
 
-  const [myProfile, pendingRequests, plan, notices] = await Promise.all([
+  const [myProfile, pendingRequests, plan] = await Promise.all([
     loadMyProfileAction(),
     listPendingRequests(user.id, current.business.id, new Date()),
     loadBusinessPlan(current.business.id),
-    current.view.role === "owner" && smsCreditsMarket()
-      ? loadSmsBellNotices(current.business.id)
-      : Promise.resolve([]),
   ]);
 
   return {
@@ -121,14 +107,11 @@ export async function requireAjustesTab(
         }
       : undefined,
     pendingRequests,
-    notices,
     plan,
     plansHref:
       current.view.role === "owner"
         ? appHref("appAjustesPlan")
         : href("precios"),
-    tabs: buildAjustesTabs(current.view, lockedTabs(plan)).filter(
-      (t) => t.key !== "pagos" || stripeEnabled(),
-    ),
+    tabs: buildAjustesTabs(current.view, lockedTabs(plan)),
   };
 }

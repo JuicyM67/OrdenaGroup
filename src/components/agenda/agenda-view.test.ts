@@ -77,8 +77,8 @@ describe("offsetLabel", () => {
     process.env.TZ = originalTz;
   });
 
-  it("samma resultat oavsett process.env.TZ (UTC, Europe/Stockholm)", () => {
-    for (const tz of ["UTC", "Europe/Stockholm"]) {
+  it("samma resultat oavsett process.env.TZ (UTC, Europe/Madrid)", () => {
+    for (const tz of ["UTC", "Europe/Madrid"]) {
       process.env.TZ = tz;
       expect(offsetLabel("2026-08-31" as LocalDate, SANTIAGO)).toBe("GMT−4");
       expect(offsetLabel("2026-09-06" as LocalDate, SANTIAGO)).toBe("GMT−3");

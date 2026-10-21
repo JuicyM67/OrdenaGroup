@@ -1,22 +1,15 @@
 // Marknadsplatsen (WP-68, D-055): flaggor, kategorier och gränser. Inga texter här —
-// namnen finns i `src/i18n/*.descubre.ts`. Ruttsökvägarna finns i `routes.ts`.
-import { market, type Market } from "./brand";
+// namnen finns i `src/i18n/es-CL.descubre.ts`. Ruttsökvägarna finns i `routes.ts`.
 
-/** Marknadsplatsen (listning, erbjudanden, karta) finns i båda marknaderna (D-060;
- * Chile var dold enligt D-055). Kan stängas med `NEXT_PUBLIC_MARKETPLACE=0`
- * (nödbroms, bakas in i klientbygget). */
+/** Marknadsplatsen (listning, erbjudanden, karta) är på (D-060; var dold enligt
+ * D-055). Kan stängas med `NEXT_PUBLIC_MARKETPLACE=0` (nödbroms, bakas in i
+ * klientbygget). */
 export function marketplaceEnabled(): boolean {
   return process.env.NEXT_PUBLIC_MARKETPLACE !== "0";
 }
 
-/** Köp av värdebevis i marknadsplatsen (WP-69, D-057) kräver Stripe och finns bara
- * i SE. I CL visar erbjudandet "Ver horas" (vanlig bokning) tills Mercado Pago finns. */
-export function vouchersMarket(m: Market = market): boolean {
-  return m === "SE" && marketplaceEnabled();
-}
-
-/** Indexering (robots + sitemap) först när ägaren sätter `MARKETPLACE_INDEXABLE=1`
- * (efter att köpet, WP-69, är live). Till dess `noindex` och inte i sitemap. */
+/** Indexering (robots + sitemap) först när ägaren sätter `MARKETPLACE_INDEXABLE=1`.
+ * Till dess `noindex` och inte i sitemap. */
 export function marketplaceIndexable(): boolean {
   return marketplaceEnabled() && process.env.MARKETPLACE_INDEXABLE === "1";
 }
@@ -32,8 +25,8 @@ export function marketplaceIncludeDemo(): boolean {
 export type MarketplaceCategoryId =
   "har" | "naglar" | "massage" | "hudvard" | "fransar" | "ovrigt";
 
-/** Kategorier i visningsordning (samma id:n som CHECK-listan på `offers.category`).
- * `ovrigt` visas inte som ruta, bara under "Alla". */
+/** Kategorier i visningsordning (samma id:n som CHECK-listan på `offers.category`,
+ * därför de interna id:na). `ovrigt` visas inte som ruta, bara under "Alla". */
 export const MARKETPLACE_CATEGORY_IDS: readonly MarketplaceCategoryId[] = [
   "har",
   "naglar",
@@ -42,38 +35,25 @@ export const MARKETPLACE_CATEGORY_IDS: readonly MarketplaceCategoryId[] = [
   "fransar",
 ];
 
-const CATEGORY_SLUGS: Record<Market, Record<MarketplaceCategoryId, string>> = {
-  SE: {
-    har: "har",
-    naglar: "naglar",
-    massage: "massage",
-    hudvard: "hudvard",
-    fransar: "fransar-och-bryn",
-    ovrigt: "ovrigt",
-  },
-  CL: {
-    har: "cabello",
-    naglar: "unas",
-    massage: "masajes",
-    hudvard: "estetica",
-    fransar: "pestanas-y-cejas",
-    ovrigt: "otros",
-  },
+/** URL-slug per kategori (`/descubre/<slug>`). */
+const CATEGORY_SLUGS: Record<MarketplaceCategoryId, string> = {
+  har: "cabello",
+  naglar: "unas",
+  massage: "masajes",
+  hudvard: "estetica",
+  fransar: "pestanas-y-cejas",
+  ovrigt: "otros",
 };
 
-export function categorySlug(
-  id: MarketplaceCategoryId,
-  m: Market = market,
-): string {
-  return CATEGORY_SLUGS[m][id];
+export function categorySlug(id: MarketplaceCategoryId): string {
+  return CATEGORY_SLUGS[id];
 }
 
 export function categoryFromSlug(
   slug: string,
-  m: Market = market,
 ): MarketplaceCategoryId | undefined {
-  return (Object.keys(CATEGORY_SLUGS[m]) as MarketplaceCategoryId[]).find(
-    (id) => CATEGORY_SLUGS[m][id] === slug,
+  return (Object.keys(CATEGORY_SLUGS) as MarketplaceCategoryId[]).find(
+    (id) => CATEGORY_SLUGS[id] === slug,
   );
 }
 
@@ -97,7 +77,8 @@ export function categoryForRubro(rubro: string): MarketplaceCategoryId {
   }
 }
 
-/** Ortsegmentet får inte vara kartans slug (`/upptack/karta`). */
+/** Reserverat ortsegment (`/descubre/<kategori>/<ort>` ger 404 för det). Värdet är
+ * oförändrat sedan tiden med två marknader (D-062). */
 export const MARKETPLACE_RESERVED_AREA = "karta";
 
 /** Avståndsfiltret (km) när besökaren delat sin position. */

@@ -13,8 +13,7 @@ import {
   isOnboardingDraft,
 } from "@/server/onboarding/owner-business";
 import { onboarding } from "@/i18n";
-import { market } from "@/config/brand";
-import { platformNamesFor } from "@/server/import/platforms";
+import { platformNames } from "@/server/import/platforms";
 import { isImportEnabled, isImportPaused } from "@/server/import/runs";
 
 import {
@@ -48,7 +47,7 @@ export default async function OnboardingPage() {
   // WP-66 (D-035): bara när importen finns och inte är pausad (månadstaket).
   const importer =
     isImportEnabled() && !(await isImportPaused())
-      ? { platformNames: platformNamesFor(market) }
+      ? { platformNames: platformNames() }
       : undefined;
 
   return (

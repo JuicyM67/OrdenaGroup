@@ -31,12 +31,11 @@ export type MyBookingRow = {
   price_clp: number;
   cancel_window_hours: number;
   cancel_approval: string;
-  payment: string | null;
+  /** Kolumnen finns kvar i `private.my_bookings()` (Stripe, D-062) men läses inte. */
+  payment?: string | null;
   review_rating: number | null;
   review_created_at: Date | string | null;
 };
-
-export type AccountPayment = "reserved" | "paid" | "refund";
 
 export type AccountBooking = {
   bookingId: string;
@@ -58,7 +57,6 @@ export type AccountBooking = {
   upcoming: boolean;
   canCancel: boolean;
   cancelNeedsApproval: boolean;
-  payment?: AccountPayment;
   /** Recensionen som finns (1–5), eller null. */
   reviewRating: number | null;
   /** Kan lämna (eller ändra) en recension från kontot nu (D-045). */
@@ -82,16 +80,6 @@ const REVIEW_EDIT_MS = 7 * DAY_MS;
 
 function toStatus(raw: string): BookingStatus {
   return BOOKING_STATUSES.find((s) => s === raw) ?? "cancelled";
-}
-
-function toPayment(
-  raw: string | null,
-  status: BookingStatus,
-): AccountPayment | undefined {
-  if (!raw) return undefined;
-  if (raw === "voided" || raw === "refunded") return "refund";
-  if (status === "cancelled") return "refund";
-  return raw === "authorized" ? "reserved" : "paid";
 }
 
 function ms(v: Date | string): number {
@@ -121,7 +109,6 @@ export function toAccountBooking(row: MyBookingRow, now: Date): AccountBooking {
   const reviewOpen =
     row.review_created_at === null ||
     t - ms(row.review_created_at) <= REVIEW_EDIT_MS;
-  const payment = toPayment(row.payment, status);
   return {
     bookingId: row.booking_id,
     business: {
@@ -141,7 +128,6 @@ export function toAccountBooking(row: MyBookingRow, now: Date): AccountBooking {
     upcoming: end > t && status !== "cancelled" && status !== "no_show",
     canCancel,
     cancelNeedsApproval,
-    ...(payment ? { payment } : {}),
     reviewRating: row.review_rating,
     reviewable: done && t - start <= REVIEW_WINDOW_MS && reviewOpen,
   };

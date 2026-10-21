@@ -59,14 +59,8 @@ function audienceFragment(
 
 export type AudienceStats = { recipients: number; skippedNoConsent: number };
 
-/** E-post kräver att kunden har en adress; sms kräver inget extra villkor —
- * `customers_phone_required_unless_anonymized` garanterar redan telefon för
- * varje icke-anonymiserad kund. */
-function channelFragment(channel: "email" | "sms"): string {
-  return channel === "email"
-    ? "c.email is not null and btrim(c.email) <> ''"
-    : "true";
-}
+/** E-post (enda kanalen för utskick) kräver att kunden har en adress. */
+const EMAIL_FRAGMENT = "c.email is not null and btrim(c.email) <> ''";
 
 /**
  * Antal mottagare (samtycke + kanal) och antal som matchar målgruppen men
@@ -77,10 +71,9 @@ export async function audienceStatsIn(
   q: Queryable,
   businessId: string,
   audience: CampaignAudience,
-  channel: "email" | "sms",
 ): Promise<AudienceStats> {
   const frag = audienceFragment(audience, 2);
-  const chan = channelFragment(channel);
+  const chan = EMAIL_FRAGMENT;
   const r = await q.query<{ recipients: string; skipped_no_consent: string }>(
     `select
        count(*) filter (where c.consent_marketing_at is not null and (${chan})) as recipients,
@@ -103,11 +96,10 @@ export async function resolveAudienceIn(
   q: Queryable,
   businessId: string,
   audience: CampaignAudience,
-  channel: "email" | "sms",
   limit: number,
 ): Promise<string[]> {
   const frag = audienceFragment(audience, 3);
-  const chan = channelFragment(channel);
+  const chan = EMAIL_FRAGMENT;
   const r = await q.query<{ id: string }>(
     `select c.id
        from public.customers c

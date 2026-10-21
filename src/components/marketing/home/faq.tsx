@@ -2,14 +2,13 @@
 // (tangentbord och skärmläsare gratis). Första frågan är öppen.
 import { ChevronDown } from "lucide-react";
 
-import { anchor } from "@/config/url-params";
 import { copy } from "@/i18n/marketing";
 
 const t = copy.home.faq;
 
 export function Faq() {
   return (
-    <section id={anchor("preguntas")} className="scroll-mt-24 bg-canvas">
+    <section id="preguntas" className="scroll-mt-24 bg-canvas">
       <div className="mx-auto grid max-w-360 grid-cols-1 gap-10 px-4 py-16 sm:px-8 lg:grid-cols-12 lg:px-22 lg:py-30">
         <div className="flex flex-col gap-4.5 lg:col-span-4">
           <span className="self-start rounded-chip bg-surface px-3 py-1.75 text-13 font-bold tracking-label">

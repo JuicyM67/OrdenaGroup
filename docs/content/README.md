@@ -21,16 +21,15 @@ textos nuevos repartidos en `estados.porConfirmar`, `reserva.
 confirmacionSolicitud`, `reserva.bookingBar.ctaSolicitudEnviada`, `reserva.
 antesDeConfirmar.{ctaEnviarSolicitud,avisoWhatsappSolicitud}`, `gestion.
 pendienteAviso`, `inicio.solicitudes`, `ajustes.reglas.
-confirmarAutomatico{,Ayuda}`, `email.{nuevaSolicitud,solicitudRecibida,
-solicitudRechazada,solicitudVencida}` y `sms.{solicitudRechazada,
-solicitudVencida}`.
+confirmarAutomatico{,Ayuda}`, y `email.{nuevaSolicitud,solicitudRecibida,
+solicitudRechazada,solicitudVencida}`.
 
 ## Dónde está cada cosa
 
 | Qué | Dónde |
 |---|---|
 | Todos los textos de la interfaz (Reserva, `r/[token]`, Inicio, Agenda, Hoy, onboarding, Clientes, Caja, Ajustes, abono, formulario de reserva, perfil público y Ajustes → Perfil) | `src/i18n/es-CL.ts` |
-| Sugerencias de preguntas por rubro (WP-40, D-031) | `src/i18n/presets/booking-questions.es-CL.ts` (espejo en sueco: `booking-questions.sv-SE.ts`) |
+| Sugerencias de preguntas por rubro (WP-40, D-031) | `src/i18n/presets/booking-questions.es-CL.ts` |
 | Tipos y punto de entrada (`import { reserva } from "@/i18n"`) | `src/i18n/index.ts` |
 | Utilidades de prueba compartidas (recorrer un área, tono, marca, fixtures) | `src/i18n/test-helpers.ts` |
 | Pruebas de estructura, tono, marca, paridad con el diseño y longitudes (WP-03) | `src/i18n/es-CL.test.ts` |
@@ -56,7 +55,7 @@ solo recibe esos nombres ya formateados como parámetros de tipo `string`.
    parámetros con nombre (ver `docs/content/GUIA_DE_ESTILO.md` §4).
 4. Ponlo bajo el área que corresponda (`comun`, `nav`, `estados`, `errores`,
    `calendario`, `reserva`, `gestion`, `inicio`, `agenda`, `hoy`,
-   `plantillasWhatsapp`, `whatsappSesion`, `email`, `sms`, y desde WP-03b
+   `plantillasWhatsapp`, `whatsappSesion`, `email`, y desde WP-03b
    `validacion`, `acceso`, `onboarding`, `negocio`, `servicios`,
    `profesionales`, `horarios`, `clientes`, `caja`, `ajustes`, `abono`,
    desde WP-40 `formulario`, desde WP-41 `perfil`, y desde WP-45

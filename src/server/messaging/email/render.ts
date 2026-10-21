@@ -1,7 +1,5 @@
 import "server-only";
 
-import type { Market } from "@/config/brand";
-
 import {
   confirmationEmail,
   magicLinkEmail,
@@ -62,18 +60,6 @@ import {
   type ListaEsperaCupoData,
   type ListaEsperaTomadaData,
 } from "./templates/lista-espera";
-import {
-  smsAgotadosEmail,
-  smsCuota80Email,
-  type SmsAvisoData,
-} from "./templates/sms-creditos";
-import { valeCompradoEmail, type ValeCompradoData } from "./templates/vale";
-import {
-  presentkortKvittoEmail,
-  presentkortLeveransEmail,
-  type PresentkortKvittoData,
-  type PresentkortLeveransData,
-} from "./templates/presentkort";
 import type { EmailKind, RenderedEmail } from "./types";
 
 /** En mall = { data, kind (`EMAIL_FROM_BOOKING`/`EMAIL_FROM_ACCOUNT`) }. */
@@ -112,14 +98,6 @@ export type EmailTemplateMap = {
   readonly campanaMarketing: CampanaMarketingData;
   /** WP-65 (D-045): al cliente, pedir reseña después de la cita. */
   readonly solicitudResena: SolicitudResenaData;
-  /** WP-76 (D-053): al dueño, avisos de SMS (80 % / agotados). */
-  readonly smsCuota80: SmsAvisoData;
-  readonly smsAgotados: SmsAvisoData;
-  /** WP-69 (D-057): al comprador, recibo del vale. */
-  readonly valeComprado: ValeCompradoData;
-  /** WP-77 (D-058): presentkort — kvitto till köparen, leverans till mottagaren. */
-  readonly presentkortKvitto: PresentkortKvittoData;
-  readonly presentkortLeverans: PresentkortLeveransData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -154,11 +132,6 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   cancelacionRechazada: "booking",
   campanaMarketing: "booking",
   solicitudResena: "booking",
-  smsCuota80: "account",
-  smsAgotados: "account",
-  valeComprado: "booking",
-  presentkortKvitto: "booking",
-  presentkortLeverans: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -186,82 +159,63 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "cancelacionRechazada",
   "campanaMarketing",
   "solicitudResena",
-  "smsCuota80",
-  "smsAgotados",
-  "valeComprado",
-  "presentkortKvitto",
-  "presentkortLeverans",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
  * `sendEmail` eller för förhandsvisning (design lab, tester). */
 export function renderEmail<T extends EmailTemplateName>(
   template: T,
-  market: Market,
   data: EmailTemplateMap[T],
 ): RenderedEmail {
   switch (template) {
     case "magicLink":
-      return magicLinkEmail(market, data as AccesoEmailData);
+      return magicLinkEmail(data as AccesoEmailData);
     case "confirmation":
-      return confirmationEmail(market, data as AccesoEmailData);
+      return confirmationEmail(data as AccesoEmailData);
     case "bienvenida":
-      return bienvenidaEmail(market, data as BienvenidaData);
+      return bienvenidaEmail(data as BienvenidaData);
     case "invitacionNegocio":
-      return invitacionNegocioEmail(market, data as InvitacionNegocioData);
+      return invitacionNegocioEmail(data as InvitacionNegocioData);
     case "invitacionAdmin":
-      return invitacionAdminEmail(market, data as InvitacionAdminData);
+      return invitacionAdminEmail(data as InvitacionAdminData);
     case "reservaConfirmada":
-      return reservaConfirmadaEmail(market, data as ReservaConfirmadaData);
+      return reservaConfirmadaEmail(data as ReservaConfirmadaData);
     case "recordatorio":
-      return recordatorioEmail(market, data as RecordatorioData);
+      return recordatorioEmail(data as RecordatorioData);
     case "reservaMovida":
-      return reservaMovidaEmail(market, data as ReservaMovidaData);
+      return reservaMovidaEmail(data as ReservaMovidaData);
     case "reservaCancelada":
-      return reservaCanceladaEmail(market, data as ReservaCanceladaData);
+      return reservaCanceladaEmail(data as ReservaCanceladaData);
     case "nuevaReservaDueno":
-      return nuevaReservaDuenoEmail(market, data as DuenoReservaData);
+      return nuevaReservaDuenoEmail(data as DuenoReservaData);
     case "cancelacionDueno":
-      return cancelacionDuenoEmail(market, data as DuenoReservaData);
+      return cancelacionDuenoEmail(data as DuenoReservaData);
     case "listaEsperaCupo":
-      return listaEsperaCupoEmail(market, data as ListaEsperaCupoData);
+      return listaEsperaCupoEmail(data as ListaEsperaCupoData);
     case "listaEsperaTomada":
-      return listaEsperaTomadaEmail(market, data as ListaEsperaTomadaData);
+      return listaEsperaTomadaEmail(data as ListaEsperaTomadaData);
     case "horaFlash":
-      return horaFlashEmail(market, data as HoraFlashData);
+      return horaFlashEmail(data as HoraFlashData);
     case "nuevaSolicitud":
-      return nuevaSolicitudEmail(market, data as DuenoReservaData);
+      return nuevaSolicitudEmail(data as DuenoReservaData);
     case "solicitudRecibida":
-      return solicitudRecibidaEmail(market, data as SolicitudRecibidaData);
+      return solicitudRecibidaEmail(data as SolicitudRecibidaData);
     case "solicitudRechazada":
-      return solicitudRechazadaEmail(market, data as SolicitudRechazadaData);
+      return solicitudRechazadaEmail(data as SolicitudRechazadaData);
     case "solicitudVencida":
-      return solicitudVencidaEmail(market, data as SolicitudVencidaData);
+      return solicitudVencidaEmail(data as SolicitudVencidaData);
     case "invitacionEquipo":
-      return invitacionEquipoEmail(market, data as InvitacionEquipoData);
+      return invitacionEquipoEmail(data as InvitacionEquipoData);
     case "bienvenidaMiembro":
-      return bienvenidaMiembroEmail(market, data as BienvenidaMiembroData);
+      return bienvenidaMiembroEmail(data as BienvenidaMiembroData);
     case "solicitudCancelacion":
-      return solicitudCancelacionEmail(market, data as DuenoReservaData);
+      return solicitudCancelacionEmail(data as DuenoReservaData);
     case "cancelacionRechazada":
-      return cancelacionRechazadaEmail(
-        market,
-        data as CancelacionRechazadaData,
-      );
+      return cancelacionRechazadaEmail(data as CancelacionRechazadaData);
     case "campanaMarketing":
-      return campanaMarketingEmail(market, data as CampanaMarketingData);
+      return campanaMarketingEmail(data as CampanaMarketingData);
     case "solicitudResena":
-      return solicitudResenaEmail(market, data as SolicitudResenaData);
-    case "smsCuota80":
-      return smsCuota80Email(market, data as SmsAvisoData);
-    case "smsAgotados":
-      return smsAgotadosEmail(market, data as SmsAvisoData);
-    case "valeComprado":
-      return valeCompradoEmail(market, data as ValeCompradoData);
-    case "presentkortKvitto":
-      return presentkortKvittoEmail(market, data as PresentkortKvittoData);
-    case "presentkortLeverans":
-      return presentkortLeveransEmail(market, data as PresentkortLeveransData);
+      return solicitudResenaEmail(data as SolicitudResenaData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

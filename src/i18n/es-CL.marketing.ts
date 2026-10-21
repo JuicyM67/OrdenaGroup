@@ -1061,8 +1061,7 @@ export const sitio = {
   /** Recomendación a un servicio externo, no parte del producto: la tarjeta
    * de sellos digital la ofrece Stampello (stampello.se), una empresa
    * aparte. No es una funcionalidad de `SITIO_FUNCIONALIDADES` ni de
-   * `PLANES_LANDING` (ver el reemplazo de `abono` en `sv-SE.ts` para el
-   * motivo). */
+   * `PLANES_LANDING`. */
   partner: {
     stampello: {
       etiqueta: "Recomendado",
@@ -1590,8 +1589,8 @@ export const SITIO_RUBROS_MARQUEE: readonly {
 ];
 
 // ---------------------------------------------------------------------------
-// home: nueva portada "Foto-historia" (WP-71). Misma forma que `home` en
-// sv-SE.ts. En Chile todavía no hay pago online al reservar (Mercado Pago
+// home: nueva portada "Foto-historia" (WP-71). Todavía no hay pago online al
+// reservar (Mercado Pago
 // viene después): nada de tarjetas ni comisiones por pago. El nombre del
 // producto nunca se escribe acá (regla dura 10).
 // ---------------------------------------------------------------------------

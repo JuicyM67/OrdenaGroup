@@ -1,7 +1,5 @@
 import "server-only";
 
-import { market as installationMarket } from "@/config/brand";
-
 import {
   EMAIL_TEMPLATE_KIND,
   renderEmail,
@@ -40,9 +38,6 @@ export type SendEmailInput<T extends EmailTemplateName = EmailTemplateName> = {
   /** Reply-To mot företaget (INTEGRATIONS.md, F7): sätts av anroparen när
    * företagets kontaktmejl finns. */
   readonly replyTo?: string;
-  /** Bara för tester/design lab: forcerar marknad i stället för
-   * installationens (`@/config/brand`). */
-  readonly market?: "CL" | "SE";
 };
 
 export type SendEmailResult =
@@ -90,9 +85,8 @@ export async function sendEmail<T extends EmailTemplateName>(
     EMAIL_FROM_ACCOUNT: process.env.EMAIL_FROM_ACCOUNT,
   },
 ): Promise<SendEmailResult> {
-  const market = input.market ?? installationMarket;
   const kind = input.kind ?? EMAIL_TEMPLATE_KIND[input.template];
-  const rendered = renderEmail(input.template, market, input.data);
+  const rendered = renderEmail(input.template, input.data);
 
   const apiKey = env.RESEND_API_KEY;
   const from = fromFor(kind, env);

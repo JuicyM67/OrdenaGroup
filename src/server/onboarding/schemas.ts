@@ -128,7 +128,7 @@ export const serviceInputSchema = z.object({
     .int({ error: "services.duration_invalid" })
     .min(5, { error: "services.duration_invalid" })
     .max(600, { error: "services.duration_invalid" }),
-  // Minsta enheten i installationens valuta (CLP: pesos, SEK: öre).
+  // Minsta enheten (CLP: pesos).
   priceClp: moneyInputSchema,
 });
 

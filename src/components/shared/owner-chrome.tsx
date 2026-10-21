@@ -20,7 +20,6 @@
 import { createContext, use, type ReactNode } from "react";
 
 import type { AvatarProps } from "@/components/ui/avatar";
-import type { SmsBellNotice } from "@/lib/validation/sms-credits";
 
 import type { MyProfileActions, MyProfileData } from "./my-profile-dialog";
 import type {
@@ -43,8 +42,6 @@ export type OwnerChromeValue = {
   /** WP-45 (D-033): klockan. Tom lista som standard — se `onConfirmRequest`/
    * `onDeclineRequest` nedan för när knappen visas över huvud taget. */
   pendingRequests: readonly PendingRequestItem[];
-  /** WP-76 (D-053): sms-varningar (80 %/slut) överst i klockan. */
-  notices?: readonly SmsBellNotice[];
   /** Klockan (NotificationBell) visas bara när BÅDE `onConfirmRequest` och
    * `onDeclineRequest` finns (samma regel som tidigare i inicio-screen.tsx/hoy-screen.tsx) —
    * `undefined` i design lab döljer den helt i stället för att visa en klocka utan

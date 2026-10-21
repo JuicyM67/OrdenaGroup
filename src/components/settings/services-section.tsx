@@ -73,7 +73,7 @@ function toRowForm(s: AjustesService): RowForm {
   };
 }
 
-/** Redan validerat i `validateRow`; minsta enheten (CLP: pesos, SEK: öre). */
+/** Redan validerat i `validateRow`; minsta enheten (CLP: pesos). */
 function priceFromForm(raw: string): number {
   const r = parseMoney(raw);
   return r.ok ? r.value : 0;

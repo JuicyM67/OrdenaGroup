@@ -5,7 +5,7 @@ import type { PhoneError } from "@/lib/format/phone";
 
 import {
   customerFormSchema,
-  customerFormSchemaFor,
+  bookingFormSchema,
   waitlistFormSchema,
   type CustomerFormInput,
 } from "./form-schema";
@@ -159,9 +159,9 @@ describe("waitlistFormSchema — egen consentVersion (WP-03b)", () => {
   });
 });
 
-describe("customerFormSchemaFor (D-030: e-post krävs i CL)", () => {
-  it("CL: tom e-post → email.invalid på fältet email", () => {
-    const r = customerFormSchemaFor("CL").safeParse(baseInput({ email: "" }));
+describe("bookingFormSchema (D-030: e-post krävs)", () => {
+  it("tom e-post → email.invalid på fältet email", () => {
+    const r = bookingFormSchema.safeParse(baseInput({ email: "" }));
     expect(r.success).toBe(false);
     if (!r.success) {
       expect(r.error.issues).toEqual([
@@ -170,16 +170,9 @@ describe("customerFormSchemaFor (D-030: e-post krävs i CL)", () => {
     }
   });
 
-  it("CL: giltig e-post godtas", () => {
+  it("giltig e-post godtas", () => {
     expect(
-      customerFormSchemaFor("CL").safeParse(baseInput({ email: "a@b.cl" }))
-        .success,
-    ).toBe(true);
-  });
-
-  it("SE: tom e-post godtas (oförändrat)", () => {
-    expect(
-      customerFormSchemaFor("SE").safeParse(baseInput({ email: "" })).success,
+      bookingFormSchema.safeParse(baseInput({ email: "a@b.cl" })).success,
     ).toBe(true);
   });
 });

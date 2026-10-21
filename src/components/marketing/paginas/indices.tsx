@@ -9,7 +9,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { brand } from "@/config/brand";
 import {
-  funcionesDisponibles,
+  FUNCION_IDS,
   href,
   hrefFuncion,
   hrefRubro,
@@ -62,7 +62,7 @@ export function FuncionesIndexTop() {
       />
       <section className="bg-linear-to-b from-canvas to-lilac-50">
         <ul className="mx-auto grid max-w-360 grid-cols-1 gap-4 px-4 py-16 sm:grid-cols-2 sm:px-8 lg:grid-cols-3 lg:px-22 lg:py-25">
-          {funcionesDisponibles().map((id) => {
+          {FUNCION_IDS.map((id) => {
             const ft = paginas.funciones[id]!;
             const ui = FUNCION_UI[id];
             return (

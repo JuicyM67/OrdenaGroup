@@ -4,7 +4,6 @@
 // eftersom `bento-salon.webp` redan används i por-que-bento.tsx (se uppdragets regel "välj
 // den som inte krockar"). Mörk gradient från vänster (`bg-gradient-to-r`) så texten är
 // läsbar ovanpå fotot, `FlashMockup` (glaskort) till höger.
-import { anchor } from "@/config/url-params";
 import { Check, Zap } from "lucide-react";
 import Image from "next/image";
 
@@ -20,7 +19,7 @@ const PUNTOS = [FLASH.puntos.punto1, FLASH.puntos.punto2, FLASH.puntos.punto3];
 export function FlashBand() {
   return (
     <section
-      id={anchor("horas-flash")}
+      id="horas-flash"
       className="mx-auto max-w-6xl scroll-mt-24 px-4 py-10 sm:px-8 sm:py-14"
     >
       <div className="relative overflow-hidden rounded-hero">

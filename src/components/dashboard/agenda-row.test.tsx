@@ -21,9 +21,9 @@ function booking(overrides: Partial<TodayBooking> = {}): TodayBooking {
 }
 
 describe("AgendaRow", () => {
-  it("muestra la hora en America/Santiago aunque TZ del proceso sea otro (Europe/Stockholm)", () => {
+  it("muestra la hora en America/Santiago aunque TZ del proceso sea otro (Europe/Madrid)", () => {
     const original = process.env.TZ;
-    process.env.TZ = "Europe/Stockholm";
+    process.env.TZ = "Europe/Madrid";
     try {
       render(
         <ul>

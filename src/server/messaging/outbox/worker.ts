@@ -1,6 +1,6 @@
 import "server-only";
 
-import { appHref, regaloHref } from "@/config/routes";
+import { appHref } from "@/config/routes";
 import { formulario } from "@/i18n";
 import {
   APP_LOCALE,
@@ -8,12 +8,9 @@ import {
   formatDate,
   formatLocalDate,
   formatTime,
-  fromLocal,
-  parseTimeZone,
   type LocalDate,
-  type LocalTime,
 } from "@/lib/format/dates";
-import { formatMoney, formatMoneyIn } from "@/lib/format/money";
+import { formatMoney } from "@/lib/format/money";
 import { formatPhone, type E164 } from "@/lib/format/phone";
 import type {
   AnswerValue,
@@ -23,16 +20,7 @@ import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import { pgErrorCode } from "@/server/db/errors";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail, type EmailTemplateMap } from "@/server/messaging/email";
-import {
-  sendSms,
-  smsLengthInfo,
-  type SendSmsInput,
-  type SmsTemplateName,
-} from "@/server/messaging/sms";
-import { reserveSmsQuotaIn } from "@/server/plans/entitlements";
-import { formatVoucherDate } from "@/server/vouchers/rules";
 
-import { isOwnerMobile } from "./enqueue";
 import { OutboxSendError } from "./errors";
 import type { OutboxChannel, OutboxRecipientKind } from "./types";
 
@@ -42,6 +30,9 @@ import type { OutboxChannel, OutboxRecipientKind } from "./types";
  * bokningskort vid sändningstillfället (D-029) — inget av det lagras i
  * `message_outbox`. Ingen `console.*` (boundaries.test.ts); fel skrivs bara
  * som en kort kod i `message_outbox.error`, aldrig persondata.
+ *
+ * Bara kanalen `email` skickas (D-062). `message_channel` har kvar värdet
+ * `sms` i databasen; en sådan rad avbryts (`processRow`).
  */
 
 const DEFAULT_LIMIT = 25;
@@ -143,8 +134,6 @@ type MessageContext = {
   email: string | null;
   servicio: string;
   profesional: string;
-  /** WP-64 (D-044): betalning online som kunden ser den. */
-  pago: "reservado" | "pagado" | "reembolso" | null;
 };
 
 type RawContextRow = {
@@ -163,7 +152,6 @@ type RawContextRow = {
   email: string | null;
   servicio: string;
   profesional: string;
-  pago: "reservado" | "pagado" | "reembolso" | null;
 };
 
 async function loadContext(
@@ -179,17 +167,7 @@ async function loadContext(
               b.name as negocio, b.phone as negocio_telefono,
               b.slug, b.address, b.cancel_window_hours,
               c.name as cliente, c.phone_e164, c.email,
-              s.name as servicio, st.name as profesional,
-              (select case
-                 when bk.status::text = 'cancelled' then 'reembolso'
-                 when sc.status in ('voided', 'refunded') then 'reembolso'
-                 when bk.status::text = 'requested' and sc.status = 'authorized' then 'reservado'
-                 else 'pagado'
-               end
-                 from public.stripe_checkouts sc
-                where sc.business_id = bk.business_id and sc.booking_id = bk.id
-                  and sc.status in ('authorized', 'captured', 'voided', 'refunded')
-                order by sc.created_at desc limit 1) as pago
+              s.name as servicio, st.name as profesional
          from public.bookings bk
          join public.businesses b on b.id = bk.business_id
          join public.customers c on c.business_id = bk.business_id and c.id = bk.customer_id
@@ -216,7 +194,6 @@ async function loadContext(
       email: row.email,
       servicio: row.servicio,
       profesional: row.profesional,
-      pago: row.pago,
     };
   });
 }
@@ -332,45 +309,6 @@ async function loadMemberWelcomeContext(
 }
 
 // ---------------------------------------------------------------------------
-// WP-55: `mensajeLibre` — mensaje libre desde la ficha del cliente
-// (`/app/clientes/[id]`, `sendCustomerMessage`). Sin `booking_id`: el cliente
-// se busca vía `payload.customerId` (mismo patrón D-029 que
-// `loadMemberWelcomeContext` arriba) — solo `payload.text` (el texto que
-// escribió el dueño/staff) va en la fila, nunca el teléfono. Se cancela si el
-// cliente fue anonimizado o perdió el teléfono entre el encolado y el envío.
-// ---------------------------------------------------------------------------
-
-type FreeMessageContext = {
-  sendable: boolean;
-  phone: string | null;
-  negocio: string;
-};
-
-async function loadFreeMessageContext(
-  businessId: string,
-  customerId: string,
-): Promise<FreeMessageContext | undefined> {
-  return withServiceTx(async (q) => {
-    const r = await q.query<{
-      sendable: boolean;
-      phone_e164: string | null;
-      negocio: string;
-    }>(
-      `select (c.anonymized_at is null and c.phone_e164 is not null) as sendable,
-              c.phone_e164, b.name as negocio
-         from public.customers c
-         join public.businesses b on b.id = c.business_id
-        where c.business_id = $1 and c.id = $2`,
-      [businessId, customerId],
-    );
-    const row = r.rows[0];
-    return row
-      ? { sendable: row.sendable, phone: row.phone_e164, negocio: row.negocio }
-      : undefined;
-  });
-}
-
-// ---------------------------------------------------------------------------
 // WP-31 (F14): `campanaMarketing` — en kampanjutskick-rad, ingen bokning
 // (`booking_id` null). `payload.campaignRecipientId` + `payload.token`
 // (klartext-token, D-029 — bara hashen finns i `campaign_recipients`, se
@@ -382,7 +320,6 @@ async function loadFreeMessageContext(
 type CampaignContext = {
   sendable: boolean;
   email: string | null;
-  phone: string | null;
   negocio: string;
   slug: string;
   texto: string;
@@ -400,7 +337,6 @@ async function loadCampaignContext(
     const r = await q.query<{
       sendable: boolean;
       email: string | null;
-      phone_e164: string | null;
       negocio: string;
       slug: string;
       texto: string;
@@ -409,7 +345,7 @@ async function loadCampaignContext(
       offer_valid_until: string | null;
     }>(
       `select (cu.anonymized_at is null and cu.consent_marketing_at is not null) as sendable,
-              cu.email, cu.phone_e164,
+              cu.email,
               b.name as negocio, b.slug,
               c.message as texto, c.offer_pct, c.offer_text,
               c.offer_valid_until::text as offer_valid_until
@@ -426,7 +362,6 @@ async function loadCampaignContext(
       ? {
           sendable: row.sendable,
           email: row.email,
-          phone: row.phone_e164,
           negocio: row.negocio,
           slug: row.slug,
           texto: row.texto,
@@ -459,7 +394,6 @@ type WaitlistCustomerContext = {
   sendable: boolean;
   cliente: string;
   email: string | null;
-  phone: string | null;
   negocio: string;
 };
 
@@ -473,12 +407,11 @@ async function loadWaitlistCustomerContext(
       sendable: boolean;
       cliente: string;
       email: string | null;
-      phone_e164: string | null;
       negocio: string;
     }>(
       `select we.day::text as day,
               (c.anonymized_at is null) as sendable,
-              c.name as cliente, c.email, c.phone_e164,
+              c.name as cliente, c.email,
               b.name as negocio
          from public.waitlist_entries we
          join public.customers c on c.business_id = we.business_id and c.id = we.customer_id
@@ -493,7 +426,6 @@ async function loadWaitlistCustomerContext(
           sendable: row.sendable,
           cliente: row.cliente,
           email: row.email,
-          phone: row.phone_e164,
           negocio: row.negocio,
         }
       : undefined;
@@ -525,34 +457,16 @@ async function processWaitlistCupoRow(
     1,
     Math.ceil((new Date(offer.expiresAt).getTime() - Date.now()) / 60_000),
   );
-  const link = waitlistOfferLink(token);
-  if (row.channel === "email") {
-    const r = await sendEmail({
-      to: ctx.email as string,
-      template: "listaEsperaCupo",
-      data: {
-        negocio: offer.businessName,
-        servicio: offer.serviceName,
-        fecha,
-        hora,
-        minutos,
-        confirmarUrl: link,
-      },
-      idempotencyKey: row.dedupeKey,
-    });
-    await finalizeSent(row, r.id);
-    return "sent";
-  }
-  const r = await sendRowSms(row, {
-    to: ctx.phone as string,
+  const r = await sendEmail({
+    to: ctx.email as string,
     template: "listaEsperaCupo",
     data: {
       negocio: offer.businessName,
       servicio: offer.serviceName,
       fecha,
       hora,
-      link,
       minutos,
+      confirmarUrl: waitlistOfferLink(token),
     },
     idempotencyKey: row.dedupeKey,
   });
@@ -572,20 +486,10 @@ async function processWaitlistTomadaRow(
     "weekdayDayMonthLongLower",
     APP_LOCALE,
   );
-  if (row.channel === "email") {
-    const r = await sendEmail({
-      to: ctx.email as string,
-      template: "listaEsperaTomada",
-      data: { cliente: ctx.cliente, negocio: ctx.negocio, fecha: dia },
-      idempotencyKey: row.dedupeKey,
-    });
-    await finalizeSent(row, r.id);
-    return "sent";
-  }
-  const r = await sendRowSms(row, {
-    to: ctx.phone as string,
+  const r = await sendEmail({
+    to: ctx.email as string,
     template: "listaEsperaTomada",
-    data: { negocio: ctx.negocio, fecha: dia },
+    data: { cliente: ctx.cliente, negocio: ctx.negocio, fecha: dia },
     idempotencyKey: row.dedupeKey,
   });
   await finalizeSent(row, r.id);
@@ -600,8 +504,7 @@ async function processWaitlistRow(
   if (!entryId) throw new OutboxSendError("invalid_payload");
   const ctx = await loadWaitlistCustomerContext(row.businessId, entryId);
   if (!ctx) throw new OutboxSendError("no_customer");
-  const channelOk = row.channel === "email" ? !!ctx.email : !!ctx.phone;
-  if (!ctx.sendable || !channelOk) {
+  if (!ctx.sendable || !ctx.email) {
     await finalizeCancelled(row);
     return "cancelled";
   }
@@ -656,7 +559,7 @@ function bajaLink(token: string): string {
   return `${appUrl()}${appHref("baja", token)}`;
 }
 
-/** WP-65 (D-045): `${APP_URL}/resena/<token>` (SE `/recension/<token>`). */
+/** WP-65 (D-045): `${APP_URL}/resena/<token>`. */
 function reviewLink(token: string): string {
   return `${appUrl()}${appHref("resena", token)}`;
 }
@@ -697,29 +600,14 @@ function precioFields(ctx: MessageContext): {
   precio: string;
   descuentoSocio?: string;
   descuentoOferta?: boolean;
-  pago?: "reservado" | "pagado" | "reembolso";
 } {
   const precio = formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0));
-  const pago = ctx.pago ? { pago: ctx.pago } : {};
-  if (ctx.discountClp <= 0) return { precio, ...pago };
+  if (ctx.discountClp <= 0) return { precio };
   return {
     precio,
     descuentoSocio: formatMoney(ctx.discountClp),
     ...(ctx.discountIsOffer ? { descuentoOferta: true } : {}),
-    ...pago,
   };
-}
-
-/** SMS-varianten: "$16.200 (-$1.800)" med ASCII "-" (GSM-7; "−" skulle
- * tvinga hela sms:et till UCS-2). */
-function precioSocioSms(ctx: MessageContext): {
-  precioSocio?: string;
-  precioOferta?: string;
-} {
-  if (ctx.discountClp <= 0) return {};
-  const precio = formatMoney(Math.max(ctx.priceClp - ctx.discountClp, 0));
-  const value = `${precio} (-${formatMoney(ctx.discountClp)})`;
-  return ctx.discountIsOffer ? { precioOferta: value } : { precioSocio: value };
 }
 
 function reservaConfirmadaData(
@@ -782,7 +670,6 @@ function reservaCanceladaData(
     fecha,
     hora,
     linkNuevaReserva: bookAgainLink(ctx.slug),
-    ...(ctx.pago === "reembolso" ? { reembolso: true as const } : {}),
   };
 }
 
@@ -978,152 +865,6 @@ async function sendCustomerEmail(
   }
 }
 
-async function sendCustomerSms(
-  ctx: MessageContext,
-  row: ClaimedRow,
-  token: string,
-): Promise<string> {
-  const to = ctx.phone;
-  const { fecha, hora } = fechaHora(ctx);
-  switch (row.template) {
-    case "reservaConfirmada": {
-      const r = await sendRowSms(row, {
-        to,
-        template: "reservaConfirmada",
-        data: {
-          negocio: ctx.negocio,
-          fecha,
-          hora,
-          link: manageLink(token),
-          ...precioSocioSms(ctx),
-        },
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    case "recordatorio": {
-      const r = await sendRowSms(row, {
-        to,
-        template: "recordatorio",
-        data: { negocio: ctx.negocio, fecha, hora, link: manageLink(token) },
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    case "reservaMovida": {
-      const r = await sendRowSms(row, {
-        to,
-        template: "reservaMovida",
-        data: { negocio: ctx.negocio, fecha, hora, link: manageLink(token) },
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    case "reservaCancelada": {
-      const r = await sendRowSms(row, {
-        to,
-        template: "reservaCancelada",
-        data: {
-          negocio: ctx.negocio,
-          fecha,
-          hora,
-          link: bookAgainLink(ctx.slug),
-        },
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    case "solicitudRechazada": {
-      const r = await sendRowSms(row, {
-        to,
-        template: "solicitudRechazada",
-        data: {
-          negocio: ctx.negocio,
-          fecha,
-          hora,
-          link: bookAgainLink(ctx.slug),
-        },
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    case "solicitudVencida": {
-      const r = await sendRowSms(row, {
-        to,
-        template: "solicitudVencida",
-        data: {
-          negocio: ctx.negocio,
-          fecha,
-          hora,
-          link: bookAgainLink(ctx.slug),
-        },
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    case "solicitudResena": {
-      const r = await sendRowSms(row, {
-        to,
-        template: "solicitudResena",
-        data: { negocio: ctx.negocio, link: reviewLink(token) },
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    case "cancelacionRechazada": {
-      const r = await sendRowSms(row, {
-        to,
-        template: "cancelacionRechazada",
-        data: { negocio: ctx.negocio, fecha, hora, ...negocioTelefono(ctx) },
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    default:
-      throw new OutboxSendError("unknown_template");
-  }
-}
-
-/** WP-56: ägar-sms (SE) till `businesses.phone`. Numret läses vid
- * sändning (D-029); är det inte (längre) en mobil returneras `null` och
- * raden avbryts tyst (ägaren har ändå e-posten). */
-async function sendOwnerSms(
-  ctx: MessageContext,
-  row: ClaimedRow,
-): Promise<string | null> {
-  if (!row.bookingId) throw new OutboxSendError("no_booking_id");
-  if (!ctx.negocioTelefono || !isOwnerMobile(ctx.negocioTelefono)) return null;
-  const { fecha, hora } = fechaHora(ctx);
-  const data = {
-    cliente: ctx.cliente,
-    fecha,
-    hora,
-    link: solicitudLink(row.bookingId),
-  };
-  switch (row.template) {
-    case "nuevaSolicitud": {
-      const r = await sendRowSms(row, {
-        to: ctx.negocioTelefono,
-        template: "nuevaSolicitudDueno",
-        data,
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    case "solicitudCancelacion": {
-      const r = await sendRowSms(row, {
-        to: ctx.negocioTelefono,
-        template: "solicitudCancelacionDueno",
-        data,
-        idempotencyKey: row.dedupeKey,
-      });
-      return r.id;
-    }
-    default:
-      throw new OutboxSendError("unknown_template");
-  }
-}
-
 type OwnerEmailTemplate =
   | "nuevaReservaDueno"
   | "cancelacionDueno"
@@ -1137,7 +878,7 @@ const OWNER_EMAIL_TEMPLATES: ReadonlySet<string> = new Set<OwnerEmailTemplate>([
   "solicitudCancelacion",
 ]);
 
-/** Ägaren får e-post (sms bara via `sendOwnerSms`, WP-56). Flera ägare i
+/** Ägaren får e-post. Flera ägare i
  * samma företag (sällsynt) får var sin sändning, egna idempotensnycklar
  * (annars kan Resends dedupe råka hoppa över en av dem). */
 async function sendOwner(
@@ -1176,8 +917,8 @@ async function sendOwner(
   return ids.join(",");
 }
 
-/** Al personal invitado (WP-46, D-034): único canal e-post en v1 (sin sms,
- * igual que el plan §4 descarta WhatsApp/SMS acá). `invitadoPor` viene del
+/** Al personal invitado (WP-46, D-034): único canal e-post en v1 (el plan §4
+ * descarta WhatsApp acá). `invitadoPor` viene del
  * `payload` (escrito por `src/server/team/invitations.ts` al encolar, ver
  * el comentario en ese archivo) — nunca de una consulta a `auth.users`. */
 async function sendInvitee(
@@ -1204,18 +945,10 @@ async function sendInvitee(
   return r.id;
 }
 
-/** `null` = inget att skicka (WP-56: ägar-sms utan mobilnummer). */
-async function sendRow(
-  ctx: MessageContext,
-  row: ClaimedRow,
-): Promise<string | null> {
-  if (row.recipientKind === "owner") {
-    return row.channel === "sms" ? sendOwnerSms(ctx, row) : sendOwner(ctx, row);
-  }
+async function sendRow(ctx: MessageContext, row: ClaimedRow): Promise<string> {
+  if (row.recipientKind === "owner") return sendOwner(ctx, row);
   const token = typeof row.payload.token === "string" ? row.payload.token : "";
-  return row.channel === "email"
-    ? sendCustomerEmail(ctx, row, token)
-    : sendCustomerSms(ctx, row, token);
+  return sendCustomerEmail(ctx, row, token);
 }
 
 // ---------------------------------------------------------------------------
@@ -1363,208 +1096,6 @@ async function processMemberWelcomeRow(
   return "sent";
 }
 
-/** WP-69 (D-057): `valeComprado` — kvittot till köparen (kundkonto, ingen
- * bokning). Adressen slås upp vid sändningen (`private.voucher_buyer_email`,
- * ingen adress i kön, D-029); koden läses ur `vouchers`. */
-async function processVoucherRow(
-  row: ClaimedRow,
-): Promise<"sent" | "cancelled"> {
-  const voucherId =
-    typeof row.payload.voucherId === "string" ? row.payload.voucherId : "";
-  if (!voucherId) throw new OutboxSendError("invalid_payload");
-  const ctx = await withServiceTx(async (q) => {
-    const r = await q.query<{
-      email: string | null;
-      code: string;
-      title: string;
-      price_minor: number;
-      currency: string;
-      expires_at: Date;
-      status: string;
-      negocio: string;
-      slug: string;
-      address: string | null;
-      timezone: string;
-    }>(
-      `select private.voucher_buyer_email(v.id) as email, v.code, v.title,
-              v.price_minor, v.currency, v.expires_at, v.status,
-              b.name as negocio, b.slug, b.address, b.timezone
-         from public.vouchers v
-         join public.businesses b on b.id = v.business_id
-        where v.business_id = $1 and v.id = $2`,
-      [row.businessId, voucherId],
-    );
-    return r.rows[0];
-  });
-  if (!ctx) throw new OutboxSendError("no_voucher");
-  if (!ctx.email || ctx.status === "refunded") {
-    await finalizeCancelled(row);
-    return "cancelled";
-  }
-  const tz = parseTimeZone(ctx.timezone);
-  const r = await sendEmail({
-    to: ctx.email,
-    template: "valeComprado",
-    data: {
-      negocio: ctx.negocio,
-      titulo: ctx.title,
-      codigo: ctx.code,
-      valor: formatMoneyIn(
-        ctx.currency === "SEK" ? "SEK" : "CLP",
-        ctx.price_minor,
-      ),
-      validoHasta: formatVoucherDate(ctx.expires_at, tz.ok ? tz.value : APP_TZ),
-      direccion: ctx.address,
-      reservarUrl: `${appUrl()}/${ctx.slug}?vardebevis=${voucherId}`,
-    },
-    idempotencyKey: row.dedupeKey,
-  });
-  await finalizeSent(row, r.id);
-  return "sent";
-}
-
-/** WP-77 (D-058): presentkortets två mejl. Adresserna (köparens, mottagarens)
- * och koden läses ur tabellerna vid sändningen; payload bär bara kortets id
- * och länkens engångstoken, som nollas när raden skickats (`finalizeSent`).
- * Saknas mottagaradress går leveransmejlet till köparen. Ett återbetalt kort
- * skickas inte. */
-async function processGiftCardRow(
-  row: ClaimedRow,
-): Promise<"sent" | "cancelled"> {
-  const cardId =
-    typeof row.payload.giftCardId === "string" ? row.payload.giftCardId : "";
-  const token = typeof row.payload.token === "string" ? row.payload.token : "";
-  if (!cardId || !token) throw new OutboxSendError("invalid_payload");
-  const ctx = await withServiceTx(async (q) => {
-    const r = await q.query<{
-      code: string;
-      initial_minor: number;
-      status: string;
-      expires_at: Date;
-      buyer_name: string | null;
-      buyer_email: string | null;
-      recipient_name: string | null;
-      recipient_email: string | null;
-      greeting: string | null;
-      theme: "lime" | "lilac" | "photo";
-      deliver_on: string | null;
-      negocio: string;
-      slug: string;
-      address: string | null;
-      timezone: string;
-    }>(
-      `select g.code, g.initial_minor, g.status, g.expires_at,
-              o.buyer_name, o.buyer_email, o.recipient_name, o.recipient_email,
-              o.greeting, o.theme, to_char(o.deliver_on, 'YYYY-MM-DD') as deliver_on,
-              b.name as negocio, b.slug, b.address, b.timezone
-         from public.gift_cards g
-         join public.gift_card_orders o on o.business_id = g.business_id and o.id = g.order_id
-         join public.businesses b on b.id = g.business_id
-        where g.business_id = $1 and g.id = $2`,
-      [row.businessId, cardId],
-    );
-    return r.rows[0];
-  });
-  if (!ctx) throw new OutboxSendError("no_gift_card");
-  const to =
-    row.template === "presentkortLeverans"
-      ? (ctx.recipient_email ?? ctx.buyer_email)
-      : ctx.buyer_email;
-  if (!to || ctx.status === "refunding" || ctx.status === "refunded") {
-    await finalizeCancelled(row);
-    return "cancelled";
-  }
-  const parsedTz = parseTimeZone(ctx.timezone);
-  const tz = parsedTz.ok ? parsedTz.value : APP_TZ;
-  const valor = formatMoneyIn("SEK", ctx.initial_minor);
-  const validoHasta = formatVoucherDate(ctx.expires_at, tz);
-  const verUrl = `${appUrl()}${regaloHref(ctx.slug, "tarjeta")}?t=${encodeURIComponent(token)}`;
-  const r =
-    row.template === "presentkortLeverans"
-      ? await sendEmail({
-          to,
-          template: "presentkortLeverans",
-          data: {
-            nombre: ctx.recipient_name ?? ctx.buyer_name ?? "",
-            de: ctx.buyer_name ?? "",
-            negocio: ctx.negocio,
-            valor,
-            validoHasta,
-            codigo: ctx.code,
-            saludo: ctx.greeting,
-            tema: ctx.theme,
-            reservarUrl: `${appUrl()}/${ctx.slug}`,
-            verUrl,
-            direccion: ctx.address,
-          },
-          idempotencyKey: row.dedupeKey,
-        })
-      : await sendEmail({
-          to,
-          template: "presentkortKvitto",
-          data: {
-            negocio: ctx.negocio,
-            valor,
-            codigo: ctx.code,
-            para: ctx.recipient_email ? ctx.recipient_name : null,
-            fechaEnvio:
-              ctx.recipient_email && ctx.deliver_on
-                ? formatVoucherDate(
-                    fromLocal(
-                      ctx.deliver_on as LocalDate,
-                      "12:00" as LocalTime,
-                      tz,
-                    ),
-                    tz,
-                  )
-                : null,
-            validoHasta,
-            direccion: ctx.address,
-            verUrl,
-          },
-          idempotencyKey: row.dedupeKey,
-        });
-  await finalizeSent(row, r.id);
-  if (row.template === "presentkortLeverans") {
-    await withServiceTx((q) =>
-      q.query(
-        `update public.gift_cards set delivered_at = coalesce(delivered_at, now())
-          where business_id = $1 and id = $2`,
-        [row.businessId, cardId],
-      ),
-    );
-  }
-  return "sent";
-}
-
-/** WP-55: `mensajeLibre` — `payload.text` es el mensaje tal cual lo escribió
- * el dueño/staff (`sendCustomerMessage` ya lo validó, ≤ 320 caracteres); acá
- * solo se antepone `negocio` como remitente (`sms.mensajeLibre`). */
-async function processFreeMessageRow(
-  row: ClaimedRow,
-): Promise<"sent" | "cancelled"> {
-  const customerId =
-    typeof row.payload.customerId === "string" ? row.payload.customerId : "";
-  const texto = typeof row.payload.text === "string" ? row.payload.text : "";
-  if (!customerId || !texto) throw new OutboxSendError("invalid_payload");
-  const ctx = await loadFreeMessageContext(row.businessId, customerId);
-  if (!ctx) throw new OutboxSendError("no_customer");
-  // El cliente pudo ser anonimizado o perder el teléfono entre el encolado y
-  // el envío — el mensaje queda inactual.
-  if (!ctx.sendable || !ctx.phone) {
-    await finalizeCancelled(row);
-    return "cancelled";
-  }
-  const r = await sendRowSms(row, {
-    to: ctx.phone,
-    template: "mensajeLibre",
-    data: { negocio: ctx.negocio, texto },
-    idempotencyKey: row.dedupeKey,
-  });
-  await finalizeSent(row, r.id);
-  return "sent";
-}
-
 /** WP-31 (F14): `campanaMarketing` — kampanjutskick, ingen bokning. Kontrollerar
  * samtycke/anonymisering/adress på nytt vid sändningen (D-029: tiden mellan
  * köning och sändning kan vara upp till en timme med 50/pass, planen kräver
@@ -1607,8 +1138,7 @@ async function processCampaignRow(
   }
   const ctx = await loadCampaignContext(row.businessId, campaignRecipientId);
   if (!ctx) throw new OutboxSendError("no_customer");
-  const channelOk = row.channel === "email" ? !!ctx.email : !!ctx.phone;
-  if (!ctx.sendable || !channelOk) {
+  if (!ctx.sendable || !ctx.email) {
     await finalizeCancelled(row);
     return "cancelled";
   }
@@ -1627,32 +1157,17 @@ async function processCampaignRow(
         APP_LOCALE,
       )
     : undefined;
-  if (row.channel === "email") {
-    const r = await sendEmail({
-      to: ctx.email as string,
-      template: "campanaMarketing",
-      data: {
-        negocio: ctx.negocio,
-        texto: ctx.texto,
-        ...(ctx.offerPct !== null ? { offerPct: ctx.offerPct } : {}),
-        ...(ctx.offerText ? { offerText: ctx.offerText } : {}),
-        ...(offerValidUntil ? { offerValidUntil } : {}),
-        reservarUrl,
-        bajaUrl: baja,
-      },
-      idempotencyKey: row.dedupeKey,
-    });
-    await finalizeSent(row, r.id);
-    return "sent";
-  }
-  const r = await sendRowSms(row, {
-    to: ctx.phone as string,
+  const r = await sendEmail({
+    to: ctx.email,
     template: "campanaMarketing",
     data: {
       negocio: ctx.negocio,
       texto: ctx.texto,
-      link: reservarUrl,
-      bajaLink: baja,
+      ...(ctx.offerPct !== null ? { offerPct: ctx.offerPct } : {}),
+      ...(ctx.offerText ? { offerText: ctx.offerText } : {}),
+      ...(offerValidUntil ? { offerValidUntil } : {}),
+      reservarUrl,
+      bajaUrl: baja,
     },
     idempotencyKey: row.dedupeKey,
   });
@@ -1660,105 +1175,18 @@ async function processCampaignRow(
   return "sent";
 }
 
-/** WP-73 (D-048) + WP-76 (D-053): sms-kvoten per plan och kalendermånad, i
- * segment, och därefter köpta krediter. Reservationen görs med den färdiga
- * texten (antal segment) precis innan leverantören anropas, under ett
- * advisory lock per företag (`reserveSmsQuotaIn`). Är både kvot och krediter
- * slut avbryts raden med `error = 'sms_quota'` — kunden får ändå e-postraden
- * som köades parallellt (om kunden har e-post), så e-post blir reserven. En
- * rad som slutar `dead`/`cancelled` lämnar tillbaka sina krediter (trigger i
- * databasen, 20261012010000_sms_credits.sql). */
-/** WP-76 (D-053): ägarens sms-varningar (`smsCuota80`/`smsAgotados`), köade
- * av `reserveSmsQuotaIn`. Ingen bokning, ingen kunddata: bara siffrorna i
- * payloaden och en länk till Inställningar → Plan. */
-async function processSmsNoticeRow(
-  row: ClaimedRow,
-): Promise<"sent" | "cancelled"> {
-  const template = row.template as "smsCuota80" | "smsAgotados";
-  const num = (v: unknown) => (typeof v === "number" ? v : 0);
-  const negocio = await withServiceTx(async (q) => {
-    const r = await q.query<{ name: string }>(
-      `select name from public.businesses where id = $1`,
-      [row.businessId],
-    );
-    return r.rows[0]?.name ?? "";
-  });
-  const emails = await ownerEmailsFor(row.businessId);
-  if (emails.length === 0) throw new OutboxSendError("no_owner_email");
-  const data = {
-    negocio,
-    usado: num(row.payload.usado),
-    max: num(row.payload.max),
-    planUrl: `${appUrl()}${appHref("appAjustesPlan")}`,
-  };
-  const ids: string[] = [];
-  for (const [i, to] of emails.entries()) {
-    const r = await sendEmail({
-      to,
-      template,
-      data,
-      idempotencyKey: `${row.dedupeKey}:o${i}`,
-    });
-    ids.push(r.id);
-  }
-  await finalizeSent(row, ids.join(","));
-  return "sent";
-}
-
-class SmsQuotaBlockedError extends Error {
-  constructor() {
-    super("sms_quota");
-  }
-}
-
-function sendRowSms<T extends SmsTemplateName>(
-  row: ClaimedRow,
-  input: SendSmsInput<T>,
-) {
-  return sendSms({
-    ...input,
-    beforeSend: async (text) => {
-      const segments = Math.max(1, smsLengthInfo(text).segments);
-      const reserved = await withServiceTx((q) =>
-        reserveSmsQuotaIn(q, row.businessId, row.id, segments),
-      );
-      if (reserved === null) throw new SmsQuotaBlockedError();
-    },
-  });
-}
-
-async function finalizeQuotaCancelled(row: ClaimedRow): Promise<void> {
-  await withServiceTx((q) =>
-    q.query(
-      `update public.message_outbox
-          set status = 'cancelled', payload = '{}'::jsonb, error = 'sms_quota'
-        where id = $1 and business_id = $2`,
-      [row.id, row.businessId],
-    ),
-  );
-}
-
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
   try {
-    if (row.template === "smsCuota80" || row.template === "smsAgotados") {
-      return await processSmsNoticeRow(row);
-    }
-    if (row.template === "valeComprado") {
-      return await processVoucherRow(row);
-    }
-    if (
-      row.template === "presentkortKvitto" ||
-      row.template === "presentkortLeverans"
-    ) {
-      return await processGiftCardRow(row);
+    // D-062: bara e-post. En rad i en annan kanal (`sms`, kvar i databasens
+    // enum) köas inte av den här koden; skulle en finnas avbryts den.
+    if (row.channel !== "email") {
+      await finalizeCancelled(row);
+      return "cancelled";
     }
     if (row.template === "bienvenidaMiembro") {
       return await processMemberWelcomeRow(row);
-    }
-    if (row.template === "mensajeLibre") {
-      return await processFreeMessageRow(row);
     }
     if (row.template === "campanaMarketing") {
       return await processCampaignRow(row);
@@ -1800,17 +1228,9 @@ async function processRow(
       return "cancelled";
     }
     const providerId = await sendRow(ctx, row);
-    if (providerId === null) {
-      await finalizeCancelled(row);
-      return "cancelled";
-    }
     await finalizeSent(row, providerId);
     return "sent";
   } catch (e) {
-    if (e instanceof SmsQuotaBlockedError) {
-      await finalizeQuotaCancelled(row);
-      return "cancelled";
-    }
     return finalizeFailed(row, errorCodeOf(e));
   }
 }

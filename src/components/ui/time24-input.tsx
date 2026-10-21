@@ -2,7 +2,7 @@
 
 // WP-47 (tillägg B): 24-timmarsklocka oavsett webbläsarens/OS:ets språk. Nativa
 // `<input type="time">` visar AM/PM (och `<input type="date">` mm/dd/åååå) efter
-// webbläsarens locale, inte appens (`es-CL`/`sv-SE`) — även med `lang="es-CL"` på
+// webbläsarens locale, inte appens (`es-CL`) — även med `lang="es-CL"` på
 // `<html>` respekterar Chrome hellre operativsystemets språk för just den inbyggda
 // klockan/kalender-widgeten. Ersätter widgeten med ett vanligt textfält och en enkel mask
 // ("HH" → "HH:", högst 4 siffror) i stället för en 15-minuters `<select>`: `manual-

@@ -35,13 +35,17 @@ export const campaignAudienceSchema: z.ZodType<CampaignAudience> =
     }),
   ]);
 
-/** Samma kanal som `message_outbox`/`campaigns.channel` (bara email/sms —
- * WhatsApp finns inte som kampanjkanal i den här fasen). */
+/** Samma kanal som `message_outbox`/`campaigns.channel` (databasens enum har
+ * email/sms; WhatsApp finns inte som kampanjkanal i den här fasen). Historiken
+ * läser kolumnen som den är. */
 export type CampaignChannel = Extract<OutboxChannel, "email" | "sms">;
+
+/** Kanalen för nya utskick: bara e-post (D-062). */
+export type NewCampaignChannel = "email";
 
 export type CampaignInput = {
   name: string;
-  channel: CampaignChannel;
+  channel: NewCampaignChannel;
   audience: CampaignAudience;
   message: string;
   offerPct?: number | null;
@@ -58,18 +62,14 @@ const LOCAL_DATE = /^\d{4}-\d{2}-\d{2}$/;
 export const campaignInputSchema = z
   .strictObject({
     name: z.string().trim().min(1).max(200),
-    channel: z.enum(["email", "sms"]),
+    channel: z.literal("email"),
     audience: campaignAudienceSchema,
     message: z.string().trim().min(1),
     offerPct: z.number().int().min(1).max(100).nullish(),
     offerText: z.string().trim().min(1).max(200).nullish(),
     offerValidUntil: z.string().regex(LOCAL_DATE).nullish(),
   })
-  .refine((v) => (v.channel === "sms" ? v.message.length <= 320 : true), {
-    path: ["message"],
-    message: "message_too_long_sms",
-  })
-  .refine((v) => (v.channel === "email" ? v.message.length <= 1000 : true), {
+  .refine((v) => v.message.length <= 1000, {
     path: ["message"],
     message: "message_too_long_email",
   });
@@ -92,7 +92,7 @@ export type CampaignListItem = {
  */
 export type FlashCampaignInput = {
   flashSlotId: string;
-  channel: CampaignChannel;
+  channel: NewCampaignChannel;
   audience: CampaignAudience;
   message: string;
 };
@@ -100,15 +100,11 @@ export type FlashCampaignInput = {
 export const flashCampaignInputSchema = z
   .strictObject({
     flashSlotId: uuid,
-    channel: z.enum(["email", "sms"]),
+    channel: z.literal("email"),
     audience: campaignAudienceSchema,
     message: z.string().trim().min(1),
   })
-  .refine((v) => (v.channel === "sms" ? v.message.length <= 320 : true), {
-    path: ["message"],
-    message: "message_too_long_sms",
-  })
-  .refine((v) => (v.channel === "email" ? v.message.length <= 1000 : true), {
+  .refine((v) => v.message.length <= 1000, {
     path: ["message"],
     message: "message_too_long_email",
   });

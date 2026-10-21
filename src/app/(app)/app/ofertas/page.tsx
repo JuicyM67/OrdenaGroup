@@ -1,6 +1,5 @@
-// /app/erbjudanden (CL /app/ofertas) — WP-70 (D-056): företagets erbjudanden i
-// marknadsplatsen. Dold där marknadsplatsen är dold (CL, `NEXT_PUBLIC_MARKETPLACE=0`):
-// 404. Kräver katalogrätt (`can_edit_catalog`, D-034); bara ägaren publicerar.
+// /app/ofertas — WP-70 (D-056): företagets erbjudanden i marknadsplatsen. Dold när
+// marknadsplatsen är avstängd (`NEXT_PUBLIC_MARKETPLACE=0`): 404. Kräver katalogrätt (`can_edit_catalog`, D-034); bara ägaren publicerar.
 // Uppgraderingsrutan visas när planen saknar `offers` (Team och uppåt, D-048).
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";

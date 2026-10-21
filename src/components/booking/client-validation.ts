@@ -13,13 +13,11 @@
  * `form-schema.ts`) är den slutgiltiga kontrollen: en manipulerad förfrågan
  * som ändå överskrider gränsen ger `invalid_input`.
  *
- * `validateEmailFor` (WP-16, D-030): i CL är e-post obligatorisk i Reserva
- * (samma regel som serverns `customerFormSchemaFor`, `form-schema.ts`), SE
- * oförändrat frivilligt. `validateEmail` (utan marknad) används fortfarande
- * av `manual-booking-dialog.tsx` (ägarens manuella bokning) — D-030 gäller
- * bara kundens Reserva-formulär, den koden är oförändrad.
+ * `validateRequiredEmail` (WP-16, D-030): e-post är obligatorisk i Reserva
+ * (samma regel som serverns `bookingFormSchema`, `form-schema.ts`).
+ * `validateEmail` (frivillig) används fortfarande av `manual-booking-dialog.tsx`
+ * (ägarens manuella bokning) — D-030 gäller bara kundens Reserva-formulär.
  */
-import type { Market } from "@/config/brand";
 import { parsePhone, phoneErrorKey, type E164 } from "@/lib/format/phone";
 
 export const NAME_MAX = 120;
@@ -56,15 +54,11 @@ export function validateEmail(raw: string): FieldResult<string | undefined> {
   return { ok: true, value: trimmed };
 }
 
-/** Som `validateEmail`, men obligatorisk i CL (D-030): en tom sträng ger
- * samma kod som en ogiltig ("email.invalid"), precis som servern
- * (`customerFormSchemaFor`). */
-export function validateEmailFor(
-  market: Market,
+/** Som `validateEmail`, men obligatorisk (D-030): en tom sträng ger samma kod
+ * som en ogiltig ("email.invalid"), precis som servern (`bookingFormSchema`). */
+export function validateRequiredEmail(
   raw: string,
 ): FieldResult<string | undefined> {
-  if (market === "CL" && raw.trim() === "") {
-    return { ok: false, code: "email.invalid" };
-  }
+  if (raw.trim() === "") return { ok: false, code: "email.invalid" };
   return validateEmail(raw);
 }

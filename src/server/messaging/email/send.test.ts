@@ -24,7 +24,7 @@ describe("sendEmail", () => {
       {
         to: "cliente@example.cl",
         template: "magicLink",
-        data: emailFixtures("CL").magicLink,
+        data: emailFixtures().magicLink,
       },
       NO_ENV,
     );
@@ -45,7 +45,7 @@ describe("sendEmail", () => {
       {
         to: "cliente@example.cl",
         template: "reservaConfirmada",
-        data: emailFixtures("CL").reservaConfirmada,
+        data: emailFixtures().reservaConfirmada,
         idempotencyKey: "reserva:abc123",
       },
       FULL_ENV,
@@ -77,7 +77,7 @@ describe("sendEmail", () => {
       {
         to: "duena@example.cl",
         template: "bienvenida",
-        data: emailFixtures("CL").bienvenida,
+        data: emailFixtures().bienvenida,
       },
       FULL_ENV,
     );
@@ -98,7 +98,7 @@ describe("sendEmail", () => {
         {
           to: "cliente@example.cl",
           template: "magicLink",
-          data: emailFixtures("CL").magicLink,
+          data: emailFixtures().magicLink,
         },
         FULL_ENV,
       ),
@@ -112,7 +112,7 @@ describe("sendEmail", () => {
       {
         to: "a@b.cl",
         template: "magicLink",
-        data: emailFixtures("CL").magicLink,
+        data: emailFixtures().magicLink,
       },
       { EMAIL_FROM_BOOKING: "booking@ordenagroup.cl" },
     );

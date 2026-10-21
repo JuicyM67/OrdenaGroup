@@ -1,6 +1,5 @@
 import "server-only";
 
-import { market } from "@/config/brand";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx, withServiceTx } from "@/server/db/tx";
 import { hitRateLimit } from "@/server/db/rate-limit";
@@ -46,10 +45,8 @@ export type SendFlashCampaignError =
   | "invalid_input"
   | "flash_not_active"
   | "no_recipients"
-  | "sms_not_available"
   | "rate_limited"
   | "plan_locked"
-  | "sms_quota"
   | "unexpected";
 
 export type SendFlashCampaignResult =
@@ -76,7 +73,7 @@ type WriteFlashCampaignInput = {
   businessId: string;
   createdBy: string;
   name: string;
-  channel: "email" | "sms";
+  channel: "email";
   audienceJson: string;
   message: string;
   flashSlotId: string;
@@ -173,9 +170,6 @@ export async function sendFlashCampaign(
   }
   const parsed = flashCampaignInputSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
-  if (parsed.data.channel === "sms" && market !== "SE") {
-    return { ok: false, code: "sms_not_available" };
-  }
   const perm = await loadPermissionAndBusiness(userId, businessId);
   if (!perm?.allowed) return { ok: false, code: "forbidden" };
 
@@ -195,25 +189,14 @@ export async function sendFlashCampaign(
   if (!allowed) return { ok: false, code: "rate_limited" };
 
   const customerIds = await withOwnerTx(userId, (q) =>
-    resolveAudienceIn(
-      q,
-      businessId,
-      parsed.data.audience,
-      parsed.data.channel,
-      MAX_RECIPIENTS + 1,
-    ),
+    resolveAudienceIn(q, businessId, parsed.data.audience, MAX_RECIPIENTS + 1),
   );
   if (customerIds.length === 0) return { ok: false, code: "no_recipients" };
   if (customerIds.length > MAX_RECIPIENTS) {
     return { ok: false, code: "rate_limited" };
   }
-  // WP-73 (D-048): planspärr + sms-kvot.
-  const planBlock = await checkCampaignPlan(
-    businessId,
-    "flash",
-    parsed.data.channel,
-    customerIds.length,
-  );
+  // WP-73 (D-048): planspärr.
+  const planBlock = await checkCampaignPlan(businessId, "flash");
   if (planBlock) return { ok: false, code: planBlock };
 
   try {

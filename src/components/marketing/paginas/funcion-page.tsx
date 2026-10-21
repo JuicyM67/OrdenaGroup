@@ -6,12 +6,7 @@ import Link from "next/link";
 import { HomeHeading } from "@/components/marketing/home/home-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
-import {
-  funcionAvailable,
-  href,
-  hrefFuncion,
-  type FuncionId,
-} from "@/config/routes";
+import { href, hrefFuncion, type FuncionId } from "@/config/routes";
 import { paginas } from "@/i18n/paginas";
 
 import { FotoHero } from "./foto-hero";
@@ -36,7 +31,7 @@ export function FuncionPage({ id }: { id: FuncionId }) {
   const ui = FUNCION_UI[id];
   const migas = funcionMigas(id);
   const relacionadas = ui.relacionadas
-    .filter((r) => funcionAvailable(r) && paginas.funciones[r])
+    .filter((r) => paginas.funciones[r])
     .slice(0, 3);
 
   return (

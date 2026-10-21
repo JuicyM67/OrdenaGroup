@@ -5,7 +5,7 @@
 import { ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
 
-import { brand, market } from "@/config/brand";
+import { brand } from "@/config/brand";
 import { href } from "@/config/routes";
 import { visita } from "@/i18n";
 
@@ -21,10 +21,6 @@ function buildSteps(): TourStep[] {
     { id: "equipo", targets: ["staff"], ...p.equipo },
     { id: "flash", targets: ["flash"], ...p.flash },
     { id: "resenas", targets: ["rating"], ...p.resenas },
-    // Stripe-betalning finns bara i SE (steget hoppas över i CL).
-    ...(market === "SE"
-      ? [{ id: "pago", targets: ["payment"], ...p.pago }]
-      : []),
     { id: "reservar", targets: ["book-bar", "book"], ...p.reservar },
   ].map((s) => ({
     id: s.id,

@@ -1,13 +1,11 @@
 import "server-only";
 
-import { market } from "@/config/brand";
 import { addLocalDays, APP_TZ, toLocalDate } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 import { loadPlanIn, planCan } from "@/server/plans/entitlements";
 
 import { MAX_RECIPIENTS, writeCampaignAsSystemIn } from "./send";
-import type { CampaignChannel } from "./types";
 
 /**
  * WP-31: "Te echamos de menos" automatiskt. Anropas dagligen från
@@ -17,8 +15,7 @@ import type { CampaignChannel } from "./types";
  * gränsen och som inte fått en winback de senaste `WINBACK_REUSE_DAYS`
  * dagarna (`customers.last_winback_at`).
  *
- * Kanal: `sms` i SE, annars (CL) `email` — D-025 (en marknad per
- * installation, `sms_not_available` i CL annars, `send.ts`).
+ * Kanal: `email` (enda kanalen för utskick).
  */
 const WINBACK_REUSE_DAYS = 90;
 
@@ -129,7 +126,6 @@ export async function runWinback(now: Date): Promise<RunWinbackResult> {
   const businesses = await withServiceTx((q) => eligibleBusinessesIn(q));
   let queued = 0;
   let sentFor = 0;
-  const channel: CampaignChannel = market === "SE" ? "sms" : "email";
   const today = toLocalDate(now, APP_TZ);
 
   for (const b of businesses) {
@@ -161,7 +157,7 @@ export async function runWinback(now: Date): Promise<RunWinbackResult> {
           businessId: b.id,
           createdBy: ownerId,
           name: `Te echamos de menos — ${today}`,
-          channel,
+          channel: "email",
           audience: { kind: "selected", customerIds },
           message: b.winback_message,
           offerPct: b.winback_offer_pct,

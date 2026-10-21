@@ -79,7 +79,6 @@ Tailwinds standardtema är nollställt (§12), så storlekarna heter efter px (`
 | page-title (mobil) | `font-display text-30 font-semibold tracking-display` |
 | stat | `font-display text-38 font-semibold tracking-display` |
 | stat (belopp) | `font-display text-32 font-semibold tracking-display` |
-| sms-saldo (WP-76, Plan) | `font-display text-36 font-bold` (mobil `text-28`) |
 | section-title (WP-76, Plan) | `font-display text-20 font-bold` |
 | time-xl | `font-display text-44 leading-none font-semibold tracking-display` |
 | day-number (desktop) | `font-display text-30 font-bold tracking-display` |
@@ -414,8 +413,8 @@ typografiskalor och komponenter som Reserva (Button, Card, TextLink). Ingen egen
 | Vy-modell | `src/components/booking/manage-view.ts` | `manageState` (cancelled/past/locked/cancellable), `manageFields`, `mustParseInstant`; re-exporterar `ManagedBooking` (typ) åt `manage-screen.tsx` — filen saknar `"use client"`, så den är den godkända indirektionspunkten förbi `boundaries.test.ts` (samma mönster som `booking/types.ts`, WP-13 item 11) |
 
 **D-030 (samma PR):** e-postfältet i `CustomerForm` (`clienteForm.emailLabel`) är
-obligatoriskt i CL (`required` + `aria-required`, `validateEmailFor` i
-`client-validation.ts`), frivilligt i SE — `manual-booking-dialog.tsx` (ägarens
+obligatoriskt (`required` + `aria-required`, `validateEmailFor` i
+`client-validation.ts`) — `manual-booking-dialog.tsx` (ägarens
 manuella bokning) är oförändrad. **Känd brist:** `es-CL.ts`s `clienteForm.emailLabel`
 ("Correo (opcional)") och `emailAyuda` är inte uppdaterade för CL:s nya obligatoriska
 fält (copywriter-es-cl äger `src/i18n/`) — flaggat i PR:en, inte löst här.
@@ -562,16 +561,9 @@ Referenser: `docs/design/reference/startsida/` (Konv1 = hero, Flytt = smärtfri 
 Nya tokens i `tokens.css` (finns bara för startsidan): textstorlekar 20/34/52/54/56/60/68, `tracking-hero|headline|label`, `leading-display`, radier `device`, `device-sm`, `screen`, `cta`, `form`, `highlight`, skuggor `float-lg|float-md|soft`, blur `photo|layer`, animationer `marquee-slow`, `drift-1..3`, `pulse-ring`, samt utilities `glass-light`, `glass-dark`, `glass-nav` (liquid glass på foton), `bg-hero-tint(-mobile)`, `bg-photo-tint(-mobile)` (full-bleed foto-hero, WP-75: kant i kant, innehåll i `max-w-360`-container, toning för >= 4.5:1), `bg-cta-tint(-mobile)`, `bg-scrim-bottom`, `bg-flytt-stage`, `object-hero-mobile`.
 Foton: `public/marketing/` (Unsplash, se CREDITS.md). Text på foto ligger alltid på en toning (min. 4,5:1).
 
-## 14. Logotyp SE: b-klockan (WP-74, D-049)
+## 14. (Borttagen) Logotyp SE
 
-Booking Buddys märke: gement **b** med kraftig stam och en rundel som tjock ring med limegröna klockvisare. Källor: `docs/design/brand/*.svg`. Komponenter: `BbMark` (`src/components/ui/bb-mark.tsx`, bara märket) och `BrandLogo` (`variant` full/mark, `tone` auto/light/dark). CL behåller sin logotyp.
-
-- **Ordmärke:** "booking" (600) + "buddy" (800), Bricolage Grotesque, `tracking-headline`, märket till vänster med `gap-2`.
-- **Färger:** på ljus yta ink + `flash-dot` (visare, kontrast på ljust); på mörk yta `on-dark` + `lime`. `tone="auto"` följer `data-surface="dark"`.
-- **Frizon:** minst märkets halva stamhöjd runt om (ca 0,5 x märkeshöjd). Inga effekter, ingen lime-ruta bakom märket (appikonen undantagen).
-- **Minsta storlek:** 16 px favicon (`bb-favicon.svg`), 24 px på skärm (märket), ordmärket minst 19 px text.
-- **Ikoner:** `public/brand/` (favicon 16/32, apple 180 utan rundade hörn, 192/512, maskable 512 med säkerhetsmarginal) genereras med `node scripts/gen-brand-icons.mjs`.
-- **Mejl:** märket som PNG (`bb-mark-email.png`, hostad på marknadens domän) + ordet som text; alla mallar delar `renderLayout`.
+Avsnittet om Booking Buddys logotyp (WP-74, D-049) gällde bara Sverige, som flyttat till ett eget repo (D-062). Ordena Calendar behåller sin logotyp (`LogoMark`).
 
 ## 15. Guidad visning (WP-72)
 
@@ -579,5 +571,5 @@ Referens: `docs/design/reference/visning/{Main,Mobil,Foretag}.dc.html`. Ljust li
 Nya tokens i `tokens.css`: inga egna färger (bara ordinarie tokens); skuggorna `spotlight` (enorm neutral ink-baserad box-shadow som dimmar resten) och `row-open` (utfälld tjänsterad); animationerna `tour-in` och `tour-ring` (lila puls); utilities `tour-glass` (vitt glas som `glass-light`), `tour-scrim`, `tour-spot` (spotlightens glid via left/top/width/height), `tour-spot-still`, `tour-note` (syns bara när `html[data-tour-on]`), `grid-cols-agenda-demo`.
 
 - `components/tour/guided-tour.tsx`: generisk motor. Mål pekas ut med `data-tour="<namn>"` på riktiga element och mäts med getBoundingClientRect (fixed spotlight, fokusfälla, Esc, pil-tangenter, `aria-modal`). Steg utan mål på sidan hoppas över. Laddas alltid lazy (`tour-loader.tsx` / `next/dynamic`) så /[slug] inte växer (D-039).
-- Kundvy: bara på `brand.demoSlug`. Företagsvy: `/ejemplo/negocio` (SE `/exempel/foretag`), statisk mockup (`business-demo.tsx`). Steget "Betalt direkt" (Stripe) finns bara i SE.
+- Kundvy: bara på `brand.demoSlug`. Företagsvy: `/demo/negocio` (tidigare `/ejemplo/negocio`, permanent redirect), statisk mockup (`business-demo.tsx`).
 - Tjänsterad = accordion (`ProfileServiceList`): namn + längd, initialcirklar för personalen, pris, chevron; utfälld visas beskrivning + "Välj tid". Alla rader börjar hopfällda (referensen visar första raden utfälld som exempeltillstånd).

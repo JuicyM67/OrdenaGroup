@@ -1,12 +1,12 @@
 import "server-only";
 
-import { marketplaceEnabled, vouchersMarket } from "@/config/marketplace";
+import { marketplaceEnabled } from "@/config/marketplace";
 import type { Queryable } from "@/server/db/pool";
 
 /**
  * D-060: bokning till erbjudandepris via marknadsplatsen
- * (`/{slug}?oferta=<id>`), bara där erbjudandet inte säljs som värdebevis
- * (CL, tills Mercado Pago finns). Kunden betalar erbjudandepriset i salongen.
+ * (`/{slug}?oferta=<id>`). Erbjudandet säljs inte online (tills Mercado Pago
+ * finns); kunden betalar erbjudandepriset i salongen.
  *
  * Räknas ALLTID på servern (inv. 6): klienten skickar aldrig pris eller
  * rabatt, och id:t binds i sidans server action (aldrig ur formuläret).
@@ -25,7 +25,7 @@ export type MarketplaceOfferInfo = {
 
 /** Finns bokning till erbjudandepris i den här installationen? */
 export function marketplaceOfferBookingEnabled(): boolean {
-  return marketplaceEnabled() && !vouchersMarket();
+  return marketplaceEnabled();
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

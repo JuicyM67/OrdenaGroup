@@ -2,6 +2,8 @@
 
 > Arbetsnamn "llena". Löfte: **"Tu agenda se llena sola."** Enkelt, premium, prisvärt bokningssystem för barberare, frisörer, skönhet, kinesiologer m.fl. Startmarknad: Santiago (Providencia + Ñuñoa).
 
+> **Bara Chile.** Repot innehåller bara Ordena Calendar (Chile). Den svenska verksamheten har ett eget repo sedan D-062. Lägg inte till marknadsval, svenska texter eller svenska funktioner här.
+
 ## Läs detta först (i ordning)
 1. `docs/product/VISION.md` — tankesättet. Styr alla avvägningar.
 2. `docs/product/MVP_SPEC.md` — vad som ska byggas (funktioner F1–F19 med "klart när").
@@ -25,6 +27,7 @@ Next.js App Router + TypeScript strict (`src/`) · Tailwind v4 med tokens · Rad
 8. **Aldrig mot produktion.** Inga migrationer, deploys eller skarpa meddelanden mot prod från en agent.
 9. **Scope:** bygg bara det som står i arbetspaketet. Ny idé → skriv den i `docs/tasks/IDEAS.md`, bygg den inte.
 10. **Namnet "llena"** finns bara i `src/config/brand.ts` (och i docs).
+11. **Befintliga migrationer ändras aldrig.** Filerna i `supabase/migrations/` ändras, tas bort och döps aldrig om — de är applicerade i databaserna i drift och delas med BookingBuddy fram till uppdelningen (D-062). Ändringar görs med en ny migration. Tabeller och typer för svenska funktioner (presentkort, värdebevis, sms-krediter, Stripe) finns kvar i databasen och i `src/types/database.ts` men används inte av koden.
 
 ## Arbetssätt
 - **Plan först:** varje arbetspaket börjar i plan mode. Planen refererar till funktions-ID (F#) och "klart när"-kriterierna.

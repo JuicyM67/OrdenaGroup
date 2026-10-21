@@ -86,9 +86,6 @@ export const cuenta = {
     no_show: "No asististe",
     cancelled: "Cancelada",
     cancel_requested: "Cancelación solicitada",
-    pagada: "Pagada",
-    reservada: "Tarjeta reservada",
-    reembolso: "Reembolsada",
   },
   reservas: {
     titulo: "Mis reservas",

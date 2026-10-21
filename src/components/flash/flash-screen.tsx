@@ -67,8 +67,6 @@ export type FlashScreenProps = {
   publicBase: string;
   /** `undefined` döljer "Enviar a clientes" i varje kort. */
   onSend?: (input: SendFlashCampaignInput) => Promise<SendFlashCampaignResult>;
-  /** SMS bara en SE (D-025/D-026). */
-  smsAvailable?: boolean;
   canViewReports?: boolean;
   onLogout?: () => void | Promise<void>;
   onCreate: (input: CreateFlashSlotInput) => Promise<CreateFlashResult>;
@@ -129,7 +127,6 @@ export function FlashScreen({
   gaps = [],
   publicBase,
   onSend,
-  smsAvailable = false,
   canViewReports,
   onLogout,
   onCreate,
@@ -254,7 +251,6 @@ export function FlashScreen({
                 slot={slot}
                 publicUrl={`${publicBase}?flash=${slot.id}`}
                 onSend={onSend}
-                smsAvailable={smsAvailable}
                 onCancel={onCancel}
               />
             ))}

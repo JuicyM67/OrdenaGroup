@@ -2,8 +2,8 @@ import "server-only";
 
 import { createHash } from "node:crypto";
 
-import { market } from "@/config/brand";
 import { marketplaceEnabled } from "@/config/marketplace";
+import { APP_TZ } from "@/lib/format/dates";
 import { hitRateLimit } from "@/server/db/rate-limit";
 import { withServiceTx } from "@/server/db/tx";
 
@@ -62,7 +62,7 @@ export async function runGeocodeSweep(
   opts: { limit?: number; geocoder?: Geocoder | null; budgetMs?: number } = {},
 ): Promise<GeocodeSweepResult> {
   const result: GeocodeSweepResult = { ok: 0, notFound: 0, skipped: 0 };
-  // Chile: marknadsplatsen är dold — inga anrop i onödan.
+  // Marknadsplatsen avstängd (nödbromsen) — inga anrop i onödan.
   if (!marketplaceEnabled()) return result;
   const geocoder = opts.geocoder === undefined ? getGeocoder() : opts.geocoder;
   if (!geocoder) return result;
@@ -70,7 +70,7 @@ export async function runGeocodeSweep(
     opts.limit ?? GEOCODE_SWEEP_LIMIT,
     GEOCODE_SWEEP_LIMIT,
   );
-  const tz = market === "SE" ? "Europe/Stockholm" : "America/Santiago";
+  const tz = APP_TZ;
 
   const pending = await withServiceTx(async (q) => {
     const r = await q.query<{ id: string; address: string; comuna: string }>(
@@ -112,7 +112,7 @@ export async function runGeocodeSweep(
     const hit = await geocoder.geocode({
       address: row.address,
       comuna: row.comuna,
-      country: market === "SE" ? "se" : "cl",
+      country: "cl",
     });
     await withServiceTx(async (q) => {
       // Bara om raden fortfarande väntar (ägaren kan ha satt nålen under tiden).

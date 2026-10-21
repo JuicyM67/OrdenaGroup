@@ -33,7 +33,7 @@ function booking(overrides: Partial<HoyBooking>): HoyBooking {
 // Testerna körs med tre olika värden på TZ (miljövariabeln, inte parametern till dates.ts) för
 // att bevisa att alla beräkningar går via SANTIAGO explicit och aldrig via värdens egen
 // tidszon (D-017/WP-04). date-fns/date-fns-tz används inte (D-018).
-for (const tz of [undefined, "UTC", "Europe/Stockholm"]) {
+for (const tz of [undefined, "UTC", "Europe/Madrid"]) {
   describe(`hoy-view (process.env.TZ=${tz ?? "(ingen, systemets standard)"})`, () => {
     const originalTz = process.env.TZ;
     beforeEach(() => {

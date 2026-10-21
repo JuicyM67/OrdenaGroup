@@ -1,8 +1,8 @@
 name: Outbox cron
 
 # D-030: schemaläggaren för `message_outbox` är GitHub Actions, inte
-# pg_cron/pg_net (WP-16). Anropar `/api/cron/outbox` var 5:e minut per
-# marknad (repo-hemligheterna sätts manuellt av ägaren, aldrig av en agent).
+# pg_cron/pg_net (WP-16). Anropar `/api/cron/outbox` var 5:e minut
+# (repo-hemligheterna sätts manuellt av ägaren, aldrig av en agent).
 # Bekräftelser går ändå ut inom 1 min via `kickOutbox`, oberoende av den här
 # workflown — det här passet tar påminnelser (24 h, kan bli upp till ~15 min
 # sena) och omförsök (backoff).
@@ -15,30 +15,25 @@ on:
 permissions:
   contents: read
 
-# En körning i taget (båda marknaderna i samma körning); en försenad körning köar nästa.
+# En körning i taget; en försenad körning köar nästa.
 concurrency:
   group: outbox-cron
   cancel-in-progress: false
 
 jobs:
   trigger:
-    strategy:
-      fail-fast: false
-      matrix:
-        market: [CL, SE]
-    name: outbox (${{ matrix.market }})
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       # Ingen hemlighet skrivs till loggen — bara att den saknas, om så är
-      # fallet. Sverige hoppas över tills dess CRON_SECRET/URL finns.
+      # fallet. Körningen hoppas över tills CRON_SECRET/URL finns.
       - name: Anropa /api/cron/outbox
         env:
-          URL: ${{ matrix.market == 'CL' && secrets.OUTBOX_CRON_URL_CL || secrets.OUTBOX_CRON_URL_SE }}
+          URL: ${{ secrets.OUTBOX_CRON_URL_CL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           if [ -z "$URL" ] || [ -z "$CRON_SECRET" ]; then
-            echo "::notice::${{ matrix.market }}: OUTBOX_CRON_URL_${{ matrix.market }} eller CRON_SECRET saknas, hoppar över."
+            echo "::notice::OUTBOX_CRON_URL_CL eller CRON_SECRET saknas, hoppar över."
             exit 0
           fi
           curl --fail --max-time 30 --silent --show-error \
