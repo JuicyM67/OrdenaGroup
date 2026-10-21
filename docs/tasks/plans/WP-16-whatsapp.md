@@ -153,9 +153,10 @@ claim/decline) · `src/server/bookings/customer-confirm.ts` (ny) · `src/server/
    sessionskanal i utkorgen; inte i v1).
 
 ## 7. Klart när
-- [ ] Klient + fake + felklassning + signatur med tester
-- [ ] Kanalval och e-postreserv i utkorgen, sändningstidsbeslut, payload-regeln (D-029/D-063)
-- [ ] Webhook: GET-verifiering, signatur, idempotens, statusar, knappsvar, väntelistans race
-- [ ] Samtycke: separat ruta, logg, återkallelse i `/r/[token]`, versioner + hashar
-- [ ] Migrationer + pgTAP + typer, `.env.example`, INTEGRATIONS, DATA_MODEL, D-063, BACKLOG
-- [ ] `typecheck`, `lint`, `format:check`, `test`, `build`, `test:db`, `test:integration`, `test:e2e` gröna
+- [x] Klient + fake + felklassning + signatur med tester
+- [x] Kanalval och e-postreserv i utkorgen, sändningstidsbeslut, payload-regeln (D-029/D-063)
+- [x] Webhook: GET-verifiering, signatur, idempotens, statusar, knappsvar, väntelistans race
+- [x] Samtycke: separat ruta, logg, återkallelse i `/r/[token]`, versioner + hashar
+- [x] Migrationer + pgTAP + typer, `.env.example`, INTEGRATIONS, DATA_MODEL, D-063, BACKLOG
+- [x] `typecheck`, `lint`, `format:check`, `test`, `build`, `test:db`, `test:integration`, `test:e2e` gröna lokalt (2026-10-21, egen stack på 583xx; CI kördes inte)
+- [ ] Skarpt: Meta-uppgifter i Vercel, webhook registrerad i Meta, godkända mallar i `WHATSAPP_TEMPLATES_APPROVED`, copywriter/jurist för TODO_COPY

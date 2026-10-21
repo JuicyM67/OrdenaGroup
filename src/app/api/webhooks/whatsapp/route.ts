@@ -56,6 +56,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (!signature) {
     return NextResponse.json({ error: "missing_signature" }, { status: 401 });
   }
+  // Säkerhetsgranskning: avvisa en uppenbart för stor body innan den läses.
+  const declared = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "too_large" }, { status: 413 });
+  }
   // Rå body (bytes): signaturen gäller exakt det Meta skickade.
   const raw = new Uint8Array(await request.arrayBuffer());
   if (raw.byteLength > MAX_BODY_BYTES) {

@@ -141,6 +141,17 @@ describe("POST (signatur före allt annat)", () => {
     expect(processMock).not.toHaveBeenCalled();
   });
 
+  it("för stor body (Content-Length) → 413 innan den läses", async () => {
+    const res = await POST(
+      post(BODY, {
+        "x-hub-signature-256": sign(BODY),
+        "content-length": String(2 * 1024 * 1024),
+      }),
+    );
+    expect(res.status).toBe(413);
+    expect(processMock).not.toHaveBeenCalled();
+  });
+
   it("signerad men inte JSON → 200 utan hantering (Meta ska inte skicka om)", async () => {
     const raw = "inte json";
     const res = await POST(post(raw, { "x-hub-signature-256": sign(raw) }));
