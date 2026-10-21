@@ -6,7 +6,10 @@ import "server-only";
  * men som egna literaler här så att `enqueue.ts`/`worker.ts` inte behöver
  * importera de genererade databastyperna för något så litet.
  */
-export type OutboxChannel = "email" | "sms";
+/** `whatsapp` (D-063): kundens bokningsmeddelanden när kunden samtyckt och
+ * mallen är godkänd hos Meta — se `src/server/messaging/whatsapp/channel.ts`.
+ * `sms` finns kvar i databasens enum men används inte (D-062). */
+export type OutboxChannel = "email" | "sms" | "whatsapp";
 /** `invitee` (WP-46, D-034): `member_invitations` — se
  * `src/server/team/invitations.ts` (köar) och `./worker.ts`s
  * `sendInvitee`/`loadInvitationContext` (skickar, slår upp adressen via

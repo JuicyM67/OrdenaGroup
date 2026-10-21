@@ -7,7 +7,11 @@ import "server-only";
  * `kick.ts` ger "inom 1 min" utan att vänta på cron. Se docs/tech/
  * INTEGRATIONS.md §5 och docs/decisions/DECISIONS.md (D-029/D-030).
  */
-export { enqueueBookingEvent, enqueueBookingEventIn } from "./enqueue";
+export {
+  enqueueBookingEvent,
+  enqueueBookingEventIn,
+  enqueueCustomerChangeRequestIn,
+} from "./enqueue";
 export {
   enqueueWaitlistEvent,
   enqueueWaitlistEventIn,

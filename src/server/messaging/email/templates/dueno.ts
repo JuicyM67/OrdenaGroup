@@ -110,3 +110,23 @@ export function solicitudCancelacionEmail(
     ],
   });
 }
+
+/** D-063 (WhatsApp, WP-22): al dueño, cuando el cliente respondió "Necesito
+ * cambiar" al recordatorio `recordatorio_24h`. Sin respuestas. */
+export function clienteQuiereCambiarEmail(
+  data: DuenoReservaData,
+): RenderedEmail {
+  const ns = emailNs().clienteQuiereCambiar;
+  const comun = emailNs().comun;
+  return composeSimpleEmail({
+    subject: ns.asunto({ cliente: data.cliente, fecha: data.fecha }),
+    preheader: ns.preheader({ servicio: data.servicio, hora: data.hora }),
+    titulo: ns.titulo,
+    paragraphs: [ns.texto(data)],
+    cardRows: cardRows(data),
+    cta: { label: ns.cta, href: data.agendaUrl },
+    footerLines: [
+      comun.piePagina({ marca: brand.name, negocio: data.negocio }),
+    ],
+  });
+}
