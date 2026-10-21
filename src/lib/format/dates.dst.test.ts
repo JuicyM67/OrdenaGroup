@@ -299,7 +299,7 @@ describe("uttömmande rundtur", () => {
   // Oberoende orakel: en annan Intl-väg (timeZoneName "longOffset").
   // date-fns-tz 3.2.0 duger inte som orakel: getTimezoneOffset(tz, date)
   // tolkar `date` som lokal väggtid, och formatInTimeZone ger fel väggtid
-  // när den hamnar i ett sommartidsglapp i värdens tidszon (t.ex. TZ=Europe/Stockholm
+  // när den hamnar i ett sommartidsglapp i värdens tidszon (t.ex. TZ=Europe/Madrid
   // 2026-03-29T05:00Z → "03:00" i stället för "02:00" i Santiago).
   it("väggtid och offset stämmer med Intl longOffset varje hel timme 2020–2030", () => {
     const oracle = new Intl.DateTimeFormat("en-US", {

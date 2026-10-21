@@ -116,7 +116,7 @@ const cases: [string, string, string, { start: number; end: number }[]][] = [
 describe.each([
   "UTC",
   "America/Santiago",
-  "Europe/Stockholm",
+  "Europe/Madrid",
   "America/Los_Angeles",
 ])("arbetsfönster kring sommartid (TZ=%s)", (hostTz) => {
   const original = process.env.TZ;

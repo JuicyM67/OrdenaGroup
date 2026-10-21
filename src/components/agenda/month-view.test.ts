@@ -40,7 +40,7 @@ describe("monthWeeks", () => {
   });
 
   it("september 2026 (sommartidsbyte i Chile mitt i månaden) ger 30 unika dagar oavsett process.env.TZ", () => {
-    for (const tz of ["UTC", "America/Santiago", "Europe/Stockholm"]) {
+    for (const tz of ["UTC", "America/Santiago", "Europe/Madrid"]) {
       process.env.TZ = tz;
       const cells = monthWeeks({ year: 2026, month: 9 })
         .flat()
