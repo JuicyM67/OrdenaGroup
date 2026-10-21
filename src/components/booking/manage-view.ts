@@ -40,6 +40,10 @@ export function mustParseInstant(iso: string, fn: string): Date {
  * som `ManagedBooking` ovan). WP-56: `pending: true` = avbokningen blev en
  * förfrågan (`cancel_requested`) i stället för en direkt avbokning —
  * `businesses.cancel_approval` kräver företagets godkännande. */
+/** D-063: resultatet av "Dejar de recibirlos por WhatsApp". */
+export type ManageWhatsAppResult =
+  { readonly ok: true } | { readonly ok: false; readonly code: string };
+
 export type ManageCancelResult =
   | { readonly ok: true; readonly pending?: boolean }
   | { readonly ok: false; readonly code: string };

@@ -112,6 +112,8 @@ export function CustomerForm({
 
   const [terms, setTerms] = useState(false);
   const [marketing, setMarketing] = useState(false);
+  // D-063: WhatsApp är en egen, valfri ruta — aldrig förkryssad.
+  const [whatsapp, setWhatsapp] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>(initialErrors ?? {});
   const [idempotencyKey] = useState(randomId);
 
@@ -234,6 +236,7 @@ export function CustomerForm({
       email: emailResult.value ?? "",
       termsAccepted: true as const,
       marketing,
+      whatsapp,
       idempotencyKey,
       serviceId: selection.serviceId!,
       staffId: selection.staffId,
@@ -433,6 +436,9 @@ export function CustomerForm({
             >
               {reserva.consentimientos.privacidadLinkTexto}
             </a>
+          </ConsentCheckbox>
+          <ConsentCheckbox checked={whatsapp} onChange={setWhatsapp}>
+            {reserva.consentimientos.whatsapp({ negocio: data.business.name })}
           </ConsentCheckbox>
           <ConsentCheckbox checked={marketing} onChange={setMarketing}>
             {reserva.consentimientos.marketing({ negocio: data.business.name })}

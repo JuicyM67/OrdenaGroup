@@ -133,6 +133,7 @@ export async function createBooking(
       businessId: business.id,
       customerId: result.value.customerId,
       marketing: parsed.data.marketing,
+      whatsapp: parsed.data.whatsapp,
       consentVersion: parsed.data.consentVersion,
       now,
     });
@@ -212,6 +213,7 @@ export async function joinWaitlist(
     phone: parsed.data.phone,
     ...(parsed.data.email ? { email: parsed.data.email } : {}),
     consentWaitlist: parsed.data.termsAccepted,
+    consentWhatsapp: parsed.data.whatsapp,
     idempotencyKey: parsed.data.idempotencyKey,
   });
   // Inget meddelande köas vid anmälan (bara när en tid erbjuds).

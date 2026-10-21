@@ -18,18 +18,22 @@ import {
   mustParseInstant,
   type ManageCancelResult,
   type ManagedBooking,
+  type ManageWhatsAppResult,
 } from "./manage-view";
 
 export function ManageScreen({
   booking,
   now,
   onCancel,
+  onRevokeWhatsApp,
 }: {
   booking: ManagedBooking;
   /** Instant (ISO, med offset) för "nu", injicerad av `page.tsx` — aldrig
    * `new Date()` här. */
   now: string;
   onCancel: () => Promise<ManageCancelResult>;
+  /** D-063: återkalla WhatsApp-samtycket (bara när det är aktivt). */
+  onRevokeWhatsApp?: () => Promise<ManageWhatsAppResult>;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [justCancelled, setJustCancelled] = useState(false);
@@ -37,6 +41,19 @@ export function ManageScreen({
   // direkt utan att behöva ladda om länken.
   const [justRequestedCancel, setJustRequestedCancel] = useState(false);
   const [generalError, setGeneralError] = useState(false);
+  const [whatsappRevoked, setWhatsappRevoked] = useState(false);
+  const [whatsappError, setWhatsappError] = useState(false);
+  const [whatsappBusy, setWhatsappBusy] = useState(false);
+
+  async function handleRevokeWhatsApp() {
+    if (!onRevokeWhatsApp || whatsappBusy) return;
+    setWhatsappBusy(true);
+    setWhatsappError(false);
+    const result = await onRevokeWhatsApp();
+    setWhatsappBusy(false);
+    if (result.ok) setWhatsappRevoked(true);
+    else setWhatsappError(true);
+  }
 
   const state = justCancelled
     ? "cancelled"
@@ -154,6 +171,39 @@ export function ManageScreen({
         <p role="alert" className="text-13 text-ink">
           {comun.algoSalioMal}
         </p>
+      ) : null}
+
+      {booking.whatsappConsent && onRevokeWhatsApp ? (
+        <div className="flex flex-col gap-2 border-t border-line pt-4">
+          {whatsappRevoked ? (
+            <p role="status" className="text-13 text-muted">
+              {gestion.whatsapp.dejado}
+            </p>
+          ) : (
+            <>
+              <p className="text-13 text-muted">
+                {gestion.whatsapp.activo({ negocio: booking.business.name })}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="md"
+                className="self-start"
+                disabled={whatsappBusy}
+                onClick={() => {
+                  void handleRevokeWhatsApp();
+                }}
+              >
+                {gestion.whatsapp.ctaDejar}
+              </Button>
+            </>
+          )}
+          {whatsappError ? (
+            <p role="alert" className="text-13 text-ink">
+              {gestion.whatsapp.error}
+            </p>
+          ) : null}
+        </div>
       ) : null}
 
       <CancelDialog

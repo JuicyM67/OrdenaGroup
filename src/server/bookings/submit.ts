@@ -126,6 +126,11 @@ export type SaveBookingConsentInput = {
   businessId: string;
   customerId: string;
   marketing: boolean;
+  /** D-063: den valfria WhatsApp-rutan. `true` loggar ett samtycke
+   * (`consent_events`, kind `whatsapp`). `false` loggar INGET — ett okryssat
+   * val vid en ny bokning återkallar inte ett tidigare samtycke (numret är
+   * inte verifierat, IDEAS rad 99); återkallelse sker via kundlänken. */
+  whatsapp?: boolean;
   consentVersion: string;
   now: Date;
 };
@@ -203,5 +208,8 @@ export async function saveBookingConsent(
       kind: "marketing",
       granted: input.marketing,
     });
+    if (input.whatsapp === true) {
+      await recordConsent(q, { ...base, kind: "whatsapp", granted: true });
+    }
   });
 }

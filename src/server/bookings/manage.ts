@@ -11,8 +11,13 @@ import "server-only";
  * `businessId` betrodd och all vidare SQL filtrerar på den (ARCHITECTURE
  * princip 3). Token loggas aldrig och skickas aldrig tillbaka.
  */
+import { LEGAL_VERSION } from "@/i18n/legal/types";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
+import {
+  hasWhatsAppConsentIn,
+  recordWhatsAppConsentIn,
+} from "@/server/privacy/whatsapp-consent";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { manageTokenSchema } from "@/server/scheduling/schemas";
 import type { BookingStatus } from "@/server/scheduling/types";
@@ -55,6 +60,9 @@ export type ManagedBooking = {
    * godkänna (`cancelByToken` svarar då `pending: true`). Sätts alltid av
    * `loadBookingByToken`; valfri bara för äldre fixturer (saknas = false). */
   cancelNeedsApproval?: boolean;
+  /** D-063: kunden har ett aktivt WhatsApp-samtycke hos företaget (kan
+   * återkallas härifrån). Valfri bara för äldre fixturer (saknas = false). */
+  whatsappConsent?: boolean;
 };
 
 /** WP-56: kundens avbokning via länken. `pending: true` = blev en
@@ -83,6 +91,7 @@ async function businessIdForToken(
 
 type DetailRow = {
   id: string;
+  customer_id: string;
   status: BookingStatus;
   price_clp: number;
   s: number;
@@ -113,7 +122,7 @@ export async function loadBookingByToken(
     const businessId = await businessIdForToken(q, t);
     if (!businessId) return null;
     const r = await q.query<DetailRow>(
-      `select bk.id, bk.status::text as status, bk.price_clp,
+      `select bk.id, bk.customer_id, bk.status::text as status, bk.price_clp,
               extract(epoch from lower(bk.period))::float8 * 1000 as s,
               extract(epoch from upper(bk.period))::float8 * 1000 as pe,
               sv.name as service_name, st.name as staff_name,
@@ -131,6 +140,11 @@ export async function loadBookingByToken(
     const x = r.rows[0];
     if (!x) return null;
     const start = Math.round(x.s);
+    const whatsappConsent = await hasWhatsAppConsentIn(
+      q,
+      businessId,
+      x.customer_id,
+    );
     const cancelNeedsApproval = customerCancelNeedsApproval(
       {
         start,
@@ -166,7 +180,43 @@ export async function loadBookingByToken(
             now,
           )),
       cancelNeedsApproval,
+      whatsappConsent,
     };
+  });
+}
+
+/**
+ * D-063 (Ley 21.719): kunden återkallar sitt WhatsApp-samtycke från
+ * länken. Loggas som `consent_events` (kind `whatsapp`, `granted: false`);
+ * därefter går kundens meddelanden från företaget som e-post (workern
+ * avgör kanalen vid varje utskick). Idempotent: utan aktivt samtycke
+ * loggas inget nytt. Okänd token → `not_found`.
+ */
+export async function revokeWhatsAppByToken(
+  token: string,
+): Promise<Result<{ revoked: boolean }, "not_found">> {
+  const t = parseToken(token);
+  if (!t) return err("not_found");
+  return withServiceTx(async (q) => {
+    const businessId = await businessIdForToken(q, t);
+    if (!businessId) return err("not_found");
+    const r = await q.query<{ customer_id: string }>(
+      `select bk.customer_id from public.bookings bk
+        where bk.business_id = $1 and bk.manage_token_hash = $2`,
+      [businessId, hashManageToken(t)],
+    );
+    const customerId = r.rows[0]?.customer_id;
+    if (!customerId) return err("not_found");
+    if (!(await hasWhatsAppConsentIn(q, businessId, customerId))) {
+      return ok({ revoked: false });
+    }
+    await recordWhatsAppConsentIn(q, {
+      businessId,
+      customerId,
+      granted: false,
+      version: LEGAL_VERSION,
+    });
+    return ok({ revoked: true });
   });
 }
 

@@ -123,12 +123,46 @@ async function fillContact(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("CustomerForm — samtycken", () => {
-  it("båda rutorna är checked === false vid första renderingen", () => {
+  it("alla rutorna (villkor, WhatsApp, marknadsföring) är checked === false vid första renderingen", () => {
     renderForm();
     const boxes = screen.getAllByRole("checkbox");
-    expect(boxes).toHaveLength(2);
+    // D-063: WhatsApp är en egen, valfri ruta.
+    expect(boxes).toHaveLength(3);
     for (const box of boxes) expect(box).not.toBeChecked();
   });
+
+  it.each([
+    [false, false],
+    [true, true],
+  ])(
+    "D-063: kryssar kunden i WhatsApp-rutan (%s) skickas whatsapp = %s",
+    async (tick, expected) => {
+      const user = userEvent.setup();
+      const onSubmitBooking = vi.fn();
+      renderForm({ onSubmitBooking });
+      await fillContact(user);
+      if (tick) {
+        await user.click(
+          screen.getByRole("checkbox", {
+            name: /^Quiero recibir por WhatsApp/,
+          }),
+        );
+      }
+      await user.click(
+        screen.getByRole("button", {
+          name: reserva.antesDeConfirmar.ctaConfirmar,
+        }),
+      );
+      expect(onSubmitBooking).toHaveBeenCalledTimes(1);
+      const input = onSubmitBooking.mock.calls[0]![0] as {
+        whatsapp: boolean;
+        marketing: boolean;
+      };
+      expect(input.whatsapp).toBe(expected);
+      // Rutorna är oberoende: WhatsApp ger aldrig marknadsföring.
+      expect(input.marketing).toBe(false);
+    },
+  );
 
   it("checked === false även efter att man gått tillbaka och fram igen (ny mount)", () => {
     const { unmount } = renderForm();

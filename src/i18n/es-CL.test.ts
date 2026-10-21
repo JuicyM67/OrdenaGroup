@@ -1669,6 +1669,10 @@ describe("consentimientos", () => {
     // "2026-10-v2" todavía (no hay piloto), así que subirlo no cuesta nada.
     "2026-10-v2":
       "00a736f71aa46e907b68f049d8894d5fb7b26bd61f05f24954250794d781b164",
+    // D-063: WhatsApp sale de `terminos` a la casilla opcional
+    // `consentimientos.whatsapp` (incluida en el hash desde v3).
+    "2026-10-v3":
+      "1ad92d4382a4df02801760012408e2d2b309be406fd4bd7b9f367b096230516d",
   };
 
   function sha256(texto: string): string {
@@ -1697,6 +1701,8 @@ describe("consentimientos", () => {
         negocio: "{negocio}",
         horas: "{horas}" as unknown as number,
       }),
+      // Nuevo en v3 (D-063): la casilla opcional de WhatsApp.
+      c.whatsapp({ negocio: "{negocio}" }),
     ].join("\n");
   }
 
@@ -1713,8 +1719,13 @@ describe("consentimientos", () => {
     ).toBe(hashEsperado);
   });
 
-  it("el texto de términos menciona WhatsApp (aviso de opt-in, pregunta 6)", () => {
-    expect(reserva.consentimientos.terminos).toContain("WhatsApp");
+  it("D-063: WhatsApp tiene su propia casilla opcional, no va en los términos obligatorios", () => {
+    expect(reserva.consentimientos.terminos).not.toContain("WhatsApp");
+    const texto = reserva.consentimientos.whatsapp({
+      negocio: "Barbería Norte",
+    });
+    expect(texto).toContain("WhatsApp");
+    expect(texto).toContain("Barbería Norte");
   });
 
   it("el texto de marketing es opcional y menciona BAJA (WP-13 arma la casilla; ver COMPLIANCE.md)", () => {
@@ -1740,6 +1751,9 @@ describe("consentimiento de la lista de espera", () => {
   const HASHES: Record<string, string> = {
     "lista-espera-2026-10-v1":
       "b55edbc719165d3b30dc9c6a76353a40fd2fe0850b63188953a82c7ac0ed7631",
+    // D-063: sin "por WhatsApp"; el hash cubre también la casilla opcional.
+    "lista-espera-2026-10-v2":
+      "e1bf28b16fcf301052b8e26af001769a152a117b5411b05e198ad5ed755c342a",
   };
 
   function sha256(texto: string): string {
@@ -1752,6 +1766,8 @@ describe("consentimiento de la lista de espera", () => {
       reserva.waitlist.terminos,
       c.responsable({ negocio: "{negocio}" }),
       c.privacidadLinkTexto,
+      // Nuevo en v2 (D-063).
+      c.whatsapp({ negocio: "{negocio}" }),
     ].join("\n");
   }
 
@@ -1765,8 +1781,8 @@ describe("consentimiento de la lista de espera", () => {
     expect(sha256(textoConsentimientoListaEspera())).toBe(hashEsperado);
   });
 
-  it("menciona WhatsApp (es un aviso, no una promoción)", () => {
-    expect(reserva.waitlist.terminos).toContain("WhatsApp");
+  it("D-063: no obliga a WhatsApp (el canal se elige en la casilla opcional)", () => {
+    expect(reserva.waitlist.terminos).not.toContain("WhatsApp");
   });
 });
 

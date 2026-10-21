@@ -9,9 +9,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ManageScreen } from "@/components/booking/manage-screen";
-import type { ManageCancelResult } from "@/components/booking/manage-view";
+import type {
+  ManageCancelResult,
+  ManageWhatsAppResult,
+} from "@/components/booking/manage-view";
 import { gestion } from "@/i18n";
-import { cancelByToken, loadBookingByToken } from "@/server/bookings/manage";
+import {
+  cancelByToken,
+  loadBookingByToken,
+  revokeWhatsAppByToken,
+} from "@/server/bookings/manage";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
 import { systemClock } from "@/server/scheduling/clock";
@@ -69,11 +76,28 @@ export default async function ManagePage({ params }: { params: Params }) {
     return result.value.pending ? { ok: true, pending: true } : { ok: true };
   }
 
+  // D-063 (Ley 21.719): återkalla WhatsApp-samtycket. Samma mönster som
+  // `cancelReservation`: token binds i closuren, samma IP-gräns.
+  async function revokeWhatsApp(): Promise<ManageWhatsAppResult> {
+    "use server";
+    const ip = await getClientIp();
+    const allowed = await hitRateLimit({
+      scope: "manage:ip",
+      subject: ip,
+      windowSeconds: MANAGE_IP_WINDOW_SECONDS,
+      max: MANAGE_IP_MAX,
+    });
+    if (!allowed) return { ok: false, code: "rate_limited" };
+    const result = await revokeWhatsAppByToken(token);
+    return result.ok ? { ok: true } : { ok: false, code: result.error };
+  }
+
   return (
     <ManageScreen
       booking={booking}
       now={now.toISOString()}
       onCancel={cancelReservation}
+      onRevokeWhatsApp={revokeWhatsApp}
     />
   );
 }
