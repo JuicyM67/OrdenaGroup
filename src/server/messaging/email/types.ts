@@ -1,7 +1,5 @@
 import "server-only";
 
-import type { Market } from "@/config/brand";
-
 /** Vad `sendEmail` skickar med (regel hård 4 / INTEGRATIONS.md §4). */
 export type EmailKind = "booking" | "account";
 
@@ -22,7 +20,7 @@ export type BookingCardData = {
   readonly hora: string;
   readonly profesional?: string;
   readonly direccion?: string;
-  /** Redan formaterat via `formatMoney` (t.ex. "$18.000"/"450 kr") — kortet
+  /** Redan formaterat via `formatMoney` (t.ex. "$18.000") — kortet
    * gör ingen egen valutalogik, samma mönster som `fecha`/`hora` i
    * `email.*` i i18n (WP-03). */
   readonly precio?: string;
@@ -33,11 +31,4 @@ export type BookingCardData = {
   /** WP-31: rabatten (`descuentoSocio`) kommer från en erbjudandelänk →
    * etiketten "Precio con oferta" i stället för "Precio socio". */
   readonly descuentoOferta?: boolean;
-  /** WP-64 (D-044): betalning online. Visas som raden "Pago" i kortet. */
-  readonly pago?: "reservado" | "pagado" | "reembolso";
-};
-
-export type EmailTemplateMeta = {
-  readonly kind: EmailKind;
-  readonly market: Market;
 };

@@ -12,7 +12,6 @@ import {
 // WP-73 (D-048): matrisen som ägaren godkänt.
 const MATRIX: Record<Feature, readonly string[]> = {
   unbranded: ["emprende", "equipo", "local", "custom"],
-  online_payment: ["emprende", "equipo", "local", "custom"],
   waitlist: ["emprende", "equipo", "local", "custom"],
   flash: ["equipo", "local", "custom"],
   campaigns: ["equipo", "local", "custom"],
@@ -40,18 +39,15 @@ describe("planmatrisen", () => {
       null,
       null,
     ]);
-    expect(BUSINESS_PLANS.map((p) => limit(p, "sms"))).toEqual([
-      0, 50, 150, 300, 300,
-    ]);
   });
 
   it("custom läser avtalade gränser, andra planer ignorerar dem", () => {
+    // `sms` fanns före D-062 och kan ligga kvar i äldre rader: ignoreras.
     const custom = parseCustomLimits({ staff: 50, sms: 2000, x: 1 });
-    expect(custom).toEqual({ staff: 50, sms: 2000 });
+    expect(custom).toEqual({ staff: 50 });
     expect(limit("custom", "staff", custom)).toBe(50);
-    expect(limit("custom", "sms", custom)).toBe(2000);
     expect(limit("local", "staff", custom)).toBe(10);
-    expect(parseCustomLimits({ staff: -1, sms: "9" })).toEqual({});
+    expect(parseCustomLimits({ staff: -1 })).toEqual({});
   });
 
   it("okänd plan behandlas som Gratis", () => {

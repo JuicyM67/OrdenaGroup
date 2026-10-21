@@ -188,7 +188,6 @@ export function InicioScreen({
       myProfile={myProfile}
       myProfileActions={myProfileActions}
       pendingRequests={data.notifications.items}
-      notices={data.notifications.notices}
       onConfirmRequest={onConfirmRequest}
       onDeclineRequest={onDeclineRequest}
       onApproveCancelRequest={onApproveCancelRequest}

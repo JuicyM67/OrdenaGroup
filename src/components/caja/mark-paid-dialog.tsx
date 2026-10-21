@@ -46,8 +46,8 @@ export type MarkPaidDialogProps = {
   bookingId: string;
   /** Det som återstår att betala, minsta enheten (förifyller beloppet). */
   dueMinor: number;
-  /** `MANUAL_METHODS` (src/server/payments/mark-paid.ts) — CL: cash/
-   * card_terminal/transfer, SE: + swish. */
+  /** `MANUAL_METHODS` (src/server/payments/mark-paid.ts): cash/
+   * card_terminal/transfer. */
   methods: readonly ManualPaymentMethod[];
   onSubmit: (input: MarkBookingPaidInput) => Promise<MarkBookingPaidResult>;
   /** Anropas efter en lyckad betalning (stänger popover/uppdaterar listor). */

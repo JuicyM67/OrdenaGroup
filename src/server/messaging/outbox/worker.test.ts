@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
  * WP-16 steg 2: workerns backoff/dead/idempotens och sändningsdispatch, utan
  * en riktig databas. `withServiceTx` mockas till en fejkad `Queryable` som
  * matchar på SQL-formen (claim/kontext/owner_emails/finalize) — samma idé
- * som `enqueue.test.ts`. `sendEmail`/`sendSms` mockas helt (aldrig ett
+ * som `enqueue.test.ts`. `sendEmail` mockas helt (aldrig ett
  * skarpt anrop från en agent/test).
  */
 
@@ -103,11 +103,6 @@ const sendEmailMock = vi.fn(async () => ({
   id: "email-1",
   rendered: { subject: "", preheader: "", html: "", text: "" },
 }));
-const sendSmsMock = vi.fn(async () => ({
-  provider: "fake" as const,
-  id: "sms-1",
-  text: "x",
-}));
 
 vi.mock("@/server/db/tx", () => ({
   withServiceTx: async <T>(fn: (q: FakeDb) => Promise<T>) => fn(db),
@@ -115,15 +110,6 @@ vi.mock("@/server/db/tx", () => ({
 vi.mock("@/server/messaging/email", () => ({
   sendEmail: (...args: unknown[]) =>
     (sendEmailMock as (...a: unknown[]) => unknown)(...args),
-}));
-vi.mock("@/server/messaging/sms", () => ({
-  sendSms: (...args: unknown[]) =>
-    (sendSmsMock as (...a: unknown[]) => unknown)(...args),
-}));
-
-// WP-73: sms-kvoten (planspärren) har egen täckning; här är den alltid öppen.
-vi.mock("@/server/plans/entitlements", () => ({
-  reserveSmsQuotaIn: async () => "quota",
 }));
 
 const { nextRetry, processOutbox } = await import("./worker");
@@ -169,7 +155,6 @@ function claimRow(overrides: Partial<RawClaimRow> = {}): RawClaimRow {
 beforeEach(() => {
   db = new FakeDb();
   sendEmailMock.mockClear();
-  sendSmsMock.mockClear();
 });
 
 describe("nextRetry (backoff 1/5/15/60, dead efter 5)", () => {
@@ -231,7 +216,7 @@ describe("processOutbox: claim → skicka → avsluta", () => {
     expect(sent[0]!.values).toEqual([claimRow().id, BIZ, "email-1"]);
   });
 
-  it("kund via sms: länken och texten byggs, sendSms anropas", async () => {
+  it("rad i kanalen sms (kvar i databasens enum, D-062): cancelled, inget skickas", async () => {
     db.claimRows = [
       claimRow({
         channel: "sms",
@@ -239,14 +224,16 @@ describe("processOutbox: claim → skicka → avsluta", () => {
       }),
     ];
     db.contextRow = contextRow();
-    await processOutbox({ limit: 25 });
-    expect(sendSmsMock).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        to: "+56912345678",
-        template: "reservaConfirmada",
-        data: expect.objectContaining({ negocio: "Barbería Norte" }),
-      }),
-    );
+    const result = await processOutbox({ limit: 25 });
+    expect(result).toEqual({
+      claimed: 1,
+      sent: 0,
+      cancelled: 1,
+      queued: 0,
+      dead: 0,
+    });
+    expect(sendEmailMock).not.toHaveBeenCalled();
+    expect(db.updatesMatching(/status = 'cancelled'/)).toHaveLength(1);
   });
 
   it("ägaren: en sändning per e-post, egen idempotencyKey-suffix", async () => {

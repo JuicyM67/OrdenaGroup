@@ -2,13 +2,11 @@ import "server-only";
 
 import { z } from "zod";
 
-import { market } from "@/config/brand";
 import { reserva } from "@/i18n";
 import type { LocalDate } from "@/lib/format/dates";
 import { e164Schema, localDateSchema } from "@/lib/format/schemas";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { findOrCreateCustomer } from "@/server/bookings/customers";
-import { customerEmailRequired } from "@/server/bookings/submit";
 import type { Queryable } from "@/server/db/pool";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { withServiceTx } from "@/server/db/tx";
@@ -150,7 +148,8 @@ export async function joinWaitlist(
 ): Promise<JoinWaitlistResult> {
   const p = joinWaitlistSchema.safeParse(input);
   if (!p.success) return { ok: false, code: "invalid_input" };
-  if (customerEmailRequired(market) && !p.data.email) {
+  // D-030: e-post krävs (enda kanalen tills WhatsApp finns).
+  if (!p.data.email) {
     return { ok: false, code: "invalid_input" };
   }
 

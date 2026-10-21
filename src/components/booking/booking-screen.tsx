@@ -113,11 +113,6 @@ export interface BookingScreenProps {
   tour?: boolean;
   /** WP-67: inloggad med kundkonto — namn/e-post förifyllda (bara värden). */
   initialContact?: CustomerContact;
-  /** WP-77 (D-058): presentkortsfältet (serverrenderat) och dess fel. */
-  giftCardField?: ReactNode;
-  giftCardErrors?: Readonly<
-    Record<"invalid" | "empty" | "rate_limited", string>
-  >;
 }
 
 export function BookingScreen({
@@ -134,8 +129,6 @@ export function BookingScreen({
   initialMobileTab,
   tour,
   initialContact = NO_CONTACT,
-  giftCardField,
-  giftCardErrors,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
@@ -164,8 +157,6 @@ export function BookingScreen({
   >(undefined);
   // WP-61: kundens egen `/r/[token]`-länk i `Confirmation`.
   const [manageToken, setManageToken] = useState<string | undefined>(undefined);
-  const [giftCardError, setGiftCardError] = useState<string | null>(null);
-  const [giftCardNotice, setGiftCardNotice] = useState<string | undefined>();
   function updateContact(patch: Partial<CustomerContact>) {
     setContact((prev) => ({ ...prev, ...patch }));
   }
@@ -314,25 +305,14 @@ export function BookingScreen({
   // automatiskt igen vid ett nytt försök.
   async function handleSubmitBooking(input: CustomerFormOutput) {
     dispatch({ type: "submit_start" });
-    setGiftCardError(null);
     try {
       const result = await submitBooking(input);
-      if (result.ok && result.checkoutUrl) {
-        // WP-64 (D-044): vidare till Stripes hostade betalsida. `submitting`
-        // står kvar så att knappen inte kan tryckas igen under omdirigeringen.
-        window.location.assign(result.checkoutUrl);
-        return;
-      }
       if (result.ok) {
         setMemberDiscount(result.memberDiscountMinor ?? null);
         setDiscountReason(result.discountReason);
         setManageToken(result.manageToken);
-        setGiftCardNotice(result.giftCardNotice);
         dispatch({ type: "submit_success" });
       } else {
-        if (result.giftCardError) {
-          setGiftCardError(giftCardErrors?.[result.giftCardError] ?? null);
-        }
         dispatch({ type: "submit_error", code: result.code });
       }
     } catch {
@@ -579,8 +559,6 @@ export function BookingScreen({
           onSubmitBooking={handleSubmitBooking}
           onSubmitWaitlist={handleSubmitWaitlist}
           initialErrors={initialFormErrors}
-          giftCardField={giftCardField}
-          giftCardError={giftCardError}
         />
       ) : (
         <Confirmation
@@ -590,7 +568,6 @@ export function BookingScreen({
           memberDiscountMinor={memberDiscount}
           discountReason={discountReason}
           manageToken={manageToken}
-          notice={giftCardNotice}
         />
       )}
 

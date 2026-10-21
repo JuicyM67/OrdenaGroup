@@ -1,6 +1,6 @@
 // WP-26 steg 4: lagringsjobbet. Samma mönster som `/api/cron/outbox`
-// (D-030): GitHub Actions anropar den här routen en gång om dagen per
-// marknad med `CRON_SECRET`, timing-safe jämförelse.
+// (D-030): GitHub Actions anropar den här routen en gång om dagen med
+// `CRON_SECRET`, timing-safe jämförelse.
 //
 // Två oberoende delar:
 //   1. `private.run_retention()` (db-engineer, 20260930080100_run_retention.sql):
@@ -15,7 +15,6 @@ import { timingSafeEqual } from "node:crypto";
 
 import { NextResponse, type NextRequest } from "next/server";
 
-import { market } from "@/config/brand";
 import { runWinback } from "@/server/campaigns";
 import { withServiceTx } from "@/server/db/tx";
 import { purgeBusiness } from "@/server/privacy/business";
@@ -109,13 +108,15 @@ async function runWinbackSafely(): Promise<{
   }
 }
 
-/** WP-63 (D-043): rulla marknadens demoföretag (`brand.demoSlug`) så att
+/** WP-63 (D-043): rulla demoföretaget (`brand.demoSlug`) så att
  * bokningar och horas flash alltid ligger kring dagens datum. Funktionen rör
  * bara demoföretagets fasta id. Ett fel stoppar aldrig resten av passet. */
 async function rollDemoSafely(): Promise<{ demoRolled: boolean }> {
   try {
     await withServiceTx((q) =>
-      q.query(`select private.seed_demo($1)`, [market]),
+      // Databasfunktionen tar fortfarande en marknadskod (migrationerna är
+      // oförändrade, D-062); det här repot kör bara Chile.
+      q.query(`select private.seed_demo('CL')`),
     );
     return { demoRolled: true };
   } catch {

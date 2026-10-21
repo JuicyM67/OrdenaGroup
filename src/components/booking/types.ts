@@ -13,10 +13,7 @@ import type { IsoWeekday, LocalDate, LocalTime } from "@/lib/format/dates";
 // @/server/booking-questions/* har `import "server-only"` som värde-import
 // — se qa-granskningen (item 11).
 import type { BookingQuestionDef } from "@/lib/validation/booking-questions";
-import type {
-  BookingError,
-  GiftCardBookingError,
-} from "@/server/bookings/types";
+import type { BookingError } from "@/server/bookings/types";
 import type { Database } from "@/types/database";
 
 export type BusinessStatus = Database["public"]["Enums"]["business_status"];
@@ -99,9 +96,6 @@ export interface BookingBusiness {
    * solicitud" (`reserva.antesDeConfirmar.ctaEnviarSolicitud`,
    * `reserva.confirmacionSolicitud`). */
   readonly autoConfirmBookings: boolean;
-  /** WP-64 (D-044): betalning online vid bokning. Frivilligt (saknas = "off");
-   * servern sätter "off" när Stripe saknas eller kontot inte kan ta betalt. */
-  readonly onlinePayment?: "off" | "optional" | "required";
   /** WP-73 (D-048): planen har väntelista. Saknas = `true`. */
   readonly waitlist?: boolean;
   /** WP-73 (D-048): "Skapad med …"-märkning (plan Gratis). Saknas = `false`. */
@@ -189,11 +183,10 @@ export interface BookingPageData {
  * `consentimientoRequerido`), typat uttömmande i `errors.ts`. */
 /** `forbidden` (WP-46) gäller bara inloggade medlemmar, aldrig kunden. */
 export type BookingServerErrorCode =
-  | Exclude<BookingError, "forbidden" | GiftCardBookingError>
+  | Exclude<BookingError, "forbidden">
   | "network"
   | "waitlist_duplicate"
-  | "rate_limited"
-  | "payment_unavailable";
+  | "rate_limited";
 
 /** Kundens uppgifter i datasteget — vanlig typ (ingen Zod), så att
  * `customer-form.tsx`/`booking-screen.tsx` kan importera den utan att dra in
@@ -216,18 +209,11 @@ export interface BookingActionOk {
    * idempotent omförsök (`src/app/[slug]/actions.ts`) eller när anroparen
    * (t.ex. väntelistan) inte har någon bokning att länka till. */
   readonly manageToken?: string;
-  /** WP-64 (D-044): kunden ska vidare till Stripe Checkout (hostad sida). */
-  readonly checkoutUrl?: string;
-  /** WP-77 (D-058): "Betalt med presentkort: …" (färdig text från servern). */
-  readonly giftCardNotice?: string;
 }
 
 export interface BookingActionErr {
   readonly ok: false;
   readonly code: BookingServerErrorCode;
-  /** WP-77 (D-058): presentkortskoden gick inte (texten skickas in i
-   * formuläret från servern, inte via i18n-chunken, D-039). */
-  readonly giftCardError?: "invalid" | "empty" | "rate_limited";
 }
 
 export type BookingActionResult = BookingActionOk | BookingActionErr;

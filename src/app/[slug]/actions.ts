@@ -15,7 +15,7 @@
 import "server-only";
 
 import {
-  customerFormSchemaFor,
+  bookingFormSchema,
   waitlistFormSchema,
 } from "@/components/booking/form-schema";
 import type {
@@ -24,9 +24,6 @@ import type {
   BookingActionResult,
 } from "@/components/booking/types";
 import { optionalAccount } from "@/app/(consumer)/cuenta/session";
-import { market } from "@/config/brand";
-import { regalo } from "@/i18n";
-import { formatMoney } from "@/lib/format/money";
 import {
   claimBookingForAccount,
   linkAccountRows,
@@ -38,13 +35,7 @@ import {
 } from "@/server/bookings/submit";
 import { pgErrorCode } from "@/server/db/errors";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
-import { withServiceTx } from "@/server/db/tx";
 import { kickOutbox } from "@/server/messaging/outbox";
-import {
-  cancelUnpaidBooking,
-  createCheckoutForBooking,
-  effectiveOnlinePayment,
-} from "@/server/payments/stripe/checkout";
 import { systemClock } from "@/server/scheduling/clock";
 import { joinWaitlist as joinWaitlistServer } from "@/server/waitlist/join";
 
@@ -75,10 +66,6 @@ export type CreateBookingActionResult =
        * fel/tom token.
        */
       readonly manageToken?: string;
-      /** WP-64 (D-044): Stripe Checkout-länk när kunden ska betala nu. */
-      readonly checkoutUrl?: string;
-      /** WP-77 (D-058): "Betalt med presentkort: …". */
-      readonly giftCardNotice?: string;
     })
   | BookingActionErr;
 
@@ -91,13 +78,11 @@ export async function createBooking(
   input: unknown,
   opts: {
     offerToken?: string | undefined;
-    /** WP-69 (D-057): värdebeviset, bundet på servern (`page.tsx`). */
-    voucher?: { id: string; userId: string } | undefined;
     /** D-060: marknadsplatsens erbjudande (CL), bundet på servern (`page.tsx`). */
     marketplaceOfferId?: string | undefined;
   } = {},
 ): Promise<CreateBookingActionResult> {
-  const parsed = customerFormSchemaFor(market).safeParse(input);
+  const parsed = bookingFormSchema.safeParse(input);
   if (!parsed.success) return { ok: false, code: "invalid_input" };
   // slotId är instanten direkt (page-data.ts sätter BookingSlot.id = start):
   // saknas den kan motorn inte räkna ut en starttid.
@@ -115,33 +100,6 @@ export async function createBooking(
   const business = await resolveBusinessBySlug(slug);
   if (!business) return { ok: false, code: "not_found" };
 
-  // WP-69: värdebeviset gäller bara för köparen som fortfarande är inloggad.
-  if (opts.voucher) {
-    const account = await optionalAccount();
-    if (account?.userId !== opts.voucher.userId) {
-      return { ok: false, code: "invalid_input" };
-    }
-  }
-
-  // WP-77 (D-058): presentkortskod. Kodgissning: varje försök med kod
-  // räknas per IP (10 / timme), samma fel för okänd/annat företag/utgången.
-  const giftCardCode = parsed.data.giftCardCode;
-  if (giftCardCode) {
-    const allowed = await hitRateLimit({
-      scope: "gift_card:booking:ip",
-      subject: ip,
-      windowSeconds: 60 * 60,
-      max: 10,
-    });
-    if (!allowed) {
-      return {
-        ok: false,
-        code: "invalid_input",
-        giftCardError: "rate_limited",
-      };
-    }
-  }
-
   const now = systemClock();
   const result = await createCustomerBooking({
     businessId: business.id,
@@ -156,28 +114,12 @@ export async function createBooking(
     // frågelista för tjänsten — klientens `answers` litas aldrig på.
     answers: parsed.data.answers,
     offerToken: opts.offerToken,
-    ...(opts.voucher ? { voucher: opts.voucher } : {}),
-    ...(opts.marketplaceOfferId && !opts.voucher
+    ...(opts.marketplaceOfferId
       ? { marketplaceOfferId: opts.marketplaceOfferId }
       : {}),
-    ...(giftCardCode && !opts.voucher ? { giftCardCode } : {}),
     now,
   });
-  if (!result.ok) {
-    if (
-      result.error === "gift_card_invalid" ||
-      result.error === "gift_card_empty"
-    ) {
-      return {
-        ok: false,
-        code: "invalid_input",
-        // Säkerhetsgranskning #116 (KAN): samma fel för tomt och ogiltigt kort
-        // (inget orakel för kodgissning).
-        giftCardError: "invalid",
-      };
-    }
-    return { ok: false, code: result.error };
-  }
+  if (!result.ok) return { ok: false, code: result.error };
   // WP-16: bekräftelsen skickas direkt efter svaret, utan att vänta på cron.
   void kickOutbox();
 
@@ -222,64 +164,6 @@ export async function createBooking(
     // Kopplas ändå vid nästa besök i kontot (`loadMyBookings`).
   }
 
-  // WP-64 (D-044): betalning online. Servern avgör (företagets läge + att kontot
-  // kan ta betalt); klientens `payOnline` räknas bara vid "Valfri". Belopp och
-  // avgift räknas i `createCheckoutForBooking` ur bokningsraden, aldrig härifrån.
-  // WP-69 (D-057): betald med värdebevis — ingen onlinebetalning, ingen rabattrad.
-  if (opts.voucher) {
-    return {
-      ok: true,
-      manageToken:
-        result.value.manageToken !== "" ? result.value.manageToken : undefined,
-    };
-  }
-  // WP-77 (D-058): betald (helt eller delvis) med presentkort — resten betalas
-  // i salongen (ägarens beslut 2026-10-11), ingen onlinebetalning.
-  if (result.value.giftCard) {
-    const g = result.value.giftCard;
-    return {
-      ok: true,
-      manageToken:
-        result.value.manageToken !== "" ? result.value.manageToken : undefined,
-      giftCardNotice: regalo.reserva.aviso({
-        pagado: formatMoney(g.heldMinor),
-        resto: formatMoney(
-          Math.max(
-            0,
-            result.value.priceClp - result.value.discountClp - g.heldMinor,
-          ),
-        ),
-        saldo: formatMoney(g.balanceMinor),
-      }),
-    };
-  }
-  const mode = await withServiceTx((q) =>
-    effectiveOnlinePayment(q, business.id),
-  );
-  let checkoutUrl: string | undefined;
-  if (
-    mode === "required" ||
-    (mode === "optional" && parsed.data.payOnline === true)
-  ) {
-    const checkout = await createCheckoutForBooking({
-      businessId: business.id,
-      bookingId: result.value.id,
-      now,
-    });
-    if (checkout.ok) {
-      checkoutUrl = checkout.url;
-    } else if (
-      mode === "required" &&
-      (checkout.code === "failed" || checkout.code === "unavailable")
-    ) {
-      // Obligatorisk betalning gick inte att starta: släpp tiden i stället för
-      // att lämna en obetald bokning kvar.
-      await cancelUnpaidBooking(business.id, result.value.id, now);
-      void kickOutbox();
-      return { ok: false, code: "payment_unavailable" };
-    }
-  }
-
   // `discountClp > 0` = medlemspris eller (WP-31) erbjudande, se
   // `discountReason`. Vid ett idempotent omförsök läses förmånstexten inte
   // om → `null`. `memberDiscountMinor` bär rabatten oavsett orsak.
@@ -291,11 +175,7 @@ export async function createBooking(
   const manageTokenOrUndefined = manageToken !== "" ? manageToken : undefined;
   // WP-30: flashpriset syns redan på tiden (servern satte `priceClp` på
   // sloten) — ingen extra rabattrad i bekräftelsen.
-  if (
-    discountClp > 0 &&
-    discountReason !== "flash" &&
-    discountReason !== "voucher"
-  ) {
+  if (discountClp > 0 && discountReason !== "flash") {
     return {
       ok: true,
       memberDiscountMinor: discountClp,
@@ -306,14 +186,9 @@ export async function createBooking(
           : (discountReason ?? "member"),
       memberBenefitText: memberBenefitText ?? null,
       manageToken: manageTokenOrUndefined,
-      ...(checkoutUrl ? { checkoutUrl } : {}),
     };
   }
-  return {
-    ok: true,
-    manageToken: manageTokenOrUndefined,
-    ...(checkoutUrl ? { checkoutUrl } : {}),
-  };
+  return { ok: true, manageToken: manageTokenOrUndefined };
 }
 
 /**

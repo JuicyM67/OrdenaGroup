@@ -13,7 +13,6 @@ import "server-only";
 
 import { z } from "zod";
 
-import type { Market } from "@/config/brand";
 import { reserva } from "@/i18n";
 import { mobileInputSchema } from "@/lib/format/schemas";
 
@@ -30,18 +29,6 @@ export const customerFormSchema = z.object({
   ]),
   termsAccepted: z.literal(true, { error: "terms.required" }),
   marketing: z.boolean(),
-  /** WP-64 (D-044): kunden vill betala online nu ("Valfri"). Servern avgör
-   * själv om betalning gäller (företagets inställning); "Obligatorisk"
-   * ignorerar värdet. */
-  payOnline: z.boolean().optional(),
-  /** WP-77 (D-058): presentkortets kod (valfri). Servern normaliserar och
-   * reserverar saldot i bokningens transaktion. */
-  giftCardCode: z
-    .string()
-    .trim()
-    .max(40)
-    .optional()
-    .transform((v) => (v ? v : undefined)),
   consentVersion: z.literal(reserva.consentimientos.version),
   idempotencyKey: z.uuid(),
   serviceId: z.string().min(1),
@@ -58,22 +45,20 @@ export const customerFormSchema = z.object({
 });
 
 /**
- * D-030: i CL är e-post obligatorisk i Reserva (enda kanalen tills WhatsApp
- * finns); SE oförändrat. Tom e-post ger samma kod som en ogiltig
- * ("email.invalid"), så `errors.ts` behöver ingen ny text.
+ * D-030: e-post är obligatorisk i Reserva (enda kanalen tills WhatsApp
+ * finns). Tom e-post ger samma kod som en ogiltig ("email.invalid"), så
+ * `errors.ts` behöver ingen ny text. Väntelistan (`waitlistFormSchema`)
+ * bygger på `customerFormSchema` utan den här regeln.
  */
-export function customerFormSchemaFor(m: Market) {
-  if (m !== "CL") return customerFormSchema;
-  return customerFormSchema.superRefine((v, ctx) => {
-    if (v.email === "") {
-      ctx.addIssue({
-        code: "custom",
-        path: ["email"],
-        message: "email.invalid",
-      });
-    }
-  });
-}
+export const bookingFormSchema = customerFormSchema.superRefine((v, ctx) => {
+  if (v.email === "") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["email"],
+      message: "email.invalid",
+    });
+  }
+});
 
 export type CustomerFormInput = z.input<typeof customerFormSchema>;
 export type CustomerFormOutput = z.output<typeof customerFormSchema>;

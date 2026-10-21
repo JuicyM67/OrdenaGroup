@@ -96,8 +96,8 @@ export type HoyScreenProps = {
   /** WP-24 (F10): "Marcar pagada" på nästa kund (server action,
    * `markPaidAction`). `undefined` döljer knappen (design lab). */
   onMarkPaid?: (input: MarkBookingPaidInput) => Promise<MarkBookingPaidResult>;
-  /** Metoderna "Marcar pagada" ska erbjuda (`MANUAL_METHODS`, CL utan
-   * `swish`). `[]` i design lab. */
+  /** Metoderna "Marcar pagada" ska erbjuda (`MANUAL_METHODS`). `[]` i
+   * design lab. */
   manualMethods?: readonly ManualPaymentMethod[];
 };
 

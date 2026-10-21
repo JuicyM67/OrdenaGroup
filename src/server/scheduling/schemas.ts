@@ -134,16 +134,9 @@ export const createBookingRequestSchema = z.strictObject({
   // WP-31 (F14): erbjudandelänkens klartext-token (`/{slug}?o=`). Bara en
   // önskan — `createIn` validerar den i transaktionen; ogiltig = ingen rabatt.
   offerToken: z.string().max(128).optional(),
-  // WP-69 (D-057): värdebeviset kunden bokar med. Binds på servern (sidan
-  // validerade det för den inloggade köparen); `createIn` validerar igen i
-  // transaktionen med radlås.
-  voucher: z.strictObject({ id: uuid, userId: uuid }).optional(),
-  // D-060: marknadsplatsens erbjudande (CL, `/{slug}?oferta=`). Binds på
+  // D-060: marknadsplatsens erbjudande (`/{slug}?oferta=`). Binds på
   // servern; `createIn` validerar i transaktionen, ogiltigt = ingen rabatt.
   marketplaceOfferId: uuid.optional(),
-  // WP-77 (D-058): presentkortets kod (betalningsmedel, inte rabatt).
-  // `createIn` reserverar saldot i transaktionen; fel kod → ingen bokning.
-  giftCardCode: z.string().trim().min(1).max(40).optional(),
 });
 
 /** Kundens flytt: bokningen identifieras bara med länkens token. */

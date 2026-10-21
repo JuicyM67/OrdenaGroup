@@ -15,11 +15,10 @@ import {
   type TestBusiness,
 } from "@/server/db/testing";
 
-// D-060 gäller installationer utan värdebeviskö (CL); oberoende av testmiljöns marknad.
+// D-060: oberoende av testmiljöns nödbroms (`NEXT_PUBLIC_MARKETPLACE`).
 vi.mock("@/config/marketplace", async (orig) => ({
   ...(await orig<typeof import("@/config/marketplace")>()),
   marketplaceEnabled: () => true,
-  vouchersMarket: () => false,
 }));
 
 const { createBooking } = await import("./__fixtures__/flat");

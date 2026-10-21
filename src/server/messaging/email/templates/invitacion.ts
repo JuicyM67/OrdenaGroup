@@ -1,6 +1,6 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailNs } from "../content";
 import { composeSimpleEmail } from "../layout";
@@ -14,12 +14,10 @@ export type InvitacionNegocioData = {
 
 /** Invitación a crear un negocio, enviada desde `/admin` (F19/WP-36). */
 export function invitacionNegocioEmail(
-  market: Market,
   data: InvitacionNegocioData,
 ): RenderedEmail {
-  const ns = emailNs(market).invitacionNegocio;
+  const ns = emailNs().invitacionNegocio;
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ marca: brand.name }),
     preheader: ns.preheader,
     titulo: ns.titulo,
@@ -37,13 +35,9 @@ export type InvitacionAdminData = {
 };
 
 /** WP-80 (D-061): en plattformsadmin lade till mottagaren som admin. */
-export function invitacionAdminEmail(
-  market: Market,
-  data: InvitacionAdminData,
-): RenderedEmail {
-  const ns = emailNs(market).invitacionAdmin;
+export function invitacionAdminEmail(data: InvitacionAdminData): RenderedEmail {
+  const ns = emailNs().invitacionAdmin;
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ marca: brand.name }),
     preheader: ns.preheader,
     titulo: ns.titulo,

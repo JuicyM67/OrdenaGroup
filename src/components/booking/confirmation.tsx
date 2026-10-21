@@ -23,7 +23,6 @@ export function Confirmation({
   memberDiscountMinor,
   discountReason,
   manageToken,
-  notice,
 }: {
   data: BookingPageData;
   selection: BookingSelection;
@@ -34,8 +33,6 @@ export function Confirmation({
   /** WP-61: `undefined` döljer länken (idempotent omförsök utan token, eller
    * design lab/fixturer som inte skickar en). */
   manageToken?: string | undefined;
-  /** WP-77 (D-058): "Betalt med presentkort: …" (text från servern). */
-  notice?: string | undefined;
 }) {
   // Fokus vid stegbyte (qa-granskning, item 8): h1 får fokus när bekräftelsen
   // monteras.
@@ -85,11 +82,6 @@ export function Confirmation({
                 : reserva.confirmacion.descuentoSocio)({
                 descuento: formatMoney(memberDiscountMinor),
               })}
-            </div>
-          ) : null}
-          {notice ? (
-            <div className="mt-1 text-14 font-semibold text-success-fg">
-              {notice}
             </div>
           ) : null}
         </Card>

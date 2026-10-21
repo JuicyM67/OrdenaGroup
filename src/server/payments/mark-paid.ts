@@ -2,7 +2,6 @@ import "server-only";
 
 import { z } from "zod";
 
-import { market } from "@/config/brand";
 import { toLocalDate } from "@/lib/format/dates";
 import { MONEY_MAX } from "@/lib/format/money";
 import { canManageStaffBookings } from "@/server/bookings/authz";
@@ -23,14 +22,13 @@ import { loadBusinessTz } from "./business-tz";
  * - Behörighet: får hantera bokningen (egen/alla, samma regel som
  *   `bookings`) ELLER `can_view_reports` (kassan). RLS på `payments`
  *   (20260930200200) har samma regel och sista ordet.
- * - Manuella metoder bara: `cash`, `card_terminal`, `transfer` och `swish`
- *   (bara på SE-installationen). `mercadopago` skapas/ändras aldrig här.
+ * - Manuella metoder bara: `cash`, `card_terminal` och `transfer`.
+ *   `mercadopago` skapas/ändras aldrig här.
  * - Ångra = status `refunded`, bara samma lokala dag (företagets tidszon)
  *   som betalningen gjordes. Rader raderas aldrig (kassahistorik).
  */
 
-export type ManualPaymentMethod =
-  "cash" | "card_terminal" | "transfer" | "swish";
+export type ManualPaymentMethod = "cash" | "card_terminal" | "transfer";
 
 export type MarkBookingPaidInput = {
   bookingId: string;
@@ -59,15 +57,16 @@ export type UndoPaymentError =
 export type UndoPaymentResult =
   { ok: true } | { ok: false; code: UndoPaymentError };
 
-/** Metoderna som får väljas manuellt på den här installationen. */
-export const MANUAL_METHODS: readonly ManualPaymentMethod[] =
-  market === "SE"
-    ? ["cash", "card_terminal", "swish", "transfer"]
-    : ["cash", "card_terminal", "transfer"];
+/** Metoderna som får väljas manuellt. */
+export const MANUAL_METHODS: readonly ManualPaymentMethod[] = [
+  "cash",
+  "card_terminal",
+  "transfer",
+];
 
 const markSchema = z.object({
   bookingId: z.guid(),
-  method: z.enum(["cash", "card_terminal", "transfer", "swish"]),
+  method: z.enum(["cash", "card_terminal", "transfer"]),
   amountMinor: z.number().int().positive().max(MONEY_MAX).optional(),
 });
 
@@ -210,9 +209,10 @@ export async function undoPayment(
       if (!row) return { ok: false, code: "not_found" } as const;
       if (
         !canPay(member, row.staff_id) ||
+        // Betalningar som inte registrerats manuellt i kassan ångras aldrig
+        // här (`stripe`/`gift_card` finns kvar i databasens enum, D-062).
         row.method === "mercadopago" ||
         row.method === "stripe" ||
-        // WP-77 (D-058): presentkortsbetalningen hör ihop med kortets ledger.
         row.method === "gift_card"
       ) {
         return { ok: false, code: "forbidden" } as const;

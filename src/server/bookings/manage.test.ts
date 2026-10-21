@@ -21,8 +21,6 @@ vi.mock("@/server/db/tx", () => ({
     fn({
       query: async (text: string, values: unknown[] = []) => {
         calls.push({ text, values });
-        // WP-64: betalningsraden (Stripe) — ingen i de här testerna.
-        if (text.includes("stripe_checkouts")) return { rows: [] };
         return {
           rows: /business_id = \$1/.test(text) ? rows.detail : rows.lookup,
         };

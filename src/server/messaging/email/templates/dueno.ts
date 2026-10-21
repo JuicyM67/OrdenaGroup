@@ -1,6 +1,6 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailNs, gestionCampos } from "../content";
 import { composeSimpleEmail } from "../layout";
@@ -25,8 +25,8 @@ export type DuenoReservaData = {
   }[];
 };
 
-function cardRows(market: Market, data: DuenoReservaData) {
-  const campos = gestionCampos(market);
+function cardRows(data: DuenoReservaData) {
+  const campos = gestionCampos();
   return [
     { label: campos.servicio, value: data.servicio },
     { label: campos.dia, value: data.fecha },
@@ -36,19 +36,15 @@ function cardRows(market: Market, data: DuenoReservaData) {
 }
 
 /** Al dueño, cuando un cliente reserva por su cuenta desde `/[slug]`. */
-export function nuevaReservaDuenoEmail(
-  market: Market,
-  data: DuenoReservaData,
-): RenderedEmail {
-  const ns = emailNs(market).nuevaReservaDueno;
-  const comun = emailNs(market).comun;
+export function nuevaReservaDuenoEmail(data: DuenoReservaData): RenderedEmail {
+  const ns = emailNs().nuevaReservaDueno;
+  const comun = emailNs().comun;
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ cliente: data.cliente, fecha: data.fecha }),
     preheader: ns.preheader({ servicio: data.servicio, hora: data.hora }),
     titulo: ns.titulo,
     paragraphs: [ns.texto(data)],
-    cardRows: cardRows(market, data),
+    cardRows: cardRows(data),
     cta: { label: ns.cta, href: data.agendaUrl },
     footerLines: [
       comun.piePagina({ marca: brand.name, negocio: data.negocio }),
@@ -60,19 +56,15 @@ export function nuevaReservaDuenoEmail(
  * pendiente de confirmar: no se manda si `auto_confirm_bookings` está
  * prendido (ahí la reserva nace `confirmed` y usa `nuevaReservaDueno`).
  * Misma forma y mismas respuestas (`answers`) que `nuevaReservaDueno`. */
-export function nuevaSolicitudEmail(
-  market: Market,
-  data: DuenoReservaData,
-): RenderedEmail {
-  const ns = emailNs(market).nuevaSolicitud;
-  const comun = emailNs(market).comun;
+export function nuevaSolicitudEmail(data: DuenoReservaData): RenderedEmail {
+  const ns = emailNs().nuevaSolicitud;
+  const comun = emailNs().comun;
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ cliente: data.cliente, fecha: data.fecha }),
     preheader: ns.preheader({ servicio: data.servicio, hora: data.hora }),
     titulo: ns.titulo,
     paragraphs: [ns.texto(data)],
-    cardRows: cardRows(market, data),
+    cardRows: cardRows(data),
     cta: { label: ns.cta, href: data.agendaUrl },
     footerLines: [
       comun.piePagina({ marca: brand.name, negocio: data.negocio }),
@@ -82,19 +74,15 @@ export function nuevaSolicitudEmail(
 
 /** Al dueño, cuando un cliente cancela su propia reserva desde `r/[token]`
  * o por WhatsApp/SMS. Misma forma que `nuevaReservaDueno`. */
-export function cancelacionDuenoEmail(
-  market: Market,
-  data: DuenoReservaData,
-): RenderedEmail {
-  const ns = emailNs(market).cancelacionDueno;
-  const comun = emailNs(market).comun;
+export function cancelacionDuenoEmail(data: DuenoReservaData): RenderedEmail {
+  const ns = emailNs().cancelacionDueno;
+  const comun = emailNs().comun;
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ cliente: data.cliente, fecha: data.fecha }),
     preheader: ns.preheader({ servicio: data.servicio, hora: data.hora }),
     titulo: ns.titulo,
     paragraphs: [ns.texto(data)],
-    cardRows: cardRows(market, data),
+    cardRows: cardRows(data),
     cta: { label: ns.cta, href: data.agendaUrl },
     footerLines: [
       comun.piePagina({ marca: brand.name, negocio: data.negocio }),
@@ -106,18 +94,16 @@ export function cancelacionDuenoEmail(
  * aprobación (`cancel_requested`). `agendaUrl` es acá el link a
  * `/app/solicitudes/{id}` (responder con un toque). Sin respuestas. */
 export function solicitudCancelacionEmail(
-  market: Market,
   data: DuenoReservaData,
 ): RenderedEmail {
-  const ns = emailNs(market).solicitudCancelacion;
-  const comun = emailNs(market).comun;
+  const ns = emailNs().solicitudCancelacion;
+  const comun = emailNs().comun;
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ cliente: data.cliente, fecha: data.fecha }),
     preheader: ns.preheader({ servicio: data.servicio, hora: data.hora }),
     titulo: ns.titulo,
     paragraphs: [ns.texto(data)],
-    cardRows: cardRows(market, data),
+    cardRows: cardRows(data),
     cta: { label: ns.cta, href: data.agendaUrl },
     footerLines: [
       comun.piePagina({ marca: brand.name, negocio: data.negocio }),

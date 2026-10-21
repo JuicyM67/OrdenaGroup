@@ -1,6 +1,6 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailNs, gestionCampos } from "../content";
 import {
@@ -23,15 +23,11 @@ export type ListaEsperaCupoData = {
 };
 
 /** Al cliente en lista de espera, cuando se libera un cupo. */
-export function listaEsperaCupoEmail(
-  market: Market,
-  data: ListaEsperaCupoData,
-): RenderedEmail {
-  const ns = emailNs(market).listaEsperaCupo;
-  const comun = emailNs(market).comun;
-  const campos = gestionCampos(market);
+export function listaEsperaCupoEmail(data: ListaEsperaCupoData): RenderedEmail {
+  const ns = emailNs().listaEsperaCupo;
+  const comun = emailNs().comun;
+  const campos = gestionCampos();
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ negocio: data.negocio }),
     preheader: ns.preheader({ servicio: data.servicio, fecha: data.fecha }),
     titulo: ns.titulo,
@@ -63,17 +59,15 @@ export type ListaEsperaTomadaData = {
  * persona. Solo texto (sin botón: no hay nada que hacer en línea, sigue
  * esperando) — mismo patrón que `cancelacionRechazadaEmail`. */
 export function listaEsperaTomadaEmail(
-  market: Market,
   data: ListaEsperaTomadaData,
 ): RenderedEmail {
-  const ns = emailNs(market).listaEsperaTomada;
-  const comun = emailNs(market).comun;
+  const ns = emailNs().listaEsperaTomada;
+  const comun = emailNs().comun;
   const asunto = ns.asunto({ negocio: data.negocio });
   const preheader = ns.preheader({ fecha: data.fecha });
   const cuerpo = ns.cuerpo(data);
   const pie = comun.piePagina({ marca: brand.name, negocio: data.negocio });
   const { html, text } = renderLayout({
-    market,
     preheader,
     bodyHtml: textToHtmlParagraphs(cuerpo),
     bodyText: cuerpo,

@@ -269,10 +269,8 @@ export async function setPlan(
   const customLimits =
     plan === "custom" ? parseCustomLimits(rawCustomLimits) : null;
   if (
-    customLimits &&
-    ((customLimits.staff !== undefined &&
-      (customLimits.staff < 1 || customLimits.staff > 10000)) ||
-      (customLimits.sms !== undefined && customLimits.sms > 1000000))
+    customLimits?.staff !== undefined &&
+    (customLimits.staff < 1 || customLimits.staff > 10000)
   ) {
     return { ok: false, code: "invalid_input" };
   }

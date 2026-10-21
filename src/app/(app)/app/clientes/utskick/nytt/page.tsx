@@ -10,7 +10,6 @@ import { z } from "zod";
 import { logout } from "@/app/auth/actions";
 import { NewCampaignScreen } from "@/components/campaigns/new-campaign-screen";
 import type { SelectedCustomer } from "@/components/campaigns/types";
-import { market } from "@/config/brand";
 import { appHref } from "@/config/routes";
 import { campanas } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -78,7 +77,6 @@ export default async function NuevoUtskickPage({
 
   return (
     <NewCampaignScreen
-      smsAvailable={market === "SE"}
       selectedCustomers={
         selectedCustomers.length > 0 ? selectedCustomers : undefined
       }

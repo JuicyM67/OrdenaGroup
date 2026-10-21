@@ -31,7 +31,7 @@ export async function setPlanAction(
   businessId: string,
   plan: BusinessPlan,
   overrideUntil: string | null,
-  customLimits: { staff?: number; sms?: number } | null = null,
+  customLimits: { staff?: number } | null = null,
 ): Promise<AdminActionResult> {
   const admin = await requireAdminForAction();
   const result = await setPlan(

@@ -4,7 +4,6 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-import { market } from "@/config/brand";
 import { visita } from "@/i18n";
 
 import { GuidedTour, type TourStep } from "./guided-tour";
@@ -24,8 +23,6 @@ const STEPS: TourStep[] = [
   step("semana", ["week"], n.pasos.semana),
   step("solicitudes", ["requests"], n.pasos.solicitudes),
   step("flash", ["flash"], n.pasos.flash),
-  // Kortbetalning via Stripe finns bara i SE (steget hoppas över i CL).
-  ...(market === "SE" ? [step("pagos", ["payments"], n.pasos.pagos)] : []),
   step("resenas", ["reviews"], n.pasos.resenas),
   step("caja", ["caja"], n.pasos.caja),
 ];

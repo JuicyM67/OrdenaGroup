@@ -10,7 +10,6 @@ import type { GeocodeHit, GeocodeQuery, Geocoder } from "./types";
  * så att kartan och "närmast först" går att utveckla utan Nominatim.
  */
 const CENTERS = {
-  se: { lat: 59.3293, lng: 18.0686 },
   cl: { lat: -33.4263, lng: -70.611 },
 } as const;
 

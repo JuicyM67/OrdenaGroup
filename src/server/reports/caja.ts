@@ -291,12 +291,6 @@ async function loadCajaIn(
            where p.business_id = bk.business_id and p.booking_id = bk.id
              and p.status = 'approved' and p.kind in ('full', 'balance')
         )
-        -- WP-69 (D-057): betald med värdebevis vid köpet — inget att ta betalt för.
-        and not exists (
-          select 1 from public.vouchers v
-           where v.business_id = bk.business_id and v.booking_id = bk.id
-             and v.status in ('reserved', 'redeemed')
-        )
       order by lower(bk.period)
       limit ${LIST_LIMIT}`,
     [businessId, s, e, now.toISOString()],

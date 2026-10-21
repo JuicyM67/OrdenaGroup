@@ -26,7 +26,6 @@ import {
 } from "@/lib/format/dates";
 import type { BookingQuestionDef } from "@/lib/validation/booking-questions";
 import { getQuestionsForServiceIn } from "@/server/booking-questions/catalog";
-import { effectiveOnlinePayment } from "@/server/payments/stripe/checkout";
 import type { Queryable } from "@/server/db/pool";
 import {
   CUSTOMER_SLOT_LIMIT,
@@ -297,8 +296,6 @@ export async function loadReservaPageData(
     cancelWindowHours: biz.cancel_window_hours,
     status: biz.status as BookingBusiness["status"],
     autoConfirmBookings: biz.auto_confirm_bookings,
-    // WP-64 (D-044): "off" om Stripe saknas eller kontot inte kan ta betalt.
-    onlinePayment: await effectiveOnlinePayment(q, businessId),
     waitlist: can(biz.plan, "waitlist"),
     branded: !can(biz.plan, "unbranded"),
   };

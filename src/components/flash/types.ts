@@ -76,11 +76,10 @@ export type FlashCampaignAudience =
   | { kind: "regulars" }
   | { kind: "inactive"; days: number };
 
-export type FlashCampaignChannel = "email" | "sms";
-
 export type SendFlashCampaignInput = {
   flashSlotId: string;
-  channel: FlashCampaignChannel;
+  /** Bara e-post (D-062). */
+  channel: "email";
   audience: FlashCampaignAudience;
   message: string;
 };

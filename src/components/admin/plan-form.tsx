@@ -1,7 +1,7 @@
 "use client";
 
 // Byt plan + valfritt slutdatum för en manuell override (F19/WP-36). Svensk
-// text. WP-73 (D-048): planen `custom` med avtalade gränser (anställda/sms).
+// text. WP-73 (D-048): planen `custom` med avtalade gränser (anställda).
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
@@ -45,9 +45,6 @@ export function PlanForm({
   const [staff, setStaff] = useState(
     customLimits?.staff !== undefined ? String(customLimits.staff) : "",
   );
-  const [sms, setSms] = useState(
-    customLimits?.sms !== undefined ? String(customLimits.sms) : "",
-  );
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -57,9 +54,7 @@ export function PlanForm({
     setError(null);
     const limits: CustomLimits = {};
     const s = toInt(staff);
-    const m = toInt(sms);
     if (s !== undefined) limits.staff = s;
-    if (m !== undefined) limits.sms = m;
     const result = await onSubmit(
       value,
       until ? new Date(`${until}T00:00:00.000Z`).toISOString() : null,
@@ -90,28 +85,16 @@ export function PlanForm({
         </select>
       </label>
       {value === "custom" ? (
-        <>
-          <label className="flex flex-col gap-1 text-13 text-ink">
-            Anställda (avtalat, standard 10)
-            <input
-              type="number"
-              min={1}
-              value={staff}
-              onChange={(e) => setStaff(e.target.value)}
-              className={INPUT}
-            />
-          </label>
-          <label className="flex flex-col gap-1 text-13 text-ink">
-            Sms/månad (avtalat, standard 300)
-            <input
-              type="number"
-              min={0}
-              value={sms}
-              onChange={(e) => setSms(e.target.value)}
-              className={INPUT}
-            />
-          </label>
-        </>
+        <label className="flex flex-col gap-1 text-13 text-ink">
+          Anställda (avtalat, standard 10)
+          <input
+            type="number"
+            min={1}
+            value={staff}
+            onChange={(e) => setStaff(e.target.value)}
+            className={INPUT}
+          />
+        </label>
       ) : null}
       <label className="flex flex-col gap-1 text-13 text-ink">
         Gratis/override till (valfritt)

@@ -4,7 +4,7 @@ import {
   EMAIL_MAX,
   NAME_MAX,
   validateEmail,
-  validateEmailFor,
+  validateRequiredEmail,
   validateName,
   validatePhone,
 } from "./client-validation";
@@ -71,27 +71,23 @@ describe("validateEmail", () => {
   });
 });
 
-describe("validateEmailFor (D-030: obligatorisk i CL, frivillig i SE)", () => {
-  it("CL: tom sträng ger email.invalid", () => {
-    expect(validateEmailFor("CL", "")).toEqual({
+describe("validateRequiredEmail (D-030: obligatorisk i Reserva)", () => {
+  it("tom sträng ger email.invalid", () => {
+    expect(validateRequiredEmail("")).toEqual({
       ok: false,
       code: "email.invalid",
     });
   });
 
-  it("CL: giltig e-post godkänns och trimmas", () => {
-    expect(validateEmailFor("CL", "  ana@ejemplo.cl  ")).toEqual({
+  it("giltig e-post godkänns och trimmas", () => {
+    expect(validateRequiredEmail("  ana@ejemplo.cl  ")).toEqual({
       ok: true,
       value: "ana@ejemplo.cl",
     });
   });
 
-  it("SE: tom sträng är fortfarande giltig (valfri), value: undefined", () => {
-    expect(validateEmailFor("SE", "")).toEqual({ ok: true, value: undefined });
-  });
-
-  it("SE: ogiltig e-post ger fortfarande email.invalid", () => {
-    expect(validateEmailFor("SE", "no-es-correo")).toEqual({
+  it("ogiltig e-post ger email.invalid", () => {
+    expect(validateRequiredEmail("no-es-correo")).toEqual({
       ok: false,
       code: "email.invalid",
     });

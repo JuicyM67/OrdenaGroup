@@ -5,10 +5,7 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { CajaScreen } from "@/components/caja/caja-screen";
-import { vouchersMarket } from "@/config/marketplace";
-import { giftCardsMarket } from "@/config/gift-cards";
-import { appHref, regalosHref, valesHref } from "@/config/routes";
-import { regalo, vales } from "@/i18n";
+import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { MANUAL_METHODS } from "@/server/payments/mark-paid";
@@ -58,16 +55,6 @@ export default async function CajaPage() {
       }}
       ownerName={owner.name}
       publicPageHref={`/${current.business.slug}`}
-      vouchersLink={
-        vouchersMarket()
-          ? { href: valesHref("caja"), label: vales.caja.enlace }
-          : undefined
-      }
-      giftCardsLink={
-        giftCardsMarket()
-          ? { href: regalosHref("caja"), label: regalo.caja.enlace }
-          : undefined
-      }
       myProfile={myProfile ?? undefined}
       myProfileActions={
         myProfile

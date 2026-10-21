@@ -1,9 +1,8 @@
 import "server-only";
 
-import { market } from "@/config/brand";
 import { createManageToken } from "@/server/bookings/token";
 import { withServiceTx } from "@/server/db/tx";
-import { customerChannelsFor } from "@/server/messaging/outbox/enqueue";
+import { customerChannels } from "@/server/messaging/outbox/enqueue";
 
 /**
  * WP-65 (D-045): recensionsförfrågan. Ett svep i `/api/cron/outbox` (var 5:e
@@ -76,7 +75,7 @@ export async function queueReviewRequests(now: Date): Promise<number> {
       if (seenCustomers.has(key)) continue;
       seenCustomers.add(key);
 
-      const channels = customerChannelsFor(market, c.has_email);
+      const channels = customerChannels(c.has_email);
       if (channels.length === 0) continue;
       const { token, hash } = createManageToken();
       const inserted = await q.query(

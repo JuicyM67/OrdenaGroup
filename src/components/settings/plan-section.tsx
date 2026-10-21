@@ -1,5 +1,5 @@
 // WP-73 (D-048): Inställningar → Plan. Aktuell plan, användning denna månad
-// (konton, aktiva tjänster, sms i SE) och vad planen innehåller. Ingen
+// (konton, aktiva tjänster) och vad planen innehåller. Ingen
 // "use client": allt räknas på servern (`loadPlanUsage`). Själva bytet av
 // plan (Stripe Billing) finns inte än — "Byt plan" går till prissidan och
 // "Kontakta oss" till kontaktsidan (IDEAS/BACKLOG).
@@ -9,7 +9,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { strokeCard } from "@/components/ui/icons";
-import { brand, market } from "@/config/brand";
+import { brand } from "@/config/brand";
 import { can, type BusinessPlan, type Feature } from "@/config/plans";
 import { href } from "@/config/routes";
 import { planes } from "@/i18n";
@@ -18,22 +18,19 @@ export type PlanSectionData = {
   plan: BusinessPlan;
   staff: { used: number; limit: number | null };
   services: { used: number; limit: number | null };
-  sms: { used: number; limit: number | null };
   /** WP-80 (D-061): 'manual' = faktureras utanför programmet; inga planköp
    * eller uppgraderingsknappar, bara "kontakta oss". */
   billingMode?: "app" | "manual";
 };
 
+// `offers` (erbjudanden i marknadsplatsen, WP-70) listas inte här, som tidigare.
 const FEATURES: readonly Feature[] = [
   "unbranded",
-  ...(market === "SE" ? (["online_payment"] as const) : []),
   "waitlist",
   "flash",
   "campaigns",
   "full_reports",
   "staff_accounts",
-  // WP-70: marknadsplatsen finns bara i SE (D-055).
-  ...(market === "SE" ? (["offers"] as const) : []),
   "priority_support",
 ];
 
@@ -67,19 +64,7 @@ function UsageRow({
   );
 }
 
-export function PlanSection({
-  data,
-  hideSmsNotice = false,
-}: {
-  data: PlanSectionData;
-  /** WP-76: sms-kortet ovanför har egen varning (D-053). */
-  hideSmsNotice?: boolean;
-}) {
-  const smsOut =
-    !hideSmsNotice &&
-    market === "SE" &&
-    data.sms.limit !== null &&
-    data.sms.used >= data.sms.limit;
+export function PlanSection({ data }: { data: PlanSectionData }) {
   return (
     <div className="flex flex-col gap-5">
       <Card radius="tile" padding="lg" className="flex flex-col gap-4">
@@ -95,18 +80,7 @@ export function PlanSection({
           </p>
           <UsageRow label={planes.ajustes.cuentas} usage={data.staff} />
           <UsageRow label={planes.ajustes.servicios} usage={data.services} />
-          {market === "SE" ? (
-            <UsageRow label={planes.ajustes.sms} usage={data.sms} />
-          ) : null}
         </div>
-        {smsOut ? (
-          <p
-            role="status"
-            className="rounded-card bg-peach p-4 text-13 text-ink"
-          >
-            {planes.ajustes.smsAgotados}
-          </p>
-        ) : null}
       </Card>
 
       <Card radius="tile" padding="lg" className="flex flex-col gap-3">

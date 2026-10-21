@@ -20,11 +20,13 @@ export type CampaignAudience =
   | { kind: "inactive"; days: number }
   | { kind: "selected"; customerIds: string[] };
 
+/** Kolumnen `campaigns.channel` som historiken läser (databasens enum). */
 export type CampaignChannel = "email" | "sms";
 
 export type CampaignInput = {
   name: string;
-  channel: CampaignChannel;
+  /** Nya utskick går bara som e-post (D-062). */
+  channel: "email";
   audience: CampaignAudience;
   message: string;
   offerPct?: number | null;
@@ -38,8 +40,6 @@ export type PreviewCampaignResult =
       ok: true;
       recipients: number;
       skippedNoConsent: number;
-      smsPartsPerMessage: number | null;
-      smsTotal: number | null;
     }
   | { ok: false; code: string };
 
@@ -47,10 +47,8 @@ export type SendCampaignErrorCode =
   | "forbidden"
   | "invalid_input"
   | "no_recipients"
-  | "sms_not_available"
   | "rate_limited"
   | "plan_locked"
-  | "sms_quota"
   | "unexpected";
 
 export type SendCampaignResult =

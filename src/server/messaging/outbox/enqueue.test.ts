@@ -1,11 +1,11 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import type { Queryable } from "@/server/db/pool";
 
-import { customerChannelsFor, enqueueBookingEventIn } from "./enqueue";
+import { customerChannels, enqueueBookingEventIn } from "./enqueue";
 
 /**
- * WP-16 steg 2: kanalplan CL/SE (med/utan e-post), och att
+ * WP-16 steg 2: kanalplanen (med/utan e-post), och att
  * `enqueueBookingEventIn` köar rätt mallar/kanaler för varje händelse, utan
  * en riktig databas (fejkad `Queryable`, samma mönster som `Queryable` i
  * `src/server/db/pool.ts`).
@@ -81,15 +81,10 @@ const NOW = Date.now();
 const FAR_START = NOW + 3 * 24 * 60 * 60 * 1000; // 3 dagar bort: får en påminnelse
 const SOON_START = NOW + 60 * 60 * 1000; // 1 h bort: ingen påminnelse (redan för sent)
 
-describe("customerChannelsFor (kanalplan CL/SE)", () => {
-  it("CL: e-post om kunden har en, annars ingen kanal", () => {
-    expect(customerChannelsFor("CL", true)).toEqual(["email"]);
-    expect(customerChannelsFor("CL", false)).toEqual([]);
-  });
-
-  it("SE: sms alltid, e-post också om kunden har en", () => {
-    expect(customerChannelsFor("SE", true)).toEqual(["email", "sms"]);
-    expect(customerChannelsFor("SE", false)).toEqual(["sms"]);
+describe("customerChannels (kanalplan)", () => {
+  it("e-post om kunden har en, annars ingen kanal", () => {
+    expect(customerChannels(true)).toEqual(["email"]);
+    expect(customerChannels(false)).toEqual([]);
   });
 });
 
@@ -311,7 +306,7 @@ describe("enqueueBookingEventIn: created (status requested — WP-45/D-033)", ()
     expect(owner?.channel).toBe("email");
   });
 
-  it("bara EN kundrad (aldrig sms, oavsett marknad — till skillnad från customerChannels)", async () => {
+  it("bara EN kundrad", async () => {
     const db = new FakeDb({ start_ms: FAR_START, has_email: true });
     await enqueueBookingEventIn(db, {
       type: "created",
@@ -378,7 +373,7 @@ describe("enqueueBookingEventIn: confirmed (ägaren bekräftar en förfrågan)",
 });
 
 describe("enqueueBookingEventIn: declined", () => {
-  it("reason declined: solicitudRechazada (SE e-post+sms, CL e-post)", async () => {
+  it("reason declined: solicitudRechazada (e-post)", async () => {
     const db = new FakeDb({ start_ms: FAR_START, has_email: true });
     await enqueueBookingEventIn(db, {
       type: "declined",
@@ -393,22 +388,10 @@ describe("enqueueBookingEventIn: declined", () => {
   });
 
   // WP-45: `e.message` (ägarens valfria motiv, bara vid `reason: "declined"`)
-  // → `payload.motivo` bara på e-postraden, aldrig sms. SE (dynamiskt
-  // ominporterad med NEXT_PUBLIC_MARKET=SE, samma mönster som
-  // `src/config/market.test.ts`) ger båda kanalerna i samma anrop, så ett
-  // enda test räcker för att bevisa båda delarna.
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.resetModules();
-  });
-
-  it("motivo: bara på e-postraden, aldrig sms — och inte alls utan motiv", async () => {
-    vi.stubEnv("NEXT_PUBLIC_MARKET", "SE");
-    vi.resetModules();
-    const { enqueueBookingEventIn: enqueueSE } = await import("./enqueue");
-
+  // → `payload.motivo` på e-postraden.
+  it("motivo: på e-postraden — och inte alls utan motiv", async () => {
     const withMotivo = new FakeDb({ start_ms: FAR_START, has_email: true });
-    await enqueueSE(withMotivo, {
+    await enqueueBookingEventIn(withMotivo, {
       type: "declined",
       bookingId: BOOKING,
       businessId: BIZ,
@@ -416,14 +399,12 @@ describe("enqueueBookingEventIn: declined", () => {
       message: "No tenemos hora ese día.",
     });
     const rows = withMotivo.inserted();
-    expect(rows).toHaveLength(2);
-    const emailRow = rows.find((r) => r.channel === "email");
-    const smsRow = rows.find((r) => r.channel === "sms");
-    expect(emailRow?.payload).toEqual({ motivo: "No tenemos hora ese día." });
-    expect(smsRow?.payload).toEqual({});
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.channel).toBe("email");
+    expect(rows[0]?.payload).toEqual({ motivo: "No tenemos hora ese día." });
 
     const withoutMotivo = new FakeDb({ start_ms: FAR_START, has_email: true });
-    await enqueueSE(withoutMotivo, {
+    await enqueueBookingEventIn(withoutMotivo, {
       type: "declined",
       bookingId: BOOKING,
       businessId: BIZ,

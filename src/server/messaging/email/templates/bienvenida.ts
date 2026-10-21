@@ -1,6 +1,6 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailNs } from "../content";
 import { composeSimpleEmail } from "../layout";
@@ -13,14 +13,10 @@ export type BienvenidaData = {
 };
 
 /** Al dueño, apenas termina el onboarding (F1). */
-export function bienvenidaEmail(
-  market: Market,
-  data: BienvenidaData,
-): RenderedEmail {
-  const ns = emailNs(market).bienvenida;
-  const comun = emailNs(market).comun;
+export function bienvenidaEmail(data: BienvenidaData): RenderedEmail {
+  const ns = emailNs().bienvenida;
+  const comun = emailNs().comun;
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ marca: brand.name }),
     preheader: ns.preheader,
     titulo: ns.titulo,

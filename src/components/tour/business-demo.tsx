@@ -1,5 +1,5 @@
 // Statisk mockup av ägarappen (WP-72, Foretag.dc.html): sidomeny, veckokalender, klocka med
-// förfrågningar, blixttid, betalningar (bara SE), omdömen, kassa och "Idag". Fast fiktiv data
+// förfrågningar, blixttid, omdömen, kassa och "Idag". Fast fiktiv data
 // ur i18n, ingen inloggning och inga DB-anrop. Mobil: dagslista i stället för veckorutnät.
 "use client";
 
@@ -10,13 +10,12 @@ import { useCallback, useState } from "react";
 
 import { BrandLogo } from "@/components/marketing/brand-logo";
 import { cn } from "@/components/ui/cn";
-import { brand, market } from "@/config/brand";
+import { brand } from "@/config/brand";
 import { visita } from "@/i18n";
 
 const BusinessTour = dynamic(() => import("./business-tour"), { ssr: false });
 
 const n = visita.negocio;
-const SHOW_PAYMENTS = market === "SE";
 
 const HOUR_PX = 72;
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -30,11 +29,10 @@ type Booking = {
   name: string;
   svc: SvcKey;
   tone: 0 | 1 | 2 | 3;
-  paid: boolean;
 };
 
 const BOOKINGS: readonly Booking[] = [
-  { day: 0, start: 0, dur: 1, name: "Amir", svc: "barba", tone: 0, paid: true },
+  { day: 0, start: 0, dur: 1, name: "Amir", svc: "barba", tone: 0 },
   {
     day: 0,
     start: 2,
@@ -42,7 +40,6 @@ const BOOKINGS: readonly Booking[] = [
     name: "Lisa",
     svc: "corte",
     tone: 1,
-    paid: false,
   },
   {
     day: 0,
@@ -51,9 +48,8 @@ const BOOKINGS: readonly Booking[] = [
     name: "Noah",
     svc: "corteHombre",
     tone: 2,
-    paid: true,
   },
-  { day: 1, start: 1, dur: 2, name: "Elin", svc: "color", tone: 3, paid: true },
+  { day: 1, start: 1, dur: 2, name: "Elin", svc: "color", tone: 3 },
   {
     day: 1,
     start: 4.5,
@@ -61,10 +57,9 @@ const BOOKINGS: readonly Booking[] = [
     name: "Moa",
     svc: "esmaltado",
     tone: 0,
-    paid: false,
   },
-  { day: 2, start: 0, dur: 1, name: "Ali", svc: "fade", tone: 2, paid: true },
-  { day: 2, start: 3, dur: 1, name: "Ebba", svc: "lash", tone: 1, paid: true },
+  { day: 2, start: 0, dur: 1, name: "Ali", svc: "fade", tone: 2 },
+  { day: 2, start: 3, dur: 1, name: "Ebba", svc: "lash", tone: 1 },
   {
     day: 2,
     start: 5,
@@ -72,7 +67,6 @@ const BOOKINGS: readonly Booking[] = [
     name: "Sofia",
     svc: "mechas",
     tone: 3,
-    paid: false,
   },
   {
     day: 3,
@@ -81,7 +75,6 @@ const BOOKINGS: readonly Booking[] = [
     name: "Jonas",
     svc: "masaje",
     tone: 0,
-    paid: true,
   },
   {
     day: 3,
@@ -90,7 +83,6 @@ const BOOKINGS: readonly Booking[] = [
     name: "Vera",
     svc: "facial",
     tone: 1,
-    paid: false,
   },
   {
     day: 4,
@@ -99,10 +91,9 @@ const BOOKINGS: readonly Booking[] = [
     name: "Leo",
     svc: "barba",
     tone: 2,
-    paid: true,
   },
-  { day: 4, start: 2, dur: 2, name: "Maja", svc: "color", tone: 3, paid: true },
-  { day: 4, start: 6, dur: 1, name: "Ida", svc: "corte", tone: 0, paid: false },
+  { day: 4, start: 2, dur: 2, name: "Maja", svc: "color", tone: 3 },
+  { day: 4, start: 6, dur: 1, name: "Ida", svc: "corte", tone: 0 },
 ];
 const FLASH = { day: 3, start: 7.5 };
 const BARS: readonly { pct: string; tone: string }[] = [
@@ -112,10 +103,10 @@ const BARS: readonly { pct: string; tone: string }[] = [
   { pct: "84%", tone: "bg-lavender" },
   { pct: "100%", tone: "bg-lime" },
 ];
-const AFTER_FLASH = new Set(["pagos", "resenas", "caja"]);
+const AFTER_FLASH = new Set(["resenas", "caja"]);
 const BEFORE_FLASH = new Set(["semana", "solicitudes", "flash"]);
 
-function BookingBlock({ b, paidLabel }: { b: Booking; paidLabel: string }) {
+function BookingBlock({ b }: { b: Booking }) {
   return (
     <div
       className={cn(
@@ -126,11 +117,6 @@ function BookingBlock({ b, paidLabel }: { b: Booking; paidLabel: string }) {
     >
       <b className="text-12">{b.name}</b>
       <span className="text-11 text-ink-soft">{n.servicios[b.svc]}</span>
-      {SHOW_PAYMENTS && b.paid ? (
-        <span className="self-start rounded-tag bg-success-bg px-1.5 py-0.5 text-10 font-bold text-success-fg">
-          {paidLabel}
-        </span>
-      ) : null}
     </div>
   );
 }
@@ -315,7 +301,7 @@ export function BusinessDemo() {
                   {[0, 1, 2, 3, 4].map((day) => (
                     <div key={day} className="relative">
                       {BOOKINGS.filter((b) => b.day === day).map((b) => (
-                        <BookingBlock key={b.name} b={b} paidLabel={n.pagada} />
+                        <BookingBlock key={b.name} b={b} />
                       ))}
                       {day === FLASH.day ? (
                         <div
@@ -348,11 +334,6 @@ export function BusinessDemo() {
                       {b.start % 1 ? "30" : "00"}
                     </span>
                   </span>
-                  {SHOW_PAYMENTS && b.paid ? (
-                    <span className="rounded-tag bg-success-bg px-1.5 py-0.5 text-10 font-bold text-success-fg">
-                      {n.pagada}
-                    </span>
-                  ) : null}
                 </div>
               ))}
               <FlashBlock taken={taken} className="h-auto py-2.5" />
@@ -360,24 +341,6 @@ export function BusinessDemo() {
           </section>
 
           <div className="flex flex-col gap-4">
-            {SHOW_PAYMENTS ? (
-              <section
-                data-tour="payments"
-                data-surface="dark"
-                className="flex flex-col gap-2 rounded-tile bg-ink px-5 py-4.5 text-on-dark"
-              >
-                <span className="flex justify-between text-12 font-bold text-on-dark-muted">
-                  <span>{n.pagos.titulo}</span>
-                  <span>{n.pagos.via}</span>
-                </span>
-                <b className="font-display text-38 text-lime">
-                  {n.pagos.monto}
-                </b>
-                <span className="text-13 text-on-dark-soft">
-                  {n.pagos.detalle}
-                </span>
-              </section>
-            ) : null}
             <section
               data-tour="reviews"
               className="flex flex-col gap-2 rounded-tile bg-surface px-5 py-4.5"
@@ -439,7 +402,7 @@ export function BusinessDemo() {
                   <span>
                     <b>{f.hora}</b> {f.texto}
                   </span>
-                  {i !== 0 || SHOW_PAYMENTS ? (
+                  {i !== 0 ? (
                     <span
                       className={cn(
                         i === 0 && "font-bold text-success-fg",

@@ -1,6 +1,5 @@
 import "server-only";
 
-import { market as installationMarket, type Market } from "@/config/brand";
 import { LEGAL_VERSION } from "@/i18n/legal/types";
 import { withServiceTx } from "@/server/db/tx";
 import { recordConsent } from "@/server/privacy/consent";
@@ -29,22 +28,10 @@ export type CreateCustomerBookingInput = {
   answers?: Record<string, unknown> | undefined;
   /** WP-31: erbjudandelänkens token. Fel form ignoreras (ingen rabatt). */
   offerToken?: string | undefined;
-  /** WP-69 (D-057): värdebeviset, bundet på servern (`page.tsx`). */
-  voucher?: { id: string; userId: string } | undefined;
-  /** D-060: marknadsplatsens erbjudande (CL), bundet på servern. */
+  /** D-060: marknadsplatsens erbjudande, bundet på servern. */
   marketplaceOfferId?: string | undefined;
-  /** WP-77 (D-058): presentkortets kod. */
-  giftCardCode?: string | undefined;
   now: Date;
-  /** Installationens marknad; injiceras bara i tester. */
-  market?: Market | undefined;
 };
-
-/** D-030: i CL krävs kundens e-post i Reserva tills WhatsApp finns (e-post
- * är den enda kanalen för bekräftelse och påminnelse). SE oförändrat. */
-export function customerEmailRequired(m: Market): boolean {
-  return m === "CL";
-}
 
 /** Pilotblockerare (säkerhetsgranskning WP-27): samma telefon kan max ha
  * `MAX_FUTURE_BOOKINGS_PER_PHONE` framtida, icke avbokade bokningar hos
@@ -86,14 +73,14 @@ async function futureBookingsForPhone(
 
 /**
  * Kundens bokning från `/{slug}` (WP-20): anropar bara motorns
- * `createBooking`. I CL krävs e-post (D-030) → annars `invalid_input`. Samtycket sparas separat av `saveBookingConsent` — se den
+ * `createBooking`. E-post krävs (D-030: e-post är den enda kanalen för
+ * bekräftelse och påminnelse tills WhatsApp finns) → annars `invalid_input`. Samtycket sparas separat av `saveBookingConsent` — se den
  * funktionen för varför de inte körs i en enda transaktion.
  */
 export async function createCustomerBooking(
   input: CreateCustomerBookingInput,
 ): Promise<Result<CreatedBooking, CustomerBookingError | "rate_limited">> {
-  const m = input.market ?? installationMarket;
-  if (customerEmailRequired(m) && !input.email?.trim()) {
+  if (!input.email?.trim()) {
     return err("invalid_input");
   }
   const futureCount = await futureBookingsForPhone(
@@ -120,11 +107,9 @@ export async function createCustomerBooking(
       ...(isOfferTokenShape(input.offerToken)
         ? { offerToken: input.offerToken }
         : {}),
-      ...(input.voucher ? { voucher: input.voucher } : {}),
       ...(isMarketplaceOfferIdShape(input.marketplaceOfferId)
         ? { marketplaceOfferId: input.marketplaceOfferId }
         : {}),
-      ...(input.giftCardCode ? { giftCardCode: input.giftCardCode } : {}),
     },
     {
       businessId: input.businessId,

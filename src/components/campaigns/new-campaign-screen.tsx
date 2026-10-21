@@ -32,13 +32,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { TextField } from "@/components/ui/text-field";
 import { appHref } from "@/config/routes";
 import { campanas } from "@/i18n";
-import { clientSmsLengthInfo } from "@/components/customers/sms-length";
 import { addLocalDays, APP_TZ, toLocalDate } from "@/lib/format/dates";
 
 import { campanaErrorText } from "./error-text";
 import type {
   CampaignAudienceKind,
-  CampaignChannel,
   CampaignInput,
   PreviewCampaignResult,
   SelectedCustomer,
@@ -46,8 +44,6 @@ import type {
 } from "./types";
 
 export type NewCampaignScreenProps = {
-  /** SMS bara en SE (D-025/D-026): CL oculta por completo el pill. */
-  smsAvailable: boolean;
   /** `?kunder=id,id` desde la ficha del cliente — ya resueltos a nombre por
    * el servidor (`getCustomerContact`). Presente = la audiencia por defecto
    * es "selected". */
@@ -66,7 +62,7 @@ export type NewCampaignScreenProps = {
   myProfileActions?: MyProfileActions;
 };
 
-const MESSAGE_MAX: Record<CampaignChannel, number> = { email: 1000, sms: 320 };
+const MESSAGE_MAX = 1000;
 const DEFAULT_INACTIVE_DAYS = 60;
 
 function audienceOptions(
@@ -82,7 +78,6 @@ function audienceOptions(
 }
 
 export function NewCampaignScreen({
-  smsAvailable,
   selectedCustomers,
   defaultAudience,
   canViewReports,
@@ -104,7 +99,6 @@ export function NewCampaignScreen({
   const [inactiveDays, setInactiveDays] = useState(
     String(DEFAULT_INACTIVE_DAYS),
   );
-  const [channel, setChannel] = useState<CampaignChannel>("email");
   const [message, setMessage] = useState("");
   const [offerEnabled, setOfferEnabled] = useState(false);
   const [offerPct, setOfferPct] = useState("");
@@ -129,8 +123,7 @@ export function NewCampaignScreen({
   );
   const [sendError, setSendError] = useState<string | null>(null);
 
-  const messageMax = MESSAGE_MAX[channel];
-  const smsInfo = channel === "sms" ? clientSmsLengthInfo(message) : null;
+  const messageMax = MESSAGE_MAX;
 
   function buildInput(): CampaignInput | null {
     const trimmedName = name.trim();
@@ -149,7 +142,7 @@ export function NewCampaignScreen({
     if (audienceKind === "selected" && !hasSelected) return null;
     return {
       name: trimmedName,
-      channel,
+      channel: "email",
       audience,
       message: trimmedMessage,
       offerPct: offerEnabled && offerPct ? Number(offerPct) : undefined,
@@ -199,7 +192,6 @@ export function NewCampaignScreen({
     name,
     audienceKind,
     inactiveDays,
-    channel,
     message,
     offerEnabled,
     offerPct,
@@ -331,28 +323,6 @@ export function NewCampaignScreen({
               ) : null}
             </div>
 
-            {smsAvailable ? (
-              <div className="flex flex-col gap-2">
-                <span className="text-13 font-semibold text-ink">
-                  {campanas.nueva.canalLabel}
-                </span>
-                <div className="flex gap-2">
-                  <Pill
-                    selected={channel === "email"}
-                    onClick={() => setChannel("email")}
-                  >
-                    {campanas.canal.email}
-                  </Pill>
-                  <Pill
-                    selected={channel === "sms"}
-                    onClick={() => setChannel("sms")}
-                  >
-                    {campanas.canal.sms}
-                  </Pill>
-                </div>
-              </div>
-            ) : null}
-
             <Textarea
               label={campanas.nueva.mensajeLabel}
               placeholder={campanas.nueva.mensajePlaceholder}
@@ -360,14 +330,10 @@ export function NewCampaignScreen({
               onChange={(e) => setMessage(e.target.value)}
               maxLength={messageMax}
               rows={5}
-              hint={
-                smsInfo
-                  ? `${campanas.nueva.contador({ n: message.length, max: messageMax })} · ${campanas.nueva.segmentosSms({ n: smsInfo.segments })}`
-                  : campanas.nueva.contador({
-                      n: message.length,
-                      max: messageMax,
-                    })
-              }
+              hint={campanas.nueva.contador({
+                n: message.length,
+                max: messageMax,
+              })}
               required
             />
           </Card>
@@ -442,15 +408,6 @@ export function NewCampaignScreen({
                   <span className="text-muted">
                     {campanas.nueva.previsualizacion.sinConsentimiento({
                       n: preview.skippedNoConsent,
-                    })}
-                  </span>
-                ) : null}
-                {preview.smsPartsPerMessage !== null &&
-                preview.smsTotal !== null ? (
-                  <span className="text-muted">
-                    {campanas.nueva.previsualizacion.sms({
-                      porMensaje: preview.smsPartsPerMessage,
-                      total: preview.smsTotal,
                     })}
                   </span>
                 ) : null}

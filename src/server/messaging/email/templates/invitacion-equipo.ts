@@ -1,7 +1,5 @@
 import "server-only";
 
-import type { Market } from "@/config/brand";
-
 import { emailNs } from "../content";
 import { button, caption, heading, paragraph, renderLayout } from "../layout";
 import type { RenderedEmail } from "../types";
@@ -24,10 +22,9 @@ export type InvitacionEquipoData = {
 };
 
 export function invitacionEquipoEmail(
-  market: Market,
   data: InvitacionEquipoData,
 ): RenderedEmail {
-  const ns = emailNs(market).invitacionEquipo;
+  const ns = emailNs().invitacionEquipo;
   const asunto = ns.asunto({ negocio: data.negocio });
   const preheader = ns.preheader({
     invitadoPor: data.invitadoPor,
@@ -54,7 +51,6 @@ export function invitacionEquipoEmail(
   ].join("\n\n");
 
   const { html, text } = renderLayout({
-    market,
     preheader,
     bodyHtml,
     bodyText,

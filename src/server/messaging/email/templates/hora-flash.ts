@@ -1,6 +1,6 @@
 import "server-only";
 
-import { brand, type Market } from "@/config/brand";
+import { brand } from "@/config/brand";
 
 import { emailNs, gestionCampos } from "../content";
 import { composeSimpleEmail } from "../layout";
@@ -22,15 +22,11 @@ export type HoraFlashData = {
  * plan — esa comprobación vive en el outbox (arbetspaket C), no acá: esta
  * función solo arma el HTML/texto.
  */
-export function horaFlashEmail(
-  market: Market,
-  data: HoraFlashData,
-): RenderedEmail {
-  const ns = emailNs(market).horaFlash;
-  const comun = emailNs(market).comun;
-  const campos = gestionCampos(market);
+export function horaFlashEmail(data: HoraFlashData): RenderedEmail {
+  const ns = emailNs().horaFlash;
+  const comun = emailNs().comun;
+  const campos = gestionCampos();
   return composeSimpleEmail({
-    market,
     subject: ns.asunto({ negocio: data.negocio, pct: data.pct }),
     preheader: ns.preheader,
     titulo: ns.titulo({ pct: data.pct }),

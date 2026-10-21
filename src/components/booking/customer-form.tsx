@@ -4,18 +4,11 @@
 "use client";
 
 import { ChevronLeft } from "lucide-react";
-import {
-  useEffect,
-  useRef,
-  useState,
-  type FormEvent,
-  type ReactNode,
-} from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
-import { market } from "@/config/brand";
 import { hrefLegal } from "@/config/legal-routes";
 import { comun, reserva } from "@/i18n";
 // WP-40 (D-031): `validateAnswers` är uttryckligen klientsäker (se
@@ -27,7 +20,7 @@ import { validateAnswers } from "@/lib/validation/booking-questions";
 import {
   EMAIL_MAX,
   NAME_MAX,
-  validateEmailFor,
+  validateRequiredEmail,
   validateName,
   validatePhone,
 } from "./client-validation";
@@ -94,8 +87,6 @@ export function CustomerForm({
   onSubmitBooking,
   onSubmitWaitlist,
   initialErrors,
-  giftCardField,
-  giftCardError,
 }: {
   formId: string;
   data: BookingPageData;
@@ -114,10 +105,6 @@ export function CustomerForm({
   /** Bara till design lab (`?estado=datos-errores`): visar fältfel utan att
    * kunden behöver skicka formuläret först. */
   initialErrors?: FieldErrors;
-  /** WP-77 (D-058): "Har du ett presentkort?" — serverrenderat fält
-   * (`name="giftCardCode"`, texterna i RSC-svaret, inte i klientbunten). */
-  giftCardField?: ReactNode;
-  giftCardError?: string | null;
 }) {
   const isWaitlist = day?.state === "full";
   const service = data.services.find((s) => s.id === selection.serviceId);
@@ -125,9 +112,6 @@ export function CustomerForm({
 
   const [terms, setTerms] = useState(false);
   const [marketing, setMarketing] = useState(false);
-  // WP-64 (D-044): "Valfri" betalning online. Servern avgör vad som gäller.
-  const onlinePayment = data.business.onlinePayment ?? "off";
-  const [payOnline, setPayOnline] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>(initialErrors ?? {});
   const [idempotencyKey] = useState(randomId);
 
@@ -191,7 +175,7 @@ export function CustomerForm({
 
     const nameResult = validateName(contact.name);
     const phoneResult = validatePhone(contact.phone);
-    const emailResult = validateEmailFor(market, contact.email);
+    const emailResult = validateRequiredEmail(contact.email);
 
     const next: FieldErrors = {};
     if (!nameResult.ok) {
@@ -244,17 +228,12 @@ export function CustomerForm({
     const answersPayload: Record<string, unknown> = {};
     for (const a of answerResult.value) answersPayload[a.questionId] = a.value;
 
-    const giftCode = new FormData(e.currentTarget).get("giftCardCode");
     const base = {
-      ...(!isWaitlist && typeof giftCode === "string" && giftCode.trim()
-        ? { giftCardCode: giftCode.trim() }
-        : {}),
       name: nameResult.value,
       phone: phoneResult.value,
       email: emailResult.value ?? "",
       termsAccepted: true as const,
       marketing,
-      ...(onlinePayment === "optional" && payOnline ? { payOnline: true } : {}),
       idempotencyKey,
       serviceId: selection.serviceId!,
       staffId: selection.staffId,
@@ -295,8 +274,7 @@ export function CustomerForm({
   // väntelistans kort (waitlist_duplicate) byter `step` i reducern innan den
   // här komponenten ens renderas igen — se `flow-state.ts` (qa-granskning,
   // item 3).
-  const generalError =
-    serverErrorCode && !giftCardError ? serverError(serverErrorCode) : null;
+  const generalError = serverErrorCode ? serverError(serverErrorCode) : null;
 
   return (
     <div className="flex flex-col gap-6 pb-35">
@@ -382,12 +360,12 @@ export function CustomerForm({
           type="email"
           autoComplete="email"
           maxLength={EMAIL_MAX}
-          // D-030: obligatorisk i CL (enda kanalen tills WhatsApp finns),
-          // frivillig i SE. `noValidate` på formuläret tystar webbläsarens
-          // egen bubbla — `aria-required` räcker för att märka fältet, och
-          // `validateEmailFor`/felkoden `email.invalid` är den riktiga
+          // D-030: obligatorisk (enda kanalen tills WhatsApp finns).
+          // `noValidate` på formuläret tystar webbläsarens egen bubbla —
+          // `aria-required` räcker för att märka fältet, och
+          // `validateRequiredEmail`/felkoden `email.invalid` är den riktiga
           // kontrollen vid submit.
-          required={market === "CL"}
+          required
           value={contact.email}
           onChange={(e) => {
             onContactChange({ email: e.target.value });
@@ -460,31 +438,6 @@ export function CustomerForm({
             {reserva.consentimientos.marketing({ negocio: data.business.name })}
           </ConsentCheckbox>
         </div>
-
-        {!isWaitlist && giftCardField ? (
-          <div className="flex flex-col gap-1.5">
-            {giftCardField}
-            {giftCardError ? (
-              <p role="alert" className="text-13 font-semibold text-ink">
-                {giftCardError}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-
-        {!isWaitlist && onlinePayment === "optional" ? (
-          <div className="flex flex-col gap-1">
-            <ConsentCheckbox checked={payOnline} onChange={setPayOnline}>
-              {reserva.pago.opcionalLabel}
-            </ConsentCheckbox>
-            <p className="text-12 text-muted">{reserva.pago.opcionalAyuda}</p>
-          </div>
-        ) : null}
-        {!isWaitlist && onlinePayment === "required" ? (
-          <p className="text-13 font-semibold text-ink">
-            {reserva.pago.obligatorioAviso}
-          </p>
-        ) : null}
 
         <p className="text-12 text-muted">
           {reserva.meta.vendidoPor({ negocio: data.business.name })}

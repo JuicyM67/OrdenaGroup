@@ -1,7 +1,5 @@
 import "server-only";
 
-import { market } from "@/config/brand";
-import { parsePhoneFor } from "@/lib/format/phone";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 
@@ -20,8 +18,6 @@ const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000;
 type EnqueueContext = {
   startMs: number;
   hasEmail: boolean;
-  /** WP-56: `businesses.phone` är ett mobilnummer (ägar-sms möjligt). */
-  ownerMobile: boolean;
   /** Bokningsradens `updated_at` (ms) — dedupe-nyckelns unika del för
    * `cancel_requested`/`cancel_declined` (WP-31-fix): till skillnad från
    * övriga händelser ändras inte bokningens starttid här, så `startMs`
@@ -32,12 +28,6 @@ type EnqueueContext = {
   updatedAtMs: number;
 };
 
-/** WP-56: ägar-sms bara till ett mobilnummer i installationens land. */
-export function isOwnerMobile(phone: string | null): boolean {
-  if (!phone) return false;
-  return parsePhoneFor(market, phone, { allow: "mobile" }).ok;
-}
-
 async function loadContext(
   q: Queryable,
   businessId: string,
@@ -46,16 +36,13 @@ async function loadContext(
   const r = await q.query<{
     start_ms: number;
     has_email: boolean;
-    business_phone: string | null;
     updated_at_ms: number;
   }>(
     `select extract(epoch from lower(bk.period))::float8 * 1000 as start_ms,
             (c.email is not null) as has_email,
-            b.phone as business_phone,
             extract(epoch from bk.updated_at)::float8 * 1000 as updated_at_ms
        from public.bookings bk
        join public.customers c on c.business_id = bk.business_id and c.id = bk.customer_id
-       join public.businesses b on b.id = bk.business_id
       where bk.business_id = $1 and bk.id = $2`,
     [businessId, bookingId],
   );
@@ -64,7 +51,6 @@ async function loadContext(
     ? {
         startMs: Math.round(row.start_ms),
         hasEmail: row.has_email,
-        ownerMobile: isOwnerMobile(row.business_phone),
         updatedAtMs: Math.round(row.updated_at_ms),
       }
     : undefined;
@@ -126,22 +112,9 @@ async function insertRow(
   );
 }
 
-/** CL: e-post om kunden har en. SE: e-post (om kunden har en) + sms (kunden
- * har alltid telefon, D-025/D-028). Ren funktion (testbar utan att mocka
- * `@/config/brand`); `customerChannels` nedan är den som används i praktiken
- * (installationens marknad, D-025: en marknad per installation). */
-export function customerChannelsFor(
-  m: "CL" | "SE",
-  hasEmail: boolean,
-): OutboxChannel[] {
-  const channels: OutboxChannel[] = [];
-  if (hasEmail) channels.push("email");
-  if (m === "SE") channels.push("sms");
-  return channels;
-}
-
-function customerChannels(hasEmail: boolean): OutboxChannel[] {
-  return customerChannelsFor(market, hasEmail);
+/** Kunden får e-post om hen har en (enda kanalen tills WhatsApp finns). */
+export function customerChannels(hasEmail: boolean): OutboxChannel[] {
+  return hasEmail ? ["email"] : [];
 }
 
 async function queueCustomerMessage(
@@ -163,9 +136,8 @@ async function queueCustomerMessage(
   }
 }
 
-/** Bara e-post, oavsett marknad (`solicitudRecibida`: "Ägarens svar" 2 —
- * SE också bara e-post för "förfrågan mottagen", till skillnad från
- * `reservaConfirmada` som får sms i SE). Ingen rad om kunden saknar e-post. */
+/** Bara e-post (`solicitudRecibida`: "Ägarens svar" 2). Ingen rad om kunden
+ * saknar e-post. */
 async function queueCustomerEmailOnly(
   q: Queryable,
   businessId: string,
@@ -184,7 +156,7 @@ async function queueCustomerEmailOnly(
   });
 }
 
-/** Ägaren får alltid e-post, aldrig sms (utanför scope, WP-16-planen §2). */
+/** Ägaren får alltid e-post (WP-16-planen §2). */
 async function queueOwnerMessage(
   q: Queryable,
   businessId: string,
@@ -194,27 +166,6 @@ async function queueOwnerMessage(
 ): Promise<void> {
   await insertRow(q, businessId, bookingId, uniqMs, {
     channel: "email",
-    recipientKind: "owner",
-    template,
-    payload: {},
-  });
-}
-
-/** WP-56: ägar-sms (bara SE, ClickSend, till `businesses.phone`) med länk
- * till `/app/solicitudes/{id}` — köas bara om numret är en mobil, annars
- * hoppas det tyst över (ägaren får ändå e-posten). Workern slår upp numret
- * vid sändning (D-029), inget nummer i kön. */
-async function queueOwnerSms(
-  q: Queryable,
-  businessId: string,
-  bookingId: string,
-  uniqMs: number,
-  template: string,
-  ownerMobile: boolean,
-): Promise<void> {
-  if (market !== "SE" || !ownerMobile) return;
-  await insertRow(q, businessId, bookingId, uniqMs, {
-    channel: "sms",
     recipientKind: "owner",
     template,
     payload: {},
@@ -267,7 +218,7 @@ export async function enqueueBookingEventIn(
   const ctx = await loadContext(q, e.businessId, e.bookingId);
   // Borde inte hända (anropas efter commit) — inget att köa utan bokningen.
   if (!ctx) return;
-  const { startMs, hasEmail, ownerMobile, updatedAtMs } = ctx;
+  const { startMs, hasEmail, updatedAtMs } = ctx;
 
   if (e.type === "created") {
     if (e.status === "requested") {
@@ -291,14 +242,6 @@ export async function enqueueBookingEventIn(
         e.bookingId,
         startMs,
         "nuevaSolicitud",
-      );
-      await queueOwnerSms(
-        q,
-        e.businessId,
-        e.bookingId,
-        startMs,
-        "nuevaSolicitud",
-        ownerMobile,
       );
       return;
     }
@@ -388,27 +331,24 @@ export async function enqueueBookingEventIn(
     const template =
       e.reason === "expired" ? "solicitudVencida" : "solicitudRechazada";
     // `e.message` (ägarens valfria motiv, bara vid `reason: "declined"`):
-    // skickas som `motivo` bara på e-postraden, aldrig sms — kortare kanal,
-    // och SE:s "nekad"/"utgången" går redan ut på både e-post och sms
-    // (Ägarens svar 2) utan att motivet behöver följa med dit. Sparas
-    // aldrig i `bookings`: bara i den här radens payload, som rensas efter
-    // sändning (D-029, worker.ts `finalizeSent`).
-    for (const channel of customerChannels(hasEmail)) {
-      const payload =
-        channel === "email" && e.message ? { motivo: e.message } : {};
-      await insertRow(q, e.businessId, e.bookingId, startMs, {
-        channel,
-        recipientKind: "customer",
-        template,
-        payload,
-      });
-    }
+    // skickas som `motivo` på e-postraden. Sparas aldrig i `bookings`: bara i
+    // den här radens payload, som rensas efter sändning (D-029, worker.ts
+    // `finalizeSent`).
+    await queueCustomerMessage(
+      q,
+      e.businessId,
+      e.bookingId,
+      startMs,
+      template,
+      hasEmail,
+      e.message ? { motivo: e.message } : {},
+    );
     return;
   }
 
   if (e.type === "cancel_requested") {
     // WP-56: kunden begärde avbokning — tiden är kvar (påminnelsen också)
-    // tills företaget svarar. Ägaren: e-post (båda marknader) + sms (SE).
+    // tills företaget svarar. Ägaren får e-post.
     // dedupe_key bär bokningens `updated_at` (WP-31-fix), inte starttiden:
     // en andra förfrågan för samma tid efter ett nekande sätter `updated_at`
     // på nytt (statusen växlar fram och tillbaka) och får alltså ett nytt
@@ -420,19 +360,11 @@ export async function enqueueBookingEventIn(
       updatedAtMs,
       "solicitudCancelacion",
     );
-    await queueOwnerSms(
-      q,
-      e.businessId,
-      e.bookingId,
-      updatedAtMs,
-      "solicitudCancelacion",
-      ownerMobile,
-    );
     return;
   }
 
   if (e.type === "cancel_declined") {
-    // WP-56: avbokningen godkändes inte — kunden: e-post + sms (SE).
+    // WP-56: avbokningen godkändes inte — kunden får e-post.
     // Samma skäl som ovan: `updated_at`, inte starttiden, i dedupe_key.
     await queueCustomerMessage(
       q,

@@ -52,7 +52,6 @@ const SERVER_MESSAGES = {
   network: errores.reserva.network,
   business_unavailable: errores.reserva.business_unavailable,
   rate_limited: errores.reserva.rate_limited,
-  payment_unavailable: errores.reserva.payment_unavailable,
 } satisfies Record<BookingServerErrorCode, string>;
 
 const PHONE_ERROR_KINDS = new Set<string>([
