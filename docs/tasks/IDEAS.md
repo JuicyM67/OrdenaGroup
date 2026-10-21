@@ -63,6 +63,11 @@ Agenter och människor skriver hit idéer som dyker upp under arbetet, så att d
 | 2026-09-28 | Samtycke från publik bokning ska inte skriva över ägarens register (`manual`) på befintlig kundrad med obekräftat nummer | security-reviewer (WP-20) | Tredje part kan annars ändra någon annans samtycke | 1 (WP-26) |
 | 2026-09-28 | Egna felmeddelanden för regelfälten i Ajustes (framförhållning, dagar framåt, avbokningsfönster, rutnät) i stället för `comun.algoSalioMal` | ui-engineer (WP-15b) | Tydligare för ägaren | 1 (copywriter) |
 | 2026-09-28 | Riktig WhatsApp-supportlänk och supportmejl i `src/config/brand.ts` (`supportWhatsapp`/`domain` är `null`) | ui-engineer (WP-hemsida) | `/contacto` visar i dag inaktiverade knappar i stället för en påhittad länk — ops behöver fylla i riktiga värden | 1 (ops, före pilot) |
+| 2026-10-21 | Sessionssvar i WhatsApp efter knappsvar (`whatsappSesion`: "¡Gracias por confirmar…!", "Esa hora ya fue tomada…") via en sessionskanal i utkorgen | integrations-engineer (WP-16-whatsapp, D-063) | Kunden får kvittens direkt i chatten; inom 24 h-fönstret kostar det ingen mall | 1 (efter pilot) |
+| 2026-10-21 | BAJA/BAJA total som fritext i WhatsApp → återkalla samtycket (`whatsappSesion.baja`/`bajaTotal`) | integrations-engineer (WP-16-whatsapp) | Metas policy: opt-out ska kunna ske i kanalen; i dag sker återkallelse via `/r/[token]` | 1 (före marknadsföringsmallar, WP-30/31) |
+| 2026-10-21 | Återkalla WhatsApp även från `/v/[token]` och från kundkortet i appen (kund som ringer) | integrations-engineer (WP-16-whatsapp) | Kunder som bara står i väntelistan har ingen `/r/[token]`-länk | 1 |
+| 2026-10-21 | Rensning av `inbound_events` (t.ex. 90 dagar) i lagringsjobbet | integrations-engineer (WP-16-whatsapp) | WhatsApp ger en rad per status; raderna saknar persondata men växer | 2 |
+| 2026-10-21 | Webhookfältet `message_template_status_update` → varna ägaren/admin när Meta pausar eller avvisar en mall | integrations-engineer (WP-16-whatsapp) | I dag faller en pausad mall tillbaka till e-post (132015) utan att någon märker det | 2 |
 
 ## Från säkerhetsgranskningen av WP-16 (2026-09-29, icke-blockerande)
 - Avbokning/flytt avbryter bara köade `recordatorio`; avbryt även köade `reservaConfirmada`/`reservaMovida` för samma bokning.

@@ -41,6 +41,12 @@ alter table public.message_outbox
 create unique index message_outbox_wa_message_id_key
   on public.message_outbox (wa_message_id)
   where wa_message_id is not null;
+-- Workerns städning (varje pass): WhatsApp-rader som fortfarande bär
+-- kundens token efter `sent` (D-029/D-063, töms vid leveransstatus eller
+-- efter 24 h). Partiellt så att indexet bara innehåller just de raderna.
+create index message_outbox_whatsapp_payload_idx
+  on public.message_outbox (sent_at)
+  where channel = 'whatsapp' and status = 'sent' and payload <> '{}'::jsonb;
 -- Uppslag av en väntelisteposts meddelanden.
 create index message_outbox_waitlist_entry_id_idx
   on public.message_outbox (business_id, waitlist_entry_id)

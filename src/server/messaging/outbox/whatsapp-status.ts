@@ -133,6 +133,9 @@ export async function applyWhatsAppStatusIn(
   const row = await lockByWaMessageId(q, u.waMessageId);
   // Okänt id, eller raden har redan bytt till e-post: inget att göra.
   if (!row || row.channel !== "whatsapp") return "ignored";
+  // Bara en skickad rad får leveransstatus (en rad som köats om efter ett
+  // tillfälligt fel behåller sin token till nästa försök).
+  if (row.status !== "sent") return "ignored";
 
   switch (u.status) {
     case "sent":
@@ -158,7 +161,7 @@ export async function applyWhatsAppStatusIn(
       return "updated";
     }
     case "failed": {
-      if (row.status !== "sent" || row.delivered_at !== null) return "ignored";
+      if (row.delivered_at !== null) return "ignored";
       const c = classifyWhatsAppError({ code: u.errorCode });
       const retry = nextRetry(row.attempts);
       if (c.kind === "temporary" && retry.status === "queued") {
@@ -191,6 +194,10 @@ export type WhatsAppReplyTarget = {
   rowId: string;
   businessId: string;
   template: string;
+  /** Bokningens starttid (s) när påminnelsen köades — sista delen av
+   * `dedupe_key` (`enqueue.ts`). Ett svar på en påminnelse för en tid som
+   * sedan flyttats gäller inte den nya tiden. */
+  queuedStartSec: number | null;
   bookingId: string | null;
   waitlistEntryId: string | null;
   customerPhone: string | null;
@@ -207,9 +214,10 @@ export async function findWhatsAppReplyTarget(
       booking_id: string | null;
       waitlist_entry_id: string | null;
       recipient_kind: string;
+      dedupe_key: string;
     }>(
       `select id, business_id, template, booking_id, waitlist_entry_id,
-              recipient_kind::text as recipient_kind
+              recipient_kind::text as recipient_kind, dedupe_key
          from public.message_outbox
         where wa_message_id = $1`,
       [waMessageId],
@@ -236,10 +244,12 @@ export async function findWhatsAppReplyTarget(
       );
       phone = c.rows[0]?.phone_e164 ?? null;
     }
+    const tail = /:(\d{9,11})$/.exec(row.dedupe_key);
     return {
       rowId: row.id,
       businessId: row.business_id,
       template: row.template,
+      queuedStartSec: tail ? Number(tail[1]) : null,
       bookingId: row.booking_id,
       waitlistEntryId: row.waitlist_entry_id,
       customerPhone: phone,

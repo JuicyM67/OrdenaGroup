@@ -141,10 +141,10 @@ loyalty_cards (business_id, customer_id, stamps, rewards_redeemed, primary key (
 -- Meddelanden
 -- WP-16 steg 1 (D-029/D-030): ingen adress i tabellen (varken telefon eller
 -- e-post) — workern slår upp den vid utskickstillfället via booking_id/
--- recipient_kind. Bara kanalerna 'email'/'sms' i den här fasen; 'whatsapp'
--- läggs till som ett nytt enum-värde i en egen WP.
+-- recipient_kind. Kanalerna 'email'/'sms' i den här fasen; 'whatsapp'
+-- lades till i D-063 (se nedan).
 message_outbox (id, business_id, booking_id null,
-  channel enum('email','sms'), recipient_kind enum('customer','owner'),
+  channel enum('email','sms','whatsapp'), recipient_kind enum('customer','owner'),
   template, payload jsonb (kan tillfälligt innehålla kundens klartext-token, D-029,
     töms av workern när raden blir sent/dead/cancelled),
   category enum('utility','marketing','service'),
@@ -160,7 +160,22 @@ message_outbox (id, business_id, booking_id null,
   -- läser auth.users via memberships.role='owner'; bara service_role får
   -- exekvera den (ägarens e-post för nuevaReservaDueno/cancelacionDueno,
   -- eftersom auth.users inte går att läsa direkt).
-inbound_events (provider, event_id, payload jsonb, received_at, primary key (provider, event_id))  -- INV-2: idempotens
+-- D-063 (20261021010000/20261021010100): channel += 'whatsapp'. Nya kolumner:
+--   wa_message_id text (Metas wamid, unikt partiellt index — statusar och
+--   knappsvarens context.id slår upp raden), delivered_at, read_at,
+--   fallback_reason text (WhatsApp-felkoden när raden bytt till e-post; satt =
+--   aldrig WhatsApp igen), waitlist_entry_id uuid (sammansatt FK →
+--   waitlist_entries, on delete set null (waitlist_entry_id)) för
+--   listaEsperaCupo/-Tomada. Check: wa_message_id bara på whatsapp-rader eller
+--   reservrader. En WhatsApp-rad behåller payload (token) tills delivered/
+--   read/failed, högst 24 h efter sent_at.
+-- consent_kind += 'whatsapp': kundens separata, valfria samtycke till
+--   WhatsApp i consent_events (granted true = ja, false = återkallat; senaste
+--   raden avgör). Ingen kolumn på customers.
+inbound_events (provider, event_id, payload jsonb, received_at, processed_at, primary key (provider, event_id))  -- INV-2: idempotens
+  -- Används av WhatsApp-webhooken (provider 'whatsapp', event_id
+  -- 'status:<wamid>:<status>' / 'msg:<wamid>', payload bara typen). RLS på,
+  -- inga policyer, bara service_role.
 
 -- Integrationer och abonnemang
 integrations (business_id, provider enum('mercadopago'), account_id, access_token_enc, refresh_token_enc, expires_at)

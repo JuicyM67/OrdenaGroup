@@ -4,9 +4,9 @@
 
 ## 1. WhatsApp Cloud API (Meta, direkt)
 
-**Uppsättning (manuell, görs av ägaren av projektet):** Meta Business-konto → verifiering med SpA-dokument → WhatsApp Business-konto → telefonnummer → permanent systemanvändartoken → webhook-URL `/api/webhooks/whatsapp` med verify token → godkända mallar.
+**Uppsättning (manuell, görs av ägaren av projektet):** Meta Business-konto → verifiering med SpA-dokument → WhatsApp Business-konto → telefonnummer → permanent systemanvändartoken → webhook-URL `/api/webhooks/whatsapp` med verify token → godkända mallar. Stegen i detalj: "Driftsättning (D-063)" nedan.
 
-**Env:** `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET` (signatur `X-Hub-Signature-256`), `WHATSAPP_VERIFY_TOKEN`.
+**Env:** `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET` (signatur `X-Hub-Signature-256`), `WHATSAPP_VERIFY_TOKEN`, `WHATSAPP_GRAPH_VERSION` (valfri, standard `v23.0`), **`WHATSAPP_TEMPLATES_APPROVED`** (vilka mallar som får gå på WhatsApp), `WHATSAPP_FAKE` (`1` = fejkläge lokalt/CI, ignoreras i Vercel production). Se `.env.example`.
 
 **Mallar (es-CL; texterna ägs av `copywriter-es-cl`, namnen är fasta):**
 
@@ -29,7 +29,31 @@
 - **Kvot:** kontrollera `usage_monthly` mot planen före utskick; marknadsföring kräver `consent_marketing_at` och kund som inte svarat "BAJA".
 - `dedupe_key` (t.ex. `reminder:{booking_id}`) förhindrar dubbletter.
 
-**Webhook:** verifiera signatur över rå body → spara i `inbound_events` (idempotens) → hantera statusar (delivered/read/failed) och knappsvar (payload innehåller `booking_id`/`waitlist_entry_id` och en signerad nonce).
+**Webhook:** verifiera signatur över rå body → spara i `inbound_events` (idempotens) → hantera statusar (delivered/read/failed) och knappsvar. *D-063 ersätter "payload innehåller `booking_id`/`waitlist_entry_id` och en signerad nonce":* knappsvaret binds till vårt eget meddelande via `context.id` (= `message_outbox.wa_message_id`) och avsändaren måste vara kundens nummer på raden; payloaden bär bara åtgärden.
+
+### WhatsApp i utkorgen (D-063, `src/server/messaging/whatsapp/`)
+
+- **Mallar och parametrar:** `templates.ts` bygger de sex mallarna med parametrarna i kontraktets ordning (`docs/content/whatsapp-templates.md`, `plantillasWhatsapp`), språk `es`. URL-knapparna får suffixet (`/r/{token}` resp. `/{slug}`), quick reply-knapparna en payload: `confirmo`, `cambiar` (påminnelsen), `si:<start s>:<offered_at s>`, `no:<offered_at s>` (väntelistan). Utkorgens interna mallnamn → Meta: `reservaConfirmada` → `reserva_confirmada`, `recordatorio` → `recordatorio_24h`, `reservaCancelada` → `reserva_cancelada`, `reservaMovida` → `reserva_movida`, `listaEsperaCupo` → `lista_espera_oferta`, `listaEsperaTomada` → `lista_espera_tomada`.
+- **Kanalval (`channel.ts`):** WhatsApp när kunden har ett aktivt WhatsApp-samtycke (senaste `consent_events` med `kind = 'whatsapp'`), ett chilenskt mobilnummer (`+569` + 8 siffror), WhatsApp är konfigurerat (`live`/`fake`) och mallen står i `WHATSAPP_TEMPLATES_APPROVED`; annars e-post om kunden har en. Köningen gissar, **workern avgör vid sändningen** (samtycket sparas efter bokningens commit; påminnelsen köas 24 h+ i förväg) och byter radens kanal åt båda hållen. Ägaren, förfrågningar, inbjudningar, kampanjer och recensioner är oförändrat e-post.
+- **Fel (`errors.ts`):** permanent (t.ex. 131026 inte på WhatsApp, 131009/100 ogiltigt nummer, 132000–132016 mallfel, 190/10/200 token/behörighet) → raden byter till e-post i samma pass (`fallback_reason = wa_<kod>`); utan e-post `dead`. Tillfälligt (rate limit 4/80007/130429/131048/131056, 131000/131016/133004, 5xx, nätverk) → utkorgens backoff; sista försöket blir e-post i stället för `dead`.
+- **Token (D-029/D-063):** en rad som skickats via WhatsApp behåller `payload` (token till e-postreserven) tills webhooken rapporterar `delivered`/`read`/`failed`, högst 24 h efter `sent_at` (workern städar).
+- **Fake (`client.ts`):** `WHATSAPP_FAKE=1` utan nycklar → inget skickas, meddelandet sparas i minnet med maskerat nummer (`fakeWhatsAppOutbox`). Aldrig i Vercel production.
+
+### Webhooken `/api/webhooks/whatsapp` (D-063)
+
+- `GET`: `hub.mode=subscribe` + `hub.verify_token` (konstant tid mot `WHATSAPP_VERIFY_TOKEN`) → `hub.challenge` som `text/plain`; annars 403.
+- `POST`: 503 utan `WHATSAPP_APP_SECRET`; 401 vid saknad/fel `X-Hub-Signature-256` (HMAC-SHA256 över rå body, konstant tid) — före JSON-parsning. Bara `field = messages` och vårt `phone_number_id`. Varje status/meddelande är en händelse i `inbound_events` (`provider = 'whatsapp'`, `status:<wamid>:<status>` / `msg:<wamid>`, payload = bara typen); hanterad händelse hoppas över, fel → 500 så att Meta skickar om.
+- **Statusar:** `delivered`/`read` → `delivered_at`/`read_at`, payload töms; `failed` (bara medan raden är `sent` och inte levererad) → e-post (permanent) eller nytt WhatsApp-försök (tillfälligt).
+- **Knappsvar:** *Confirmo* → `bookings.confirmed_by_customer_at` (bara om bokningen fortfarande är `confirmed`, inte passerat och har samma starttid som påminnelsen); *Necesito cambiar* → ägarmejl `clienteQuiereCambiar` via utkorgen, inget automatiskt svar till kunden; *Sí, la quiero* → `claimWaitlistOfferForEntry` (samma motor som `/v/[token]`, först till kvarn, servern räknar om tiden, erbjudandet måste vara det som meddelandet gällde) — redan tagen → `lista_espera_tomada`; *No, gracias* → posten `expired`, sekventiellt läge erbjuder nästa i kön.
+- **Fritext/media:** sparas inte (bara typen i `inbound_events`), inget svar.
+- Loggar bara räknare/SQLSTATE — aldrig telefon, namn, text eller hemligheter.
+
+### Driftsättning (D-063) — när Meta-uppgifterna finns
+
+1. **Vercel** (Project → Settings → Environment Variables, Production; samma i staging-miljön med testnumret): `WHATSAPP_ACCESS_TOKEN` (permanent systemanvändartoken med `whatsapp_business_messaging` + `whatsapp_business_management`), `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_APP_SECRET` (App Dashboard → Settings → Basic → App secret), `WHATSAPP_VERIFY_TOKEN` (egen slumpsträng, t.ex. `openssl rand -hex 32`), `WHATSAPP_TEMPLATES_APPROVED` (tomt tills mallarna är godkända). Sätt **inte** `WHATSAPP_FAKE` i production. Deploya om.
+2. **Meta App Dashboard → WhatsApp → Configuration → Webhook:** Callback URL `https://<domän>/api/webhooks/whatsapp`, Verify token = samma värde som `WHATSAPP_VERIFY_TOKEN` → *Verify and save* (Meta gör GET-verifieringen). Under *Webhook fields*: prenumerera på **`messages`** (inkommande meddelanden, knappsvar och leveransstatusar kommer alla i det fältet). `message_template_status_update` behövs inte (hanteras inte).
+3. **Mallar:** skicka in de tre utan URL (`recordatorio_24h`, `lista_espera_oferta`, `lista_espera_tomada`) direkt; de tre med URL-knapp när domänen är bestämd (bas-URL `https://<domän>/r/` resp. `https://<domän>/`, samma bas som `NEXT_PUBLIC_APP_URL`). När Meta godkänt en mall: lägg till namnet i `WHATSAPP_TEMPLATES_APPROVED` och deploya om — det är hela påslaget.
+4. Kontroll: `curl "https://<domän>/api/webhooks/whatsapp?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=123"` ska svara `123`.
 
 ## 2. Mercado Pago (handpenning, företagets eget konto)
 
@@ -74,8 +98,8 @@ jämförelse), tills vidare bara relevant för jobb som inte är `outbox`.
 tabellen lagrar ingen adress alls (varken telefon eller e-post), bara `recipient_kind`
 (`customer`/`owner`); adressen slås upp av workern vid utskickstillfället (kundens/personalens
 kontaktuppgift via `booking_id`, ägarens e-post via `private.owner_emails()`, service_role-bara).
-`channel` har bara `'email'`/`'sms'` i den här fasen (`'sms'` används inte sedan D-062; `'whatsapp'` läggs till som eget enum-värde i
-en senare WP, se DATA_MODEL.md). `status` saknar `delivered`/`read` tills leveransstatus-webhooks
+`channel` hade bara `'email'`/`'sms'` i den här fasen (`'sms'` används inte sedan D-062; `'whatsapp'` lades till i
+`20261021010000_whatsapp_enum_values.sql`, D-063). `status` saknar `delivered`/`read` tills leveransstatus-webhooks
 byggs; har i stället `cancelled` (väntande påminnelser för en flyttad/avbokad bokning avbryts).
 
 **WP-16 steg 2 (integrations-engineer), `src/server/messaging/outbox/`:**

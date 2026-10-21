@@ -451,7 +451,13 @@ export async function enqueueBookingEvent(e: BookingEvent): Promise<void> {
  */
 export async function enqueueCustomerChangeRequestIn(
   q: Queryable,
-  input: { businessId: string; bookingId: string; sourceRowId: string },
+  input: {
+    businessId: string;
+    bookingId: string;
+    sourceRowId: string;
+    /** Starttiden (s) som påminnelsen gällde (samma regel som Confirmo). */
+    startSec: number;
+  },
 ): Promise<boolean> {
   const r = await q.query(
     `insert into public.message_outbox
@@ -463,11 +469,13 @@ export async function enqueueCustomerChangeRequestIn(
       where bk.business_id = $1 and bk.id = $2
         and bk.status in ('confirmed', 'pending_payment')
         and lower(bk.period) > now()
+        and floor(extract(epoch from lower(bk.period)))::bigint = $4::bigint
      on conflict (dedupe_key) do nothing`,
     [
       input.businessId,
       input.bookingId,
       `clienteQuiereCambiar:email:owner:${input.bookingId}:${input.sourceRowId}`,
+      input.startSec,
     ],
   );
   return (r.rowCount ?? 0) === 1;

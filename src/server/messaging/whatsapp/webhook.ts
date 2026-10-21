@@ -164,11 +164,17 @@ async function handleButtonReply(
   // Bara kunden som fick meddelandet kan svara på det.
   if (!sameWhatsAppNumber(m.from, target.customerPhone)) return false;
 
-  if (target.template === "recordatorio" && target.bookingId) {
+  if (
+    target.template === "recordatorio" &&
+    target.bookingId &&
+    target.queuedStartSec !== null
+  ) {
+    const startSec = target.queuedStartSec;
     if (action.action === "confirmo") {
       await confirmBookingByCustomer({
         businessId: target.businessId,
         bookingId: target.bookingId,
+        startSec,
         now,
       });
       return false;
@@ -180,6 +186,7 @@ async function handleButtonReply(
           businessId: target.businessId,
           bookingId,
           sourceRowId: target.rowId,
+          startSec,
         }),
       );
     }

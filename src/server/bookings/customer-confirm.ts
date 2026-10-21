@@ -19,6 +19,9 @@ export type CustomerConfirmResult = "confirmed" | "already" | "not_confirmable";
 export async function confirmBookingByCustomer(input: {
   businessId: string;
   bookingId: string;
+  /** Starttiden (s) som påminnelsen gällde: en flyttad bokning bekräftas
+   * inte via en påminnelse om den gamla tiden. */
+  startSec: number;
   now: Date;
 }): Promise<CustomerConfirmResult> {
   return withServiceTx(async (q) => {
@@ -28,8 +31,9 @@ export async function confirmBookingByCustomer(input: {
         where business_id = $1 and id = $2
           and status = 'confirmed'
           and confirmed_by_customer_at is null
-          and lower(period) > $3`,
-      [input.businessId, input.bookingId, input.now],
+          and lower(period) > $3
+          and floor(extract(epoch from lower(period)))::bigint = $4::bigint`,
+      [input.businessId, input.bookingId, input.now, input.startSec],
     );
     if ((r.rowCount ?? 0) === 1) return "confirmed";
     const b = await q.query<{ already: boolean }>(

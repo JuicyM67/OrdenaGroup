@@ -135,6 +135,8 @@ async function sentWhatsAppRow(
     bookingId?: string | null;
     entryId?: string | null;
     payload?: Record<string, unknown>;
+    /** Starttiden i dedupe_key (som `enqueue.ts`); standard START. */
+    startMs?: number;
   },
 ): Promise<{ id: string; wamid: string }> {
   const w = wamid(row.template);
@@ -152,7 +154,7 @@ async function sentWhatsAppRow(
       row.entryId ?? null,
       row.template,
       JSON.stringify(row.payload ?? {}),
-      `${row.template}:whatsapp:customer:${randomUUID()}:1`,
+      `${row.template}:whatsapp:customer:${randomUUID()}:${Math.floor((row.startMs ?? START) / 1000)}`,
       w,
     ],
   );
@@ -404,6 +406,33 @@ describe("knappsvar på recordatorio_24h", () => {
     expect(
       (await outboxRows(biz)).filter((r) => r.template !== "recordatorio"),
     ).toEqual([]);
+  });
+
+  it("Confirmo på en påminnelse om en tid som sedan flyttats → bekräftar inte den nya tiden", async () => {
+    const biz = await business();
+    const c = await customer(biz);
+    const bookingId = await insertTestBooking(biz, {
+      start: START,
+      durationMin: 35,
+      customerId: c.id,
+    });
+    // Påminnelsen gällde 09:00 samma dag (bokningen är nu 10:00).
+    const row = await sentWhatsAppRow(biz, {
+      template: "recordatorio",
+      bookingId,
+      startMs: START - 3_600_000,
+    });
+    await processWhatsAppWebhook(
+      buttonReply({ from: c.phone, contextId: row.wamid, payload: "confirmo" }),
+      NOW,
+      ENV,
+    );
+    const r = await adminQuery<{ v: Date | null }>(
+      `select confirmed_by_customer_at as v from public.bookings
+        where business_id = $1 and id = $2`,
+      [biz.id, bookingId],
+    );
+    expect(r.rows[0]!.v).toBeNull();
   });
 
   it("Necesito cambiar → ägaren får e-post (en per påminnelse), kunden inget", async () => {
