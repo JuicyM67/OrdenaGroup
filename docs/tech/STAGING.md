@@ -174,6 +174,6 @@ workflowen första gången:
 | Publik adress | https://ordenacalendar.vercel.app |
 
 Sveriges staging (Environment `staging-se`, Vercel-projektet för Booking Buddy) hör till
-repot `JuicyM67/BookingBuddy` sedan uppdelningen (D-062) och körs inte längre härifrån.
+repot `Effektiv-Media/BookingBuddy` sedan uppdelningen (D-062) och körs inte längre härifrån.
 Environment `staging-se` i det här repots GitHub-inställningar används inte längre och kan
 tas bort av ägaren.

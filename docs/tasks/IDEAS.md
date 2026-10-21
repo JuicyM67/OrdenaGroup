@@ -1,6 +1,6 @@
 # Idéer utanför scope
 
-> Idéer som bara gällde Sverige (svenska slugs, ClickSend, sms-paket, presentkort) följde med till repot `JuicyM67/BookingBuddy` vid uppdelningen (D-062).
+> Idéer som bara gällde Sverige (svenska slugs, ClickSend, sms-paket, presentkort) följde med till repot `Effektiv-Media/BookingBuddy` vid uppdelningen (D-062).
 
 Agenter och människor skriver hit idéer som dyker upp under arbetet, så att de inte byggs i fel arbetspaket. Planeraren går igenom listan varje vecka.
 

@@ -86,7 +86,7 @@ Ett arbetspaket (WP) = en branch `wp/<id>-…` = en eller några små PR:er. **B
 
 ## Sverige (D-025–D-028) — flyttat till BookingBuddy (D-062)
 
-Sverige (Booking Buddy) utvecklas sedan 2026-10-21 i repot `JuicyM67/BookingBuddy`. Paketen nedan och de rena SE-paketen WP-64, WP-69, WP-76, WP-77 och WP-78 hör dit; raderna står kvar här som historik.
+Sverige (Booking Buddy) utvecklas sedan 2026-10-21 i repot `Effektiv-Media/BookingBuddy`. Paketen nedan och de rena SE-paketen WP-64, WP-69, WP-76, WP-77 och WP-78 hör dit; raderna står kvar här som historik.
 
 | ID | Titel | Agent | Beror på | Status |
 |---|---|---|---|---|

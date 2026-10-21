@@ -21,4 +21,4 @@ Samlade från säkerhetsgranskningen av WP-03 (2026-09-27). Texterna finns i `sr
 
 ## Frågorna 14–24 (Sverige)
 
-Frågorna 14–19 (värdebevis i marknadsplatsen, WP-69) och 20–24 (presentkort, WP-77) gällde bara Sverige och följde med till repot `JuicyM67/BookingBuddy` vid uppdelningen (D-062). Numreringen behålls så att hänvisningar till frågorna 1–13 inte ändras.
+Frågorna 14–19 (värdebevis i marknadsplatsen, WP-69) och 20–24 (presentkort, WP-77) gällde bara Sverige och följde med till repot `Effektiv-Media/BookingBuddy` vid uppdelningen (D-062). Numreringen behålls så att hänvisningar till frågorna 1–13 inte ändras.
