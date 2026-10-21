@@ -21,7 +21,7 @@ export function offerJsonLd(
             "@type": "PostalAddress",
             streetAddress: offer.business.address,
             addressLocality: offer.business.areaName ?? offer.business.comuna,
-            addressCountry: offer.currency === "SEK" ? "SE" : "CL",
+            addressCountry: "CL",
           },
         }
       : {}),

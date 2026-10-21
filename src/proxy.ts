@@ -20,30 +20,22 @@
 // här — varje admin-sida gör sin egen `requireAdminPage()`-kontroll
 // (404/redirect till /admin/mfa), som inte får avslöja att ytan finns för
 // icke-admins (ett proxy-redirect till /login skulle göra det).
-//
-// WP-58: SE:s installation har svenska permalänkar (`/app/inbjudan`,
-// `/app/valkommen`, `/app/forfragningar`, se `src/config/routes.ts`) som
-// `next.config.ts`s `rewrites`/`redirects` skriver om/omdirigerar till de
-// här spanska filsystemsrutterna — men proxy.ts körs FÖRE det steget, så
-// pathname kan vara i endera formen (den här installationens marknad, eller
-// en delad/gammal länk i den andra). Undantagen nedan matchar därför BÅDA
-// formerna via `appRoutePrefixes()`, oavsett vilken marknad som är igång.
+
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isDesignLabEnabled } from "@/app/design-lab/gate";
 import {
-  appRoutePrefixes,
-  CUENTA_INGRESAR_PATHS,
-  CUENTA_ROOTS,
+  appRoutePrefix,
+  CUENTA_INGRESAR_PATH,
+  CUENTA_ROOT,
   cuentaHref,
 } from "@/config/routes";
 import { refreshSupabaseSession } from "@/lib/supabase/proxy";
 
-const [INVITACION_CL, INVITACION_SE] = appRoutePrefixes("appInvitacion");
-const [BIENVENIDA_CL, BIENVENIDA_SE] = appRoutePrefixes("appBienvenida");
-const [SOLICITUD_CL, SOLICITUD_SE] = appRoutePrefixes("appSolicitud");
+const INVITACION = appRoutePrefix("appInvitacion");
+const BIENVENIDA = appRoutePrefix("appBienvenida");
 const SOLICITUD_RE = new RegExp(
-  `^(?:${SOLICITUD_CL}|${SOLICITUD_SE})([0-9a-f-]{36})$`,
+  `^${appRoutePrefix("appSolicitud")}([0-9a-f-]{36})$`,
   "i",
 );
 
@@ -69,14 +61,12 @@ export async function proxy(request: NextRequest) {
   // inloggat/utloggat läge (`src/app/(app-public)/app/invitacion/[token]/page.tsx`),
   // ingen sessionsdata läcker härifrån (bara en generell status/negocio-namn,
   // läst med service role, inte bunden till den besökandes identitet).
-  const isInvitationPage =
-    pathname.startsWith(INVITACION_CL) || pathname.startsWith(INVITACION_SE);
+  const isInvitationPage = pathname.startsWith(INVITACION);
 
   // F19/WP-36: samma undantag för /app/bienvenida/[token] (en ANNAN
   // inbjudan, att skapa ett nytt företag — se src/app/app/bienvenida/
   // [token]/page.tsx).
-  const isPublicInviteRoute =
-    pathname.startsWith(BIENVENIDA_CL) || pathname.startsWith(BIENVENIDA_SE);
+  const isPublicInviteRoute = pathname.startsWith(BIENVENIDA);
 
   if (
     pathname.startsWith("/app") &&
@@ -90,7 +80,7 @@ export async function proxy(request: NextRequest) {
     const redirect = NextResponse.redirect(url);
     // WP-56: /app/solicitudes/[id] kräver inloggning (`(app)/layout.tsx`),
     // till skillnad från /app/invitacion/bienvenida ovan — men ägaren som
-    // öppnar sms/mejl-länken utloggad ska ändå hamna rätt efter inloggning.
+    // öppnar mejl-länken utloggad ska ändå hamna rätt efter inloggning.
     // `/auth/confirm` stödjer medvetet ingen `?next=` (öppen omdirigering,
     // D-019), så samma cookie-mönster som `pending_invitation`
     // (`/app/invitacion/[token]/page.tsx`): ett redan formatvaliderat id,
@@ -107,15 +97,13 @@ export async function proxy(request: NextRequest) {
     return redirect;
   }
 
-  // WP-67 (D-054): kundkontots sidor (`/cuenta/*`, SE `/konto/*`, båda
-  // formerna — proxy körs före rewrites) kräver inloggning, utom själva
-  // inloggningssidan. Utloggad → kontots inloggning, inte företagens `/login`.
-  const isCuenta = CUENTA_ROOTS.some(
-    (root) => pathname === root || pathname.startsWith(`${root}/`),
-  );
-  const isCuentaIngresar = CUENTA_INGRESAR_PATHS.some(
-    (p) => pathname === p || pathname.startsWith(`${p}/`),
-  );
+  // WP-67 (D-054): kundkontots sidor (`/cuenta/*`) kräver inloggning, utom
+  // själva inloggningssidan. Utloggad → kontots inloggning, inte företagens `/login`.
+  const isCuenta =
+    pathname === CUENTA_ROOT || pathname.startsWith(`${CUENTA_ROOT}/`);
+  const isCuentaIngresar =
+    pathname === CUENTA_INGRESAR_PATH ||
+    pathname.startsWith(`${CUENTA_INGRESAR_PATH}/`);
   if (isCuenta && !isCuentaIngresar && userId === null) {
     const url = request.nextUrl.clone();
     url.pathname = cuentaHref("cuentaIngresar");
@@ -134,6 +122,5 @@ export const config = {
     "/login",
     "/auth/:path*",
     "/cuenta/:path*",
-    "/konto/:path*",
   ],
 };

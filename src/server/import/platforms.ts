@@ -16,52 +16,29 @@ export type ImportPlatform = {
   key: string;
   name: string;
   domains: readonly string[];
-  /** Var plattformen är vanlig — styr bara listan som visas för ägaren. */
-  markets: readonly ("CL" | "SE")[];
 };
 
+/** Plattformar som är vanliga i Chile (visas för ägaren i den här ordningen). */
 export const IMPORT_PLATFORMS: readonly ImportPlatform[] = [
-  {
-    key: "bokadirekt",
-    name: "Bokadirekt",
-    domains: ["bokadirekt.se"],
-    markets: ["SE"],
-  },
   {
     key: "fresha",
     name: "Fresha",
     domains: ["fresha.com"],
-    markets: ["SE", "CL"],
   },
   {
     key: "booksy",
     name: "Booksy",
     domains: ["booksy.com", "booksy.net"],
-    markets: ["SE", "CL"],
-  },
-  {
-    key: "timma",
-    name: "Timma",
-    domains: ["timma.se", "timma.fi"],
-    markets: ["SE"],
   },
   {
     key: "agendapro",
     name: "AgendaPro",
     domains: ["agendapro.com", "agendapro.cl"],
-    markets: ["CL"],
   },
   {
     key: "reservo",
     name: "Reservo",
     domains: ["reservo.cl"],
-    markets: ["CL"],
-  },
-  {
-    key: "treatwell",
-    name: "Treatwell",
-    domains: ["treatwell.se", "treatwell.com", "treatwell.co.uk"],
-    markets: ["SE"],
   },
 ];
 
@@ -69,11 +46,9 @@ export const IMPORT_PLATFORMS: readonly ImportPlatform[] = [
 export const IMPORT_ALLOWED_DOMAINS: readonly string[] =
   IMPORT_PLATFORMS.flatMap((p) => p.domains);
 
-/** "Bokadirekt, Timma, …" för ägarens marknad (visas under länkfältet). */
-export function platformNamesFor(market: "CL" | "SE"): string {
-  return IMPORT_PLATFORMS.filter((p) => p.markets.includes(market))
-    .map((p) => p.name)
-    .join(", ");
+/** "Fresha, Booksy, …" (visas under länkfältet). */
+export function platformNames(): string {
+  return IMPORT_PLATFORMS.map((p) => p.name).join(", ");
 }
 
 export function platformForHost(host: string): ImportPlatform | null {
@@ -98,7 +73,7 @@ export const importUrlSchema = z
   .min(1, { error: "import.url_invalid" })
   .max(2000, { error: "import.url_invalid" })
   .transform((raw, ctx): ParsedImportUrl => {
-    // Ägare klistrar ofta in utan schema ("bokadirekt.se/places/…").
+    // Ägare klistrar ofta in utan schema ("agendapro.com/cl/…").
     const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw)
       ? raw
       : `https://${raw}`;

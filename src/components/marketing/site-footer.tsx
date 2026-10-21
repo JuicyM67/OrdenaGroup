@@ -11,7 +11,7 @@ import { brand } from "@/config/brand";
 import { marketplaceEnabled } from "@/config/marketplace";
 import {
   cuentaHref,
-  funcionesDisponibles,
+  FUNCION_IDS,
   href,
   hrefFuncion,
   hrefLegal,
@@ -87,7 +87,7 @@ export function SiteFooter() {
             <Link href={href("funcionalidades")} className={linkClass}>
               {copy.sitio.footer.links.funcionalidades}
             </Link>
-            {funcionesDisponibles().map((id) => (
+            {FUNCION_IDS.map((id) => (
               <Link key={id} href={hrefFuncion(id)} className={linkClass}>
                 {paginas.funciones[id]?.nombre}
               </Link>

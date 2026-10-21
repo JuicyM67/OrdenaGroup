@@ -2,7 +2,6 @@
 // ingen "use client", inget i klientbunten (JS-budgeten 190 kB, D-039):
 // `ProfileBrowse` tar emot dem som färdiga noder. "Ver más" är en vanlig
 // länk (`?resenas=N#resenas`), server-paginering utan klient-JS.
-import { anchor } from "@/config/url-params";
 import { Star } from "lucide-react";
 
 import { Chip } from "@/components/ui/chip";
@@ -76,7 +75,7 @@ export function RatingChip({
 }
 
 export function ReviewsSection({
-  id = anchor("resenas"),
+  id = "resenas",
   reviews,
   negocio,
   moreHref,

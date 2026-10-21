@@ -1,14 +1,10 @@
-// Rutt-karta per marknad (D-025: en installation per marknad). CL behåller de spanska
-// sökvägarna sidfilerna redan har under `(marketing)/` (t.ex. `/precios`). SE använder
-// svenska slugs; `next.config.ts` skriver om dem (`rewrites`) till samma sidfiler och
-// gör permanenta redirects (308) från de gamla spanska sökvägarna (för delade länkar).
+// Rutt-karta (D-025). Sökvägarna är exakt filsystemsrutterna under `src/app/`
+// (t.ex. `/precios` under `(marketing)/`).
 //
 // Interna länkar på hemsidan ska alltid gå via `href()` / `hrefIndustria()` härifrån,
-// aldrig hårdkodade `/precios`-strängar — annars pekar SE-installationen på fel sida.
-// `/login` är undantaget (auth-route, rörs inte här).
-import { market, type Market } from "./brand";
+// aldrig hårdkodade `/precios`-strängar. `/login` är undantaget (auth-route, rörs
+// inte här).
 import { marketplaceEnabled } from "./marketplace";
-import { anchor } from "./url-params";
 
 export type RouteId =
   | "inicio"
@@ -21,16 +17,16 @@ export type RouteId =
   | "ejemploNegocio"
   | "paraClientes";
 
-/** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts` / `sv-SE.ts`). */
+/** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts`). */
 export type IndustriaId =
   "barberias" | "peluquerias" | "estetica" | "kinesiologia";
 
-import { hrefLegal, SE_LEGAL_SLUGS, type LegalDocId } from "./legal-routes";
+import { hrefLegal, type LegalDocId } from "./legal-routes";
 
 export { hrefLegal, type LegalDocId };
 
-/** CL-sökvägen: exakt filsystemsrutten under `(marketing)/`, oavsett marknad. */
-const CL_ROUTES: Record<RouteId, string> = {
+/** Exakt filsystemsrutten under `(marketing)/`. */
+const ROUTES: Record<RouteId, string> = {
   inicio: "/",
   precios: "/precios",
   funcionalidades: "/funcionalidades",
@@ -39,58 +35,25 @@ const CL_ROUTES: Record<RouteId, string> = {
   preguntas: "/preguntas",
   contacto: "/contacto",
   ejemploNegocio: "/demo/negocio",
-  // Landningssidan för konsumentkontot. Bara SE (dold/404 i CL som marknadsplatsen).
+  // Landningssidan för konsumentkontot (med marknadsplatsen, D-060).
   paraClientes: "/para-clientes",
 };
 
-/** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
-const SE_ROUTES: Record<RouteId, string> = {
-  inicio: "/",
-  precios: "/priser",
-  funcionalidades: "/funktioner",
-  horasFlash: "/blixttider",
-  ventajas: "/fordelar",
-  preguntas: "/vanliga-fragor",
-  contacto: "/kontakt",
-  ejemploNegocio: "/demo/foretag",
-  paraClientes: "/for-kunder",
-};
-
-const ROUTES_BY_MARKET: Record<Market, Record<RouteId, string>> = {
-  CL: CL_ROUTES,
-  SE: SE_ROUTES,
-};
-
-/** Länk till en av de delade marknadssidorna, i den här installationens marknad.
- * `hash` läggs på utan `#` (t.ex. `href("funcionalidades", "agenda")` → `/funktioner#agenda`
- * på SE, `/funcionalidades#agenda` på CL). */
+/** Länk till en av marknadssidorna. `hash` läggs på utan `#` (t.ex.
+ * `href("funcionalidades", "agenda")` → `/funcionalidades#agenda`). */
 export function href(id: RouteId, hash?: string): string {
-  const path = ROUTES_BY_MARKET[market][id];
-  return hash ? `${path}#${anchor(hash)}` : path;
+  const path = ROUTES[id];
+  return hash ? `${path}#${hash}` : path;
 }
-
-/** Alla dokument-id:n med sin svenska slug, i en fast ordning — används av
- * `next.config.ts` för att bygga SE:s `/legal/<slug>`-rewrites (samma mönster som
- * `SE_INDUSTRIA_SLUG_LIST`). */
-export const SE_LEGAL_SLUG_LIST: readonly {
-  readonly id: LegalDocId;
-  readonly slug: string;
-}[] = (Object.keys(SE_LEGAL_SLUGS) as LegalDocId[]).map((id) => ({
-  id,
-  slug: SE_LEGAL_SLUGS[id],
-}));
 
 // ---------------------------------------------------------------------------
 // Funktionssidor och branschsidor (WP-75). Filsystemets (CL) sökvägar:
 //   /funcionalidades/<slug>   (+ /horas-flash och /migracion som egna sidfiler)
 //   /rubros och /rubros/<slug>
-// SE får svenska slugs (`/funktioner/<slug>`, `/blixttider`, `/flytt`, `/branscher/<slug>`)
-// via samma rewrites/redirects som övriga marknadssidor.
 // ---------------------------------------------------------------------------
 
 export type FuncionId =
   | "reservas"
-  | "pagos"
   | "resenas"
   | "horasFlash"
   | "listaEspera"
@@ -102,7 +65,6 @@ export type FuncionId =
 /** Ordning i menyn, översikten och sitemap. */
 export const FUNCION_IDS: readonly FuncionId[] = [
   "reservas",
-  "pagos",
   "resenas",
   "horasFlash",
   "listaEspera",
@@ -112,9 +74,8 @@ export const FUNCION_IDS: readonly FuncionId[] = [
   "migracion",
 ];
 
-const CL_FUNCION_PATHS: Record<FuncionId, string> = {
+const FUNCION_PATHS: Record<FuncionId, string> = {
   reservas: "/funcionalidades/reservas-online",
-  pagos: "/funcionalidades/pagos",
   resenas: "/funcionalidades/resenas",
   horasFlash: "/horas-flash",
   listaEspera: "/funcionalidades/lista-de-espera",
@@ -124,47 +85,22 @@ const CL_FUNCION_PATHS: Record<FuncionId, string> = {
   migracion: "/migracion",
 };
 
-const SE_FUNCION_PATHS: Record<FuncionId, string> = {
-  reservas: "/funktioner/onlinebokning",
-  pagos: "/funktioner/betalning",
-  resenas: "/funktioner/omdomen",
-  horasFlash: "/blixttider",
-  listaEspera: "/funktioner/vantelista",
-  recordatorios: "/funktioner/paminnelser",
-  agenda: "/funktioner/kalender",
-  caja: "/funktioner/kassa",
-  migracion: "/flytt",
-};
-
-/** Funktioner som inte finns på en marknad (kundbetalning är inte byggd på CL, D-044). */
-const FUNCION_ONLY_MARKET: Partial<Record<FuncionId, Market>> = { pagos: "SE" };
-
-export function funcionAvailable(id: FuncionId, m: Market = market): boolean {
-  const only = FUNCION_ONLY_MARKET[id];
-  return only === undefined || only === m;
-}
-
-/** Funktionerna som finns i den här installationens marknad, i menyordning. */
-export function funcionesDisponibles(m: Market = market): FuncionId[] {
-  return FUNCION_IDS.filter((id) => funcionAvailable(id, m));
-}
-
 export function hrefFuncion(id: FuncionId): string {
-  return market === "SE" ? SE_FUNCION_PATHS[id] : CL_FUNCION_PATHS[id];
+  return FUNCION_PATHS[id];
 }
 
-/** Sista segmentet i CL-sökvägen för funktioner under `/funcionalidades/[funcion]`. */
+/** Sista segmentet i sökvägen för funktioner under `/funcionalidades/[funcion]`. */
 export function funcionFromParam(slug: string): FuncionId | undefined {
   return FUNCION_IDS.find(
-    (id) => CL_FUNCION_PATHS[id] === `/funcionalidades/${slug}`,
+    (id) => FUNCION_PATHS[id] === `/funcionalidades/${slug}`,
   );
 }
 
-/** Param-värdena (CL-slugs) för `/funcionalidades/[funcion]`. */
+/** Param-värdena (slugs) för `/funcionalidades/[funcion]`. */
 export function funcionParamSlugs(): string[] {
   return FUNCION_IDS.filter((id) =>
-    CL_FUNCION_PATHS[id].startsWith("/funcionalidades/"),
-  ).map((id) => CL_FUNCION_PATHS[id].slice("/funcionalidades/".length));
+    FUNCION_PATHS[id].startsWith("/funcionalidades/"),
+  ).map((id) => FUNCION_PATHS[id].slice("/funcionalidades/".length));
 }
 
 /** Samma id:n som bildfilerna i `public/marketing/<id>.webp`. */
@@ -197,9 +133,9 @@ export const RUBRO_IDS: readonly RubroId[] = [
   "makeup",
 ];
 
-/** Sista segmentet i `/rubros/<slug>` (filsystemet, CL). De fyra första branscherna behåller
+/** Sista segmentet i `/rubros/<slug>` (filsystemet). De fyra första branscherna behåller
  * sina gamla `/para/<slug>`-id:n. */
-const CL_RUBRO_SLUGS: Record<RubroId, string> = {
+const RUBRO_SLUGS: Record<RubroId, string> = {
   frisor: "peluquerias",
   barberare: "barberias",
   naglar: "unas",
@@ -214,45 +150,20 @@ const CL_RUBRO_SLUGS: Record<RubroId, string> = {
   makeup: "maquillaje",
 };
 
-const SE_RUBRO_SLUGS: Record<RubroId, string> = {
-  frisor: "frisor",
-  barberare: "barberare",
-  naglar: "naglar",
-  fransar: "fransar-och-bryn",
-  hudvard: "hudvard",
-  massage: "massage",
-  naprapat: "naprapat-och-fysio",
-  yoga: "yoga-och-pilates",
-  tatuering: "tatuering",
-  hundtrim: "hundtrim",
-  pt: "personlig-traning",
-  makeup: "makeup",
-};
-
-/** Gamla `/for/<slug>` på SE (före WP-75) → nytt branschid. */
-const SE_LEGACY_FOR_SLUGS: Record<string, RubroId> = {
-  barberare: "barberare",
-  frisorer: "frisor",
-  hudvard: "hudvard",
-  naprapat: "naprapat",
-};
-
 export function hrefRubros(): string {
-  return market === "SE" ? "/branscher" : "/rubros";
+  return "/rubros";
 }
 
 export function hrefRubro(id: RubroId): string {
-  return market === "SE"
-    ? `/branscher/${SE_RUBRO_SLUGS[id]}`
-    : `/rubros/${CL_RUBRO_SLUGS[id]}`;
+  return `/rubros/${RUBRO_SLUGS[id]}`;
 }
 
 export function rubroFromParam(slug: string): RubroId | undefined {
-  return RUBRO_IDS.find((id) => CL_RUBRO_SLUGS[id] === slug);
+  return RUBRO_IDS.find((id) => RUBRO_SLUGS[id] === slug);
 }
 
 export function rubroParamSlugs(): string[] {
-  return RUBRO_IDS.map((id) => CL_RUBRO_SLUGS[id]);
+  return RUBRO_IDS.map((id) => RUBRO_SLUGS[id]);
 }
 
 /** Länk till en av de gamla fyra branscherna (kvar för äldre anropare). */
@@ -267,7 +178,7 @@ const INDUSTRIA_TO_RUBRO: Record<IndustriaId, RubroId> = {
   kinesiologia: "naprapat",
 };
 
-/** Alla publika, indexerbara sökvägar i den här marknaden (sitemap.xml). */
+/** Alla publika, indexerbara sökvägar (sitemap.xml). */
 export function sitemapPaths(): string[] {
   const paths = [
     href("inicio"),
@@ -277,7 +188,7 @@ export function sitemapPaths(): string[] {
     href("preguntas"),
     href("contacto"),
     ...(marketplaceEnabled() ? [href("paraClientes")] : []),
-    ...funcionesDisponibles().map(hrefFuncion),
+    ...FUNCION_IDS.map(hrefFuncion),
     hrefRubros(),
     ...RUBRO_IDS.map(hrefRubro),
     hrefLegal("privacidad"),
@@ -289,12 +200,10 @@ export function sitemapPaths(): string[] {
 
 // ---------------------------------------------------------------------------
 // App-rutter (WP-58): samma mönster som ovan, men för ägarytan (`/app/*`) och
-// de publika token-sidorna (`/baja/[token]`). CL-sökvägarna är filsystemets
+// de publika token-sidorna (`/baja/[token]`). Sökvägarna är filsystemets
 // (`src/app/(app)/app/*`, `src/app/(app-public)/app/*`, `src/app/app/*`,
-// `src/app/baja/*`), oförändrade. SE använder svenska slugs, skrivna om i
-// `next.config.ts` (samma `seRouteRewrites`/`seRouteRedirects` som
-// marknadssidorna). `/v/[token]` och `/r/[token]` är redan korta, språklösa
-// koder — de finns INTE i den här tabellen, oförändrade i båda marknaderna.
+// `src/app/baja/*`). `/v/[token]` och `/r/[token]` är redan korta koder — de
+// finns INTE i den här tabellen.
 export type AppRouteId =
   | "appInicio"
   | "appAgenda"
@@ -318,7 +227,6 @@ export type AppRouteId =
   | "appAjustesSocios"
   | "appAjustesEquipo"
   | "appAjustesPrivacidad"
-  | "appAjustesPagos"
   | "appAjustesPlan"
   | "appSolicitud"
   | "appInvitacion"
@@ -340,19 +248,16 @@ export const AJUSTES_TAB_ROUTE_IDS = {
   socios: "appAjustesSocios",
   equipo: "appAjustesEquipo",
   privacidad: "appAjustesPrivacidad",
-  pagos: "appAjustesPagos",
   plan: "appAjustesPlan",
 } as const satisfies Record<string, AppRouteId>;
 
-/** CL-sökvägen (filsystemets), med `[id]`/`[token]` som platshållare för dynamiska
+/** Filsystemets sökväg, med `[id]`/`[token]` som platshållare för dynamiska
  * segment (bara ett per rutt). */
-const CL_APP_ROUTES: Record<AppRouteId, string> = {
+const APP_ROUTES: Record<AppRouteId, string> = {
   appInicio: "/app/inicio",
   appAgenda: "/app/agenda",
   appHoy: "/app/hoy",
   appClientes: "/app/clientes",
-  // WP-65: före `appClienteDetail` — rewrites/redirects byggs i nyckelordning,
-  // och `/app/kunder/:id` skulle annars fånga `/app/kunder/omdomen` först.
   appClientesResenas: "/app/clientes/resenas",
   appClienteDetail: "/app/clientes/[id]",
   appClientesUtskick: "/app/clientes/utskick",
@@ -360,7 +265,7 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appCaja: "/app/caja",
   appCajaInformes: "/app/caja/informes",
   appFlash: "/app/flash",
-  // WP-70 (D-056): erbjudanderedigeraren. Dold i CL (som marknadsplatsen, D-055).
+  // WP-70 (D-056): erbjudanderedigeraren.
   appOfertas: "/app/ofertas",
   appAjustes: "/app/ajustes",
   appAjustesNegocio: "/app/ajustes/negocio",
@@ -372,7 +277,6 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesSocios: "/app/ajustes/socios",
   appAjustesEquipo: "/app/ajustes/equipo",
   appAjustesPrivacidad: "/app/ajustes/privacidad",
-  appAjustesPagos: "/app/ajustes/pagos",
   appAjustesPlan: "/app/ajustes/plan",
   appSolicitud: "/app/solicitudes/[id]",
   appInvitacion: "/app/invitacion/[token]",
@@ -382,51 +286,11 @@ const CL_APP_ROUTES: Record<AppRouteId, string> = {
   resena: "/resena/[token]",
 };
 
-/** SE-sökvägen: svensk slug, skriven om (i `next.config.ts`) till samma sidfil som CL. */
-const SE_APP_ROUTES: Record<AppRouteId, string> = {
-  appInicio: "/app/start",
-  appAgenda: "/app/kalender",
-  appHoy: "/app/idag",
-  appClientes: "/app/kunder",
-  appClienteDetail: "/app/kunder/[id]",
-  appClientesUtskick: "/app/kunder/utskick",
-  appClientesUtskickNytt: "/app/kunder/utskick/nytt",
-  appClientesResenas: "/app/kunder/omdomen",
-  appCaja: "/app/kassa",
-  appCajaInformes: "/app/kassa/rapporter",
-  appFlash: "/app/blixttider",
-  appOfertas: "/app/erbjudanden",
-  appAjustes: "/app/installningar",
-  appAjustesNegocio: "/app/installningar/foretag",
-  appAjustesPerfil: "/app/installningar/profil",
-  appAjustesReglas: "/app/installningar/bokningsregler",
-  appAjustesServicios: "/app/installningar/tjanster",
-  appAjustesFormulario: "/app/installningar/bokningsformular",
-  appAjustesHorario: "/app/installningar/oppettider",
-  appAjustesSocios: "/app/installningar/medlemmar",
-  appAjustesEquipo: "/app/installningar/team",
-  appAjustesPrivacidad: "/app/installningar/integritet",
-  appAjustesPagos: "/app/installningar/betalningar",
-  appAjustesPlan: "/app/installningar/plan",
-  appSolicitud: "/app/forfragningar/[id]",
-  appInvitacion: "/app/inbjudan/[token]",
-  appBienvenida: "/app/valkommen/[token]",
-  appOnboarding: "/app/kom-igang",
-  baja: "/avregistrera/[token]",
-  resena: "/recension/[token]",
-};
-
-const APP_ROUTES_BY_MARKET: Record<Market, Record<AppRouteId, string>> = {
-  CL: CL_APP_ROUTES,
-  SE: SE_APP_ROUTES,
-};
-
-/** Länk till en app-rutt, i den här installationens marknad. `param` ersätter ruttens
- * enda dynamiska segment (`[id]`/`[token]`) om den har ett — hash/query läggs på av
- * anroparen (t.ex. `` `${appHref("appAgenda")}?vista=dia&fecha=${d}` ``, samma mönster
- * som innan, se WP-58-planen). */
+/** Länk till en app-rutt. `param` ersätter ruttens enda dynamiska segment
+ * (`[id]`/`[token]`) om den har ett — hash/query läggs på av anroparen (t.ex.
+ * `` `${appHref("appAgenda")}?vista=dia&fecha=${d}` ``, se WP-58-planen). */
 export function appHref(id: AppRouteId, param?: string): string {
-  const path = APP_ROUTES_BY_MARKET[market][id];
+  const path = APP_ROUTES[id];
   return param === undefined ? path : path.replace(/\[(?:id|token)\]/, param);
 }
 
@@ -434,22 +298,14 @@ function stripDynamicSegment(path: string): string {
   return path.replace(/\[(?:id|token)\]$/, "");
 }
 
-/** Prefixet (utan själva id/token-delen) för en dynamisk app-rutt, i BÅDA marknadernas
- * form — oavsett vilken marknad den här installationen kör. `src/proxy.ts` körs före
- * `next.config.ts`s rewrites/redirects och måste därför känna igen både den spanska och
- * den svenska sökvägen när den avgör om en rutt är publik. */
-export function appRoutePrefixes(id: AppRouteId): readonly [string, string] {
-  return [
-    stripDynamicSegment(CL_APP_ROUTES[id]),
-    stripDynamicSegment(SE_APP_ROUTES[id]),
-  ];
+/** Prefixet (utan själva id/token-delen) för en dynamisk app-rutt (`src/proxy.ts`). */
+export function appRoutePrefix(id: AppRouteId): string {
+  return stripDynamicSegment(APP_ROUTES[id]);
 }
 
 // ---------------------------------------------------------------------------
-// Kundkonton (WP-67, D-054): konsumentens egna sidor. CL-sökvägarna är
-// filsystemets (`src/app/(consumer)/cuenta/*`); SE får svenska slugs via samma
-// rewrites/redirects som app-rutterna. Finns i båda marknaderna (till skillnad
-// från marknadsplatsen, WP-68, som är dold i CL).
+// Kundkonton (WP-67, D-054): konsumentens egna sidor, filsystemets sökvägar
+// (`src/app/(consumer)/cuenta/*`).
 // ---------------------------------------------------------------------------
 export type CuentaRouteId =
   | "cuenta"
@@ -459,7 +315,7 @@ export type CuentaRouteId =
   | "cuentaPrivacidad"
   | "cuentaResena";
 
-const CL_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
+const CUENTA_ROUTES: Record<CuentaRouteId, string> = {
   cuenta: "/cuenta",
   cuentaIngresar: "/cuenta/ingresar",
   cuentaReservas: "/cuenta/reservas",
@@ -468,318 +324,42 @@ const CL_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
   cuentaResena: "/cuenta/resena/[id]",
 };
 
-const SE_CUENTA_ROUTES: Record<CuentaRouteId, string> = {
-  cuenta: "/konto",
-  cuentaIngresar: "/konto/logga-in",
-  cuentaReservas: "/konto/bokningar",
-  cuentaFavoritos: "/konto/favoriter",
-  cuentaPrivacidad: "/konto/integritet",
-  cuentaResena: "/konto/recension/[id]",
-};
-
-/** Länk till en kontosida, i den här installationens marknad. `param` ersätter
- * `[id]` (bara `cuentaResena`). */
+/** Länk till en kontosida. `param` ersätter `[id]` (bara `cuentaResena`). */
 export function cuentaHref(id: CuentaRouteId, param?: string): string {
-  const path = (market === "SE" ? SE_CUENTA_ROUTES : CL_CUENTA_ROUTES)[id];
+  const path = CUENTA_ROUTES[id];
   return param === undefined ? path : path.replace("[id]", param);
 }
 
-/** Kontots rotprefix i BÅDA marknadernas form (`/cuenta`, `/konto`) —
- * `src/proxy.ts` körs före rewrites och måste känna igen båda. */
-export const CUENTA_ROOTS: readonly [string, string] = [
-  CL_CUENTA_ROUTES.cuenta,
-  SE_CUENTA_ROUTES.cuenta,
-];
-
-/** Inloggningssidan för konton i båda marknadernas form. */
-export const CUENTA_INGRESAR_PATHS: readonly [string, string] = [
-  CL_CUENTA_ROUTES.cuentaIngresar,
-  SE_CUENTA_ROUTES.cuentaIngresar,
-];
-
-// WP-69 (D-057): värdebevisens sidor (kontot och kassan). Egen liten tabell, inte i
-// app-/kontotabellerna ovan, så att sökvägarna inte följer med tabellerna in i
-// bokningssidans klientbunt (D-039). Rewrites/redirects som övriga.
-export type ValesRouteId = "cuenta" | "caja";
-const CL_VALES: Record<ValesRouteId, string> = {
-  cuenta: "/cuenta/vales",
-  caja: "/app/caja/vales",
-};
-const SE_VALES: Record<ValesRouteId, string> = {
-  cuenta: "/konto/vardebevis",
-  caja: "/app/kassa/vardebevis",
-};
-
-export function valesHref(id: ValesRouteId): string {
-  return (market === "SE" ? SE_VALES : CL_VALES)[id];
-}
-
-function valesPairs(): { source: string; destination: string }[] {
-  return (["cuenta", "caja"] as const).map((id) => ({
-    source: SE_VALES[id],
-    destination: CL_VALES[id],
-  }));
-}
-
-// WP-77 (D-058): presentkortens sidor. Köpet ligger under företagets egen sida
-// (`/<slug>/presentkort`, CL-filsystemet `/[slug]/tarjeta-regalo`), kontot och
-// kassan som värdebevisen. Egen tabell (D-039: inget i bokningssidans klientbunt).
-export type RegaloRouteId = "compra" | "listo" | "tarjeta";
-const CL_REGALO: Record<RegaloRouteId, string> = {
-  compra: "/tarjeta-regalo",
-  listo: "/tarjeta-regalo/listo",
-  tarjeta: "/tarjeta-regalo/tarjeta",
-};
-const SE_REGALO: Record<RegaloRouteId, string> = {
-  compra: "/presentkort",
-  listo: "/presentkort/klart",
-  tarjeta: "/presentkort/kort",
-};
-export type RegalosRouteId = "cuenta" | "caja";
-const CL_REGALOS: Record<RegalosRouteId, string> = {
-  cuenta: "/cuenta/regalos",
-  caja: "/app/caja/regalos",
-};
-const SE_REGALOS: Record<RegalosRouteId, string> = {
-  cuenta: "/konto/presentkort",
-  caja: "/app/kassa/presentkort",
-};
-
-/** `/<slug>/presentkort[/klart|/kort]` i den här installationens marknad. */
-export function regaloHref(slug: string, id: RegaloRouteId = "compra"): string {
-  const tail = (market === "SE" ? SE_REGALO : CL_REGALO)[id];
-  return `/${encodeURIComponent(slug)}${tail}`;
-}
-
-export function regalosHref(id: RegalosRouteId): string {
-  return (market === "SE" ? SE_REGALOS : CL_REGALOS)[id];
-}
-
-/** Kontot och kassan först (statiska), sist `/:slug/…` (fångar annars
- * `/konto/presentkort`). */
-function regaloPairs(): { source: string; destination: string }[] {
-  const fixed = (["cuenta", "caja"] as const).map((id) => ({
-    source: SE_REGALOS[id],
-    destination: CL_REGALOS[id],
-  }));
-  const slugged = (["listo", "tarjeta", "compra"] as const).map((id) => ({
-    source: `/:slug${SE_REGALO[id]}`,
-    destination: `/:slug${CL_REGALO[id]}`,
-  }));
-  return [...fixed, ...slugged];
-}
-
-function cuentaPairs(): { source: string; destination: string }[] {
-  return (Object.keys(CL_CUENTA_ROUTES) as CuentaRouteId[]).map((id) => ({
-    source: SE_CUENTA_ROUTES[id].replace("[id]", ":id"),
-    destination: CL_CUENTA_ROUTES[id].replace("[id]", ":id"),
-  }));
-}
-
-/** `[id]`/`[token]` (våra platshållare) → `:id`/`:token` (path-to-regexp, det
- * `next.config.ts`s `rewrites`/`redirects` förstår). */
-function toRewritePath(path: string): string {
-  return path.replace(/\[(id|token)\]/, ":$1");
-}
-
-/** SE-slug → CL-sidfil för funktions- och branschsidorna (WP-75). */
-function seMarketingPagePairs(): { source: string; destination: string }[] {
-  // `horasFlash` finns redan som RouteId (/blixttider ↔ /horas-flash).
-  const funciones = FUNCION_IDS.filter((id) => id !== "horasFlash").map(
-    (id) => ({
-      source: SE_FUNCION_PATHS[id],
-      destination: CL_FUNCION_PATHS[id],
-    }),
-  );
-  const rubros = [
-    { source: "/branscher", destination: "/rubros" },
-    ...RUBRO_IDS.map((id) => ({
-      source: `/branscher/${SE_RUBRO_SLUGS[id]}`,
-      destination: `/rubros/${CL_RUBRO_SLUGS[id]}`,
-    })),
-  ];
-  return [...funciones, ...rubros];
-}
-
 // ---------------------------------------------------------------------------
-// Marknadsplatsen (WP-68, D-055). Filsystemet (CL): `src/app/(consumer)/descubre/**`
-// och `src/app/(consumer)/oferta/[slug]`. SE: `/upptack`, `/upptack/karta`,
-// `/upptack/<kategori>[/<ort>]`, `/erbjudande/<slug>` (rewrites/redirects nedan).
-// Kategorislugsen per marknad finns i `marketplace.ts`. I CL är ytan dold (404).
+// Marknadsplatsen (WP-68, D-055, D-060). Filsystemet: `src/app/(consumer)/descubre/**`
+// och `src/app/(consumer)/oferta/[slug]`. Kategorislugsen finns i `marketplace.ts`.
 // ---------------------------------------------------------------------------
 export type MarketplaceRouteId = "descubre" | "descubreMapa" | "oferta";
 
-const CL_MARKETPLACE: Record<MarketplaceRouteId, string> = {
+const MARKETPLACE_ROUTES: Record<MarketplaceRouteId, string> = {
   descubre: "/descubre",
   descubreMapa: "/descubre/mapa",
   oferta: "/oferta",
 };
 
-const SE_MARKETPLACE: Record<MarketplaceRouteId, string> = {
-  descubre: "/upptack",
-  descubreMapa: "/upptack/karta",
-  oferta: "/erbjudande",
-};
+/** Kontots rotprefix (`src/proxy.ts`: allt under det kräver inloggning). */
+export const CUENTA_ROOT: string = CUENTA_ROUTES.cuenta;
 
-/** Segment som inte får bli en kategori- eller ortslug (krockar med kartan). */
-export const MARKETPLACE_RESERVED_SEGMENTS: readonly string[] = [
-  "mapa",
-  "karta",
-];
+/** Kontots inloggningssida (undantaget i `src/proxy.ts`). */
+export const CUENTA_INGRESAR_PATH: string = CUENTA_ROUTES.cuentaIngresar;
 
 /** Länk till marknadsplatsen. Extra segment (kategori, ort, erbjudandets slug) läggs
- * på i ordning: `hrefMarketplace("descubre", "har", "sodermalm")` → `/upptack/har/sodermalm`. */
+ * på i ordning: `hrefMarketplace("descubre", "cabello", "providencia")` →
+ * `/descubre/cabello/providencia`. */
 export function hrefMarketplace(
   id: MarketplaceRouteId,
   ...segments: readonly string[]
 ): string {
-  const base = (market === "SE" ? SE_MARKETPLACE : CL_MARKETPLACE)[id];
+  const base = MARKETPLACE_ROUTES[id];
   return [base, ...segments.map((x) => encodeURIComponent(x))].join("/");
 }
 
-function seMarketplacePairs(): { source: string; destination: string }[] {
-  // Kartan före `:kategori`, annars fångas `/upptack/karta` som en kategori.
-  return [
-    { source: SE_MARKETPLACE.descubre, destination: CL_MARKETPLACE.descubre },
-    {
-      source: SE_MARKETPLACE.descubreMapa,
-      destination: CL_MARKETPLACE.descubreMapa,
-    },
-    {
-      source: `${SE_MARKETPLACE.descubre}/:categoria`,
-      destination: `${CL_MARKETPLACE.descubre}/:categoria`,
-    },
-    {
-      source: `${SE_MARKETPLACE.descubre}/:categoria/:ciudad`,
-      destination: `${CL_MARKETPLACE.descubre}/:categoria/:ciudad`,
-    },
-    {
-      source: `${SE_MARKETPLACE.oferta}/:slug`,
-      destination: `${CL_MARKETPLACE.oferta}/:slug`,
-    },
-  ];
-}
-
-/** `{ source, destination }`-par: svensk slug → befintlig (spansk) sidfilsrutt. Bara SE
- * (`next.config.ts` anropar den här funktionen enbart när `NEXT_PUBLIC_MARKET=SE`). */
-export function seRouteRewrites(): { source: string; destination: string }[] {
-  const rutter = (Object.keys(CL_ROUTES) as RouteId[])
-    .filter((id) => id !== "inicio")
-    .map((id) => ({ source: SE_ROUTES[id], destination: CL_ROUTES[id] }));
-  const marknadsSidor = seMarketingPagePairs();
-  const legal = SE_LEGAL_SLUG_LIST.map(({ id, slug }) => ({
-    source: `/legal/${slug}`,
-    destination: `/legal/${id}`,
-  }));
-  const appRutter = (Object.keys(CL_APP_ROUTES) as AppRouteId[]).map((id) => ({
-    source: toRewritePath(SE_APP_ROUTES[id]),
-    destination: toRewritePath(CL_APP_ROUTES[id]),
-  }));
-  return [
-    ...rutter,
-    ...marknadsSidor,
-    ...legal,
-    ...appRutter,
-    ...seMarketplacePairs(),
-    ...cuentaPairs(),
-    ...valesPairs(),
-    ...regaloPairs(),
-  ];
-}
-
-/** `{ source, destination, permanent }`-par: gamla spanska sökvägar → nya svenska (308),
- * så delade/indexerade länkar fortsätter fungera. Bara SE. */
-export function seRouteRedirects(): {
-  source: string;
-  destination: string;
-  permanent: true;
-}[] {
-  const rutter = (Object.keys(CL_ROUTES) as RouteId[])
-    .filter((id) => id !== "inicio")
-    .map((id) => ({
-      source: CL_ROUTES[id],
-      destination: SE_ROUTES[id],
-      permanent: true as const,
-    }));
-  const marknadsSidor = seMarketingPagePairs().map(
-    ({ source, destination }) => ({
-      source: destination,
-      destination: source,
-      permanent: true as const,
-    }),
-  );
-  const legal = SE_LEGAL_SLUG_LIST.map(({ id, slug }) => ({
-    source: `/legal/${id}`,
-    destination: `/legal/${slug}`,
-    permanent: true as const,
-  }));
-  const appRutter = (Object.keys(CL_APP_ROUTES) as AppRouteId[]).map((id) => ({
-    source: toRewritePath(CL_APP_ROUTES[id]),
-    destination: toRewritePath(SE_APP_ROUTES[id]),
-    permanent: true as const,
-  }));
-  const marknadsplats = seMarketplacePairs().map(({ source, destination }) => ({
-    source: destination,
-    destination: source,
-    permanent: true as const,
-  }));
-  const cuenta = [...cuentaPairs(), ...valesPairs(), ...regaloPairs()].map(
-    ({ source, destination }) => ({
-      source: destination,
-      destination: source,
-      permanent: true as const,
-    }),
-  );
-  return [
-    ...rutter,
-    ...marknadsSidor,
-    ...legal,
-    ...appRutter,
-    ...marknadsplats,
-    ...cuenta,
-  ];
-}
-
-/** Gamla svenska sökvägar som bytt namn → nuvarande (308), så delade länkar inte bryts.
- * Hålls utanför `seRouteRedirects()` (som är exakt motsats till rewrites). Bara SE. */
-export function seLegacyRedirects(): {
-  source: string;
-  destination: string;
-  permanent: true;
-}[] {
-  return [
-    // "Flashtider" heter "Blixttider" på svenska.
-    {
-      source: "/flashtider",
-      destination: SE_ROUTES.horasFlash,
-      permanent: true,
-    },
-    // Företagsdemot hette "exempel/foretag" före omdöpningen till "Demo".
-    {
-      source: "/exempel/foretag",
-      destination: SE_ROUTES.ejemploNegocio,
-      permanent: true,
-    },
-    {
-      source: "/ejemplo/negocio",
-      destination: SE_ROUTES.ejemploNegocio,
-      permanent: true,
-    },
-    // Branschsidor före WP-75: `/for/<slug>` och `/para/<id>` → `/branscher/<slug>`.
-    ...Object.entries(SE_LEGACY_FOR_SLUGS).map(([slug, id]) => ({
-      source: `/for/${slug}`,
-      destination: `/branscher/${SE_RUBRO_SLUGS[id]}`,
-      permanent: true as const,
-    })),
-    ...(Object.keys(INDUSTRIA_TO_RUBRO) as IndustriaId[]).map((legacy) => ({
-      source: `/para/${legacy}`,
-      destination: `/branscher/${SE_RUBRO_SLUGS[INDUSTRIA_TO_RUBRO[legacy]]}`,
-      permanent: true as const,
-    })),
-  ];
-}
-
-/** CL: `/para/<id>` → `/rubros/<id>` (308), för delade länkar före WP-75. */
+/** `/para/<id>` → `/rubros/<id>` (308), för delade länkar före WP-75. */
 export function clLegacyRedirects(): {
   source: string;
   destination: string;
@@ -789,12 +369,12 @@ export function clLegacyRedirects(): {
     // Demo del negocio: antes "/ejemplo/negocio".
     {
       source: "/ejemplo/negocio",
-      destination: CL_ROUTES.ejemploNegocio,
+      destination: ROUTES.ejemploNegocio,
       permanent: true as const,
     },
     ...(Object.keys(INDUSTRIA_TO_RUBRO) as IndustriaId[]).map((legacy) => ({
       source: `/para/${legacy}`,
-      destination: `/rubros/${CL_RUBRO_SLUGS[INDUSTRIA_TO_RUBRO[legacy]]}`,
+      destination: `/rubros/${RUBRO_SLUGS[INDUSTRIA_TO_RUBRO[legacy]]}`,
       permanent: true as const,
     })),
   ];

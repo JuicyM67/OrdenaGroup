@@ -8,20 +8,19 @@ function row(over: Partial<MyBookingRow> = {}): MyBookingRow {
   return {
     business_id: "aaaaaaaa-0000-0000-0000-000000000001",
     booking_id: "b1000000-0000-0000-0000-00000000000a",
-    business_name: "Salong Norrsken",
-    slug: "salong-norrsken",
-    timezone: "Europe/Stockholm",
-    address: "Götgatan 1",
-    comuna: "Stockholm",
-    service_name: "Klippning",
-    staff_name: "Ida",
+    business_name: "Estudio Brisa",
+    slug: "estudio-brisa",
+    timezone: "America/Santiago",
+    address: "Av. Providencia 1234",
+    comuna: "Providencia",
+    service_name: "Corte",
+    staff_name: "Diego",
     starts_at: new Date("2026-10-16T12:30:00Z"),
     ends_at: new Date("2026-10-16T13:15:00Z"),
     status: "confirmed",
     price_clp: 65000,
     cancel_window_hours: 24,
     cancel_approval: "none",
-    payment: null,
     review_rating: null,
     review_created_at: null,
     ...over,
@@ -86,16 +85,6 @@ describe("toAccountBooking", () => {
     expect(
       toAccountBooking(row({ ...base, status: "no_show" }), NOW).reviewable,
     ).toBe(false);
-  });
-
-  it("betalning: captured = betald, avbokad = återbetald", () => {
-    expect(toAccountBooking(row({ payment: "captured" }), NOW).payment).toBe(
-      "paid",
-    );
-    expect(
-      toAccountBooking(row({ payment: "captured", status: "cancelled" }), NOW)
-        .payment,
-    ).toBe("refund");
   });
 
   it("splitBookings: kommande stigande, tidigare fallande", () => {

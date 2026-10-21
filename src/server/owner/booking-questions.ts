@@ -13,9 +13,7 @@ import "server-only";
  *
  * Felkoder är data; UI mappar dem via i18n.
  */
-import { market as installationMarket, type Market } from "@/config/brand";
 import * as presetsEs from "@/i18n/presets/booking-questions.es-CL";
-import * as presetsSv from "@/i18n/presets/booking-questions.sv-SE";
 import { pgErrorCode } from "@/server/db/errors";
 import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
@@ -497,19 +495,15 @@ export async function createQuestion(
 
 type Preset = presetsEs.BookingQuestionPreset;
 
-function presetsFor(m: Market): Readonly<Record<string, readonly Preset[]>> {
-  return m === "SE"
-    ? presetsSv.BOOKING_QUESTION_PRESETS
-    : presetsEs.BOOKING_QUESTION_PRESETS;
-}
+const PRESETS: Readonly<Record<string, readonly Preset[]>> =
+  presetsEs.BOOKING_QUESTION_PRESETS;
 
-/** Förslaget för bransch + nyckel på installationens språk, annars undefined. */
+/** Förslaget för bransch + nyckel, annars undefined. */
 export function findPreset(
   industry: string,
   presetKey: string,
-  m: Market = installationMarket,
 ): Preset | undefined {
-  const all = presetsFor(m);
+  const all = PRESETS;
   if (!Object.hasOwn(all, industry)) return undefined;
   return all[industry]?.find((x) => x.key === presetKey);
 }
@@ -524,15 +518,10 @@ export async function activatePreset(
   userId: string,
   businessId: string,
   rawInput: unknown,
-  opts: { market?: Market } = {},
 ): Promise<BookingFormCreateResult> {
   const p = activatePresetInputSchema.safeParse(rawInput);
   if (!p.success) return fail(firstCode(p.error));
-  const preset = findPreset(
-    p.data.industry,
-    p.data.presetKey,
-    opts.market ?? installationMarket,
-  );
+  const preset = findPreset(p.data.industry, p.data.presetKey);
   if (!preset) return fail("preset_not_found");
   const fields = questionFieldsSchema.safeParse({
     label: preset.label,

@@ -6,7 +6,6 @@ import "server-only";
  * (`runs.ts`), Claude eller fejkläget, och mappningen till
  * förhandsgranskningen. Anropas av `POST /api/import/extract`.
  */
-import { market } from "@/config/brand";
 import type { ImportExtractResponse } from "@/lib/validation/import";
 import { withOwnerTx } from "@/server/db/tx";
 import { requireOwnerMember } from "@/server/owner/member";
@@ -135,11 +134,7 @@ export async function extractForImport(
     if (signal?.aborted) return { ok: false, code: "import.cancelled" };
     return {
       ok: true,
-      preview: toPreview(
-        fakeExtraction(market),
-        platform?.name ?? null,
-        existing,
-      ),
+      preview: toPreview(fakeExtraction(), platform?.name ?? null, existing),
     };
   }
 
@@ -147,7 +142,6 @@ export async function extractForImport(
     req.source === "url"
       ? { kind: "url", url: req.url }
       : { kind: "text", text: req.text },
-    market,
     signal,
   );
   await finishRun(

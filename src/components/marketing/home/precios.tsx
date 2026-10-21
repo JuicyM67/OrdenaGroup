@@ -2,7 +2,6 @@
 // `copy.PLANES` (samma som /precios), priserna från `src/config/pricing.ts`. Avgiftsrutan
 // använder `copy.home.precios.nota` (en enda i18n-nyckel per marknad).
 import { PlanCards, PlanCustomBand } from "@/components/marketing/plan-cards";
-import { anchor } from "@/config/url-params";
 import { copy } from "@/i18n/marketing";
 
 import { HomeHeading } from "./home-heading";
@@ -11,7 +10,7 @@ const t = copy.home.precios;
 
 export function Precios() {
   return (
-    <section id={anchor("precios")} className="scroll-mt-24 bg-surface">
+    <section id="precios" className="scroll-mt-24 bg-surface">
       <div className="mx-auto flex max-w-360 flex-col gap-9 px-4 py-16 sm:px-8 lg:px-22 lg:py-30">
         <div className="flex flex-col items-center gap-4 text-center">
           <HomeHeading

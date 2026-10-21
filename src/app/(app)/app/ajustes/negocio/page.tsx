@@ -8,9 +8,8 @@ import { logout } from "@/app/auth/actions";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { BusinessSection } from "@/components/settings/business-section";
 import { ImportSection } from "@/components/settings/import-section";
-import { market } from "@/config/brand";
 import { nav } from "@/i18n";
-import { platformNamesFor } from "@/server/import/platforms";
+import { platformNames } from "@/server/import/platforms";
 import { isImportEnabled, isImportPaused } from "@/server/import/runs";
 import { loadAjustesBusiness } from "@/server/owner/ajustes";
 
@@ -62,7 +61,7 @@ export default async function AjustesNegocioPage() {
       <div className="flex flex-col gap-6">
         {showImport ? (
           <ImportSection
-            platformNames={platformNamesFor(market)}
+            platformNames={platformNames()}
             action={applyImportAction}
           />
         ) : null}

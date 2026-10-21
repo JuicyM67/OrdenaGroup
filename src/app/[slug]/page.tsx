@@ -1,6 +1,6 @@
 // Publik bokningssida (F5). Riktig data sedan WP-20 (D-020s grind för
 // `/[slug]` togs bort i samma PR, se docs/decisions/DECISIONS.md).
-import { readParam, queryString, anchor } from "@/config/url-params";
+import { readParam, queryString } from "@/config/url-params";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -260,7 +260,7 @@ export default async function ReservaPage({
   // `ProfileBrowse`s markup/text/formatering hamnar i klientbunten.
   const reviewsMoreHref =
     reviews?.hasMore && reviews.items.length < PUBLIC_REVIEWS_MAX
-      ? `${queryString("resenas", reviews.items.length + PUBLIC_REVIEWS_PAGE * 4)}#${anchor("resenas")}`
+      ? `${queryString("resenas", reviews.items.length + PUBLIC_REVIEWS_PAGE * 4)}#resenas`
       : undefined;
   // WP-72: guidad visning, bara på demoföretaget (aldrig riktiga företag).
   const isDemo = slug === brand.demoSlug;

@@ -2,20 +2,14 @@
 # WP-26/27: lägger in SUPABASE_SERVICE_ROLE_KEY (Supabase "secret"-nyckel) i Vercel,
 # behövs för att purgeBusiness ska kunna tömma bildmappen via Storage API.
 # Körs av ägaren i egen terminal:
-#   bash scripts/set-service-key.sh        # Chile (ordenagroup)
-#   bash scripts/set-service-key.sh se     # Sverige (bookingbuddy)
+#   bash scripts/set-service-key.sh        # ordenagroup
 # Frågar efter Supabase access token (visas inte). Skriver aldrig ut nyckeln.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 SCOPE="matias-lopezs-projects-c1b12c12"
-if [ "${1:-cl}" = "se" ]; then
-  read -rp "Supabase project ref för Booking Buddy (Settings → General): " REF
-  VERCEL_PROJECT="bookingbuddy"
-else
-  REF="bligjpmisejtdnbfwhqx"
-  VERCEL_PROJECT="ordenagroup"
-fi
+REF="bligjpmisejtdnbfwhqx"
+VERCEL_PROJECT="ordenagroup"
 read -rsp "Supabase access token (sbp_…): " TOKEN; echo
 
 KEY=$(curl -fsS -H "Authorization: Bearer $TOKEN" \

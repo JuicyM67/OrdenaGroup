@@ -4,11 +4,7 @@ import type { AccountBooking } from "@/server/accounts/view";
 import { cuenta } from "@/i18n";
 
 export function statusLabel(b: AccountBooking): string {
-  const e = cuenta.estados;
-  if (b.payment === "paid" && b.status !== "cancelled") return e.pagada;
-  if (b.payment === "reserved" && b.status !== "cancelled") return e.reservada;
-  if (b.payment === "refund") return e.reembolso;
-  return e[b.status];
+  return cuenta.estados[b.status];
 }
 
 export function StatusBadge({ booking }: { booking: AccountBooking }) {

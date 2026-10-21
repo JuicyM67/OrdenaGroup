@@ -490,9 +490,7 @@ describe("ägarens CRUD", () => {
     const b2 = await createTestBusiness();
     try {
       const input = { industry: "barberias", presetKey: "estilo_barba" };
-      const a = await activatePreset(b2.ownerUserId, b2.id, input, {
-        market: "CL",
-      });
+      const a = await activatePreset(b2.ownerUserId, b2.id, input);
       expect(a.ok).toBe(true);
       if (!a.ok) return;
       expect(
@@ -500,9 +498,7 @@ describe("ägarens CRUD", () => {
       ).toEqual({
         ok: true,
       });
-      const again = await activatePreset(b2.ownerUserId, b2.id, input, {
-        market: "CL",
-      });
+      const again = await activatePreset(b2.ownerUserId, b2.id, input);
       expect(again).toEqual({ ok: true, id: a.id });
       const qs = await getQuestionsForService(b2.id, b2.services.corte!);
       expect(qs).toMatchObject([{ id: a.id, kind: "single_choice" }]);

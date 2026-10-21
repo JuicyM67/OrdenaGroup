@@ -1,13 +1,11 @@
 /**
- * Namntabeller per språk (calendar-es-CL.ts, calendar-sv-SE.ts) och tabellerna
- * för den här installationens språk (`marketConfig.locale`, D-025).
+ * Namntabellerna (calendar-es-CL.ts) för appens språk (`marketConfig.locale`).
  */
 import { marketConfig } from "@/config/market";
 
 import * as esCL from "./calendar-es-CL";
-import * as svSE from "./calendar-sv-SE";
 
-export type CalendarLocale = "es-CL" | "sv-SE";
+export type CalendarLocale = typeof marketConfig.locale;
 
 export type CalendarNames = {
   readonly WEEKDAY_LONG: readonly string[];
@@ -19,14 +17,13 @@ export type CalendarNames = {
 
 const TABLES: Record<CalendarLocale, CalendarNames> = {
   "es-CL": esCL,
-  "sv-SE": svSE,
 };
 
 export function calendarNames(locale: CalendarLocale): CalendarNames {
   return TABLES[locale];
 }
 
-/** Appens språk (installationens marknad). */
+/** Appens språk. */
 export const APP_LOCALE: CalendarLocale = marketConfig.locale;
 
 const app = TABLES[APP_LOCALE];

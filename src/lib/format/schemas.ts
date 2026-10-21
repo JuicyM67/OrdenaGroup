@@ -91,13 +91,13 @@ function withPhoneKey(
   return r.ok ? r : { ok: false, error: phoneErrorKey(r.error) };
 }
 
-/** Kundens telefon (F5/F9) i installationens land: bara mobilnummer. */
+/** Kundens telefon (F5/F9): bara mobilnummer. */
 export const mobileInputSchema: z.ZodType<E164, string> = fromParser(
   "phone",
   (s) => withPhoneKey(parsePhone(s)),
 );
 
-/** Företagets telefon (F1) i installationens land: mobil eller fast. */
+/** Företagets telefon (F1): mobil eller fast. */
 export const phoneInputSchema: z.ZodType<E164, string> = fromParser(
   "phone",
   (s) => withPhoneKey(parsePhone(s, { allow: "mobile_or_fixed" })),
@@ -109,14 +109,14 @@ function chilean(allow: PhoneAllow): z.ZodType<E164, string> {
   );
 }
 
-/** Bara chilenska mobilnummer, oavsett marknad. Appen använder `mobileInputSchema`. */
+/** Bara chilenska mobilnummer. Appen använder `mobileInputSchema`. */
 export const chileanMobileInputSchema = chilean("mobile");
 
-/** Bara chilenska nummer, oavsett marknad. Appen använder `phoneInputSchema`. */
+/** Bara chilenska nummer. Appen använder `phoneInputSchema`. */
 export const chileanPhoneInputSchema = chilean("mobile_or_fixed");
 
 /**
- * Prisfält i installationens valuta → minsta enheten (CLP: pesos, SEK: öre).
+ * Prisfält → minsta enheten (CLP: pesos).
  * Felkoderna har prefixet "clp" (samma i18n-nycklar, `validacion.clp.*`).
  */
 export const moneyInputSchema: z.ZodType<MoneyMinor, string> = fromParser(

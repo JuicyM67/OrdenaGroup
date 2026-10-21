@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import { allBrandNames, brand, parseMarket } from "./brand";
+import { allBrandNames, brand } from "./brand";
 
 const currentFile = fileURLToPath(import.meta.url);
 
@@ -22,13 +22,6 @@ describe("brand", () => {
       brand.supportWhatsapp === null ||
         typeof brand.supportWhatsapp === "string",
     ).toBe(true);
-  });
-});
-
-describe("parseMarket", () => {
-  it("defaults to CL and accepts SE", () => {
-    expect(parseMarket(undefined)).toBe("CL");
-    expect(parseMarket("SE")).toBe("SE");
   });
 });
 
