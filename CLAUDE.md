@@ -4,6 +4,8 @@
 
 > **Bara Chile.** Repot innehåller bara Ordena Calendar (Chile). Den svenska verksamheten har ett eget repo sedan D-062. Lägg inte till marknadsval, svenska texter eller svenska funktioner här.
 
+> **Repot är publikt (D-064/D-065).** Committa aldrig hemligheter, kunddata, personliga e-postadresser eller interna dokument. `docs/tasks/`, `docs/gtm/`, `docs/research/`, `VISION.md`, `ROADMAP.md` och `JURIST_FRAGOR.md` finns bara lokalt (gitignorerade) — läs och uppdatera dem, men de följer aldrig med i en commit. I en ny worktree: kopiera dem från `~/OrdenaGroup`.
+
 ## Läs detta först (i ordning)
 1. `docs/product/VISION.md` — tankesättet. Styr alla avvägningar.
 2. `docs/product/MVP_SPEC.md` — vad som ska byggas (funktioner F1–F19 med "klart när").
@@ -34,7 +36,7 @@ Next.js App Router + TypeScript strict (`src/`) · Tailwind v4 med tokens · Rad
 - **Små PR:er**, en per arbetspaket eller delsteg. Branch: `wp/<id>-<kort-namn>`.
 - **Parallellt arbete** sker i separata git worktrees (se README). Två agenter rör aldrig samma filer samtidigt. Ägarskap per mapp står i BACKLOG.
 - **Klart = testat:** `npm run typecheck && npm run lint && npm run test` gröna, plus `npm run visual` för UI och `npm run test:db` för databas.
-- Uppdatera `docs/tasks/BACKLOG.md` (status) och vid behov `DECISIONS.md` i samma PR.
+- Uppdatera `docs/tasks/BACKLOG.md` (status, bara lokalt) och vid behov `DECISIONS.md` (i PR:en).
 
 ## Agenter (`.claude/agents/`)
 | Agent | Ansvar | Äger |
