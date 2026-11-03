@@ -2,7 +2,7 @@
 // följande admins läggs till i /admin/administradores. Körs av en människa
 // — aldrig mot produktion från en agent (regel hård 8).
 //
-//   npm run admin:add -- mattiasa14@gmail.com                    # lokal databas
+//   npm run admin:add -- <din-e-post>                    # lokal databas
 //   DATABASE_URL=… npm run admin:add -- <e-post> --confirm-remote  # staging m.fl.
 //   npm run admin:add -- <e-post> --dry-run   # provkör i en transaktion som rullas tillbaka
 //
