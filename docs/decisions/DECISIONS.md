@@ -4,6 +4,13 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-064 · 2026-11-03 · Schemaläggning utanför GitHub Actions; repot publikt (ersätter D-030:s schemaläggardel)
+**Beslut:** `/api/cron/outbox` anropas var 5:e minut av cron-job.org (GET, `Authorization: Bearer $CRON_SECRET`). `/api/cron/retention` körs av Vercel Cron en gång per dygn (`vercel.json`, 09:00 UTC; Vercel skickar `CRON_SECRET` själv). Arbetsflödena `outbox-cron.yml`/`retention-cron.yml` finns kvar men bara för manuell körning (`workflow_dispatch`). Repot `JuicyM67/OrdenaGroup` är publikt.
+**Varför:** schemat var 5:e minut åt upp gratiskvoten i GitHub Actions (varje körning räknas som minst 1 min) och stoppade CI, migrationer och crons; GitHubs schemaläggning var dessutom flera timmar sen. Publikt repo ger obegränsade Actions-minuter. Historiken skannades med gitleaks före bytet (inga riktiga nycklar).
+**Konsekvens:** byts `CRON_SECRET` måste den uppdateras i Vercel (production), i cron-job.org och i GitHub-hemligheten. Inga hemligheter, kunddata eller privata anteckningar får committas — allt i repot är offentligt.
+
+---
+
 ### D-062 · 2026-10-21 · Uppdelning i två repon: OrdenaGroup (CL) och BookingBuddy (SE)
 **Varför:** ägarens beslut 2026-10-21: Chile (Ordena Calendar) och Sverige (Booking Buddy) är två olika verksamheter med egna prioriteringar, leverantörer och regelverk. En gemensam kodbas med marknadsväxlar (`NEXT_PUBLIC_MARKET`) gjorde varje ändring dyrare och riskerade att svenska funktioner påverkade Chile och tvärtom. **Konsekvens:**
 - **Ersätter D-025:s "en kodbas för båda marknaderna".** Det här repot (OrdenaGroup) är bara Chile. Sverige har flyttat till repot `Effektiv-Media/BookingBuddy`, som utgår från commit `0a1f7be` i det här repot. D-026 (varumärke per marknad), D-027 (Stripe-abonnemang i SE) och D-028 (SMS via ClickSend i SE) gäller inte längre här, liksom de rena SE-besluten D-044, D-047, D-049, D-053, D-057 och D-058 — de lever vidare i BookingBuddy.

@@ -1,5 +1,7 @@
 name: Outbox cron
 
+# D-064: inget schema här längre (Actions-kvoten tog slut). Schemat körs av
+# cron-job.org var 5:e minut; den här workflown är bara för manuell körning.
 # D-030: schemaläggaren för `message_outbox` är GitHub Actions, inte
 # pg_cron/pg_net (WP-16). Anropar `/api/cron/outbox` var 5:e minut
 # (repo-hemligheterna sätts manuellt av ägaren, aldrig av en agent).
@@ -8,8 +10,6 @@ name: Outbox cron
 # sena) och omförsök (backoff).
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions:
