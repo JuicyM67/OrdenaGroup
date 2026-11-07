@@ -175,7 +175,7 @@ export const reserva = {
       `Reserva gestionada por ${brand.name} para ${p.negocio}.`,
   },
   header: {
-    confirmacionWhatsapp: "Confirmación por WhatsApp",
+    confirmacionWhatsapp: "Confirmación por correo o WhatsApp",
     /** "{dias} · {rango}", p. ej. "Lun–Sáb · 10:00–19:00" (ambos ya
      * formateados por WP-04). */
     horario: (p: { dias: string; rango: string }): string =>
@@ -324,7 +324,7 @@ export const reserva = {
   confirmacion: {
     titulo: "¡Listo, tu hora quedó reservada!",
     resumenTitulo: "Resumen de tu reserva",
-    avisoWhatsapp: "Te enviamos la confirmación por WhatsApp.",
+    avisoWhatsapp: "Te enviamos la confirmación por correo, o por WhatsApp si lo elegiste.",
     descuentoSocio: (p: { descuento: string }): string =>
       `Descuento socio: −${p.descuento}`,
     /** WP-31: descuento por el link de una oferta (gana el mayor, no se suman). */

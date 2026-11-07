@@ -1,6 +1,5 @@
-// WP-16 steg 2: schemaläggaren är GitHub Actions (D-030), inte pg_cron/
-// pg_net — `.github/workflows/outbox-cron.yml` anropar den här routen var
-// 5:e minut med `CRON_SECRET`.
+// Schemaläggare: cron-job.org var 5:e minut (D-064, ersätter D-030), inte pg_cron/
+// pg_net; anropet skickar `Authorization: Bearer $CRON_SECRET`.
 // Bekräftelser går ändå ut inom 1 min via `kickOutbox` (oberoende av cronen);
 // det här passet tar hand om påminnelser (24 h) och rader som misslyckades
 // första gången (backoff).

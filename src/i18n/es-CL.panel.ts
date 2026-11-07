@@ -351,7 +351,7 @@ export const agenda = {
     bloqueosYAlmuerzo: "Bloqueos y almuerzo",
     esperanEl: (p: { n: number; dia: string }): string =>
       `${p.n} ${p.n === 1 ? "espera" : "esperan"} el ${p.dia}`,
-    avisoWhatsapp: "Se avisa solo por WhatsApp",
+    avisoWhatsapp: "Se avisa por WhatsApp o por correo",
     /** Aviso al desmarcar el último profesional visible en "Mostrar en la
      * agenda": siempre debe quedar al menos uno, para no dejar la semana
      * vacía sin darse cuenta. */

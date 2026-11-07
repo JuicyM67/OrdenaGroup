@@ -1,5 +1,7 @@
 name: Retention cron
 
+# D-064: inget schema här längre (Actions-kvoten tog slut). Schemat körs av
+# Vercel Cron (vercel.json) 09:00 UTC; den här workflown är bara för manuell körning.
 # WP-26 steg 4: lagringsjobbet (F12). Samma mönster som
 # `.github/workflows/outbox-cron.yml` (D-030): GitHub Actions är
 # schemaläggaren, inte pg_cron/pg_net. Anropar `/api/cron/retention` en
@@ -9,8 +11,6 @@ name: Retention cron
 # ångerfrist gått ut.
 
 on:
-  schedule:
-    - cron: "0 9 * * *"
   workflow_dispatch:
 
 permissions:

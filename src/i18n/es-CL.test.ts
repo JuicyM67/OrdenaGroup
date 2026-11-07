@@ -924,11 +924,6 @@ describe("paridad de diseño", () => {
   const casos: Array<{ clave: string; texto: string; archivo: string }> = [
     // Reserva
     {
-      clave: "reserva.header.confirmacionWhatsapp",
-      texto: reserva.header.confirmacionWhatsapp,
-      archivo: "Reserva",
-    },
-    {
       clave: "reserva.pasos.servicio",
       texto: reserva.pasos.servicio,
       archivo: "Reserva",
@@ -1207,11 +1202,6 @@ describe("paridad de diseño", () => {
       archivo: "Agenda",
     },
     {
-      clave: "agenda.panel.avisoWhatsapp",
-      texto: agenda.panel.avisoWhatsapp,
-      archivo: "Agenda",
-    },
-    {
       clave: "agenda.bloqueo.almuerzo",
       texto: agenda.bloqueo.almuerzo,
       archivo: "Agenda",
@@ -1472,6 +1462,9 @@ describe("paridad inversa: todo texto del diseño tiene dueño", () => {
     "Martina Lagos", // clienta de ejemplo (Agenda, popover)
     "Corte clásico", // servicio de ejemplo (Agenda, popover)
     "Joaquín Rivas", // cliente de ejemplo (Hoy)
+    // D-063: WhatsApp es opcional; la copy real dice "correo o WhatsApp".
+    "Confirmación por WhatsApp", // Reserva (header)
+    "Se avisa solo por WhatsApp", // Agenda (lista de espera)
   ];
 
   // Se arma dentro de cada `it`: `muestras` se completa cuando corren los tests

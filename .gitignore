@@ -17,3 +17,11 @@ supabase/.temp
 *.log
 next-env.d.ts
 src/types/database.ts.tmp
+
+# Interna dokument (D-065): finns bara lokalt, aldrig i det publika repot
+/docs/gtm/
+/docs/research/
+/docs/product/VISION.md
+/docs/product/ROADMAP.md
+/docs/legal/JURIST_FRAGOR.md
+/docs/tasks/
