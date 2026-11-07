@@ -33,6 +33,8 @@ export const adminPanel = {
     activo: "Activo",
     congelado: "Congelado",
     borrar: "Eliminación pedida",
+    /** WP-83 (D-068): el dueño eligió un plan pagado al registrarse. */
+    quierePlan: (p: { plan: string }): string => `Quiere ${p.plan}`,
     vacio: "Ningún negocio coincide.",
     abrir: (p: { nombre: string }): string => `Abrir ${p.nombre}`,
     sinDueno: "Sin dueño",

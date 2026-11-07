@@ -40,6 +40,8 @@ export type BusinessListItem = {
   readonly status: BusinessStatus;
   readonly billingMode: BillingMode;
   readonly deletionRequestedAt: string | null;
+  /** WP-83 (D-068): plan pagado que el dueño pidió al registrarse. */
+  readonly planRequested: BusinessPlan | null;
   readonly ownerEmail: string | null;
   readonly createdAt: string;
   /** WP-84 (D-069): kortens innehåll (rubro, comuna, bild, redo för Descubre). */
@@ -97,6 +99,7 @@ export async function listBusinesses(
       status: BusinessStatus;
       billing_mode: string;
       deletion_requested_at: string | null;
+      plan_requested: BusinessPlan | null;
       owner_user_id: string | null;
       created_at: string;
       category: string;
@@ -107,7 +110,7 @@ export async function listBusinesses(
       has_services: boolean;
     }>(
       `select b.id, b.name, b.slug, b.plan, b.plan_override_until, b.status,
-              b.billing_mode, b.deletion_requested_at, b.created_at,
+              b.billing_mode, b.deletion_requested_at, b.plan_requested, b.created_at,
               b.category, b.comuna,
               coalesce(nullif(btrim(b.logo_url), ''), nullif(btrim(b.cover_url), '')) as image_url,
               (select m.user_id from public.memberships m
@@ -134,6 +137,7 @@ export async function listBusinesses(
     status: row.status,
     billingMode: row.billing_mode === "manual" ? "manual" : "app",
     deletionRequestedAt: row.deletion_requested_at,
+    planRequested: row.plan_requested,
     ownerEmail: row.owner_user_id
       ? (emails.get(row.owner_user_id) ?? null)
       : null,
@@ -184,6 +188,9 @@ export type BusinessDetail = {
   /** Intern anteckning (private.business_billing_notes), bara /admin. */
   readonly billingNote: string | null;
   readonly deletionRequestedAt: string | null;
+  /** WP-83 (D-068): plan pagado pedido al registrarse, y cuándo. */
+  readonly planRequested: BusinessPlan | null;
+  readonly planRequestedAt: string | null;
   readonly createdAt: string;
   readonly counts: {
     readonly bookings: number;
@@ -211,11 +218,13 @@ export async function getBusinessDetail(
       billing_mode: string;
       billing_note: string | null;
       deletion_requested_at: string | null;
+      plan_requested: BusinessPlan | null;
+      plan_requested_at: string | null;
       created_at: string;
     }>(
       `select b.id, b.name, b.slug, b.comuna, b.category, b.plan, b.plan_override_until,
               b.custom_limits, b.status, b.billing_mode, n.note as billing_note,
-              b.deletion_requested_at, b.created_at
+              b.deletion_requested_at, b.plan_requested, b.plan_requested_at, b.created_at
          from public.businesses b
          left join private.business_billing_notes n on n.business_id = b.id
         where b.id = $1`,
@@ -269,6 +278,8 @@ export async function getBusinessDetail(
     billingMode: data.business.billing_mode === "manual" ? "manual" : "app",
     billingNote: data.business.billing_note,
     deletionRequestedAt: data.business.deletion_requested_at,
+    planRequested: data.business.plan_requested,
+    planRequestedAt: data.business.plan_requested_at,
     createdAt: data.business.created_at,
     counts: {
       bookings: data.bookings,

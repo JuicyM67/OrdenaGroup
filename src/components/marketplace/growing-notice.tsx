@@ -5,7 +5,7 @@ import { ArrowRight, Sprout } from "lucide-react";
 import Link from "next/link";
 
 import { cn } from "@/components/ui/cn";
-import { href } from "@/config/routes";
+import { href, SIGNUP_PATH } from "@/config/routes";
 import { descubre } from "@/i18n";
 
 const t = descubre.creciendo;
@@ -32,7 +32,7 @@ export function GrowingNotice({ className }: { className?: string }) {
       </span>
       <span className="flex shrink-0 flex-col gap-2 sm:items-end">
         <Link
-          href="/login"
+          href={SIGNUP_PATH}
           className="flex h-11 w-fit items-center gap-2 rounded-full bg-ink px-5 text-14 font-bold text-on-dark transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
           {t.paraNegocios}

@@ -122,6 +122,11 @@ export function AdminBusinessCard({
             {b.deletionRequestedAt ? (
               <Chip tone="alert">{t.borrar}</Chip>
             ) : null}
+            {b.planRequested && b.planRequested !== b.plan ? (
+              <Chip tone="alert">
+                {t.quierePlan({ plan: planes.nombres[b.planRequested] })}
+              </Chip>
+            ) : null}
           </span>
         </div>
         <div className="flex flex-col items-end gap-1.5">

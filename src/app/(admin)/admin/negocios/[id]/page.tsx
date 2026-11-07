@@ -236,6 +236,17 @@ export default async function AdminBusinessDetailPage({
 
           <section className="flex flex-col gap-3 rounded-card bg-surface p-6 fields-on-surface">
             <h2 className="text-18 font-bold text-ink">Plan</h2>
+            {business.planRequested &&
+            business.planRequested !== business.plan ? (
+              <p className="text-13 font-semibold text-ink">
+                {adminPanel.lista.quierePlan({
+                  plan: planes.nombres[business.planRequested],
+                })}
+                {business.planRequestedAt
+                  ? ` · ${new Date(business.planRequestedAt).toLocaleString("es-CL")}`
+                  : null}
+              </p>
+            ) : null}
             {business.billingMode === "manual" ? (
               <p className="text-13 text-ink-soft">
                 {adminPanel.facturacion.planBloqueado}
