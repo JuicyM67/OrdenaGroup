@@ -11,6 +11,7 @@ import type { Clp } from "@/lib/format/clp";
 // `booking/types.ts`, WP-40).
 import type { BookingAnswerView } from "@/server/booking-questions/answers";
 import type { Database } from "@/types/database";
+import type { BookingPackageInfo } from "@/components/packages/types";
 
 /** 1..6, se `--color-staff-1`…`--color-staff-6` i tokens.css. */
 export type StaffColor = 1 | 2 | 3 | 4 | 5 | 6;
@@ -65,6 +66,9 @@ export type AgendaBooking = {
   /** WP-54: `customers.is_member`. Saknas i design lab/äldre fixturer →
    * ingen "Socio"-chip i popovern. */
   readonly isMember?: boolean;
+  /** WP-86 (D-072): paket som täcker bokningen eller redan använts för den.
+   * Saknas = inget paket att visa. */
+  readonly packageInfo?: BookingPackageInfo;
 };
 
 export type AgendaBlock = {

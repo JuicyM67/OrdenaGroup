@@ -643,6 +643,8 @@ export { widgets } from "./es-CL.widgets";
 export { compartir } from "./es-CL.compartir";
 // WP-87 (D-073): tarjetas de regalo (venta en el local).
 export { regalo } from "./es-CL.regalo";
+// WP-86 (D-072): paquetes de sesiones.
+export { paquetes } from "./es-CL.paquetes";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).
 export {

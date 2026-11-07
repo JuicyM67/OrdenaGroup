@@ -132,11 +132,20 @@ export async function markBookingPaid(
                     where p.business_id = bk.business_id and p.booking_id = bk.id
                       and p.status = 'approved' and p.kind = 'deposit'
                  ), 0))::int as due,
-                exists (
+                (exists (
                   select 1 from public.payments p
                    where p.business_id = bk.business_id and p.booking_id = bk.id
                      and p.status = 'approved' and p.kind in ('full', 'balance')
-                ) as paid_full
+                ) or exists (
+                  -- WP-86 (D-072): betald med paket (ej ångrad inlösen).
+                  select 1 from public.customer_package_moves m
+                   where m.business_id = bk.business_id and m.booking_id = bk.id
+                     and m.kind = 'redeem'
+                     and not exists (
+                       select 1 from public.customer_package_moves r
+                        where r.business_id = m.business_id and r.reverses_id = m.id
+                     )
+                )) as paid_full
            from public.bookings bk
           where bk.business_id = $1 and bk.id = $2`,
         [businessId, bookingId],

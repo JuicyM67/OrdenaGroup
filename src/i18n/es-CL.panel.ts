@@ -3587,6 +3587,8 @@ export const planes = {
     offers: "Ofertas en el marketplace",
     // TODO_COPY (WP-87, D-073)
     gift_cards: "Tarjetas de regalo",
+    // WP-86 (D-072). TODO_COPY
+    packages: "Paquetes de sesiones",
     priority_support: "Soporte prioritario",
   },
   bloqueo: {
@@ -3603,6 +3605,9 @@ export const planes = {
       offers: "Mejora tu plan y vende tus servicios a clientes nuevos.",
       // TODO_COPY (WP-87, D-073)
       gift_cards: "Mejora tu plan y vende tarjetas de regalo en tu local.",
+      // WP-86 (D-072). TODO_COPY
+      packages:
+        "Mejora tu plan y vende paquetes de sesiones que tus clientes pagan por adelantado.",
       priority_support: "Mejora tu plan y te atendemos primero.",
     },
     verPlanes: "Ver planes",

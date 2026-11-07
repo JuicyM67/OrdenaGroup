@@ -54,6 +54,10 @@ import { removeWaitlistEntry } from "@/server/waitlist";
 
 import { markPaidAction, undoPaymentAction } from "../caja/actions";
 import {
+  undoPackageUseAction,
+  redeemPackageAction,
+} from "../caja/package-actions";
+import {
   confirmMyPhotoUploadAction,
   createMyPhotoUploadAction,
   deleteMyPhotoAction,
@@ -318,6 +322,10 @@ export default async function AppAgendaPage({
       initialManualCustomer={initialManualCustomer ?? undefined}
       onMarkPaid={markPaidAction}
       onUndoPayment={undoPaymentAction}
+      packageActions={{
+        redeem: redeemPackageAction,
+        undo: undoPackageUseAction,
+      }}
       manualMethods={MANUAL_METHODS}
     />
   );

@@ -242,6 +242,7 @@ export type AppRouteId =
   | "appAjustesPlan"
   | "appAjustesWidgets"
   | "appAjustesCompartir"
+  | "appAjustesPaquetes"
   | "appSolicitud"
   | "appInvitacion"
   | "appBienvenida"
@@ -265,6 +266,7 @@ export const AJUSTES_TAB_ROUTE_IDS = {
   plan: "appAjustesPlan",
   widgets: "appAjustesWidgets",
   compartir: "appAjustesCompartir",
+  paquetes: "appAjustesPaquetes",
 } as const satisfies Record<string, AppRouteId>;
 
 /** Filsystemets sökväg, med `[id]`/`[token]` som platshållare för dynamiska
@@ -300,6 +302,8 @@ const APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesWidgets: "/app/ajustes/widgets",
   // WP-89 (D-075): bokningslänken, QR och guider per kanal.
   appAjustesCompartir: "/app/ajustes/compartir",
+  // WP-86 (D-072): paketmallar.
+  appAjustesPaquetes: "/app/ajustes/paquetes",
   appSolicitud: "/app/solicitudes/[id]",
   appInvitacion: "/app/invitacion/[token]",
   appBienvenida: "/app/bienvenida/[token]",

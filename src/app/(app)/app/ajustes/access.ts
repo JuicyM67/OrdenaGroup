@@ -63,6 +63,7 @@ export type AjustesPageContext = {
 const TAB_FEATURE: Partial<Record<AjustesTabKey, Feature>> = {
   socios: "campaigns",
   equipo: "staff_accounts",
+  paquetes: "packages",
 };
 
 function lockedTabs(plan: PlanInfo): Set<AjustesTabKey> {
