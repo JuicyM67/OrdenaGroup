@@ -4,6 +4,16 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-071 · 2026-11-07 · Domänen är ordenagroup.cl; brandade inloggningsmejl; Descubre synligt som standard bekräftat
+**Beslut:** ägaren (2026-11-07): appen och marknadssajten ligger på `https://ordenagroup.cl` (`brand.domain`, `NEXT_PUBLIC_APP_URL`, Supabase Auth Site URL). `www.ordenagroup.cl` pekar på samma projekt. `ordenacalendar.vercel.app` fortsätter svara, så redan inklistrade widgetkoder och cron-job.org fungerar.
+**Varför:** widgetkoder och WhatsApp-mallarnas URL-knappar låser domänen; den behövde bestämmas före lansering. **Konsekvens:**
+- `brand.domain = "ordenagroup.cl"`: kontaktsidan visar `hola@ordenagroup.cl`, länkar i appen visar `ordenagroup.cl/<slug>`.
+- WhatsApp-mallarna med URL-knapp (`reserva_confirmada`, `reserva_cancelada`, `reserva_movida`) har `dominioPendiente: false` och kan skickas till Meta med basen `https://ordenagroup.cl/r/`.
+- Inloggningsmejlen (`supabase/templates/es-CL/`) har appikonen från `{{ .SiteURL }}/apple-icon` i stället för en prick och en sidfot med varumärket. Driftade mallar sätts i Supabase-dashboarden (Authentication → Email Templates), med OTP-längd 6 och giltighet 900 s.
+- Descubre (D-070): ägaren bekräftar att aktiva företag med bild, adress och en aktiv tjänst syns automatiskt; ägaren kan stänga av det i Ajustes.
+
+---
+
 ### D-070 · 2026-11-07 · Descubre blir en företagskatalog med 16 kategorier (WP-85; port av SE:s D-073, bygger på D-055/D-060)
 **Beslut:** `/descubre` visar **negocios** per kategori och comuna, med flikarna **Negocios** (förvald, `/descubre[/<kategori>[/<comuna>]]`) · **Ofertas** (`/descubre/ofertas?kategori=`, erbjudandelistan från WP-68, bokas till erbjudandepris och betalas i salongen enligt D-060) · **Horas flash** (`/descubre/horas-flash`). Kartan visar fortfarande erbjudanden; dess "Ver lista" leder till Ofertas.
 - **16 kategorier, en gemensam lista** för rubro (`businesses.category`, `RUBRO_KEYS` i `src/config/rubros.ts`) och Descubre, 1:1 via `categoryForRubro`: Peluquería, Barbería, Uñas, Pestañas y cejas, Estética, Maquillaje y depilación, Masajes, Spa, Kinesiología y salud, Terapias holísticas, Entrenamiento y yoga, Tatuajes y piercing, Mascotas, Limpieza y hogar, Autos, Otros. Utgår från de befintliga rubros och `/rubros`-sidorna (WP-75); 8 nya rubros (`belleza`, `spa`, `holistico`, `entrenamiento`, `tatuajes`, `mascotas`, `limpieza`, `automotriz`). Interna kategori-id:n är desamma som i SE (CHECK på `offers.category`); URL-slugsen är spanska (`peluquerias`, `barberias`, …). Gamla `/descubre/cabello` fungerar som alias. `kinesiologia` flyttar från Masajes till Kinesiología y salud.

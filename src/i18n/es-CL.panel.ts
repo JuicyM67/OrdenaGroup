@@ -611,7 +611,7 @@ export const plantillasWhatsapp = {
           fuente:
             "token de gestión aleatorio de 32 bytes en base64url (43 caracteres), generado por el servidor al enviar; en la base se guarda solo su hash; el link nunca se deriva del hash",
         },
-        dominioPendiente: true,
+        dominioPendiente: false,
       },
     ],
     nota: "Utility: confirma una reserva que el propio cliente acaba de hacer. No ofrece nada nuevo, solo detalla su compra.",
@@ -700,7 +700,7 @@ export const plantillasWhatsapp = {
           ejemplo: "barberia-norte",
           fuente: "businesses.slug",
         },
-        dominioPendiente: true,
+        dominioPendiente: false,
       },
     ],
     nota: "Utility: confirma la cancelación de la propia reserva del cliente. El botón lleva a la página de reservas del mismo negocio, sin descuentos ni texto de venta (R5: riesgo de reclasificación a marketing si se agrega algún incentivo).",
@@ -752,7 +752,7 @@ export const plantillasWhatsapp = {
           fuente:
             "token de gestión aleatorio de 32 bytes en base64url (43 caracteres), generado por el servidor al enviar; en la base se guarda solo su hash; el link nunca se deriva del hash. WP-16 genera un token nuevo cada vez que se reenvía esta plantilla.",
         },
-        dominioPendiente: true,
+        dominioPendiente: false,
       },
     ],
     nota: "Utility: informa un cambio en la propia reserva del cliente, hecho por el negocio.",
