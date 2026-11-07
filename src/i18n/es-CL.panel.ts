@@ -1449,7 +1449,6 @@ export const acceso = {
     /** Estado del botón `cta` mientras se envía la solicitud. */
     enviando: "Enviando…",
     sinContrasena: "No necesitas contraseña.",
-    cuentaNueva: "Si es tu primera vez, creamos tu cuenta al tiro.",
     /** Botón de vuelta a la página de inicio (arriba a la izquierda). */
     volver: "Volver al inicio",
     /** Texto grande del panel con foto. */
@@ -1458,12 +1457,44 @@ export const acceso = {
     /** Título y bajada de la tarjeta (el h1 de la página). */
     cardTitulo: "Entra a tu agenda",
     cardTexto:
-      "Te enviamos un link a tu correo: no hay contraseña que recordar.",
+      "Te enviamos un código y un link a tu correo: no hay contraseña que recordar.",
+    /** WP-83 (D-068): link a la página de registro (`SIGNUP_PATH`). TODO_COPY */
+    nuevoPregunta: "¿Primera vez acá?",
+    nuevoLink: "Crea tu agenda gratis",
+  },
+  /** WP-83 (D-068): `/comenzar`, registro de un negocio nuevo. Mismo correo
+   * (código + link) que `/login`; la cuenta se crea al entrar. TODO_COPY */
+  registro: {
+    titulo: "Crea tu agenda",
+    /** La última palabra va destacada (igual que `login.bienvenida`). */
+    bienvenida: "Comienza gratis",
+    bienvenidaTexto:
+      "Tu página de reservas queda lista en minutos. Sin tarjeta de crédito.",
+    cardTitulo: "Crea tu agenda",
+    cardTexto: "Parte con tu correo y lo armamos juntos.",
+    pasos: {
+      correo: "Escribe tu correo",
+      codigo: "Ingresa el código que te enviamos (o abre el link)",
+      datos:
+        "Pega el link de tu sistema de reservas anterior, o completa tus datos",
+    },
+    cta: "Crear mi agenda",
+    cuentaPregunta: "¿Ya tienes cuenta?",
+    cuentaLink: "Entra",
+  },
+  /** WP-83 (D-068): el código del correo se escribe acá (alternativa al
+   * link). TODO_COPY */
+  codigo: {
+    label: "Código del correo",
+    placeholder: "123456",
+    cta: "Entrar",
+    verificando: "Revisando…",
+    oLink: "O toca el botón del correo.",
   },
   enviado: {
     titulo: "Revisa tu correo",
     enviadoA: (p: { email: string }): string =>
-      `Te enviamos un link a ${p.email}.`,
+      `Te enviamos un código y un link a ${p.email}.`,
     codigoLabel: "O escribe el código de 6 dígitos",
     reenviarEn: (p: { segundos: number }): string =>
       `Reenviar en ${p.segundos} s`,
@@ -1473,7 +1504,7 @@ export const acceso = {
     tituloBandeja: "Revisa tu bandeja de entrada",
     sinCorreo: "¿No te llegó el correo?",
     sinCorreoAyuda: "Mira también en spam. A veces tarda un minuto.",
-    reenviado: "Listo, te lo enviamos de nuevo.",
+    reenviado: "Listo, te enviamos otro correo.",
   },
   /** Nombres propuestos por copywriter (R2 del plan de WP-03b): WP-15
    * confirma la lista real de códigos de Supabase Auth y ajusta las claves
@@ -1491,6 +1522,9 @@ export const acceso = {
       "No pudimos verificar que eres una persona. Intenta de nuevo.",
     session_expired: "Tu sesión venció. Entra de nuevo.",
     network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
+    /** WP-83: límite propio de intentos con el código (10 minutos). TODO_COPY */
+    too_many_attempts:
+      "Hiciste muchos intentos. Espera unos minutos y pide un código nuevo.",
   },
   sesionCerrada: "Cerraste tu sesión.",
 } as const satisfies Trad;
@@ -1622,6 +1656,86 @@ export const onboarding = {
     titulo: "Completa tu configuración",
     pasosPendientes: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "paso pendiente" : "pasos pendientes"}`,
+    // WP-83 (D-068): la tarjeta de Inicio con el mismo estilo que el panel de
+    // pasos del onboarding. TODO_COPY
+    tituloCorto: "Comenzar",
+    hola: "¡Hola! Terminemos de armar tu agenda",
+    porcentaje: (p: { n: number }): string => `${p.n} %`,
+    abrir: "Ver los pasos",
+    cerrar: "Ocultar los pasos",
+  },
+  /** WP-83 (D-068): panel de pasos del onboarding, primer paso (importar) y
+   * pantallas de carga. TODO_COPY */
+  guia: {
+    titulo: "Comenzar",
+    progreso: (p: { n: number }): string => `${p.n} % listo`,
+    pasoDe: (p: { n: number; total: number }): string =>
+      `Paso ${p.n} de ${p.total}`,
+    verPasos: "Ver todos los pasos",
+    pasos: {
+      inicio: "Trae tus datos",
+      negocio: "Tu negocio",
+      rubro: "Rubro",
+      lugar: "Ubicación y contacto",
+      servicios: "Servicios",
+      equipo: "Equipo",
+      horario: "Horario",
+      pagina: "Tu página",
+    },
+  },
+  inicio: {
+    titulo: "¿Ya tienes una página de reservas?",
+    texto:
+      "Podemos traer tus servicios, precios y horario. Tú revisas todo antes de guardar.",
+    si: "Sí, traer mis datos",
+    no: "No, parto desde cero",
+    noTexto: "Toma unos cinco minutos.",
+    importado: "¡Listo! Revisa tus datos en el siguiente paso.",
+    volverOpciones: "Volver a las opciones",
+  },
+  negocioPaso: {
+    titulo: "¿Cómo se llama tu negocio?",
+    texto: "Tus clientes ven este nombre. El link lo puedes cambiar después.",
+    vistaPrevia: "Tu página de reservas",
+  },
+  rubroPaso: {
+    titulo: "¿A qué te dedicas?",
+    texto:
+      "Elige el rubro que más se parezca al tuyo. Así te encuentran en Descubre.",
+  },
+  lugarPaso: {
+    titulo: "¿Dónde te encuentran tus clientes?",
+    texto: "La comuna aparece en tu página de reservas y en Descubre.",
+  },
+  /** Sin pago en la app (D-061/D-068): un plan pagado queda como solicitud y
+   * el equipo lo activa. */
+  planPaso: {
+    titulo: "Elige tu plan",
+    texto:
+      "Parte gratis, o pide un plan pagado con 30 días de prueba, sin tarjeta. Te contactamos para activarlo.",
+    porMes: "/mes + IVA",
+    gratisPrecio: "$0",
+    popular: "Popular",
+    pedir: "Quiero este plan",
+    pidiendo: "Enviando…",
+    elegirGratis: "Seguir con Gratis",
+    solicitadoTitulo: (p: { nombre: string }): string =>
+      `Listo, pediste el plan ${p.nombre}`,
+    solicitadoTexto:
+      "Te contactamos pronto para activar tus 30 días de prueba. Mientras tanto, tu agenda funciona con el plan Gratis.",
+    continuar: "Continuar",
+    error:
+      "No pudimos guardar tu solicitud. Intenta de nuevo o sigue con Gratis.",
+  },
+  creando: {
+    titulo: "Estamos armando tu agenda",
+    texto: "Toma solo unos segundos.",
+    pasos: {
+      negocio: "Creando tu negocio",
+      servicios: "Agregando tus servicios",
+      equipo: "Equipo y horario",
+      pagina: "Publicando tu página de reservas",
+    },
   },
   avisoSinServicios:
     "Tu página no recibe reservas hasta que agregues un servicio.",
@@ -3300,6 +3414,8 @@ export const importar = {
     `Elegiste ${p.servicios} ${p.servicios === 1 ? "servicio" : "servicios"} y ${p.personal} ${p.personal === 1 ? "persona" : "personas"} en el equipo. Te sugerimos el plan ${p.plan}.`,
   planSugeridaAyuda: (p: { gratis: string }): string =>
     `En ${p.gratis} quedan activos solo 3 servicios; el resto se guarda inactivo hasta que cambies de plan.`,
+  /** WP-83: título de la pantalla de carga (lista de pasos). TODO_COPY */
+  cargandoTitulo: "Estamos trayendo tus datos",
   ctaCancelar: "Cancelar",
   revisarTitulo: "Revisa lo que encontramos",
   revisarIntro:

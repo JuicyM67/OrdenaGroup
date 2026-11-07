@@ -7,7 +7,6 @@
 import { useState } from "react";
 
 import { ConsentCheckbox } from "@/components/booking/consent-checkbox";
-import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
 import { Time24Input } from "@/components/ui/time24-input";
 import { hrefLegal } from "@/config/routes";
@@ -15,6 +14,7 @@ import { WEEKDAY_LONG } from "@/lib/format/calendar";
 import { horarios, onboarding } from "@/i18n";
 
 import { validateTimeRange } from "./client-validation";
+import { StepNav } from "./step-frame";
 import { onboardingErrorText } from "./error-text";
 import type { WizardHours } from "./types";
 
@@ -67,13 +67,12 @@ export function HoursStep({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <p className="text-13 font-semibold text-muted">
-          {onboarding.paso({ n: 3, total: 5 })}
-        </p>
-        <h1 className="text-22 font-bold tracking-title text-ink">
+        <h1 className="font-display text-30 leading-snug font-semibold tracking-title text-ink sm:text-34">
           {onboarding.pasos.horario}
         </h1>
-        <p className="text-13 text-muted">{onboarding.intro.horario}</p>
+        <p className="text-15 leading-body text-muted">
+          {onboarding.intro.horario}
+        </p>
       </div>
 
       <div className="flex flex-col gap-3">
@@ -151,19 +150,11 @@ export function HoursStep({
         {onboarding.terminos.sufijo}
       </ConsentCheckbox>
 
-      <div className="flex gap-3">
-        <Button type="button" variant="secondary" size="xl" onClick={onBack}>
-          {onboarding.ctaVolver}
-        </Button>
-        <Button
-          type="button"
-          size="xl"
-          className="flex-1"
-          onClick={handleContinue}
-        >
-          {onboarding.ctaContinuar}
-        </Button>
-      </div>
+      <StepNav
+        onBack={onBack}
+        onContinue={handleContinue}
+        continueLabel={onboarding.ctaContinuar}
+      />
     </div>
   );
 }

@@ -2,19 +2,30 @@
 
 // Formulär för inloggning med magisk länk (F1, WP-15), omgjort som ljust glaskort i
 // startsidans designspråk (rebrand). Ingen referens i *.dc.html: TextField som i Reserva,
-// lime rund knapp som i startsidans EmailForm. Bara e-post — koden på 6 siffror i `acceso.enviado` är inte byggd i den
-// här slimmade versionen (se rapporten till WP-15).
+// lime rund knapp som i startsidans EmailForm. WP-96: efter utskicket kan koden från
+// mejlet skrivas in (`CodeEntry`) — länken i mejlet fungerar som förut.
 //
 // `onRequestMagicLink` tas emot som prop i stället för att importeras direkt (samma mönster
 // som BookingScreen/[slug]/page.tsx, WP-13): page.tsx äger vilken server action som körs.
-import { AlertCircle, ArrowRight, Mail, MailCheck } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  Mail,
+  MailCheck,
+  Sparkles,
+} from "lucide-react";
+import Link from "next/link";
 import { useId, useState } from "react";
 
+import { cn } from "@/components/ui/cn";
 import { TextField } from "@/components/ui/text-field";
+import { LOGIN_PATH, SIGNUP_PATH } from "@/config/routes";
 import { acceso } from "@/i18n/auth";
 
 import type { RequestMagicLinkResult } from "@/app/(auth)/login/actions";
+import type { VerifyEmailCodeResult } from "@/app/auth/code-actions";
 
+import { CodeEntry } from "./code-entry";
 import { authErrorText } from "./error-text";
 
 type Estado =
@@ -25,17 +36,24 @@ type Estado =
 
 export type LoginFormProps = {
   onRequestMagicLink: (email: string) => Promise<RequestMagicLinkResult>;
+  /** WP-96: verifierar koden från mejlet (server action från page.tsx). */
+  onVerifyCode: (email: string, code: string) => Promise<VerifyEmailCodeResult>;
   /** Fel från `/auth/confirm` (link/código vencido), lästa via `?error=` (WP-15). */
   initialErrorCode?: string;
   /** E-post förifylld från startsidan (`/login?email=`, WP-71). */
   initialEmail?: string;
+  /** WP-83 (D-068): `registro` = /comenzar (nytt företag). Samma mejl (kod + länk). */
+  variant?: "login" | "registro";
 };
 
 export function LoginForm({
   onRequestMagicLink,
+  onVerifyCode,
   initialErrorCode,
   initialEmail,
+  variant = "login",
 }: LoginFormProps) {
+  const registro = variant === "registro";
   const [estado, setEstado] = useState<Estado>(
     initialErrorCode
       ? { fase: "error", email: "", code: initialErrorCode }
@@ -80,6 +98,7 @@ export function LoginForm({
             {acceso.enviado.enviadoA({ email: estado.email })}
           </p>
         </div>
+        <CodeEntry email={estado.email} onVerifyCode={onVerifyCode} />
         <div className="flex flex-col gap-3 rounded-tile bg-surface/70 p-4">
           <p className="text-14 font-semibold text-ink">
             {acceso.enviado.sinCorreo}
@@ -121,18 +140,43 @@ export function LoginForm({
     <section className="flex flex-col gap-6 rounded-card p-6 glass-light sm:p-8">
       <span
         aria-hidden="true"
-        className="flex size-14 items-center justify-center rounded-full bg-staff-4 text-ink"
+        className={cn(
+          "flex size-14 items-center justify-center rounded-full text-ink",
+          registro ? "bg-lime" : "bg-staff-4",
+        )}
       >
-        <Mail className="size-6" strokeWidth={2} />
+        {registro ? (
+          <Sparkles className="size-6" strokeWidth={2} />
+        ) : (
+          <Mail className="size-6" strokeWidth={2} />
+        )}
       </span>
       <div className="flex flex-col gap-2">
         <h1 className="font-display text-30 leading-snug font-semibold tracking-title text-ink">
-          {acceso.login.cardTitulo}
+          {registro ? acceso.registro.cardTitulo : acceso.login.cardTitulo}
         </h1>
         <p className="text-15 leading-body text-ink-soft">
-          {acceso.login.cardTexto}
+          {registro ? acceso.registro.cardTexto : acceso.login.cardTexto}
         </p>
       </div>
+      {registro ? (
+        <ol className="flex flex-col gap-2.5">
+          {Object.values(acceso.registro.pasos).map((paso, i) => (
+            <li
+              key={paso}
+              className="flex items-center gap-3 text-14 font-semibold text-ink"
+            >
+              <span
+                aria-hidden="true"
+                className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface text-13 font-bold"
+              >
+                {i + 1}
+              </span>
+              {paso}
+            </li>
+          ))}
+        </ol>
+      ) : null}
       {bannerError ? (
         <p
           role="alert"
@@ -176,7 +220,11 @@ export function LoginForm({
           disabled={enviando}
           className="flex h-13 items-center justify-between gap-3 rounded-full bg-lime pr-2 pl-6 text-16 font-bold text-ink transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-40"
         >
-          {enviando ? acceso.login.enviando : acceso.login.cta}
+          {enviando
+            ? acceso.login.enviando
+            : registro
+              ? acceso.registro.cta
+              : acceso.login.cta}
           <span
             aria-hidden="true"
             className="flex size-9.5 items-center justify-center rounded-full bg-ink text-lime"
@@ -185,7 +233,15 @@ export function LoginForm({
           </span>
         </button>
       </form>
-      <p className="text-13 text-muted">{acceso.login.cuentaNueva}</p>
+      <p className="text-14 text-muted">
+        {registro ? acceso.registro.cuentaPregunta : acceso.login.nuevoPregunta}{" "}
+        <Link
+          href={registro ? LOGIN_PATH : SIGNUP_PATH}
+          className="rounded-badge font-bold text-ink underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          {registro ? acceso.registro.cuentaLink : acceso.login.nuevoLink}
+        </Link>
+      </p>
     </section>
   );
 }

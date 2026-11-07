@@ -44,6 +44,8 @@ const RESERVED_SLUGS = new Set([
   "embed",
   "widget",
   "widgets",
+  // WP-83 (D-068): la página de registro de negocios nuevos.
+  "comenzar",
 ]);
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;

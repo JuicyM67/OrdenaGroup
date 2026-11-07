@@ -5,6 +5,7 @@ import { PlanCards, PlanCustomBand } from "@/components/marketing/plan-cards";
 import { copy } from "@/i18n/marketing";
 
 import { HomeHeading } from "./home-heading";
+import { SIGNUP_PATH } from "@/config/routes";
 
 const t = copy.home.precios;
 
@@ -24,7 +25,7 @@ export function Precios() {
           </p>
         </div>
         <div>
-          <PlanCards ctaHref="/login" variant="foto" />
+          <PlanCards ctaHref={SIGNUP_PATH} variant="foto" />
           <PlanCustomBand />
         </div>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

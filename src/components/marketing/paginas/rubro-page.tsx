@@ -16,6 +16,7 @@ import {
   hrefRubro,
   hrefRubros,
   RUBRO_IDS,
+  SIGNUP_PATH,
   type RubroId,
 } from "@/config/routes";
 import { paginas } from "@/i18n/paginas";
@@ -66,7 +67,7 @@ export function RubroPage({ id }: { id: RubroId }) {
           texto={t.hero.texto}
           acciones={
             <>
-              <HeroPrimary href="/login">{t.hero.cta}</HeroPrimary>
+              <HeroPrimary href={SIGNUP_PATH}>{t.hero.cta}</HeroPrimary>
               <HeroGlass href={`/${brand.demoSlug}`}>{c.verEjemplo}</HeroGlass>
             </>
           }
@@ -173,7 +174,7 @@ export function RubroPage({ id }: { id: RubroId }) {
                 {t.cierre.texto}
               </p>
               <div>
-                <HeroPrimary href="/login">{t.cierre.boton}</HeroPrimary>
+                <HeroPrimary href={SIGNUP_PATH}>{t.cierre.boton}</HeroPrimary>
               </div>
             </div>
           </div>

@@ -64,14 +64,20 @@ export type WizardData = {
   hours: WizardHours[];
 };
 
+// WP-83 (BookingBuddy WP-92): företagsuppgifterna i tre steg (negocio/rubro/lugar), importen först
+// ("inicio") och planvalet ("plan") efter "pagina".
 export const STEP_IDS = [
-  "business",
+  "inicio",
+  "negocio",
+  "rubro",
+  "lugar",
   "services",
   "staff",
   "hours",
   // WP-51: entre "hours" (fin de la transacción, el negocio ya existe) y
   // "done" ("Tu link").
   "pagina",
+  "plan",
   "done",
 ] as const;
 export type StepId = (typeof STEP_IDS)[number];

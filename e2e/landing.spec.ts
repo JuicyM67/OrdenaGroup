@@ -71,17 +71,17 @@ test('"Ver la página de ejemplo" lleva al negocio de demo (brand.demoSlug)', as
   await page.waitForURL(`**/${brand.demoSlug}`);
 });
 
-test("el formulario del hero lleva a /login con el correo", async ({
+test("el formulario del hero lleva a /comenzar con el correo (WP-83)", async ({
   page,
 }) => {
   await page.goto("/");
   await page.locator("#hero-email").fill("ana@example.com");
-  // Inloggade projekt omdirigeras vidare från /login – kontrollera själva
+  // Inloggade projekt omdirigeras vidare från /comenzar – kontrollera själva
   // navigeringen dit i stället för slutadressen.
   const navigated = page.waitForRequest(
     (r) =>
       r.isNavigationRequest() &&
-      r.url().includes("/login?email=ana%40example.com"),
+      r.url().includes("/comenzar?email=ana%40example.com"),
   );
   await page
     .getByRole("main")

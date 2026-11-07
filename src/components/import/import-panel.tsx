@@ -22,6 +22,7 @@ import type {
   ImportPreviewStaff,
   ImportProfileField,
 } from "@/lib/validation/import";
+import { LoadingChecklist } from "@/components/onboarding/loading-checklist";
 import { suggestPlanFor } from "@/config/plans";
 import { importar, negocio, planes } from "@/i18n";
 
@@ -120,7 +121,6 @@ export function ImportPanel({
   const [text, setText] = useState("");
   const [error, setError] = useState<string | undefined>();
   const [suggestText, setSuggestText] = useState(false);
-  const [step, setStep] = useState(0);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [message, setMessage] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
@@ -147,21 +147,12 @@ export function ImportPanel({
   const [servicesSel, setServicesSel] = useState<boolean[]>([]);
   const [staffSel, setStaffSel] = useState<boolean[]>([]);
 
-  useEffect(() => {
-    if (phase !== "loading") return;
-    const t = setInterval(
-      () => setStep((s) => Math.min(s + 1, PROGRESS.length - 1)),
-      9000,
-    );
-    return () => clearInterval(t);
-  }, [phase]);
-
+  // WP-92: stegen i laddningen drivs av `LoadingChecklist` (9 s per steg).
   useEffect(() => () => abortRef.current?.abort(), []);
 
   async function run() {
     setError(undefined);
     setSuggestText(false);
-    setStep(0);
     setPhase("loading");
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -219,7 +210,30 @@ export function ImportPanel({
     );
   }
 
-  if (!preview || phase === "input" || phase === "loading") {
+  // WP-92: laddningen som en checklista (samma stil som onboardingens stegpanel).
+  if (phase === "loading") {
+    return (
+      <LoadingChecklist
+        title={importar.cargandoTitulo}
+        text={importar.aviso}
+        steps={PROGRESS}
+        stepMs={9000}
+        footer={
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            className="self-start"
+            onClick={cancel}
+          >
+            {importar.ctaCancelar}
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (!preview || phase === "input") {
     return (
       <Card className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
@@ -231,21 +245,7 @@ export function ImportPanel({
           </p>
         </div>
 
-        {phase === "loading" ? (
-          <div className="flex flex-col gap-3" role="status" aria-live="polite">
-            <p className="text-15 font-semibold text-ink">{PROGRESS[step]}</p>
-            <p className="text-13 text-muted">{importar.aviso}</p>
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              className="self-start"
-              onClick={cancel}
-            >
-              {importar.ctaCancelar}
-            </Button>
-          </div>
-        ) : (
+        {
           <>
             {source === "url" ? (
               <TextField
@@ -298,7 +298,7 @@ export function ImportPanel({
               </Button>
             </div>
           </>
-        )}
+        }
       </Card>
     );
   }

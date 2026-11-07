@@ -528,6 +528,8 @@ export type Database = {
           phone: string | null;
           plan: Database["public"]["Enums"]["business_plan"];
           plan_override_until: string | null;
+          plan_requested: Database["public"]["Enums"]["business_plan"] | null;
+          plan_requested_at: string | null;
           review_requests_enabled: boolean;
           slot_interval_minutes: number;
           slug: string;
@@ -581,6 +583,8 @@ export type Database = {
           phone?: string | null;
           plan?: Database["public"]["Enums"]["business_plan"];
           plan_override_until?: string | null;
+          plan_requested?: Database["public"]["Enums"]["business_plan"] | null;
+          plan_requested_at?: string | null;
           review_requests_enabled?: boolean;
           slot_interval_minutes?: number;
           slug: string;
@@ -634,6 +638,8 @@ export type Database = {
           phone?: string | null;
           plan?: Database["public"]["Enums"]["business_plan"];
           plan_override_until?: string | null;
+          plan_requested?: Database["public"]["Enums"]["business_plan"] | null;
+          plan_requested_at?: string | null;
           review_requests_enabled?: boolean;
           slot_interval_minutes?: number;
           slug?: string;

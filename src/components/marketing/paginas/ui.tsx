@@ -9,6 +9,7 @@ import { cn } from "@/components/ui/cn";
 
 import type { MockFila, Pregunta } from "@/i18n/paginas";
 import { Highlight } from "@/components/marketing/highlight";
+import { SIGNUP_PATH } from "@/config/routes";
 
 export function HeroPrimary({
   href,
@@ -195,7 +196,7 @@ export function BuddyCta({
           </h2>
           <p className="text-16 text-on-dark/90 sm:text-17">{texto}</p>
           <div>
-            <HeroPrimary href="/login">{boton}</HeroPrimary>
+            <HeroPrimary href={SIGNUP_PATH}>{boton}</HeroPrimary>
           </div>
         </div>
       </div>

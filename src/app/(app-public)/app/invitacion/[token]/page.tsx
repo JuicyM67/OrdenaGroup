@@ -12,6 +12,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { requestMagicLink } from "@/app/(auth)/login/actions";
+import { verifyEmailCode } from "@/app/auth/code-actions";
 import { LoginForm } from "@/components/auth/login-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -163,7 +164,12 @@ export default async function InvitationPage({
           ) : null}
         </Card>
 
-        {!user ? <LoginForm onRequestMagicLink={onRequestMagicLink} /> : null}
+        {!user ? (
+          <LoginForm
+            onRequestMagicLink={onRequestMagicLink}
+            onVerifyCode={verifyEmailCode}
+          />
+        ) : null}
       </div>
     </main>
   );

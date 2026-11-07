@@ -25,7 +25,7 @@ import { SectionHeading } from "@/components/marketing/section-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { brand } from "@/config/brand";
-import { href } from "@/config/routes";
+import { href, SIGNUP_PATH } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 
 export const metadata: Metadata = {
@@ -64,7 +64,7 @@ export default function PreciosPage() {
         </section>
 
         <section className="mx-auto max-w-6xl px-4 pb-14 sm:px-8">
-          <PlanCards ctaHref="/login" />
+          <PlanCards ctaHref={SIGNUP_PATH} />
           <PlanCustomBand />
           <Card
             tone="lime"
@@ -188,7 +188,7 @@ export default function PreciosPage() {
           title={copy.landing.ctaFinal.titulo}
           text={copy.landing.ctaFinal.texto}
           buttonLabel={copy.landing.ctaFinal.boton}
-          href="/login"
+          href={SIGNUP_PATH}
         />
       </main>
 

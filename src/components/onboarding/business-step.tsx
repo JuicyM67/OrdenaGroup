@@ -1,12 +1,16 @@
 "use client";
 
-// Paso 0 (sin numerar, ver el comentario de onboarding-wizard.tsx): datos del negocio +
-// link. `negocio.*` (src/i18n/es-CL.ts) — "onboarding paso 1 y Ajustes".
+// Företagsuppgifterna i onboarding (WP-92): tre korta steg i stället för ett långt
+// formulär — namn + bokningslänk, bransch (rutor med ikon, samma toner som Descubre)
+// och plats + kontakt. Samma fält, validering och data (`WizardBusiness`) som förut;
+// allt sparas fortfarande i ett enda anrop efter Öppettider.
+import { Check } from "lucide-react";
 import { useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Pill } from "@/components/ui/pill";
+import { CATEGORY_UI } from "@/components/marketplace/categories";
+import { cn } from "@/components/ui/cn";
 import { TextField } from "@/components/ui/text-field";
+import { categoryForRubro } from "@/config/marketplace";
 import { negocio, onboarding } from "@/i18n";
 
 import {
@@ -16,6 +20,7 @@ import {
   validateSlug,
 } from "./client-validation";
 import { onboardingErrorText } from "./error-text";
+import { StepHeader, StepNav } from "./step-frame";
 import type { WizardBusiness } from "./types";
 
 const RUBROS = Object.entries(negocio.rubros) as [string, string][];
@@ -24,108 +29,187 @@ export type BusinessStepProps = {
   value: WizardBusiness;
   onChange: (value: WizardBusiness) => void;
   onContinue: () => void;
+  onBack?: () => void;
 };
 
-type Errors = Partial<
-  Record<"name" | "slug" | "comuna" | "phone" | "category", string>
->;
-
-export function BusinessStep({
+/** Steg "Företaget": namn och bokningslänk med förhandsvisning. */
+export function BusinessNameStep({
   value,
   onChange,
   onContinue,
+  onBack,
 }: BusinessStepProps) {
-  const [errors, setErrors] = useState<Errors>({});
+  const [errors, setErrors] = useState<{ name?: string; slug?: string }>({});
 
-  function setName(name: string) {
-    onChange({
-      ...value,
-      name,
-      slug: value.slugTouched ? value.slug : slugify(name),
-    });
-  }
-
-  function setSlug(slug: string) {
-    onChange({ ...value, slug, slugTouched: true });
-  }
-
-  function handleContinue() {
+  function next() {
     const name = validateRequired(value.name, "business.name_empty");
     const slug = validateSlug(value.slug);
-    const comuna = validateRequired(value.comuna, "business.comuna_empty");
-    const phone = validatePhone(value.phone);
-    const next: Errors = {};
-    if (!name.ok) next.name = onboardingErrorText(name.code);
-    if (!slug.ok) next.slug = onboardingErrorText(slug.code);
-    if (!comuna.ok) next.comuna = onboardingErrorText(comuna.code);
-    if (!phone.ok) next.phone = onboardingErrorText(phone.code);
-    if (value.category === "") {
-      next.category = onboardingErrorText("business.category_invalid");
-    }
-    setErrors(next);
-    if (Object.keys(next).length === 0) onContinue();
+    const e: { name?: string; slug?: string } = {};
+    if (!name.ok) e.name = onboardingErrorText(name.code);
+    if (!slug.ok) e.slug = onboardingErrorText(slug.code);
+    setErrors(e);
+    if (!e.name && !e.slug) onContinue();
   }
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-22 font-bold tracking-title text-ink">
-          {negocio.campos.nameLabel}
-        </h1>
-        <p className="text-13 text-muted">{onboarding.bienvenida}</p>
-      </div>
-
+      <StepHeader
+        title={onboarding.negocioPaso.titulo}
+        text={onboarding.negocioPaso.texto}
+      />
       <TextField
         label={negocio.campos.nameLabel}
         placeholder={negocio.campos.namePlaceholder}
         value={value.name}
-        onChange={(e) => setName(e.target.value)}
+        onChange={(e) =>
+          onChange({
+            ...value,
+            name: e.target.value,
+            slug: value.slugTouched ? value.slug : slugify(e.target.value),
+          })
+        }
         error={errors.name}
         maxLength={120}
+        autoFocus
       />
-
       <TextField
         label={negocio.slug.label}
         hint={errors.slug ? undefined : negocio.slug.ayuda}
         value={value.slug}
-        onChange={(e) => setSlug(e.target.value)}
+        onChange={(e) =>
+          onChange({ ...value, slug: e.target.value, slugTouched: true })
+        }
         error={errors.slug}
         maxLength={40}
       />
-      {value.slug ? (
-        <p className="-mt-3 text-13 text-muted">
-          {negocio.slug.vistaPrevia({ url: `/${value.slug}` })}
+      <div className="flex items-center gap-3 rounded-tile bg-canvas px-4 py-3.5">
+        <span
+          aria-hidden="true"
+          className="size-2.5 shrink-0 rounded-full bg-lime ring-2 ring-ink/10"
+        />
+        <span className="flex min-w-0 flex-col">
+          <span className="text-12 text-muted">
+            {onboarding.negocioPaso.vistaPrevia}
+          </span>
+          <span className="truncate text-15 font-semibold text-ink">
+            {negocio.slug.vistaPrevia({ url: `/${value.slug || "…"}` })}
+          </span>
+        </span>
+      </div>
+      <StepNav onBack={onBack} onContinue={next} />
+    </div>
+  );
+}
+
+/** Steg "Bransch": rutor med kategorins ikon och ton. */
+export function BusinessCategoryStep({
+  value,
+  onChange,
+  onContinue,
+  onBack,
+}: BusinessStepProps) {
+  const [error, setError] = useState<string | undefined>();
+
+  function next() {
+    if (value.category === "") {
+      setError(onboardingErrorText("business.category_invalid"));
+      return;
+    }
+    onContinue();
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <StepHeader
+        title={onboarding.rubroPaso.titulo}
+        text={onboarding.rubroPaso.texto}
+      />
+      <div
+        role="radiogroup"
+        aria-label={negocio.campos.categoryLabel}
+        className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4"
+      >
+        {RUBROS.map(([key, label]) => {
+          const ui = CATEGORY_UI[categoryForRubro(key)];
+          const on = value.category === key;
+          return (
+            <button
+              key={key}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              onClick={() => {
+                onChange({ ...value, category: key });
+                setError(undefined);
+              }}
+              className={cn(
+                "relative flex min-h-24 flex-col items-start justify-between gap-2 rounded-tile p-3.5 text-left text-14 font-bold text-ink transition-transform duration-150 ease-out hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink",
+                ui.tone,
+                on && "ring-2 ring-ink ring-offset-2 ring-offset-surface",
+              )}
+            >
+              <span
+                aria-hidden="true"
+                className="flex size-9 items-center justify-center rounded-full bg-surface/70"
+              >
+                <ui.icon className="size-4.5" strokeWidth={2} />
+              </span>
+              {label}
+              {on ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute top-2.5 right-2.5 flex size-6 items-center justify-center rounded-full bg-ink text-lime"
+                >
+                  <Check className="size-3.5" strokeWidth={3} />
+                </span>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+      {error ? (
+        <p role="alert" className="text-13 font-semibold text-ink">
+          {error}
         </p>
       ) : null}
+      <StepNav onBack={onBack} onContinue={next} />
+    </div>
+  );
+}
 
+/** Steg "Plats och kontakt": comuna och telefon. */
+export function BusinessPlaceStep({
+  value,
+  onChange,
+  onContinue,
+  onBack,
+}: BusinessStepProps) {
+  const [errors, setErrors] = useState<{ comuna?: string; phone?: string }>({});
+
+  function next() {
+    const comuna = validateRequired(value.comuna, "business.comuna_empty");
+    const phone = validatePhone(value.phone);
+    const e: { comuna?: string; phone?: string } = {};
+    if (!comuna.ok) e.comuna = onboardingErrorText(comuna.code);
+    if (!phone.ok) e.phone = onboardingErrorText(phone.code);
+    setErrors(e);
+    if (!e.comuna && !e.phone) onContinue();
+  }
+
+  return (
+    <div className="flex flex-col gap-5">
+      <StepHeader
+        title={onboarding.lugarPaso.titulo}
+        text={onboarding.lugarPaso.texto}
+      />
       <TextField
         label={negocio.campos.comunaLabel}
         value={value.comuna}
         onChange={(e) => onChange({ ...value, comuna: e.target.value })}
         error={errors.comuna}
         maxLength={80}
+        autoComplete="address-level2"
       />
-
-      <div className="flex flex-col gap-2">
-        <span className="text-13 font-semibold text-ink">
-          {negocio.campos.categoryLabel}
-        </span>
-        <div className="flex flex-wrap gap-2">
-          {RUBROS.map(([key, label]) => (
-            <Pill
-              key={key}
-              selected={value.category === key}
-              onClick={() => onChange({ ...value, category: key })}
-            >
-              {label}
-            </Pill>
-          ))}
-        </div>
-        {errors.category ? (
-          <span className="text-13 text-ink">{errors.category}</span>
-        ) : null}
-      </div>
-
       <TextField
         label={negocio.campos.phoneLabel}
         hint={errors.phone ? undefined : negocio.campos.phoneAyuda}
@@ -133,11 +217,9 @@ export function BusinessStep({
         value={value.phone}
         onChange={(e) => onChange({ ...value, phone: e.target.value })}
         error={errors.phone}
+        autoComplete="tel"
       />
-
-      <Button type="button" size="xl" onClick={handleContinue}>
-        {onboarding.ctaContinuar}
-      </Button>
+      <StepNav onBack={onBack} onContinue={next} />
     </div>
   );
 }
