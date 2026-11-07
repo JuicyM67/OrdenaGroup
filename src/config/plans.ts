@@ -35,6 +35,8 @@ export type Feature =
   | "gift_cards"
   /** Förbetalda paket med N sessioner (WP-86, D-072). */
   | "packages"
+  /** Ficha de atención + consentimiento informado (WP-88, D-074). */
+  | "records"
   | "priority_support";
 
 export type LimitKind = "staff" | "services";
@@ -53,6 +55,7 @@ const ALL_FEATURES: readonly Feature[] = [
   "offers",
   "gift_cards",
   "packages",
+  "records",
   "priority_support",
 ];
 
@@ -63,6 +66,7 @@ const FEATURES: Record<BusinessPlan, ReadonlySet<Feature>> = {
     "waitlist",
     "gift_cards",
     "packages",
+    "records",
   ]),
   equipo: new Set<Feature>([
     "unbranded",
@@ -74,6 +78,7 @@ const FEATURES: Record<BusinessPlan, ReadonlySet<Feature>> = {
     "offers",
     "gift_cards",
     "packages",
+    "records",
   ]),
   local: new Set<Feature>(ALL_FEATURES),
   custom: new Set<Feature>(ALL_FEATURES),

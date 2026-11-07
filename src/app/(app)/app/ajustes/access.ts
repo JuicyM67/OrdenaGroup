@@ -64,6 +64,7 @@ const TAB_FEATURE: Partial<Record<AjustesTabKey, Feature>> = {
   socios: "campaigns",
   equipo: "staff_accounts",
   paquetes: "packages",
+  ficha: "records",
 };
 
 function lockedTabs(plan: PlanInfo): Set<AjustesTabKey> {

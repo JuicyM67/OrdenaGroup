@@ -3061,6 +3061,12 @@ export const equipo = {
       ayuda:
         "Puede cambiar el horario de atención, las reglas de reserva y el perfil del negocio.",
     },
+    /** WP-88 (D-074). TODO_COPY */
+    view_records: {
+      nombre: "Ficha de atención",
+      ayuda:
+        "Puede ver y escribir la ficha de los clientes (notas de atención, alergias y consentimientos). Son datos sensibles: actívalo solo para quien atiende.",
+    },
   },
   invitaciones: {
     titulo: "Invitaciones pendientes",
@@ -3590,6 +3596,8 @@ export const planes = {
     // WP-86 (D-072). TODO_COPY
     packages: "Paquetes de sesiones",
     priority_support: "Soporte prioritario",
+    /** WP-88 (D-074). TODO_COPY */
+    records: "Ficha de atención y consentimientos",
   },
   bloqueo: {
     titulo: (p: { funcion: string; plan: string }): string =>
@@ -3609,6 +3617,9 @@ export const planes = {
       packages:
         "Mejora tu plan y vende paquetes de sesiones que tus clientes pagan por adelantado.",
       priority_support: "Mejora tu plan y te atendemos primero.",
+      /** WP-88 (D-074). TODO_COPY */
+      records:
+        "Mejora tu plan y guarda la ficha y los consentimientos de tus clientes.",
     },
     verPlanes: "Ver planes",
     bloqueado: "Bloqueado",

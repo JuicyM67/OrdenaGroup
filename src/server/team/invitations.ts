@@ -181,8 +181,9 @@ export async function createInvitation(
         `insert into public.member_invitations
            (business_id, email, staff_id, invited_by, token_hash,
             can_manage_own_bookings, can_manage_all_bookings, can_cancel_bookings,
-            can_edit_catalog, can_manage_team, can_view_reports, can_edit_settings)
-         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+            can_edit_catalog, can_manage_team, can_view_reports, can_edit_settings,
+            can_view_records)
+         values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          returning id`,
         [
           businessId,
@@ -197,6 +198,7 @@ export async function createInvitation(
           flags.can_manage_team,
           flags.can_view_reports,
           flags.can_edit_settings,
+          flags.can_view_records,
         ],
       );
       invitationId = inserted.rows[0]?.id;

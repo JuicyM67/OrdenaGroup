@@ -14,6 +14,7 @@
 import {
   Building2,
   CalendarClock,
+  ClipboardCheck,
   ClipboardList,
   Clock,
   Gauge,
@@ -32,7 +33,15 @@ import type { ReactNode } from "react";
 
 import { strokeNav } from "@/components/ui/icons";
 import { AJUSTES_TAB_ROUTE_IDS, appHref } from "@/config/routes";
-import { ajustes, compartir, paquetes, perfil, planes, widgets } from "@/i18n";
+import {
+  ajustes,
+  compartir,
+  fichaAtencion,
+  paquetes,
+  perfil,
+  planes,
+  widgets,
+} from "@/i18n";
 
 export const AJUSTES_TAB_KEYS = [
   "negocio",
@@ -49,6 +58,7 @@ export const AJUSTES_TAB_KEYS = [
   "privacidad",
   "widgets",
   "compartir",
+  "ficha",
 ] as const;
 
 export type AjustesTabKey = (typeof AJUSTES_TAB_KEYS)[number];
@@ -81,6 +91,7 @@ const AJUSTES_TAB_LABEL: Record<AjustesTabKey, string> = {
   privacidad: ajustes.secciones.privacidad,
   widgets: widgets.panel.pestana,
   compartir: compartir.pestana,
+  ficha: fichaAtencion.ajustes.pestana,
 };
 
 const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
@@ -97,6 +108,7 @@ const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
   privacidad: Shield,
   widgets: Globe,
   compartir: Share2,
+  ficha: ClipboardCheck,
 };
 
 export function ajustesTabHref(key: AjustesTabKey): string {
@@ -119,6 +131,7 @@ export function ajustesTabVisible(
     case "socios":
     case "widgets":
     case "compartir":
+    case "ficha":
       return access.perms.can_edit_settings;
     case "servicios":
     case "paquetes":

@@ -11,6 +11,7 @@ import "server-only";
  * `businessId` betrodd och all vidare SQL filtrerar på den (ARCHITECTURE
  * princip 3). Token loggas aldrig och skickas aldrig tillbaka.
  */
+import type { PublicConsent } from "@/components/booking/types";
 import { LEGAL_VERSION } from "@/i18n/legal/types";
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
@@ -18,6 +19,11 @@ import {
   hasWhatsAppConsentIn,
   recordWhatsAppConsentIn,
 } from "@/server/privacy/whatsapp-consent";
+import {
+  loadServiceConsentsIn,
+  pendingConsentsForCustomerIn,
+  recordInformedConsentsIn,
+} from "@/server/records/public-consent";
 import { err, ok, type Result } from "@/server/scheduling/result";
 import { manageTokenSchema } from "@/server/scheduling/schemas";
 import type { BookingStatus } from "@/server/scheduling/types";
@@ -63,6 +69,10 @@ export type ManagedBooking = {
   /** D-063: kunden har ett aktivt WhatsApp-samtycke hos företaget (kan
    * återkallas härifrån). Valfri bara för äldre fixturer (saknas = false). */
   whatsappConsent?: boolean;
+  /** WP-88 (D-074): consentimientos som bokningens tjänst kräver och som
+   * kunden inte godkänt i aktuell version (godkänns härifrån). Valfri bara
+   * för äldre fixturer (saknas = inga). */
+  pendingConsents?: PublicConsent[];
 };
 
 /** WP-56: kundens avbokning via länken. `pending: true` = blev en
@@ -92,6 +102,7 @@ async function businessIdForToken(
 type DetailRow = {
   id: string;
   customer_id: string;
+  service_id: string;
   status: BookingStatus;
   price_clp: number;
   s: number;
@@ -122,7 +133,7 @@ export async function loadBookingByToken(
     const businessId = await businessIdForToken(q, t);
     if (!businessId) return null;
     const r = await q.query<DetailRow>(
-      `select bk.id, bk.customer_id, bk.status::text as status, bk.price_clp,
+      `select bk.id, bk.customer_id, bk.service_id, bk.status::text as status, bk.price_clp,
               extract(epoch from lower(bk.period))::float8 * 1000 as s,
               extract(epoch from upper(bk.period))::float8 * 1000 as pe,
               sv.name as service_name, st.name as staff_name,
@@ -145,6 +156,16 @@ export async function loadBookingByToken(
       businessId,
       x.customer_id,
     );
+    // WP-88 (D-074): bara för bokningar som inte är avbokade.
+    const pendingConsents =
+      x.status === "cancelled"
+        ? []
+        : await pendingConsentsForCustomerIn(
+            q,
+            businessId,
+            x.customer_id,
+            x.service_id,
+          );
     const cancelNeedsApproval = customerCancelNeedsApproval(
       {
         start,
@@ -181,6 +202,7 @@ export async function loadBookingByToken(
           )),
       cancelNeedsApproval,
       whatsappConsent,
+      ...(pendingConsents.length > 0 ? { pendingConsents } : {}),
     };
   });
 }
@@ -217,6 +239,52 @@ export async function revokeWhatsAppByToken(
       version: LEGAL_VERSION,
     });
     return ok({ revoked: true });
+  });
+}
+
+/**
+ * WP-88 (D-074): kunden godkänner en consentimiento från sin länk. Mallen
+ * måste vara en av dem bokningens tjänst kräver och versionen den aktuella
+ * (annars `outdated`: texten ändrades medan sidan var öppen). Loggas i
+ * `consent_events` (källa `manage_link`, bokningen satt). Idempotent.
+ */
+export async function acceptInformedConsentByToken(
+  token: string,
+  input: { templateId: string; version: string },
+): Promise<Result<{ accepted: true }, "not_found" | "outdated">> {
+  const t = parseToken(token);
+  if (!t) return err("not_found");
+  return withServiceTx(async (q) => {
+    const businessId = await businessIdForToken(q, t);
+    if (!businessId) return err("not_found");
+    const r = await q.query<{
+      id: string;
+      customer_id: string;
+      service_id: string;
+      status: string;
+    }>(
+      `select bk.id, bk.customer_id, bk.service_id, bk.status::text as status
+         from public.bookings bk
+        where bk.business_id = $1 and bk.manage_token_hash = $2`,
+      [businessId, hashManageToken(t)],
+    );
+    const bk = r.rows[0];
+    if (!bk || bk.status === "cancelled") return err("not_found");
+    const required =
+      (await loadServiceConsentsIn(q, businessId, [bk.service_id]))[
+        bk.service_id
+      ] ?? [];
+    const c = required.find((x) => x.templateId === input.templateId);
+    if (!c) return err("not_found");
+    if (c.version !== input.version) return err("outdated");
+    await recordInformedConsentsIn(q, {
+      businessId,
+      customerId: bk.customer_id,
+      bookingId: bk.id,
+      items: [{ templateId: c.templateId, version: c.version }],
+      source: "manage_link",
+    });
+    return ok({ accepted: true });
   });
 }
 

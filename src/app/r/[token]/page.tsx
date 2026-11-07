@@ -15,7 +15,9 @@ import type {
   ManageWhatsAppResult,
 } from "@/components/booking/manage-view";
 import { gestion } from "@/i18n";
+import type { ConsentAcceptResult } from "@/components/records/consent-accept-card";
 import {
+  acceptInformedConsentByToken,
   cancelByToken,
   loadBookingByToken,
   revokeWhatsAppByToken,
@@ -101,6 +103,36 @@ export default async function ManagePage({ params }: { params: Params }) {
     return result.ok ? { ok: true } : { ok: false, code: result.error };
   }
 
+  // WP-88 (D-074): godkänn en consentimiento. Samma mönster: token binds i
+  // closuren, samma IP-gräns; mall och version kontrolleras mot bokningens
+  // tjänst på servern.
+  async function acceptConsent(input: {
+    templateId: string;
+    version: string;
+  }): Promise<ConsentAcceptResult> {
+    "use server";
+    const ip = await getClientIp();
+    const allowed = await hitRateLimit({
+      scope: "manage:ip",
+      subject: ip,
+      windowSeconds: MANAGE_IP_WINDOW_SECONDS,
+      max: MANAGE_IP_MAX,
+    });
+    if (!allowed) return { ok: false, code: "rate_limited" };
+    if (
+      typeof input?.templateId !== "string" ||
+      typeof input?.version !== "string" ||
+      input.version.length > 64
+    ) {
+      return { ok: false, code: "not_found" };
+    }
+    const result = await acceptInformedConsentByToken(token, {
+      templateId: input.templateId,
+      version: input.version,
+    });
+    return result.ok ? { ok: true } : { ok: false, code: result.error };
+  }
+
   return (
     <ManageScreen
       booking={booking}
@@ -110,6 +142,7 @@ export default async function ManagePage({ params }: { params: Params }) {
       packagesSlot={
         packages.length > 0 ? <ManagePackages packages={packages} /> : null
       }
+      onAcceptConsent={acceptConsent}
     />
   );
 }

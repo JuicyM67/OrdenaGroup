@@ -121,6 +121,40 @@ export type BusinessExportData = {
     channel: string;
     granted: boolean;
     createdAt: string;
+    /** WP-88 (D-074): consentimiento informado. */
+    consentTemplateId: string | null;
+    bookingId: string | null;
+    source: string | null;
+  }>;
+  /** WP-88 (D-074): fichan (känsliga uppgifter) och consentimiento-mallarna
+   * med alla versioner kunder kan ha godkänt. */
+  customerRecords: Array<{
+    customerId: string;
+    allergies: string | null;
+    contraindications: string | null;
+    observations: string | null;
+    updatedAt: string;
+  }>;
+  recordEntries: Array<{
+    id: string;
+    customerId: string;
+    bookingId: string | null;
+    body: string;
+    authorStaffId: string | null;
+    createdAt: string;
+  }>;
+  consentTemplates: Array<{
+    id: string;
+    title: string;
+    active: boolean;
+    version: string;
+    serviceIds: string[];
+    versions: Array<{
+      version: string;
+      title: string;
+      body: string;
+      createdAt: string;
+    }>;
   }>;
 };
 
@@ -273,9 +307,70 @@ export async function exportBusiness(
       channel: string;
       granted: boolean;
       created_at: string;
+      consent_template_id: string | null;
+      booking_id: string | null;
+      source: string | null;
     }>(
-      `select customer_id, subject, kind, version, channel, granted, created_at
+      `select customer_id, subject, kind, version, channel, granted, created_at,
+              consent_template_id, booking_id, source
          from public.consent_events where business_id = $1 order by created_at`,
+      [businessId],
+    );
+
+    const recordsRes = await q.query<{
+      customer_id: string;
+      allergies: string | null;
+      contraindications: string | null;
+      observations: string | null;
+      updated_at: string;
+    }>(
+      `select customer_id, allergies, contraindications, observations, updated_at
+         from public.customer_records where business_id = $1`,
+      [businessId],
+    );
+
+    const entriesRes = await q.query<{
+      id: string;
+      customer_id: string;
+      booking_id: string | null;
+      body: string;
+      author_staff_id: string | null;
+      created_at: string;
+    }>(
+      `select id, customer_id, booking_id, body, author_staff_id, created_at
+         from public.customer_record_entries where business_id = $1
+        order by created_at`,
+      [businessId],
+    );
+
+    const templatesRes = await q.query<{
+      id: string;
+      title: string;
+      active: boolean;
+      version: string;
+      service_ids: string[] | null;
+    }>(
+      `select ct.id, ct.title, ct.active, ct.version,
+              array_remove(array_agg(sct.service_id), null) as service_ids
+         from public.consent_templates ct
+         left join public.service_consent_templates sct
+           on sct.business_id = ct.business_id and sct.template_id = ct.id
+        where ct.business_id = $1
+        group by ct.id
+        order by ct.created_at`,
+      [businessId],
+    );
+
+    const versionsRes = await q.query<{
+      template_id: string;
+      version: string;
+      title: string;
+      body: string;
+      created_at: string;
+    }>(
+      `select template_id, version, title, body, created_at
+         from public.consent_template_versions where business_id = $1
+        order by created_at`,
       [businessId],
     );
 
@@ -364,6 +459,39 @@ export async function exportBusiness(
           channel: e.channel,
           granted: e.granted,
           createdAt: e.created_at,
+          consentTemplateId: e.consent_template_id,
+          bookingId: e.booking_id,
+          source: e.source,
+        })),
+        customerRecords: recordsRes.rows.map((r) => ({
+          customerId: r.customer_id,
+          allergies: r.allergies,
+          contraindications: r.contraindications,
+          observations: r.observations,
+          updatedAt: r.updated_at,
+        })),
+        recordEntries: entriesRes.rows.map((r) => ({
+          id: r.id,
+          customerId: r.customer_id,
+          bookingId: r.booking_id,
+          body: r.body,
+          authorStaffId: r.author_staff_id,
+          createdAt: r.created_at,
+        })),
+        consentTemplates: templatesRes.rows.map((t) => ({
+          id: t.id,
+          title: t.title,
+          active: t.active,
+          version: t.version,
+          serviceIds: t.service_ids ?? [],
+          versions: versionsRes.rows
+            .filter((v) => v.template_id === t.id)
+            .map((v) => ({
+              version: v.version,
+              title: v.title,
+              body: v.body,
+              createdAt: v.created_at,
+            })),
         })),
       },
     };

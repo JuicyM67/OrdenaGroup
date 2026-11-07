@@ -20,6 +20,7 @@ const MATRIX: Record<Feature, readonly string[]> = {
   offers: ["equipo", "local", "custom"],
   gift_cards: ["emprende", "equipo", "local", "custom"],
   packages: ["emprende", "equipo", "local", "custom"],
+  records: ["emprende", "equipo", "local", "custom"],
   priority_support: ["local", "custom"],
 };
 

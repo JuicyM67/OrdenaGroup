@@ -45,7 +45,7 @@ import { initialsOf } from "@/lib/format/initials";
 import { Menu, MenuButtonItem, MenuLinkItem } from "@/components/ui/menu";
 import { Textarea } from "@/components/ui/textarea";
 import { appHref } from "@/config/routes";
-import { ajustes, clientes, comun, estados, nav } from "@/i18n";
+import { ajustes, clientes, comun, estados, fichaAtencion, nav } from "@/i18n";
 import {
   APP_TZ,
   formatDate,
@@ -75,6 +75,8 @@ export type CustomerDetailScreenProps = {
   customer: CustomerDetail;
   /** WP-24 (D-034): döljer Caja i navigeringen. `undefined` visar den. */
   canViewReports?: boolean;
+  /** WP-88 (D-074): länk till fichan, bara med `can_view_records`. */
+  fichaHref?: string;
   onLogout?: () => void | Promise<void>;
   onUpdateNotes: (
     notes: string,
@@ -197,6 +199,7 @@ function ConsentRow({
 export function CustomerDetailScreen({
   customer,
   canViewReports,
+  fichaHref,
   onLogout,
   onUpdateNotes,
   onExportCustomer,
@@ -421,6 +424,11 @@ export function CustomerDetailScreen({
               {clientes.ficha.ctaNuevaReserva}
             </Link>
           </Button>
+          {fichaHref ? (
+            <Button asChild variant="secondary" size="lg">
+              <Link href={fichaHref}>{fichaAtencion.ctaAbrir}</Link>
+            </Button>
+          ) : null}
           {phone ? (
             <Button
               type="button"
