@@ -90,20 +90,23 @@ function wait(ms: number, signal?: AbortSignal): Promise<void> {
   });
 }
 
-/** `businessId` = null under onboarding (företaget finns inte än). */
+/** `businessId` = null under onboarding (företaget finns inte än).
+ * WP-91: `opts.existing` = befintliga namn som anroparen redan läst (admin läser
+ * dem via service_role i stället för ägarens session). */
 export async function extractForImport(
   userId: string,
   businessId: string | null,
   raw: unknown,
   signal?: AbortSignal,
+  opts: { existing?: ExistingNames } = {},
 ): Promise<ImportExtractResponse> {
   if (!isImportEnabled()) return { ok: false, code: "import.unavailable" };
   const parsed = parseRequest(raw);
   if (!parsed.ok) return parsed;
   const { req, platform } = parsed;
 
-  let existing: ExistingNames | undefined;
-  if (businessId) {
+  let existing: ExistingNames | undefined = opts.existing;
+  if (businessId && !existing) {
     try {
       existing = await existingNames(userId, businessId);
     } catch (e) {

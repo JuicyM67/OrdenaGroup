@@ -1972,6 +1972,7 @@ export type Database = {
           id: string;
           name: string;
           price_clp: number;
+          price_from: boolean;
           remind_after_weeks: number | null;
           sort: number;
           updated_at: string;
@@ -1989,6 +1990,7 @@ export type Database = {
           id?: string;
           name: string;
           price_clp: number;
+          price_from?: boolean;
           remind_after_weeks?: number | null;
           sort?: number;
           updated_at?: string;
@@ -2006,6 +2008,7 @@ export type Database = {
           id?: string;
           name?: string;
           price_clp?: number;
+          price_from?: boolean;
           remind_after_weeks?: number | null;
           sort?: number;
           updated_at?: string;

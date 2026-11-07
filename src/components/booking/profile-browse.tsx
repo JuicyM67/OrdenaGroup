@@ -20,8 +20,8 @@ import {
 
 import { formulario, perfil, resenas } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
-import { formatMoney } from "@/lib/format/money";
 
+import { formatServicePrice } from "./format-price";
 import { categoryTabs } from "./categories";
 import { ProfileGallery } from "./profile-gallery";
 import { ProfileChipsDesktop, ProfileHeader } from "./profile-header";
@@ -262,7 +262,7 @@ function MobileBookBar({
         {service ? (
           <p className="truncate text-13 text-on-dark-soft">
             {formatDuration(service.durationMin)} ·{" "}
-            {formatMoney(service.priceClp)}
+            {formatServicePrice(service)}
           </p>
         ) : null}
       </div>

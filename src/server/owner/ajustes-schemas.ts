@@ -98,6 +98,8 @@ export const ajustesServiceInputSchema = serviceInputSchema.extend({
   bufferAfterMin: bufferAfterMinSchema,
   // WP-41: frivillig. Utelämnad = oförändrad vid uppdatering, "" = rensa.
   description: serviceDescriptionSchema.optional(),
+  // WP-84 (D-069): precio "desde". Utelämnad = oförändrad vid uppdatering, av vid ny.
+  priceFrom: z.boolean({ error: "invalid_input" }).optional(),
 });
 export type AjustesServiceInput = z.infer<typeof ajustesServiceInputSchema>;
 

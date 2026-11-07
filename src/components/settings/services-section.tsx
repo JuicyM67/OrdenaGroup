@@ -23,7 +23,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/components/ui/cn";
 import { Textarea } from "@/components/ui/textarea";
 import { TextField } from "@/components/ui/text-field";
-import { ajustes, formulario, servicios } from "@/i18n";
+import { ajustes, formulario, reserva, servicios } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
 import { formatMoney, moneyInputValue, parseMoney } from "@/lib/format/money";
 import { SERVICE_DESCRIPTION_MAX } from "@/lib/validation/profile";
@@ -52,6 +52,8 @@ type RowForm = {
   priceClp: string;
   bufferAfterMin: string;
   description: string;
+  /** WP-84 (D-069): precio "desde". */
+  priceFrom: boolean;
 };
 type RowErrors = Partial<Record<keyof RowForm, string>>;
 
@@ -61,6 +63,7 @@ const EMPTY_FORM: RowForm = {
   priceClp: "",
   bufferAfterMin: "0",
   description: "",
+  priceFrom: false,
 };
 
 function toRowForm(s: AjustesService): RowForm {
@@ -70,6 +73,7 @@ function toRowForm(s: AjustesService): RowForm {
     priceClp: moneyInputValue(s.priceClp),
     bufferAfterMin: String(s.bufferAfterMin),
     description: s.description,
+    priceFrom: s.priceFrom,
   };
 }
 
@@ -112,6 +116,7 @@ function validateRow(form: RowForm): { errors: RowErrors; payload?: unknown } {
       priceClp: form.priceClp,
       bufferAfterMin: bufferN,
       description,
+      priceFrom: form.priceFrom,
     },
   };
 }
@@ -210,6 +215,25 @@ function ServiceForm({
               error={errors.priceClp}
             />
           </div>
+          {/* WP-84 (D-069): precio "desde". */}
+          <label className="flex cursor-pointer items-start gap-3 text-14 text-ink">
+            <input
+              type="checkbox"
+              checked={form.priceFrom}
+              onChange={(e) =>
+                onChange({ ...form, priceFrom: e.target.checked })
+              }
+              className="mt-0.5 size-5 shrink-0 accent-ink"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-semibold">
+                {servicios.campos.precioDesde}
+              </span>
+              <span className="text-13 text-muted">
+                {servicios.campos.precioDesdeAyuda}
+              </span>
+            </span>
+          </label>
           <TextField
             label={servicios.campos.bufferLabel}
             hint={
@@ -321,6 +345,7 @@ export function ServicesSection({
               bufferAfterMin: Number(form.bufferAfterMin),
               active: true,
               description: form.description.trim(),
+              priceFrom: form.priceFrom,
             },
           ]);
           setEditingId(null);
@@ -340,6 +365,7 @@ export function ServicesSection({
                     priceClp: priceFromForm(form.priceClp),
                     bufferAfterMin: Number(form.bufferAfterMin),
                     description: form.description.trim(),
+                    priceFrom: form.priceFrom,
                   }
                 : s,
             ),
@@ -396,7 +422,10 @@ export function ServicesSection({
               <div className="min-w-0">
                 <p className="text-15 font-bold text-ink">{s.name}</p>
                 <p className="text-13 text-muted">
-                  {formatDuration(s.durationMin)} · {formatMoney(s.priceClp)}
+                  {formatDuration(s.durationMin)} ·{" "}
+                  {s.priceFrom
+                    ? reserva.precioDesde({ precio: formatMoney(s.priceClp) })
+                    : formatMoney(s.priceClp)}
                 </p>
               </div>
               <div className="flex shrink-0 gap-2">
