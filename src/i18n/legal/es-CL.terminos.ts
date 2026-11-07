@@ -19,7 +19,7 @@ export function getTerminosCL(entity: LegalEntity): LegalDoc {
   return {
     slug: "terminos",
     title: "Términos y Condiciones para Empresas",
-    status: "draft",
+    status: "final",
     version: LEGAL_VERSION,
     versionLabel: `Versión ${LEGAL_VERSION}`,
     intro: [
