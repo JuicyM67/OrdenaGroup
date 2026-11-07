@@ -10,6 +10,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { MANUAL_METHODS } from "@/server/payments/mark-paid";
 import { ownerNameParts } from "@/server/owner/shared";
+import { loadCajaPackageContext } from "@/server/packages/packages";
 
 import {
   confirmMyPhotoUploadAction,
@@ -19,6 +20,12 @@ import {
   updateMyTitleAction,
 } from "../my-profile-actions";
 import { loadCajaAction, markPaidAction, undoPaymentAction } from "./actions";
+import {
+  redeemPackageAction,
+  searchPackageCustomersAction,
+  sellPackageAction,
+  undoPackageUseAction,
+} from "./package-actions";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -41,6 +48,8 @@ export default async function CajaPage() {
   const initialData = await loadCajaAction({ kind: "today" });
   const owner = ownerNameParts(user.email);
   const myProfile = await loadMyProfileAction();
+  // WP-86 (D-072): "Vender paquete" bara med plan + behörighet.
+  const pkg = await loadCajaPackageContext(user.id, current.business.id);
 
   return (
     <CajaScreen
@@ -55,6 +64,18 @@ export default async function CajaPage() {
       }}
       ownerName={owner.name}
       publicPageHref={`/${current.business.slug}`}
+      packages={{
+        templates: pkg.templates,
+        ...(pkg.canSell
+          ? {
+              sell: {
+                sell: sellPackageAction,
+                searchCustomers: searchPackageCustomersAction,
+              },
+            }
+          : {}),
+        booking: { redeem: redeemPackageAction, undo: undoPackageUseAction },
+      }}
       myProfile={myProfile ?? undefined}
       myProfileActions={
         myProfile

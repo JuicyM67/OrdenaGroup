@@ -61,6 +61,12 @@ import {
   type ListaEsperaCupoData,
   type ListaEsperaTomadaData,
 } from "./templates/lista-espera";
+import {
+  tarjetaRegaloCompradorEmail,
+  tarjetaRegaloDestinatarioEmail,
+  type TarjetaRegaloCompradorData,
+  type TarjetaRegaloDestinatarioData,
+} from "./templates/tarjeta-regalo";
 import type { EmailKind, RenderedEmail } from "./types";
 
 /** En mall = { data, kind (`EMAIL_FROM_BOOKING`/`EMAIL_FROM_ACCOUNT`) }. */
@@ -101,6 +107,10 @@ export type EmailTemplateMap = {
   readonly solicitudResena: SolicitudResenaData;
   /** D-063: al dueño, el cliente respondió "Necesito cambiar" en WhatsApp. */
   readonly clienteQuiereCambiar: DuenoReservaData;
+  /** WP-87 (D-073): tarjeta de regalo — comprobante al comprador, la
+   * tarjeta a quien la recibe. */
+  readonly tarjetaRegaloComprador: TarjetaRegaloCompradorData;
+  readonly tarjetaRegaloDestinatario: TarjetaRegaloDestinatarioData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -136,6 +146,8 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   campanaMarketing: "booking",
   solicitudResena: "booking",
   clienteQuiereCambiar: "booking",
+  tarjetaRegaloComprador: "booking",
+  tarjetaRegaloDestinatario: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -164,6 +176,8 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "campanaMarketing",
   "solicitudResena",
   "clienteQuiereCambiar",
+  "tarjetaRegaloComprador",
+  "tarjetaRegaloDestinatario",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -223,6 +237,12 @@ export function renderEmail<T extends EmailTemplateName>(
       return solicitudResenaEmail(data as SolicitudResenaData);
     case "clienteQuiereCambiar":
       return clienteQuiereCambiarEmail(data as DuenoReservaData);
+    case "tarjetaRegaloComprador":
+      return tarjetaRegaloCompradorEmail(data as TarjetaRegaloCompradorData);
+    case "tarjetaRegaloDestinatario":
+      return tarjetaRegaloDestinatarioEmail(
+        data as TarjetaRegaloDestinatarioData,
+      );
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

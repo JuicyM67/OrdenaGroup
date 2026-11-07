@@ -21,7 +21,8 @@ export type RouteId =
   | "preguntas"
   | "contacto"
   | "ejemploNegocio"
-  | "paraClientes";
+  | "paraClientes"
+  | "guiaLinkReservas";
 
 /** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts`). */
 export type IndustriaId =
@@ -43,6 +44,9 @@ const ROUTES: Record<RouteId, string> = {
   ejemploNegocio: "/demo/negocio",
   // Landningssidan för konsumentkontot (med marknadsplatsen, D-060).
   paraClientes: "/para-clientes",
+  // WP-89 (D-075): publik guide för att lägga ut bokningslänken (egen sidfil, inte i
+  // funktionsmallen eller menyn).
+  guiaLinkReservas: "/funcionalidades/comparte-tu-link",
 };
 
 /** Länk till en av marknadssidorna. `hash` läggs på utan `#` (t.ex.
@@ -195,6 +199,7 @@ export function sitemapPaths(): string[] {
     href("contacto"),
     ...(marketplaceEnabled() ? [href("paraClientes")] : []),
     ...FUNCION_IDS.map(hrefFuncion),
+    href("guiaLinkReservas"),
     hrefRubros(),
     ...RUBRO_IDS.map(hrefRubro),
     hrefLegal("privacidad"),
@@ -221,6 +226,7 @@ export type AppRouteId =
   | "appClientesResenas"
   | "appCaja"
   | "appCajaInformes"
+  | "appCajaTarjetas"
   | "appFlash"
   | "appOfertas"
   | "appAjustes"
@@ -235,6 +241,9 @@ export type AppRouteId =
   | "appAjustesPrivacidad"
   | "appAjustesPlan"
   | "appAjustesWidgets"
+  | "appAjustesCompartir"
+  | "appAjustesPaquetes"
+  | "appAjustesFicha"
   | "appSolicitud"
   | "appInvitacion"
   | "appBienvenida"
@@ -257,6 +266,9 @@ export const AJUSTES_TAB_ROUTE_IDS = {
   privacidad: "appAjustesPrivacidad",
   plan: "appAjustesPlan",
   widgets: "appAjustesWidgets",
+  compartir: "appAjustesCompartir",
+  paquetes: "appAjustesPaquetes",
+  ficha: "appAjustesFicha",
 } as const satisfies Record<string, AppRouteId>;
 
 /** Filsystemets sökväg, med `[id]`/`[token]` som platshållare för dynamiska
@@ -272,6 +284,8 @@ const APP_ROUTES: Record<AppRouteId, string> = {
   appClientesUtskickNytt: "/app/clientes/utskick/nytt",
   appCaja: "/app/caja",
   appCajaInformes: "/app/caja/informes",
+  // WP-87 (D-073): Caja → Tarjetas de regalo (vender, usar, listado).
+  appCajaTarjetas: "/app/caja/tarjetas-regalo",
   appFlash: "/app/flash",
   // WP-70 (D-056): erbjudanderedigeraren.
   appOfertas: "/app/ofertas",
@@ -288,6 +302,12 @@ const APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesPlan: "/app/ajustes/plan",
   // WP-82 (D-067): widgets för företagets egen hemsida.
   appAjustesWidgets: "/app/ajustes/widgets",
+  // WP-89 (D-075): bokningslänken, QR och guider per kanal.
+  appAjustesCompartir: "/app/ajustes/compartir",
+  // WP-86 (D-072): paketmallar.
+  appAjustesPaquetes: "/app/ajustes/paquetes",
+  // WP-88 (D-074): ficha de atención y consentimientos.
+  appAjustesFicha: "/app/ajustes/ficha",
   appSolicitud: "/app/solicitudes/[id]",
   appInvitacion: "/app/invitacion/[token]",
   appBienvenida: "/app/bienvenida/[token]",
@@ -302,6 +322,12 @@ const APP_ROUTES: Record<AppRouteId, string> = {
 export function appHref(id: AppRouteId, param?: string): string {
   const path = APP_ROUTES[id];
   return param === undefined ? path : path.replace(/\[(?:id|token)\]/, param);
+}
+
+/** WP-87 (D-073): la tarjeta de regalo detrás de un link (`?t=<token>`),
+ * bajo la página del negocio (filsystemet `src/app/[slug]/tarjeta-regalo/tarjeta`). */
+export function tarjetaRegaloHref(slug: string): string {
+  return `/${slug}/tarjeta-regalo/tarjeta`;
 }
 
 function stripDynamicSegment(path: string): string {

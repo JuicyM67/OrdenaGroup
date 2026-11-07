@@ -3,13 +3,17 @@
 // den inom fönstret. Härledd — ingen ritad referens (som datasteget/
 // bekräftelsen i WP-13), men samma formspråk: mörk rubrik, `Card radius="tile"`
 // för sammanfattningen, samma typografiskalor.
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
+import {
+  ConsentAcceptCard,
+  type ConsentAcceptResult,
+} from "@/components/records/consent-accept-card";
 import { TextLink } from "@/components/ui/text-link";
-import { comun, estados, gestion } from "@/i18n";
+import { comun, consentimientoInformado, estados, gestion } from "@/i18n";
 
 import { CancelDialog } from "./cancel-dialog";
 import {
@@ -26,6 +30,8 @@ export function ManageScreen({
   now,
   onCancel,
   onRevokeWhatsApp,
+  packagesSlot,
+  onAcceptConsent,
 }: {
   booking: ManagedBooking;
   /** Instant (ISO, med offset) för "nu", injicerad av `page.tsx` — aldrig
@@ -34,6 +40,13 @@ export function ManageScreen({
   onCancel: () => Promise<ManageCancelResult>;
   /** D-063: återkalla WhatsApp-samtycket (bara när det är aktivt). */
   onRevokeWhatsApp?: () => Promise<ManageWhatsAppResult>;
+  /** WP-86 (D-072): kundens paket hos företaget (`ManagePackages`). */
+  packagesSlot?: ReactNode;
+  /** WP-88 (D-074): godkänn en consentimiento som tjänsten kräver. */
+  onAcceptConsent?: (input: {
+    templateId: string;
+    version: string;
+  }) => Promise<ConsentAcceptResult>;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [justCancelled, setJustCancelled] = useState(false);
@@ -100,6 +113,30 @@ export function ManageScreen({
           {fields.precio}
         </div>
       </Card>
+
+      {packagesSlot}
+      {onAcceptConsent &&
+      state !== "cancelled" &&
+      (booking.pendingConsents?.length ?? 0) > 0 ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-15 font-bold text-ink">
+            {consentimientoInformado.pendientesTitulo}
+          </h2>
+          {booking.pendingConsents?.map((c) => (
+            <ConsentAcceptCard
+              key={c.templateId}
+              consent={c}
+              businessName={booking.business.name}
+              onAccept={() =>
+                onAcceptConsent({
+                  templateId: c.templateId,
+                  version: c.version,
+                })
+              }
+            />
+          ))}
+        </section>
+      ) : null}
 
       {booking.status === "requested" ? (
         <div className="flex flex-col gap-2">

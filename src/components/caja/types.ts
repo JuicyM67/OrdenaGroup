@@ -4,6 +4,7 @@
 // (gränsregeln i uppdraget), samma mönster som `AgendaMemberView`/
 // `HoyMemberView` (agenda/types.ts, mobile/types.ts) eller `CustomerExportResult`
 // i `customer-privacy-actions.tsx`. Håll de två filerna i synk för hand.
+import type { BookingPackageInfo } from "@/components/packages/types";
 import { estados } from "@/i18n";
 import type { LocalDate } from "@/lib/format/dates";
 
@@ -73,6 +74,8 @@ export type PorCobrarRow = {
   staffName: string;
   /** Det som återstår: pris − rabatt − godkänd förskottsbetalning. */
   priceMinor: number;
+  /** WP-86 (D-072): ett aktivt paket som täcker bokningen. */
+  packageInfo?: BookingPackageInfo;
 };
 
 export type PagoHoyRow = {
@@ -94,6 +97,8 @@ export type CajaData = {
   byService: BreakdownRow[];
   porCobrar: PorCobrarRow[];
   pagosHoy: PagoHoyRow[];
+  /** WP-86 (D-072): paket sålda i perioden (ingår i `revenueMinor`). */
+  packages: { soldCount: number; soldMinor: number };
 };
 
 export type CajaResult = CajaData | { forbidden: true } | { invalid: true };

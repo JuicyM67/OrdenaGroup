@@ -90,6 +90,10 @@ export const errores = {
      * desde el mismo IP, o ya hay demasiadas reservas futuras con este
      * número de teléfono en este negocio. */
     rate_limited: "Demasiados intentos. Prueba de nuevo en unos minutos.",
+    /** WP-88 (D-074): el servicio pide un consentimiento informado que no se
+     * aceptó (o cambió mientras el formulario estaba abierto). TODO_COPY */
+    informed_consent_required:
+      "Para reservar este servicio tienes que aceptar el consentimiento. Si recién cambió, recarga la página.",
     nombreVacio: "Escribe tu nombre.",
     emailInvalido: "Revisa tu correo electrónico.",
     consentimientoRequerido: "Acepta los términos para continuar.",
@@ -639,6 +643,14 @@ export { ofertas } from "./es-CL.ofertas";
 export { adminPanel } from "./es-CL.admin";
 // WP-82 (D-067): widgets para el sitio web del negocio.
 export { widgets } from "./es-CL.widgets";
+// WP-89 (D-075): "Comparte tu link" (QR y guías por canal).
+export { compartir } from "./es-CL.compartir";
+// WP-87 (D-073): tarjetas de regalo (venta en el local).
+export { regalo } from "./es-CL.regalo";
+// WP-86 (D-072): paquetes de sesiones.
+export { paquetes } from "./es-CL.paquetes";
+// WP-88 (D-074): ficha de atención y consentimiento informado.
+export { consentimientoInformado, fichaAtencion } from "./es-CL.ficha";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).
 export {

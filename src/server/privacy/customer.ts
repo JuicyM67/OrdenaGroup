@@ -64,6 +64,27 @@ export type CustomerExportData = {
     channel: string;
     granted: boolean;
     createdAt: string;
+    /** WP-88 (D-074): consentimiento informado — mallen (titel i den
+     * godkända versionen), bokningen och var kunden godkände. */
+    consentTemplateId: string | null;
+    consentTitle: string | null;
+    bookingId: string | null;
+    source: string | null;
+  }>;
+  /** WP-88 (D-074): fichans fasta fält (känsliga uppgifter). */
+  record: {
+    allergies: string | null;
+    contraindications: string | null;
+    observations: string | null;
+    updatedAt: string;
+  } | null;
+  /** WP-88 (D-074): fichans anteckningar. */
+  recordEntries: Array<{
+    id: string;
+    bookingId: string | null;
+    body: string;
+    authorStaffId: string | null;
+    createdAt: string;
   }>;
   /** WP-65 (D-045): kundens recensioner, med företagets svar. */
   reviews: Array<{
@@ -175,9 +196,45 @@ export async function exportCustomer(
       channel: string;
       granted: boolean;
       created_at: string;
+      consent_template_id: string | null;
+      consent_title: string | null;
+      booking_id: string | null;
+      source: string | null;
     }>(
-      `select subject, kind, version, channel, granted, created_at
-         from public.consent_events
+      `select ce.subject, ce.kind, ce.version, ce.channel, ce.granted, ce.created_at,
+              ce.consent_template_id, ctv.title as consent_title, ce.booking_id, ce.source
+         from public.consent_events ce
+         left join public.consent_template_versions ctv
+           on ctv.business_id = ce.business_id
+          and ctv.template_id = ce.consent_template_id
+          and ctv.version = ce.version
+        where ce.business_id = $1 and ce.customer_id = $2
+        order by ce.created_at`,
+      [businessId, customerId],
+    );
+
+    const recordRes = await q.query<{
+      allergies: string | null;
+      contraindications: string | null;
+      observations: string | null;
+      updated_at: string;
+    }>(
+      `select allergies, contraindications, observations, updated_at
+         from public.customer_records
+        where business_id = $1 and customer_id = $2`,
+      [businessId, customerId],
+    );
+    const recordRow = recordRes.rows[0];
+
+    const entriesRes = await q.query<{
+      id: string;
+      booking_id: string | null;
+      body: string;
+      author_staff_id: string | null;
+      created_at: string;
+    }>(
+      `select id, booking_id, body, author_staff_id, created_at
+         from public.customer_record_entries
         where business_id = $1 and customer_id = $2
         order by created_at`,
       [businessId, customerId],
@@ -262,6 +319,25 @@ export async function exportCustomer(
           channel: e.channel,
           granted: e.granted,
           createdAt: e.created_at,
+          consentTemplateId: e.consent_template_id,
+          consentTitle: e.consent_title,
+          bookingId: e.booking_id,
+          source: e.source,
+        })),
+        record: recordRow
+          ? {
+              allergies: recordRow.allergies,
+              contraindications: recordRow.contraindications,
+              observations: recordRow.observations,
+              updatedAt: recordRow.updated_at,
+            }
+          : null,
+        recordEntries: entriesRes.rows.map((r) => ({
+          id: r.id,
+          bookingId: r.booking_id,
+          body: r.body,
+          authorStaffId: r.author_staff_id,
+          createdAt: r.created_at,
         })),
         reviews: reviewsRes.rows.map((r) => ({
           bookingId: r.booking_id,
@@ -296,6 +372,9 @@ export async function exportCustomer(
  * `booking_answers` för kundens bokningar, avbryter köade outbox-rader och
  * tömmer deras payload, rensar `manage_token_hash` på kundens bokningar och
  * kopplar loss `consent_events` (behålls utan koppling till kunden, D-033).
+ * WP-88 (D-074): fichan (fasta fält, anteckningar, signeringslänkar) raderas
+ * av triggern `customers_purge_records` när `anonymized_at` sätts här (och i
+ * `private.run_retention`).
  * Väntande förfrågningar (`requested`, WP-45) avbokas utan utskick.
  * Recensioner (WP-65, D-045): triggern `customers_anonymize_reviews`
  * nollar namn/text/svar och raderar inbjudningarna när `anonymized_at`

@@ -566,6 +566,7 @@ export type Database = {
           plan_override_until: string | null;
           plan_requested: Database["public"]["Enums"]["business_plan"] | null;
           plan_requested_at: string | null;
+          record_fields: string[];
           review_requests_enabled: boolean;
           serves_at_customer: boolean;
           slot_interval_minutes: number;
@@ -626,6 +627,7 @@ export type Database = {
           plan_override_until?: string | null;
           plan_requested?: Database["public"]["Enums"]["business_plan"] | null;
           plan_requested_at?: string | null;
+          record_fields?: string[];
           review_requests_enabled?: boolean;
           serves_at_customer?: boolean;
           slot_interval_minutes?: number;
@@ -686,6 +688,7 @@ export type Database = {
           plan_override_until?: string | null;
           plan_requested?: Database["public"]["Enums"]["business_plan"] | null;
           plan_requested_at?: string | null;
+          record_fields?: string[];
           review_requests_enabled?: boolean;
           serves_at_customer?: boolean;
           slot_interval_minutes?: number;
@@ -835,39 +838,55 @@ export type Database = {
       };
       consent_events: {
         Row: {
+          booking_id: string | null;
           business_id: string;
           channel: Database["public"]["Enums"]["consent_channel"];
+          consent_template_id: string | null;
           created_at: string;
           customer_id: string | null;
           granted: boolean;
           id: string;
           kind: Database["public"]["Enums"]["consent_kind"];
+          source: string | null;
           subject: Database["public"]["Enums"]["consent_subject"];
           version: string;
         };
         Insert: {
+          booking_id?: string | null;
           business_id: string;
           channel: Database["public"]["Enums"]["consent_channel"];
+          consent_template_id?: string | null;
           created_at?: string;
           customer_id?: string | null;
           granted: boolean;
           id?: string;
           kind: Database["public"]["Enums"]["consent_kind"];
+          source?: string | null;
           subject: Database["public"]["Enums"]["consent_subject"];
           version: string;
         };
         Update: {
+          booking_id?: string | null;
           business_id?: string;
           channel?: Database["public"]["Enums"]["consent_channel"];
+          consent_template_id?: string | null;
           created_at?: string;
           customer_id?: string | null;
           granted?: boolean;
           id?: string;
           kind?: Database["public"]["Enums"]["consent_kind"];
+          source?: string | null;
           subject?: Database["public"]["Enums"]["consent_subject"];
           version?: string;
         };
         Relationships: [
+          {
+            foreignKeyName: "consent_events_booking_fk";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
           {
             foreignKeyName: "consent_events_business_id_customer_id_fkey";
             columns: ["business_id", "customer_id"];
@@ -877,6 +896,164 @@ export type Database = {
           },
           {
             foreignKeyName: "consent_events_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "consent_events_template_fk";
+            columns: ["business_id", "consent_template_id"];
+            isOneToOne: false;
+            referencedRelation: "consent_templates";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      consent_signing_links: {
+        Row: {
+          booking_id: string | null;
+          business_id: string;
+          created_at: string;
+          created_by: string | null;
+          customer_id: string;
+          expires_at: string;
+          id: string;
+          template_id: string;
+          token_hash: string;
+          used_at: string | null;
+        };
+        Insert: {
+          booking_id?: string | null;
+          business_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id: string;
+          expires_at: string;
+          id?: string;
+          template_id: string;
+          token_hash: string;
+          used_at?: string | null;
+        };
+        Update: {
+          booking_id?: string | null;
+          business_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          customer_id?: string;
+          expires_at?: string;
+          id?: string;
+          template_id?: string;
+          token_hash?: string;
+          used_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "consent_signing_links_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "consent_signing_links_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "consent_signing_links_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "consent_signing_links_business_id_template_id_fkey";
+            columns: ["business_id", "template_id"];
+            isOneToOne: false;
+            referencedRelation: "consent_templates";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      consent_template_versions: {
+        Row: {
+          body: string;
+          business_id: string;
+          created_at: string;
+          template_id: string;
+          title: string;
+          version: string;
+        };
+        Insert: {
+          body: string;
+          business_id: string;
+          created_at?: string;
+          template_id: string;
+          title: string;
+          version: string;
+        };
+        Update: {
+          body?: string;
+          business_id?: string;
+          created_at?: string;
+          template_id?: string;
+          title?: string;
+          version?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "consent_template_versions_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "consent_template_versions_business_id_template_id_fkey";
+            columns: ["business_id", "template_id"];
+            isOneToOne: false;
+            referencedRelation: "consent_templates";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      consent_templates: {
+        Row: {
+          active: boolean;
+          body: string;
+          business_id: string;
+          created_at: string;
+          id: string;
+          title: string;
+          updated_at: string;
+          version: string;
+        };
+        Insert: {
+          active?: boolean;
+          body: string;
+          business_id: string;
+          created_at?: string;
+          id?: string;
+          title: string;
+          updated_at?: string;
+          version?: string;
+        };
+        Update: {
+          active?: boolean;
+          body?: string;
+          business_id?: string;
+          created_at?: string;
+          id?: string;
+          title?: string;
+          updated_at?: string;
+          version?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "consent_templates_business_id_fkey";
             columns: ["business_id"];
             isOneToOne: false;
             referencedRelation: "businesses";
@@ -1002,6 +1179,297 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "booking_questions";
             referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      customer_package_moves: {
+        Row: {
+          booking_id: string | null;
+          business_id: string;
+          created_at: string;
+          created_by: string | null;
+          customer_package_id: string;
+          delta: number;
+          id: string;
+          kind: string;
+          no_show: boolean;
+          reverses_id: string | null;
+        };
+        Insert: {
+          booking_id?: string | null;
+          business_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          customer_package_id: string;
+          delta: number;
+          id?: string;
+          kind: string;
+          no_show?: boolean;
+          reverses_id?: string | null;
+        };
+        Update: {
+          booking_id?: string | null;
+          business_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          customer_package_id?: string;
+          delta?: number;
+          id?: string;
+          kind?: string;
+          no_show?: boolean;
+          reverses_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_package_moves_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_package_moves_business_id_customer_package_id_fkey";
+            columns: ["business_id", "customer_package_id"];
+            isOneToOne: false;
+            referencedRelation: "customer_packages";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_package_moves_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "customer_package_moves_business_id_reverses_id_fkey";
+            columns: ["business_id", "reverses_id"];
+            isOneToOne: false;
+            referencedRelation: "customer_package_moves";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      customer_package_services: {
+        Row: {
+          business_id: string;
+          customer_package_id: string;
+          service_id: string;
+        };
+        Insert: {
+          business_id: string;
+          customer_package_id: string;
+          service_id: string;
+        };
+        Update: {
+          business_id?: string;
+          customer_package_id?: string;
+          service_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_package_services_business_id_customer_package_id_fkey";
+            columns: ["business_id", "customer_package_id"];
+            isOneToOne: false;
+            referencedRelation: "customer_packages";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_package_services_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "customer_package_services_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      customer_packages: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          customer_id: string;
+          expires_on: string | null;
+          id: string;
+          name: string;
+          payment_method: Database["public"]["Enums"]["payment_method"];
+          price_clp: number;
+          sessions_total: number;
+          sold_at: string;
+          sold_by: string | null;
+          status: string;
+          template_id: string;
+          voided_at: string | null;
+          voided_by: string | null;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          customer_id: string;
+          expires_on?: string | null;
+          id?: string;
+          name: string;
+          payment_method: Database["public"]["Enums"]["payment_method"];
+          price_clp: number;
+          sessions_total: number;
+          sold_at?: string;
+          sold_by?: string | null;
+          status?: string;
+          template_id: string;
+          voided_at?: string | null;
+          voided_by?: string | null;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          customer_id?: string;
+          expires_on?: string | null;
+          id?: string;
+          name?: string;
+          payment_method?: Database["public"]["Enums"]["payment_method"];
+          price_clp?: number;
+          sessions_total?: number;
+          sold_at?: string;
+          sold_by?: string | null;
+          status?: string;
+          template_id?: string;
+          voided_at?: string | null;
+          voided_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_packages_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_packages_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "customer_packages_business_id_template_id_fkey";
+            columns: ["business_id", "template_id"];
+            isOneToOne: false;
+            referencedRelation: "package_templates";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      customer_record_entries: {
+        Row: {
+          author_staff_id: string | null;
+          author_user_id: string | null;
+          body: string;
+          booking_id: string | null;
+          business_id: string;
+          created_at: string;
+          customer_id: string;
+          id: string;
+        };
+        Insert: {
+          author_staff_id?: string | null;
+          author_user_id?: string | null;
+          body: string;
+          booking_id?: string | null;
+          business_id: string;
+          created_at?: string;
+          customer_id: string;
+          id?: string;
+        };
+        Update: {
+          author_staff_id?: string | null;
+          author_user_id?: string | null;
+          body?: string;
+          booking_id?: string | null;
+          business_id?: string;
+          created_at?: string;
+          customer_id?: string;
+          id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_record_entries_business_id_author_staff_id_fkey";
+            columns: ["business_id", "author_staff_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_record_entries_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_record_entries_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_record_entries_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      customer_records: {
+        Row: {
+          allergies: string | null;
+          business_id: string;
+          contraindications: string | null;
+          customer_id: string;
+          observations: string | null;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          allergies?: string | null;
+          business_id: string;
+          contraindications?: string | null;
+          customer_id: string;
+          observations?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          allergies?: string | null;
+          business_id?: string;
+          contraindications?: string | null;
+          customer_id?: string;
+          observations?: string | null;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_records_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: true;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_records_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
           },
         ];
       };
@@ -1248,6 +1716,7 @@ export type Database = {
           buyer_email: string | null;
           buyer_name: string | null;
           buyer_token_hash: string | null;
+          channel: string;
           created_at: string;
           currency: string;
           deliver_on: string | null;
@@ -1255,6 +1724,7 @@ export type Database = {
           fee_minor: number;
           greeting: string | null;
           id: string;
+          in_store_method: string | null;
           next_attempt_at: string;
           paid_at: string | null;
           payment_intent_id: string | null;
@@ -1263,8 +1733,9 @@ export type Database = {
           recipient_name: string | null;
           refunded_minor: number;
           session_id: string | null;
+          sold_by_user_id: string | null;
           status: string;
-          stripe_account_id: string;
+          stripe_account_id: string | null;
           theme: string;
           updated_at: string;
           user_id: string | null;
@@ -1276,6 +1747,7 @@ export type Database = {
           buyer_email?: string | null;
           buyer_name?: string | null;
           buyer_token_hash?: string | null;
+          channel?: string;
           created_at?: string;
           currency?: string;
           deliver_on?: string | null;
@@ -1283,6 +1755,7 @@ export type Database = {
           fee_minor: number;
           greeting?: string | null;
           id?: string;
+          in_store_method?: string | null;
           next_attempt_at?: string;
           paid_at?: string | null;
           payment_intent_id?: string | null;
@@ -1291,8 +1764,9 @@ export type Database = {
           recipient_name?: string | null;
           refunded_minor?: number;
           session_id?: string | null;
+          sold_by_user_id?: string | null;
           status?: string;
-          stripe_account_id: string;
+          stripe_account_id?: string | null;
           theme?: string;
           updated_at?: string;
           user_id?: string | null;
@@ -1304,6 +1778,7 @@ export type Database = {
           buyer_email?: string | null;
           buyer_name?: string | null;
           buyer_token_hash?: string | null;
+          channel?: string;
           created_at?: string;
           currency?: string;
           deliver_on?: string | null;
@@ -1311,6 +1786,7 @@ export type Database = {
           fee_minor?: number;
           greeting?: string | null;
           id?: string;
+          in_store_method?: string | null;
           next_attempt_at?: string;
           paid_at?: string | null;
           payment_intent_id?: string | null;
@@ -1319,8 +1795,9 @@ export type Database = {
           recipient_name?: string | null;
           refunded_minor?: number;
           session_id?: string | null;
+          sold_by_user_id?: string | null;
           status?: string;
-          stripe_account_id?: string;
+          stripe_account_id?: string | null;
           theme?: string;
           updated_at?: string;
           user_id?: string | null;
@@ -1438,6 +1915,7 @@ export type Database = {
           can_manage_all_bookings: boolean;
           can_manage_own_bookings: boolean;
           can_manage_team: boolean;
+          can_view_records: boolean;
           can_view_reports: boolean;
           created_at: string;
           email: string;
@@ -1458,6 +1936,7 @@ export type Database = {
           can_manage_all_bookings?: boolean;
           can_manage_own_bookings?: boolean;
           can_manage_team?: boolean;
+          can_view_records?: boolean;
           can_view_reports?: boolean;
           created_at?: string;
           email: string;
@@ -1478,6 +1957,7 @@ export type Database = {
           can_manage_all_bookings?: boolean;
           can_manage_own_bookings?: boolean;
           can_manage_team?: boolean;
+          can_view_records?: boolean;
           can_view_reports?: boolean;
           created_at?: string;
           email?: string;
@@ -1515,6 +1995,7 @@ export type Database = {
           can_manage_all_bookings: boolean;
           can_manage_own_bookings: boolean;
           can_manage_team: boolean;
+          can_view_records: boolean;
           can_view_reports: boolean;
           created_at: string;
           role: Database["public"]["Enums"]["member_role"];
@@ -1530,6 +2011,7 @@ export type Database = {
           can_manage_all_bookings?: boolean;
           can_manage_own_bookings?: boolean;
           can_manage_team?: boolean;
+          can_view_records?: boolean;
           can_view_reports?: boolean;
           created_at?: string;
           role: Database["public"]["Enums"]["member_role"];
@@ -1545,6 +2027,7 @@ export type Database = {
           can_manage_all_bookings?: boolean;
           can_manage_own_bookings?: boolean;
           can_manage_team?: boolean;
+          can_view_records?: boolean;
           can_view_reports?: boolean;
           created_at?: string;
           role?: Database["public"]["Enums"]["member_role"];
@@ -1765,6 +2248,96 @@ export type Database = {
           },
         ];
       };
+      package_template_services: {
+        Row: {
+          business_id: string;
+          service_id: string;
+          template_id: string;
+        };
+        Insert: {
+          business_id: string;
+          service_id: string;
+          template_id: string;
+        };
+        Update: {
+          business_id?: string;
+          service_id?: string;
+          template_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "package_template_services_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "package_template_services_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "package_template_services_business_id_template_id_fkey";
+            columns: ["business_id", "template_id"];
+            isOneToOne: false;
+            referencedRelation: "package_templates";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      package_templates: {
+        Row: {
+          active: boolean;
+          business_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          price_clp: number;
+          sessions: number;
+          show_public: boolean;
+          sort: number;
+          updated_at: string;
+          validity_days: number | null;
+        };
+        Insert: {
+          active?: boolean;
+          business_id: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          price_clp: number;
+          sessions: number;
+          show_public?: boolean;
+          sort?: number;
+          updated_at?: string;
+          validity_days?: number | null;
+        };
+        Update: {
+          active?: boolean;
+          business_id?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          price_clp?: number;
+          sessions?: number;
+          show_public?: boolean;
+          sort?: number;
+          updated_at?: string;
+          validity_days?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "package_templates_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       payments: {
         Row: {
           amount_clp: number;
@@ -1969,6 +2542,49 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "businesses";
             referencedColumns: ["id"];
+          },
+        ];
+      };
+      service_consent_templates: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          service_id: string;
+          template_id: string;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          service_id: string;
+          template_id: string;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          service_id?: string;
+          template_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "service_consent_templates_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "service_consent_templates_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "service_consent_templates_business_id_template_id_fkey";
+            columns: ["business_id", "template_id"];
+            isOneToOne: false;
+            referencedRelation: "consent_templates";
+            referencedColumns: ["business_id", "id"];
           },
         ];
       };
@@ -2810,7 +3426,13 @@ export type Database = {
       campaign_status: "draft" | "sent";
       consent_channel: "web" | "whatsapp" | "manual";
       consent_kind:
-        "terms" | "marketing" | "waitlist" | "owner_terms" | "dpa" | "whatsapp";
+        | "terms"
+        | "marketing"
+        | "waitlist"
+        | "owner_terms"
+        | "dpa"
+        | "whatsapp"
+        | "informed";
       consent_subject: "customer" | "owner";
       deposit_kind: "none" | "fixed" | "percent";
       flash_slot_status: "active" | "booked" | "cancelled";
@@ -2990,6 +3612,7 @@ export const Constants = {
         "owner_terms",
         "dpa",
         "whatsapp",
+        "informed",
       ],
       consent_subject: ["customer", "owner"],
       deposit_kind: ["none", "fixed", "percent"],

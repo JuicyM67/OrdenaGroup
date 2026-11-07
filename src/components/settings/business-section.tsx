@@ -20,6 +20,7 @@ import { TuLinkCard } from "@/components/shared/tu-link-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TextField } from "@/components/ui/text-field";
+import { appHref } from "@/config/routes";
 import { ajustes, negocio } from "@/i18n";
 
 import { ajustesErrorText } from "./error-text";
@@ -160,7 +161,13 @@ export function BusinessSection({
       {/* UX-granskning (sección "Inställningar", fel 4-grannen "Bokningslänk-kortet"):
           flyttad hit från AjustesShell (toppen av varje flik) — hör hemma på "Tu negocio",
           inte upprepad på t.ex. Öppettider. */}
-      <TuLinkCard slug={business.slug} businessName={business.name} />
+      {/* WP-89 (D-075): Tu negocio och Comparte tu link kräver samma behörighet
+          (`can_edit_settings`), så länken till guiden visas alltid här. */}
+      <TuLinkCard
+        slug={business.slug}
+        businessName={business.name}
+        guideHref={appHref("appAjustesCompartir")}
+      />
 
       <form
         onSubmit={(e) => void handleSubmit(e)}

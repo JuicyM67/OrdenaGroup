@@ -20,6 +20,11 @@ import type { Queryable } from "@/server/db/pool";
 import { withOwnerTx } from "@/server/db/tx";
 import { loadBusinessTz } from "@/server/payments/business-tz";
 import {
+  cajaPackagesIn,
+  listBookingPackageInfoIn,
+  type BookingPackageInfo,
+} from "@/server/packages/packages";
+import {
   intersect,
   normalize,
   subtract,
@@ -76,6 +81,8 @@ export type PorCobrarRow = {
   staffName: string;
   /** Det som återstår: pris − rabatt − godkänd förskottsbetalning. */
   priceMinor: number;
+  /** WP-86 (D-072): ett aktivt paket som täcker bokningen ("Usar paquete"). */
+  packageInfo?: BookingPackageInfo;
 };
 
 export type PagoHoyRow = {
@@ -97,6 +104,9 @@ export type CajaData = {
   byService: BreakdownRow[];
   porCobrar: PorCobrarRow[];
   pagosHoy: PagoHoyRow[];
+  /** WP-86 (D-072): paket sålda i perioden (ingår redan i `revenueMinor`
+   * och `byMethod`). */
+  packages: { soldCount: number; soldMinor: number };
 };
 
 export type CajaResult = CajaData | { forbidden: true } | { invalid: true };
@@ -291,6 +301,16 @@ async function loadCajaIn(
            where p.business_id = bk.business_id and p.booking_id = bk.id
              and p.status = 'approved' and p.kind in ('full', 'balance')
         )
+        -- WP-86 (D-072): betald med paket (ej ångrad inlösen).
+        and not exists (
+          select 1 from public.customer_package_moves m
+           where m.business_id = bk.business_id and m.booking_id = bk.id
+             and m.kind = 'redeem'
+             and not exists (
+               select 1 from public.customer_package_moves r
+                where r.business_id = m.business_id and r.reverses_id = m.id
+             )
+        )
       order by lower(bk.period)
       limit ${LIST_LIMIT}`,
     [businessId, s, e, now.toISOString()],
@@ -318,26 +338,57 @@ async function loadCajaIn(
     [businessId, today.start.toISOString(), today.end.toISOString()],
   );
 
+  // WP-86 (D-072): sålda paket är inkasserat på försäljningsdagen (per
+  // metod); en bokning som betalats med paket är inte längre "por cobrar".
+  const pk = await cajaPackagesIn(q, businessId, s, e);
+  const pkInfo = await listBookingPackageInfoIn(
+    q,
+    businessId,
+    pc.rows.map((x) => x.id),
+    now,
+  );
+  const byMethodWithPackages = byMethod.map((r) => ({ ...r }));
+  for (const m of pk.byMethod) {
+    const row = byMethodWithPackages.find((r) => r.key === m.method);
+    if (row) row.amountMinor += m.amountMinor;
+    else {
+      byMethodWithPackages.push({
+        key: m.method,
+        label: m.method,
+        amountMinor: m.amountMinor,
+        bookings: 0,
+      });
+    }
+  }
+  byMethodWithPackages.sort((a, b) => b.amountMinor - a.amountMinor);
+
   return {
     period: days,
     summary: {
-      revenueMinor: num(sr?.revenue_clp),
-      expectedMinor: num(sr?.expected_clp),
+      revenueMinor: num(sr?.revenue_clp) + pk.soldMinor,
+      expectedMinor: Math.max(
+        0,
+        num(sr?.expected_clp) - pk.redeemedExpectedMinor,
+      ),
       bookings: num(sr?.bookings_count),
       noShows: num(sr?.no_show_count),
       averageMinor: num(sr?.average_price_clp),
     },
-    byMethod,
+    byMethod: byMethodWithPackages,
     byStaff,
     byService,
-    porCobrar: pc.rows.map((x) => ({
-      bookingId: x.id,
-      start: x.start_at.toISOString(),
-      customerName: x.customer_name,
-      serviceName: x.service_name,
-      staffName: x.staff_name,
-      priceMinor: x.due,
-    })),
+    porCobrar: pc.rows.map((x) => {
+      const info = pkInfo.get(x.id);
+      return {
+        bookingId: x.id,
+        start: x.start_at.toISOString(),
+        customerName: x.customer_name,
+        serviceName: x.service_name,
+        staffName: x.staff_name,
+        priceMinor: x.due,
+        ...(info?.available ? { packageInfo: info } : {}),
+      };
+    }),
     pagosHoy: ph.rows.map((x) => ({
       paymentId: x.id,
       bookingId: x.booking_id,
@@ -346,6 +397,7 @@ async function loadCajaIn(
       amountMinor: x.amount_clp,
       customerName: x.customer_name,
     })),
+    packages: { soldCount: pk.soldCount, soldMinor: pk.soldMinor },
   };
 }
 

@@ -12,13 +12,15 @@ import { Card } from "@/components/ui/card";
 import { strokeCard } from "@/components/ui/icons";
 import { TextLink } from "@/components/ui/text-link";
 import { cn } from "@/components/ui/cn";
-import { inicio } from "@/i18n";
+import { compartir, inicio } from "@/i18n";
 
 export type TuLinkCardProps = {
   /** Slug del negocio, sin barra inicial (p. ej. "barberia-norte"). */
   slug: string;
   /** Nombre del negocio, para el mensaje de WhatsApp prellenado. */
   businessName: string;
+  /** WP-89 (D-075): länk till Ajustes → Comparte tu link, bara för den som får se fliken. */
+  guideHref?: string;
   className?: string;
 };
 
@@ -29,7 +31,12 @@ function appUrl(): string {
   );
 }
 
-export function TuLinkCard({ slug, businessName, className }: TuLinkCardProps) {
+export function TuLinkCard({
+  slug,
+  businessName,
+  guideHref,
+  className,
+}: TuLinkCardProps) {
   const [copied, setCopied] = useState(false);
   // WP-47: la Clipboard API puede fallar (permiso denegado, contexto no seguro) — antes
   // fallaba en silencio (`setCopied(false)`, indistinguible del estado inicial).
@@ -105,6 +112,9 @@ export function TuLinkCard({ slug, businessName, className }: TuLinkCardProps) {
       <TextLink href={`/${slug}`} target="_blank" rel="noreferrer">
         {inicio.tuLink.abrir}
       </TextLink>
+      {guideHref ? (
+        <TextLink href={guideHref}>{compartir.enlaceGuia}</TextLink>
+      ) : null}
     </Card>
   );
 }

@@ -27,10 +27,13 @@ export type PlanSectionData = {
 const FEATURES: readonly Feature[] = [
   "unbranded",
   "waitlist",
+  // WP-86 (D-072)
+  "packages",
   "flash",
   "campaigns",
   "full_reports",
   "staff_accounts",
+  "records",
   "priority_support",
 ];
 

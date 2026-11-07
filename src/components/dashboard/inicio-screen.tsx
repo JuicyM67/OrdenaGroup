@@ -68,7 +68,12 @@ export type InicioScreenProps = {
    * Slug/nombre para la tarjeta "Tu link de reservas" (aside). Solo se pasa desde la
    * página real /app/inicio — el design lab (fixtures) no lo incluye.
    */
-  bookingLink?: { slug: string; businessName: string };
+  bookingLink?: {
+    slug: string;
+    businessName: string;
+    /** WP-89 (D-075): Ajustes → Comparte tu link, när den inloggade får se fliken. */
+    guideHref?: string;
+  };
   /** WP-47: Llegó/No vino (server action, `markArrival`). `undefined` i design lab. */
   onArrival?: (
     bookingId: string,
@@ -331,6 +336,7 @@ export function InicioScreen({
             <TuLinkCard
               slug={bookingLink.slug}
               businessName={bookingLink.businessName}
+              guideHref={bookingLink.guideHref}
             />
           ) : null}
         </aside>

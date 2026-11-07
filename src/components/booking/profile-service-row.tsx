@@ -4,9 +4,10 @@
 // servern; accordionen själv (`ProfileServiceList`, profile-interactive.tsx) är klientön.
 import { ChevronDown } from "lucide-react";
 
-import { perfil } from "@/i18n";
+import { paquetes, perfil } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
 import { initialsOf } from "@/lib/format/initials";
+import { formatMoney } from "@/lib/format/money";
 
 import { formatServicePrice } from "./format-price";
 import { staffTone, type StaffTone } from "./profile-view";
@@ -41,6 +42,14 @@ export function ProfileServiceHeader({
         <span className="mt-0.5 block text-12 text-muted">
           {formatDuration(service.durationMin)}
         </span>
+        {service.packageOffer ? (
+          <span className="mt-0.5 block text-12 text-muted">
+            {paquetes.publico.disponible({
+              n: service.packageOffer.sessions,
+              precio: formatMoney(service.packageOffer.priceClp),
+            })}
+          </span>
+        ) : null}
       </span>
       {doing.length > 0 ? (
         <span

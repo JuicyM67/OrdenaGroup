@@ -34,6 +34,7 @@ const NO_FLAGS: Record<Perm, boolean> = {
   can_manage_team: false,
   can_view_reports: false,
   can_edit_settings: false,
+  can_view_records: false,
 };
 
 let biz: TestBusiness;

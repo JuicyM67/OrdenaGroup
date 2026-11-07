@@ -26,7 +26,9 @@ export type Perm =
   | "can_edit_catalog"
   | "can_manage_team"
   | "can_view_reports"
-  | "can_edit_settings";
+  | "can_edit_settings"
+  /** WP-88 (D-074): fichan och consentimientos (känsliga uppgifter). */
+  | "can_view_records";
 
 export const PERMS: readonly Perm[] = [
   "can_manage_own_bookings",
@@ -36,6 +38,7 @@ export const PERMS: readonly Perm[] = [
   "can_manage_team",
   "can_view_reports",
   "can_edit_settings",
+  "can_view_records",
 ];
 
 /** Samma fyra värden som `public.member_role` (D-034: `admin` är en
@@ -61,6 +64,7 @@ type MembershipRow = {
   can_manage_team: boolean;
   can_view_reports: boolean;
   can_edit_settings: boolean;
+  can_view_records: boolean;
 };
 
 /**
@@ -75,7 +79,8 @@ export async function loadMember(
   const r = await q.query<MembershipRow>(
     `select role, staff_id,
             can_manage_own_bookings, can_manage_all_bookings, can_cancel_bookings,
-            can_edit_catalog, can_manage_team, can_view_reports, can_edit_settings
+            can_edit_catalog, can_manage_team, can_view_reports, can_edit_settings,
+            can_view_records
        from public.memberships
       where business_id = $1 and user_id = $2`,
     [businessId, userId],
@@ -95,6 +100,7 @@ export async function loadMember(
       can_manage_team: row.can_manage_team,
       can_view_reports: row.can_view_reports,
       can_edit_settings: row.can_edit_settings,
+      can_view_records: row.can_view_records,
     },
   };
 }

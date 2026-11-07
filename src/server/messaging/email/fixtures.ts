@@ -198,5 +198,29 @@ export function emailFixtures(): {
       hora: b.hora,
       agendaUrl: "https://app.example.com/app/agenda",
     },
+    tarjetaRegaloComprador: {
+      negocio: b.negocio,
+      valor: "$30.000",
+      codigo: "TR-7QXM-4HRT-9KZ2",
+      para: "Sofía",
+      validoHasta: "7 de noviembre de 2027",
+      direccion: b.direccion,
+      verUrl:
+        "https://app.example.com/barberia-norte/tarjeta-regalo/tarjeta?t=abc",
+    },
+    tarjetaRegaloDestinatario: {
+      nombre: "Sofía",
+      de: "Camila",
+      negocio: b.negocio,
+      valor: "$30.000",
+      validoHasta: "7 de noviembre de 2027",
+      codigo: "TR-7QXM-4HRT-9KZ2",
+      saludo: "¡Feliz cumpleaños! Date un gustito. Abrazo, Cami",
+      tema: "lilac",
+      reservarUrl: "https://app.example.com/barberia-norte",
+      verUrl:
+        "https://app.example.com/barberia-norte/tarjeta-regalo/tarjeta?t=def",
+      direccion: b.direccion,
+    },
   };
 }

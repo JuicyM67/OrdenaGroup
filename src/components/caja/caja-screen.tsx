@@ -18,6 +18,13 @@ import { useState } from "react";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import { BookingPackageActions } from "@/components/packages/booking-package-actions";
+import { SellPackageDialog } from "@/components/packages/sell-package-dialog";
+import type {
+  BookingPackageActions as PackageBookingActions,
+  PackageTemplate,
+  SellPackageActions,
+} from "@/components/packages/types";
 import type {
   MyProfileActions,
   MyProfileData,
@@ -29,7 +36,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField } from "@/components/ui/date-field";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { appHref } from "@/config/routes";
-import { caja, comun } from "@/i18n";
+import { caja, comun, paquetes, regalo } from "@/i18n";
 import {
   APP_TZ,
   formatDate,
@@ -65,6 +72,13 @@ export type CajaScreenProps = {
   publicPageHref: string;
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-86 (D-072): "Vender paquete" (`templates`/`sell`, bara med plan och
+   * behörighet) och "Usar paquete" på raderna i "Por cobrar". */
+  packages?: {
+    templates: PackageTemplate[];
+    sell?: SellPackageActions;
+    booking: PackageBookingActions;
+  };
 };
 
 type PeriodKind = "today" | "week" | "month" | "range";
@@ -120,6 +134,7 @@ export function CajaScreen({
   publicPageHref,
   myProfile,
   myProfileActions,
+  packages,
 }: CajaScreenProps) {
   const [periodKind, setPeriodKind] = useState<PeriodKind>("today");
   const [rangeFrom, setRangeFrom] = useState("");
@@ -132,6 +147,7 @@ export function CajaScreen({
   const [undoError, setUndoError] = useState<string | null>(null);
 
   const [payingBookingId, setPayingBookingId] = useState<string | null>(null);
+  const [sellOpen, setSellOpen] = useState(false);
   const [payError, setPayError] = useState<{
     bookingId: string;
     message: string;
@@ -257,6 +273,22 @@ export function CajaScreen({
             itemClassName="w-20"
           />
           <div className="flex flex-wrap gap-2">
+            {/* WP-87 (D-073): vender y usar tarjetas de regalo. */}
+            <Button asChild variant="secondary" size="sm">
+              <Link href={appHref("appCajaTarjetas")}>
+                {regalo.caja.enlace} →
+              </Link>
+            </Button>
+            {packages?.sell ? (
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setSellOpen(true)}
+              >
+                {paquetes.vender.cta}
+              </Button>
+            ) : null}
             <Button asChild variant="secondary" size="sm">
               <Link href={appHref("appCajaInformes")}>
                 {caja.tabs.informes} →
@@ -359,6 +391,14 @@ export function CajaScreen({
                           </Button>
                         ))}
                       </div>
+                      {r.packageInfo && packages ? (
+                        <BookingPackageActions
+                          bookingId={r.bookingId}
+                          info={r.packageInfo}
+                          actions={packages.booking}
+                          onChanged={() => void reloadCaja(currentPeriod())}
+                        />
+                      ) : null}
                       {payError && payError.bookingId === r.bookingId ? (
                         <p role="alert" className="text-13 text-ink">
                           {payError.message}
@@ -395,6 +435,15 @@ export function CajaScreen({
                   style={{ width: `${collectedPct}%` }}
                 />
               </div>
+              {cajaData.packages.soldCount > 0 ? (
+                <span className="text-13 text-on-dark-soft">
+                  {paquetes.caja.vendidosCount({
+                    n: cajaData.packages.soldCount,
+                  })}{" "}
+                  · {formatMoney(cajaData.packages.soldMinor)} ·{" "}
+                  {paquetes.caja.incluidoEnCobrado}
+                </span>
+              ) : null}
             </Card>
           </div>
 
@@ -518,6 +567,16 @@ export function CajaScreen({
         <p role="status" className="text-13 text-muted">
           {comun.cargando}
         </p>
+      ) : null}
+
+      {packages?.sell ? (
+        <SellPackageDialog
+          open={sellOpen}
+          onOpenChange={setSellOpen}
+          templates={packages.templates}
+          actions={packages.sell}
+          onSold={() => void reloadCaja(currentPeriod())}
+        />
       ) : null}
 
       <ConfirmDialog

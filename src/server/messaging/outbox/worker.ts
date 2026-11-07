@@ -1,6 +1,6 @@
 import "server-only";
 
-import { appHref } from "@/config/routes";
+import { appHref, tarjetaRegaloHref } from "@/config/routes";
 import { formulario } from "@/i18n";
 import {
   APP_LOCALE,
@@ -8,6 +8,8 @@ import {
   formatDate,
   formatLocalDate,
   formatTime,
+  parseTimeZone,
+  toLocalDate,
   type LocalDate,
 } from "@/lib/format/dates";
 import { formatMoney } from "@/lib/format/money";
@@ -1452,6 +1454,103 @@ async function processCampaignRow(
   return "sent";
 }
 
+/** WP-87 (D-073, som SE D-058): tarjetans två mejl. Adresserna och koden
+ * läses ur tabellerna vid sändningen; payload bär bara kortets id och
+ * länkens token, som nollas när raden skickats (`finalizeSent`). Ett
+ * anulerat kort skickas inte. */
+async function processGiftCardRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const cardId =
+    typeof row.payload.giftCardId === "string" ? row.payload.giftCardId : "";
+  const token = typeof row.payload.token === "string" ? row.payload.token : "";
+  if (!cardId || !token) throw new OutboxFinalError("invalid_payload");
+  const ctx = await withServiceTx(async (q) => {
+    const r = await q.query<{
+      code: string;
+      initial_minor: number;
+      status: string;
+      expires_at: Date;
+      buyer_name: string | null;
+      buyer_email: string | null;
+      recipient_name: string | null;
+      recipient_email: string | null;
+      greeting: string | null;
+      theme: string;
+      negocio: string;
+      slug: string;
+      address: string | null;
+      timezone: string;
+    }>(
+      `select g.code, g.initial_minor, g.status, g.expires_at,
+              o.buyer_name, o.buyer_email, o.recipient_name, o.recipient_email,
+              o.greeting, o.theme, b.name as negocio, b.slug, b.address, b.timezone
+         from public.gift_cards g
+         join public.gift_card_orders o on o.business_id = g.business_id and o.id = g.order_id
+         join public.businesses b on b.id = g.business_id
+        where g.business_id = $1 and g.id = $2`,
+      [row.businessId, cardId],
+    );
+    return r.rows[0];
+  });
+  if (!ctx) throw new OutboxFinalError("no_gift_card");
+  const destinatario = row.template === "tarjetaRegaloDestinatario";
+  const to = destinatario ? ctx.recipient_email : ctx.buyer_email;
+  if (!to || ctx.status === "refunding" || ctx.status === "refunded") {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const parsedTz = parseTimeZone(ctx.timezone);
+  const tz = parsedTz.ok ? parsedTz.value : APP_TZ;
+  const valor = formatMoney(ctx.initial_minor);
+  const validoHasta = `${formatDate(ctx.expires_at, tz, "dayMonthLong")} de ${toLocalDate(ctx.expires_at, tz).slice(0, 4)}`;
+  const verUrl = `${appUrl()}${tarjetaRegaloHref(ctx.slug)}?t=${encodeURIComponent(token)}`;
+  const r = destinatario
+    ? await sendEmail({
+        to,
+        template: "tarjetaRegaloDestinatario",
+        data: {
+          nombre: ctx.recipient_name,
+          de: ctx.buyer_name,
+          negocio: ctx.negocio,
+          valor,
+          validoHasta,
+          codigo: ctx.code,
+          saludo: ctx.greeting,
+          tema: ctx.theme === "lime" ? "lime" : "lilac",
+          reservarUrl: bookAgainLink(ctx.slug),
+          verUrl,
+          direccion: ctx.address,
+        },
+        idempotencyKey: row.dedupeKey,
+      })
+    : await sendEmail({
+        to,
+        template: "tarjetaRegaloComprador",
+        data: {
+          negocio: ctx.negocio,
+          valor,
+          codigo: ctx.code,
+          para: ctx.recipient_name,
+          validoHasta,
+          direccion: ctx.address,
+          verUrl,
+        },
+        idempotencyKey: row.dedupeKey,
+      });
+  await finalizeSent(row, r.id);
+  if (destinatario) {
+    await withServiceTx((q) =>
+      q.query(
+        `update public.gift_cards set delivered_at = coalesce(delivered_at, now())
+          where business_id = $1 and id = $2`,
+        [row.businessId, cardId],
+      ),
+    );
+  }
+  return "sent";
+}
+
 async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
@@ -1465,6 +1564,12 @@ async function processRow(
     if (row.channel === "sms" || (row.channel === "whatsapp" && !whatsappRow)) {
       await finalizeCancelled(row);
       return "cancelled";
+    }
+    if (
+      row.template === "tarjetaRegaloComprador" ||
+      row.template === "tarjetaRegaloDestinatario"
+    ) {
+      return await processGiftCardRow(row);
     }
     if (row.template === "bienvenidaMiembro") {
       return await processMemberWelcomeRow(row);
