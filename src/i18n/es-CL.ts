@@ -324,7 +324,8 @@ export const reserva = {
   confirmacion: {
     titulo: "¡Listo, tu hora quedó reservada!",
     resumenTitulo: "Resumen de tu reserva",
-    avisoWhatsapp: "Te enviamos la confirmación por correo, o por WhatsApp si lo elegiste.",
+    avisoWhatsapp:
+      "Te enviamos la confirmación por correo, o por WhatsApp si lo elegiste.",
     descuentoSocio: (p: { descuento: string }): string =>
       `Descuento socio: −${p.descuento}`,
     /** WP-31: descuento por el link de una oferta (gana el mayor, no se suman). */
