@@ -10,9 +10,9 @@ import { MapPin } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { perfil } from "@/i18n";
 import { APP_TZ, formatDuration, formatTime } from "@/lib/format/dates";
-import { formatMoney } from "@/lib/format/money";
 import { formatPhone, type E164 } from "@/lib/format/phone";
 
+import { formatServicePrice } from "./format-price";
 import { ProfileServiceButton } from "./profile-interactive";
 import {
   appleMapsUrl,
@@ -61,7 +61,7 @@ export function FastestTimesCard({
       <span className="text-12 text-on-dark-muted">
         {fastestTimeDetail(now, next.start, service.name)}
         {" · "}
-        {formatDuration(service.durationMin)} · {formatMoney(service.priceClp)}
+        {formatDuration(service.durationMin)} · {formatServicePrice(service)}
       </span>
     </Card>
   );

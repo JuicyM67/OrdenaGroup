@@ -4,8 +4,8 @@
 // pris) står i ett eget element som aldrig kortas.
 import { perfil } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
-import { formatMoney } from "@/lib/format/money";
 
+import { formatServicePrice } from "./format-price";
 import { ProfileBookNowButton } from "./profile-interactive";
 import { nextAvailableChipLabel } from "./profile-view";
 import type { BookingPageData, BookingProfile } from "./types";
@@ -23,7 +23,7 @@ export function MobileBookBar({
     : null;
   const label = nextAvailableChipLabel(data.now, profile.nextAvailable);
   const duracion = service ? formatDuration(service.durationMin) : "";
-  const precio = service ? formatMoney(service.priceClp) : "";
+  const precio = service ? formatServicePrice(service) : "";
 
   return (
     <div

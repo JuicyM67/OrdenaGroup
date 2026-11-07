@@ -39,6 +39,8 @@ export type AjustesService = {
   name: string;
   durationMin: number;
   priceClp: number;
+  /** WP-84 (D-069): precio "desde" (lägsta pris). */
+  priceFrom: boolean;
   bufferAfterMin: number;
   active: boolean;
   /** WP-41: "" = sin descripción. */

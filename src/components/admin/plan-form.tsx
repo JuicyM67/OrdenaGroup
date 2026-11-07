@@ -11,6 +11,7 @@ import {
   type BusinessPlan,
   type CustomLimits,
 } from "@/config/plans";
+import { planes } from "@/i18n";
 
 import type { AdminActionResult } from "./confirm-action-button";
 
@@ -79,7 +80,7 @@ export function PlanForm({
         >
           {BUSINESS_PLANS.map((p) => (
             <option key={p} value={p}>
-              {p}
+              {planes.nombres[p]}
             </option>
           ))}
         </select>

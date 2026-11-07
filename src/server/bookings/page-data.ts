@@ -135,6 +135,7 @@ type ServiceRow = {
   name: string;
   duration_min: number;
   price_clp: number;
+  price_from: boolean;
   category_id: string | null;
   description: string | null;
 };
@@ -320,7 +321,7 @@ export async function loadReservaPageData(
   }
 
   const serviceRows = await q.query<ServiceRow>(
-    `select id, name, duration_min, price_clp, category_id, description
+    `select id, name, duration_min, price_clp, price_from, category_id, description
        from public.services
       where business_id = $1 and active
       order by sort, name`,
@@ -375,6 +376,7 @@ export async function loadReservaPageData(
     name: s.name,
     durationMin: s.duration_min,
     priceClp: s.price_clp,
+    ...(s.price_from ? { priceFrom: true } : {}),
     tint: TINTS[i % TINTS.length]!,
     categoryId: s.category_id,
     description: s.description,

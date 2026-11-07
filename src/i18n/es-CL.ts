@@ -169,6 +169,11 @@ const TERMINOS_LISTA_ESPERA =
   "Acepto recibir el aviso si se libera una hora.";
 
 export const reserva = {
+  // WP-84 (D-069, port av SE WP-93): precio "desde". Acá (no en `perfil`)
+  // para que el código cliente de la reserva no arrastre los textos del panel
+  // (presupuesto JS, D-039). TODO_COPY: revisión de copywriter-es-cl.
+  precioDesde: (p: { precio: string }): string => `desde ${p.precio}`,
+  pagoEnLocal: "El precio final puede ser mayor. Lo confirmas en el local.",
   meta: {
     titulo: (p: { negocio: string }): string => `Reservar en ${p.negocio}`,
     vendidoPor: (p: { negocio: string }): string =>

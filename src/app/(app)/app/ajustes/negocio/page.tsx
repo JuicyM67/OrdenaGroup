@@ -12,6 +12,7 @@ import { nav } from "@/i18n";
 import { platformNames } from "@/server/import/platforms";
 import { isImportEnabled, isImportPaused } from "@/server/import/runs";
 import { loadAjustesBusiness } from "@/server/owner/ajustes";
+import { loadPlanUsage } from "@/server/plans/entitlements";
 
 import { requireAjustesTab } from "../access";
 import { applyImportAction } from "../import-actions";
@@ -41,6 +42,10 @@ export default async function AjustesNegocioPage() {
     ctx.current.member.role === "owner" &&
     isImportEnabled() &&
     !(await isImportPaused());
+  // WP-84 (D-069): plan och antal för importens "plan sugerido".
+  const usage = showImport
+    ? await loadPlanUsage(ctx.current.business.id).catch(() => null)
+    : null;
 
   return (
     <AjustesShell
@@ -63,6 +68,12 @@ export default async function AjustesNegocioPage() {
           <ImportSection
             platformNames={platformNames()}
             action={applyImportAction}
+            currentPlan={usage?.plan}
+            existingCounts={
+              usage
+                ? { services: usage.services.used, staff: usage.staff.used }
+                : undefined
+            }
           />
         ) : null}
         <BusinessSection

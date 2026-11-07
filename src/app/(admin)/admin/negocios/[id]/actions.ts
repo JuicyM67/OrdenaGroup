@@ -7,9 +7,12 @@
 // `private.admin_audit_log` (se respektive `src/server/admin/*`-funktion).
 import { revalidatePath } from "next/cache";
 
+import type { ImportApplyResult } from "@/lib/validation/import";
 import { requireAdminForAction } from "@/server/admin/auth";
+import { setAdminBusinessPlace } from "@/server/admin/business-place";
 import {
   adminCancelDeletion,
+  adminDeleteNow,
   adminRequestDeletion,
   changeEmail,
   freezeBusiness,
@@ -21,6 +24,7 @@ import {
   type BillingMode,
   type BusinessPlan,
 } from "@/server/admin/businesses";
+import { adminApplyImport } from "@/server/admin/import";
 
 async function afterAction(businessId: string): Promise<void> {
   revalidatePath(`/admin/negocios/${businessId}`);
@@ -41,6 +45,28 @@ export async function setPlanAction(
     overrideUntil,
     customLimits,
   );
+  await afterAction(businessId);
+  return result;
+}
+
+/** WP-84 (D-069): importen från förra bokningssystemet, åt företaget. */
+export async function adminImportAction(
+  businessId: string,
+  input: unknown,
+): Promise<ImportApplyResult> {
+  const admin = await requireAdminForAction();
+  const result = await adminApplyImport(admin.userId, businessId, input);
+  await afterAction(businessId);
+  return result;
+}
+
+/** WP-84 (D-069): "Rubro y ubicación" (rubro, comuna, dirección). */
+export async function setBusinessPlaceAction(
+  businessId: string,
+  input: unknown,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminForAction();
+  const result = await setAdminBusinessPlace(admin.userId, businessId, input);
   await afterAction(businessId);
   return result;
 }
@@ -72,6 +98,17 @@ export async function unfreezeAction(
   const admin = await requireAdminForAction();
   const result = await unfreezeBusiness(admin.userId, businessId);
   await afterAction(businessId);
+  return result;
+}
+
+/** WP-84 (D-069): radera direkt, med slug som bekräftelse. */
+export async function deleteNowAction(
+  businessId: string,
+  confirmSlug: string,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminForAction();
+  const result = await adminDeleteNow(admin.userId, businessId, confirmSlug);
+  revalidatePath("/admin");
   return result;
 }
 

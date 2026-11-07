@@ -23,6 +23,7 @@ import {
 import { getStorageAdminClient } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail } from "@/server/messaging/email/send";
+import { purgeBusiness } from "@/server/privacy/business";
 
 import { writeAuditLog } from "./audit";
 
@@ -41,6 +42,15 @@ export type BusinessListItem = {
   readonly deletionRequestedAt: string | null;
   readonly ownerEmail: string | null;
   readonly createdAt: string;
+  /** WP-84 (D-069): kortens innehåll (rubro, comuna, bild, redo för Descubre). */
+  readonly category: string;
+  readonly comuna: string;
+  readonly imageUrl: string | null;
+  readonly readiness: {
+    readonly imagen: boolean;
+    readonly lugar: boolean;
+    readonly servicios: boolean;
+  };
 };
 
 /**
@@ -89,12 +99,24 @@ export async function listBusinesses(
       deletion_requested_at: string | null;
       owner_user_id: string | null;
       created_at: string;
+      category: string;
+      comuna: string;
+      image_url: string | null;
+      has_image: boolean;
+      has_place: boolean;
+      has_services: boolean;
     }>(
       `select b.id, b.name, b.slug, b.plan, b.plan_override_until, b.status,
               b.billing_mode, b.deletion_requested_at, b.created_at,
+              b.category, b.comuna,
+              coalesce(nullif(btrim(b.logo_url), ''), nullif(btrim(b.cover_url), '')) as image_url,
               (select m.user_id from public.memberships m
                 where m.business_id = b.id and m.role = 'owner'
-                order by m.created_at limit 1) as owner_user_id
+                order by m.created_at limit 1) as owner_user_id,
+              (coalesce(btrim(b.logo_url), '') <> '' or coalesce(btrim(b.cover_url), '') <> '') as has_image,
+              coalesce(btrim(b.address), '') <> '' as has_place,
+              exists (select 1 from public.services s
+                       where s.business_id = b.id and s.active) as has_services
          from public.businesses b
         order by b.created_at desc`,
     );
@@ -116,6 +138,14 @@ export async function listBusinesses(
       ? (emails.get(row.owner_user_id) ?? null)
       : null,
     createdAt: row.created_at,
+    category: row.category,
+    comuna: row.comuna,
+    imageUrl: row.image_url,
+    readiness: {
+      imagen: row.has_image,
+      lugar: row.has_place,
+      servicios: row.has_services,
+    },
   }));
 
   const q = filter.q?.trim().toLowerCase();
@@ -398,6 +428,48 @@ export async function unfreezeBusiness(
     await writeAuditLog(q, { adminUserId, action: "unfreeze", businessId });
     return { ok: true };
   });
+}
+
+/**
+ * WP-84 (D-069, port av SE WP-93): plattformsadmin raderar ett företag DIREKT
+ * (testkonton, dubbletter), utan 30 dagars frist. Oåterkalleligt. Kräver att
+ * admin skriver företagets slug som bekräftelse. Samma radering som
+ * lagringsjobbet (`purgeBusiness`: Storage, bokningar före företaget,
+ * ägarkonton utan andra medlemskap). Loggraden skrivs FÖRE raderingen med
+ * bara slug i `details` (regel 7: inget namn) — `business_id` blir `null` när
+ * företaget försvinner (on delete set null).
+ */
+export async function adminDeleteNow(
+  adminUserId: string,
+  businessId: string,
+  confirmSlug: string,
+): Promise<AdminActionResult> {
+  const found = await withServiceTx(async (q) => {
+    const r = await q.query<{ slug: string }>(
+      `select slug from public.businesses where id = $1`,
+      [businessId],
+    );
+    return r.rows[0] ?? null;
+  });
+  if (!found) return { ok: false, code: "not_found" };
+  if (confirmSlug.trim().toLowerCase() !== found.slug) {
+    return { ok: false, code: "confirm_mismatch" };
+  }
+  await withServiceTx((q) =>
+    writeAuditLog(q, {
+      adminUserId,
+      action: "delete_now",
+      businessId,
+      details: { slug: found.slug },
+    }),
+  );
+  try {
+    const result = await purgeBusiness(businessId, { skipGracePeriod: true });
+    return result.ok ? { ok: true } : { ok: false, code: result.code };
+  } catch {
+    // T.ex. Storage-fel: inget i databasen har raderats än (steg 2 före 3).
+    return { ok: false, code: "desconocido" };
+  }
 }
 
 /**

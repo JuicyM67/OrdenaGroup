@@ -26,6 +26,9 @@ export interface BookingService {
   readonly name: string;
   readonly durationMin: number;
   readonly priceClp: Clp;
+  /** WP-84 (D-069): priset är ett lägsta pris ("desde $15.000"). Frivilligt
+   * (saknas = fast pris). */
+  readonly priceFrom?: boolean;
   readonly tint: ServiceTint;
   /** `null` = utan kategori (WP-40, D-031). Frivilligt fält (befintliga
    * fixturer/tester saknar det) — behandla en saknad nyckel som `null`. */

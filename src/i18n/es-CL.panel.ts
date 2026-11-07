@@ -1670,6 +1670,10 @@ export const servicios = {
     pricePlaceholder: "$10.000",
     bufferLabel: "Tiempo extra después",
     bufferAyuda: "Para limpiar o preparar. El cliente no lo ve.",
+    // WP-84 (D-069): precio "desde". TODO_COPY.
+    precioDesde: "Mostrar «desde» antes del valor",
+    precioDesdeAyuda:
+      "Para servicios cuyo valor final depende del trabajo. El cliente ve «desde $15.000».",
     categoryLabel: "Categoría (opcional)",
     profesionalesLabel: "¿Quién lo hace?",
     mostrarEnPaginaLabel: "Mostrar en la página de reservas",
@@ -3287,6 +3291,15 @@ export const importar = {
     casi: "Casi listo…",
   },
   aviso: "Puede tardar hasta un minuto. Quédate tranquilo en esta pantalla.",
+  // WP-84 (D-069): plan sugerido según lo que eliges importar. TODO_COPY.
+  planSugerida: (p: {
+    servicios: number;
+    personal: number;
+    plan: string;
+  }): string =>
+    `Elegiste ${p.servicios} ${p.servicios === 1 ? "servicio" : "servicios"} y ${p.personal} ${p.personal === 1 ? "persona" : "personas"} en el equipo. Te sugerimos el plan ${p.plan}.`,
+  planSugeridaAyuda: (p: { gratis: string }): string =>
+    `En ${p.gratis} quedan activos solo 3 servicios; el resto se guarda inactivo hasta que cambies de plan.`,
   ctaCancelar: "Cancelar",
   revisarTitulo: "Revisa lo que encontramos",
   revisarIntro:
