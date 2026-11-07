@@ -12,6 +12,7 @@ export function BookingBar({
   ctaDisabled,
   onCta,
   formId,
+  inline = false,
 }: {
   summary: string;
   price: BarPrice | null;
@@ -19,6 +20,9 @@ export function BookingBar({
   ctaDisabled?: boolean;
   onCta?: () => void;
   formId?: string;
+  /** WP-82 (widgets): i en iframe med automatisk höjd fungerar inte `fixed`. Raden ligger
+   * i flödet och fäster sig mot underkanten bara när innehållet är högre än fönstret. */
+  inline?: boolean;
 }) {
   const ctaProps: Partial<ButtonProps> = formId
     ? { type: "submit", form: formId }
@@ -32,7 +36,11 @@ export function BookingBar({
       role="region"
       aria-label={summary}
       data-surface="dark"
-      className="fixed inset-x-3 bottom-3 mx-auto flex max-w-114 items-center gap-3 rounded-bar bg-dark py-3.5 pr-3.5 pl-5"
+      className={
+        inline
+          ? "sticky bottom-3 z-10 mx-auto flex w-full max-w-114 items-center gap-3 rounded-bar bg-dark py-3.5 pr-3.5 pl-5"
+          : "fixed inset-x-3 bottom-3 mx-auto flex max-w-114 items-center gap-3 rounded-bar bg-dark py-3.5 pr-3.5 pl-5"
+      }
     >
       <div className="min-w-0 grow">
         <div className="truncate text-12 text-on-dark-muted">{summary}</div>

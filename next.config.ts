@@ -34,12 +34,30 @@ const nextConfig: NextConfig = {
       {
         // Bara sidor/API, inte /_next/static: headers på varje JS-chunk räknas
         // annars in i JS-budgeten (D-032, encodedDataLength) utan att skydda något.
-        source: "/((?!_next/static|_next/image|favicon.ico).*)",
+        // `/embed/` har egna regler nedan (WP-82, D-067).
+        source: "/((?!_next/static|_next/image|favicon.ico|embed/).*)",
         headers: [
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=63072000; includeSubDomains",
+          },
+        ],
+      },
+      {
+        // WP-82 (D-067): widgetarna under /embed/<slug>/ ska kunna ramas in på företagens
+        // egna sidor, så här gäller `frame-ancestors *` och ingen X-Frame-Options (den
+        // kan inte tillåta bestämda ursprung). Inga sessioner eller kakor används på
+        // dessa sidor; allt annat är fortfarande blockerat ovan.
+        source: "/embed/:slug/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors *" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Robots-Tag", value: "noindex" },
           {
             key: "Strict-Transport-Security",
             value: "max-age=63072000; includeSubDomains",

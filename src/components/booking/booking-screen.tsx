@@ -3,6 +3,7 @@
 // priser eller lediga tider räknas ut här (hård regel 2).
 "use client";
 
+import dynamic from "next/dynamic";
 import { queryString } from "@/config/url-params";
 import {
   type ReactNode,
@@ -17,6 +18,12 @@ import {
 import { comun, formulario, reserva } from "@/i18n";
 
 import { TourLoader } from "@/components/tour/tour-loader";
+
+// WP-82: stäng-knappen (och därmed meddelandeprotokollet med Zod) hör bara till dialogläget
+// och får inte väga i `/[slug]`s JS-budget (D-039): egen chunk som bara hämtas där.
+const EmbeddedTopBar = dynamic(() =>
+  import("@/components/widgets/embedded-top-bar").then((m) => m.EmbeddedTopBar),
+);
 
 import { BookingBar } from "./booking-bar";
 import { BusinessHeader } from "./business-header";
@@ -115,6 +122,11 @@ export interface BookingScreenProps {
   tour?: boolean;
   /** WP-67: inloggad med kundkonto — namn/e-post förifyllda (bara värden). */
   initialContact?: CustomerContact;
+  /** WP-82 (D-067): bokningen inbäddad som widget på företagets egen sida (iframe mot
+   * `/embed/<slug>/reserva`). `inline` = direkt på sidan, `dialog` = i dialogen från knappen
+   * (egen stäng-knapp). Läget har ingen fast mobilbar (inline-rad i stället), öppnar
+   * `/r/…` i en ny flik och rör inte webbläsarhistoriken. Utan värdet är beteendet oförändrat. */
+  embedded?: "inline" | "dialog";
 }
 
 export function BookingScreen({
@@ -131,6 +143,7 @@ export function BookingScreen({
   initialMobileTab,
   tour,
   initialContact = NO_CONTACT,
+  embedded,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
@@ -236,6 +249,7 @@ export function BookingScreen({
   // bakåtknappen på Android går tillbaka till valen med allt kvar. Bekräftelsen
   // ersätter posten (replaceState), så att bakåt inte skickar formuläret igen.
   useEffect(() => {
+    if (embedded) return;
     if (state.step === "datos") {
       const datosQuery = queryString("paso", "datos");
       if (window.location.search !== datosQuery) {
@@ -244,9 +258,10 @@ export function BookingScreen({
     } else if (state.step === "confirmacion") {
       window.history.replaceState({}, "", window.location.pathname);
     }
-  }, [state.step]);
+  }, [state.step, embedded]);
 
   useEffect(() => {
+    if (embedded) return;
     const onPopState = () => {
       // Bakåt från bekräftelsen (qa-granskning, item 7): nollställ i stället
       // för att öppna valen med den redan bokade tiden.
@@ -261,11 +276,12 @@ export function BookingScreen({
     return () => {
       window.removeEventListener("popstate", onPopState);
     };
-  }, [state.step, initialContact]);
+  }, [state.step, initialContact, embedded]);
 
   if (data.business.status === "frozen") {
     return (
       <div className="flex flex-col gap-6 p-5 pb-10">
+        {embedded === "dialog" ? <EmbeddedTopBar /> : null}
         <BusinessHeader business={data.business} />
         <p className="text-14 text-muted">
           {reserva.vacios.negocioNoDisponible}
@@ -277,6 +293,7 @@ export function BookingScreen({
   if (data.services.length === 0) {
     return (
       <div className="flex flex-col gap-6 p-5 pb-10">
+        {embedded === "dialog" ? <EmbeddedTopBar /> : null}
         <BusinessHeader business={data.business} />
         <p className="text-14 text-muted">{reserva.vacios.sinServicios}</p>
       </div>
@@ -430,9 +447,12 @@ export function BookingScreen({
       className={
         isProfileBrowse
           ? "relative flex min-h-full flex-col"
-          : "relative flex min-h-full flex-col gap-6 p-5 pb-35"
+          : embedded
+            ? "relative flex min-h-full flex-col gap-6 p-5 pb-5"
+            : "relative flex min-h-full flex-col gap-6 p-5 pb-35"
       }
     >
+      {embedded === "dialog" ? <EmbeddedTopBar /> : null}
       {offerNotice && state.step !== "confirmacion" ? (
         <div className={isProfileBrowse ? "px-5 pt-4" : undefined}>
           {offerNotice}
@@ -639,6 +659,7 @@ export function BookingScreen({
           memberDiscountMinor={memberDiscount}
           discountReason={discountReason}
           manageToken={manageToken}
+          newTabLinks={!!embedded}
         />
       )}
 
@@ -655,6 +676,7 @@ export function BookingScreen({
           ctaLabel={ctaLabel}
           ctaDisabled={ctaDisabled}
           onCta={ctaAction}
+          inline={!!embedded}
         />
       ) : null}
 
@@ -665,6 +687,7 @@ export function BookingScreen({
           ctaLabel={ctaLabel}
           ctaDisabled={ctaDisabled}
           formId={formId}
+          inline={!!embedded}
         />
       ) : null}
       {tour && isProfileBrowse ? (

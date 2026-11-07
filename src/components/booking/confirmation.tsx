@@ -23,6 +23,7 @@ export function Confirmation({
   memberDiscountMinor,
   discountReason,
   manageToken,
+  newTabLinks = false,
 }: {
   data: BookingPageData;
   selection: BookingSelection;
@@ -33,6 +34,8 @@ export function Confirmation({
   /** WP-61: `undefined` döljer länken (idempotent omförsök utan token, eller
    * design lab/fixturer som inte skickar en). */
   manageToken?: string | undefined;
+  /** WP-82: inbäddad i en iframe, där `/r/…` inte får ramas in — länken öppnas i en ny flik. */
+  newTabLinks?: boolean;
 }) {
   // Fokus vid stegbyte (qa-granskning, item 8): h1 får fokus när bekräftelsen
   // monteras.
@@ -106,6 +109,9 @@ export function Confirmation({
       {manageToken ? (
         <a
           href={`/r/${manageToken}`}
+          {...(newTabLinks
+            ? { target: "_blank", rel: "noopener noreferrer" }
+            : {})}
           className="text-14 font-bold text-ink underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
           {isRequest
