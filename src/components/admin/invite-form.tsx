@@ -1,6 +1,7 @@
 "use client";
 
-// "Nytt företag": bjuder in någon via e-post (F19/WP-36). Svensk text.
+// "Nuevo negocio": bjuder in någon via e-post (F19/WP-36). Text via
+// `adminPanel.invitar`.
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
@@ -8,13 +9,16 @@ import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { Textarea } from "@/components/ui/textarea";
 import { BILLING_NOTE_MAX } from "@/config/billing-mode";
-import { adminPanel } from "@/i18n";
+import { adminPanel, planes } from "@/i18n";
 import type {
   InviteBusinessInput,
   InviteBusinessResult,
 } from "@/app/(admin)/admin/nuevo/actions";
 
+import { actionErrorText } from "./admin-error-text";
 import { BillingModeCheckbox } from "./billing-form";
+
+const t = adminPanel.invitar;
 
 const PLANS = ["free", "emprende", "equipo", "local"] as const;
 
@@ -61,7 +65,7 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
   if (done) {
     return (
       <p className="text-14 text-ink">
-        Inbjudan skickad till {email}.{" "}
+        {t.enviada({ correo: email })}{" "}
         <Button
           type="button"
           variant="secondary"
@@ -75,7 +79,7 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
             setNote("");
           }}
         >
-          Bjud in en till
+          {t.otra}
         </Button>
       </p>
     );
@@ -87,20 +91,20 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
       className="flex flex-col gap-4"
     >
       <TextField
-        label="Företagets namn"
+        label={t.nombre}
         required
         value={businessName}
         onChange={(e) => setBusinessName(e.target.value)}
       />
       <TextField
-        label="Ägarens e-post"
+        label={t.correo}
         type="email"
         required
         value={email}
         onChange={(e) => setEmail(e.target.value)}
       />
       <label className="flex flex-col gap-1 text-13 text-ink">
-        Plan
+        {t.plan}
         <select
           value={plan}
           onChange={(e) =>
@@ -110,13 +114,13 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
         >
           {PLANS.map((p) => (
             <option key={p} value={p}>
-              {p}
+              {planes.nombres[p]}
             </option>
           ))}
         </select>
       </label>
       <label className="flex flex-col gap-1 text-13 text-ink">
-        Gratis/override till (valfritt)
+        {t.hasta}
         <input
           type="date"
           value={until}
@@ -135,10 +139,10 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
         />
       ) : null}
       {error ? (
-        <p className="text-13 text-alert">Det gick inte ({error}).</p>
+        <p className="text-13 text-alert">{actionErrorText(error)}</p>
       ) : null}
       <Button type="submit" size="lg" disabled={pending}>
-        {pending ? "Skickar…" : "Skicka inbjudan"}
+        {pending ? t.enviando : t.enviar}
       </Button>
     </form>
   );

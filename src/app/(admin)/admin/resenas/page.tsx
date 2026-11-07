@@ -1,8 +1,9 @@
-// /admin/resenas: anmälda och dolda recensioner (WP-65, D-045). Svensk
-// text (bara plattformsägaren använder ytan, samma som resten av /admin).
-// Dölja/återställa — aldrig radera; varje åtgärd audit-loggas.
+// /admin/resenas: anmälda och dolda recensioner (WP-65, D-045). Text via
+// `adminPanel.resenas` (es-CL). Dölja/återställa — aldrig radera; varje
+// åtgärd audit-loggas. Filtret i URL:en: `?ver=ocultas`.
 import Link from "next/link";
 
+import { formatAdminDate } from "@/components/admin/admin-dates";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { ConfirmActionButton } from "@/components/admin/confirm-action-button";
 import { adminPanel } from "@/i18n";
@@ -16,22 +17,18 @@ import { hideReviewAction, restoreReviewAction } from "./actions";
 
 export const dynamic = "force-dynamic";
 
-const REASONS: Record<string, string> = {
-  offensive: "Kränkande språk",
-  false: "Felaktig information",
-  personal_data: "Personuppgifter",
-  not_customer: "Inte deras kund",
-  other: "Annat",
-};
+const t = adminPanel.resenas;
+const REASONS: Readonly<Record<string, string>> = t.motivos;
 
 export default async function AdminReviewsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ visa?: string }>;
+  searchParams: Promise<{ ver?: string }>;
 }) {
   await requireAdminPage();
   const sp = await searchParams;
-  const filter: AdminReviewFilter = sp.visa === "dolda" ? "hidden" : "reported";
+  const filter: AdminReviewFilter =
+    sp.ver === "ocultas" ? "hidden" : "reported";
   const reviews = await listModerationReviews(filter);
 
   return (
@@ -46,17 +43,17 @@ export default async function AdminReviewsPage({
                 : "text-ink-soft underline"
             }
           >
-            Anmälda
+            {t.reportadas}
           </Link>
           <Link
-            href="/admin/resenas?visa=dolda"
+            href="/admin/resenas?ver=ocultas"
             className={
               filter === "hidden"
                 ? "font-bold text-ink"
                 : "text-ink-soft underline"
             }
           >
-            Dolda
+            {t.ocultas}
           </Link>
         </nav>
         <ul className="flex flex-col gap-3">
@@ -73,25 +70,23 @@ export default async function AdminReviewsPage({
                   {r.negocio}
                 </Link>
                 <span className="text-ink-soft">
-                  {new Date(r.createdAt).toLocaleDateString("sv-SE")} ·{" "}
-                  {r.rating}
-                  /5 · {r.displayName ?? "Anonym"}
+                  {formatAdminDate(r.createdAt)} · {r.rating}/5 ·{" "}
+                  {r.displayName ?? t.anonimo}
                 </span>
               </div>
               <p className="text-14 whitespace-pre-line text-ink">
-                {r.comment ?? "(ingen text)"}
+                {r.comment ?? t.sinTexto}
               </p>
               {r.reply ? (
                 <p className="rounded-control bg-canvas px-3 py-2 text-13 whitespace-pre-line text-ink-soft">
-                  Svar: {r.reply}
+                  {t.respuesta} {r.reply}
                 </p>
               ) : null}
               {r.reportReason ? (
                 <p className="text-13 text-ink">
-                  Anmäld{" "}
                   {r.reportedAt
-                    ? new Date(r.reportedAt).toLocaleDateString("sv-SE")
-                    : ""}
+                    ? t.reportada({ fecha: formatAdminDate(r.reportedAt) })
+                    : t.reportadaSinFecha}
                   : {REASONS[r.reportReason] ?? r.reportReason}
                   {r.reportNote ? ` — ${r.reportNote}` : ""}
                 </p>
@@ -99,26 +94,26 @@ export default async function AdminReviewsPage({
               <div className="flex gap-2">
                 {r.hiddenAt ? (
                   <ConfirmActionButton
-                    label="Återställ"
-                    title="Återställ recensionen?"
-                    body="Den blir synlig på företagets sida igen."
-                    confirmLabel="Återställ"
+                    label={t.restaurar.boton}
+                    title={t.restaurar.titulo}
+                    body={t.restaurar.texto}
+                    confirmLabel={t.restaurar.boton}
                     action={restoreReviewAction.bind(null, r.businessId, r.id)}
                   />
                 ) : (
                   <>
                     <ConfirmActionButton
-                      label="Dölj"
-                      title="Dölj recensionen?"
-                      body="Den försvinner från företagets sida och snittbetyget. Kan återställas."
-                      confirmLabel="Dölj"
+                      label={t.ocultar.boton}
+                      title={t.ocultar.titulo}
+                      body={t.ocultar.texto}
+                      confirmLabel={t.ocultar.boton}
                       action={hideReviewAction.bind(null, r.businessId, r.id)}
                     />
                     <ConfirmActionButton
-                      label="Avvisa anmälan"
-                      title="Avvisa anmälan?"
-                      body="Recensionen ligger kvar och anmälan stängs."
-                      confirmLabel="Avvisa"
+                      label={t.descartar.boton}
+                      title={t.descartar.titulo}
+                      body={t.descartar.texto}
+                      confirmLabel={t.descartar.confirmar}
                       action={restoreReviewAction.bind(
                         null,
                         r.businessId,
@@ -131,7 +126,7 @@ export default async function AdminReviewsPage({
             </li>
           ))}
           {reviews.length === 0 ? (
-            <li className="text-13 text-ink-soft">Inget att granska.</li>
+            <li className="text-13 text-ink-soft">{t.vacio}</li>
           ) : null}
         </ul>
       </div>

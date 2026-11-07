@@ -1,12 +1,17 @@
 "use client";
 
 // Support-åtgärder per medlem (F19/WP-36): skicka ny inloggningslänk, byt
-// e-post. Svensk text.
+// e-post. Text via `adminPanel.miembro`.
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
+import { adminPanel } from "@/i18n";
+
+import { actionErrorText } from "./admin-error-text";
 import type { AdminActionResult } from "./confirm-action-button";
+
+const t = adminPanel.miembro;
 
 export type MemberActionsProps = {
   onSendLoginLink: () => Promise<AdminActionResult>;
@@ -30,7 +35,7 @@ export function MemberActions({
     setLinkMsg(null);
     const result = await onSendLoginLink();
     setSendingLink(false);
-    setLinkMsg(result.ok ? "Länk skickad." : `Det gick inte (${result.code}).`);
+    setLinkMsg(result.ok ? t.enlaceEnviado : actionErrorText(result.code));
   }
 
   async function handleChangeEmail(e: FormEvent) {
@@ -57,7 +62,7 @@ export function MemberActions({
           disabled={sendingLink}
           onClick={() => void handleSendLink()}
         >
-          {sendingLink ? "Skickar…" : "Skicka inloggningslänk"}
+          {sendingLink ? t.enviando : t.enviarEnlace}
         </Button>
         <Button
           type="button"
@@ -65,7 +70,7 @@ export function MemberActions({
           size="xs"
           onClick={() => setEditing((v) => !v)}
         >
-          Byt e-post
+          {t.cambiarCorreo}
         </Button>
       </div>
       {linkMsg ? (
@@ -77,14 +82,14 @@ export function MemberActions({
           className="flex items-end gap-2"
         >
           <TextField
-            label="Ny e-post"
+            label={t.correoNuevo}
             type="email"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            error={emailError ? `Det gick inte (${emailError}).` : undefined}
+            error={emailError ? actionErrorText(emailError) : undefined}
           />
           <Button type="submit" size="xs" disabled={savingEmail}>
-            {savingEmail ? "Sparar…" : "Spara"}
+            {savingEmail ? t.guardando : t.guardar}
           </Button>
         </form>
       ) : null}

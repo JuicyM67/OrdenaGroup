@@ -3,7 +3,9 @@
  * administradores y "Facturación manual". WP-84 (D-069): menú, lista de
  * negocios como tarjetas, "Rubro y ubicación", "Borrar ahora" e importación.
  * Archivo propio para que no entren en el chunk de i18n de la página de
- * reservas. El resto de `/admin` sigue con texto fijo en sueco (WP-36).
+ * reservas. También los textos que WP-36 dejó fijos en sueco (detalle del
+ * negocio, reseñas, registro, verificación en dos pasos, invitar), ahora en
+ * es-CL: todo `/admin` sale de este archivo.
  * TODO_COPY: revisión de copywriter-es-cl.
  */
 import type { Trad } from "./index";
@@ -52,6 +54,210 @@ export const adminPanel = {
   },
   detalle: {
     verPagina: "Abrir página de reservas",
+    miembros: "Miembros",
+    sinCorreo: "(sin correo)",
+    /** `memberships.role`; un rol desconocido se muestra tal cual. */
+    roles: {
+      owner: "Dueño",
+      admin: "Administrador",
+      staff: "Personal",
+    },
+    reservas: "Reservas",
+    equipo: "Equipo",
+    cuentas: "Cuentas",
+    estado: "Estado",
+    eliminacionPedida: (p: { fecha: string }): string =>
+      `Eliminación pedida el ${p.fecha}`,
+    congelar: {
+      boton: "Congelar",
+      titulo: "¿Congelar el negocio?",
+      texto:
+        "La página de reservas deja de estar disponible hasta que lo descongeles.",
+    },
+    descongelar: {
+      boton: "Descongelar",
+      titulo: "¿Descongelar el negocio?",
+      texto: "La página de reservas vuelve a estar disponible.",
+    },
+    pedirEliminacion: {
+      boton: "Pedir eliminación",
+      titulo: "¿Pedir la eliminación del negocio?",
+      texto:
+        "La página de reservas se cierra altiro. El negocio se borra para siempre en 30 días, salvo que deshagas la eliminación antes.",
+    },
+    deshacerEliminacion: {
+      boton: "Deshacer eliminación",
+      titulo: "¿Deshacer la eliminación?",
+      texto: "La cuenta vuelve al estado que tenía antes.",
+    },
+    plan: "Plan",
+    ultimaActividad: "Última actividad",
+    sinReservas: "Todavía no hay reservas.",
+    registro: "Registro",
+  },
+  // Acciones de soporte por miembro (enlace para entrar, cambiar correo).
+  miembro: {
+    enviarEnlace: "Enviar enlace para entrar",
+    enviando: "Enviando…",
+    enlaceEnviado: "Enlace enviado.",
+    cambiarCorreo: "Cambiar correo",
+    correoNuevo: "Correo nuevo",
+    guardar: "Guardar",
+    guardando: "Guardando…",
+  },
+  // Cambiar plan (y fecha de término opcional) en el detalle del negocio.
+  plan: {
+    plan: "Plan",
+    personal: "Personal acordado (por defecto 10)",
+    hasta: "Gratis o de prueba hasta (opcional)",
+    guardar: "Guardar plan",
+    guardando: "Guardando…",
+  },
+  // /admin/nuevo: invitar a alguien a crear un negocio.
+  invitar: {
+    nombre: "Nombre del negocio",
+    correo: "Correo del dueño",
+    plan: "Plan",
+    hasta: "Gratis o de prueba hasta (opcional)",
+    enviar: "Enviar invitación",
+    enviando: "Enviando…",
+    enviada: (p: { correo: string }): string =>
+      `Invitación enviada a ${p.correo}.`,
+    otra: "Invitar a otro",
+  },
+  // Botón de confirmación genérico (congelar, ocultar reseña, etc.).
+  confirmar: {
+    cancelar: "Cancelar",
+  },
+  /** Códigos de error de las acciones del panel → texto. */
+  errores: {
+    invalid_input: "Revisa los datos.",
+    invalid_email: "Revisa el correo.",
+    invalid_name: "Escribe el nombre del negocio.",
+    note_too_long: "La nota es demasiado larga.",
+    not_found: "No lo encontramos. Recarga la página.",
+    already_frozen: "El negocio ya está congelado.",
+    not_frozen: "El negocio no está congelado.",
+    deletion_pending: "Primero deshaz la eliminación.",
+    already_requested: "La eliminación ya estaba pedida.",
+    not_requested: "No hay una eliminación pedida.",
+    onboarding_draft: "El negocio todavía no termina su configuración inicial.",
+    generate_link_failed: "No pudimos crear el enlace. Intenta de nuevo.",
+    send_failed: "No pudimos enviar el correo. Intenta de nuevo.",
+    update_failed:
+      "No pudimos cambiar el correo. Puede que otra cuenta ya lo use.",
+    desconocido: "Algo salió mal. Intenta de nuevo.",
+  },
+  // /admin/resenas: reseñas reportadas y ocultas.
+  resenas: {
+    reportadas: "Reportadas",
+    ocultas: "Ocultas",
+    vacio: "Nada que revisar.",
+    anonimo: "Anónimo",
+    sinTexto: "(sin texto)",
+    respuesta: "Respuesta:",
+    reportada: (p: { fecha: string }): string => `Reportada el ${p.fecha}`,
+    reportadaSinFecha: "Reportada",
+    motivos: {
+      offensive: "Lenguaje ofensivo",
+      false: "Información falsa",
+      personal_data: "Datos personales",
+      not_customer: "No fue su cliente",
+      other: "Otro motivo",
+    },
+    ocultar: {
+      boton: "Ocultar",
+      titulo: "¿Ocultar la reseña?",
+      texto:
+        "Desaparece de la página del negocio y del promedio. Se puede restaurar.",
+    },
+    restaurar: {
+      boton: "Restaurar",
+      titulo: "¿Restaurar la reseña?",
+      texto: "Vuelve a verse en la página del negocio.",
+    },
+    descartar: {
+      boton: "Descartar reporte",
+      titulo: "¿Descartar el reporte?",
+      texto: "La reseña se mantiene y el reporte se cierra.",
+      confirmar: "Descartar",
+    },
+  },
+  // /admin/actividad y el registro del detalle: `admin_audit_log` legible.
+  registro: {
+    verNegocio: "Ver negocio",
+    vacio: "Todavía no hay acciones.",
+    /** `admin_audit_log.action`; una acción desconocida se muestra tal cual. */
+    acciones: {
+      set_plan: "Cambió el plan",
+      set_billing_mode: "Cambió la facturación",
+      freeze: "Congeló el negocio",
+      unfreeze: "Descongeló el negocio",
+      request_deletion: "Pidió eliminar el negocio",
+      cancel_deletion: "Deshizo la eliminación",
+      delete_now: "Borró el negocio",
+      send_login_link: "Envió un enlace para entrar",
+      change_email: "Cambió el correo de una cuenta",
+      invite_business: "Invitó a un negocio nuevo",
+      add_admin: "Agregó un administrador",
+      remove_admin: "Quitó a un administrador",
+      business_place: "Cambió rubro y ubicación",
+      import: "Importó datos de otro sistema",
+      review_hide: "Ocultó una reseña",
+      review_restore: "Restauró una reseña",
+    },
+    /** Claves de `details`; una clave desconocida se muestra tal cual. */
+    campos: {
+      plan: "Plan",
+      custom_limits: "Límites acordados",
+      staff_acordado: "Personal acordado",
+      billing_mode: "Facturación",
+      slug: "Link",
+      rubro: "Rubro",
+      comuna: "Comuna",
+      address: "Dirección",
+      services: "Servicios",
+      staff: "Equipo",
+      categories: "Categorías",
+      profile: "Datos del perfil",
+      hours: "Horario",
+    },
+    modos: {
+      app: "En la app",
+      manual: "Manual",
+    },
+    sinFecha: "Sin fecha de término",
+    hasta: (p: { fecha: string }): string => `Hasta el ${p.fecha}`,
+    conNota: "Con nota interna",
+    sinNota: "Sin nota interna",
+    cuentaNueva: "Cuenta nueva",
+    cuentaExistente: "Cuenta existente",
+    cambios: (p: { campos: string }): string => `Cambios: ${p.campos}`,
+    sinCambios: "Sin cambios",
+    si: "Sí",
+    no: "No",
+  },
+  // /admin/mfa: verificación en dos pasos (TOTP).
+  mfa: {
+    titulo: "Verificación en dos pasos",
+    /** Nombre del factor en Supabase (`friendlyName`). */
+    nombreFactor: (p: { marca: string }): string => `Admin ${p.marca}`,
+    cargando: "Cargando…",
+    errorNivel: "No pudimos leer tu nivel de verificación. Recarga la página.",
+    errorFactores:
+      "No pudimos leer tus métodos de verificación. Recarga la página.",
+    errorRegistro: "No pudimos empezar la activación. Recarga la página.",
+    escanear:
+      "Escanea el código QR con tu app de autenticación (por ejemplo, Google Authenticator o 1Password).",
+    qrAlt: "Código QR para la verificación en dos pasos",
+    manual: (p: { secreto: string }): string =>
+      `¿No puedes escanearlo? Ingresa este código a mano: ${p.secreto}`,
+    escribeCodigo: "Escribe el código de tu app de autenticación.",
+    codigo: "Código",
+    verificar: "Verificar",
+    verificando: "Verificando…",
+    codigoIncorrecto: "El código no es correcto. Intenta de nuevo.",
+    errorVerificar: "No pudimos verificar el código. Intenta de nuevo.",
   },
   // WP-84: "Rubro y ubicación" en /admin/negocios/[id].
   ubicacion: {

@@ -1,12 +1,15 @@
 "use client";
 
 // Generisk bekräftelseknapp för känsliga /admin-åtgärder (frys/radera,
-// F19/WP-36): återanvänder `ConfirmDialog` (WP-26). Svensk text.
+// F19/WP-36): återanvänder `ConfirmDialog` (WP-26). Text via `adminPanel`.
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { Button, type ButtonProps } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { adminPanel } from "@/i18n";
+
+import { actionErrorText } from "./admin-error-text";
 
 export type AdminActionResult = { ok: true } | { ok: false; code: string };
 
@@ -18,7 +21,7 @@ export type ConfirmActionButtonProps = {
   cancelLabel?: string;
   variant?: ButtonProps["variant"];
   action: () => Promise<AdminActionResult>;
-  /** WP-80: översätter felkoden (standard: "Det gick inte (kod)"). */
+  /** WP-80: översätter felkoden (standard: `actionErrorText`). */
   errorText?: (code: string) => string;
 };
 
@@ -27,10 +30,10 @@ export function ConfirmActionButton({
   title,
   body,
   confirmLabel,
-  cancelLabel = "Avbryt",
+  cancelLabel = adminPanel.confirmar.cancelar,
   variant = "secondary",
   action,
-  errorText,
+  errorText = actionErrorText,
 }: ConfirmActionButtonProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -68,7 +71,7 @@ export function ConfirmActionButton({
             {body}
             {error ? (
               <span className="mt-2 block text-13 text-alert">
-                {errorText ? errorText(error) : `Det gick inte (${error}).`}
+                {errorText(error)}
               </span>
             ) : null}
           </>
