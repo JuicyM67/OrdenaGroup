@@ -31,6 +31,8 @@ export type Feature =
   | "staff_accounts"
   /** Erbjudanden i marknadsplatsen (WP-70, D-056). */
   | "offers"
+  /** Sälja tarjetas de regalo i Caja (WP-87, D-073). Inlösen kräver ingen plan. */
+  | "gift_cards"
   | "priority_support";
 
 export type LimitKind = "staff" | "services";
@@ -47,12 +49,13 @@ const ALL_FEATURES: readonly Feature[] = [
   "full_reports",
   "staff_accounts",
   "offers",
+  "gift_cards",
   "priority_support",
 ];
 
 const FEATURES: Record<BusinessPlan, ReadonlySet<Feature>> = {
   free: new Set<Feature>([]),
-  emprende: new Set<Feature>(["unbranded", "waitlist"]),
+  emprende: new Set<Feature>(["unbranded", "waitlist", "gift_cards"]),
   equipo: new Set<Feature>([
     "unbranded",
     "waitlist",
@@ -61,6 +64,7 @@ const FEATURES: Record<BusinessPlan, ReadonlySet<Feature>> = {
     "full_reports",
     "staff_accounts",
     "offers",
+    "gift_cards",
   ]),
   local: new Set<Feature>(ALL_FEATURES),
   custom: new Set<Feature>(ALL_FEATURES),

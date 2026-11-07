@@ -19,6 +19,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { expireRequests } from "@/server/bookings/confirm";
 import { pgErrorCode } from "@/server/db/errors";
 import { runGeocodeSweep } from "@/server/geocoding";
+import { runGiftCardSweep } from "@/server/gift-cards";
 import { processOutbox } from "@/server/messaging/outbox";
 import { queueReviewRequests } from "@/server/reviews/requests";
 import { systemClock } from "@/server/scheduling/clock";
@@ -89,6 +90,17 @@ async function handle(request: NextRequest): Promise<NextResponse> {
       code: pgErrorCode(e) ?? "unknown",
     });
   }
+  // WP-87 (D-073): tarjetas de regalo — utgångna kort och persondata efter
+  // 90 dagar (SE:s `gift_card_sweep`, D-058). Ett fel här stoppar aldrig
+  // utkorgen.
+  let giftCards = { expired: 0, cleared: 0 };
+  try {
+    giftCards = await runGiftCardSweep(systemClock());
+  } catch (e) {
+    console.error("outbox: runGiftCardSweep misslyckades", {
+      code: pgErrorCode(e) ?? "unknown",
+    });
+  }
   const result = await processOutbox({ limit: CRON_LIMIT });
   // WP-68 (D-055, S4): geokodningen körs EFTER utkorgen och med en kort
   // tidsbudget, så att den aldrig försenar meddelanden. Ett fel här påverkar
@@ -106,6 +118,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     expired,
     waitlistExpired,
     reviewRequests,
+    giftCards,
     geocoded,
     ...result,
   });
@@ -114,6 +127,7 @@ async function handle(request: NextRequest): Promise<NextResponse> {
     expired,
     waitlistExpired,
     reviewRequests,
+    giftCards,
     geocoded,
   });
 }

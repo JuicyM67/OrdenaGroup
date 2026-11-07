@@ -639,6 +639,8 @@ export { ofertas } from "./es-CL.ofertas";
 export { adminPanel } from "./es-CL.admin";
 // WP-82 (D-067): widgets para el sitio web del negocio.
 export { widgets } from "./es-CL.widgets";
+// WP-87 (D-073): tarjetas de regalo (venta en el local).
+export { regalo } from "./es-CL.regalo";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).
 export {

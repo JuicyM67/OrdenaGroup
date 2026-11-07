@@ -29,7 +29,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { DateField } from "@/components/ui/date-field";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { appHref } from "@/config/routes";
-import { caja, comun } from "@/i18n";
+import { caja, comun, regalo } from "@/i18n";
 import {
   APP_TZ,
   formatDate,
@@ -257,6 +257,12 @@ export function CajaScreen({
             itemClassName="w-20"
           />
           <div className="flex flex-wrap gap-2">
+            {/* WP-87 (D-073): vender y usar tarjetas de regalo. */}
+            <Button asChild variant="secondary" size="sm">
+              <Link href={appHref("appCajaTarjetas")}>
+                {regalo.caja.enlace} →
+              </Link>
+            </Button>
             <Button asChild variant="secondary" size="sm">
               <Link href={appHref("appCajaInformes")}>
                 {caja.tabs.informes} →

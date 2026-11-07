@@ -1248,6 +1248,7 @@ export type Database = {
           buyer_email: string | null;
           buyer_name: string | null;
           buyer_token_hash: string | null;
+          channel: string;
           created_at: string;
           currency: string;
           deliver_on: string | null;
@@ -1255,6 +1256,7 @@ export type Database = {
           fee_minor: number;
           greeting: string | null;
           id: string;
+          in_store_method: string | null;
           next_attempt_at: string;
           paid_at: string | null;
           payment_intent_id: string | null;
@@ -1263,8 +1265,9 @@ export type Database = {
           recipient_name: string | null;
           refunded_minor: number;
           session_id: string | null;
+          sold_by_user_id: string | null;
           status: string;
-          stripe_account_id: string;
+          stripe_account_id: string | null;
           theme: string;
           updated_at: string;
           user_id: string | null;
@@ -1276,6 +1279,7 @@ export type Database = {
           buyer_email?: string | null;
           buyer_name?: string | null;
           buyer_token_hash?: string | null;
+          channel?: string;
           created_at?: string;
           currency?: string;
           deliver_on?: string | null;
@@ -1283,6 +1287,7 @@ export type Database = {
           fee_minor: number;
           greeting?: string | null;
           id?: string;
+          in_store_method?: string | null;
           next_attempt_at?: string;
           paid_at?: string | null;
           payment_intent_id?: string | null;
@@ -1291,8 +1296,9 @@ export type Database = {
           recipient_name?: string | null;
           refunded_minor?: number;
           session_id?: string | null;
+          sold_by_user_id?: string | null;
           status?: string;
-          stripe_account_id: string;
+          stripe_account_id?: string | null;
           theme?: string;
           updated_at?: string;
           user_id?: string | null;
@@ -1304,6 +1310,7 @@ export type Database = {
           buyer_email?: string | null;
           buyer_name?: string | null;
           buyer_token_hash?: string | null;
+          channel?: string;
           created_at?: string;
           currency?: string;
           deliver_on?: string | null;
@@ -1311,6 +1318,7 @@ export type Database = {
           fee_minor?: number;
           greeting?: string | null;
           id?: string;
+          in_store_method?: string | null;
           next_attempt_at?: string;
           paid_at?: string | null;
           payment_intent_id?: string | null;
@@ -1319,8 +1327,9 @@ export type Database = {
           recipient_name?: string | null;
           refunded_minor?: number;
           session_id?: string | null;
+          sold_by_user_id?: string | null;
           status?: string;
-          stripe_account_id?: string;
+          stripe_account_id?: string | null;
           theme?: string;
           updated_at?: string;
           user_id?: string | null;

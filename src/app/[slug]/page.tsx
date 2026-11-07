@@ -1,6 +1,7 @@
 // Publik bokningssida (F5). Riktig data sedan WP-20 (D-020s grind för
 // `/[slug]` togs bort i samma PR, se docs/decisions/DECISIONS.md).
 import { readParam, queryString } from "@/config/url-params";
+import { Gift } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -17,7 +18,7 @@ import type {
 import type { BookingActionResult } from "@/components/booking/types";
 import { brand } from "@/config/brand";
 import { href } from "@/config/routes";
-import { planes, reserva } from "@/i18n";
+import { planes, regalo, reserva } from "@/i18n";
 import { formatMoney } from "@/lib/format/money";
 import { isFavorite } from "@/server/accounts/account";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
@@ -42,6 +43,7 @@ import {
   PUBLIC_REVIEWS_PAGE,
 } from "@/server/reviews/public";
 import { withServiceTx } from "@/server/db/tx";
+import { businessShowsGiftCards } from "@/server/gift-cards";
 import { systemClock } from "@/server/scheduling/clock";
 
 import { createBooking, joinWaitlist } from "./actions";
@@ -264,6 +266,10 @@ export default async function ReservaPage({
       : undefined;
   // WP-72: guidad visning, bara på demoföretaget (aldrig riktiga företag).
   const isDemo = slug === brand.demoSlug;
+  // WP-87 (D-073): tarjetas de regalo säljs i salongen — bara en rad här.
+  const showsGiftCards = await businessShowsGiftCards(business.id).catch(
+    () => false,
+  );
   const profileContent = p ? (
     <ProfileBrowse
       data={data}
@@ -271,6 +277,14 @@ export default async function ReservaPage({
       social={social}
       reviews={reviews}
       reviewsMoreHref={reviewsMoreHref}
+      giftCardNote={
+        showsGiftCards ? (
+          <p className="flex items-center gap-2.5 rounded-tile bg-lilac px-4 py-3.5 text-14 font-semibold text-ink">
+            <Gift aria-hidden="true" className="size-4.5 shrink-0" />
+            {regalo.perfil.linea}
+          </p>
+        ) : undefined
+      }
     />
   ) : undefined;
 

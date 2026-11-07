@@ -10,6 +10,7 @@
 // skickas aldrig till servern.
 import * as Dialog from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
+import Link from "next/link";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,8 @@ import { IconButton } from "@/components/ui/icon-button";
 import { Pill } from "@/components/ui/pill";
 import { TextField } from "@/components/ui/text-field";
 import { useSheetDrag } from "@/components/ui/use-sheet-drag";
-import { caja, comun } from "@/i18n";
+import { appHref } from "@/config/routes";
+import { caja, comun, regalo } from "@/i18n";
 import { formatMoney, moneyInputValue, parseMoney } from "@/lib/format/money";
 
 import type {
@@ -181,6 +183,15 @@ export function MarkPaidDialog({
                 {error}
               </p>
             ) : null}
+
+            {/* WP-87 (D-073): el código se ingresa en Caja → Tarjetas de
+                regalo, con esta reserva ya elegida en "Usar en". */}
+            <Link
+              href={`${appHref("appCajaTarjetas")}?reserva=${encodeURIComponent(bookingId)}`}
+              className="self-start text-13 font-semibold text-ink underline underline-offset-2"
+            >
+              {regalo.caja.pagarConTarjeta}
+            </Link>
 
             <div className="mt-1 flex justify-end gap-3">
               <Button

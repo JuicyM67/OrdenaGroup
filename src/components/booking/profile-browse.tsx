@@ -60,6 +60,7 @@ export function ProfileBrowse({
   social,
   reviews,
   reviewsMoreHref,
+  giftCardNote,
 }: {
   data: BookingPageData;
   profile: BookingProfile;
@@ -68,6 +69,9 @@ export function ProfileBrowse({
   reviews?: PublicReviewsView;
   /** `?resenas=N#resenas` när det finns fler än de som visas. */
   reviewsMoreHref?: string;
+  /** WP-87 (D-073): "Regala una tarjeta de regalo · cómprala en el local"
+   * (serverrenderad rad, bara när företaget slagit på den). */
+  giftCardNote?: ReactNode;
 }) {
   const { business, staff } = data;
   const tabs = categoryTabs(data.categories ?? [], data.services);
@@ -93,6 +97,7 @@ export function ProfileBrowse({
         hasSocial={hasSocial}
         social={social?.contact}
       />
+      {giftCardNote}
     </div>
   );
 
