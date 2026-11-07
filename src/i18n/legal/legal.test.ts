@@ -51,9 +51,9 @@ describe("estructura de cada documento", () => {
   );
 
   it.each(TODOS_LOS_DOCS)(
-    "%s: es borrador de la versión vigente",
+    "%s: es final (aprobado por el dueño 2026-11-07) y de la versión vigente",
     (_slug, doc) => {
-      expect(doc.status).toBe("draft");
+      expect(doc.status).toBe("final");
       expect(doc.version).toBe(LEGAL_VERSION);
     },
   );

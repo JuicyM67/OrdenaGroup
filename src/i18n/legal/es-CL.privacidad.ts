@@ -19,7 +19,7 @@ export function getPrivacidadCL(entity: LegalEntity): LegalDoc {
   return {
     slug: "privacidad",
     title: "Política de Privacidad",
-    status: "draft",
+    status: "final",
     version: LEGAL_VERSION,
     versionLabel: `Versión ${LEGAL_VERSION}`,
     intro: [

@@ -12,7 +12,7 @@ export function getEncargoCL(entity: LegalEntity): LegalDoc {
   return {
     slug: "encargo",
     title: "Acuerdo de Encargo de Tratamiento de Datos",
-    status: "draft",
+    status: "final",
     version: LEGAL_VERSION,
     versionLabel: `Versión ${LEGAL_VERSION}`,
     intro: [
