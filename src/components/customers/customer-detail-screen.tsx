@@ -18,7 +18,7 @@
 // meningar utan rubrik (fel 2).
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
@@ -94,6 +94,9 @@ export type CustomerDetailScreenProps = {
   publicPageHref: string;
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-86 (D-072): kundens paket (`CustomerPackagesCard`), renderat av
+   * sidan. `undefined` döljer kortet. */
+  packagesCard?: ReactNode;
 };
 
 const STATUS_CHIP: Record<
@@ -204,6 +207,7 @@ export function CustomerDetailScreen({
   publicPageHref,
   myProfile,
   myProfileActions,
+  packagesCard,
 }: CustomerDetailScreenProps) {
   const router = useRouter();
   const [notes, setNotes] = useState(customer.notes ?? "");
@@ -657,6 +661,10 @@ export function CustomerDetailScreen({
             ) : null}
           </div>
         </Card>
+
+        {packagesCard ? (
+          <div className="lg:col-span-2">{packagesCard}</div>
+        ) : null}
 
         <section className="flex flex-col gap-3 lg:col-span-2">
           <h2 className="text-15 font-bold text-ink">

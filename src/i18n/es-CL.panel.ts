@@ -3585,6 +3585,8 @@ export const planes = {
     full_reports: "Caja e informes completos",
     staff_accounts: "Cuentas para tu equipo",
     offers: "Ofertas en el marketplace",
+    // WP-86 (D-072). TODO_COPY
+    packages: "Paquetes de sesiones",
     priority_support: "Soporte prioritario",
   },
   bloqueo: {
@@ -3599,6 +3601,9 @@ export const planes = {
       full_reports: "Mejora tu plan y mira tus números completos.",
       staff_accounts: "Mejora tu plan y dale una cuenta a tu equipo.",
       offers: "Mejora tu plan y vende tus servicios a clientes nuevos.",
+      // WP-86 (D-072). TODO_COPY
+      packages:
+        "Mejora tu plan y vende paquetes de sesiones que tus clientes pagan por adelantado.",
       priority_support: "Mejora tu plan y te atendemos primero.",
     },
     verPlanes: "Ver planes",

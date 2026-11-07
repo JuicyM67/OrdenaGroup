@@ -39,6 +39,9 @@ export interface BookingService {
   /** WP-72: vilka i teamet som utför tjänsten (`staff_services`), för
    * initialcirklarna på profilens tjänsterad. Frivilligt (saknas = inga). */
   readonly staffIds?: readonly string[];
+  /** WP-86 (D-072): tjänsten finns i ett publikt paket ("Disponible en pack
+   * de N sesiones · $X", köps i salongen). Frivilligt (saknas = inget). */
+  readonly packageOffer?: { readonly sessions: number; readonly priceClp: Clp };
 }
 
 /** Tjänstekategori (WP-40, D-031): egna rader i `service_categories`, bara

@@ -639,6 +639,8 @@ export { ofertas } from "./es-CL.ofertas";
 export { adminPanel } from "./es-CL.admin";
 // WP-82 (D-067): widgets para el sitio web del negocio.
 export { widgets } from "./es-CL.widgets";
+// WP-86 (D-072): paquetes de sesiones.
+export { paquetes } from "./es-CL.paquetes";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).
 export {

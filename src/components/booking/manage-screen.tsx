@@ -3,7 +3,7 @@
 // den inom fönstret. Härledd — ingen ritad referens (som datasteget/
 // bekräftelsen i WP-13), men samma formspråk: mörk rubrik, `Card radius="tile"`
 // för sammanfattningen, samma typografiskalor.
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -26,6 +26,7 @@ export function ManageScreen({
   now,
   onCancel,
   onRevokeWhatsApp,
+  packagesSlot,
 }: {
   booking: ManagedBooking;
   /** Instant (ISO, med offset) för "nu", injicerad av `page.tsx` — aldrig
@@ -34,6 +35,8 @@ export function ManageScreen({
   onCancel: () => Promise<ManageCancelResult>;
   /** D-063: återkalla WhatsApp-samtycket (bara när det är aktivt). */
   onRevokeWhatsApp?: () => Promise<ManageWhatsAppResult>;
+  /** WP-86 (D-072): kundens paket hos företaget (`ManagePackages`). */
+  packagesSlot?: ReactNode;
 }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [justCancelled, setJustCancelled] = useState(false);
@@ -100,6 +103,8 @@ export function ManageScreen({
           {fields.precio}
         </div>
       </Card>
+
+      {packagesSlot}
 
       {booking.status === "requested" ? (
         <div className="flex flex-col gap-2">

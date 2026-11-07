@@ -21,6 +21,7 @@ import {
   Globe,
   Image as ImageIcon,
   Lock,
+  Package,
   Scissors,
   Shield,
   Users,
@@ -30,13 +31,15 @@ import type { ReactNode } from "react";
 
 import { strokeNav } from "@/components/ui/icons";
 import { AJUSTES_TAB_ROUTE_IDS, appHref } from "@/config/routes";
-import { ajustes, perfil, planes, widgets } from "@/i18n";
+import { ajustes, paquetes, perfil, planes, widgets } from "@/i18n";
 
 export const AJUSTES_TAB_KEYS = [
   "negocio",
   "perfil",
   "reglas",
   "servicios",
+  // WP-86 (D-072)
+  "paquetes",
   "formulario",
   "horario",
   "socios",
@@ -67,6 +70,7 @@ const AJUSTES_TAB_LABEL: Record<AjustesTabKey, string> = {
   perfil: perfil.ajustes.titulo,
   reglas: ajustes.secciones.reglas,
   servicios: ajustes.secciones.servicios,
+  paquetes: paquetes.pestana,
   formulario: ajustes.secciones.formularioReserva,
   horario: ajustes.secciones.horario,
   socios: ajustes.secciones.socios,
@@ -81,6 +85,7 @@ const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
   perfil: ImageIcon,
   reglas: Clock,
   servicios: Scissors,
+  paquetes: Package,
   formulario: ClipboardList,
   horario: CalendarClock,
   socios: Gift,
@@ -111,6 +116,7 @@ export function ajustesTabVisible(
     case "widgets":
       return access.perms.can_edit_settings;
     case "servicios":
+    case "paquetes":
     case "formulario":
       return access.perms.can_edit_catalog;
     case "equipo":

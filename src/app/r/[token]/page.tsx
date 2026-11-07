@@ -9,6 +9,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { ManageScreen } from "@/components/booking/manage-screen";
+import { ManagePackages } from "@/components/packages/manage-packages";
 import type {
   ManageCancelResult,
   ManageWhatsAppResult,
@@ -21,6 +22,7 @@ import {
 } from "@/server/bookings/manage";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
+import { loadPackagesForManagedBooking } from "@/server/packages/packages";
 import { systemClock } from "@/server/scheduling/clock";
 
 // Pilotblockerare (säkerhetsgranskning WP-27): en IP kan avboka/hantera
@@ -55,6 +57,13 @@ export default async function ManagePage({ params }: { params: Params }) {
   const now = systemClock();
   const booking = await loadBookingByToken(token, now);
   if (!booking) notFound();
+  // WP-86 (D-072): kundens aktiva paket hos företaget (bokningen är redan
+  // verifierad via token; bara namn och saldo visas).
+  const packages = await loadPackagesForManagedBooking(
+    booking.businessId,
+    booking.bookingId,
+    now,
+  );
 
   async function cancelReservation(): Promise<ManageCancelResult> {
     "use server";
@@ -98,6 +107,9 @@ export default async function ManagePage({ params }: { params: Params }) {
       now={now.toISOString()}
       onCancel={cancelReservation}
       onRevokeWhatsApp={revokeWhatsApp}
+      packagesSlot={
+        packages.length > 0 ? <ManagePackages packages={packages} /> : null
+      }
     />
   );
 }

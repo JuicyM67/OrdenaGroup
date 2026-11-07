@@ -235,6 +235,7 @@ export type AppRouteId =
   | "appAjustesPrivacidad"
   | "appAjustesPlan"
   | "appAjustesWidgets"
+  | "appAjustesPaquetes"
   | "appSolicitud"
   | "appInvitacion"
   | "appBienvenida"
@@ -257,6 +258,7 @@ export const AJUSTES_TAB_ROUTE_IDS = {
   privacidad: "appAjustesPrivacidad",
   plan: "appAjustesPlan",
   widgets: "appAjustesWidgets",
+  paquetes: "appAjustesPaquetes",
 } as const satisfies Record<string, AppRouteId>;
 
 /** Filsystemets sökväg, med `[id]`/`[token]` som platshållare för dynamiska
@@ -288,6 +290,8 @@ const APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesPlan: "/app/ajustes/plan",
   // WP-82 (D-067): widgets för företagets egen hemsida.
   appAjustesWidgets: "/app/ajustes/widgets",
+  // WP-86 (D-072): paketmallar.
+  appAjustesPaquetes: "/app/ajustes/paquetes",
   appSolicitud: "/app/solicitudes/[id]",
   appInvitacion: "/app/invitacion/[token]",
   appBienvenida: "/app/bienvenida/[token]",

@@ -1005,6 +1005,190 @@ export type Database = {
           },
         ];
       };
+      customer_package_moves: {
+        Row: {
+          booking_id: string | null;
+          business_id: string;
+          created_at: string;
+          created_by: string | null;
+          customer_package_id: string;
+          delta: number;
+          id: string;
+          kind: string;
+          no_show: boolean;
+          reverses_id: string | null;
+        };
+        Insert: {
+          booking_id?: string | null;
+          business_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          customer_package_id: string;
+          delta: number;
+          id?: string;
+          kind: string;
+          no_show?: boolean;
+          reverses_id?: string | null;
+        };
+        Update: {
+          booking_id?: string | null;
+          business_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          customer_package_id?: string;
+          delta?: number;
+          id?: string;
+          kind?: string;
+          no_show?: boolean;
+          reverses_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_package_moves_business_id_booking_id_fkey";
+            columns: ["business_id", "booking_id"];
+            isOneToOne: false;
+            referencedRelation: "bookings";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_package_moves_business_id_customer_package_id_fkey";
+            columns: ["business_id", "customer_package_id"];
+            isOneToOne: false;
+            referencedRelation: "customer_packages";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_package_moves_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "customer_package_moves_business_id_reverses_id_fkey";
+            columns: ["business_id", "reverses_id"];
+            isOneToOne: false;
+            referencedRelation: "customer_package_moves";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      customer_package_services: {
+        Row: {
+          business_id: string;
+          customer_package_id: string;
+          service_id: string;
+        };
+        Insert: {
+          business_id: string;
+          customer_package_id: string;
+          service_id: string;
+        };
+        Update: {
+          business_id?: string;
+          customer_package_id?: string;
+          service_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_package_services_business_id_customer_package_id_fkey";
+            columns: ["business_id", "customer_package_id"];
+            isOneToOne: false;
+            referencedRelation: "customer_packages";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_package_services_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "customer_package_services_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      customer_packages: {
+        Row: {
+          business_id: string;
+          created_at: string;
+          customer_id: string;
+          expires_on: string | null;
+          id: string;
+          name: string;
+          payment_method: Database["public"]["Enums"]["payment_method"];
+          price_clp: number;
+          sessions_total: number;
+          sold_at: string;
+          sold_by: string | null;
+          status: string;
+          template_id: string;
+          voided_at: string | null;
+          voided_by: string | null;
+        };
+        Insert: {
+          business_id: string;
+          created_at?: string;
+          customer_id: string;
+          expires_on?: string | null;
+          id?: string;
+          name: string;
+          payment_method: Database["public"]["Enums"]["payment_method"];
+          price_clp: number;
+          sessions_total: number;
+          sold_at?: string;
+          sold_by?: string | null;
+          status?: string;
+          template_id: string;
+          voided_at?: string | null;
+          voided_by?: string | null;
+        };
+        Update: {
+          business_id?: string;
+          created_at?: string;
+          customer_id?: string;
+          expires_on?: string | null;
+          id?: string;
+          name?: string;
+          payment_method?: Database["public"]["Enums"]["payment_method"];
+          price_clp?: number;
+          sessions_total?: number;
+          sold_at?: string;
+          sold_by?: string | null;
+          status?: string;
+          template_id?: string;
+          voided_at?: string | null;
+          voided_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "customer_packages_business_id_customer_id_fkey";
+            columns: ["business_id", "customer_id"];
+            isOneToOne: false;
+            referencedRelation: "customers";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "customer_packages_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "customer_packages_business_id_template_id_fkey";
+            columns: ["business_id", "template_id"];
+            isOneToOne: false;
+            referencedRelation: "package_templates";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
       customers: {
         Row: {
           anonymized_at: string | null;
@@ -1762,6 +1946,96 @@ export type Database = {
             isOneToOne: false;
             referencedRelation: "services";
             referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      package_template_services: {
+        Row: {
+          business_id: string;
+          service_id: string;
+          template_id: string;
+        };
+        Insert: {
+          business_id: string;
+          service_id: string;
+          template_id: string;
+        };
+        Update: {
+          business_id?: string;
+          service_id?: string;
+          template_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "package_template_services_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "package_template_services_business_id_service_id_fkey";
+            columns: ["business_id", "service_id"];
+            isOneToOne: false;
+            referencedRelation: "services";
+            referencedColumns: ["business_id", "id"];
+          },
+          {
+            foreignKeyName: "package_template_services_business_id_template_id_fkey";
+            columns: ["business_id", "template_id"];
+            isOneToOne: false;
+            referencedRelation: "package_templates";
+            referencedColumns: ["business_id", "id"];
+          },
+        ];
+      };
+      package_templates: {
+        Row: {
+          active: boolean;
+          business_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          price_clp: number;
+          sessions: number;
+          show_public: boolean;
+          sort: number;
+          updated_at: string;
+          validity_days: number | null;
+        };
+        Insert: {
+          active?: boolean;
+          business_id: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          price_clp: number;
+          sessions: number;
+          show_public?: boolean;
+          sort?: number;
+          updated_at?: string;
+          validity_days?: number | null;
+        };
+        Update: {
+          active?: boolean;
+          business_id?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          price_clp?: number;
+          sessions?: number;
+          show_public?: boolean;
+          sort?: number;
+          updated_at?: string;
+          validity_days?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "package_templates_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
           },
         ];
       };
