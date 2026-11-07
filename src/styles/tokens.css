@@ -1015,3 +1015,10 @@
 @utility grid-cols-agenda-demo {
   grid-template-columns: minmax(0, 1fr) 390px;
 }
+
+/* WP-85 (D-070): sökfältets förslagslista (`<datalist>`) utan Chromes pil. */
+@utility no-list-indicator {
+  &::-webkit-calendar-picker-indicator {
+    display: none !important;
+  }
+}

@@ -43,6 +43,8 @@ function initialData(): WizardData {
       comuna: "",
       category: "",
       phone: "",
+      address: "",
+      servesAtCustomer: false,
     },
     services: [],
     staff: [],

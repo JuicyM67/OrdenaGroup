@@ -85,6 +85,15 @@ export const businessSettingsInputSchema = z.object({
   autoConfirmBookings: z.boolean({ error: "business.auto_confirm_invalid" }),
   // WP-56: "Cancelaciones del cliente".
   cancelApproval: cancelApprovalSchema,
+  // WP-85 (D-070): "Vi kommer till kunden" + orterna. Utelämnade = oförändrade
+  // (bokningsreglerna skickar samma rad utan dem).
+  servesAtCustomer: z.boolean({ error: "invalid_input" }).optional(),
+  serviceAreas: z
+    .array(z.string({ error: "invalid_input" }).trim().min(1).max(80), {
+      error: "invalid_input",
+    })
+    .max(30, { error: "business.service_areas_max" })
+    .optional(),
 });
 export type BusinessSettingsInput = z.infer<typeof businessSettingsInputSchema>;
 

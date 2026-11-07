@@ -5,7 +5,18 @@
  * del dueño 2026-10-10). Archivo propio (como `es-CL.visita.ts`) para que no
  * entren en el chunk de i18n de la página de reservas. TODO_COPY: revisión de
  * copywriter-es-cl. La marca entra siempre como `{ marca }`.
+ *
+ * WP-85 (D-070): Descubre es además un catálogo de negocios con 16 categorías
+ * (pestañas Negocios · Ofertas · Horas flash).
  */
+
+const ofertas = (n: number): string => (n === 1 ? "1 oferta" : `${n} ofertas`);
+
+const negocios = (n: number): string =>
+  n === 1 ? "1 negocio" : `${n} negocios`;
+
+const horasFlash = (n: number): string =>
+  n === 1 ? "1 hora flash" : `${n} horas flash`;
 
 export const descubre = {
   meta: {
@@ -24,8 +35,8 @@ export const descubre = {
   },
   nav: {
     descubre: "Descubre",
-    descubreMenu: "Descubre ofertas",
-    descubreTexto: "Ofertas y horas flash cerca de ti",
+    descubreMenu: "Descubre negocios y ofertas",
+    descubreTexto: "Negocios, ofertas y horas flash cerca de ti",
     lista: "Lista",
     mapa: "Mapa",
     paraNegocios: "Para negocios",
@@ -37,7 +48,7 @@ export const descubre = {
     destacado: "más barato cerca de ti",
     tituloCorto: "Ofertas",
     destacadoCorto: "cerca de ti",
-    /** "Pelo en {comuna}": preposición antes de la comuna destacada. */
+    /** "Uñas en {comuna}": preposición antes de la comuna destacada. */
     en: "en",
     bajada:
       "Ofertas y horas libres de salones con reseñas verificadas de clientes reales.",
@@ -62,16 +73,28 @@ export const descubre = {
   categorias: {
     label: "Categorías",
     todas: "Todas",
+    // WP-85 (D-070): 16 categorías, los mismos nombres que los rubros
+    // (`negocio.rubros`).
     nombres: {
-      har: "Pelo",
+      har: "Peluquería",
+      barberare: "Barbería",
       naglar: "Uñas",
-      massage: "Masajes",
-      hudvard: "Estética",
       fransar: "Pestañas y cejas",
+      hudvard: "Estética",
+      skonhet: "Maquillaje y depilación",
+      massage: "Masajes",
+      spa: "Spa",
+      halsa: "Kinesiología y salud",
+      holistiskt: "Terapias holísticas",
+      traning: "Entrenamiento y yoga",
+      tatuering: "Tatuajes y piercing",
+      djur: "Mascotas",
+      stad: "Limpieza y hogar",
+      fordon: "Autos",
       ovrigt: "Otros",
     },
-    total: (p: { n: number }): string =>
-      p.n === 1 ? "1 oferta" : `${p.n} ofertas`,
+    total: (p: { n: number }): string => ofertas(p.n),
+    totalNegocios: (p: { n: number }): string => negocios(p.n),
   },
   flash: {
     titulo: "Horas flash hoy",
@@ -79,13 +102,83 @@ export const descubre = {
     label: "Horas flash de hoy",
     precioAntes: "Antes",
   },
+  // WP-85 (D-070): Descubre como catálogo de negocios: pestañas, tarjetas de
+  // negocio y páginas por comuna.
+  pestanas: {
+    label: "Ver",
+    negocios: "Negocios",
+    ofertas: "Ofertas",
+    flash: "Horas flash",
+  },
+  negociosMeta: {
+    titulo: "Encuentra y reserva negocios cerca de ti",
+    descripcion:
+      "Peluquerías, barberías, uñas, masajes, estética, limpieza y mucho más: reserva directo en negocios cerca de ti, con reseñas verificadas.",
+    categoria: (p: { categoria: string }): string =>
+      `${p.categoria} cerca de ti: reserva online`,
+    categoriaCiudad: (p: { categoria: string; ciudad: string }): string =>
+      `${p.categoria} en ${p.ciudad}: reserva online`,
+    categoriaDescripcion: (p: { categoria: string }): string =>
+      `Negocios de ${p.categoria.toLowerCase()} cerca de ti. Compara reseñas y reserva tu hora online.`,
+    ofertas: "Ofertas cerca de ti",
+    flash: "Horas flash hoy: horas libres a menor precio",
+  },
+  negociosHero: {
+    buscar: "¿Qué quieres reservar? Ej: corte, masaje, limpieza",
+    titulo: "Encuentra y reserva",
+    destacado: "cerca de ti",
+    bajada:
+      "Negocios con horas libres y reseñas verificadas de clientes reales.",
+    /** "Peluquería en {comuna}". */
+    en: "en",
+    /** "Peluquería cerca de {comuna}" (menos negocios que el mínimo). */
+    cerca: "cerca de",
+  },
+  negociosLista: {
+    titulo: "Negocios",
+    tituloCerca: "Negocios cerca de ti",
+    resultados: (p: { n: number }): string => negocios(p.n),
+    resultadosKm: (p: { n: number; km: number }): string =>
+      `${negocios(p.n)} a menos de ${p.km} km`,
+    vacioTitulo: "Todavía no hay negocios aquí",
+    vacioTexto:
+      "Descubre crece a medida que se suman negocios nuevos. Prueba otra categoría u otra comuna.",
+    cerca: (p: { comuna: string }): string =>
+      `Todavía no hay tantos negocios en ${p.comuna}, así que te mostramos los más cercanos.`,
+    ranking:
+      "Orden: más cerca primero si compartes tu ubicación; si no, primero los negocios con horas flash y ofertas. Todas las reseñas vienen de reservas realizadas.",
+  },
+  negocioTarjeta: {
+    aDomicilioEn: (p: { comunas: string }): string =>
+      `Atiende a domicilio en ${p.comunas}`,
+    aDomicilio: "Atiende a domicilio",
+    oferta: "Oferta",
+    ofertas: (p: { n: number }): string => ofertas(p.n),
+    nuevo: "Nuevo en Descubre",
+  },
+  creciendo: {
+    titulo: "Descubre crece cada semana",
+    texto:
+      "Todo el tiempo se suman negocios nuevos, así que pronto vas a ver más cerca de ti.",
+    recomendar: "¿Falta tu negocio favorito? Recomiéndalo",
+    paraNegocios: "¿Tienes un negocio? Aparece aquí gratis",
+  },
+  flashLista: {
+    titulo: "Horas flash hoy",
+    bajada:
+      "Horas libres de hoy a menor precio. La hora queda tuya cuando la confirmas.",
+    resultados: (p: { n: number }): string => horasFlash(p.n),
+    vacioTitulo: "No quedan horas flash hoy",
+    vacioTexto:
+      "Los negocios publican horas flash cuando les queda un espacio libre. Vuelve más tarde o mira todos los negocios.",
+    verNegocios: "Ver todos los negocios",
+  },
   lista: {
     tituloCerca: "Populares cerca de ti",
     titulo: "Ofertas",
-    resultados: (p: { n: number }): string =>
-      p.n === 1 ? "1 oferta" : `${p.n} ofertas`,
+    resultados: (p: { n: number }): string => ofertas(p.n),
     resultadosKm: (p: { n: number; km: number }): string =>
-      `${p.n === 1 ? "1 oferta" : `${p.n} ofertas`} a menos de ${p.km} km`,
+      `${ofertas(p.n)} a menos de ${p.km} km`,
     vacioTitulo: "Todavía no hay ofertas aquí",
     vacioTexto: "Prueba otra categoría, otra comuna o borra los filtros.",
     ver: "Ver",
@@ -110,6 +203,7 @@ export const descubre = {
       new: "Más nuevas",
       price: "Menor precio",
       discount: "Mayor descuento",
+      rating: "Mejor nota",
     },
     aplicar: "Ver resultados",
     limpiar: "Borrar filtros",

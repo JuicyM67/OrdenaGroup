@@ -491,6 +491,38 @@ export type Database = {
           },
         ];
       };
+      business_service_areas: {
+        Row: {
+          area_name: string;
+          area_slug: string;
+          business_id: string;
+          created_at: string;
+          sort: number;
+        };
+        Insert: {
+          area_name: string;
+          area_slug: string;
+          business_id: string;
+          created_at?: string;
+          sort?: number;
+        };
+        Update: {
+          area_name?: string;
+          area_slug?: string;
+          business_id?: string;
+          created_at?: string;
+          sort?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "business_service_areas_business_id_fkey";
+            columns: ["business_id"];
+            isOneToOne: false;
+            referencedRelation: "businesses";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       businesses: {
         Row: {
           about: string | null;
@@ -518,7 +550,11 @@ export type Database = {
           lat: number | null;
           lng: number | null;
           logo_url: string | null;
+          marketplace_categories_reviewed_at: string | null;
+          marketplace_extra_categories: string[];
           marketplace_flash_visible: boolean;
+          marketplace_hidden: boolean;
+          marketplace_listed: boolean;
           max_days_ahead: number;
           member_benefit_text: string | null;
           member_discount_pct: number | null;
@@ -529,6 +565,7 @@ export type Database = {
           plan: Database["public"]["Enums"]["business_plan"];
           plan_override_until: string | null;
           review_requests_enabled: boolean;
+          serves_at_customer: boolean;
           slot_interval_minutes: number;
           slug: string;
           status: Database["public"]["Enums"]["business_status"];
@@ -571,7 +608,11 @@ export type Database = {
           lat?: number | null;
           lng?: number | null;
           logo_url?: string | null;
+          marketplace_categories_reviewed_at?: string | null;
+          marketplace_extra_categories?: string[];
           marketplace_flash_visible?: boolean;
+          marketplace_hidden?: boolean;
+          marketplace_listed?: boolean;
           max_days_ahead?: number;
           member_benefit_text?: string | null;
           member_discount_pct?: number | null;
@@ -582,6 +623,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["business_plan"];
           plan_override_until?: string | null;
           review_requests_enabled?: boolean;
+          serves_at_customer?: boolean;
           slot_interval_minutes?: number;
           slug: string;
           status?: Database["public"]["Enums"]["business_status"];
@@ -624,7 +666,11 @@ export type Database = {
           lat?: number | null;
           lng?: number | null;
           logo_url?: string | null;
+          marketplace_categories_reviewed_at?: string | null;
+          marketplace_extra_categories?: string[];
           marketplace_flash_visible?: boolean;
+          marketplace_hidden?: boolean;
+          marketplace_listed?: boolean;
           max_days_ahead?: number;
           member_benefit_text?: string | null;
           member_discount_pct?: number | null;
@@ -635,6 +681,7 @@ export type Database = {
           plan?: Database["public"]["Enums"]["business_plan"];
           plan_override_until?: string | null;
           review_requests_enabled?: boolean;
+          serves_at_customer?: boolean;
           slot_interval_minutes?: number;
           slug?: string;
           status?: Database["public"]["Enums"]["business_status"];

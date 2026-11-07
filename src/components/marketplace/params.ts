@@ -1,4 +1,4 @@
-// Upptäck (WP-68): sökparametrar ↔ filter, och positionscookien (D-055). Rena
+// Descubre (WP-68): sökparametrar ↔ filter, och positionscookien (D-055). Rena
 // funktioner utan server-beroenden — används av sidorna (server) och av
 // positionsknappen (klient).
 import {
@@ -10,9 +10,16 @@ import {
 } from "@/config/marketplace";
 import { hrefMarketplace } from "@/config/routes";
 
-export type MarketplaceSort = "near" | "new" | "price" | "discount";
+/** `rating` gäller bara företagsfliken (WP-85); erbjudandena tolkar den som `near`. */
+export type MarketplaceSort = "near" | "new" | "price" | "discount" | "rating";
 
-const SORTS: readonly MarketplaceSort[] = ["near", "new", "price", "discount"];
+const SORTS: readonly MarketplaceSort[] = [
+  "near",
+  "new",
+  "price",
+  "discount",
+  "rating",
+];
 
 /** Det som finns i URL:en (aldrig positionen — den ligger i cookien). */
 export type DiscoverParams = {
@@ -66,12 +73,19 @@ export function toQuery(p: DiscoverParams): string {
   return s ? `?${s}` : "";
 }
 
-/** Länk till listan (eller kartan) med kategori och parametrar. */
+/** Länk till listan (eller kartan) med kategori och parametrar. Företagsfliken
+ * (`lista`) har kategorin i sökvägen; erbjudanden och kartan i `?kategori=`. */
 export function discoverHref(
   p: DiscoverParams,
   category?: MarketplaceCategoryId,
-  view: "lista" | "karta" = "lista",
+  view: "lista" | "karta" | "ofertas" = "lista",
 ): string {
+  if (view === "ofertas") {
+    const qs = new URLSearchParams(toQuery(p).slice(1));
+    if (category) qs.set("kategori", categorySlug(category));
+    const s = qs.toString();
+    return `${hrefMarketplace("descubreOfertas")}${s ? `?${s}` : ""}`;
+  }
   if (view === "karta") {
     const qs = new URLSearchParams(toQuery({ ...p, sida: undefined }).slice(1));
     if (category) qs.set("kategori", categorySlug(category));
@@ -122,4 +136,16 @@ export function parsePositionCookie(
   const lng = Number(m[2]);
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return undefined;
   return { lat, lng };
+}
+
+/** Blixttidsfliken (WP-85); bara orten följer med. */
+export function flashHref(p: Pick<DiscoverParams, "ort">): string {
+  return `${hrefMarketplace("descubreFlash")}${p.ort ? `?ort=${encodeURIComponent(p.ort)}` : ""}`;
+}
+
+/** Erbjudandenas sortering: `rating` finns bara för företag (→ `near`). */
+export function offerSort(
+  s: MarketplaceSort | undefined,
+): Exclude<MarketplaceSort, "rating"> {
+  return s === undefined || s === "rating" ? "near" : s;
 }

@@ -31,7 +31,10 @@ test("login → onboarding → länk till bokningssidan", async ({
   const slug = `wp15-e2e-${Date.now()}`;
   await page.getByLabel("Nombre del negocio").fill("Barbería E2E");
   await page.getByLabel("Tu link de reservas").fill(slug);
-  await page.getByLabel("Comuna").fill("Providencia");
+  await page.getByLabel("Comuna", { exact: true }).fill("Providencia");
+  await page
+    .getByLabel("Dirección", { exact: true })
+    .fill("Av. Providencia 1234");
   await page.getByRole("button", { name: "Barbería" }).click();
   await page.getByLabel("Teléfono del negocio").fill("+56912345678");
   await page.getByRole("button", { name: "Continuar" }).click();

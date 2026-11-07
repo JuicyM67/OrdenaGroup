@@ -1,4 +1,4 @@
-// /upptack/karta (CL: /descubre/mapa, dold) — kartvyn (WP-68, D-055).
+// /descubre/mapa (CL: /descubre/mapa, dold) — kartvyn (WP-68, D-055).
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
@@ -7,6 +7,7 @@ import { pageMetadata } from "@/components/marketing/paginas/metadata";
 import { getConsumerNav } from "@/components/marketplace/consumer-session";
 import { MapPage } from "@/components/marketplace/map-page";
 import {
+  offerSort,
   parseDiscoverParams,
   parsePositionCookie,
 } from "@/components/marketplace/params";
@@ -56,7 +57,7 @@ export default async function MapaPage({
         maxKm: position ? params.km : undefined,
         flashOnly: params.blixt,
         minRating: params.betyg ? 4.5 : undefined,
-        sort: params.sortera ?? "near",
+        sort: offerSort(params.sortera),
       },
       200,
     ),

@@ -25,6 +25,7 @@ function validInput(slug: string) {
       comuna: "Providencia",
       category: "barberia",
       phone: "+56912345678",
+      address: "Av. Providencia 1234",
     },
     services: [
       { name: "Corte", durationMin: 30, priceClp: "12000" },

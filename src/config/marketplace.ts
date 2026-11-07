@@ -22,27 +22,79 @@ export function marketplaceIncludeDemo(): boolean {
   return process.env.VERCEL_ENV !== "production";
 }
 
+// WP-85 (D-070, port av SE:s D-070): 16 huvudkategorier, en gemensam lista för
+// rubro (`businesses.category`, `RUBRO_KEYS` i ./rubros.ts) och Descubre. De interna
+// id:na är desamma som i SE (CHECK-listan på `offers.category`); namnen och
+// URL-slugsen är chilenska (`src/i18n/es-CL.descubre.ts`).
 export type MarketplaceCategoryId =
-  "har" | "naglar" | "massage" | "hudvard" | "fransar" | "ovrigt";
+  | "har"
+  | "barberare"
+  | "naglar"
+  | "fransar"
+  | "hudvard"
+  | "skonhet"
+  | "massage"
+  | "spa"
+  | "halsa"
+  | "holistiskt"
+  | "traning"
+  | "tatuering"
+  | "djur"
+  | "stad"
+  | "fordon"
+  | "ovrigt";
 
-/** Kategorier i visningsordning (samma id:n som CHECK-listan på `offers.category`,
- * därför de interna id:na). `ovrigt` visas inte som ruta, bara under "Alla". */
+/** Kategorier i visningsordning (samma id:n som CHECK-listan på `offers.category`
+ * och `businesses.marketplace_extra_categories`). `ovrigt` visas inte som ruta,
+ * bara under "Todas". */
 export const MARKETPLACE_CATEGORY_IDS: readonly MarketplaceCategoryId[] = [
   "har",
+  "barberare",
   "naglar",
-  "massage",
-  "hudvard",
   "fransar",
+  "hudvard",
+  "skonhet",
+  "massage",
+  "spa",
+  "halsa",
+  "holistiskt",
+  "traning",
+  "tatuering",
+  "djur",
+  "stad",
+  "fordon",
 ];
 
-/** URL-slug per kategori (`/descubre/<slug>`). */
+/** Alla 16, inklusive `ovrigt` (validering, väljare). */
+export const ALL_MARKETPLACE_CATEGORY_IDS: readonly MarketplaceCategoryId[] = [
+  ...MARKETPLACE_CATEGORY_IDS,
+  "ovrigt",
+];
+
+/** URL-slug per kategori (`/descubre/<slug>`), samma ord som `/rubros/<slug>` där
+ * rubron har en egen sida. */
 const CATEGORY_SLUGS: Record<MarketplaceCategoryId, string> = {
-  har: "cabello",
+  har: "peluquerias",
+  barberare: "barberias",
   naglar: "unas",
-  massage: "masajes",
-  hudvard: "estetica",
   fransar: "pestanas-y-cejas",
+  hudvard: "estetica",
+  skonhet: "maquillaje-y-depilacion",
+  massage: "masajes",
+  spa: "spa",
+  halsa: "kinesiologia-y-salud",
+  holistiskt: "terapias-holisticas",
+  traning: "entrenamiento-y-yoga",
+  tatuering: "tatuajes-y-piercing",
+  djur: "mascotas",
+  stad: "limpieza-y-hogar",
+  fordon: "autos",
   ovrigt: "otros",
+};
+
+/** Äldre slugs som fortfarande ska fungera (WP-68 hette Peluquería "cabello"). */
+const CATEGORY_SLUG_ALIASES: Record<string, MarketplaceCategoryId> = {
+  cabello: "har",
 };
 
 export function categorySlug(id: MarketplaceCategoryId): string {
@@ -52,30 +104,65 @@ export function categorySlug(id: MarketplaceCategoryId): string {
 export function categoryFromSlug(
   slug: string,
 ): MarketplaceCategoryId | undefined {
-  return (Object.keys(CATEGORY_SLUGS) as MarketplaceCategoryId[]).find(
-    (id) => CATEGORY_SLUGS[id] === slug,
+  return (
+    (Object.keys(CATEGORY_SLUGS) as MarketplaceCategoryId[]).find(
+      (id) => CATEGORY_SLUGS[id] === slug,
+    ) ?? CATEGORY_SLUG_ALIASES[slug]
   );
 }
 
-/** Förvald erbjudandekategori ur företagets bransch (`businesses.category`). */
+export function isMarketplaceCategoryId(v: string): v is MarketplaceCategoryId {
+  return (ALL_MARKETPLACE_CATEGORY_IDS as readonly string[]).includes(v);
+}
+
+/** Huvudkategorin ur företagets rubro (`businesses.category`, `RUBRO_KEYS`),
+ * 1:1 (D-070). Okänd rubro → `ovrigt`. */
 export function categoryForRubro(rubro: string): MarketplaceCategoryId {
   switch (rubro) {
-    case "barberia":
     case "peluqueria":
       return "har";
+    case "barberia":
+      return "barberare";
     case "unas":
       return "naglar";
-    case "masajes":
-    case "kinesiologia":
-      return "massage";
-    case "estetica":
-      return "hudvard";
     case "cejas_pestanas":
       return "fransar";
+    case "estetica":
+      return "hudvard";
+    case "belleza":
+      return "skonhet";
+    case "masajes":
+      return "massage";
+    case "spa":
+      return "spa";
+    case "kinesiologia":
+      return "halsa";
+    case "holistico":
+      return "holistiskt";
+    case "entrenamiento":
+      return "traning";
+    case "tatuajes":
+      return "tatuering";
+    case "mascotas":
+      return "djur";
+    case "limpieza":
+      return "stad";
+    case "automotriz":
+      return "fordon";
     default:
       return "ovrigt";
   }
 }
+
+/** Högst så många extra kategorier per företag (samma gräns som i DB). */
+export const MARKETPLACE_EXTRA_CATEGORIES_MAX = 6;
+
+/** Högst så många comunas som ett företag som va a domicilio kan täcka. */
+export const SERVICE_AREAS_MAX = 30;
+
+/** En comunasida (`/descubre/<kategori>/<comuna>`) visas och indexeras först från så
+ * många listade företag (D-070); under det visas "cerca de <comuna>". */
+export const MARKETPLACE_AREA_MIN_BUSINESSES = 3;
 
 /** Reserverat ortsegment (`/descubre/<kategori>/<ort>` ger 404 för det). Värdet är
  * oförändrat sedan tiden med två marknader (D-062). */

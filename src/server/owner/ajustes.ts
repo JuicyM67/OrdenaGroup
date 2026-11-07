@@ -14,6 +14,7 @@ import type { IsoWeekday } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
+import { areaSlug } from "@/server/geocoding/area";
 import { mediaPathFromUrl } from "@/server/bookings/media";
 // WP-56: samma mappning `string → "none"|"late"|"all"` som motorn
 // (`src/server/bookings/row.ts`, scheduling-engineer) använder för
@@ -79,6 +80,10 @@ export type AjustesBusiness = {
   reviewRequestsEnabled: boolean;
   /** WP-23: `businesses.waitlist_hold_minutes` (5–240). */
   waitlistHoldMinutes: number;
+  /** WP-85 (D-070): `businesses.serves_at_customer`. */
+  servesAtCustomer: boolean;
+  /** WP-85: orterna i `business_service_areas` (namn, i ordning). */
+  serviceAreas: string[];
 };
 
 export type AjustesService = {
@@ -234,6 +239,7 @@ type BusinessRow = {
   waitlist_mode: string;
   waitlist_hold_minutes: number;
   review_requests_enabled: boolean;
+  serves_at_customer: boolean;
 };
 
 /** Samma försvarsmönster som `toCancelApproval` (`src/server/bookings/row.ts`)
@@ -277,13 +283,18 @@ async function loadBusinessRow(
             cancel_approval, member_discount_pct, member_benefit_text,
             winback_days, winback_message, winback_offer_pct, winback_offer_days,
             waitlist_mode::text as waitlist_mode, waitlist_hold_minutes,
-            review_requests_enabled
+            review_requests_enabled, serves_at_customer
        from public.businesses
       where id = $1`,
     [businessId],
   );
   const b = businessRes.rows[0];
   if (!b) throw new Error("loadAjustesData: företaget hittades inte");
+  const areasRes = await q.query<{ area_name: string }>(
+    `select area_name from public.business_service_areas
+      where business_id = $1 order by sort, area_name`,
+    [businessId],
+  );
   return {
     name: b.name,
     slug: b.slug,
@@ -305,6 +316,8 @@ async function loadBusinessRow(
     winbackMessage: b.winback_message,
     winbackOfferPct: b.winback_offer_pct,
     winbackOfferDays: b.winback_offer_days,
+    servesAtCustomer: b.serves_at_customer,
+    serviceAreas: areasRes.rows.map((r) => r.area_name),
   };
 }
 
@@ -494,10 +507,47 @@ export async function updateBusinessSettings(
           input.cancelApproval,
         ],
       );
-      return assertUpdated(r.rowCount) ?? { ok: true };
+      const notUpdated = assertUpdated(r.rowCount);
+      if (notUpdated) return notUpdated;
+      // WP-85 (D-070): "kommer till kunden" och orterna, bara när de skickas.
+      if (input.servesAtCustomer !== undefined) {
+        await q.query(
+          `update public.businesses set serves_at_customer = $2 where id = $1`,
+          [businessId, input.servesAtCustomer],
+        );
+      }
+      if (input.serviceAreas !== undefined) {
+        await replaceServiceAreas(q, businessId, input.serviceAreas);
+      }
+      return { ok: true };
     });
   } catch (e) {
     return { ok: false, code: mapDbError(e) };
+  }
+}
+
+/** Ersätter företagets täckta orter (ordningen = listans). Dubbletter (samma
+ * `area_slug`) och namn som inte ger någon slug hoppas över. */
+async function replaceServiceAreas(
+  q: Queryable,
+  businessId: string,
+  names: readonly string[],
+): Promise<void> {
+  await q.query(
+    `delete from public.business_service_areas where business_id = $1`,
+    [businessId],
+  );
+  const seen = new Set<string>();
+  let sort = 0;
+  for (const name of names) {
+    const slug = areaSlug(name);
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    await q.query(
+      `insert into public.business_service_areas (business_id, area_slug, area_name, sort)
+       values ($1, $2, $3, $4)`,
+      [businessId, slug, name.trim().slice(0, 80), sort++],
+    );
   }
 }
 

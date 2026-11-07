@@ -30,6 +30,7 @@ import {
   declineRequest,
 } from "@/server/owner/requests";
 import { setReviewRequestsEnabled } from "@/server/reviews/owner";
+import { updateDescubreSettings } from "@/server/owner/descubre";
 
 async function currentOwner(): Promise<
   { userId: string; businessId: string } | { ok: false; code: "unauthorized" }
@@ -61,6 +62,15 @@ export async function updateBusinessSettingsAction(
   const owner = await currentOwner();
   if ("ok" in owner) return owner;
   return updateBusinessSettings(owner.userId, owner.businessId, input);
+}
+
+/** WP-85 (D-070): Ajustes → Tu negocio → "Descubre". */
+export async function updateDescubreSettingsAction(
+  input: unknown,
+): Promise<MutationResult> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return owner;
+  return updateDescubreSettings(owner.userId, owner.businessId, input);
 }
 
 export async function createServiceAction(

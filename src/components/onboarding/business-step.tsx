@@ -27,7 +27,7 @@ export type BusinessStepProps = {
 };
 
 type Errors = Partial<
-  Record<"name" | "slug" | "comuna" | "phone" | "category", string>
+  Record<"name" | "slug" | "comuna" | "phone" | "category" | "address", string>
 >;
 
 export function BusinessStep({
@@ -59,6 +59,11 @@ export function BusinessStep({
     if (!slug.ok) next.slug = onboardingErrorText(slug.code);
     if (!comuna.ok) next.comuna = onboardingErrorText(comuna.code);
     if (!phone.ok) next.phone = onboardingErrorText(phone.code);
+    // WP-85 (D-070): adress krävs utom för den som kommer till kunden.
+    if (!value.servesAtCustomer) {
+      const address = validateRequired(value.address, "business.address_empty");
+      if (!address.ok) next.address = onboardingErrorText(address.code);
+    }
     if (value.category === "") {
       next.category = onboardingErrorText("business.category_invalid");
     }
@@ -105,6 +110,37 @@ export function BusinessStep({
         error={errors.comuna}
         maxLength={80}
       />
+
+      <div className="flex flex-col gap-3">
+        {value.servesAtCustomer ? null : (
+          <TextField
+            label={negocio.campos.addressLabel}
+            hint={errors.address ? undefined : negocio.campos.addressAyuda}
+            placeholder={negocio.campos.addressPlaceholder}
+            value={value.address}
+            onChange={(e) => onChange({ ...value, address: e.target.value })}
+            error={errors.address}
+            maxLength={200}
+            autoComplete="street-address"
+          />
+        )}
+        <label className="flex cursor-pointer items-start gap-3 text-14 text-ink">
+          <input
+            type="checkbox"
+            checked={value.servesAtCustomer}
+            onChange={(e) =>
+              onChange({ ...value, servesAtCustomer: e.target.checked })
+            }
+            className="mt-0.5 size-5 shrink-0 accent-ink"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="font-semibold">{negocio.campos.sinLocal}</span>
+            <span className="text-13 text-muted">
+              {negocio.campos.sinLocalAyuda}
+            </span>
+          </span>
+        </label>
+      </div>
 
       <div className="flex flex-col gap-2">
         <span className="text-13 font-semibold text-ink">

@@ -1,5 +1,7 @@
 // Kategorirutorna (WP-68): pastellrutor med rund ikoncirkel; "Alla" är mörk med
 // lime-ikon (Desktop.dc.html / Main.dc.html). Mobil: horisontell rad som scrollar.
+// WP-85: 16 kategorier (två rader om åtta på dator), länken per flik via `hrefFor`
+// och antalet som företag eller erbjudanden via `unit`.
 import Link from "next/link";
 
 import { cn } from "@/components/ui/cn";
@@ -19,15 +21,29 @@ export function CategoryTiles({
   counts,
   active,
   params,
+  hrefFor,
+  unit = "ofertas",
+  total: totalOverride,
 }: {
   counts: readonly CategoryCount[];
   active: MarketplaceCategoryId | undefined;
   params: DiscoverParams;
+  /** Länk för en ruta (standard: erbjudandelistan per kategori, WP-68). */
+  hrefFor?: (
+    id: MarketplaceCategoryId | undefined,
+    keep: DiscoverParams,
+  ) => string;
+  unit?: "ofertas" | "negocios";
+  /** Antalet på "Alla" när ett företag kan ligga i flera kategorier (WP-85). */
+  total?: number;
 }) {
   const countOf = (id: MarketplaceCategoryId): number =>
     counts.find((c) => c.category === id)?.count ?? 0;
-  const total = counts.reduce((s, c) => s + c.count, 0);
+  const total = totalOverride ?? counts.reduce((s, c) => s + c.count, 0);
   const keep: DiscoverParams = { ...params, sida: undefined };
+  const link = hrefFor ?? ((id, p) => discoverHref(p, id));
+  const totalText =
+    unit === "negocios" ? t.categorias.totalNegocios : t.categorias.total;
 
   const tiles = [
     {
@@ -48,17 +64,17 @@ export function CategoryTiles({
 
   return (
     <nav aria-label={t.categorias.label} className="-mx-4 sm:mx-0">
-      <ul className="relative flex gap-2 overflow-x-auto px-4 pb-1 sm:px-0 lg:grid lg:grid-cols-6 lg:gap-3.5 lg:overflow-visible">
+      <ul className="relative flex gap-2 overflow-x-auto px-4 pb-1 sm:px-0 lg:grid lg:grid-cols-8 lg:gap-3 lg:overflow-visible">
         {tiles.map((tile) => {
           const isActive = tile.id === active;
           const dark = tile.id === undefined;
           return (
             <li key={tile.id ?? "todas"} className="shrink-0">
               <Link
-                href={discoverHref(keep, tile.id)}
+                href={link(tile.id, keep)}
                 aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex h-22 w-21 flex-col items-center justify-center gap-1.5 rounded-tile text-13 font-semibold transition-transform duration-150 ease-out hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:h-32 lg:w-full lg:items-start lg:justify-between lg:rounded-card lg:p-4",
+                  "flex h-22 w-24 flex-col items-center justify-center gap-1.5 rounded-tile px-1 text-center text-13 leading-snug font-semibold transition-transform duration-150 ease-out hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:h-30 lg:w-full lg:items-start lg:justify-between lg:rounded-card lg:p-3.5 lg:text-left",
                   dark ? "bg-ink text-on-dark" : `${tile.tone} text-ink`,
                   isActive && !dark
                     ? "ring-2 ring-ink ring-offset-2 ring-offset-canvas"
@@ -76,14 +92,14 @@ export function CategoryTiles({
                   <tile.icon className="size-4.5" strokeWidth={2} />
                 </span>
                 <span className="flex flex-col items-center lg:items-start">
-                  <span className="lg:text-16 lg:font-bold">{tile.label}</span>
+                  <span className="lg:text-14 lg:font-bold">{tile.label}</span>
                   <span
                     className={cn(
                       "hidden text-12 font-medium lg:block",
                       dark ? "text-on-dark-soft" : "text-ink-soft",
                     )}
                   >
-                    {dark ? t.categorias.total({ n: tile.count }) : tile.count}
+                    {dark ? totalText({ n: tile.count }) : tile.count}
                   </span>
                 </span>
               </Link>

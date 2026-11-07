@@ -21,6 +21,9 @@ export function applyImportToWizard(
   if (b.district) business.comuna = b.district;
   if (b.category) business.category = b.category;
   if (choice.profile.phone) business.phone = choice.profile.phone;
+  if (choice.profile.address && !business.address) {
+    business.address = choice.profile.address.slice(0, 200);
+  }
 
   const taken = new Set(data.services.map((s) => norm(s.name)));
   const services = [...data.services];

@@ -1,12 +1,15 @@
 // sitemap.xml (WP-75): alla publika, indexerbara sidor i installationens marknad (en
 // installation per marknad, D-025), med riktiga marknadsadresser från `routes.ts`.
-// WP-68 (D-055): marknadsplatsen (Upptäck, kategori, kategori × ort, erbjudanden) tas
+// WP-68 (D-055): marknadsplatsen (Descubre, kategori, kategori × ort, erbjudanden) tas
 // med först när den är indexerbar (`MARKETPLACE_INDEXABLE=1`, bara SE).
+// WP-85 (D-070): kategori- och ortsidorna är företagskatalogen; en ortsida tas med
+// först från `MARKETPLACE_AREA_MIN_BUSINESSES` listade företag.
 import type { MetadataRoute } from "next";
 
 import { categorySlug, marketplaceIndexable } from "@/config/marketplace";
 import { hrefMarketplace, sitemapPaths } from "@/config/routes";
 import { absoluteUrl } from "@/config/site-url";
+import { loadDirectorySitemap } from "@/server/marketplace/businesses";
 import { loadSitemapEntries } from "@/server/marketplace/public";
 
 export const revalidate = 3600;
@@ -14,7 +17,10 @@ export const revalidate = 3600;
 async function marketplaceEntries(): Promise<MetadataRoute.Sitemap> {
   if (!marketplaceIndexable()) return [];
   try {
-    const { offers, combos } = await loadSitemapEntries();
+    const [{ offers }, combos] = await Promise.all([
+      loadSitemapEntries(),
+      loadDirectorySitemap(),
+    ]);
     const categoryPaths = new Set<string>();
     for (const c of combos) {
       const cat = categorySlug(c.category);
@@ -28,6 +34,11 @@ async function marketplaceEntries(): Promise<MetadataRoute.Sitemap> {
         url: absoluteUrl(hrefMarketplace("descubre")),
         changeFrequency: "daily",
         priority: 0.8,
+      },
+      {
+        url: absoluteUrl(hrefMarketplace("descubreOfertas")),
+        changeFrequency: "daily",
+        priority: 0.6,
       },
       ...[...categoryPaths].map((path) => ({
         url: absoluteUrl(path),

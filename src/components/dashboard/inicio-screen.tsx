@@ -13,7 +13,7 @@
 // lokalt tillstånd/`useRouter`, samma mönster som agenda-screen.tsx.
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { MoveDialog } from "@/components/agenda/move-dialog";
 import type { AgendaActionResult } from "@/components/agenda/agenda-screen";
@@ -101,6 +101,8 @@ export type InicioScreenProps = {
    * utan egen personalrad, design lab). */
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-85 (D-070): banner under sidhuvudet (påminnelsen om Descubre). */
+  topBanner?: ReactNode;
 };
 
 const AGENDA_HREF = appHref("appAgenda");
@@ -118,6 +120,7 @@ export function InicioScreen({
   onDeclineCancelRequest,
   myProfile,
   myProfileActions,
+  topBanner,
 }: InicioScreenProps) {
   const router = useRouter();
   const now = mustParseInstant(data.now, "InicioScreen");
@@ -210,6 +213,7 @@ export function InicioScreen({
           </Button>
         }
       />
+      {topBanner}
 
       <div
         className={cn(

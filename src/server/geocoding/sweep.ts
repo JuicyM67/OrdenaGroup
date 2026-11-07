@@ -20,7 +20,7 @@ import type { Geocoder } from "./types";
  * `manual` (ägaren/seed satt nålen) rörs aldrig.
  *
  * Bara aktiva företag utan begärd radering som har ett publicerat
- * erbjudande eller visar blixttider i Upptäck (S5) geokodas. Varje
+ * erbjudande eller visar blixttider i Descubre (S5) geokodas. Varje
  * skrivning sker per `id`.
  */
 
@@ -78,7 +78,10 @@ export async function runGeocodeSweep(
         where geocode_status = 'pending' and address is not null
           and status = 'active' and timezone = $1
           and deletion_requested_at is null
-          and ((marketplace_flash_visible
+          -- WP-85 (D-070): även företag som listas i Descubres katalog.
+          and ((marketplace_listed and not marketplace_hidden
+                and not serves_at_customer)
+               or (marketplace_flash_visible
                 and private.plan_has_feature(plan::text, 'flash'))
                or exists (select 1 from public.offers o
                            where o.business_id = businesses.id
