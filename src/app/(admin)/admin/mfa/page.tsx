@@ -7,11 +7,12 @@ import type { Metadata } from "next";
 
 import { MfaPanel } from "@/components/admin/mfa-panel";
 import { brand } from "@/config/brand";
+import { adminPanel } from "@/i18n";
 import { requireAdminAnyAal } from "@/server/admin/auth";
 
 // Regel 10: namnet "llena" bara i src/config/brand.ts.
 export const metadata: Metadata = {
-  title: `Tvåstegsverifiering – ${brand.name} admin`,
+  title: `${adminPanel.mfa.titulo} – ${brand.name} admin`,
   robots: { index: false, follow: false },
 };
 
@@ -23,7 +24,9 @@ export default async function AdminMfaPage() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-6 p-6">
       <div className="rounded-card bg-surface p-6">
-        <h1 className="mb-4 text-19 font-bold text-ink">Tvåstegsverifiering</h1>
+        <h1 className="mb-4 text-19 font-bold text-ink">
+          {adminPanel.mfa.titulo}
+        </h1>
         <MfaPanel />
       </div>
     </main>

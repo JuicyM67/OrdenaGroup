@@ -1,12 +1,17 @@
-// /admin/negocios/[id]: företagsdetalj med alla åtgärder (F19/WP-36). Svensk
-// text (bara ägaren använder ytan); nya texter via `adminPanel` (es-CL).
+// /admin/negocios/[id]: företagsdetalj med alla åtgärder (F19/WP-36). All
+// text via `adminPanel` (es-CL).
 // WP-84 (D-069): omgjord layout (port av SE WP-90/91/93/94) — "Rubro y
 // ubicación", importen åt företaget och "Borrar ahora". Facturación manual,
 // planöverstyrning och medlemmarnas åtgärder ligger kvar.
 import { ArrowUpRight } from "lucide-react";
 import { notFound } from "next/navigation";
 
+import { formatAdminDateTime } from "@/components/admin/admin-dates";
 import { AdminShell } from "@/components/admin/admin-shell";
+import {
+  auditActionText,
+  auditDetailsText,
+} from "@/components/admin/audit-text";
 import { BillingForm } from "@/components/admin/billing-form";
 import { ConfirmActionButton } from "@/components/admin/confirm-action-button";
 import { DeleteNowButton } from "@/components/admin/delete-now-button";
@@ -38,6 +43,9 @@ import {
 } from "./actions";
 
 export const dynamic = "force-dynamic";
+
+const t = adminPanel.detalle;
+const ROLES: Readonly<Record<string, string>> = t.roles;
 
 export default async function AdminBusinessDetailPage({
   params,
@@ -84,7 +92,7 @@ export default async function AdminBusinessDetailPage({
           rel="noopener"
           className="flex h-11 items-center gap-2 rounded-full bg-surface px-5 text-14 font-bold text-ink shadow-soft hover:bg-field focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          {adminPanel.detalle.verPagina}
+          {t.verPagina}
           <ArrowUpRight aria-hidden="true" className="size-4" strokeWidth={2} />
         </a>
       }
@@ -133,7 +141,7 @@ export default async function AdminBusinessDetailPage({
           ) : null}
 
           <section className="flex flex-col gap-3 rounded-card bg-surface p-6 fields-on-surface">
-            <h2 className="text-18 font-bold text-ink">Medlemmar</h2>
+            <h2 className="text-18 font-bold text-ink">{t.miembros}</h2>
             <ul className="flex flex-col gap-4">
               {business.members.map((m) => (
                 <li
@@ -141,8 +149,10 @@ export default async function AdminBusinessDetailPage({
                   className="flex flex-col gap-1.5 border-b border-border pb-4 last:border-0 last:pb-0"
                 >
                   <p className="text-14 text-ink">
-                    {m.email ?? "(okänd e-post)"}{" "}
-                    <span className="text-12 text-ink-soft">{m.role}</span>
+                    {m.email ?? t.sinCorreo}{" "}
+                    <span className="text-12 text-ink-soft">
+                      {ROLES[m.role] ?? m.role}
+                    </span>
                   </p>
                   <MemberActions
                     onSendLoginLink={sendLoginLinkAction.bind(
@@ -167,62 +177,64 @@ export default async function AdminBusinessDetailPage({
               <p className="text-22 font-bold text-ink">
                 {business.counts.bookings}
               </p>
-              <p className="text-13 text-ink-soft">Bokningar</p>
+              <p className="text-13 text-ink-soft">{t.reservas}</p>
             </div>
             <div className="rounded-card bg-surface p-6">
               <p className="text-22 font-bold text-ink">
                 {business.counts.staff}
               </p>
-              <p className="text-13 text-ink-soft">Personal</p>
+              <p className="text-13 text-ink-soft">{t.equipo}</p>
             </div>
             <div className="rounded-card bg-surface p-6">
               <p className="text-22 font-bold text-ink">
                 {business.counts.members}
               </p>
-              <p className="text-13 text-ink-soft">Konton</p>
+              <p className="text-13 text-ink-soft">{t.cuentas}</p>
             </div>
           </section>
 
           <section className="flex flex-col gap-3 rounded-card bg-surface p-6 fields-on-surface">
-            <h2 className="text-18 font-bold text-ink">Status</h2>
+            <h2 className="text-18 font-bold text-ink">{t.estado}</h2>
             <p className="text-13 text-ink-soft">
-              {business.status === "frozen" ? "Fryst" : "Aktiv"}
+              {business.status === "frozen"
+                ? adminPanel.lista.congelado
+                : adminPanel.lista.activo}
               {business.deletionRequestedAt
-                ? ` · Radering begärd ${new Date(business.deletionRequestedAt).toLocaleString("sv-SE")}`
+                ? ` · ${t.eliminacionPedida({ fecha: formatAdminDateTime(business.deletionRequestedAt) })}`
                 : ""}
             </p>
             <div className="flex flex-wrap gap-2">
               {business.status === "frozen" ? (
                 <ConfirmActionButton
-                  label="Avfrys"
-                  title="Avfrys företaget?"
-                  body="Bokningssidan blir synlig igen."
-                  confirmLabel="Avfrys"
+                  label={t.descongelar.boton}
+                  title={t.descongelar.titulo}
+                  body={t.descongelar.texto}
+                  confirmLabel={t.descongelar.boton}
                   action={unfreezeAction.bind(null, business.id)}
                 />
               ) : (
                 <ConfirmActionButton
-                  label="Frys"
-                  title="Frys företaget?"
-                  body="Bokningssidan blir otillgänglig tills du avfryser."
-                  confirmLabel="Frys"
+                  label={t.congelar.boton}
+                  title={t.congelar.titulo}
+                  body={t.congelar.texto}
+                  confirmLabel={t.congelar.boton}
                   action={freezeAction.bind(null, business.id)}
                 />
               )}
               {business.deletionRequestedAt ? (
                 <ConfirmActionButton
-                  label="Ångra radering"
-                  title="Ångra raderingen?"
-                  body="Kontot återställs till sitt tidigare status."
-                  confirmLabel="Ångra radering"
+                  label={t.deshacerEliminacion.boton}
+                  title={t.deshacerEliminacion.titulo}
+                  body={t.deshacerEliminacion.texto}
+                  confirmLabel={t.deshacerEliminacion.boton}
                   action={cancelDeletionAction.bind(null, business.id)}
                 />
               ) : (
                 <ConfirmActionButton
-                  label="Begär radering"
-                  title="Begär radering av företaget?"
-                  body="Bokningssidan stängs direkt. Företaget raderas permanent 30 dagar senare, om inte du ångrar innan dess."
-                  confirmLabel="Begär radering"
+                  label={t.pedirEliminacion.boton}
+                  title={t.pedirEliminacion.titulo}
+                  body={t.pedirEliminacion.texto}
+                  confirmLabel={t.pedirEliminacion.boton}
                   action={requestDeletionAction.bind(null, business.id)}
                 />
               )}
@@ -235,7 +247,7 @@ export default async function AdminBusinessDetailPage({
           </section>
 
           <section className="flex flex-col gap-3 rounded-card bg-surface p-6 fields-on-surface">
-            <h2 className="text-18 font-bold text-ink">Plan</h2>
+            <h2 className="text-18 font-bold text-ink">{t.plan}</h2>
             {business.planRequested &&
             business.planRequested !== business.plan ? (
               <p className="text-13 font-semibold text-ink">
@@ -243,7 +255,7 @@ export default async function AdminBusinessDetailPage({
                   plan: planes.nombres[business.planRequested],
                 })}
                 {business.planRequestedAt
-                  ? ` · ${new Date(business.planRequestedAt).toLocaleString("es-CL")}`
+                  ? ` · ${formatAdminDateTime(business.planRequestedAt)}`
                   : null}
               </p>
             ) : null}
@@ -272,28 +284,31 @@ export default async function AdminBusinessDetailPage({
           </section>
 
           <section className="flex flex-col gap-2 rounded-card bg-surface p-6">
-            <h2 className="text-18 font-bold text-ink">Senaste aktivitet</h2>
+            <h2 className="text-18 font-bold text-ink">{t.ultimaActividad}</h2>
             <p className="text-13 text-ink-soft">
               {business.lastActivityAt
-                ? new Date(business.lastActivityAt).toLocaleString("sv-SE")
-                : "Ingen bokning ännu."}
+                ? formatAdminDateTime(business.lastActivityAt)
+                : t.sinReservas}
             </p>
           </section>
 
           <section className="flex flex-col gap-2 rounded-card bg-surface p-6">
-            <h2 className="text-18 font-bold text-ink">Logg</h2>
+            <h2 className="text-18 font-bold text-ink">{t.registro}</h2>
             <ul className="flex flex-col gap-1.5">
-              {log.map((entry) => (
-                <li key={entry.id} className="text-12 text-ink-soft">
-                  {new Date(entry.createdAt).toLocaleString("sv-SE")} —{" "}
-                  {entry.action}
-                  {Object.keys(entry.details).length
-                    ? ` (${JSON.stringify(entry.details)})`
-                    : ""}
-                </li>
-              ))}
+              {log.map((entry) => {
+                const details = auditDetailsText(entry);
+                return (
+                  <li key={entry.id} className="text-12 text-ink-soft">
+                    {formatAdminDateTime(entry.createdAt)} —{" "}
+                    {auditActionText(entry.action)}
+                    {details ? ` (${details})` : ""}
+                  </li>
+                );
+              })}
               {log.length === 0 ? (
-                <li className="text-12 text-ink-soft">Inga åtgärder ännu.</li>
+                <li className="text-12 text-ink-soft">
+                  {adminPanel.registro.vacio}
+                </li>
               ) : null}
             </ul>
           </section>

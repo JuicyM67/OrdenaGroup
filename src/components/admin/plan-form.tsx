@@ -1,7 +1,7 @@
 "use client";
 
-// Byt plan + valfritt slutdatum för en manuell override (F19/WP-36). Svensk
-// text. WP-73 (D-048): planen `custom` med avtalade gränser (anställda).
+// Byt plan + valfritt slutdatum för en manuell override (F19/WP-36). Text
+// via `adminPanel.plan`. WP-73 (D-048): planen `custom` med avtalade gränser (anställda).
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
@@ -11,9 +11,12 @@ import {
   type BusinessPlan,
   type CustomLimits,
 } from "@/config/plans";
-import { planes } from "@/i18n";
+import { adminPanel, planes } from "@/i18n";
 
+import { actionErrorText } from "./admin-error-text";
 import type { AdminActionResult } from "./confirm-action-button";
+
+const t = adminPanel.plan;
 
 export type PlanFormProps = {
   plan: BusinessPlan;
@@ -72,7 +75,7 @@ export function PlanForm({
       className="flex flex-wrap items-end gap-3"
     >
       <label className="flex flex-col gap-1 text-13 text-ink">
-        Plan
+        {t.plan}
         <select
           value={value}
           onChange={(e) => setValue(e.target.value as BusinessPlan)}
@@ -87,7 +90,7 @@ export function PlanForm({
       </label>
       {value === "custom" ? (
         <label className="flex flex-col gap-1 text-13 text-ink">
-          Anställda (avtalat, standard 10)
+          {t.personal}
           <input
             type="number"
             min={1}
@@ -98,7 +101,7 @@ export function PlanForm({
         </label>
       ) : null}
       <label className="flex flex-col gap-1 text-13 text-ink">
-        Gratis/override till (valfritt)
+        {t.hasta}
         <input
           type="date"
           value={until}
@@ -107,10 +110,10 @@ export function PlanForm({
         />
       </label>
       <Button type="submit" size="sm" disabled={pending}>
-        {pending ? "Sparar…" : "Spara plan"}
+        {pending ? t.guardando : t.guardar}
       </Button>
       {error ? (
-        <span className="text-13 text-alert">Det gick inte ({error}).</span>
+        <span className="text-13 text-alert">{actionErrorText(error)}</span>
       ) : null}
     </form>
   );
