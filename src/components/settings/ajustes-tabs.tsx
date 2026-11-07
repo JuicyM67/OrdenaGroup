@@ -14,6 +14,7 @@
 import {
   Building2,
   CalendarClock,
+  ClipboardCheck,
   ClipboardList,
   Clock,
   Gauge,
@@ -30,7 +31,7 @@ import type { ReactNode } from "react";
 
 import { strokeNav } from "@/components/ui/icons";
 import { AJUSTES_TAB_ROUTE_IDS, appHref } from "@/config/routes";
-import { ajustes, perfil, planes, widgets } from "@/i18n";
+import { ajustes, fichaAtencion, perfil, planes, widgets } from "@/i18n";
 
 export const AJUSTES_TAB_KEYS = [
   "negocio",
@@ -44,6 +45,7 @@ export const AJUSTES_TAB_KEYS = [
   "plan",
   "privacidad",
   "widgets",
+  "ficha",
 ] as const;
 
 export type AjustesTabKey = (typeof AJUSTES_TAB_KEYS)[number];
@@ -74,6 +76,7 @@ const AJUSTES_TAB_LABEL: Record<AjustesTabKey, string> = {
   plan: planes.ajustes.titulo,
   privacidad: ajustes.secciones.privacidad,
   widgets: widgets.panel.pestana,
+  ficha: fichaAtencion.ajustes.pestana,
 };
 
 const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
@@ -88,6 +91,7 @@ const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
   plan: Gauge,
   privacidad: Shield,
   widgets: Globe,
+  ficha: ClipboardCheck,
 };
 
 export function ajustesTabHref(key: AjustesTabKey): string {
@@ -109,6 +113,7 @@ export function ajustesTabVisible(
     case "horario":
     case "socios":
     case "widgets":
+    case "ficha":
       return access.perms.can_edit_settings;
     case "servicios":
     case "formulario":

@@ -115,6 +115,11 @@ export default async function ClienteDetallePage({
     <CustomerDetailScreen
       customer={customer}
       canViewReports={current.view.perms.can_view_reports}
+      fichaHref={
+        current.view.perms.can_view_records
+          ? `${appHref("appClienteDetail", parsedId.data)}/ficha`
+          : undefined
+      }
       onLogout={logout}
       onUpdateNotes={onUpdateNotes}
       onExportCustomer={onExportCustomer}

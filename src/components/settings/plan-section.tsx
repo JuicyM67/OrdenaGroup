@@ -31,6 +31,7 @@ const FEATURES: readonly Feature[] = [
   "campaigns",
   "full_reports",
   "staff_accounts",
+  "records",
   "priority_support",
 ];
 

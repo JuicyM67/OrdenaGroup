@@ -66,6 +66,7 @@ export type TeamPerms = {
   can_manage_team: boolean;
   can_view_reports: boolean;
   can_edit_settings: boolean;
+  can_view_records: boolean;
 };
 
 type MutationResult = { ok: true } | { ok: false; code: string };
@@ -132,6 +133,7 @@ const PERM_ROWS: {
   { perm: "can_manage_team", key: "manage_team" },
   { perm: "can_view_reports", key: "view_reports" },
   { perm: "can_edit_settings", key: "edit_settings" },
+  { perm: "can_view_records", key: "view_records" },
 ];
 
 const DEFAULT_PERMS: TeamPerms = {
@@ -142,6 +144,7 @@ const DEFAULT_PERMS: TeamPerms = {
   can_manage_team: false,
   can_view_reports: false,
   can_edit_settings: false,
+  can_view_records: false,
 };
 
 function PermSwitches({

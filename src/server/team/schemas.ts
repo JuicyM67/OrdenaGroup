@@ -48,6 +48,7 @@ export const invitationFlagsSchema = z.strictObject({
   can_manage_team: z.boolean(),
   can_view_reports: z.boolean(),
   can_edit_settings: z.boolean(),
+  can_view_records: z.boolean(),
 });
 
 export type InvitationFlagsInput = z.infer<typeof invitationFlagsSchema>;

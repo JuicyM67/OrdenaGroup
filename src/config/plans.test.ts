@@ -18,6 +18,7 @@ const MATRIX: Record<Feature, readonly string[]> = {
   full_reports: ["equipo", "local", "custom"],
   staff_accounts: ["equipo", "local", "custom"],
   offers: ["equipo", "local", "custom"],
+  records: ["emprende", "equipo", "local", "custom"],
   priority_support: ["local", "custom"],
 };
 

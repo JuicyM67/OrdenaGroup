@@ -44,6 +44,7 @@ import {
   flashPrice,
   loadActiveFlashSlotsIn,
 } from "@/server/flash/public";
+import { loadServiceConsentsIn } from "@/server/records/public-consent";
 import { loadSnapshot } from "@/server/scheduling/load";
 import {
   ANY_STAFF,
@@ -510,6 +511,13 @@ export async function loadReservaPageData(
     }
   }
 
+  // WP-88 (D-074): consentimientos som tjänsterna kräver (tomt utan planen).
+  const informedConsentsByService = await loadServiceConsentsIn(
+    q,
+    businessId,
+    serviceRows.rows.map((s) => s.id),
+  );
+
   return {
     now: now.toISOString(),
     business,
@@ -518,6 +526,7 @@ export async function loadReservaPageData(
     availability: availability as BookingAvailability,
     categories,
     questionsByService,
+    informedConsentsByService,
     profile: {
       ...profileBase,
       nextAvailable: nextFree && {

@@ -75,6 +75,7 @@ type MembershipRow = {
   can_manage_team: boolean;
   can_view_reports: boolean;
   can_edit_settings: boolean;
+  can_view_records: boolean;
 };
 type InvitationRow = {
   id: string;
@@ -93,6 +94,7 @@ function toPerms(r: MembershipRow): InvitationFlagsInput {
     can_manage_team: r.can_manage_team,
     can_view_reports: r.can_view_reports,
     can_edit_settings: r.can_edit_settings,
+    can_view_records: r.can_view_records,
   };
 }
 
@@ -113,7 +115,8 @@ export async function loadTeamData(
     const membershipsRes = await q.query<MembershipRow>(
       `select user_id, staff_id,
               can_manage_own_bookings, can_manage_all_bookings, can_cancel_bookings,
-              can_edit_catalog, can_manage_team, can_view_reports, can_edit_settings
+              can_edit_catalog, can_manage_team, can_view_reports, can_edit_settings,
+              can_view_records
          from public.memberships
         where business_id = $1 and role = 'staff' and staff_id is not null`,
       [businessId],
@@ -216,7 +219,8 @@ export async function updateMembershipPerms(
       `update public.memberships
           set can_manage_own_bookings = $3, can_manage_all_bookings = $4,
               can_cancel_bookings = $5, can_edit_catalog = $6,
-              can_manage_team = $7, can_view_reports = $8, can_edit_settings = $9
+              can_manage_team = $7, can_view_reports = $8, can_edit_settings = $9,
+              can_view_records = $10
         where business_id = $1 and user_id = $2 and role = 'staff'`,
       [
         businessId,
@@ -228,6 +232,7 @@ export async function updateMembershipPerms(
         perms.can_manage_team,
         perms.can_view_reports,
         perms.can_edit_settings,
+        perms.can_view_records,
       ],
     );
     return r.rowCount ? { ok: true } : { ok: false, code: "not_found" };
