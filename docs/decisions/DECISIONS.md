@@ -4,6 +4,19 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-075 · 2026-11-07 · "Comparte tu link": bokningslänken, QR och guider för Instagram, Google m.fl. (WP-89)
+**Beslut:** ny flik **Ajustes → Comparte tu link** (`/app/ajustes/compartir`, efter Widgets, kräver `can_edit_settings` som Widgets, alla planer) med bokningslänken (kopiera, öppna), en **QR-kod** (`?utm_source=qr`) att ladda ner som PNG för disken/skyltfönstret och korta numrerade guider för **Instagram, Google (Perfil de Negocio/Maps), WhatsApp Business, Facebook och TikTok**, var och en med en egen länk `?utm_source=<kanal>` och (WhatsApp) ett färdigt meddelande för ett snabbsvar. Samma guider publikt på `/funcionalidades/comparte-tu-link` (egen sidfil, i sitemap, inte i menyn eller funktionsmallen).
+**Varför:** salongerna i Chile får kunderna via Instagram, Google Maps och WhatsApp; länken på Inicio sa bara "Pégalo en tu Instagram" utan hur.
+**Konsekvens:**
+- **Instagrams åtgärdsknapp "Reservar" kräver en Meta-partner** (Fresha, Booksy m.fl.; det går inte att klistra in en egen adress). Vi är ingen partner, så guiden använder länken i bion ("Editar perfil" > "Enlaces" > "Agregar enlace externo") och säger det rakt ut. Att bli partner (eller gå via en aggregator) är en egen fråga.
+- **Menynamnen** är kontrollerade mot plattformarnas hjälpsidor i november 2026 (Google es-419 helt; Metas och TikToks sidor bara via sökutdrag, de går inte att läsa automatiskt) och skrivs bara där de kunde bekräftas; annars allmänt ("elige el botón para reservar"). Guiden säger att menyerna kan ändras. Texter i `src/i18n/es-CL.compartir.ts` (TODO_COPY).
+- **utm sparas inte.** Bokningssidan ignorerar `utm_source` (den läses inte och påverkar inte flödet) och bokningar har bara `source` (`web`/`manual`/`waitlist`/`flash`). Länkarna förbereder källstatistik; att spara källan med bokningen och visa den är ett eget arbetspaket (kräver migration).
+- **QR:** `qrcode-generator` (MIT, inga beroenden) ger modulmatrisen; komponenten ritar SVG med tokens och PNG via canvas med samma beräknade färger (inga egna färgvärden). Adressen kommer från `siteOrigin()` (`NEXT_PUBLIC_APP_URL`): vid domänbytet till ordenagroup.cl får nya QR-koder och länkar den nya adressen, men **redan utskrivna QR-koder och inklistrade länkar pekar på den gamla** tills den gamla adressen omdirigerar.
+- **Påminnelser:** kortet "Tu link de reservas" (Inicio, Ajustes → Tu negocio) och sista onboardingsteget "Tu link" länkar till fliken ("Cómo ponerlo en Instagram, Google y más"); på Inicio bara för den som får se fliken.
+- Inga migrationer, ingen ny tabell.
+
+---
+
 ### D-070 · 2026-11-07 · Descubre blir en företagskatalog med 16 kategorier (WP-85; port av SE:s D-073, bygger på D-055/D-060)
 **Beslut:** `/descubre` visar **negocios** per kategori och comuna, med flikarna **Negocios** (förvald, `/descubre[/<kategori>[/<comuna>]]`) · **Ofertas** (`/descubre/ofertas?kategori=`, erbjudandelistan från WP-68, bokas till erbjudandepris och betalas i salongen enligt D-060) · **Horas flash** (`/descubre/horas-flash`). Kartan visar fortfarande erbjudanden; dess "Ver lista" leder till Ofertas.
 - **16 kategorier, en gemensam lista** för rubro (`businesses.category`, `RUBRO_KEYS` i `src/config/rubros.ts`) och Descubre, 1:1 via `categoryForRubro`: Peluquería, Barbería, Uñas, Pestañas y cejas, Estética, Maquillaje y depilación, Masajes, Spa, Kinesiología y salud, Terapias holísticas, Entrenamiento y yoga, Tatuajes y piercing, Mascotas, Limpieza y hogar, Autos, Otros. Utgår från de befintliga rubros och `/rubros`-sidorna (WP-75); 8 nya rubros (`belleza`, `spa`, `holistico`, `entrenamiento`, `tatuajes`, `mascotas`, `limpieza`, `automotriz`). Interna kategori-id:n är desamma som i SE (CHECK på `offers.category`); URL-slugsen är spanska (`peluquerias`, `barberias`, …). Gamla `/descubre/cabello` fungerar som alias. `kinesiologia` flyttar från Masajes till Kinesiología y salud.

@@ -21,7 +21,8 @@ export type RouteId =
   | "preguntas"
   | "contacto"
   | "ejemploNegocio"
-  | "paraClientes";
+  | "paraClientes"
+  | "guiaLinkReservas";
 
 /** Samma id:n som i `SITIO_PARA_INDUSTRIAS` (`src/i18n/es-CL.marketing.ts`). */
 export type IndustriaId =
@@ -43,6 +44,9 @@ const ROUTES: Record<RouteId, string> = {
   ejemploNegocio: "/demo/negocio",
   // Landningssidan för konsumentkontot (med marknadsplatsen, D-060).
   paraClientes: "/para-clientes",
+  // WP-89 (D-075): publik guide för att lägga ut bokningslänken (egen sidfil, inte i
+  // funktionsmallen eller menyn).
+  guiaLinkReservas: "/funcionalidades/comparte-tu-link",
 };
 
 /** Länk till en av marknadssidorna. `hash` läggs på utan `#` (t.ex.
@@ -195,6 +199,7 @@ export function sitemapPaths(): string[] {
     href("contacto"),
     ...(marketplaceEnabled() ? [href("paraClientes")] : []),
     ...FUNCION_IDS.map(hrefFuncion),
+    href("guiaLinkReservas"),
     hrefRubros(),
     ...RUBRO_IDS.map(hrefRubro),
     hrefLegal("privacidad"),
@@ -235,6 +240,7 @@ export type AppRouteId =
   | "appAjustesPrivacidad"
   | "appAjustesPlan"
   | "appAjustesWidgets"
+  | "appAjustesCompartir"
   | "appSolicitud"
   | "appInvitacion"
   | "appBienvenida"
@@ -257,6 +263,7 @@ export const AJUSTES_TAB_ROUTE_IDS = {
   privacidad: "appAjustesPrivacidad",
   plan: "appAjustesPlan",
   widgets: "appAjustesWidgets",
+  compartir: "appAjustesCompartir",
 } as const satisfies Record<string, AppRouteId>;
 
 /** Filsystemets sökväg, med `[id]`/`[token]` som platshållare för dynamiska
@@ -288,6 +295,8 @@ const APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesPlan: "/app/ajustes/plan",
   // WP-82 (D-067): widgets för företagets egen hemsida.
   appAjustesWidgets: "/app/ajustes/widgets",
+  // WP-89 (D-075): bokningslänken, QR och guider per kanal.
+  appAjustesCompartir: "/app/ajustes/compartir",
   appSolicitud: "/app/solicitudes/[id]",
   appInvitacion: "/app/invitacion/[token]",
   appBienvenida: "/app/bienvenida/[token]",

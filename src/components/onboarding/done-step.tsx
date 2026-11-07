@@ -7,8 +7,9 @@ import { useState } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { TextLink } from "@/components/ui/text-link";
 import { appHref } from "@/config/routes";
-import { onboarding } from "@/i18n";
+import { compartir, onboarding } from "@/i18n";
 
 export type DoneStepProps = {
   slug: string;
@@ -76,6 +77,11 @@ export function DoneStep({ slug, businessName, hasServices }: DoneStepProps) {
       <Button asChild size="xl">
         <Link href={appHref("appAgenda")}>{onboarding.listo.ctaIrAgenda}</Link>
       </Button>
+
+      {/* WP-89 (D-075): guiden för Instagram, Google m.fl. (ägaren ser alltid fliken). */}
+      <TextLink href={appHref("appAjustesCompartir")} className="self-center">
+        {compartir.enlaceGuia}
+      </TextLink>
     </div>
   );
 }

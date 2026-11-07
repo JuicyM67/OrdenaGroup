@@ -639,6 +639,8 @@ export { ofertas } from "./es-CL.ofertas";
 export { adminPanel } from "./es-CL.admin";
 // WP-82 (D-067): widgets para el sitio web del negocio.
 export { widgets } from "./es-CL.widgets";
+// WP-89 (D-075): "Comparte tu link" (QR y guías por canal).
+export { compartir } from "./es-CL.compartir";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).
 export {
