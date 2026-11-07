@@ -1,6 +1,6 @@
 // Footer delad av alla sidor på sitio-webben. Ny sidfot (WP-71, SidaP3.dc.html): mörk,
 // kolumner (produkt, branscher, företaget, kontakt + konto), en kort "Om"-text,
-// Stampello som partnerkort och en trygghetsrad. Kontaktuppgifter kommer från
+// en trygghetsrad (Stampello-kortet borttaget 2026-11-07, ägarens beslut). Kontaktuppgifter kommer från
 // `brand.legal`; fält som fortfarande är platshållare ("[…]") renderas inte.
 // Sociala ikoner visas inte: `brand.ts` har inga länkar till sociala medier än.
 import { Check } from "lucide-react";
@@ -50,7 +50,6 @@ function Column({
 export function SiteFooter() {
   const anio = new Date().getFullYear();
   const { legal } = brand;
-  const partner = copy.sitio.partner.stampello;
 
   return (
     <footer data-surface="dark" className="bg-night text-on-dark">
@@ -69,19 +68,6 @@ export function SiteFooter() {
                 {t.omTexto}
               </p>
             </div>
-            <a
-              href={partner.url}
-              target="_blank"
-              rel="noopener"
-              className="mt-2 flex flex-col gap-1 rounded-icon px-4 py-3.5 text-14 glass-dark transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
-            >
-              <span className="text-11 font-bold tracking-label text-lime">
-                {t.partnerEtiqueta}
-              </span>
-              <span>
-                <b>Stampello</b> – {t.partnerTexto}
-              </span>
-            </a>
           </div>
 
           <Column title={t.producto}>
