@@ -102,6 +102,8 @@ describe("loadBookingByToken", () => {
       cancelWindowHours: 3,
       canCancel: true,
       cancelNeedsApproval: false,
+      // D-063: ingen consent_events-rad i fejk-databasen → inget samtycke.
+      whatsappConsent: false,
     });
     expect(calls[1]!.values).toEqual([BIZ, hashManageToken(TOKEN)]);
   });

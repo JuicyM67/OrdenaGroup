@@ -2,6 +2,11 @@ import "server-only";
 
 import type { Queryable } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
+import {
+  chooseCustomerChannel,
+  whatsappPossible,
+} from "@/server/messaging/whatsapp/channel";
+import { hasWhatsAppConsentIn } from "@/server/privacy/whatsapp-consent";
 
 import type { BookingEvent, OutboxChannel, OutboxRecipientKind } from "./types";
 
@@ -18,6 +23,9 @@ const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000;
 type EnqueueContext = {
   startMs: number;
   hasEmail: boolean;
+  /** D-063: för kanalvalet (WhatsApp kräver samtycke + chilenskt mobilnr). */
+  customerId?: string | undefined;
+  phone?: string | null | undefined;
   /** Bokningsradens `updated_at` (ms) — dedupe-nyckelns unika del för
    * `cancel_requested`/`cancel_declined` (WP-31-fix): till skillnad från
    * övriga händelser ändras inte bokningens starttid här, så `startMs`
@@ -37,10 +45,13 @@ async function loadContext(
     start_ms: number;
     has_email: boolean;
     updated_at_ms: number;
+    customer_id?: string;
+    phone_e164?: string | null;
   }>(
     `select extract(epoch from lower(bk.period))::float8 * 1000 as start_ms,
             (c.email is not null) as has_email,
-            extract(epoch from bk.updated_at)::float8 * 1000 as updated_at_ms
+            extract(epoch from bk.updated_at)::float8 * 1000 as updated_at_ms,
+            c.id as customer_id, c.phone_e164
        from public.bookings bk
        join public.customers c on c.business_id = bk.business_id and c.id = bk.customer_id
       where bk.business_id = $1 and bk.id = $2`,
@@ -52,6 +63,8 @@ async function loadContext(
         startMs: Math.round(row.start_ms),
         hasEmail: row.has_email,
         updatedAtMs: Math.round(row.updated_at_ms),
+        customerId: row.customer_id,
+        phone: row.phone_e164,
       }
     : undefined;
 }
@@ -112,9 +125,41 @@ async function insertRow(
   );
 }
 
-/** Kunden får e-post om hen har en (enda kanalen tills WhatsApp finns). */
+/** Kunden får e-post om hen har en. Mallar utan WhatsApp-version (t.ex.
+ * recensionsförfrågan) använder den här direkt; bokningens WhatsApp-mallar
+ * går via `customerChannelIn` (D-063). */
 export function customerChannels(hasEmail: boolean): OutboxChannel[] {
   return hasEmail ? ["email"] : [];
+}
+
+/**
+ * D-063: kanalen för ett kundmeddelande vid köningen — WhatsApp om kunden
+ * samtyckt, har chilenskt mobilnummer och mallen är godkänd, annars e-post
+ * (om den finns), annars ingen rad. Workern avgör på nytt vid sändningen
+ * (samtycket sparas efter bokningens commit, och en påminnelse köas 24 h+
+ * i förväg), så det här är bara den första gissningen.
+ */
+export async function customerChannelIn(
+  q: Queryable,
+  businessId: string,
+  ctx: {
+    hasEmail: boolean;
+    customerId?: string | undefined;
+    phone?: string | null | undefined;
+  },
+  template: string,
+): Promise<OutboxChannel | null> {
+  const possible = whatsappPossible(template, ctx.phone);
+  const consent =
+    possible && ctx.customerId
+      ? await hasWhatsAppConsentIn(q, businessId, ctx.customerId)
+      : false;
+  return chooseCustomerChannel({
+    template,
+    hasEmail: ctx.hasEmail,
+    phone: ctx.phone,
+    whatsappConsent: consent,
+  });
 }
 
 async function queueCustomerMessage(
@@ -123,17 +168,17 @@ async function queueCustomerMessage(
   bookingId: string,
   uniqMs: number,
   template: string,
-  hasEmail: boolean,
+  ctx: EnqueueContext,
   payload: Record<string, unknown>,
 ): Promise<void> {
-  for (const channel of customerChannels(hasEmail)) {
-    await insertRow(q, businessId, bookingId, uniqMs, {
-      channel,
-      recipientKind: "customer",
-      template,
-      payload,
-    });
-  }
+  const channel = await customerChannelIn(q, businessId, ctx, template);
+  if (!channel) return;
+  await insertRow(q, businessId, bookingId, uniqMs, {
+    channel,
+    recipientKind: "customer",
+    template,
+    payload,
+  });
 }
 
 /** Bara e-post (`solicitudRecibida`: "Ägarens svar" 2). Ingen rad om kunden
@@ -178,20 +223,20 @@ async function queueReminder(
   businessId: string,
   bookingId: string,
   startMs: number,
-  hasEmail: boolean,
+  ctx: EnqueueContext,
   token: string,
 ): Promise<void> {
   if (startMs - REMINDER_LEAD_MS <= Date.now()) return;
   const nextAttemptAt = new Date(startMs - REMINDER_LEAD_MS);
-  for (const channel of customerChannels(hasEmail)) {
-    await insertRow(q, businessId, bookingId, startMs, {
-      channel,
-      recipientKind: "customer",
-      template: "recordatorio",
-      payload: { token },
-      nextAttemptAt,
-    });
-  }
+  const channel = await customerChannelIn(q, businessId, ctx, "recordatorio");
+  if (!channel) return;
+  await insertRow(q, businessId, bookingId, startMs, {
+    channel,
+    recipientKind: "customer",
+    template: "recordatorio",
+    payload: { token },
+    nextAttemptAt,
+  });
 }
 
 /** Avbryter väntande påminnelser (queued/failed) för bokningen — flytt
@@ -251,7 +296,7 @@ export async function enqueueBookingEventIn(
       e.bookingId,
       startMs,
       "reservaConfirmada",
-      hasEmail,
+      ctx,
       { token: e.token },
     );
     if (e.by === "customer") {
@@ -263,14 +308,7 @@ export async function enqueueBookingEventIn(
         "nuevaReservaDueno",
       );
     }
-    await queueReminder(
-      q,
-      e.businessId,
-      e.bookingId,
-      startMs,
-      hasEmail,
-      e.token,
-    );
+    await queueReminder(q, e.businessId, e.bookingId, startMs, ctx, e.token);
     return;
   }
 
@@ -282,20 +320,13 @@ export async function enqueueBookingEventIn(
       e.bookingId,
       startMs,
       "reservaMovida",
-      hasEmail,
+      ctx,
       { token: e.token },
     );
     // En förfrågan som kunden flyttar (`r/[token]`) förblir `requested`:
     // ingen påminnelse förrän ägaren bekräftar den (WP-45, "Ägarens svar").
     if (e.status === "confirmed") {
-      await queueReminder(
-        q,
-        e.businessId,
-        e.bookingId,
-        startMs,
-        hasEmail,
-        e.token,
-      );
+      await queueReminder(q, e.businessId, e.bookingId, startMs, ctx, e.token);
     }
     return;
   }
@@ -310,17 +341,10 @@ export async function enqueueBookingEventIn(
       e.bookingId,
       startMs,
       "reservaConfirmada",
-      hasEmail,
+      ctx,
       { token: e.token },
     );
-    await queueReminder(
-      q,
-      e.businessId,
-      e.bookingId,
-      startMs,
-      hasEmail,
-      e.token,
-    );
+    await queueReminder(q, e.businessId, e.bookingId, startMs, ctx, e.token);
     return;
   }
 
@@ -340,7 +364,7 @@ export async function enqueueBookingEventIn(
       e.bookingId,
       startMs,
       template,
-      hasEmail,
+      ctx,
       e.message ? { motivo: e.message } : {},
     );
     return;
@@ -372,7 +396,7 @@ export async function enqueueBookingEventIn(
       e.bookingId,
       updatedAtMs,
       "cancelacionRechazada",
-      hasEmail,
+      ctx,
       {},
     );
     return;
@@ -386,7 +410,7 @@ export async function enqueueBookingEventIn(
     e.bookingId,
     startMs,
     "reservaCancelada",
-    hasEmail,
+    ctx,
     {},
   );
   if (e.by === "customer") {
@@ -414,4 +438,45 @@ export async function enqueueBookingEvent(e: BookingEvent): Promise<void> {
   } catch {
     // Se kommentaren ovan: sväljs medvetet.
   }
+}
+
+/**
+ * D-063 (WP-22): kunden svarade "Necesito cambiar" på påminnelsen i
+ * WhatsApp → ägaren får e-post (`clienteQuiereCambiar`, samma
+ * ägarnotis-mekanism som `nuevaReservaDueno`/`cancelacionDueno`). Kunden får
+ * inget automatiskt svar (företaget hör av sig). `sourceRowId` = påminnelsens
+ * utkorgsrad: ett svar per påminnelse, en upprepning (samma eller nytt
+ * knapptryck) köar inget nytt (`on conflict do nothing`). Bara för en
+ * bokning som fortfarande gäller och inte passerat.
+ */
+export async function enqueueCustomerChangeRequestIn(
+  q: Queryable,
+  input: {
+    businessId: string;
+    bookingId: string;
+    sourceRowId: string;
+    /** Starttiden (s) som påminnelsen gällde (samma regel som Confirmo). */
+    startSec: number;
+  },
+): Promise<boolean> {
+  const r = await q.query(
+    `insert into public.message_outbox
+       (business_id, booking_id, channel, recipient_kind, template, payload,
+        category, dedupe_key)
+     select bk.business_id, bk.id, 'email', 'owner', 'clienteQuiereCambiar',
+            '{}'::jsonb, 'utility', $3
+       from public.bookings bk
+      where bk.business_id = $1 and bk.id = $2
+        and bk.status in ('confirmed', 'pending_payment')
+        and lower(bk.period) > now()
+        and floor(extract(epoch from lower(bk.period)))::bigint = $4::bigint
+     on conflict (dedupe_key) do nothing`,
+    [
+      input.businessId,
+      input.bookingId,
+      `clienteQuiereCambiar:email:owner:${input.bookingId}:${input.sourceRowId}`,
+      input.startSec,
+    ],
+  );
+  return (r.rowCount ?? 0) === 1;
 }

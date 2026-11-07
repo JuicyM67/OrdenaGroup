@@ -29,6 +29,9 @@ export const customerFormSchema = z.object({
   ]),
   termsAccepted: z.literal(true, { error: "terms.required" }),
   marketing: z.boolean(),
+  /** D-063: casilla opcional y separada de WhatsApp (nunca premarcada).
+   * Falta = no (un cliente viejo sin la casilla nunca da su consentimiento). */
+  whatsapp: z.boolean().optional().default(false),
   consentVersion: z.literal(reserva.consentimientos.version),
   idempotencyKey: z.uuid(),
   serviceId: z.string().min(1),

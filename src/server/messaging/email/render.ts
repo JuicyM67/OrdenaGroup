@@ -34,6 +34,7 @@ import {
 } from "./templates/campana-marketing";
 import {
   cancelacionDuenoEmail,
+  clienteQuiereCambiarEmail,
   nuevaReservaDuenoEmail,
   nuevaSolicitudEmail,
   solicitudCancelacionEmail,
@@ -98,6 +99,8 @@ export type EmailTemplateMap = {
   readonly campanaMarketing: CampanaMarketingData;
   /** WP-65 (D-045): al cliente, pedir reseña después de la cita. */
   readonly solicitudResena: SolicitudResenaData;
+  /** D-063: al dueño, el cliente respondió "Necesito cambiar" en WhatsApp. */
+  readonly clienteQuiereCambiar: DuenoReservaData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -132,6 +135,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   cancelacionRechazada: "booking",
   campanaMarketing: "booking",
   solicitudResena: "booking",
+  clienteQuiereCambiar: "booking",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -159,6 +163,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "cancelacionRechazada",
   "campanaMarketing",
   "solicitudResena",
+  "clienteQuiereCambiar",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -216,6 +221,8 @@ export function renderEmail<T extends EmailTemplateName>(
       return campanaMarketingEmail(data as CampanaMarketingData);
     case "solicitudResena":
       return solicitudResenaEmail(data as SolicitudResenaData);
+    case "clienteQuiereCambiar":
+      return clienteQuiereCambiarEmail(data as DuenoReservaData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);

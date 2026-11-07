@@ -14,3 +14,12 @@ export class OutboxSendError extends Error {
     this.code = code;
   }
 }
+
+/** Ett fel där fler försök inte hjälper (D-063: permanent WhatsApp-fel och
+ * kunden saknar e-post att falla tillbaka på) → raden blir `dead` direkt. */
+export class OutboxFinalError extends OutboxSendError {
+  constructor(code: string) {
+    super(code);
+    this.name = "OutboxFinalError";
+  }
+}

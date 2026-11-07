@@ -164,7 +164,9 @@ export const errores = {
  * temporal `reserva.terminosListaEspera` más abajo), para que no existan
  * dos copias que puedan desalinearse. */
 const TERMINOS_LISTA_ESPERA =
-  "Acepto recibir por WhatsApp el aviso si se libera una hora.";
+  // D-063: sin "por WhatsApp" — el canal se elige aparte, en la casilla
+  // opcional `consentimientos.whatsapp`. TODO_COPY: revisión de copywriter-es-cl.
+  "Acepto recibir el aviso si se libera una hora.";
 
 export const reserva = {
   meta: {
@@ -173,7 +175,7 @@ export const reserva = {
       `Reserva gestionada por ${brand.name} para ${p.negocio}.`,
   },
   header: {
-    confirmacionWhatsapp: "Confirmación por WhatsApp",
+    confirmacionWhatsapp: "Confirmación por correo o WhatsApp",
     /** "{dias} · {rango}", p. ej. "Lun–Sáb · 10:00–19:00" (ambos ya
      * formateados por WP-04). */
     horario: (p: { dias: string; rango: string }): string =>
@@ -230,7 +232,9 @@ export const reserva = {
      * 2026-09-27). El hash se registra en `es-CL.test.ts` junto al de
      * `consentimientos`. */
     terminos: TERMINOS_LISTA_ESPERA,
-    consentimientoVersion: "lista-espera-2026-10-v1",
+    /** v2 (D-063): `terminos` ya no nombra WhatsApp; el hash cubre también
+     * la casilla opcional `consentimientos.whatsapp`. */
+    consentimientoVersion: "lista-espera-2026-10-v2",
   },
   /**
    * @deprecated Alias temporal de `reserva.waitlist.terminos` (revisión de
@@ -274,14 +278,16 @@ export const reserva = {
   antesDeConfirmar: {
     politicaCancelacion: (p: { horas: number }): string =>
       `Puedes cancelar o cambiar la hora hasta ${p.horas} h antes, sin costo.`,
+    /** D-063: el canal depende de la casilla opcional
+     * `consentimientos.whatsapp` (el correo es el respaldo). TODO_COPY. */
     avisoWhatsapp: (p: { negocio: string }): string =>
-      `Te enviaremos la confirmación y un recordatorio por WhatsApp de ${p.negocio} a este número.`,
+      `Te enviaremos la confirmación y un recordatorio de ${p.negocio} por correo, o por WhatsApp a este número si lo eliges abajo.`,
     /** WP-45: variante de `avisoWhatsapp` cuando el negocio tiene apagada la
      * confirmación automática (`auto_confirm_bookings = false`, el valor por
      * defecto). CL todavía no tiene plantilla de WhatsApp para "solicitud
      * recibida" (WP-22 pendiente), por eso el primer aviso es por correo. */
     avisoWhatsappSolicitud: (p: { negocio: string }): string =>
-      `Si tu hora queda pendiente, te avisamos por correo; ya confirmada, la confirmación y el recordatorio llegan por WhatsApp de ${p.negocio}.`,
+      `Si tu hora queda pendiente, te avisamos por correo; ya confirmada, la confirmación y el recordatorio de ${p.negocio} llegan por correo, o por WhatsApp si lo eliges abajo.`,
     ctaConfirmar: "Confirmar reserva",
     /** WP-45: variante de `ctaConfirmar` cuando el negocio tiene apagada la
      * confirmación automática: la reserva queda `requested`, no `confirmed`. */
@@ -294,10 +300,12 @@ export const reserva = {
    * o (desde v2) `abono.reserva.condiciones`, sube `version` y registra el
    * nuevo hash en `es-CL.test.ts` (`HASHES`). v1 queda registrada en el
    * archivo de hashes aunque ya no se use (GUIA §7, archivo inmutable). */
+  /** v3 (D-063): WhatsApp sale de `terminos` (obligatoria) a su propia
+   * casilla opcional `whatsapp`, nunca premarcada (Ley 21.719). TODO_COPY:
+   * revisión de copywriter-es-cl y del abogado (R8). */
   consentimientos: {
-    version: "2026-10-v2",
-    terminos:
-      "Acepto los términos de la reserva y la política de cancelación, y recibir por WhatsApp la confirmación y los recordatorios de esta hora.",
+    version: "2026-10-v3",
+    terminos: "Acepto los términos de la reserva y la política de cancelación.",
     terminosLinkTexto: "los términos de la reserva",
     politicaLinkTexto: "la política de cancelación",
     privacidadLinkTexto: "la política de privacidad",
@@ -308,11 +316,16 @@ export const reserva = {
       `Tus datos los trata ${p.negocio}; la plataforma los procesa por encargo.`,
     marketing: (p: { negocio: string }): string =>
       `Quiero recibir ofertas y novedades de ${p.negocio} por WhatsApp. Puedo responder BAJA cuando quiera.`,
+    /** D-063: casilla opcional, separada de los términos. Sin marcar = los
+     * avisos llegan por correo. TODO_COPY. */
+    whatsapp: (p: { negocio: string }): string =>
+      `Quiero recibir por WhatsApp los avisos de ${p.negocio} sobre mis horas y la lista de espera (confirmación, recordatorio y cambios). Puedo dejar de recibirlos cuando quiera.`,
   },
   confirmacion: {
     titulo: "¡Listo, tu hora quedó reservada!",
     resumenTitulo: "Resumen de tu reserva",
-    avisoWhatsapp: "Te enviamos la confirmación por WhatsApp.",
+    avisoWhatsapp:
+      "Te enviamos la confirmación por correo, o por WhatsApp si lo elegiste.",
     descuentoSocio: (p: { descuento: string }): string =>
       `Descuento socio: −${p.descuento}`,
     /** WP-31: descuento por el link de una oferta (gana el mayor, no se suman). */

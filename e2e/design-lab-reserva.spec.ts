@@ -172,8 +172,17 @@ test.describe("Reserva (fixturer) — flödet", () => {
       .click();
 
     const terms = page.getByRole("checkbox").first();
-    const marketing = page.getByRole("checkbox").nth(1);
+    // D-063: WhatsApp och marknadsföring är egna, valfria rutor — aldrig
+    // förkryssade (regel 7).
+    const whatsapp = page.getByRole("checkbox", {
+      name: /^Quiero recibir por WhatsApp los avisos/,
+    });
+    const marketing = page.getByRole("checkbox", {
+      name: /^Quiero recibir ofertas/,
+    });
+    await expect(page.getByRole("checkbox")).toHaveCount(3);
     await expect(terms).not.toBeChecked();
+    await expect(whatsapp).not.toBeChecked();
     await expect(marketing).not.toBeChecked();
 
     await page.getByLabel(reserva.clienteForm.nombreLabel).fill("Ana Pérez");

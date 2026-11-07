@@ -44,6 +44,8 @@ const joinWaitlistSchema = z.strictObject({
   phone: e164Schema,
   email: z.email().max(254).optional(),
   consentWaitlist: z.literal(true),
+  /** D-063: den valfria WhatsApp-rutan (samma som i Reserva). */
+  consentWhatsapp: z.boolean().optional(),
   idempotencyKey: uuid,
 });
 
@@ -138,6 +140,20 @@ async function joinIn(
     channel: "web",
     granted: true,
   });
+  // D-063: bara ett aktivt ja loggas (ett nej återkallar inget, se
+  // `saveBookingConsent`). I samma transaktion som posten, så att
+  // erbjudandet senare kan gå på WhatsApp.
+  if (input.consentWhatsapp === true) {
+    await recordConsent(q, {
+      businessId: input.businessId,
+      customerId,
+      subject: "customer",
+      kind: "whatsapp",
+      version: reserva.waitlist.consentimientoVersion,
+      channel: "web",
+      granted: true,
+    });
+  }
   return ok(true);
 }
 

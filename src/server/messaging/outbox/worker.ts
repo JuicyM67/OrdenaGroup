@@ -20,8 +20,18 @@ import { listBookingAnswersIn } from "@/server/booking-questions/answers";
 import { pgErrorCode } from "@/server/db/errors";
 import { withServiceTx } from "@/server/db/tx";
 import { sendEmail, type EmailTemplateMap } from "@/server/messaging/email";
+import { whatsappPossible } from "@/server/messaging/whatsapp/channel";
+import { sendWhatsAppTemplate } from "@/server/messaging/whatsapp/client";
+import { WhatsAppSendError } from "@/server/messaging/whatsapp/errors";
+import {
+  buildTemplate,
+  firstName,
+  isWhatsAppOutboxTemplate,
+  type BuiltTemplate,
+} from "@/server/messaging/whatsapp/templates";
+import { hasWhatsAppConsentIn } from "@/server/privacy/whatsapp-consent";
 
-import { OutboxSendError } from "./errors";
+import { OutboxFinalError, OutboxSendError } from "./errors";
 import type { OutboxChannel, OutboxRecipientKind } from "./types";
 
 /**
@@ -31,25 +41,41 @@ import type { OutboxChannel, OutboxRecipientKind } from "./types";
  * `message_outbox`. Ingen `console.*` (boundaries.test.ts); fel skrivs bara
  * som en kort kod i `message_outbox.error`, aldrig persondata.
  *
- * Bara kanalen `email` skickas (D-062). `message_channel` har kvar värdet
- * `sms` i databasen; en sådan rad avbryts (`processRow`).
+ * Kanaler: `email` och (D-063) `whatsapp` för kundens bokningsmeddelanden
+ * (`routeCustomerRow`). `message_channel` har kvar värdet `sms` i
+ * databasen; en sådan rad avbryts (`processRow`, D-062).
+ *
+ * WhatsApp (D-063): kanalen avgörs på nytt vid sändningen — samtycke,
+ * chilenskt mobilnummer, konfiguration och godkänd mall
+ * (`whatsapp/channel.ts`). Permanent fel → samma rad byter till e-post i
+ * samma pass (`fallback_reason`). Tillfälligt fel → backoff; sista försöket
+ * blir e-post i stället för `dead`. En rad som skickats via WhatsApp
+ * behåller `payload` (token för e-postreserven) tills webhooken rapporterar
+ * delivered/read/failed, högst `WHATSAPP_PAYLOAD_HOURS`.
  */
 
 const DEFAULT_LIMIT = 25;
 const MAX_ATTEMPTS = 5;
 const BACKOFF_MINUTES = [1, 5, 15, 60] as const;
 const STUCK_SENDING_MINUTES = 10;
+/** D-063/D-029: så länge en WhatsApp-rad får behålla token för reserven. */
+const WHATSAPP_PAYLOAD_HOURS = 24;
 
 type ClaimedRow = {
   id: string;
   businessId: string;
   bookingId: string | null;
+  /** Ändras i minnet när raden byter kanal (`routeCustomerRow`). */
   channel: OutboxChannel;
   recipientKind: OutboxRecipientKind;
   template: string;
   payload: Record<string, unknown>;
   attempts: number;
   dedupeKey: string;
+  /** D-063: satt = raden har redan fallit tillbaka från WhatsApp. */
+  fallbackReason: string | null;
+  /** D-063: väntelistans post (överlever att payload töms). */
+  waitlistEntryId: string | null;
 };
 
 type RawClaimRow = {
@@ -62,6 +88,8 @@ type RawClaimRow = {
   payload: Record<string, unknown> | null;
   attempts: number;
   dedupe_key: string;
+  fallback_reason?: string | null;
+  waitlist_entry_id?: string | null;
 };
 
 async function claimBatch(
@@ -76,6 +104,15 @@ async function claimBatch(
           set status = 'queued'
         where status = 'sending'
           and updated_at < now() - interval '${STUCK_SENDING_MINUTES} minutes'`,
+    );
+    // D-063/D-029: en WhatsApp-rad som aldrig fick leveransstatus behåller
+    // inte kundens token längre än så här (reserven är ändå inaktuell då).
+    await q.query(
+      `update public.message_outbox
+          set payload = '{}'::jsonb
+        where channel = 'whatsapp' and status = 'sent'
+          and payload <> '{}'::jsonb
+          and sent_at < now() - interval '${WHATSAPP_PAYLOAD_HOURS} hours'`,
     );
     const params: unknown[] = bookingId ? [limit, bookingId] : [limit];
     const bookingFilter = bookingId ? "and booking_id = $2" : "";
@@ -95,7 +132,8 @@ async function claimBatch(
          from next
         where m.id = next.id
        returning m.id, m.business_id, m.booking_id, m.channel, m.recipient_kind,
-                 m.template, m.payload, m.attempts, m.dedupe_key`,
+                 m.template, m.payload, m.attempts, m.dedupe_key,
+                 m.fallback_reason, m.waitlist_entry_id`,
       params,
     );
     return r.rows.map((x) => ({
@@ -108,6 +146,8 @@ async function claimBatch(
       payload: x.payload ?? {},
       attempts: x.attempts,
       dedupeKey: x.dedupe_key,
+      fallbackReason: x.fallback_reason ?? null,
+      waitlistEntryId: x.waitlist_entry_id ?? null,
     }));
   });
 }
@@ -129,6 +169,8 @@ type MessageContext = {
   slug: string;
   address: string | null;
   cancelWindowHours: number;
+  /** D-063: kanalvalet (WhatsApp-samtycket är per kundrad). */
+  customerId: string;
   cliente: string;
   phone: string;
   email: string | null;
@@ -147,6 +189,7 @@ type RawContextRow = {
   slug: string;
   address: string | null;
   cancel_window_hours: number;
+  customer_id: string;
   cliente: string;
   phone_e164: string;
   email: string | null;
@@ -166,7 +209,7 @@ async function loadContext(
               bk.campaign_recipient_id is not null as discount_is_offer,
               b.name as negocio, b.phone as negocio_telefono,
               b.slug, b.address, b.cancel_window_hours,
-              c.name as cliente, c.phone_e164, c.email,
+              c.id as customer_id, c.name as cliente, c.phone_e164, c.email,
               s.name as servicio, st.name as profesional
          from public.bookings bk
          join public.businesses b on b.id = bk.business_id
@@ -189,6 +232,7 @@ async function loadContext(
       slug: row.slug,
       address: row.address,
       cancelWindowHours: row.cancel_window_hours,
+      customerId: row.customer_id,
       cliente: row.cliente,
       phone: row.phone_e164,
       email: row.email,
@@ -392,7 +436,9 @@ type WaitlistCustomerContext = {
   /** "YYYY-MM-DD" — dagen kunden väntar på. */
   day: string;
   sendable: boolean;
+  customerId: string;
   cliente: string;
+  phone: string | null;
   email: string | null;
   negocio: string;
 };
@@ -405,13 +451,15 @@ async function loadWaitlistCustomerContext(
     const r = await q.query<{
       day: string;
       sendable: boolean;
+      customer_id: string;
       cliente: string;
+      phone_e164: string | null;
       email: string | null;
       negocio: string;
     }>(
       `select we.day::text as day,
               (c.anonymized_at is null) as sendable,
-              c.name as cliente, c.email,
+              c.id as customer_id, c.name as cliente, c.phone_e164, c.email,
               b.name as negocio
          from public.waitlist_entries we
          join public.customers c on c.business_id = we.business_id and c.id = we.customer_id
@@ -424,7 +472,9 @@ async function loadWaitlistCustomerContext(
       ? {
           day: row.day,
           sendable: row.sendable,
+          customerId: row.customer_id,
           cliente: row.cliente,
+          phone: row.phone_e164,
           email: row.email,
           negocio: row.negocio,
         }
@@ -457,8 +507,29 @@ async function processWaitlistCupoRow(
     1,
     Math.ceil((new Date(offer.expiresAt).getTime() - Date.now()) / 60_000),
   );
+  const routed = await routeCustomerRow(row, {
+    customerId: ctx.customerId,
+    phone: ctx.phone,
+    hasEmail: ctx.email !== null,
+    build: () =>
+      buildTemplate("lista_espera_oferta", {
+        negocio: offer.businessName,
+        cliente: firstName(ctx.cliente),
+        servicio: offer.serviceName,
+        fecha,
+        hora,
+        minutos,
+        startMs: start.getTime(),
+        offeredMs: new Date(offer.offeredAt).getTime(),
+      }),
+  });
+  if (routed !== "email") return routed;
+  if (!ctx.email) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
   const r = await sendEmail({
-    to: ctx.email as string,
+    to: ctx.email,
     template: "listaEsperaCupo",
     data: {
       negocio: offer.businessName,
@@ -486,8 +557,24 @@ async function processWaitlistTomadaRow(
     "weekdayDayMonthLongLower",
     APP_LOCALE,
   );
+  const routed = await routeCustomerRow(row, {
+    customerId: ctx.customerId,
+    phone: ctx.phone,
+    hasEmail: ctx.email !== null,
+    build: () =>
+      buildTemplate("lista_espera_tomada", {
+        negocio: ctx.negocio,
+        cliente: firstName(ctx.cliente),
+        fecha: dia,
+      }),
+  });
+  if (routed !== "email") return routed;
+  if (!ctx.email) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
   const r = await sendEmail({
-    to: ctx.email as string,
+    to: ctx.email,
     template: "listaEsperaTomada",
     data: { cliente: ctx.cliente, negocio: ctx.negocio, fecha: dia },
     idempotencyKey: row.dedupeKey,
@@ -499,12 +586,17 @@ async function processWaitlistTomadaRow(
 async function processWaitlistRow(
   row: ClaimedRow,
 ): Promise<"sent" | "cancelled"> {
+  // D-063: `waitlist_entry_id` som reserv — en WhatsApp-rad som föll
+  // tillbaka till e-post efter att payload tömts har bara kolumnen kvar.
   const entryId =
-    typeof row.payload.entryId === "string" ? row.payload.entryId : "";
+    typeof row.payload.entryId === "string"
+      ? row.payload.entryId
+      : (row.waitlistEntryId ?? "");
   if (!entryId) throw new OutboxSendError("invalid_payload");
   const ctx = await loadWaitlistCustomerContext(row.businessId, entryId);
   if (!ctx) throw new OutboxSendError("no_customer");
-  if (!ctx.sendable || !ctx.email) {
+  // Ingen e-post avgörs först efter kanalvalet (WhatsApp kan räcka).
+  if (!ctx.sendable) {
     await finalizeCancelled(row);
     return "cancelled";
   }
@@ -952,6 +1044,177 @@ async function sendRow(ctx: MessageContext, row: ClaimedRow): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
+// WhatsApp (D-063): kanalval vid sändningen och reserv till e-post
+// ---------------------------------------------------------------------------
+
+/** Bokningens WhatsApp-mall med kontraktets parametrar, eller `null` när
+ * den inte kan byggas (t.ex. token saknas för knappen) → e-post. */
+function bookingWhatsAppTemplate(
+  ctx: MessageContext,
+  row: ClaimedRow,
+  token: string,
+): BuiltTemplate | null {
+  const { fecha, hora } = fechaHora(ctx);
+  const cliente = firstName(ctx.cliente);
+  switch (row.template) {
+    case "reservaConfirmada":
+      return token
+        ? buildTemplate("reserva_confirmada", {
+            negocio: ctx.negocio,
+            cliente,
+            servicio: ctx.servicio,
+            fecha,
+            hora,
+            profesional: ctx.profesional,
+            horasCancelacion: ctx.cancelWindowHours,
+            token,
+          })
+        : null;
+    case "recordatorio":
+      return buildTemplate("recordatorio_24h", {
+        negocio: ctx.negocio,
+        cliente,
+        servicio: ctx.servicio,
+        fecha,
+        hora,
+      });
+    case "reservaCancelada":
+      return buildTemplate("reserva_cancelada", {
+        negocio: ctx.negocio,
+        cliente,
+        fecha,
+        hora,
+        slug: ctx.slug,
+      });
+    case "reservaMovida":
+      return token
+        ? buildTemplate("reserva_movida", {
+            negocio: ctx.negocio,
+            cliente,
+            fecha,
+            hora,
+            profesional: ctx.profesional,
+            token,
+          })
+        : null;
+    default:
+      return null;
+  }
+}
+
+async function hasWhatsAppConsent(
+  businessId: string,
+  customerId: string,
+): Promise<boolean> {
+  return withServiceTx((q) => hasWhatsAppConsentIn(q, businessId, customerId));
+}
+
+/** Skickat via WhatsApp: `payload` behålls (token till en ev. e-postreserv
+ * när webhooken säger `failed`), töms vid delivered/read eller efter
+ * `WHATSAPP_PAYLOAD_HOURS`. Ett tomt id (ska inte hända) ger `null`. */
+async function finalizeSentWhatsApp(
+  row: ClaimedRow,
+  providerId: string,
+): Promise<void> {
+  const id = providerId === "" ? null : providerId;
+  await withServiceTx((q) =>
+    q.query(
+      `update public.message_outbox
+          set status = 'sent', sent_at = now(), channel = 'whatsapp',
+              provider_message_id = $3, wa_message_id = $3, error = null,
+              delivered_at = null, read_at = null
+        where id = $1 and business_id = $2`,
+      [row.id, row.businessId, id],
+    ),
+  );
+  row.channel = "whatsapp";
+}
+
+/** Byter raden till e-post. `reason` satt (en WhatsApp-felkod) = WhatsApp
+ * försöks aldrig igen för raden, och e-posten räknas som första försöket. */
+async function switchRowToEmail(
+  row: ClaimedRow,
+  reason: string | null,
+): Promise<void> {
+  await withServiceTx((q) =>
+    q.query(
+      // Aldrig skickad via WhatsApp (bara inte längre tillåten): ingen
+      // felkod — utom om raden redan har ett wamid från ett tidigare
+      // försök, då måste den märkas (constraint
+      // message_outbox_wa_message_id_whatsapp).
+      reason === null
+        ? `update public.message_outbox
+              set channel = 'email',
+                  fallback_reason = case when wa_message_id is not null
+                                         then 'wa_ineligible'
+                                         else fallback_reason end
+            where id = $1 and business_id = $2`
+        : `update public.message_outbox
+              set channel = 'email', fallback_reason = $3, error = $3,
+                  attempts = 1
+            where id = $1 and business_id = $2`,
+      reason === null
+        ? [row.id, row.businessId]
+        : [row.id, row.businessId, reason],
+    ),
+  );
+  row.channel = "email";
+  if (reason !== null) {
+    row.fallbackReason = reason;
+    row.attempts = 1;
+  }
+}
+
+type RouteInfo = {
+  customerId: string;
+  phone: string | null;
+  hasEmail: boolean;
+  build: () => BuiltTemplate | null;
+};
+
+/**
+ * D-063: skickar kundraden via WhatsApp när det får ske just nu, annars
+ * `"email"` (anroparen fortsätter med e-posten i samma pass). En rad köad
+ * som `whatsapp` som inte längre får gå på WhatsApp blir e-post om kunden
+ * har en, annars avbryts den. Tillfälligt fel kastas vidare till backoff
+ * (`finalizeFailed`) — utom på sista försöket, då blir det e-post. Permanent
+ * fel → e-post direkt; utan e-post är raden slut (`dead`).
+ */
+async function routeCustomerRow(
+  row: ClaimedRow,
+  info: RouteInfo,
+): Promise<"sent" | "cancelled" | "email"> {
+  const possible =
+    row.fallbackReason === null && whatsappPossible(row.template, info.phone);
+  const consent = possible
+    ? await hasWhatsAppConsent(row.businessId, info.customerId)
+    : false;
+  const template = possible && consent ? info.build() : null;
+  if (!template || !info.phone) {
+    if (row.channel === "whatsapp") {
+      if (!info.hasEmail) {
+        await finalizeCancelled(row);
+        return "cancelled";
+      }
+      await switchRowToEmail(row, null);
+    }
+    return "email";
+  }
+  try {
+    const r = await sendWhatsAppTemplate({ to: info.phone, template });
+    await finalizeSentWhatsApp(row, r.id);
+    return "sent";
+  } catch (e) {
+    if (!(e instanceof WhatsAppSendError)) throw e;
+    const lastAttempt = row.attempts >= MAX_ATTEMPTS;
+    if (e.kind === "temporary" && !lastAttempt) throw e;
+    if (!info.hasEmail) throw new OutboxFinalError(e.code);
+    await switchRowToEmail(row, e.code);
+    return "email";
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Backoff och avslut
 // ---------------------------------------------------------------------------
 
@@ -971,6 +1234,7 @@ function errorCodeOf(e: unknown): string {
   const code = pgErrorCode(e);
   if (code) return code;
   if (e instanceof OutboxSendError) return e.code;
+  if (e instanceof WhatsAppSendError) return e.code;
   if (e instanceof Error) {
     const m = /HTTP (\d+)/.exec(e.message);
     if (m) return `http_${m[1]}`;
@@ -1002,6 +1266,19 @@ async function finalizeCancelled(row: ClaimedRow): Promise<void> {
       [row.id, row.businessId],
     ),
   );
+}
+
+/** Slut utan fler försök (t.ex. permanent WhatsApp-fel och ingen e-post). */
+async function finalizeDead(row: ClaimedRow, code: string): Promise<"dead"> {
+  await withServiceTx((q) =>
+    q.query(
+      `update public.message_outbox
+          set status = 'dead', error = $3, payload = '{}'::jsonb
+        where id = $1 and business_id = $2`,
+      [row.id, row.businessId, code],
+    ),
+  );
+  return "dead";
 }
 
 async function finalizeFailed(
@@ -1179,9 +1456,13 @@ async function processRow(
   row: ClaimedRow,
 ): Promise<"sent" | "queued" | "dead" | "cancelled"> {
   try {
-    // D-062: bara e-post. En rad i en annan kanal (`sms`, kvar i databasens
-    // enum) köas inte av den här koden; skulle en finnas avbryts den.
-    if (row.channel !== "email") {
+    // D-062: `sms` (kvar i databasens enum) köas inte av den här koden;
+    // skulle en finnas avbryts den. D-063: `whatsapp` bara för kundens
+    // bokningsmallar (`routeCustomerRow` nedan) — allt annat avbryts.
+    const whatsappRow =
+      row.recipientKind === "customer" &&
+      isWhatsAppOutboxTemplate(row.template);
+    if (row.channel === "sms" || (row.channel === "whatsapp" && !whatsappRow)) {
       await finalizeCancelled(row);
       return "cancelled";
     }
@@ -1227,10 +1508,22 @@ async function processRow(
       await finalizeCancelled(row);
       return "cancelled";
     }
+    if (whatsappRow) {
+      const token =
+        typeof row.payload.token === "string" ? row.payload.token : "";
+      const routed = await routeCustomerRow(row, {
+        customerId: ctx.customerId,
+        phone: ctx.phone,
+        hasEmail: ctx.email !== null,
+        build: () => bookingWhatsAppTemplate(ctx, row, token),
+      });
+      if (routed !== "email") return routed;
+    }
     const providerId = await sendRow(ctx, row);
     await finalizeSent(row, providerId);
     return "sent";
   } catch (e) {
+    if (e instanceof OutboxFinalError) return finalizeDead(row, e.code);
     return finalizeFailed(row, errorCodeOf(e));
   }
 }

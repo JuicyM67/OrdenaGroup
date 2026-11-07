@@ -190,5 +190,13 @@ export function emailFixtures(): {
       servicio: b.servicio,
       resenaUrl: "https://app.example.com/resena/abc123",
     },
+    clienteQuiereCambiar: {
+      negocio: b.negocio,
+      cliente: b.cliente,
+      servicio: b.servicio,
+      fecha: b.fecha,
+      hora: b.hora,
+      agendaUrl: "https://app.example.com/app/agenda",
+    },
   };
 }

@@ -6,6 +6,7 @@ import "server-only";
  */
 export {
   claimWaitlistOffer,
+  claimWaitlistOfferForEntry,
   getWaitlistOffer,
   type ClaimWaitlistResult,
   type GetWaitlistOfferResult,
@@ -20,6 +21,10 @@ export {
   type JoinWaitlistResult,
 } from "./join";
 export { onSlotFreed, type SlotFreedInput } from "./match";
+export {
+  declineWaitlistOfferForEntry,
+  type DeclineWaitlistResult,
+} from "./reply";
 export {
   listWaitlist,
   removeWaitlistEntry,

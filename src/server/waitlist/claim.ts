@@ -43,6 +43,8 @@ type EntryRow = {
   status: string;
   customer_id: string;
   expires_ms: number | null;
+  /** `offered_at` (ms) — binder ett WhatsApp-svar till rätt erbjudande. */
+  offered_ms: number | null;
 };
 
 type CustomerRow = {
@@ -63,13 +65,46 @@ async function lockEntryByToken(
   const r = await q.query<EntryRow>(
     `select id, business_id, service_id, staff_id, day::text as day,
             status::text as status, customer_id,
-            extract(epoch from offer_expires_at)::float8 * 1000 as expires_ms
+            extract(epoch from offer_expires_at)::float8 * 1000 as expires_ms,
+            extract(epoch from offered_at)::float8 * 1000 as offered_ms
        from public.waitlist_entries
       where offer_token_hash = $1
       for update`,
     [hashWaitlistToken(token)],
   );
   return r.rows[0];
+}
+
+/** D-063 (WhatsApp-svaret): posten låst via id inom ett känt företag. */
+async function lockEntryById(
+  q: Queryable,
+  businessId: string,
+  entryId: string,
+): Promise<EntryRow | undefined> {
+  const r = await q.query<EntryRow>(
+    `select id, business_id, service_id, staff_id, day::text as day,
+            status::text as status, customer_id,
+            extract(epoch from offer_expires_at)::float8 * 1000 as expires_ms,
+            extract(epoch from offered_at)::float8 * 1000 as offered_ms
+       from public.waitlist_entries
+      where business_id = $1 and id = $2
+      for update`,
+    [businessId, entryId],
+  );
+  return r.rows[0];
+}
+
+/** Ett WhatsApp-svar på ett ÄLDRE erbjudande till samma post (sekventiellt
+ * läge kan erbjuda posten igen senare) gäller inte det nya: knappens
+ * `offered_at` (sekunder) måste vara det nuvarande. */
+export function sameOffer(
+  offeredMs: number | null,
+  expectedOfferedMs: number,
+): boolean {
+  return (
+    offeredMs !== null &&
+    Math.floor(offeredMs / 1000) === Math.floor(expectedOfferedMs / 1000)
+  );
 }
 
 /** Statusen när posten inte (längre) är ett giltigt erbjudande. */
@@ -138,13 +173,14 @@ export async function expireTakenOffersIn(
 
 async function claimIn(
   q: Queryable,
-  token: string,
+  lock: (q: Queryable) => Promise<EntryRow | undefined>,
   now: Date,
   expectedStart: number,
   sink: WaitlistEvent[],
+  expectedOfferedMs?: number,
 ): Promise<Outcome> {
   sink.length = 0;
-  const e = await lockEntryByToken(q, token);
+  const e = await lock(q);
   if (!e) return { kind: "fail", code: "invalid" };
   const businessId = e.business_id;
 
@@ -163,6 +199,13 @@ async function claimIn(
   }
   const closed = closedCode(e, now);
   if (closed) return { kind: "fail", code: closed };
+  // D-063: svar på ett äldre erbjudande (WhatsApp-knappen) → som utgånget.
+  if (
+    expectedOfferedMs !== undefined &&
+    !sameOffer(e.offered_ms, expectedOfferedMs)
+  ) {
+    return { kind: "fail", code: "expired" };
+  }
 
   const c = await q.query<CustomerRow>(
     `select phone_e164, name, email from public.customers
@@ -242,10 +285,52 @@ export async function claimWaitlistOffer(
   if (!isWaitlistTokenShape(token)) return { ok: false, code: "invalid" };
   const expectedStart = new Date(start).getTime();
   if (!Number.isFinite(expectedStart)) return { ok: false, code: "invalid" };
+  return runClaim(
+    (q) => lockEntryByToken(q, token),
+    now,
+    expectedStart,
+    undefined,
+  );
+}
+
+/**
+ * D-063: samma claim från ett WhatsApp-knappsvar ("Sí, la quiero").
+ * `businessId`/`entryId` kommer från VÅR utkorgsrad (webhookens
+ * `context.id` → `message_outbox.wa_message_id`), aldrig från payloaden, och
+ * avsändaren är redan kontrollerad mot kundens nummer. `start`/`offeredAt`
+ * (ms) kommer från knappens payload — tiden kunden såg i meddelandet och
+ * vilket erbjudande det gällde. Samma regler som `/v/[token]`: först till
+ * kvarn, servern räknar om tiden, `no_overlap` avgör.
+ */
+export async function claimWaitlistOfferForEntry(input: {
+  businessId: string;
+  entryId: string;
+  startMs: number;
+  offeredMs: number;
+  now: Date;
+}): Promise<ClaimWaitlistResult> {
+  if (!Number.isFinite(input.startMs) || !Number.isFinite(input.offeredMs)) {
+    return { ok: false, code: "invalid" };
+  }
+  return runClaim(
+    (q) => lockEntryById(q, input.businessId, input.entryId),
+    input.now,
+    input.startMs,
+    input.offeredMs,
+  );
+}
+
+async function runClaim(
+  lock: (q: Queryable) => Promise<EntryRow | undefined>,
+  now: Date,
+  expectedStart: number,
+  expectedOfferedMs: number | undefined,
+): Promise<ClaimWaitlistResult> {
   const events: WaitlistEvent[] = [];
   const r = await runAs(
     { kind: "customer" },
-    async (q) => ok(await claimIn(q, token, now, expectedStart, events)),
+    async (q) =>
+      ok(await claimIn(q, lock, now, expectedStart, events, expectedOfferedMs)),
     { onConflict: err("taken" as const) },
   );
   if (!r.ok) return { ok: false, code: "taken" };
@@ -283,6 +368,8 @@ export type WaitlistOfferView = {
   staffId: string;
   /** ISO UTC. */
   expiresAt: string;
+  /** ISO UTC — när erbjudandet gjordes (D-063: binder WhatsApp-svaret). */
+  offeredAt: string;
 };
 
 export type GetWaitlistOfferResult =
@@ -299,7 +386,8 @@ export async function getWaitlistOffer(
     const r = await q.query<EntryRow>(
       `select id, business_id, service_id, staff_id, day::text as day,
               status::text as status, customer_id,
-              extract(epoch from offer_expires_at)::float8 * 1000 as expires_ms
+              extract(epoch from offer_expires_at)::float8 * 1000 as expires_ms,
+              extract(epoch from offered_at)::float8 * 1000 as offered_ms
          from public.waitlist_entries
         where offer_token_hash = $1`,
       [hashWaitlistToken(token)],
@@ -349,6 +437,9 @@ export async function getWaitlistOffer(
         start: new Date(slot.start).toISOString(),
         staffId: slot.staffIds[0]!,
         expiresAt: new Date(Math.round(e.expires_ms!)).toISOString(),
+        offeredAt: new Date(
+          Math.round(e.offered_ms ?? e.expires_ms!),
+        ).toISOString(),
       },
     } as const;
   });

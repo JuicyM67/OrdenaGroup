@@ -161,6 +161,16 @@ export const gestion = {
   /** Siguiente paso desde un estado sin salida (link inválido/vencido,
    * reserva ya pasada o ya cancelada). */
   ctaReservarOtraHora: "Reservar otra hora",
+  /** D-063: revocar el consentimiento de WhatsApp desde el link de gestión
+   * (Ley 21.719). TODO_COPY: revisión de copywriter-es-cl. */
+  whatsapp: {
+    activo: (p: { negocio: string }): string =>
+      `Recibes los avisos de ${p.negocio} por WhatsApp.`,
+    ctaDejar: "Dejar de recibirlos por WhatsApp",
+    dejado:
+      "Listo, ya no te escribiremos por WhatsApp. Los avisos te llegan por correo.",
+    error: "No pudimos guardar el cambio. Inténtalo de nuevo.",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -341,7 +351,7 @@ export const agenda = {
     bloqueosYAlmuerzo: "Bloqueos y almuerzo",
     esperanEl: (p: { n: number; dia: string }): string =>
       `${p.n} ${p.n === 1 ? "espera" : "esperan"} el ${p.dia}`,
-    avisoWhatsapp: "Se avisa solo por WhatsApp",
+    avisoWhatsapp: "Se avisa por WhatsApp o por correo",
     /** Aviso al desmarcar el último profesional visible en "Mostrar en la
      * agenda": siempre debe quedar al menos uno, para no dejar la semana
      * vacía sin darse cuenta. */
@@ -1070,6 +1080,24 @@ export const email = {
     }): string =>
       `${p.cliente} pidió cancelar su hora de ${p.servicio} del ${p.fecha} a las ${p.hora}. La hora sigue reservada hasta que respondas.`,
     cta: "Responder",
+  },
+  /** D-063 (WhatsApp, WP-22): al dueño, cuando el cliente respondió
+   * "Necesito cambiar" al recordatorio. No se le responde nada automático al
+   * cliente: el negocio lo contacta. TODO_COPY: revisión de copywriter-es-cl. */
+  clienteQuiereCambiar: {
+    asunto: (p: { cliente: string; fecha: string }): string =>
+      `${p.cliente} necesita cambiar su hora del ${p.fecha}`,
+    preheader: (p: { servicio: string; hora: string }): string =>
+      `${p.servicio} a las ${p.hora}. Contáctalo para buscar otra hora.`,
+    titulo: "Un cliente necesita cambiar su hora",
+    texto: (p: {
+      cliente: string;
+      servicio: string;
+      fecha: string;
+      hora: string;
+    }): string =>
+      `${p.cliente} respondió "Necesito cambiar" al recordatorio de su hora de ${p.servicio} del ${p.fecha} a las ${p.hora}. La hora sigue reservada hasta que la muevas o la canceles.`,
+    cta: "Ver mi agenda",
   },
   /** WP-56: al cliente, cuando el negocio no acepta su cancelación (la hora
    * sigue en pie). `telefono` es el del negocio, si lo tiene. */
