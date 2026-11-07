@@ -192,7 +192,28 @@ export const reserva = {
     profesional: "2 · ¿Con quién?",
     cualquiera: "Cualquiera",
     diaYHora: "3 · Día y hora",
+    /** WP-81 (D-066): el servicio ya se eligió en la página del negocio (o
+     * por un link `?flash=`/`?oferta=`), así que los pasos se renumeran. */
+    profesionalTrasServicio: "1 · ¿Con quién?",
+    diaYHoraTrasServicio: "2 · Día y hora",
   },
+  /** WP-81 (D-066): tarjeta del servicio ya elegido, con "Cambiar servicio". */
+  servicioElegido: {
+    cambiar: "Cambiar servicio",
+    cambiarAria: (p: { nombre: string }): string =>
+      `Cambiar servicio, ahora elegido: ${p.nombre}`,
+    etiqueta: "Servicio elegido",
+  },
+  // WP-81 (D-066): filtro por profesional y nota por profesional en la página
+  // del negocio. Acá y no en `perfil` para que el código cliente no arrastre
+  // todos los textos del panel (presupuesto de JS, D-039).
+  filtroPersonal: (p: { nombre: string }): string =>
+    `Mostrando servicios de ${p.nombre}`,
+  filtroPersonalQuitar: "Ver todos",
+  verPersonal: (p: { nombre: string }): string =>
+    `Ver servicios y horas disponibles con ${p.nombre}`,
+  personalNota: (p: { nota: string; n: number }): string =>
+    `${p.nota} (${p.n})`,
   /** Texto oculto (sr-only) para los días del selector de fecha (paso 3):
    * hoy el punto de color (`d.dotStyle` en Reserva.dc.html) es la única
    * marca de "lleno" o "con hora flash", sin texto accesible. Claves

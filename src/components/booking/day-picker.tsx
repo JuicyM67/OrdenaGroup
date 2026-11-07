@@ -24,11 +24,14 @@ export function DayPicker({
   days,
   selectedDate,
   onSelect,
+  heading = reserva.pasos.diaYHora,
 }: {
   headingId: string;
   days: readonly DayAvailability[];
   selectedDate: LocalDate | null;
   onSelect: (date: LocalDate) => void;
+  /** Rubrikens text (standard "Dag och tid" med stegnummer). */
+  heading?: string;
 }) {
   const first = days[0]?.date ?? null;
   const last = days[days.length - 1]?.date ?? null;
@@ -67,7 +70,7 @@ export function DayPicker({
     <div className="flex flex-col gap-2.5">
       <div className="flex items-center justify-between gap-3">
         <h2 id={headingId} className="text-16 leading-event font-bold text-ink">
-          {reserva.pasos.diaYHora}
+          {heading}
         </h2>
         <div className="flex items-center gap-1.5">
           <span aria-live="polite" className="mr-1 text-13 text-muted">

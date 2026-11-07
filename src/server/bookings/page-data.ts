@@ -118,6 +118,9 @@ type BusinessRow = {
   tiktok: string | null;
   facebook: string | null;
   address: string | null;
+  /** WP-81: geokodad position (D-055) för kartan under "Cómo llegar". */
+  lat: string | null;
+  lng: string | null;
   phone: string | null;
   /** WP-45 (D-033): av → CTA:n/bekräftelsen visar "Enviar solicitud" i
    * stället för "Confirmar reserva" (ui-engineer, se createBooking i
@@ -250,7 +253,8 @@ export async function loadReservaPageData(
 
   const bizRes = await q.query<BusinessRow>(
     `select name, comuna, category, status::text as status, cancel_window_hours,
-            about, cover_url, logo_url, instagram, tiktok, facebook, address, phone,
+            about, cover_url, logo_url, instagram, tiktok, facebook, address,
+            lat::text as lat, lng::text as lng, phone,
             auto_confirm_bookings, plan::text as plan
        from public.businesses where id = $1`,
     [businessId],
@@ -274,6 +278,10 @@ export async function loadReservaPageData(
     tiktokUrl: socialUrl("tiktok", biz.tiktok),
     facebookUrl: socialUrl("facebook", biz.facebook),
     address: biz.address,
+    geo:
+      biz.lat !== null && biz.lng !== null
+        ? { lat: Number(biz.lat), lng: Number(biz.lng) }
+        : null,
     phone: biz.phone,
     gallery,
     hours: hours.rows as readonly BookingProfileHours[],
@@ -372,14 +380,38 @@ export async function loadReservaPageData(
     description: s.description,
     staffIds: staffIdsByService.get(s.id) ?? [],
   }));
-  const staff: BookingStaffMember[] = staffRows.rows.map((s) => ({
-    id: s.id,
-    name: s.name,
-    title: s.title,
-    // WP-44: bara bilder i vår bucket och företagets egen mapp (samma regel
-    // som cover_url/logo_url ovan).
-    photoUrl: publicImageUrl(s.photo_url, businessId),
-  }));
+  // WP-81: betyg per medarbetare — varje omdöme hör till en bokning, och
+  // bokningen till en person (bara synliga omdömen, D-045).
+  const staffRatings = await q.query<{
+    staff_id: string;
+    avg: string;
+    n: number;
+  }>(
+    `select bk.staff_id, round(avg(rv.rating)::numeric, 1)::text as avg, count(*)::int as n
+       from public.reviews rv
+       join public.bookings bk on bk.business_id = rv.business_id and bk.id = rv.booking_id
+      where rv.business_id = $1 and rv.hidden_at is null
+      group by bk.staff_id`,
+    [businessId],
+  );
+  const ratingByStaff = new Map(
+    staffRatings.rows.map((r) => [
+      r.staff_id,
+      { average: Number(r.avg), count: r.n },
+    ]),
+  );
+  const staff: BookingStaffMember[] = staffRows.rows.map((s) => {
+    const rating = ratingByStaff.get(s.id);
+    return {
+      id: s.id,
+      name: s.name,
+      title: s.title,
+      // WP-44: bara bilder i vår bucket och företagets egen mapp (samma regel
+      // som cover_url/logo_url ovan).
+      photoUrl: publicImageUrl(s.photo_url, businessId),
+      ...(rating ? { rating } : {}),
+    };
+  });
   let nextFree: { start: number; serviceId: string } | null = null;
 
   const availability: Record<string, Record<string, DayAvailability[]>> = {};

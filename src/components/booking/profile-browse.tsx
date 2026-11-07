@@ -20,13 +20,12 @@ import {
 
 import { formulario, perfil, resenas } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
-import { formatMoney } from "@/lib/format/money";
 
 import { categoryTabs } from "./categories";
+import { MobileBookBar } from "./mobile-book-bar";
 import { ProfileGallery } from "./profile-gallery";
 import { ProfileChipsDesktop, ProfileHeader } from "./profile-header";
 import {
-  ProfileBookNowButton,
   ProfileCategoryTabs,
   ProfileMobileTabs,
   ProfileServiceList,
@@ -41,7 +40,6 @@ import {
   MapCard,
 } from "./profile-side-panels";
 import { ProfileStaff } from "./profile-staff";
-import { nextAvailableChipLabel } from "./profile-view";
 import type { BookingPageData, BookingProfile } from "./types";
 
 /** Serverrenderade ikonknappar (chips-raden och Kontakt-kortet). */
@@ -76,6 +74,7 @@ export function ProfileBrowse({
   const rows: ProfileServiceRowEntry[] = data.services.map((service) => ({
     id: service.id,
     categoryId: service.categoryId ?? null,
+    staffIds: service.staffIds ?? [],
     header: <ProfileServiceHeader service={service} staff={staff} />,
     description: service.description ?? null,
     ariaLabel: `${service.name} · ${formatDuration(service.durationMin)}`,
@@ -88,7 +87,7 @@ export function ProfileBrowse({
   const infoPanel = (
     <div className="flex flex-col gap-3.5">
       <HoursCard profile={profile} />
-      <MapCard address={profile.address} />
+      <MapCard address={profile.address} geo={profile.geo} />
       <ContactCard
         phone={profile.phone}
         hasSocial={hasSocial}
@@ -133,7 +132,16 @@ export function ProfileBrowse({
                 ) : undefined
               }
             />
-            <h2 className="font-display text-28 font-bold text-ink">
+            <ProfileGallery
+              id="galeria-escritorio"
+              images={profile.gallery}
+              negocio={business.name}
+              className="mb-2"
+            />
+            <h2
+              id="reservar-hora"
+              className="scroll-mt-6 font-display text-28 font-bold text-ink"
+            >
               {perfil.publico.secciones.reservarHora}
             </h2>
             {tabs.length > 0 ? <ProfileCategoryTabs tabs={tabs} /> : null}
@@ -163,8 +171,6 @@ export function ProfileBrowse({
               </>
             ) : null}
 
-            <ProfileGallery images={profile.gallery} />
-
             {reviews ? (
               <ReviewsSection
                 reviews={reviews}
@@ -182,7 +188,7 @@ export function ProfileBrowse({
               services={data.services}
             />
             <HoursCard profile={profile} />
-            <MapCard address={profile.address} />
+            <MapCard address={profile.address} geo={profile.geo} />
             <ContactCard
               phone={profile.phone}
               hasSocial={hasSocial}
@@ -194,6 +200,12 @@ export function ProfileBrowse({
 
       {/* Mobil */}
       <div className="flex flex-1 flex-col lg:hidden">
+        <ProfileGallery
+          id="galeria-movil"
+          images={profile.gallery}
+          negocio={business.name}
+          className="px-4 pt-4"
+        />
         <ProfileMobileTabs
           tabs={mobileTabs}
           tablistLabel={perfil.publico.secciones.reservarHora}
@@ -229,49 +241,6 @@ export function ProfileBrowse({
 
         <MobileBookBar profile={profile} data={data} />
       </div>
-    </div>
-  );
-}
-
-/** Fast "Boka nu"-rad (`ProfilMobil.dc.html` rad 39). Ingen egen textnyckel
- * för etikett+klockslag på var sin rad som i referensen — återanvänder
- * samma hela mening som huvudets chip (`chips.proximaHora`) på en rad,
- * medveten förenkling (ingen `perfil.publico`-nyckel delar upp den). */
-function MobileBookBar({
-  profile,
-  data,
-}: {
-  profile: BookingProfile;
-  data: BookingPageData;
-}) {
-  const next = profile.nextAvailable;
-  const service = next
-    ? data.services.find((s) => s.id === next.serviceId)
-    : null;
-  const label = nextAvailableChipLabel(data.now, profile.nextAvailable);
-
-  return (
-    <div
-      data-tour="book-bar"
-      className="fixed inset-x-3 bottom-3.5 z-10 flex items-center justify-between gap-3 rounded-panel bg-ink px-3.5 py-3 text-on-dark shadow-popover"
-    >
-      <div className="min-w-0">
-        {label ? (
-          <p className="truncate text-12 text-on-dark-muted">{label}</p>
-        ) : null}
-        {service ? (
-          <p className="truncate text-13 text-on-dark-soft">
-            {formatDuration(service.durationMin)} ·{" "}
-            {formatMoney(service.priceClp)}
-          </p>
-        ) : null}
-      </div>
-      <ProfileBookNowButton
-        serviceId={next ? next.serviceId : null}
-        className="shrink-0"
-      >
-        {perfil.publico.reservarAhora}
-      </ProfileBookNowButton>
     </div>
   );
 }

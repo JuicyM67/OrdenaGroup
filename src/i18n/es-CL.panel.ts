@@ -2579,9 +2579,14 @@ export const perfil = {
       comoLlegar: email.comun.comoLlegar,
       contacto: "Contacto",
     },
-    /** Link "Vägbeskrivning →" del diseño: abre Google/Apple Maps, sin mapa
-     * incrustado en v1 (plan, "Contenido"). */
-    verRuta: "Ver ruta →",
+    /** WP-81 (D-066): tarjeta "Cómo llegar" con mapa (imagen fija de
+     * OpenStreetMap) y botones para abrir la ruta en Google Maps o Apple
+     * Maps. */
+    indicaciones: "Ver ruta",
+    appleMaps: "Apple Maps",
+    mapaTitulo: (p: { direccion: string }): string =>
+      `Mapa: ${p.direccion}. Abrir la ruta`,
+    mapaAtribucion: "© OpenStreetMap",
     /** Pestañas de la versión mobile (`role="tablist"` bajo la portada). */
     tabs: {
       servicios: "Servicios",
@@ -2605,6 +2610,17 @@ export const perfil = {
      * componente no arma esta frase por su cuenta). */
     servicioDetalle: (p: { duracion: string; descripcion?: string }): string =>
       p.descripcion ? `${p.duracion} · ${p.descripcion}` : p.duracion,
+    /** WP-81 (D-066): segunda línea de la barra fija mobile. `barraServicio`
+     * es la frase completa (lector de pantalla/`title`); en pantalla el
+     * nombre va en su propio elemento `truncate` y `barraServicioResto` al
+     * lado, para que la elipsis corte solo el nombre, nunca el precio. */
+    barraServicio: (p: {
+      nombre: string;
+      duracion: string;
+      precio: string;
+    }): string => `${p.nombre} · ${p.duracion} · ${p.precio}`,
+    barraServicioResto: (p: { duracion: string; precio: string }): string =>
+      `· ${p.duracion} · ${p.precio}`,
     /** Título de la tarjeta oscura del panel lateral/aside ("Snabbast in"
      * en el diseño). */
     masRapido: "Más rápido",
@@ -2615,8 +2631,19 @@ export const perfil = {
       `${p.dia} · ${p.servicio}`,
     /** Mosaico "+ 8 bilder" de la galería: cuántas fotos hay además de las
      * que ya se ven en la grilla. */
-    nFotos: (p: { n: number }): string =>
-      `+${p.n} ${p.n === 1 ? "foto" : "fotos"}`,
+    /** WP-81 (D-066): galería arriba en la página del negocio y vista a
+     * pantalla completa con todas las fotos. */
+    galeria: {
+      mas: "Ver más fotos",
+      abrir: (p: { negocio: string; n: number }): string =>
+        `Ver ${p.n === 1 ? "la foto" : `las ${p.n} fotos`} de ${p.negocio}`,
+      titulo: (p: { negocio: string }): string => `Fotos de ${p.negocio}`,
+      cantidad: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "foto" : "fotos"}`,
+      foto: (p: { negocio: string; n: number }): string =>
+        `${p.negocio}, foto ${p.n}`,
+      cerrar: "Cerrar",
+    },
     /** aria-label del link a Instagram de la tarjeta de contacto. */
     instagramAria: (p: { negocio: string }): string =>
       `Instagram de ${p.negocio}`,

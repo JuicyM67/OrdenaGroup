@@ -10,6 +10,7 @@
 import { useState, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
+import { reserva } from "@/i18n";
 
 import { ALL_CATEGORY_ID, UNCATEGORIZED_CATEGORY_ID } from "./categories";
 import type { CategoryTab } from "./categories";
@@ -37,6 +38,8 @@ export function ProfileCategoryTabs({
 export interface ProfileServiceRowEntry {
   readonly id: string;
   readonly categoryId: string | null;
+  /** WP-81: personal som utför tjänsten (personalfiltret). */
+  readonly staffIds?: readonly string[];
   /** Radens synliga huvud (namn, längd, personal, pris, chevron), färdigrenderat av
    * servern (`ProfileServiceHeader`). */
   readonly header: ReactNode;
@@ -61,20 +64,45 @@ export function ProfileServiceList({
   /** `data-tour`-namn på listan (visningen). */
   tour?: string;
 }) {
-  const { categoryId, bookService } = useProfileFlow();
+  const { categoryId, bookService, staffFilter, onSelectStaff } =
+    useProfileFlow();
   const [openId, setOpenId] = useState<string | null>(null);
-  const visible =
+  const byCategory =
     categoryId === ALL_CATEGORY_ID
       ? rows
       : categoryId === UNCATEGORIZED_CATEGORY_ID
         ? rows.filter((r) => r.categoryId === null)
         : rows.filter((r) => r.categoryId === categoryId);
+  // WP-81: bara den valda medarbetarens behandlingar.
+  const visible = staffFilter
+    ? byCategory.filter((r) => r.staffIds?.includes(staffFilter.id))
+    : byCategory;
+  const filterChip = staffFilter ? (
+    <p className="flex flex-wrap items-center gap-2 rounded-full bg-lilac py-1.5 pr-1.5 pl-4 text-13 font-semibold text-ink">
+      <span className="flex-1">
+        {reserva.filtroPersonal({ nombre: staffFilter.name })}
+      </span>
+      <button
+        type="button"
+        onClick={() => onSelectStaff(null)}
+        className="rounded-full bg-surface px-3 py-1 text-12 font-bold text-ink hover:bg-field focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      >
+        {reserva.filtroPersonalQuitar} ✕
+      </button>
+    </p>
+  ) : null;
 
   if (visible.length === 0) {
-    return <p className="text-14 text-muted">{emptyLabel}</p>;
+    return (
+      <div className="flex flex-col gap-3">
+        {filterChip}
+        <p className="text-14 text-muted">{emptyLabel}</p>
+      </div>
+    );
   }
   return (
     <div data-tour={tour} className="flex flex-col gap-2">
+      {filterChip}
       {visible.map((r, i) => {
         const open = openId === r.id;
         return (

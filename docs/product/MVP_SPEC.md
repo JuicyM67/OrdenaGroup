@@ -39,7 +39,7 @@ Varje funktion har ett ID. Arbetspaketen i [BACKLOG](../tasks/BACKLOG.md) refere
 - **Klart när:** två samtidiga bokningar av samma tid ger en lyckad och en med ett tydligt fel.
 
 ### F5. Publik bokningssida (kund, mobil)
-- URL: `/{slug}`. Flöde: tjänst → profesional (eller "Cualquiera") → dag → tid → namn + telefon → bekräfta.
+- URL: `/{slug}`. Flöde: tjänst (väljs på profilsidan eller via `?flash=`/`?oferta=`, D-066) → profesional (eller "Cualquiera") → dag → tid → namn + telefon → bekräfta.
 - Inget konto. Samtyckesrutor (villkor obligatoriskt, marknadsföring valfritt och aldrig förkryssat).
 - Visar avbokningspolicy **innan** bekräftelse.
 - Design: `docs/design/reference/Reserva.dc.html`.

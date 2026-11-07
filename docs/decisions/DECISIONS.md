@@ -4,6 +4,17 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-066 · 2026-11-07 · Bokningssidan `/[slug]`: tjänsten väljs en gång, karta, filter per profesional, galleri överst (WP-81)
+**Beslut:** porterat från BookingBuddy (SE D-066, D-077, WP-98, WP-100), anpassat till Chile:
+- **Tjänsten väljs en gång:** val på profilen ("Elegir hora") eller via `?flash=`/`?oferta=` låser tjänsten. Nästa vy visar ett litet kort (namn, tid · pris, "Cambiar servicio") och frågar sedan bara "1 · ¿Con quién?" och "2 · Día y hora". Personlistan visar bara profesionales som utför tjänsten (nycklarna i `availability[tjänst]`); en vald person som inte utför en ny tjänst återställs till "Cualquiera". Mobilens fasta rad visar tjänstens namn (ellips bara på namnet, aldrig på pris). Design lab är oförändrat (ingen profil → gamla trestegsvyn).
+- **Filter per profesional:** personalkorten är knappar. Val → tjänstelistan visar bara personens tjänster (chip "Ver todos") och personen förväljs när man bokar. Snittbetyg per profesional från synliga reseñas på personens bokningar (D-045). Rent klientläge; servern räknar tillgängligheten som förut. Ingen ny tabell.
+- **"Cómo llegar":** stillbild av OpenStreetMap-rutor (zoom 16, egen nål, "© OpenStreetMap" som länk) från `businesses.lat/lng`; klick öppnar vägbeskrivningen. Knappar "Ver ruta" (Google Maps) och "Apple Maps". Utan koordinater: adress + knapparna. **Ingen ny geokodning:** koordinaterna kommer från det befintliga svepet i outbox-cronen (D-055/D-060), som i Chile bara geokodar företag som syns i marknadsplatsen — övriga företag visar ingen karta tills svepet breddas.
+- **Galleri överst:** mosaik (en stor + två små) överst på sidan (dator och mobil) och "Ver más fotos" som öppnar alla bilder i helskärm via webbläsarens Popover API (ingen extra JS, D-032/D-039).
+**Varför:** samma brister som SE åtgärdade: tjänstelistan visades igen efter valet, kunden såg inte var salongen ligger och kunde inte välja profesional på profilen.
+**Konsekvens:** inga migrationer. Hoppades över: SE:s presentkort/värdebevis/Stripe-delar och demons svenska "Agenda → Kalender"-text. Kartbilderna hämtas av besökarens webbläsare direkt från `tile.openstreetmap.org` (ser IP-adressen); integritetspolicyn nämner inte det än (inte heller Descubres karta) — tas med vid nästa översyn av `es-CL.privacidad.ts`.
+
+---
+
 ### D-065 · 2026-11-03 · Interna dokument bara lokalt (repot är publikt, D-064)
 **Beslut:** `docs/gtm/`, `docs/research/`, `docs/product/VISION.md`, `docs/product/ROADMAP.md`, `docs/legal/JURIST_FRAGOR.md` och hela `docs/tasks/` (BACKLOG, IDEAS, pilotfynd, planer) spåras inte längre av git utan står i `.gitignore`. Filerna ligger kvar lokalt i `~/OrdenaGroup` på samma sökvägar. Personliga e-postadresser ersatta med platshållare.
 **Varför:** repot är publikt; strategi, konkurrentanalys, juristfrågor och interna planer ska inte publiceras framåt. Äldre versioner finns kvar i git-historiken och i gamla PR:er.

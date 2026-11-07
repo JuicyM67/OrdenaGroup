@@ -20,6 +20,12 @@ export interface ProfileFlowValue {
   readonly onSelectMobileTab: (tab: MobileTab) => void;
   /** Väljer tjänsten och växlar `BookingScreen` till bokningsflödet (`viewMode = "picker"`). */
   readonly bookService: (serviceId: string) => void;
+  /** WP-81: vald medarbetare på profilen — tjänstelistan visar bara personens
+   * behandlingar och personen förväljs i bokningen. `null` = alla. */
+  readonly staffFilter: { readonly id: string; readonly name: string } | null;
+  readonly onSelectStaff: (
+    staff: { readonly id: string; readonly name: string } | null,
+  ) => void;
 }
 
 const ProfileFlowContext = createContext<ProfileFlowValue | null>(null);

@@ -137,6 +137,66 @@ export function mapsUrl(address: string): string {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
 }
 
+/** WP-81: vägbeskrivning till företaget (Google Maps väljer färdsätt själv). */
+export function directionsUrl(
+  address: string,
+  geo?: { lat: number; lng: number } | null,
+): string {
+  const dest = geo ? `${geo.lat},${geo.lng}` : address;
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
+}
+
+/** WP-81: samma vägbeskrivning i Apple Maps. */
+export function appleMapsUrl(
+  address: string,
+  geo?: { lat: number; lng: number } | null,
+): string {
+  const dest = geo ? `${geo.lat},${geo.lng}` : address;
+  return `https://maps.apple.com/?daddr=${encodeURIComponent(dest)}`;
+}
+
+/** WP-81: en stillbild av kartan av OpenStreetMaps kartrutor (256 px) runt
+ * positionen — ingen iframe med OSM:s knappar och texter, ingen JS. `grid` är
+ * rutnätets storlek; `offset` är positionens punkt i rutnätet, så att
+ * komponenten kan centrera den. 5 × 3 rutor räcker för kort upp till
+ * 1024 × 512 px. */
+export type OsmTileMap = {
+  grid: { width: number; height: number };
+  offset: { x: number; y: number };
+  tiles: { src: string; left: number; top: number }[];
+};
+
+export function osmTileMap(
+  geo: { lat: number; lng: number },
+  zoom = 16,
+): OsmTileMap {
+  const n = 2 ** zoom;
+  const latRad = (geo.lat * Math.PI) / 180;
+  const x = ((geo.lng + 180) / 360) * n;
+  const y =
+    ((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n;
+  const x0 = Math.floor(x) - 2;
+  const y0 = Math.floor(y) - 1;
+  const tiles: OsmTileMap["tiles"] = [];
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 5; col++) {
+      const tx = (((x0 + col) % n) + n) % n;
+      const ty = y0 + row;
+      if (ty < 0 || ty >= n) continue;
+      tiles.push({
+        src: `https://tile.openstreetmap.org/${zoom}/${tx}/${ty}.png`,
+        left: col * 256,
+        top: row * 256,
+      });
+    }
+  }
+  return {
+    grid: { width: 5 * 256, height: 3 * 256 },
+    offset: { x: (x - x0) * 256, y: (y - y0) * 256 },
+    tiles,
+  };
+}
+
 /** WP-51: "Barbería · Providencia" en el encabezado (`negocio.rubros[category]`;
  * una categoría desconocida o sin configurar se omite, no se muestra la
  * clave cruda). */
