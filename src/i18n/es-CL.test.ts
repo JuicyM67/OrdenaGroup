@@ -158,6 +158,7 @@ const MUESTRA_GENERICA: Record<string, unknown> = {
   desde: "28 de septiembre",
   hasta: "4 de octubre",
   comuna: "Providencia",
+  nota: "4,8",
   rango: "11:30 – 12:05",
   dias: "Lun–Sáb",
   linkGestion: "https://ejemplo.cl/r/abc123",

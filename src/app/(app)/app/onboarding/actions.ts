@@ -19,6 +19,7 @@ import {
   type ImageUploadTicket,
   type ProfileResult,
 } from "@/server/owner/profile";
+import { requestPlan, type RequestPlanResult } from "@/server/plans/request";
 
 export async function submitOnboarding(
   input: unknown,
@@ -91,4 +92,25 @@ export async function updatePageProfileAction(
   const owner = await currentOwner();
   if ("ok" in owner) return owner;
   return updateBusinessProfile(owner.userId, owner.businessId, input);
+}
+
+// ---------------------------------------------------------------------------
+// Paso "Elige tu plan" (WP-83, D-068): sin pago en la app. Una plan pagada
+// solo queda registrada (`businesses.plan_requested`) y el equipo la activa
+// en /admin. Solo el dueño; el negocio sale de la sesión, nunca del cliente.
+// ---------------------------------------------------------------------------
+
+export async function requestPlanAction(
+  plan: unknown,
+): Promise<RequestPlanResult | { ok: false; code: "unauthorized" }> {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, code: "unauthorized" };
+  const current = await getCurrentMember(user.id);
+  if (!current || current.member.role !== "owner") {
+    return { ok: false, code: "unauthorized" };
+  }
+  return requestPlan(current.business.id, plan);
 }

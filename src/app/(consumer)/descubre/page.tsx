@@ -1,5 +1,5 @@
-// /upptack (CL: /descubre, dold tills Mercado Pago finns) — marknadsplatsens
-// listvy (WP-68, D-055).
+// /descubre — marknadsplatsens förstasida: företagskatalogen (WP-85, D-070;
+// tidigare erbjudandelistan från WP-68, som nu är fliken /descubre/ofertas).
 import type { Metadata } from "next";
 
 import {
@@ -9,7 +9,7 @@ import {
   type RouteSearchParams,
 } from "@/components/marketplace/discover-route";
 
-export function generateMetadata(): Metadata {
+export function generateMetadata(): Promise<Metadata> {
   return discoverMetadata(undefined, undefined);
 }
 

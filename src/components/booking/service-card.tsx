@@ -3,9 +3,9 @@ import { Scissors } from "lucide-react";
 
 import { cn } from "@/components/ui/cn";
 import { strokeCard } from "@/components/ui/icons";
-import { formatMoney } from "@/lib/format/money";
 import { formatDuration } from "@/lib/format/dates";
 
+import { formatServicePrice } from "./format-price";
 import type { BookingService } from "./types";
 
 const TINT_BG: Record<BookingService["tint"], string> = {
@@ -53,7 +53,7 @@ export function ServiceCard({
         </span>
       </span>
       <span className="text-15 font-bold text-ink">
-        {formatMoney(service.priceClp)}
+        {formatServicePrice(service)}
       </span>
     </button>
   );

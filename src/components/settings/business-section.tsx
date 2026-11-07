@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 // validadores de cliente. Las dos secciones siguen escribiendo en la misma fila de
 // `businesses` (mismo `action`) — esta solo edita/envía los campos de "Tu negocio";
 // los campos de reglas viajan sin cambios desde `business` (ver `handleSubmit`).
+import { X } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -30,7 +31,12 @@ type FormState = {
   comuna: string;
   phone: string;
   address: string;
+  /** WP-85 (D-070): "Vi kommer till kunden" + orterna. */
+  servesAtCustomer: boolean;
+  serviceAreas: string[];
 };
+
+const SERVICE_AREAS_MAX = 30;
 
 function toFormState(b: AjustesBusiness): FormState {
   return {
@@ -39,10 +45,14 @@ function toFormState(b: AjustesBusiness): FormState {
     comuna: b.comuna,
     phone: b.phone,
     address: b.address,
+    servesAtCustomer: b.servesAtCustomer,
+    serviceAreas: b.serviceAreas,
   };
 }
 
-type Errors = Partial<Record<"name" | "slug" | "comuna" | "phone", string>>;
+type Errors = Partial<
+  Record<"name" | "slug" | "comuna" | "phone" | "address" | "zonas", string>
+>;
 
 export function BusinessSection({
   business,
@@ -61,6 +71,20 @@ export function BusinessSection({
     "idle",
   );
   const [submitError, setSubmitError] = useState<string | undefined>();
+  const [newArea, setNewArea] = useState("");
+
+  function addArea() {
+    const name = newArea.trim();
+    if (!name) return;
+    setNewArea("");
+    if (
+      form.serviceAreas.some((a) => a.toLowerCase() === name.toLowerCase()) ||
+      form.serviceAreas.length >= SERVICE_AREAS_MAX
+    ) {
+      return;
+    }
+    set("serviceAreas", [...form.serviceAreas, name.slice(0, 80)]);
+  }
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -78,6 +102,13 @@ export function BusinessSection({
     if (!slug.ok) next.slug = ajustesErrorText(slug.code);
     if (!comuna.ok) next.comuna = ajustesErrorText(comuna.code);
     if (!phone.ok) next.phone = ajustesErrorText(phone.code);
+    // WP-85 (D-070): adress, eller minst en ort för den som kommer till kunden.
+    if (!form.servesAtCustomer) {
+      const address = validateRequired(form.address, "business.address_empty");
+      if (!address.ok) next.address = ajustesErrorText(address.code);
+    } else if (form.serviceAreas.length === 0) {
+      next.zonas = negocio.campos.zonasVacio;
+    }
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
@@ -90,6 +121,8 @@ export function BusinessSection({
         comuna: form.comuna,
         phone: form.phone,
         address: form.address,
+        servesAtCustomer: form.servesAtCustomer,
+        serviceAreas: form.serviceAreas,
         // "Reglas de reserva" vive en su propia pestaña (booking-rules-section.tsx) pero
         // `updateBusinessSettings` escribe la fila entera: viajan sin cambios.
         minNoticeMinutes: business.minNoticeMinutes,
@@ -107,6 +140,8 @@ export function BusinessSection({
           comuna: form.comuna,
           phone: form.phone,
           address: form.address,
+          servesAtCustomer: form.servesAtCustomer,
+          serviceAreas: form.serviceAreas,
         });
       } else {
         setStatus("error");
@@ -185,14 +220,102 @@ export function BusinessSection({
               error={errors.phone}
             />
 
-            <TextField
-              label={negocio.campos.addressLabel}
-              placeholder={negocio.campos.addressPlaceholder}
-              value={form.address}
-              onChange={(e) => set("address", e.target.value)}
-              maxLength={200}
-            />
+            {form.servesAtCustomer ? null : (
+              <TextField
+                label={negocio.campos.addressLabel}
+                hint={errors.address ? undefined : negocio.campos.addressAyuda}
+                placeholder={negocio.campos.addressPlaceholder}
+                value={form.address}
+                onChange={(e) => set("address", e.target.value)}
+                error={errors.address}
+                maxLength={200}
+                autoComplete="street-address"
+              />
+            )}
           </div>
+
+          <label className="flex cursor-pointer items-start gap-3 text-14 text-ink">
+            <input
+              type="checkbox"
+              checked={form.servesAtCustomer}
+              onChange={(e) => set("servesAtCustomer", e.target.checked)}
+              className="mt-0.5 size-5 shrink-0 accent-ink"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-semibold">{negocio.campos.sinLocal}</span>
+              <span className="text-13 text-muted">
+                {negocio.campos.sinLocalAyuda}
+              </span>
+            </span>
+          </label>
+
+          {form.servesAtCustomer ? (
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-end gap-2 lg:max-w-120">
+                <TextField
+                  label={negocio.campos.zonasLabel}
+                  placeholder={negocio.campos.zonasPlaceholder}
+                  value={newArea}
+                  onChange={(e) => setNewArea(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addArea();
+                    }
+                  }}
+                  error={errors.zonas}
+                  maxLength={80}
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="2xl"
+                  onClick={addArea}
+                  disabled={form.serviceAreas.length >= SERVICE_AREAS_MAX}
+                  className="shrink-0"
+                >
+                  {negocio.campos.zonasAgregar}
+                </Button>
+              </div>
+              {errors.zonas ? null : (
+                <p className="-mt-1 text-13 text-muted">
+                  {negocio.campos.zonasAyuda}
+                </p>
+              )}
+              {form.serviceAreas.length > 0 ? (
+                <ul className="flex flex-wrap gap-2">
+                  {form.serviceAreas.map((a) => (
+                    <li key={a}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          set(
+                            "serviceAreas",
+                            form.serviceAreas.filter((x) => x !== a),
+                          )
+                        }
+                        aria-label={negocio.campos.zonasQuitar({ comuna: a })}
+                        className="flex h-9 items-center gap-1.5 rounded-full bg-ink pr-2.5 pl-3.5 text-13 font-semibold text-on-dark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+                      >
+                        {a}
+                        <X
+                          aria-hidden="true"
+                          className="size-3.5"
+                          strokeWidth={2.5}
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {form.serviceAreas.length >= SERVICE_AREAS_MAX ? (
+                <p className="text-12 text-muted">
+                  {negocio.campos.zonasMax({ max: SERVICE_AREAS_MAX })}
+                </p>
+              ) : null}
+            </div>
+          ) : null}
         </Card>
 
         {submitError ? (

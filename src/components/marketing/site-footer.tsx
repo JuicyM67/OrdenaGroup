@@ -19,6 +19,7 @@ import {
   hrefRubro,
   hrefRubros,
   RUBRO_IDS,
+  SIGNUP_PATH,
 } from "@/config/routes";
 import { descubre, paraClientes } from "@/i18n";
 import { copy } from "@/i18n/marketing";
@@ -174,7 +175,7 @@ export function SiteFooter() {
               </Link>
             )}
             <Link
-              href="/login"
+              href={SIGNUP_PATH}
               className="self-start rounded-control bg-lime px-3.5 py-2 text-14 font-bold text-ink transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-lime"
             >
               {t.crearCuenta}

@@ -1,10 +1,15 @@
-// /admin: företagslista med sök (namn, slug, ägarens e-post) och filter
-// plan/status (F19/WP-36). GET-formulär (inget klient-JS krävs). Svensk
-// text (bara ägaren använder ytan, se planen).
-import { BUSINESS_PLANS } from "@/config/plans";
-import Link from "next/link";
+// /admin: företagslistan som kort (WP-91, ägarens referens: CRM-kort med ikonmeny)
+// med sök (namn, slug, ägarens e-post) och filter plan/status/fakturering som
+// rundade dropdowns i samma GET-formulär (inget klient-JS). Planerna visas med sina
+// riktiga namn (`planes.nombres`). Texten via `adminPanel` (es-CL).
+// WP-84 (D-069): port av SE WP-91.
+import { ChevronDown, Search } from "lucide-react";
 
-import { adminPanel } from "@/i18n";
+import { AdminShell } from "@/components/admin/admin-shell";
+import { AdminBusinessCard } from "@/components/admin/business-card";
+import { cn } from "@/components/ui/cn";
+import { BUSINESS_PLANS } from "@/config/plans";
+import { adminPanel, planes } from "@/i18n";
 import { requireAdminPage } from "@/server/admin/auth";
 import {
   listBusinesses,
@@ -14,18 +19,58 @@ import {
 
 export const dynamic = "force-dynamic";
 
+const t = adminPanel.lista;
 const PLANS: readonly BusinessPlan[] = BUSINESS_PLANS;
 const STATUSES: readonly BusinessStatus[] = ["active", "frozen"];
+
+type Params = {
+  q?: string;
+  plan?: string;
+  status?: string;
+  facturacion?: string;
+};
+
+/** Rundad nativ dropdown (GET-formulär, inget klient-JS). */
+function PillSelect({
+  name,
+  label,
+  value,
+  children,
+}: {
+  name: string;
+  label: string;
+  value: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <label className="relative flex">
+      <span className="sr-only">{label}</span>
+      <select
+        name={name}
+        defaultValue={value}
+        className={cn(
+          "h-12 w-full appearance-none rounded-full pr-10 pl-4 text-14 font-semibold shadow-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink lg:w-auto",
+          value ? "bg-ink text-on-dark" : "bg-surface text-ink",
+        )}
+      >
+        {children}
+      </select>
+      <ChevronDown
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none absolute top-1/2 right-3.5 size-4 -translate-y-1/2",
+          value ? "text-on-dark" : "text-muted",
+        )}
+        strokeWidth={2}
+      />
+    </label>
+  );
+}
 
 export default async function AdminBusinessesPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    q?: string;
-    plan?: string;
-    status?: string;
-    facturacion?: string;
-  }>;
+  searchParams: Promise<Params>;
 }) {
   await requireAdminPage();
   const sp = await searchParams;
@@ -41,153 +86,75 @@ export default async function AdminBusinessesPage({
   });
 
   return (
-    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-22 font-bold text-ink">Företag</h1>
-        <div className="flex gap-3">
-          <Link
-            href="/admin/administradores"
-            className="text-13 font-semibold text-ink underline"
-          >
-            {adminPanel.nav.administradores}
-          </Link>
-          <Link
-            href="/admin/resenas"
-            className="text-13 font-semibold text-ink underline"
-          >
-            Recensioner
-          </Link>
-          <Link
-            href="/admin/actividad"
-            className="text-13 font-semibold text-ink underline"
-          >
-            Logg
-          </Link>
-          <Link
-            href="/admin/nuevo"
-            className="rounded-control bg-ink px-4 py-2 text-13 font-bold text-on-dark"
-          >
-            Nytt företag
-          </Link>
-        </div>
-      </div>
-
-      <form className="flex flex-wrap items-end gap-3" method="get">
-        <label className="flex flex-col gap-1 text-13 text-ink">
-          Sök
+    <AdminShell
+      active="negocios"
+      title={t.titulo}
+      subtitle={t.cantidad({ n: businesses.length })}
+    >
+      <form
+        method="get"
+        role="search"
+        className="flex flex-col gap-2 rounded-card bg-surface/60 p-3 lg:flex-row lg:items-center"
+      >
+        <label className="flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full bg-surface px-4 shadow-soft focus-within:outline-2 focus-within:outline-ink">
+          <Search
+            aria-hidden="true"
+            className="size-4.5 text-muted"
+            strokeWidth={2}
+          />
+          <span className="sr-only">{t.buscar}</span>
           <input
-            type="text"
+            type="search"
             name="q"
             defaultValue={sp.q ?? ""}
-            placeholder="Namn, slug eller ägarens e-post"
-            className="h-10 w-72 rounded-control border border-border bg-surface px-3 text-14 text-ink"
+            placeholder={t.buscar}
+            className="h-full min-w-0 flex-1 bg-transparent text-15 outline-none placeholder:text-muted"
           />
         </label>
-        <label className="flex flex-col gap-1 text-13 text-ink">
-          Plan
-          <select
-            name="plan"
-            defaultValue={sp.plan ?? ""}
-            className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
-          >
-            <option value="">Alla</option>
+        <div className="grid grid-cols-3 gap-2 lg:flex">
+          <PillSelect name="plan" label={t.plan} value={plan ?? ""}>
+            <option value="">{`${t.plan}: ${t.todos}`}</option>
             {PLANS.map((p) => (
               <option key={p} value={p}>
-                {p}
+                {planes.nombres[p]}
               </option>
             ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-13 text-ink">
-          Status
-          <select
-            name="status"
-            defaultValue={sp.status ?? ""}
-            className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
-          >
-            <option value="">Alla</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s === "frozen" ? "Fryst" : "Aktiv"}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-13 text-ink">
-          {adminPanel.facturacion.filtro}
-          <select
+          </PillSelect>
+          <PillSelect name="status" label={t.status} value={status ?? ""}>
+            <option value="">{`${t.status}: ${t.todos}`}</option>
+            <option value="active">{t.activo}</option>
+            <option value="frozen">{t.congelado}</option>
+          </PillSelect>
+          <PillSelect
             name="facturacion"
-            defaultValue={billingMode ?? ""}
-            className="h-10 rounded-control border border-border bg-surface px-3 text-14 text-ink"
+            label={t.facturacion}
+            value={billingMode ?? ""}
           >
-            <option value="">{adminPanel.facturacion.todos}</option>
+            <option value="">{`${t.facturacion}: ${t.todos}`}</option>
             <option value="manual">{adminPanel.facturacion.manual}</option>
-          </select>
-        </label>
+          </PillSelect>
+        </div>
         <button
           type="submit"
-          className="h-10 rounded-control bg-ink px-4 text-13 font-bold text-on-dark"
+          className="h-12 rounded-full bg-ink px-6 text-14 font-bold text-on-dark hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          Filtrera
+          {t.buscarBoton}
         </button>
       </form>
 
-      <div className="overflow-x-auto rounded-card bg-surface">
-        <table className="w-full text-left text-13">
-          <thead>
-            <tr className="border-b border-border text-ink-soft">
-              <th className="px-4 py-3 font-semibold">Namn</th>
-              <th className="px-4 py-3 font-semibold">Ägare</th>
-              <th className="px-4 py-3 font-semibold">Plan</th>
-              <th className="px-4 py-3 font-semibold">Status</th>
-              <th className="px-4 py-3 font-semibold">Skapad</th>
-            </tr>
-          </thead>
-          <tbody>
-            {businesses.map((b) => (
-              <tr key={b.id} className="border-b border-border last:border-0">
-                <td className="px-4 py-3">
-                  <Link
-                    href={`/admin/negocios/${b.id}`}
-                    className="font-semibold text-ink underline"
-                  >
-                    {b.name}
-                  </Link>
-                  <div className="text-12 text-ink-soft">{b.slug}</div>
-                </td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {b.ownerEmail ?? "—"}
-                </td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {b.plan}
-                  {b.planOverrideUntil
-                    ? ` (till ${new Date(b.planOverrideUntil).toLocaleDateString("sv-SE")})`
-                    : ""}
-                  {b.billingMode === "manual" ? (
-                    <span className="ml-2 rounded-control bg-canvas px-2 py-0.5 text-12 font-semibold text-ink">
-                      {adminPanel.facturacion.etiqueta}
-                    </span>
-                  ) : null}
-                </td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {b.status === "frozen" ? "Fryst" : "Aktiv"}
-                  {b.deletionRequestedAt ? " · Radering begärd" : ""}
-                </td>
-                <td className="px-4 py-3 text-ink-soft">
-                  {new Date(b.createdAt).toLocaleDateString("sv-SE")}
-                </td>
-              </tr>
-            ))}
-            {businesses.length === 0 ? (
-              <tr>
-                <td className="px-4 py-6 text-ink-soft" colSpan={5}>
-                  Inga företag matchar.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
-      </div>
-    </main>
+      {businesses.length === 0 ? (
+        <p className="rounded-card bg-surface p-6 text-14 text-muted">
+          {t.vacio}
+        </p>
+      ) : (
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+          {businesses.map((b) => (
+            <li key={b.id}>
+              <AdminBusinessCard business={b} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </AdminShell>
   );
 }

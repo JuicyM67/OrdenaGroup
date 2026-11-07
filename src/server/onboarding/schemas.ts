@@ -11,6 +11,8 @@ import "server-only";
  */
 import { z } from "zod";
 
+import { RUBRO_KEYS } from "@/config/rubros";
+
 import {
   localTimeSchema,
   moneyInputSchema,
@@ -54,20 +56,17 @@ export const RESERVED_SLUGS = [
   // WP-67: kundkonton (CL /cuenta, SE /konto).
   "cuenta",
   "konto",
+  // WP-82 (D-067): publika widget-rutter.
+  "embed",
+  "widget",
+  "widgets",
+  // WP-83 (D-068): registreringen för nya företag (/comenzar).
+  "comenzar",
 ] as const;
 
-// Samma nycklar som `negocio.rubros` (src/i18n/es-CL.ts). Hålls i synk manuellt (som
-// `profesionales.colores` mot `staff.color`-checken i DB) — testat i schemas.test.ts.
-export const RUBRO_KEYS = [
-  "barberia",
-  "peluqueria",
-  "estetica",
-  "unas",
-  "cejas_pestanas",
-  "masajes",
-  "kinesiologia",
-  "otro",
-] as const;
+// WP-85: listan ligger i `src/config/rubros.ts` (används även i klientkomponenter;
+// den här filen är server-only). Exporteras vidare härifrån som förut.
+export { RUBRO_KEYS, type RubroKey } from "@/config/rubros";
 
 // Exporterade (utöver onboardingInputSchema) så att src/server/owner/ajustes-schemas.ts
 // (WP-15b) kan bygga vidare på exakt samma regler ("samma slug-regler och reserverade
@@ -109,13 +108,31 @@ const categorySchema = z.enum(RUBRO_KEYS, {
   error: "business.category_invalid",
 });
 
-export const businessInputSchema = z.object({
-  name: businessNameSchema,
-  slug: slugSchema,
-  comuna: comunaSchema,
-  category: categorySchema,
-  phone: phoneInputSchema,
-});
+// WP-85 (D-070): adress krävs utom för den som kommer till kunden (då blir
+// `comuna` första orten i `business_service_areas`).
+export const businessInputSchema = z
+  .object({
+    name: businessNameSchema,
+    slug: slugSchema,
+    comuna: comunaSchema,
+    category: categorySchema,
+    phone: phoneInputSchema,
+    address: z
+      .string({ error: "business.address_empty" })
+      .trim()
+      .max(200, { error: "business.address_too_long" })
+      .default(""),
+    servesAtCustomer: z.boolean().default(false),
+  })
+  .superRefine((b, ctx) => {
+    if (!b.servesAtCustomer && b.address === "") {
+      ctx.addIssue({
+        code: "custom",
+        path: ["address"],
+        message: "business.address_empty",
+      });
+    }
+  });
 
 export const serviceInputSchema = z.object({
   name: z

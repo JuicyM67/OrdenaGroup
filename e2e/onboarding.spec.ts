@@ -18,7 +18,9 @@ test("login → onboarding → länk till bokningssidan", async ({
   await page.goto("/login");
   await page.getByLabel("Correo").fill(email);
   await page.getByRole("button", { name: "Enviarme el link" }).click();
-  await expect(page.getByText(`Te enviamos un link a ${email}.`)).toBeVisible();
+  await expect(
+    page.getByText(`Te enviamos un código y un link a ${email}.`),
+  ).toBeVisible();
 
   const link = await waitForConfirmLink(email);
   await page.goto(link);
@@ -27,12 +29,33 @@ test("login → onboarding → länk till bokningssidan", async ({
   // Sesión visible (nav.cerrarSesion) — F1, WP-15.
   await expect(page.getByText(`Sesión iniciada como ${email}`)).toBeVisible();
 
-  // Paso "negocio" (sin numerar, ver onboarding-wizard.tsx).
+  // WP-83: importar primero (solo si la importación está activa), después
+  // Tu negocio → Rubro → Ubicación y contacto, un paso a la vez.
+  const desdeCero = page.getByRole("button", { name: /No, parto desde cero/ });
+  if (await desdeCero.isVisible().catch(() => false)) {
+    await desdeCero.click();
+  }
   const slug = `wp15-e2e-${Date.now()}`;
+  await expect(
+    page.getByRole("heading", { name: "¿Cómo se llama tu negocio?" }),
+  ).toBeVisible();
   await page.getByLabel("Nombre del negocio").fill("Barbería E2E");
   await page.getByLabel("Tu link de reservas").fill(slug);
-  await page.getByLabel("Comuna").fill("Providencia");
-  await page.getByRole("button", { name: "Barbería" }).click();
+  await page.getByRole("button", { name: "Continuar" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "¿A qué te dedicas?" }),
+  ).toBeVisible();
+  await page.getByRole("radio", { name: "Barbería" }).click();
+  await page.getByRole("button", { name: "Continuar" }).click();
+
+  await expect(
+    page.getByRole("heading", { name: "¿Dónde te encuentran tus clientes?" }),
+  ).toBeVisible();
+  await page.getByLabel("Comuna", { exact: true }).fill("Providencia");
+  await page
+    .getByLabel("Dirección", { exact: true })
+    .fill("Av. Providencia 1234");
   await page.getByLabel("Teléfono del negocio").fill("+56912345678");
   await page.getByRole("button", { name: "Continuar" }).click();
 
@@ -62,6 +85,12 @@ test("login → onboarding → länk till bokningssidan", async ({
   // cubre en las pruebas de Ajustes → Perfil, mismos componentes).
   await expect(page.getByRole("heading", { name: "Tu página" })).toBeVisible();
   await page.getByRole("button", { name: "Saltar este paso" }).click();
+
+  // WP-83 (D-068): Elige tu plan — sin pago en la app; sigue con Gratis.
+  await expect(
+    page.getByRole("heading", { name: "Elige tu plan" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Seguir con Gratis" }).first().click();
 
   // Paso 5 de 5: Tu link.
   await expect(

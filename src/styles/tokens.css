@@ -1015,3 +1015,19 @@
 @utility grid-cols-agenda-demo {
   grid-template-columns: minmax(0, 1fr) 390px;
 }
+
+/* WP-82 (D-067): widgets på företagens egna sidor (/embed/*). Iframens bakgrund ska vara
+   genomskinlig så att widgeten smälter in; `data-embed-root` sätts av src/app/embed/layout.tsx.
+   Specificiteten slår `body { @apply bg-canvas }` i globals.css. */
+@layer base {
+  body:has([data-embed-root]) {
+    background-color: transparent;
+  }
+}
+
+/* WP-85 (D-070): sökfältets förslagslista (`<datalist>`) utan Chromes pil. */
+@utility no-list-indicator {
+  &::-webkit-calendar-picker-indicator {
+    display: none !important;
+  }
+}

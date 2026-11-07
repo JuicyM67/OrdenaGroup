@@ -45,7 +45,7 @@ export const cuenta = {
   enviado: {
     titulo: "Revisa tu correo",
     texto: (p: { email: string }): string =>
-      `Te mandamos un link a ${p.email}. Ábrelo en este mismo navegador.`,
+      `Te mandamos un código y un link a ${p.email}.`,
     otroCorreo: "Usar otro correo",
   },
   nav: {

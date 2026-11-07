@@ -18,6 +18,7 @@ export function SearchForm({
   trailing,
   className,
   extraHidden,
+  suggestions,
 }: {
   action: string;
   params: DiscoverParams;
@@ -26,6 +27,8 @@ export function SearchForm({
   trailing?: ReactNode;
   className?: string;
   extraHidden?: Record<string, string>;
+  /** WP-85: förslag i fältet (`<datalist>`, ingen klient-JS) — behandlingar och kategorier. */
+  suggestions?: readonly string[];
 }) {
   const hidden: Record<string, string> = {
     ...(params.ort ? { ort: params.ort } : {}),
@@ -63,8 +66,17 @@ export function SearchForm({
         defaultValue={params.q}
         maxLength={SEARCH_MAX}
         placeholder={placeholder}
-        className="h-full min-w-0 flex-1 bg-transparent text-15 outline-none placeholder:text-muted"
+        list={suggestions ? "descubre-sugerencias" : undefined}
+        autoComplete="off"
+        className="no-list-indicator h-full min-w-0 flex-1 bg-transparent text-15 outline-none placeholder:text-muted"
       />
+      {suggestions ? (
+        <datalist id="descubre-sugerencias">
+          {suggestions.map((s) => (
+            <option key={s} value={s} />
+          ))}
+        </datalist>
+      ) : null}
       {trailing}
       <button
         type="submit"

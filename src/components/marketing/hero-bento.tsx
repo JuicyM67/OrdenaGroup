@@ -27,6 +27,7 @@ import { brand } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
 
 import { DEMO } from "./demo-data";
+import { SIGNUP_PATH } from "@/config/routes";
 
 const BENTO = copy.sitio.inicio.heroBento;
 
@@ -396,7 +397,7 @@ export function HeroSection() {
         </p>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button asChild variant="primary" size="xl">
-            <Link href="/login">{copy.landing.hero.ctaPrimario}</Link>
+            <Link href={SIGNUP_PATH}>{copy.landing.hero.ctaPrimario}</Link>
           </Button>
           <Button asChild variant="secondary" size="xl">
             <Link href={`/${brand.demoSlug}`}>

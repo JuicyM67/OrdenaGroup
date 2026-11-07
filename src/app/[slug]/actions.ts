@@ -80,6 +80,8 @@ export async function createBooking(
     offerToken?: string | undefined;
     /** D-060: marknadsplatsens erbjudande (CL), bundet på servern (`page.tsx`). */
     marketplaceOfferId?: string | undefined;
+    /** WP-82 (D-067): inbäddad bokning (`/embed`) läser eller skriver aldrig en kundsession. */
+    noAccount?: boolean | undefined;
   } = {},
 ): Promise<CreateBookingActionResult> {
   const parsed = bookingFormSchema.safeParse(input);
@@ -152,7 +154,7 @@ export async function createBooking(
   // WP-67 (D-054): inloggad med kundkonto → bokningen blir kontots
   // (`account_user_id`) och kundraden kopplas. Fel här påverkar aldrig bokningen.
   try {
-    const account = await optionalAccount();
+    const account = opts.noAccount ? null : await optionalAccount();
     if (account) {
       await claimBookingForAccount(
         account.userId,

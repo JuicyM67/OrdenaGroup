@@ -13,7 +13,7 @@ setup("logga in en ägare och spara sessionen", async ({ page }) => {
   await page.goto("/login");
   await page.getByLabel("Correo").fill(EMAIL);
   await page.getByRole("button", { name: "Enviarme el link" }).click();
-  await page.getByText(`Te enviamos un link a ${EMAIL}.`).waitFor();
+  await page.getByText(`Te enviamos un código y un link a ${EMAIL}.`).waitFor();
 
   const link = await waitForConfirmLink(EMAIL);
   await page.goto(link);

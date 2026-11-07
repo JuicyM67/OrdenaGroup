@@ -474,6 +474,7 @@ async function checkPurgeEligible(
   q: Queryable,
   businessId: string,
   lockForUpdate: boolean,
+  skipGracePeriod = false,
 ): Promise<EligibilityCheck> {
   const r = await q.query<{
     deletion_requested_at: string | null;
@@ -489,6 +490,9 @@ async function checkPurgeEligible(
   );
   const business = r.rows[0];
   if (!business) return { ok: false, code: "not_found" };
+  // WP-84 (D-069): plattformsadmin raderar direkt ("Borrar ahora", testkonton
+  // m.m.) — ingen frist. Lagringsjobbet skickar aldrig flaggan.
+  if (skipGracePeriod) return { ok: true };
   if (!business.deletion_requested_at)
     return { ok: false, code: "not_requested" };
   if (!business.overdue) return { ok: false, code: "too_early" };
@@ -528,6 +532,9 @@ async function purgeBusinessMedia(businessId: string): Promise<void> {
  * Oåterkallelig. Ingen `userId` — anropas bara av lagringsjobbet
  * (CRON_SECRET, WP-26 steg 4) när `deletion_requested_at` är minst 30 dagar
  * gammalt (kontrolleras oberoende av anroparen, försvar i djupet).
+ * Undantag (WP-84, D-069): `adminDeleteNow` i `src/server/admin/businesses.ts`
+ * skickar `skipGracePeriod` efter `requireAdminForAction()` (admin + aal2)
+ * och bekräftelse med slug.
  *
  * Ordning: (1) kontrollera fristen, (2) tömma Storage-mappen (INNAN
  * DB-raderingen, punkt B2 — en avbruten körning kan köras om säkert: steg 2
@@ -545,16 +552,20 @@ async function purgeBusinessMedia(businessId: string): Promise<void> {
  * säkerhetsgranskning punkt 6) och försvinner bara via kaskad när deras
  * bokning raderas.
  */
-export async function purgeBusiness(businessId: string): Promise<PurgeResult> {
+export async function purgeBusiness(
+  businessId: string,
+  opts: { skipGracePeriod?: boolean } = {},
+): Promise<PurgeResult> {
+  const skip = opts.skipGracePeriod === true;
   const eligible = await withServiceTx((q) =>
-    checkPurgeEligible(q, businessId, false),
+    checkPurgeEligible(q, businessId, false, skip),
   );
   if (!eligible.ok) return eligible;
 
   await purgeBusinessMedia(businessId);
 
   return withServiceTx(async (q) => {
-    const recheck = await checkPurgeEligible(q, businessId, true);
+    const recheck = await checkPurgeEligible(q, businessId, true, skip);
     if (!recheck.ok) return recheck;
 
     const ownersRes = await q.query<{ user_id: string }>(

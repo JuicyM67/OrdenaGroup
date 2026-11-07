@@ -26,6 +26,9 @@ export interface BookingService {
   readonly name: string;
   readonly durationMin: number;
   readonly priceClp: Clp;
+  /** WP-84 (D-069): priset är ett lägsta pris ("desde $15.000"). Frivilligt
+   * (saknas = fast pris). */
+  readonly priceFrom?: boolean;
   readonly tint: ServiceTint;
   /** `null` = utan kategori (WP-40, D-031). Frivilligt fält (befintliga
    * fixturer/tester saknar det) — behandla en saknad nyckel som `null`. */
@@ -53,6 +56,9 @@ export interface BookingStaffMember {
   /** WP-44: profilbild, redan filtrerad till vår bucket/företagets mapp
    * (`page-data.ts`). Frivilligt, `null`/saknas = initialer. */
   readonly photoUrl?: string | null;
+  /** WP-81: snittbetyg från omdömen på bokningar hos personen (D-045: bara
+   * synliga). Frivilligt, saknas = inga omdömen. */
+  readonly rating?: { readonly average: number; readonly count: number };
 }
 
 /** `"any"` = "Cualquiera" (R8 av WP-02), annars `BookingStaffMember["id"]`. */
@@ -127,6 +133,9 @@ export interface BookingProfile {
   readonly tiktokUrl: string | null;
   readonly facebookUrl: string | null;
   readonly address: string | null;
+  /** WP-81: geokodad position (D-055) — kartan under "Cómo llegar". Frivillig
+   * (saknas/`null` = ingen karta, bara adress och vägbeskrivning). */
+  readonly geo?: { readonly lat: number; readonly lng: number } | null;
   /** E.164. */
   readonly phone: string | null;
   /** Galleriets publika URL:er i ägarens ordning (max 12). */

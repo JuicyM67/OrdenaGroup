@@ -22,6 +22,7 @@ const RUBRO_TO_INDUSTRY: Readonly<
   cejas_pestanas: "pestanas_cejas",
   masajes: "masajes",
   kinesiologia: "kinesiologia",
+  tatuajes: "tatuajes",
 };
 
 export function industryForBusinessCategory(

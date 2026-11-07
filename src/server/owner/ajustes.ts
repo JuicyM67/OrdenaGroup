@@ -14,6 +14,7 @@ import type { IsoWeekday } from "@/lib/format/dates";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
+import { areaSlug } from "@/server/geocoding/area";
 import { mediaPathFromUrl } from "@/server/bookings/media";
 // WP-56: samma mappning `string → "none"|"late"|"all"` som motorn
 // (`src/server/bookings/row.ts`, scheduling-engineer) använder för
@@ -79,6 +80,10 @@ export type AjustesBusiness = {
   reviewRequestsEnabled: boolean;
   /** WP-23: `businesses.waitlist_hold_minutes` (5–240). */
   waitlistHoldMinutes: number;
+  /** WP-85 (D-070): `businesses.serves_at_customer`. */
+  servesAtCustomer: boolean;
+  /** WP-85: orterna i `business_service_areas` (namn, i ordning). */
+  serviceAreas: string[];
 };
 
 export type AjustesService = {
@@ -86,6 +91,8 @@ export type AjustesService = {
   name: string;
   durationMin: number;
   priceClp: number;
+  /** WP-84 (D-069): precio "desde" (lägsta pris). */
+  priceFrom: boolean;
   bufferAfterMin: number;
   active: boolean;
   /** WP-41: "" = ingen beskrivning. */
@@ -234,6 +241,7 @@ type BusinessRow = {
   waitlist_mode: string;
   waitlist_hold_minutes: number;
   review_requests_enabled: boolean;
+  serves_at_customer: boolean;
 };
 
 /** Samma försvarsmönster som `toCancelApproval` (`src/server/bookings/row.ts`)
@@ -251,6 +259,7 @@ type ServiceRow = {
   buffer_after_min: number;
   active: boolean;
   description: string | null;
+  price_from: boolean;
 };
 
 type StaffRow = {
@@ -277,13 +286,18 @@ async function loadBusinessRow(
             cancel_approval, member_discount_pct, member_benefit_text,
             winback_days, winback_message, winback_offer_pct, winback_offer_days,
             waitlist_mode::text as waitlist_mode, waitlist_hold_minutes,
-            review_requests_enabled
+            review_requests_enabled, serves_at_customer
        from public.businesses
       where id = $1`,
     [businessId],
   );
   const b = businessRes.rows[0];
   if (!b) throw new Error("loadAjustesData: företaget hittades inte");
+  const areasRes = await q.query<{ area_name: string }>(
+    `select area_name from public.business_service_areas
+      where business_id = $1 order by sort, area_name`,
+    [businessId],
+  );
   return {
     name: b.name,
     slug: b.slug,
@@ -305,6 +319,8 @@ async function loadBusinessRow(
     winbackMessage: b.winback_message,
     winbackOfferPct: b.winback_offer_pct,
     winbackOfferDays: b.winback_offer_days,
+    servesAtCustomer: b.serves_at_customer,
+    serviceAreas: areasRes.rows.map((r) => r.area_name),
   };
 }
 
@@ -314,7 +330,7 @@ async function loadServiceRows(
 ): Promise<AjustesService[]> {
   const servicesRes = await q.query<ServiceRow>(
     `select id, name, duration_min, price_clp, buffer_after_min, active,
-            description
+            description, price_from
        from public.services
       where business_id = $1
       order by sort, name`,
@@ -325,6 +341,7 @@ async function loadServiceRows(
     name: s.name,
     durationMin: s.duration_min,
     priceClp: s.price_clp,
+    priceFrom: s.price_from,
     bufferAfterMin: s.buffer_after_min,
     active: s.active,
     description: s.description ?? "",
@@ -494,10 +511,47 @@ export async function updateBusinessSettings(
           input.cancelApproval,
         ],
       );
-      return assertUpdated(r.rowCount) ?? { ok: true };
+      const notUpdated = assertUpdated(r.rowCount);
+      if (notUpdated) return notUpdated;
+      // WP-85 (D-070): "kommer till kunden" och orterna, bara när de skickas.
+      if (input.servesAtCustomer !== undefined) {
+        await q.query(
+          `update public.businesses set serves_at_customer = $2 where id = $1`,
+          [businessId, input.servesAtCustomer],
+        );
+      }
+      if (input.serviceAreas !== undefined) {
+        await replaceServiceAreas(q, businessId, input.serviceAreas);
+      }
+      return { ok: true };
     });
   } catch (e) {
     return { ok: false, code: mapDbError(e) };
+  }
+}
+
+/** Ersätter företagets täckta orter (ordningen = listans). Dubbletter (samma
+ * `area_slug`) och namn som inte ger någon slug hoppas över. */
+async function replaceServiceAreas(
+  q: Queryable,
+  businessId: string,
+  names: readonly string[],
+): Promise<void> {
+  await q.query(
+    `delete from public.business_service_areas where business_id = $1`,
+    [businessId],
+  );
+  const seen = new Set<string>();
+  let sort = 0;
+  for (const name of names) {
+    const slug = areaSlug(name);
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    await q.query(
+      `insert into public.business_service_areas (business_id, area_slug, area_name, sort)
+       values ($1, $2, $3, $4)`,
+      [businessId, slug, name.trim().slice(0, 80), sort++],
+    );
   }
 }
 
@@ -650,8 +704,8 @@ export async function insertServiceIn(
 ): Promise<string | undefined> {
   const sort = await nextSort(q, "services", businessId);
   const r = await q.query<{ id: string }>(
-    `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort, description, active)
-     values ($1, $2, $3, $4, $5, $6, $7, $8) returning id`,
+    `insert into public.services (business_id, name, duration_min, price_clp, buffer_after_min, sort, description, active, price_from)
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning id`,
     [
       businessId,
       input.name,
@@ -661,6 +715,7 @@ export async function insertServiceIn(
       sort,
       input.description ?? null,
       active,
+      input.priceFrom === true,
     ],
   );
   return r.rows[0]?.id;
@@ -716,7 +771,8 @@ export async function updateService(
         // WP-41: `description` utelämnad (äldre formulär) = oförändrad.
         `update public.services
             set name = $1, duration_min = $2, price_clp = $3, buffer_after_min = $4,
-                description = case when $7::boolean then $8 else description end
+                description = case when $7::boolean then $8 else description end,
+                price_from = coalesce($9, price_from)
           where id = $5 and business_id = $6`,
         [
           input.name,
@@ -727,6 +783,7 @@ export async function updateService(
           businessId,
           input.description !== undefined,
           input.description ?? null,
+          input.priceFrom ?? null,
         ],
       );
       return assertUpdated(r.rowCount) ?? { ok: true };
@@ -774,6 +831,22 @@ export async function setServiceActive(
 // Personal (ingen radering, se WP-15b-planen)
 // ---------------------------------------------------------------------------
 
+/** Bara tjänster i samma företag kopplas (sammansatt FK, D-014). */
+async function insertStaffServices(
+  q: Queryable,
+  businessId: string,
+  staffId: string,
+  serviceIds: readonly string[],
+): Promise<void> {
+  for (const serviceId of new Set(serviceIds)) {
+    await q.query(
+      `insert into public.staff_services (business_id, staff_id, service_id)
+       select $1, $2, id from public.services where id = $3 and business_id = $1`,
+      [businessId, staffId, serviceId],
+    );
+  }
+}
+
 async function replaceStaffServices(
   q: Queryable,
   businessId: string,
@@ -784,13 +857,7 @@ async function replaceStaffServices(
     `delete from public.staff_services where business_id = $1 and staff_id = $2`,
     [businessId, staffId],
   );
-  for (const serviceId of new Set(serviceIds)) {
-    await q.query(
-      `insert into public.staff_services (business_id, staff_id, service_id)
-       select $1, $2, id from public.services where id = $3 and business_id = $1`,
-      [businessId, staffId, serviceId],
-    );
-  }
+  await insertStaffServices(q, businessId, staffId, serviceIds);
 }
 
 /** Insert i anroparens transaktion (behörigheten kontrolleras av anroparen).
@@ -807,7 +874,9 @@ export async function insertStaffIn(
     [businessId, input.name, `staff-${((sort - 1) % 6) + 1}`, sort],
   );
   const id = r.rows[0]?.id;
-  if (id) await replaceStaffServices(q, businessId, id, input.serviceIds);
+  // Ny personal har inga kopplingar än: bara insert (ingen delete — service_role
+  // saknar medvetet delete på staff_services, 20260930110000; WP-91 admin-import).
+  if (id) await insertStaffServices(q, businessId, id, input.serviceIds);
   return id;
 }
 

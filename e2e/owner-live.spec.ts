@@ -113,7 +113,7 @@ test("ägarens riktiga bokningar i Inicio/Agenda/Hoy, Llegó sparas, en ny reser
   await page.getByLabel("Correo").fill(OWNER_EMAIL);
   await page.getByRole("button", { name: "Enviarme el link" }).click();
   await expect(
-    page.getByText(`Te enviamos un link a ${OWNER_EMAIL}.`),
+    page.getByText(`Te enviamos un código y un link a ${OWNER_EMAIL}.`),
   ).toBeVisible();
   const link = await waitForConfirmLink(OWNER_EMAIL);
   await page.goto(link);

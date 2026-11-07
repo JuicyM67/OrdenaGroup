@@ -25,14 +25,15 @@ import { strokeNav } from "@/components/ui/icons";
 import { brand } from "@/config/brand";
 import { marketplaceEnabled } from "@/config/marketplace";
 import {
+  cuentaHref,
   FUNCION_IDS,
   href,
   hrefFuncion,
   hrefMarketplace,
   hrefRubro,
-  cuentaHref,
   hrefRubros,
   RUBRO_IDS,
+  SIGNUP_PATH,
 } from "@/config/routes";
 import { descubre, paraClientes } from "@/i18n";
 import { copy } from "@/i18n/marketing";
@@ -195,7 +196,7 @@ export function SiteHeader({ className }: { className?: string }) {
             size="sm"
             className="hidden rounded-full bg-lilac text-ink hover:bg-lilac/85 sm:inline-flex"
           >
-            <Link href="/login">{copy.sitio.nav.ctaCrearAgenda}</Link>
+            <Link href={SIGNUP_PATH}>{copy.sitio.nav.ctaCrearAgenda}</Link>
           </Button>
 
           <Dialog.Root open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -398,7 +399,7 @@ export function SiteHeader({ className }: { className?: string }) {
                       size="2xl"
                       className="h-13 rounded-full bg-lilac text-ink hover:bg-lilac/85"
                     >
-                      <Link href="/login">{t.crearGratis}</Link>
+                      <Link href={SIGNUP_PATH}>{t.crearGratis}</Link>
                     </Button>
                   </Dialog.Close>
                   {marketplaceEnabled() ? (

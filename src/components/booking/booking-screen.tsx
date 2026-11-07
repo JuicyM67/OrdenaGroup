@@ -3,6 +3,7 @@
 // priser eller lediga tider räknas ut här (hård regel 2).
 "use client";
 
+import dynamic from "next/dynamic";
 import { queryString } from "@/config/url-params";
 import {
   type ReactNode,
@@ -18,6 +19,12 @@ import { comun, formulario, reserva } from "@/i18n";
 
 import { TourLoader } from "@/components/tour/tour-loader";
 
+// WP-82: stäng-knappen (och därmed meddelandeprotokollet med Zod) hör bara till dialogläget
+// och får inte väga i `/[slug]`s JS-budget (D-039): egen chunk som bara hämtas där.
+const EmbeddedTopBar = dynamic(() =>
+  import("@/components/widgets/embedded-top-bar").then((m) => m.EmbeddedTopBar),
+);
+
 import { BookingBar } from "./booking-bar";
 import { BusinessHeader } from "./business-header";
 import {
@@ -26,6 +33,7 @@ import {
   servicesForCategory,
 } from "./categories";
 import { CategoryTabs } from "./category-tabs";
+import { ChosenServiceCard } from "./chosen-service-card";
 import { Confirmation } from "./confirmation";
 import { CustomerForm } from "./customer-form";
 import { DayPicker } from "./day-picker";
@@ -40,6 +48,7 @@ import {
 import type { CustomerFormOutput, WaitlistFormOutput } from "./form-schema";
 import { ProfileFlowProvider, type MobileTab } from "./profile-flow-context";
 import { ServiceCard } from "./service-card";
+import { staffOfferingService } from "./staff-for-service";
 import { StaffPicker } from "./staff-picker";
 import { barPrice, findDay, summaryText } from "./summary";
 import { TimeSlotGrid } from "./time-slot-grid";
@@ -113,6 +122,11 @@ export interface BookingScreenProps {
   tour?: boolean;
   /** WP-67: inloggad med kundkonto — namn/e-post förifyllda (bara värden). */
   initialContact?: CustomerContact;
+  /** WP-82 (D-067): bokningen inbäddad som widget på företagets egen sida (iframe mot
+   * `/embed/<slug>/reserva`). `inline` = direkt på sidan, `dialog` = i dialogen från knappen
+   * (egen stäng-knapp). Läget har ingen fast mobilbar (inline-rad i stället), öppnar
+   * `/r/…` i en ny flik och rör inte webbläsarhistoriken. Utan värdet är beteendet oförändrat. */
+  embedded?: "inline" | "dialog";
 }
 
 export function BookingScreen({
@@ -129,6 +143,7 @@ export function BookingScreen({
   initialMobileTab,
   tour,
   initialContact = NO_CONTACT,
+  embedded,
 }: BookingScreenProps) {
   const [state, dispatch] = useReducer(
     bookingFlowReducer,
@@ -191,15 +206,50 @@ export function BookingScreen({
     if (id === "equipo") setMobileTab("personal");
     else if (id !== null) setMobileTab("servicios");
   }, []);
+  // WP-81 (D-066): tjänsten valdes utanför pickern (profilens "Elegir hora",
+  // `?flash=`/`?oferta=`-länk) och frågas därför inte om igen — pickern visar ett litet
+  // sammanfattningskort med "Cambiar servicio" i stället för hela tjänstelistan.
+  // Design lab saknar både `profileContent` och `initialSelection` → alltid
+  // `false` där, så referensens tre sektioner är oförändrade.
+  const [serviceLocked, setServiceLocked] = useState<boolean>(
+    !!profileContent && !!initialSelection?.serviceId,
+  );
+  // WP-81: vald medarbetare på profilen filtrerar tjänsterna och förväljs.
+  const [staffFilter, setStaffFilter] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   function bookService(serviceId: string) {
-    selectService(serviceId);
+    const preferred =
+      staffFilter &&
+      staffOfferingService(data, serviceId).some((m) => m.id === staffFilter.id)
+        ? staffFilter.id
+        : null;
+    if (preferred) {
+      const keepDay = !!findDay(
+        data,
+        { serviceId, staffId: preferred },
+        selection.date,
+      );
+      dispatch({ type: "select_service", serviceId, keepDay });
+      dispatch({ type: "select_staff", staffId: preferred, keepDay });
+      if (!keepDay) openFirstDay(serviceId, preferred);
+    } else {
+      selectService(serviceId);
+    }
+    setServiceLocked(true);
     setViewMode("picker");
+  }
+  function changeService() {
+    setServiceLocked(false);
+    setViewMode("profile");
   }
 
   // Historik (planens steg 5): `datos` läggs som `?paso=datos` (pushState) så att
   // bakåtknappen på Android går tillbaka till valen med allt kvar. Bekräftelsen
   // ersätter posten (replaceState), så att bakåt inte skickar formuläret igen.
   useEffect(() => {
+    if (embedded) return;
     if (state.step === "datos") {
       const datosQuery = queryString("paso", "datos");
       if (window.location.search !== datosQuery) {
@@ -208,9 +258,10 @@ export function BookingScreen({
     } else if (state.step === "confirmacion") {
       window.history.replaceState({}, "", window.location.pathname);
     }
-  }, [state.step]);
+  }, [state.step, embedded]);
 
   useEffect(() => {
+    if (embedded) return;
     const onPopState = () => {
       // Bakåt från bekräftelsen (qa-granskning, item 7): nollställ i stället
       // för att öppna valen med den redan bokade tiden.
@@ -225,11 +276,12 @@ export function BookingScreen({
     return () => {
       window.removeEventListener("popstate", onPopState);
     };
-  }, [state.step, initialContact]);
+  }, [state.step, initialContact, embedded]);
 
   if (data.business.status === "frozen") {
     return (
       <div className="flex flex-col gap-6 p-5 pb-10">
+        {embedded === "dialog" ? <EmbeddedTopBar /> : null}
         <BusinessHeader business={data.business} />
         <p className="text-14 text-muted">
           {reserva.vacios.negocioNoDisponible}
@@ -241,6 +293,7 @@ export function BookingScreen({
   if (data.services.length === 0) {
     return (
       <div className="flex flex-col gap-6 p-5 pb-10">
+        {embedded === "dialog" ? <EmbeddedTopBar /> : null}
         <BusinessHeader business={data.business} />
         <p className="text-14 text-muted">{reserva.vacios.sinServicios}</p>
       </div>
@@ -265,13 +318,21 @@ export function BookingScreen({
   );
 
   function selectService(serviceId: string) {
-    const keepDay = !!findDay(
-      data,
-      { serviceId, staffId: selection.staffId },
-      selection.date,
-    );
+    // Vald medarbetare som inte utför den nya tjänsten faller tillbaka på
+    // "Vem som helst" (annars saknas dagar för kombinationen).
+    const staffId =
+      selection.staffId !== "any" &&
+      !staffOfferingService(data, serviceId).some(
+        (member) => member.id === selection.staffId,
+      )
+        ? "any"
+        : selection.staffId;
+    const keepDay = !!findDay(data, { serviceId, staffId }, selection.date);
     dispatch({ type: "select_service", serviceId, keepDay });
-    if (!keepDay) openFirstDay(serviceId, selection.staffId);
+    if (staffId !== selection.staffId) {
+      dispatch({ type: "select_staff", staffId, keepDay });
+    }
+    if (!keepDay) openFirstDay(serviceId, staffId);
   }
 
   function selectStaff(staffId: string) {
@@ -366,15 +427,32 @@ export function BookingScreen({
   // bokningsrad per brytpunkt — den ärver inte den gamla mobilpaddingen
   // (`p-5 pb-35`) som resten av flödet fortfarande använder.
   const isProfileBrowse = state.step === "seleccion" && viewMode === "profile";
+  const chosenService =
+    serviceLocked && selection.serviceId
+      ? (data.services.find((s) => s.id === selection.serviceId) ?? null)
+      : null;
+  const staffHeading = chosenService
+    ? reserva.pasos.profesionalTrasServicio
+    : reserva.pasos.profesional;
+  const dayHeading = chosenService
+    ? reserva.pasos.diaYHoraTrasServicio
+    : reserva.pasos.diaYHora;
+  const staffForPicker =
+    chosenService && selection.serviceId
+      ? staffOfferingService(data, selection.serviceId)
+      : data.staff;
 
   return (
     <div
       className={
         isProfileBrowse
           ? "relative flex min-h-full flex-col"
-          : "relative flex min-h-full flex-col gap-6 p-5 pb-35"
+          : embedded
+            ? "relative flex min-h-full flex-col gap-6 p-5 pb-5"
+            : "relative flex min-h-full flex-col gap-6 p-5 pb-35"
       }
     >
+      {embedded === "dialog" ? <EmbeddedTopBar /> : null}
       {offerNotice && state.step !== "confirmacion" ? (
         <div className={isProfileBrowse ? "px-5 pt-4" : undefined}>
           {offerNotice}
@@ -389,6 +467,11 @@ export function BookingScreen({
               mobileTab,
               onSelectMobileTab: setMobileTab,
               bookService,
+              staffFilter,
+              onSelectStaff: (member) => {
+                setStaffFilter(member);
+                if (member) setMobileTab("servicios");
+              },
             }}
           >
             {profileContent}
@@ -410,42 +493,49 @@ export function BookingScreen({
             ) : null}
             <BusinessHeader business={data.business} />
 
-            <section
-              aria-labelledby="paso-servicio"
-              className="flex flex-col gap-2.5"
-            >
-              <h2
-                id="paso-servicio"
-                className="text-16 leading-event font-bold text-ink"
+            {chosenService ? (
+              <ChosenServiceCard
+                service={chosenService}
+                onChange={changeService}
+              />
+            ) : (
+              <section
+                aria-labelledby="paso-servicio"
+                className="flex flex-col gap-2.5"
               >
-                {reserva.pasos.servicio}
-              </h2>
-              {tabs.length > 0 ? (
-                <CategoryTabs
-                  tabs={tabs}
-                  selectedId={categoryId}
-                  onSelect={setCategoryId}
-                />
-              ) : null}
-              <div className="flex flex-col gap-2.5">
-                {visibleServices.length === 0 ? (
-                  <p className="text-14 text-muted">
-                    {formulario.categorias.vacia}
-                  </p>
-                ) : (
-                  visibleServices.map((service) => (
-                    <ServiceCard
-                      key={service.id}
-                      service={service}
-                      selected={selection.serviceId === service.id}
-                      onSelect={() => {
-                        selectService(service.id);
-                      }}
-                    />
-                  ))
-                )}
-              </div>
-            </section>
+                <h2
+                  id="paso-servicio"
+                  className="text-16 leading-event font-bold text-ink"
+                >
+                  {reserva.pasos.servicio}
+                </h2>
+                {tabs.length > 0 ? (
+                  <CategoryTabs
+                    tabs={tabs}
+                    selectedId={categoryId}
+                    onSelect={setCategoryId}
+                  />
+                ) : null}
+                <div className="flex flex-col gap-2.5">
+                  {visibleServices.length === 0 ? (
+                    <p className="text-14 text-muted">
+                      {formulario.categorias.vacia}
+                    </p>
+                  ) : (
+                    visibleServices.map((service) => (
+                      <ServiceCard
+                        key={service.id}
+                        service={service}
+                        selected={selection.serviceId === service.id}
+                        onSelect={() => {
+                          selectService(service.id);
+                        }}
+                      />
+                    ))
+                  )}
+                </div>
+              </section>
+            )}
 
             <section
               aria-labelledby="paso-profesional"
@@ -455,10 +545,10 @@ export function BookingScreen({
                 id="paso-profesional"
                 className="text-16 leading-event font-bold text-ink"
               >
-                {reserva.pasos.profesional}
+                {staffHeading}
               </h2>
               <StaffPicker
-                staff={data.staff}
+                staff={staffForPicker}
                 selectedId={selection.staffId}
                 onSelect={selectStaff}
               />
@@ -472,6 +562,7 @@ export function BookingScreen({
                 <DayPicker
                   headingId="paso-dia-hora"
                   days={daysForSelection}
+                  heading={dayHeading}
                   selectedDate={selection.date}
                   onSelect={(date) => {
                     dispatch({ type: "select_day", date });
@@ -483,7 +574,7 @@ export function BookingScreen({
                     id="paso-dia-hora"
                     className="text-16 leading-event font-bold text-ink"
                   >
-                    {reserva.pasos.diaYHora}
+                    {dayHeading}
                   </h2>
                   <p className="text-14 text-muted">
                     {!selection.serviceId
@@ -568,6 +659,7 @@ export function BookingScreen({
           memberDiscountMinor={memberDiscount}
           discountReason={discountReason}
           manageToken={manageToken}
+          newTabLinks={!!embedded}
         />
       )}
 
@@ -584,6 +676,7 @@ export function BookingScreen({
           ctaLabel={ctaLabel}
           ctaDisabled={ctaDisabled}
           onCta={ctaAction}
+          inline={!!embedded}
         />
       ) : null}
 
@@ -594,6 +687,7 @@ export function BookingScreen({
           ctaLabel={ctaLabel}
           ctaDisabled={ctaDisabled}
           formId={formId}
+          inline={!!embedded}
         />
       ) : null}
       {tour && isProfileBrowse ? (

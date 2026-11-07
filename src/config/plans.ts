@@ -114,3 +114,24 @@ export function parseCustomLimits(raw: unknown): CustomLimits {
   }
   return out;
 }
+
+/** WP-84 (D-069, port av SE WP-94): den minsta plan som rymmer så många
+ * tjänster och personal (t.ex. efter en import). Över Locals gräns → `local`
+ * (A medida via oss). */
+export function suggestPlanFor(counts: {
+  services: number;
+  staff: number;
+}): Exclude<BusinessPlan, "custom"> {
+  const order = ["free", "emprende", "equipo", "local"] as const;
+  for (const p of order) {
+    const maxServices = LIMITS[p].services;
+    const maxStaff = LIMITS[p].staff;
+    if (
+      (maxServices === null || counts.services <= maxServices) &&
+      (maxStaff === null || counts.staff <= maxStaff)
+    ) {
+      return p;
+    }
+  }
+  return "local";
+}

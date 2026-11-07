@@ -169,6 +169,11 @@ const TERMINOS_LISTA_ESPERA =
   "Acepto recibir el aviso si se libera una hora.";
 
 export const reserva = {
+  // WP-84 (D-069, port av SE WP-93): precio "desde". Acá (no en `perfil`)
+  // para que el código cliente de la reserva no arrastre los textos del panel
+  // (presupuesto JS, D-039). TODO_COPY: revisión de copywriter-es-cl.
+  precioDesde: (p: { precio: string }): string => `desde ${p.precio}`,
+  pagoEnLocal: "El precio final puede ser mayor. Lo confirmas en el local.",
   meta: {
     titulo: (p: { negocio: string }): string => `Reservar en ${p.negocio}`,
     vendidoPor: (p: { negocio: string }): string =>
@@ -192,7 +197,28 @@ export const reserva = {
     profesional: "2 · ¿Con quién?",
     cualquiera: "Cualquiera",
     diaYHora: "3 · Día y hora",
+    /** WP-81 (D-066): el servicio ya se eligió en la página del negocio (o
+     * por un link `?flash=`/`?oferta=`), así que los pasos se renumeran. */
+    profesionalTrasServicio: "1 · ¿Con quién?",
+    diaYHoraTrasServicio: "2 · Día y hora",
   },
+  /** WP-81 (D-066): tarjeta del servicio ya elegido, con "Cambiar servicio". */
+  servicioElegido: {
+    cambiar: "Cambiar servicio",
+    cambiarAria: (p: { nombre: string }): string =>
+      `Cambiar servicio, ahora elegido: ${p.nombre}`,
+    etiqueta: "Servicio elegido",
+  },
+  // WP-81 (D-066): filtro por profesional y nota por profesional en la página
+  // del negocio. Acá y no en `perfil` para que el código cliente no arrastre
+  // todos los textos del panel (presupuesto de JS, D-039).
+  filtroPersonal: (p: { nombre: string }): string =>
+    `Mostrando servicios de ${p.nombre}`,
+  filtroPersonalQuitar: "Ver todos",
+  verPersonal: (p: { nombre: string }): string =>
+    `Ver servicios y horas disponibles con ${p.nombre}`,
+  personalNota: (p: { nota: string; n: number }): string =>
+    `${p.nota} (${p.n})`,
   /** Texto oculto (sr-only) para los días del selector de fecha (paso 3):
    * hoy el punto de color (`d.dotStyle` en Reserva.dc.html) es la única
    * marca de "lleno" o "con hora flash", sin texto accesible. Claves
@@ -611,6 +637,8 @@ export { cuenta } from "./es-CL.cuenta";
 export { ofertas } from "./es-CL.ofertas";
 // WP-80: panel de plataforma (administradores, facturación manual).
 export { adminPanel } from "./es-CL.admin";
+// WP-82 (D-067): widgets para el sitio web del negocio.
+export { widgets } from "./es-CL.widgets";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).
 export {
@@ -633,6 +661,7 @@ export {
   profesionales,
   horarios,
   ajustes,
+  descubreAjustes,
   clientes,
   campanas,
   CAJA_METODOS_MANUALES,

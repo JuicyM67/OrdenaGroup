@@ -11,6 +11,7 @@ export function Stars({
   label,
   className,
   size = "sm",
+  tone = "light",
 }: {
   /** 1–5, får vara ett snitt (4.6 → fyra fyllda). */
   rating: number;
@@ -18,6 +19,8 @@ export function Stars({
   label: string;
   className?: string;
   size?: "sm" | "md" | "lg";
+  /** `dark` = på mörk yta (widgets, WP-82): lime stjärnor. */
+  tone?: "light" | "dark";
 }) {
   const filled = Math.round(rating);
   const iconSize =
@@ -35,7 +38,13 @@ export function Stars({
           strokeWidth={1.8}
           className={cn(
             iconSize,
-            n <= filled ? "fill-ink text-ink" : "fill-none text-subtle",
+            n <= filled
+              ? tone === "dark"
+                ? "fill-lime text-lime"
+                : "fill-ink text-ink"
+              : tone === "dark"
+                ? "fill-none text-on-dark-faint"
+                : "fill-none text-subtle",
           )}
         />
       ))}

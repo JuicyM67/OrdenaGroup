@@ -22,7 +22,9 @@ import type {
   ImportPreviewStaff,
   ImportProfileField,
 } from "@/lib/validation/import";
-import { importar, negocio } from "@/i18n";
+import { LoadingChecklist } from "@/components/onboarding/loading-checklist";
+import { suggestPlanFor } from "@/config/plans";
+import { importar, negocio, planes } from "@/i18n";
 
 /** Det ägaren valde, efter redigering. */
 export type ImportChoice = {
@@ -46,6 +48,13 @@ export type ImportPanelProps = {
   onConfirm: (
     choice: ImportChoice,
   ) => Promise<{ ok: boolean; message: string }>;
+  /** WP-91: admin läser via `/api/admin/import/extract` åt ett valt företag. */
+  extract?: { url: string; businessId: string };
+  /** WP-84 (D-069, port av SE WP-94): företagets plan och befintliga antal
+   * (Ajustes/admin), för "plan sugerido". Saknas = Gratis och inget
+   * befintligt (onboarding). */
+  currentPlan?: string;
+  existingCounts?: { services: number; staff: number };
 };
 
 type Phase = "input" | "loading" | "preview" | "done";
@@ -102,6 +111,9 @@ export function ImportPanel({
   mode,
   platformNames,
   onConfirm,
+  extract,
+  currentPlan,
+  existingCounts,
 }: ImportPanelProps) {
   const [phase, setPhase] = useState<Phase>("input");
   const [source, setSource] = useState<"url" | "text">("url");
@@ -109,7 +121,6 @@ export function ImportPanel({
   const [text, setText] = useState("");
   const [error, setError] = useState<string | undefined>();
   const [suggestText, setSuggestText] = useState(false);
-  const [step, setStep] = useState(0);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [message, setMessage] = useState<string | undefined>();
   const [saving, setSaving] = useState(false);
@@ -136,31 +147,23 @@ export function ImportPanel({
   const [servicesSel, setServicesSel] = useState<boolean[]>([]);
   const [staffSel, setStaffSel] = useState<boolean[]>([]);
 
-  useEffect(() => {
-    if (phase !== "loading") return;
-    const t = setInterval(
-      () => setStep((s) => Math.min(s + 1, PROGRESS.length - 1)),
-      9000,
-    );
-    return () => clearInterval(t);
-  }, [phase]);
-
+  // WP-92: stegen i laddningen drivs av `LoadingChecklist` (9 s per steg).
   useEffect(() => () => abortRef.current?.abort(), []);
 
   async function run() {
     setError(undefined);
     setSuggestText(false);
-    setStep(0);
     setPhase("loading");
     const ctrl = new AbortController();
     abortRef.current = ctrl;
     try {
-      const res = await fetch("/api/import/extract", {
+      const res = await fetch(extract?.url ?? "/api/import/extract", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(
-          source === "url" ? { source, url } : { source, text },
-        ),
+        body: JSON.stringify({
+          ...(source === "url" ? { source, url } : { source, text }),
+          ...(extract ? { businessId: extract.businessId } : {}),
+        }),
         signal: ctrl.signal,
       });
       const body = (await res.json()) as ImportExtractResponse;
@@ -207,7 +210,30 @@ export function ImportPanel({
     );
   }
 
-  if (!preview || phase === "input" || phase === "loading") {
+  // WP-92: laddningen som en checklista (samma stil som onboardingens stegpanel).
+  if (phase === "loading") {
+    return (
+      <LoadingChecklist
+        title={importar.cargandoTitulo}
+        text={importar.aviso}
+        steps={PROGRESS}
+        stepMs={9000}
+        footer={
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
+            className="self-start"
+            onClick={cancel}
+          >
+            {importar.ctaCancelar}
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (!preview || phase === "input") {
     return (
       <Card className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5">
@@ -219,21 +245,7 @@ export function ImportPanel({
           </p>
         </div>
 
-        {phase === "loading" ? (
-          <div className="flex flex-col gap-3" role="status" aria-live="polite">
-            <p className="text-15 font-semibold text-ink">{PROGRESS[step]}</p>
-            <p className="text-13 text-muted">{importar.aviso}</p>
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              className="self-start"
-              onClick={cancel}
-            >
-              {importar.ctaCancelar}
-            </Button>
-          </div>
-        ) : (
+        {
           <>
             {source === "url" ? (
               <TextField
@@ -286,7 +298,7 @@ export function ImportPanel({
               </Button>
             </div>
           </>
-        )}
+        }
       </Card>
     );
   }
@@ -333,6 +345,28 @@ export function ImportPanel({
       : null,
   ];
   const infoOnly = infoCandidates.filter((x): x is Info => x !== null);
+
+  // WP-84 (port av SE WP-94): urvalet jämfört med planernas gränser.
+  const selectedServices =
+    (existingCounts?.services ?? 0) +
+    servicesSel.filter((v, i) => v && !services[i]?.exists).length;
+  const selectedStaff = Math.max(
+    1,
+    (existingCounts?.staff ?? 0) +
+      staffSel.filter((v, i) => v && !p.staff[i]?.exists).length,
+  );
+  const suggestedPlan = suggestPlanFor({
+    services: selectedServices,
+    staff: selectedStaff,
+  });
+  const planOrder = ["free", "emprende", "equipo", "local"] as const;
+  // `custom` (A medida) har avtalade gränser: inget förslag.
+  const suggested =
+    currentPlan !== "custom" &&
+    planOrder.indexOf(suggestedPlan) >
+      planOrder.indexOf((currentPlan ?? "free") as (typeof planOrder)[number])
+      ? suggestedPlan
+      : null;
 
   const count =
     bizFields.filter((f) => bizSel[f.key]).length +
@@ -406,6 +440,26 @@ export function ImportPanel({
           </p>
         ) : null}
       </div>
+
+      {/* WP-84 (port av SE WP-94): plan sugerido cuando la selección no cabe
+          en Gratis (o en el plan actual del negocio). */}
+      {suggested !== null ? (
+        <div
+          role="status"
+          className="flex flex-col gap-1 rounded-tile bg-lavender px-4 py-3 text-14 text-ink"
+        >
+          <p className="font-semibold">
+            {importar.planSugerida({
+              servicios: selectedServices,
+              personal: selectedStaff,
+              plan: planes.nombres[suggested],
+            })}
+          </p>
+          <p className="text-13 text-ink-soft">
+            {importar.planSugeridaAyuda({ gratis: planes.nombres.free })}
+          </p>
+        </div>
+      ) : null}
 
       {bizFields.length + profileFields.length + infoOnly.length > 0 ? (
         <section className="flex flex-col gap-3">

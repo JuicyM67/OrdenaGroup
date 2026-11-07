@@ -44,9 +44,10 @@ function metadataName(
     : null;
 }
 
-/** Anropas efter en lyckad verifiering/kodväxling med SAMMA klient (den har
- * sessionen i minnet). Kastar alltid (redirect). */
-export async function finishSignIn(supabase: SupabaseClient): Promise<never> {
+/** Målet efter en lyckad verifiering/kodväxling med SAMMA klient (den har
+ * sessionen i minnet). WP-83: delas av länken (`finishSignIn`) och koden
+ * (`verifyEmailCode`), som navigerar på klienten. */
+export async function signInTarget(supabase: SupabaseClient): Promise<string> {
   const { intent, marketing, returnTo } = await takeIntent();
   if (intent === "customer") {
     const {
@@ -63,10 +64,15 @@ export async function finishSignIn(supabase: SupabaseClient): Promise<never> {
         // att visas); ingen persondata loggas.
       }
       // WP-69: tillbaka till erbjudandet kunden ville köpa (whitelist).
-      redirect(returnTo ?? cuentaHref("cuenta"));
+      return returnTo ?? cuentaHref("cuenta");
     }
   }
-  redirect("/app");
+  return "/app";
+}
+
+/** Anropas efter en lyckad verifiering/kodväxling. Kastar alltid (redirect). */
+export async function finishSignIn(supabase: SupabaseClient): Promise<never> {
+  redirect(await signInTarget(supabase));
 }
 
 /** Fel vid verifieringen: tillbaka till rätt inloggningssida. */

@@ -115,6 +115,8 @@ export const importSelectionSchema = z.object({
         description: text(1000),
         durationMin: text(10),
         price: text(20),
+        // WP-84 (D-069): precio "desde" följer med (frivillig för äldre klienter).
+        priceFrom: z.boolean().optional(),
         category: text(200),
       }),
     )

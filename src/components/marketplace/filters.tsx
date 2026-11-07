@@ -10,7 +10,12 @@ import type { DiscoverParams, MarketplaceSort } from "./params";
 
 const t = descubre;
 
-const SORTS: readonly MarketplaceSort[] = ["near", "new", "price", "discount"];
+const OFFER_SORTS: readonly MarketplaceSort[] = [
+  "near",
+  "new",
+  "price",
+  "discount",
+];
 
 const legend = "mb-2.5 text-14 font-bold";
 
@@ -19,12 +24,18 @@ export function Filters({
   params,
   hasPosition,
   clearHref,
+  sorts = OFFER_SORTS,
+  extraHidden,
   className,
 }: {
   action: string;
   params: DiscoverParams;
   hasPosition: boolean;
   clearHref: string;
+  /** WP-85: företagsfliken sorterar på närmast/betyg/nyast. */
+  sorts?: readonly MarketplaceSort[];
+  /** GET-formulär tappar action-adressens frågesträng (t.ex. `?kategori=`). */
+  extraHidden?: Record<string, string>;
   className?: string;
 }) {
   return (
@@ -37,6 +48,9 @@ export function Filters({
       {params.ort ? (
         <input type="hidden" name="ort" value={params.ort} />
       ) : null}
+      {Object.entries(extraHidden ?? {}).map(([k, v]) => (
+        <input key={k} type="hidden" name={k} value={v} />
+      ))}
 
       <fieldset>
         <legend className={legend}>{t.filtros.distancia}</legend>
@@ -93,7 +107,7 @@ export function Filters({
           defaultValue={params.sortera ?? "near"}
           className="h-11 rounded-control bg-canvas px-3.5 text-14 font-medium focus-visible:outline-2 focus-visible:outline-ink"
         >
-          {SORTS.map((s) => (
+          {sorts.map((s) => (
             <option key={s} value={s}>
               {t.filtros.ordenes[s]}
             </option>

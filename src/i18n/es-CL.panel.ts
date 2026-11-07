@@ -1449,7 +1449,6 @@ export const acceso = {
     /** Estado del botón `cta` mientras se envía la solicitud. */
     enviando: "Enviando…",
     sinContrasena: "No necesitas contraseña.",
-    cuentaNueva: "Si es tu primera vez, creamos tu cuenta al tiro.",
     /** Botón de vuelta a la página de inicio (arriba a la izquierda). */
     volver: "Volver al inicio",
     /** Texto grande del panel con foto. */
@@ -1458,12 +1457,44 @@ export const acceso = {
     /** Título y bajada de la tarjeta (el h1 de la página). */
     cardTitulo: "Entra a tu agenda",
     cardTexto:
-      "Te enviamos un link a tu correo: no hay contraseña que recordar.",
+      "Te enviamos un código y un link a tu correo: no hay contraseña que recordar.",
+    /** WP-83 (D-068): link a la página de registro (`SIGNUP_PATH`). TODO_COPY */
+    nuevoPregunta: "¿Primera vez acá?",
+    nuevoLink: "Crea tu agenda gratis",
+  },
+  /** WP-83 (D-068): `/comenzar`, registro de un negocio nuevo. Mismo correo
+   * (código + link) que `/login`; la cuenta se crea al entrar. TODO_COPY */
+  registro: {
+    titulo: "Crea tu agenda",
+    /** La última palabra va destacada (igual que `login.bienvenida`). */
+    bienvenida: "Comienza gratis",
+    bienvenidaTexto:
+      "Tu página de reservas queda lista en minutos. Sin tarjeta de crédito.",
+    cardTitulo: "Crea tu agenda",
+    cardTexto: "Parte con tu correo y lo armamos juntos.",
+    pasos: {
+      correo: "Escribe tu correo",
+      codigo: "Ingresa el código que te enviamos (o abre el link)",
+      datos:
+        "Pega el link de tu sistema de reservas anterior, o completa tus datos",
+    },
+    cta: "Crear mi agenda",
+    cuentaPregunta: "¿Ya tienes cuenta?",
+    cuentaLink: "Entra",
+  },
+  /** WP-83 (D-068): el código del correo se escribe acá (alternativa al
+   * link). TODO_COPY */
+  codigo: {
+    label: "Código del correo",
+    placeholder: "123456",
+    cta: "Entrar",
+    verificando: "Revisando…",
+    oLink: "O toca el botón del correo.",
   },
   enviado: {
     titulo: "Revisa tu correo",
     enviadoA: (p: { email: string }): string =>
-      `Te enviamos un link a ${p.email}.`,
+      `Te enviamos un código y un link a ${p.email}.`,
     codigoLabel: "O escribe el código de 6 dígitos",
     reenviarEn: (p: { segundos: number }): string =>
       `Reenviar en ${p.segundos} s`,
@@ -1473,7 +1504,7 @@ export const acceso = {
     tituloBandeja: "Revisa tu bandeja de entrada",
     sinCorreo: "¿No te llegó el correo?",
     sinCorreoAyuda: "Mira también en spam. A veces tarda un minuto.",
-    reenviado: "Listo, te lo enviamos de nuevo.",
+    reenviado: "Listo, te enviamos otro correo.",
   },
   /** Nombres propuestos por copywriter (R2 del plan de WP-03b): WP-15
    * confirma la lista real de códigos de Supabase Auth y ajusta las claves
@@ -1491,6 +1522,9 @@ export const acceso = {
       "No pudimos verificar que eres una persona. Intenta de nuevo.",
     session_expired: "Tu sesión venció. Entra de nuevo.",
     network: "No pudimos conectar. Revisa tu conexión e intenta de nuevo.",
+    /** WP-83: límite propio de intentos con el código (10 minutos). TODO_COPY */
+    too_many_attempts:
+      "Hiciste muchos intentos. Espera unos minutos y pide un código nuevo.",
   },
   sesionCerrada: "Cerraste tu sesión.",
 } as const satisfies Trad;
@@ -1530,8 +1564,23 @@ export const negocio = {
     phoneAyuda:
       "Celular o fijo. Tus clientes lo ven en la confirmación y lo usan para escribirte si no pueden cambiar su hora solos.",
     phonePlaceholder: "+56 9 1234 5678",
-    addressLabel: "Dirección (opcional)",
+    // WP-85 (D-070): la dirección es obligatoria (Descubre, mapa), salvo para
+    // quien atiende a domicilio.
+    addressLabel: "Dirección",
     addressPlaceholder: "Calle y número",
+    addressAyuda:
+      "Donde te encuentran tus clientes. Aparece en tu página de reservas y en Descubre.",
+    sinLocal: "No tenemos local: atendemos a domicilio",
+    sinLocalAyuda:
+      "Así apareces en Descubre en las comunas donde atiendes, en vez de en una dirección.",
+    zonasLabel: "Comunas donde atiendes",
+    zonasAyuda: "Escribe una comuna y toca Agregar. Puedes agregar varias.",
+    zonasPlaceholder: "Ej: Ñuñoa",
+    zonasAgregar: "Agregar",
+    zonasQuitar: (p: { comuna: string }): string => `Quitar ${p.comuna}`,
+    zonasMax: (p: { max: number }): string =>
+      `Puedes agregar hasta ${p.max} comunas.`,
+    zonasVacio: "Agrega al menos una comuna.",
   },
   /** Claves = valores guardados en `businesses.category` (pregunta 8 del plan
    * de WP-03b). La lista de comunas es dato, no copy: vive en WP-15. */
@@ -1540,9 +1589,19 @@ export const negocio = {
     peluqueria: "Peluquería",
     estetica: "Estética",
     unas: "Uñas",
-    cejas_pestanas: "Cejas y pestañas",
+    cejas_pestanas: "Pestañas y cejas",
     masajes: "Masajes",
-    kinesiologia: "Kinesiología",
+    kinesiologia: "Kinesiología y salud",
+    // WP-85 (D-070): un rubro por categoría de Descubre (mismos nombres que
+    // `descubre.categorias.nombres`).
+    belleza: "Maquillaje y depilación",
+    spa: "Spa",
+    holistico: "Terapias holísticas",
+    entrenamiento: "Entrenamiento y yoga",
+    tatuajes: "Tatuajes y piercing",
+    mascotas: "Mascotas",
+    limpieza: "Limpieza y hogar",
+    automotriz: "Autos",
     otro: "Otro",
   },
   slug: {
@@ -1622,6 +1681,86 @@ export const onboarding = {
     titulo: "Completa tu configuración",
     pasosPendientes: (p: { n: number }): string =>
       `${p.n} ${p.n === 1 ? "paso pendiente" : "pasos pendientes"}`,
+    // WP-83 (D-068): la tarjeta de Inicio con el mismo estilo que el panel de
+    // pasos del onboarding. TODO_COPY
+    tituloCorto: "Comenzar",
+    hola: "¡Hola! Terminemos de armar tu agenda",
+    porcentaje: (p: { n: number }): string => `${p.n} %`,
+    abrir: "Ver los pasos",
+    cerrar: "Ocultar los pasos",
+  },
+  /** WP-83 (D-068): panel de pasos del onboarding, primer paso (importar) y
+   * pantallas de carga. TODO_COPY */
+  guia: {
+    titulo: "Comenzar",
+    progreso: (p: { n: number }): string => `${p.n} % listo`,
+    pasoDe: (p: { n: number; total: number }): string =>
+      `Paso ${p.n} de ${p.total}`,
+    verPasos: "Ver todos los pasos",
+    pasos: {
+      inicio: "Trae tus datos",
+      negocio: "Tu negocio",
+      rubro: "Rubro",
+      lugar: "Ubicación y contacto",
+      servicios: "Servicios",
+      equipo: "Equipo",
+      horario: "Horario",
+      pagina: "Tu página",
+    },
+  },
+  inicio: {
+    titulo: "¿Ya tienes una página de reservas?",
+    texto:
+      "Podemos traer tus servicios, precios y horario. Tú revisas todo antes de guardar.",
+    si: "Sí, traer mis datos",
+    no: "No, parto desde cero",
+    noTexto: "Toma unos cinco minutos.",
+    importado: "¡Listo! Revisa tus datos en el siguiente paso.",
+    volverOpciones: "Volver a las opciones",
+  },
+  negocioPaso: {
+    titulo: "¿Cómo se llama tu negocio?",
+    texto: "Tus clientes ven este nombre. El link lo puedes cambiar después.",
+    vistaPrevia: "Tu página de reservas",
+  },
+  rubroPaso: {
+    titulo: "¿A qué te dedicas?",
+    texto:
+      "Elige el rubro que más se parezca al tuyo. Así te encuentran en Descubre.",
+  },
+  lugarPaso: {
+    titulo: "¿Dónde te encuentran tus clientes?",
+    texto: "La comuna aparece en tu página de reservas y en Descubre.",
+  },
+  /** Sin pago en la app (D-061/D-068): un plan pagado queda como solicitud y
+   * el equipo lo activa. */
+  planPaso: {
+    titulo: "Elige tu plan",
+    texto:
+      "Parte gratis, o pide un plan pagado con 30 días de prueba, sin tarjeta. Te contactamos para activarlo.",
+    porMes: "/mes + IVA",
+    gratisPrecio: "$0",
+    popular: "Popular",
+    pedir: "Quiero este plan",
+    pidiendo: "Enviando…",
+    elegirGratis: "Seguir con Gratis",
+    solicitadoTitulo: (p: { nombre: string }): string =>
+      `Listo, pediste el plan ${p.nombre}`,
+    solicitadoTexto:
+      "Te contactamos pronto para activar tus 30 días de prueba. Mientras tanto, tu agenda funciona con el plan Gratis.",
+    continuar: "Continuar",
+    error:
+      "No pudimos guardar tu solicitud. Intenta de nuevo o sigue con Gratis.",
+  },
+  creando: {
+    titulo: "Estamos armando tu agenda",
+    texto: "Toma solo unos segundos.",
+    pasos: {
+      negocio: "Creando tu negocio",
+      servicios: "Agregando tus servicios",
+      equipo: "Equipo y horario",
+      pagina: "Publicando tu página de reservas",
+    },
   },
   avisoSinServicios:
     "Tu página no recibe reservas hasta que agregues un servicio.",
@@ -1670,6 +1809,10 @@ export const servicios = {
     pricePlaceholder: "$10.000",
     bufferLabel: "Tiempo extra después",
     bufferAyuda: "Para limpiar o preparar. El cliente no lo ve.",
+    // WP-84 (D-069): precio "desde". TODO_COPY.
+    precioDesde: "Mostrar «desde» antes del valor",
+    precioDesdeAyuda:
+      "Para servicios cuyo valor final depende del trabajo. El cliente ve «desde $15.000».",
     categoryLabel: "Categoría (opcional)",
     profesionalesLabel: "¿Quién lo hace?",
     mostrarEnPaginaLabel: "Mostrar en la página de reservas",
@@ -1808,6 +1951,50 @@ export const horarios = {
     ctaEliminar: "Eliminar bloqueo",
     overlapsBookings: (p: { n: number }): string =>
       `Ese bloqueo se cruza con ${p.n} ${p.n === 1 ? "reserva" : "reservas"}. Muévelas antes de guardar.`,
+  },
+} as const satisfies Trad;
+
+// WP-85 (D-070): Ajustes → Tu negocio → "Descubre".
+export const descubreAjustes = {
+  titulo: "Descubre",
+  intro:
+    "Descubre es nuestro catálogo donde los clientes encuentran negocios cerca de ellos. Aparecer ahí es gratis.",
+  visibleLabel: "Mostrar mi negocio en Descubre",
+  visibleAyuda:
+    "Tu negocio aparece cuando tu perfil está completo. Puedes desactivarlo cuando quieras.",
+  estado: {
+    visible: "Tu negocio aparece en Descubre",
+    ocultoPlataforma:
+      "Tu negocio está oculto en Descubre. Escríbenos si crees que es un error.",
+    falta: "Esto falta para que tu negocio aparezca:",
+  },
+  faltan: {
+    imagen: "Un logo o una foto de portada (Ajustes → Perfil)",
+    direccion: "La dirección del negocio (aquí arriba)",
+    zonas: "Las comunas donde atiendes (aquí arriba)",
+    servicio: "Al menos un servicio activo (Ajustes → Servicios)",
+  },
+  rubroLabel: "Rubro",
+  rubroAyuda: "Tu rubro es tu categoría principal en Descubre.",
+  extrasTitulo: "También ofrecemos",
+  extrasAyuda: (p: { max: number }): string =>
+    `Elige hasta ${p.max} categorías más para que más clientes te encuentren.`,
+  extrasSugerencia:
+    "Marcamos las categorías que aparecen en tus servicios. Revísalas y guarda.",
+  sugerida: "Sugerida",
+  guardar: "Guardar",
+  // Aviso en Inicio cuando el negocio quiere aparecer pero falta algo.
+  recordatorio: {
+    texto: (p: { faltan: string }): string =>
+      `Tu negocio todavía no aparece en Descubre: te falta ${p.faltan}.`,
+    cta: "Completar",
+    faltan: {
+      imagen: "un logo o una foto de portada",
+      direccion: "una dirección",
+      zonas: "las comunas donde atiendes",
+      servicio: "un servicio activo",
+    },
+    y: "y",
   },
 } as const satisfies Trad;
 
@@ -2579,9 +2766,15 @@ export const perfil = {
       comoLlegar: email.comun.comoLlegar,
       contacto: "Contacto",
     },
-    /** Link "Vägbeskrivning →" del diseño: abre Google/Apple Maps, sin mapa
-     * incrustado en v1 (plan, "Contenido"). */
-    verRuta: "Ver ruta →",
+    /** WP-81 (D-066): tarjeta "Cómo llegar" con mapa (imagen fija de
+     * OpenStreetMap) y botones para abrir la ruta en Google Maps o Apple
+     * Maps. */
+    indicaciones: "Ver ruta",
+    appleMaps: "Apple Maps",
+    mapaTitulo: (p: { direccion: string }): string =>
+      `Mapa: ${p.direccion}. Abrir la ruta`,
+    /** Sin el símbolo © (cuenta como emoji para `REGLAS_DE_TONO.emoji`). */
+    mapaAtribucion: "Mapa de OpenStreetMap",
     /** Pestañas de la versión mobile (`role="tablist"` bajo la portada). */
     tabs: {
       servicios: "Servicios",
@@ -2605,6 +2798,17 @@ export const perfil = {
      * componente no arma esta frase por su cuenta). */
     servicioDetalle: (p: { duracion: string; descripcion?: string }): string =>
       p.descripcion ? `${p.duracion} · ${p.descripcion}` : p.duracion,
+    /** WP-81 (D-066): segunda línea de la barra fija mobile. `barraServicio`
+     * es la frase completa (lector de pantalla/`title`); en pantalla el
+     * nombre va en su propio elemento `truncate` y `barraServicioResto` al
+     * lado, para que la elipsis corte solo el nombre, nunca el precio. */
+    barraServicio: (p: {
+      nombre: string;
+      duracion: string;
+      precio: string;
+    }): string => `${p.nombre} · ${p.duracion} · ${p.precio}`,
+    barraServicioResto: (p: { duracion: string; precio: string }): string =>
+      `· ${p.duracion} · ${p.precio}`,
     /** Título de la tarjeta oscura del panel lateral/aside ("Snabbast in"
      * en el diseño). */
     masRapido: "Más rápido",
@@ -2615,8 +2819,19 @@ export const perfil = {
       `${p.dia} · ${p.servicio}`,
     /** Mosaico "+ 8 bilder" de la galería: cuántas fotos hay además de las
      * que ya se ven en la grilla. */
-    nFotos: (p: { n: number }): string =>
-      `+${p.n} ${p.n === 1 ? "foto" : "fotos"}`,
+    /** WP-81 (D-066): galería arriba en la página del negocio y vista a
+     * pantalla completa con todas las fotos. */
+    galeria: {
+      mas: "Ver más fotos",
+      abrir: (p: { negocio: string; n: number }): string =>
+        `Ver ${p.n === 1 ? "la foto" : `las ${p.n} fotos`} de ${p.negocio}`,
+      titulo: (p: { negocio: string }): string => `Fotos de ${p.negocio}`,
+      cantidad: (p: { n: number }): string =>
+        `${p.n} ${p.n === 1 ? "foto" : "fotos"}`,
+      foto: (p: { negocio: string; n: number }): string =>
+        `${p.negocio}, foto ${p.n}`,
+      cerrar: "Cerrar",
+    },
     /** aria-label del link a Instagram de la tarjeta de contacto. */
     instagramAria: (p: { negocio: string }): string =>
       `Instagram de ${p.negocio}`,
@@ -3259,6 +3474,17 @@ export const importar = {
     casi: "Casi listo…",
   },
   aviso: "Puede tardar hasta un minuto. Quédate tranquilo en esta pantalla.",
+  // WP-84 (D-069): plan sugerido según lo que eliges importar. TODO_COPY.
+  planSugerida: (p: {
+    servicios: number;
+    personal: number;
+    plan: string;
+  }): string =>
+    `Elegiste ${p.servicios} ${p.servicios === 1 ? "servicio" : "servicios"} y ${p.personal} ${p.personal === 1 ? "persona" : "personas"} en el equipo. Te sugerimos el plan ${p.plan}.`,
+  planSugeridaAyuda: (p: { gratis: string }): string =>
+    `En ${p.gratis} quedan activos solo 3 servicios; el resto se guarda inactivo hasta que cambies de plan.`,
+  /** WP-83: título de la pantalla de carga (lista de pasos). TODO_COPY */
+  cargandoTitulo: "Estamos trayendo tus datos",
   ctaCancelar: "Cancelar",
   revisarTitulo: "Revisa lo que encontramos",
   revisarIntro:

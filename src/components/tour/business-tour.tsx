@@ -7,6 +7,7 @@ import Link from "next/link";
 import { visita } from "@/i18n";
 
 import { GuidedTour, type TourStep } from "./guided-tour";
+import { SIGNUP_PATH } from "@/config/routes";
 
 const v = visita;
 const n = v.negocio;
@@ -67,7 +68,7 @@ export default function BusinessTour({
           <p className="text-15 leading-relaxed text-muted">{n.final.texto}</p>
           <div className="flex flex-col gap-2.5 sm:flex-row">
             <Link
-              href="/login"
+              href={SIGNUP_PATH}
               data-autofocus
               className="flex h-13.5 shrink-0 items-center justify-center gap-2.5 rounded-full bg-lilac font-bold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:flex-1"
             >

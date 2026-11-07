@@ -30,6 +30,8 @@ const KNOWN: Record<string, string> = {
   "business.name_empty": validacion.requerido,
   "business.name_invalid_type": validacion.requerido,
   "business.comuna_empty": validacion.requerido,
+  "business.address_empty": validacion.requerido,
+  "business.address_too_long": validacion.requerido,
   "business.comuna_invalid_type": validacion.requerido,
   "business.category_invalid": validacion.requerido,
   "business.slug_invalid": negocio.errores.slug_invalid,

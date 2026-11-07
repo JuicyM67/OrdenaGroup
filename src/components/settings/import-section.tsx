@@ -20,6 +20,11 @@ import { ajustesErrorText } from "./error-text";
 export type ImportSectionProps = {
   platformNames: string;
   action: (input: unknown) => Promise<ImportApplyResult>;
+  /** WP-91: admin importerar åt ett valt företag. */
+  extract?: { url: string; businessId: string };
+  /** WP-84 (port av SE WP-94): för "plan sugerido". */
+  currentPlan?: string;
+  existingCounts?: { services: number; staff: number };
 };
 
 function toSelection(c: ImportChoice): ImportSelection {
@@ -31,18 +36,28 @@ function toSelection(c: ImportChoice): ImportSelection {
       description: s.description,
       durationMin: s.durationMin,
       price: s.price,
+      priceFrom: s.priceFrom,
       category: s.category,
     })),
     staff: c.staff.map((s) => ({ name: s.name, title: s.title })),
   };
 }
 
-export function ImportSection({ platformNames, action }: ImportSectionProps) {
+export function ImportSection({
+  platformNames,
+  action,
+  extract,
+  currentPlan,
+  existingCounts,
+}: ImportSectionProps) {
   const router = useRouter();
   return (
     <ImportPanel
       mode="ajustes"
       platformNames={platformNames}
+      extract={extract}
+      currentPlan={currentPlan}
+      existingCounts={existingCounts}
       onConfirm={async (choice) => {
         const r = await action(toSelection(choice));
         if (!r.ok) {

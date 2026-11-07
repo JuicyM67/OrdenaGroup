@@ -29,9 +29,13 @@ test.describe("Reserva (riktig data) — /barberia-norte", () => {
     await page
       .getByRole("button", { name: "Elegir hora", exact: true })
       .click();
+    // WP-81 (D-066): tjänsten väljs en gång — kortet ersätter tjänstelistan.
     await expect(
-      page.getByRole("button", { name: /Corte clásico/ }),
-    ).toHaveAttribute("aria-pressed", "true");
+      page.getByRole("group", { name: reserva.servicioElegido.etiqueta }),
+    ).toContainText("Corte clásico");
+    await expect(
+      page.getByRole("heading", { name: reserva.pasos.servicio }),
+    ).toHaveCount(0);
 
     // Första dag med ledig tid (schemamotorn, "Cualquiera" är förvalt).
     await pickFirstFreeSlot(page);
@@ -164,7 +168,9 @@ test.describe("Reserva (riktig data) — prestanda (FRÅGA 7)", () => {
     await page
       .getByRole("button", { name: "Elegir hora", exact: true })
       .click();
-    await expect(service).toHaveAttribute("aria-pressed", "true");
+    await expect(
+      page.getByRole("group", { name: reserva.servicioElegido.etiqueta }),
+    ).toContainText("Corte clásico");
     const elapsedMs = Date.now() - start;
 
     // Låt sista `loadingFinished`-events hinna fram innan vi summerar.

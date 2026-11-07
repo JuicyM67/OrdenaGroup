@@ -8,10 +8,14 @@ import { logout } from "@/app/auth/actions";
 import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { BusinessSection } from "@/components/settings/business-section";
 import { ImportSection } from "@/components/settings/import-section";
+import { DescubreSection } from "@/components/settings/descubre-section";
+import { marketplaceEnabled } from "@/config/marketplace";
 import { nav } from "@/i18n";
 import { platformNames } from "@/server/import/platforms";
 import { isImportEnabled, isImportPaused } from "@/server/import/runs";
 import { loadAjustesBusiness } from "@/server/owner/ajustes";
+import { loadPlanUsage } from "@/server/plans/entitlements";
+import { loadDescubreSettings } from "@/server/owner/descubre";
 
 import { requireAjustesTab } from "../access";
 import { applyImportAction } from "../import-actions";
@@ -21,6 +25,7 @@ import {
   declineCancelRequestAction,
   declineRequestAction,
   updateBusinessSettingsAction,
+  updateDescubreSettingsAction,
 } from "../actions";
 
 export const metadata: Metadata = {
@@ -37,10 +42,18 @@ export default async function AjustesNegocioPage() {
     ctx.current.business.id,
   );
   // WP-66 (D-035): bara ägaren, och bara när importen finns och inte är pausad.
+  // WP-85 (D-070): "Descubre" under företagsuppgifterna (av när marknadsplatsen är av).
+  const descubreSettings = marketplaceEnabled()
+    ? await loadDescubreSettings(ctx.userId, ctx.current.business.id)
+    : null;
   const showImport =
     ctx.current.member.role === "owner" &&
     isImportEnabled() &&
     !(await isImportPaused());
+  // WP-84 (D-069): plan och antal för importens "plan sugerido".
+  const usage = showImport
+    ? await loadPlanUsage(ctx.current.business.id).catch(() => null)
+    : null;
 
   return (
     <AjustesShell
@@ -63,12 +76,24 @@ export default async function AjustesNegocioPage() {
           <ImportSection
             platformNames={platformNames()}
             action={applyImportAction}
+            currentPlan={usage?.plan}
+            existingCounts={
+              usage
+                ? { services: usage.services.used, staff: usage.staff.used }
+                : undefined
+            }
           />
         ) : null}
         <BusinessSection
           business={business}
           action={updateBusinessSettingsAction}
         />
+        {descubreSettings ? (
+          <DescubreSection
+            settings={descubreSettings}
+            action={updateDescubreSettingsAction}
+          />
+        ) : null}
       </div>
     </AjustesShell>
   );

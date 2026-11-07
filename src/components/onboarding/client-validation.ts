@@ -40,6 +40,12 @@ const RESERVED_SLUGS = new Set([
   // WP-67: kundkonton (CL /cuenta, SE /konto).
   "cuenta",
   "konto",
+  // WP-82 (D-067): publika widget-rutter.
+  "embed",
+  "widget",
+  "widgets",
+  // WP-83 (D-068): la página de registro de negocios nuevos.
+  "comenzar",
 ]);
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/;

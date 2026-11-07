@@ -56,3 +56,16 @@ företaget (med `comuna`/`category` tomma) och gör mottagaren till `owner`.
 (`isOnboardingDraft`, `src/server/onboarding/owner-business.ts`) och
 UPPDATERAR det i stället för att skapa ett nytt
 (`src/server/onboarding/complete-onboarding.ts`).
+
+## Hjälpa ett företag (WP-84, D-069)
+
+På `/admin/negocios/[id]`:
+
+- **Rubro y ubicación** — rubro, comuna och dirección (inte för utkast från
+  en inbjudan). Loggas som `business_place` (bara vilka fält som ändrats).
+- **Importar desde otro sistema** — samma AI-import som ägarens Ajustes →
+  Negocio, via `POST /api/admin/import/extract` och `adminImportAction`.
+  Öppettider importeras bara om företaget saknar öppettider. Loggas som
+  `import` (bara antal).
+- **Borrar ahora** — raderar direkt (testkonton, dubbletter). Skriv
+  företagets slug för att bekräfta. Loggas som `delete_now` (bara slug).

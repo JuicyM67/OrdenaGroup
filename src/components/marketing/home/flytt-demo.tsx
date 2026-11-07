@@ -19,6 +19,7 @@ import {
 import { cn } from "@/components/ui/cn";
 
 import { HomeHeading } from "./home-heading";
+import { SIGNUP_PATH } from "@/config/routes";
 
 export type FlyttProps = {
   etiqueta: string;
@@ -182,7 +183,7 @@ export function FlyttDemo(props: FlyttProps) {
 
         <div className="flex flex-wrap items-center gap-4">
           <Link
-            href="/login"
+            href={SIGNUP_PATH}
             className="flex h-14 items-center gap-3.5 rounded-form bg-ink pr-2 pl-6 text-16 font-bold text-on-dark transition-opacity duration-150 ease-out hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
             {props.cta}

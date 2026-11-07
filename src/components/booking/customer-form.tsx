@@ -445,6 +445,11 @@ export function CustomerForm({
           </ConsentCheckbox>
         </div>
 
+        {/* WP-84 (D-069): precio "desde" — el final se confirma en el local. */}
+        {!isWaitlist && service?.priceFrom ? (
+          <p className="text-13 text-muted">{reserva.pagoEnLocal}</p>
+        ) : null}
+
         <p className="text-12 text-muted">
           {reserva.meta.vendidoPor({ negocio: data.business.name })}
         </p>

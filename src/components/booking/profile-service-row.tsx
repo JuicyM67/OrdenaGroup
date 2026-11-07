@@ -6,9 +6,9 @@ import { ChevronDown } from "lucide-react";
 
 import { perfil } from "@/i18n";
 import { formatDuration } from "@/lib/format/dates";
-import { formatMoney } from "@/lib/format/money";
 import { initialsOf } from "@/lib/format/initials";
 
+import { formatServicePrice } from "./format-price";
 import { staffTone, type StaffTone } from "./profile-view";
 import type { BookingService, BookingStaffMember } from "./types";
 
@@ -71,7 +71,7 @@ export function ProfileServiceHeader({
         </span>
       ) : null}
       <span className="w-18.5 shrink-0 text-right text-15 font-bold text-ink">
-        {formatMoney(service.priceClp)}
+        {formatServicePrice(service)}
       </span>
       <span
         aria-hidden="true"
