@@ -17,11 +17,11 @@ import {
   TiktokGlyph,
 } from "@/components/booking/social-icons";
 import { SingleImageField } from "@/components/settings/profile-section";
-import { Button } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { negocio, onboarding, perfil, redesSociales } from "@/i18n";
 
 import { onboardingErrorText } from "./error-text";
+import { StepNav } from "./step-frame";
 import type { PageStepActions, WizardPageDefaults } from "./types";
 
 export type PageStepProps = {
@@ -80,13 +80,12 @@ export function PageStep({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <p className="text-13 font-semibold text-muted">
-          {onboarding.paso({ n: 4, total: 5 })}
-        </p>
-        <h1 className="text-22 font-bold tracking-title text-ink">
+        <h1 className="font-display text-30 leading-snug font-semibold tracking-title text-ink sm:text-34">
           {onboarding.pasos.pagina}
         </h1>
-        <p className="text-13 text-muted">{onboarding.intro.pagina}</p>
+        <p className="text-15 leading-body text-muted">
+          {onboarding.intro.pagina}
+        </p>
       </div>
 
       <div className="flex flex-col gap-4 rounded-tile bg-surface p-4">
@@ -152,26 +151,20 @@ export function PageStep({
         </p>
       ) : null}
 
-      <div className="flex gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          size="xl"
-          disabled={submitting}
-          onClick={onSkip}
-        >
-          {onboarding.ctaSaltar}
-        </Button>
-        <Button
-          type="button"
-          size="xl"
-          className="flex-1"
-          disabled={submitting}
-          onClick={() => void handleContinue()}
-        >
-          {onboarding.ctaContinuar}
-        </Button>
-      </div>
+      <StepNav
+        onContinue={() => void handleContinue()}
+        disabled={submitting}
+        extra={
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={onSkip}
+            className="flex h-12 items-center rounded-full px-4 text-14 font-semibold text-ink hover:bg-canvas focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-40"
+          >
+            {onboarding.ctaSaltar}
+          </button>
+        }
+      />
     </div>
   );
 }

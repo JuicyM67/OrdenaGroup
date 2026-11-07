@@ -38,7 +38,7 @@ import {
 } from "@/components/marketing/paginas/indices";
 import { BreadcrumbJsonLd } from "@/components/marketing/paginas/json-ld";
 import { pageMetadata } from "@/components/marketing/paginas/metadata";
-import { href } from "@/config/routes";
+import { href, SIGNUP_PATH } from "@/config/routes";
 import { copy } from "@/i18n/marketing";
 import { paginas } from "@/i18n/paginas";
 
@@ -210,7 +210,7 @@ export default function FuncionalidadesPage() {
           title={copy.sitio.funcionalidades.cta.titulo}
           text={copy.landing.ctaFinal.texto}
           buttonLabel={copy.sitio.funcionalidades.cta.boton}
-          href="/login"
+          href={SIGNUP_PATH}
         />
       </main>
 

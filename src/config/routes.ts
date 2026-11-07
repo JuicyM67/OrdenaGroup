@@ -2,9 +2,15 @@
 // (t.ex. `/precios` under `(marketing)/`).
 //
 // Interna länkar på hemsidan ska alltid gå via `href()` / `hrefIndustria()` härifrån,
-// aldrig hårdkodade `/precios`-strängar. `/login` är undantaget (auth-route, rörs
-// inte här).
+// aldrig hårdkodade `/precios`-strängar. Auth-rutterna är `LOGIN_PATH`/`SIGNUP_PATH`
+// nedan.
 import { marketplaceEnabled } from "./marketplace";
+
+/** WP-83 (D-068): "Entrar" går till `LOGIN_PATH`, allt som skapar en ny agenda
+ * ("Crear mi agenda", priskort, CTA) till `SIGNUP_PATH`. Båda använder samma
+ * magiska länk/kod; ett nytt konto skapas när länken öppnas eller koden skrivs in. */
+export const LOGIN_PATH = "/login";
+export const SIGNUP_PATH = "/comenzar";
 
 export type RouteId =
   | "inicio"

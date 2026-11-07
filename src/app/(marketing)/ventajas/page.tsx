@@ -26,6 +26,7 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { brand } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
+import { SIGNUP_PATH } from "@/config/routes";
 
 export const metadata: Metadata = {
   title: copy.sitio.ventajas.meta.titulo({ nombre: brand.name }),
@@ -219,7 +220,7 @@ export default function VentajasPage() {
           title={V.cta.titulo}
           text={copy.landing.ctaFinal.texto}
           buttonLabel={V.cta.boton}
-          href="/login"
+          href={SIGNUP_PATH}
         />
       </main>
 

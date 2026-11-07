@@ -1,10 +1,11 @@
 // E-postfält + knapp "Skapa gratis konto" (hero och avslutande CTA, WP-71). Vanligt
-// GET-formulär mot /login med e-posten som `?email=` — inloggningen förifyller den.
+// GET-formulär mot /comenzar (WP-83) med e-posten som `?email=` — registreringen förifyller den.
 // Ingen klient-JS behövs.
 import { ArrowRight } from "lucide-react";
 
 import { cn } from "@/components/ui/cn";
 import { copy } from "@/i18n/marketing";
+import { SIGNUP_PATH } from "@/config/routes";
 
 const t = copy.home.hero;
 
@@ -12,7 +13,7 @@ export function EmailForm({
   id,
   tone,
   className,
-  action = "/login",
+  action = SIGNUP_PATH,
   texts = t,
 }: {
   id: string;

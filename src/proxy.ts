@@ -10,7 +10,8 @@
 // stänger `/app/*` för utloggade (redirect till `/login`) — matcher utökad nedan, medvetet
 // snävt (bara de rutter som behöver det), inte alla rutter (D-019/§"Delade mappar").
 // `/login` och `/auth/*` matchas också, så att en redan inloggad ägare som öppnar `/login`
-// kan skickas vidare av sidan själv (page.tsx), med färska cookies.
+// kan skickas vidare av sidan själv (page.tsx), med färska cookies. Samma för
+// registreringen `/comenzar` (WP-83, D-068).
 //
 // F19/WP-36: `/app/bienvenida/[token]` är PUBLIK (utanför `(app)`-layoutens
 // inloggningskrav, se src/app/app/bienvenida/[token]/page.tsx) — en person
@@ -120,6 +121,7 @@ export const config = {
     "/app/:path*",
     "/admin/:path*",
     "/login",
+    "/comenzar",
     "/auth/:path*",
     "/cuenta/:path*",
   ],

@@ -1,4 +1,5 @@
-// /app/onboarding (F1, WP-15 slim): företag → tjänster → equipo → horario → link.
+// /app/onboarding (F1, WP-15 slim; WP-83 stegpanel): import → företag → rubro → plats →
+// tjänster → equipo → horario → din sida → plan → link.
 // Inloggning krävs redan av src/app/(app)/layout.tsx. Ägare som redan har ett företag
 // skickas till /app/inicio (onboarding är bara för kontot första gången).
 import type { Metadata } from "next";
@@ -13,13 +14,16 @@ import {
   isOnboardingDraft,
 } from "@/server/onboarding/owner-business";
 import { onboarding } from "@/i18n";
+import { withServiceTx } from "@/server/db/tx";
 import { platformNames } from "@/server/import/platforms";
+import { loadPlanIn } from "@/server/plans/entitlements";
 import { isImportEnabled, isImportPaused } from "@/server/import/runs";
 
 import {
   confirmPageImageUploadAction,
   createPageImageUploadAction,
   deletePageImageAction,
+  requestPlanAction,
   submitOnboarding,
   updatePageProfileAction,
 } from "./actions";
@@ -50,9 +54,17 @@ export default async function OnboardingPage() {
       ? { platformNames: platformNames() }
       : undefined;
 
+  // WP-83 (D-068): planvalet bara när planen inte redan styrs av oss — ett
+  // utkast från en admin-inbjudan kan redan ha en plan eller "Facturación manual".
+  const planInfo = business
+    ? await withServiceTx((q) => loadPlanIn(q, business.id))
+    : null;
+  const showPlans =
+    !planInfo || (planInfo.plan === "free" && planInfo.billingMode === "app");
+
   return (
-    <main className="min-h-dvh bg-canvas px-4 py-8">
-      <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
+    <main className="min-h-dvh bg-canvas px-4 py-6 sm:py-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-5">
         <SessionBar email={user.email ?? ""} />
         <OnboardingWizard
           onSubmit={submitOnboarding}
@@ -63,6 +75,7 @@ export default async function OnboardingPage() {
             updateProfile: updatePageProfileAction,
           }}
           importer={importer}
+          onRequestPlan={showPlans ? requestPlanAction : undefined}
         />
       </div>
     </main>

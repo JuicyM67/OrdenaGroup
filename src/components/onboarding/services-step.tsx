@@ -15,6 +15,7 @@ import {
   validatePriceClp,
   validateRequired,
 } from "./client-validation";
+import { StepNav } from "./step-frame";
 import { onboardingErrorText } from "./error-text";
 import type { WizardService } from "./types";
 
@@ -67,13 +68,12 @@ export function ServicesStep({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <p className="text-13 font-semibold text-muted">
-          {onboarding.paso({ n: 1, total: 5 })}
-        </p>
-        <h1 className="text-22 font-bold tracking-title text-ink">
+        <h1 className="font-display text-30 leading-snug font-semibold tracking-title text-ink sm:text-34">
           {onboarding.pasos.servicios}
         </h1>
-        <p className="text-13 text-muted">{onboarding.intro.servicios}</p>
+        <p className="text-15 leading-body text-muted">
+          {onboarding.intro.servicios}
+        </p>
       </div>
 
       {value.length === 0 ? (
@@ -128,19 +128,13 @@ export function ServicesStep({
         {servicios.ctaAgregar}
       </Button>
 
-      <div className="flex gap-3">
-        <Button type="button" variant="secondary" size="xl" onClick={onBack}>
-          {onboarding.ctaVolver}
-        </Button>
-        <Button
-          type="button"
-          size="xl"
-          className="flex-1"
-          onClick={handleContinue}
-        >
-          {value.length === 0 ? onboarding.ctaSaltar : onboarding.ctaContinuar}
-        </Button>
-      </div>
+      <StepNav
+        onBack={onBack}
+        onContinue={handleContinue}
+        continueLabel={
+          value.length === 0 ? onboarding.ctaSaltar : onboarding.ctaContinuar
+        }
+      />
     </div>
   );
 }

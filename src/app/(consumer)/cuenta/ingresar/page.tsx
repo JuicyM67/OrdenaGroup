@@ -13,6 +13,8 @@ import { cuenta } from "@/i18n";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasAccount } from "@/server/accounts/account";
 
+import { verifyEmailCode } from "@/app/auth/code-actions";
+
 import { requestAccountMagicLink, signInWithGoogle } from "./actions";
 
 export const metadata: Metadata = {
@@ -63,6 +65,7 @@ export default async function CuentaIngresarPage({
       ) : null}
       <SignInCard
         onRequestMagicLink={requestAccountMagicLink}
+        onVerifyCode={verifyEmailCode}
         googleAction={signInWithGoogle}
         googleEnabled={process.env.NEXT_PUBLIC_GOOGLE_AUTH === "1"}
         initialErrorCode={error && ERROR_RE.test(error) ? error : undefined}

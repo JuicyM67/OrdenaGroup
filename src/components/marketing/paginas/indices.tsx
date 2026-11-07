@@ -15,6 +15,7 @@ import {
   hrefRubro,
   hrefRubros,
   RUBRO_IDS,
+  SIGNUP_PATH,
 } from "@/config/routes";
 import { paginas } from "@/i18n/paginas";
 
@@ -55,7 +56,7 @@ export function FuncionesIndexTop() {
         texto={t.hero.texto}
         acciones={
           <>
-            <HeroPrimary href="/login">{c.crearGratis}</HeroPrimary>
+            <HeroPrimary href={SIGNUP_PATH}>{c.crearGratis}</HeroPrimary>
             <HeroGlass href={`/${brand.demoSlug}`}>{c.verEjemplo}</HeroGlass>
           </>
         }
@@ -115,7 +116,7 @@ export function RubrosIndexPage() {
           texto={t.hero.texto}
           acciones={
             <>
-              <HeroPrimary href="/login">{c.crearGratis}</HeroPrimary>
+              <HeroPrimary href={SIGNUP_PATH}>{c.crearGratis}</HeroPrimary>
               <HeroGlass href={`/${brand.demoSlug}`}>{c.verEjemplo}</HeroGlass>
             </>
           }

@@ -13,7 +13,15 @@ import { href } from "@/config/routes";
 import { acceso } from "@/i18n/auth";
 import { Highlight } from "@/components/marketing/highlight";
 
-export function AuthShell({ children }: { children: ReactNode }) {
+export function AuthShell({
+  children,
+  variant = "login",
+}: {
+  children: ReactNode;
+  /** WP-83 (D-068): `registro` = /comenzar (nytt företag), `login` = /login. */
+  variant?: "login" | "registro";
+}) {
+  const t = variant === "registro" ? acceso.registro : acceso.login;
   return (
     <div className="relative isolate min-h-dvh overflow-hidden bg-canvas text-on-dark lg:bg-dark">
       <div className="absolute inset-x-0 top-0 -z-10 h-80 lg:inset-y-0 lg:h-auto">
@@ -55,13 +63,11 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <div className="grid flex-1 items-center gap-8 pt-6 lg:grid-cols-2 lg:gap-16 lg:pt-0">
           <div className="flex flex-col gap-4 lg:max-w-140 lg:gap-6">
             <p className="font-display text-36 leading-display font-semibold tracking-hero text-balance sm:text-44 lg:text-54">
-              {acceso.login.bienvenida.split(" ").slice(0, -1).join(" ")}
-              <Highlight>
-                {acceso.login.bienvenida.split(" ").slice(-1)[0]}
-              </Highlight>
+              {t.bienvenida.split(" ").slice(0, -1).join(" ")}
+              <Highlight>{t.bienvenida.split(" ").slice(-1)[0]}</Highlight>
             </p>
             <p className="max-w-md text-16 leading-relaxed text-on-dark/90 sm:text-18">
-              {acceso.login.bienvenidaTexto}
+              {t.bienvenidaTexto}
             </p>
             <TrustRow className="hidden lg:flex" />
           </div>

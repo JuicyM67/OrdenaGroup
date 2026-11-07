@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { strokeCard } from "@/components/ui/icons";
 import { copy } from "@/i18n/marketing";
+import { SIGNUP_PATH } from "@/config/routes";
 
 const t = copy.sitio.inicio.migracion;
 
@@ -99,7 +100,7 @@ export function MigracionSection() {
             ))}
           </ol>
           <Button asChild variant="primary" size="xl" className="mt-2 w-fit">
-            <Link href="/login">{t.cta}</Link>
+            <Link href={SIGNUP_PATH}>{t.cta}</Link>
           </Button>
         </div>
         <div className="flex w-full flex-1 items-center justify-center">

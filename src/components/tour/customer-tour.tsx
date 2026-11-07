@@ -6,7 +6,7 @@ import { ArrowRight, Lock } from "lucide-react";
 import Link from "next/link";
 
 import { brand } from "@/config/brand";
-import { href } from "@/config/routes";
+import { href, SIGNUP_PATH } from "@/config/routes";
 import { visita } from "@/i18n";
 
 import { GuidedTour, type TourStep } from "./guided-tour";
@@ -119,7 +119,7 @@ export default function CustomerTour({
               </p>
               <div className="flex flex-col gap-2.5 sm:flex-row">
                 <Link
-                  href="/login"
+                  href={SIGNUP_PATH}
                   data-autofocus
                   className="flex h-13 shrink-0 items-center justify-center gap-2.5 rounded-full bg-lilac font-bold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink sm:h-13.5 sm:flex-1"
                 >

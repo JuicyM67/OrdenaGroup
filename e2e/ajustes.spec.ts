@@ -25,7 +25,7 @@ test("Ajustes: cambiar el precio de un servicio se ve en /barberia-norte", async
   await page.getByLabel("Correo").fill(OWNER_EMAIL);
   await page.getByRole("button", { name: "Enviarme el link" }).click();
   await expect(
-    page.getByText(`Te enviamos un link a ${OWNER_EMAIL}.`),
+    page.getByText(`Te enviamos un código y un link a ${OWNER_EMAIL}.`),
   ).toBeVisible();
   const link = await waitForConfirmLink(OWNER_EMAIL);
   await page.goto(link);

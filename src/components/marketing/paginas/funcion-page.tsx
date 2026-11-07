@@ -6,7 +6,12 @@ import Link from "next/link";
 import { HomeHeading } from "@/components/marketing/home/home-heading";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
-import { href, hrefFuncion, type FuncionId } from "@/config/routes";
+import {
+  href,
+  hrefFuncion,
+  SIGNUP_PATH,
+  type FuncionId,
+} from "@/config/routes";
 import { paginas } from "@/i18n/paginas";
 
 import { FotoHero } from "./foto-hero";
@@ -50,7 +55,9 @@ export function FuncionPage({ id }: { id: FuncionId }) {
           pre={t.hero.pre}
           marca={t.hero.marca}
           texto={t.hero.texto}
-          acciones={<HeroPrimary href="/login">{c.crearGratis}</HeroPrimary>}
+          acciones={
+            <HeroPrimary href={SIGNUP_PATH}>{c.crearGratis}</HeroPrimary>
+          }
           tarjeta={<HeroCard {...t.tarjeta} />}
         />
 

@@ -9,6 +9,8 @@ import { AlertCircle, ArrowRight, MailCheck, UserRound } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 
 import type { RequestMagicLinkResult } from "@/app/(auth)/login/actions";
+import type { VerifyEmailCodeResult } from "@/app/auth/code-actions";
+import { CodeEntry } from "@/components/auth/code-entry";
 import { authErrorText } from "@/components/auth/error-text";
 import { TextField } from "@/components/ui/text-field";
 import { cuenta } from "@/i18n";
@@ -25,6 +27,8 @@ export type SignInCardProps = {
     email: string;
     marketing: boolean;
   }) => Promise<RequestMagicLinkResult>;
+  /** WP-96: verifierar koden från mejlet (server action från page.tsx). */
+  onVerifyCode: (email: string, code: string) => Promise<VerifyEmailCodeResult>;
   /** Server action för Google (formulär, fungerar utan JS). */
   googleAction?: (formData: FormData) => Promise<void>;
   googleEnabled: boolean;
@@ -53,6 +57,7 @@ function GoogleMark() {
 
 export function SignInCard({
   onRequestMagicLink,
+  onVerifyCode,
   googleAction,
   googleEnabled,
   initialErrorCode,
@@ -103,6 +108,7 @@ export function SignInCard({
             {cuenta.enviado.texto({ email: estado.email })}
           </p>
         </div>
+        <CodeEntry email={estado.email} onVerifyCode={onVerifyCode} />
         <button
           type="button"
           onClick={() => setEstado({ fase: "form" })}

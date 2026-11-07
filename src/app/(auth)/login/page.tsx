@@ -8,6 +8,7 @@ import { LoginForm } from "@/components/auth/login-form";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { acceso } from "@/i18n/auth";
 
+import { verifyEmailCode } from "@/app/auth/code-actions";
 import { requestMagicLink } from "./actions";
 
 export const metadata: Metadata = {
@@ -39,6 +40,7 @@ export default async function LoginPage({
     <AuthShell>
       <LoginForm
         onRequestMagicLink={requestMagicLink}
+        onVerifyCode={verifyEmailCode}
         initialErrorCode={error}
         initialEmail={initialEmail}
       />
