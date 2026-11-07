@@ -661,6 +661,7 @@ export {
   profesionales,
   horarios,
   ajustes,
+  descubreAjustes,
   clientes,
   campanas,
   CAJA_METODOS_MANUALES,

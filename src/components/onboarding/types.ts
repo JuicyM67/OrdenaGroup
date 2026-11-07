@@ -23,6 +23,9 @@ export type WizardBusiness = {
   comuna: string;
   category: string;
   phone: string;
+  /** WP-85 (D-070): krävs utom när `servesAtCustomer` (då blir `comuna` första orten). */
+  address: string;
+  servesAtCustomer: boolean;
 };
 
 export type WizardService = {

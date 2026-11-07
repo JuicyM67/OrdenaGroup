@@ -52,7 +52,10 @@ test("login → onboarding → länk till bokningssidan", async ({
   await expect(
     page.getByRole("heading", { name: "¿Dónde te encuentran tus clientes?" }),
   ).toBeVisible();
-  await page.getByLabel("Comuna").fill("Providencia");
+  await page.getByLabel("Comuna", { exact: true }).fill("Providencia");
+  await page
+    .getByLabel("Dirección", { exact: true })
+    .fill("Av. Providencia 1234");
   await page.getByLabel("Teléfono del negocio").fill("+56912345678");
   await page.getByRole("button", { name: "Continuar" }).click();
 

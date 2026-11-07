@@ -1,6 +1,9 @@
 // Klientens typer för Ajustes (WP-15b slim). Speglar `src/server/owner/ajustes.ts`,
 // duplicerade i stället för importerade: en "use client"-fil importerar aldrig
 // något under `@/server/*` (samma regel som src/components/onboarding/types.ts).
+import type { MarketplaceCategoryId } from "@/config/marketplace";
+import type { RubroKey } from "@/config/rubros";
+
 export type AjustesBusiness = {
   name: string;
   slug: string;
@@ -28,6 +31,9 @@ export type AjustesBusiness = {
   winbackOfferDays: number | null;
   /** WP-23: `businesses.waitlist_mode`. */
   waitlistMode: "sequential" | "broadcast";
+  /** WP-85 (D-070): "Vi kommer till kunden" och orterna. */
+  servesAtCustomer: boolean;
+  serviceAreas: string[];
   /** WP-23: `businesses.waitlist_hold_minutes` (5–240). */
   waitlistHoldMinutes: number;
   /** WP-65 (D-045): "Pedir reseña después de la cita". Saknas = på. */
@@ -92,6 +98,18 @@ export type AjustesData = {
 };
 
 export type MutationResult = { ok: true } | { ok: false; code: string };
+
+/** WP-85 (D-070): speglar `DescubreSettings` i `src/server/owner/descubre.ts`. */
+export type DescubreSettings = {
+  rubro: RubroKey;
+  mainCategory: MarketplaceCategoryId;
+  listed: boolean;
+  hidden: boolean;
+  extraCategories: MarketplaceCategoryId[];
+  suggested: MarketplaceCategoryId[];
+  reviewed: boolean;
+  missing: ("imagen" | "direccion" | "zonas" | "servicio")[];
+};
 export type CreateResult =
   { ok: true; id: string } | { ok: false; code: string };
 

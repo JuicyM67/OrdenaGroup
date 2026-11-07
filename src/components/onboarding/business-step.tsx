@@ -184,16 +184,25 @@ export function BusinessPlaceStep({
   onContinue,
   onBack,
 }: BusinessStepProps) {
-  const [errors, setErrors] = useState<{ comuna?: string; phone?: string }>({});
+  const [errors, setErrors] = useState<{
+    comuna?: string;
+    phone?: string;
+    address?: string;
+  }>({});
 
   function next() {
     const comuna = validateRequired(value.comuna, "business.comuna_empty");
     const phone = validatePhone(value.phone);
-    const e: { comuna?: string; phone?: string } = {};
+    const e: { comuna?: string; phone?: string; address?: string } = {};
     if (!comuna.ok) e.comuna = onboardingErrorText(comuna.code);
     if (!phone.ok) e.phone = onboardingErrorText(phone.code);
+    // WP-85 (D-070): adress krävs utom för den som kommer till kunden.
+    if (!value.servesAtCustomer) {
+      const address = validateRequired(value.address, "business.address_empty");
+      if (!address.ok) e.address = onboardingErrorText(address.code);
+    }
     setErrors(e);
-    if (!e.comuna && !e.phone) onContinue();
+    if (!e.comuna && !e.phone && !e.address) onContinue();
   }
 
   return (
@@ -210,6 +219,36 @@ export function BusinessPlaceStep({
         maxLength={80}
         autoComplete="address-level2"
       />
+      <div className="flex flex-col gap-3">
+        {value.servesAtCustomer ? null : (
+          <TextField
+            label={negocio.campos.addressLabel}
+            hint={errors.address ? undefined : negocio.campos.addressAyuda}
+            placeholder={negocio.campos.addressPlaceholder}
+            value={value.address}
+            onChange={(e) => onChange({ ...value, address: e.target.value })}
+            error={errors.address}
+            maxLength={200}
+            autoComplete="street-address"
+          />
+        )}
+        <label className="flex cursor-pointer items-start gap-3 text-14 text-ink">
+          <input
+            type="checkbox"
+            checked={value.servesAtCustomer}
+            onChange={(e) =>
+              onChange({ ...value, servesAtCustomer: e.target.checked })
+            }
+            className="mt-0.5 size-5 shrink-0 accent-ink"
+          />
+          <span className="flex flex-col gap-0.5">
+            <span className="font-semibold">{negocio.campos.sinLocal}</span>
+            <span className="text-13 text-muted">
+              {negocio.campos.sinLocalAyuda}
+            </span>
+          </span>
+        </label>
+      </div>
       <TextField
         label={negocio.campos.phoneLabel}
         hint={errors.phone ? undefined : negocio.campos.phoneAyuda}

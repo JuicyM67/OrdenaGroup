@@ -14,6 +14,7 @@ import { LEGAL_VERSION } from "@/i18n/legal/types";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
+import { areaSlug } from "@/server/geocoding/area";
 import { loadPlanIn, planLimit } from "@/server/plans/entitlements";
 import { recordConsent } from "@/server/privacy/consent";
 
@@ -211,6 +212,26 @@ export async function completeOnboarding(
           ],
         );
         businessId = businessRow.rows[0]!.id;
+      }
+
+      // WP-85 (D-070): adress, eller "kommer till kunden" med orten som första
+      // täckta ort (fler orter läggs till i Ajustes → Tu negocio).
+      await q.query(
+        `update public.businesses set address = $2, serves_at_customer = $3
+          where id = $1`,
+        [
+          businessId,
+          input.business.servesAtCustomer ? null : input.business.address,
+          input.business.servesAtCustomer,
+        ],
+      );
+      const firstArea = areaSlug(input.business.comuna);
+      if (input.business.servesAtCustomer && firstArea) {
+        await q.query(
+          `insert into public.business_service_areas (business_id, area_slug, area_name)
+           values ($1, $2, $3) on conflict do nothing`,
+          [businessId, firstArea, input.business.comuna.trim().slice(0, 80)],
+        );
       }
 
       await insertBusinessHours(q, businessId, input.hours);

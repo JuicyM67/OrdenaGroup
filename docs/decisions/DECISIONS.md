@@ -4,6 +4,19 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-070 · 2026-11-07 · Descubre blir en företagskatalog med 16 kategorier (WP-85; port av SE:s D-073, bygger på D-055/D-060)
+**Beslut:** `/descubre` visar **negocios** per kategori och comuna, med flikarna **Negocios** (förvald, `/descubre[/<kategori>[/<comuna>]]`) · **Ofertas** (`/descubre/ofertas?kategori=`, erbjudandelistan från WP-68, bokas till erbjudandepris och betalas i salongen enligt D-060) · **Horas flash** (`/descubre/horas-flash`). Kartan visar fortfarande erbjudanden; dess "Ver lista" leder till Ofertas.
+- **16 kategorier, en gemensam lista** för rubro (`businesses.category`, `RUBRO_KEYS` i `src/config/rubros.ts`) och Descubre, 1:1 via `categoryForRubro`: Peluquería, Barbería, Uñas, Pestañas y cejas, Estética, Maquillaje y depilación, Masajes, Spa, Kinesiología y salud, Terapias holísticas, Entrenamiento y yoga, Tatuajes y piercing, Mascotas, Limpieza y hogar, Autos, Otros. Utgår från de befintliga rubros och `/rubros`-sidorna (WP-75); 8 nya rubros (`belleza`, `spa`, `holistico`, `entrenamiento`, `tatuajes`, `mascotas`, `limpieza`, `automotriz`). Interna kategori-id:n är desamma som i SE (CHECK på `offers.category`); URL-slugsen är spanska (`peluquerias`, `barberias`, …). Gamla `/descubre/cabello` fungerar som alias. `kinesiologia` flyttar från Masajes till Kinesiología y salud.
+- **Huvudkategori = rubron.** Extra kategorier (≤ 6) **föreslås** ur tjänst- och kategorinamn via en chilensk behandlingslista (`src/config/treatments.ts`, ~190 behandlingar), visas förbockade i Ajustes → Tu negocio → "Descubre" och gäller först när ägaren sparat (`marketplace_categories_reviewed_at`).
+- **Synlighet:** `businesses.marketplace_listed` (på som standard) + komplett profil (logo eller portada, dirección eller comunas, minst en aktiv tjänst; `missingForMarketplace`). `marketplace_hidden` sätts bara av servern. Demosalongerna (D-043) undantas från bildkravet (initialer i kategorins ton). Inicio visar en påminnelse när något saknas.
+- **A domicilio:** `serves_at_customer` + `business_service_areas` (≤ 30 comunas, RLS: medlemmar läser, `can_edit_settings` skriver); listas efter comunas, inte avstånd. Comunasidor indexeras först från 3 negocios (`MARKETPLACE_AREA_MIN_BUSINESSES`), annars "cerca de <comuna>".
+- **Dirección obligatorisk** i onboarding och Ajustes, utom med "No tenemos local: atendemos a domicilio". Geokodningen i outbox-cronen omfattar nu även listade negocios.
+- **Sök "¿Qué quieres reservar?"** med förslag ur kategorierna och behandlingslistan (`<datalist>`); en behandling hittar negocios i dess kategori, ett kategorinamn leder till kategorisidan.
+- **Inte porterat:** SE:s datarättningsskript (`upptack-backfill.ts`) och allt som rör Stripe, värdebevis, presentkort, sms och Bokadirekt.
+- Migration `20261030010000_descubre_negocios.sql` (samma tidsstämpel som SE), pgTAP `144_descubre_negocios`.
+
+---
+
 ### D-069 · 2026-11-07 · Ombyggd adminyta: hjälpa ett företag, import åt företaget, "Borrar ahora" och "desde"-priser (WP-84; port av SE D-074–D-076)
 **Varför:** ägaren vill ha samma adminverktyg som BookingBuddy (WP-90/91/93/94) i Chile, anpassat till det som finns här (D-062). **Konsekvens:**
 - **Layout:** `AdminShell` (ikonmeny Negocios/Reseñas/Registro/Administradores, används per sida efter `requireAdminPage()`), företagslistan som kort (logo/initialer, rubro · comuna, dueño, plan med riktiga namn, Manual/Congelado-chips, tre prickar för Descubre: imagen, dirección, servicios) med sök och filter plan/estado/facturación. Detaljsidan i två spalter; Facturación manual, planöverstyrning, frysning, raderingsbegäran och medlemmarnas åtgärder ligger kvar. Nya texter i `es-CL.admin.ts` (TODO_COPY), resten av `/admin` fortfarande hårdkodad svenska (D-061).

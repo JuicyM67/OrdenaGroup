@@ -344,11 +344,17 @@ export function cuentaHref(id: CuentaRouteId, param?: string): string {
 // Marknadsplatsen (WP-68, D-055, D-060). Filsystemet: `src/app/(consumer)/descubre/**`
 // och `src/app/(consumer)/oferta/[slug]`. Kategorislugsen finns i `marketplace.ts`.
 // ---------------------------------------------------------------------------
-export type MarketplaceRouteId = "descubre" | "descubreMapa" | "oferta";
+// WP-85 (D-070): flikarna Ofertas (`/descubre/ofertas`) och Horas flash
+// (`/descubre/horas-flash`) är egna rutter; `/descubre[/<kategori>[/<comuna>]]` är
+// företagskatalogen.
+export type MarketplaceRouteId =
+  "descubre" | "descubreMapa" | "descubreOfertas" | "descubreFlash" | "oferta";
 
 const MARKETPLACE_ROUTES: Record<MarketplaceRouteId, string> = {
   descubre: "/descubre",
   descubreMapa: "/descubre/mapa",
+  descubreOfertas: "/descubre/ofertas",
+  descubreFlash: "/descubre/horas-flash",
   oferta: "/oferta",
 };
 
@@ -359,8 +365,8 @@ export const CUENTA_ROOT: string = CUENTA_ROUTES.cuenta;
 export const CUENTA_INGRESAR_PATH: string = CUENTA_ROUTES.cuentaIngresar;
 
 /** Länk till marknadsplatsen. Extra segment (kategori, ort, erbjudandets slug) läggs
- * på i ordning: `hrefMarketplace("descubre", "cabello", "providencia")` →
- * `/descubre/cabello/providencia`. */
+ * på i ordning: `hrefMarketplace("descubre", "peluquerias", "providencia")` →
+ * `/descubre/peluquerias/providencia`. */
 export function hrefMarketplace(
   id: MarketplaceRouteId,
   ...segments: readonly string[]

@@ -8,6 +8,8 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { InicioScreen } from "@/components/dashboard/inicio-screen";
+import { DescubreReminder } from "@/components/settings/descubre-reminder";
+import { marketplaceEnabled } from "@/config/marketplace";
 import { appHref } from "@/config/routes";
 import { inicio } from "@/i18n";
 import { APP_TZ, toLocalDate } from "@/lib/format/dates";
@@ -23,6 +25,7 @@ import {
   declineRequest,
 } from "@/server/owner/requests";
 import { ownerNameParts } from "@/server/owner/shared";
+import { loadDescubreSettings } from "@/server/owner/descubre";
 
 import {
   confirmMyPhotoUploadAction,
@@ -55,6 +58,14 @@ export default async function InicioPage() {
   const owner = ownerNameParts(user.email);
   const data = await loadOwnerInicio(user.id, business.id, today, now, owner);
   const myProfile = await loadMyProfileAction();
+  // WP-85 (D-070): påminnelse när företaget vill synas i Descubre men något saknas.
+  const descubreSettings = marketplaceEnabled()
+    ? await loadDescubreSettings(user.id, business.id).catch(() => null)
+    : null;
+  const descubreMissing =
+    descubreSettings && descubreSettings.listed && !descubreSettings.hidden
+      ? descubreSettings.missing
+      : [];
 
   const onArrival = async (bookingId: string, status: ArrivalStatus) => {
     "use server";
@@ -130,6 +141,20 @@ export default async function InicioPage() {
       onApproveCancelRequest={onApproveCancelRequest}
       onDeclineCancelRequest={onDeclineCancelRequest}
       myProfile={myProfile ?? undefined}
+      topBanner={
+        descubreMissing.length > 0 ? (
+          <DescubreReminder
+            missing={descubreMissing}
+            href={
+              descubreMissing.includes("imagen")
+                ? appHref("appAjustesPerfil")
+                : descubreMissing.includes("servicio")
+                  ? appHref("appAjustesServicios")
+                  : appHref("appAjustesNegocio")
+            }
+          />
+        ) : undefined
+      }
       myProfileActions={
         myProfile
           ? {

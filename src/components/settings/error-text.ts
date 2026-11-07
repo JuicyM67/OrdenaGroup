@@ -5,6 +5,7 @@
 // befintliga nyckel, se rapporten).
 import {
   comun,
+  descubreAjustes,
   equipo,
   errores,
   horarios,
@@ -43,6 +44,10 @@ const KNOWN: Record<string, string> = {
   "business.slug_reserved": negocio.errores.slug_reserved,
   "business.slug_taken": negocio.errores.slug_taken,
   "business.address_too_long": comun.algoSalioMal,
+  // WP-85 (D-070): dirección obligatoria (salvo a domicilio) y Descubre.
+  "business.address_empty": validacion.requerido,
+  "business.service_areas_max": negocio.campos.zonasMax({ max: 30 }),
+  "descubre.too_many_categories": descubreAjustes.extrasAyuda({ max: 6 }),
   "business.min_notice_invalid": comun.algoSalioMal,
   "business.max_days_ahead_invalid": comun.algoSalioMal,
   "business.cancel_window_invalid": comun.algoSalioMal,

@@ -164,14 +164,14 @@ export function MapPage({
               {t.mapa.aqui({ n: offers.length })}
             </h2>
             <Link
-              href={discoverHref(params, category)}
+              href={discoverHref(params, category, "ofertas")}
               className="rounded-badge text-13 font-bold underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-ink lg:hidden"
             >
               {t.mapa.verLista}
             </Link>
             <ViewToggle
               active="karta"
-              listHref={discoverHref(params, category)}
+              listHref={discoverHref(params, category, "ofertas")}
               mapHref={mapHref(params, category)}
               className="hidden lg:flex"
             />

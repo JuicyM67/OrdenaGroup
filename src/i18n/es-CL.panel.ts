@@ -1564,8 +1564,23 @@ export const negocio = {
     phoneAyuda:
       "Celular o fijo. Tus clientes lo ven en la confirmación y lo usan para escribirte si no pueden cambiar su hora solos.",
     phonePlaceholder: "+56 9 1234 5678",
-    addressLabel: "Dirección (opcional)",
+    // WP-85 (D-070): la dirección es obligatoria (Descubre, mapa), salvo para
+    // quien atiende a domicilio.
+    addressLabel: "Dirección",
     addressPlaceholder: "Calle y número",
+    addressAyuda:
+      "Donde te encuentran tus clientes. Aparece en tu página de reservas y en Descubre.",
+    sinLocal: "No tenemos local: atendemos a domicilio",
+    sinLocalAyuda:
+      "Así apareces en Descubre en las comunas donde atiendes, en vez de en una dirección.",
+    zonasLabel: "Comunas donde atiendes",
+    zonasAyuda: "Escribe una comuna y toca Agregar. Puedes agregar varias.",
+    zonasPlaceholder: "Ej: Ñuñoa",
+    zonasAgregar: "Agregar",
+    zonasQuitar: (p: { comuna: string }): string => `Quitar ${p.comuna}`,
+    zonasMax: (p: { max: number }): string =>
+      `Puedes agregar hasta ${p.max} comunas.`,
+    zonasVacio: "Agrega al menos una comuna.",
   },
   /** Claves = valores guardados en `businesses.category` (pregunta 8 del plan
    * de WP-03b). La lista de comunas es dato, no copy: vive en WP-15. */
@@ -1574,9 +1589,19 @@ export const negocio = {
     peluqueria: "Peluquería",
     estetica: "Estética",
     unas: "Uñas",
-    cejas_pestanas: "Cejas y pestañas",
+    cejas_pestanas: "Pestañas y cejas",
     masajes: "Masajes",
-    kinesiologia: "Kinesiología",
+    kinesiologia: "Kinesiología y salud",
+    // WP-85 (D-070): un rubro por categoría de Descubre (mismos nombres que
+    // `descubre.categorias.nombres`).
+    belleza: "Maquillaje y depilación",
+    spa: "Spa",
+    holistico: "Terapias holísticas",
+    entrenamiento: "Entrenamiento y yoga",
+    tatuajes: "Tatuajes y piercing",
+    mascotas: "Mascotas",
+    limpieza: "Limpieza y hogar",
+    automotriz: "Autos",
     otro: "Otro",
   },
   slug: {
@@ -1926,6 +1951,50 @@ export const horarios = {
     ctaEliminar: "Eliminar bloqueo",
     overlapsBookings: (p: { n: number }): string =>
       `Ese bloqueo se cruza con ${p.n} ${p.n === 1 ? "reserva" : "reservas"}. Muévelas antes de guardar.`,
+  },
+} as const satisfies Trad;
+
+// WP-85 (D-070): Ajustes → Tu negocio → "Descubre".
+export const descubreAjustes = {
+  titulo: "Descubre",
+  intro:
+    "Descubre es nuestro catálogo donde los clientes encuentran negocios cerca de ellos. Aparecer ahí es gratis.",
+  visibleLabel: "Mostrar mi negocio en Descubre",
+  visibleAyuda:
+    "Tu negocio aparece cuando tu perfil está completo. Puedes desactivarlo cuando quieras.",
+  estado: {
+    visible: "Tu negocio aparece en Descubre",
+    ocultoPlataforma:
+      "Tu negocio está oculto en Descubre. Escríbenos si crees que es un error.",
+    falta: "Esto falta para que tu negocio aparezca:",
+  },
+  faltan: {
+    imagen: "Un logo o una foto de portada (Ajustes → Perfil)",
+    direccion: "La dirección del negocio (aquí arriba)",
+    zonas: "Las comunas donde atiendes (aquí arriba)",
+    servicio: "Al menos un servicio activo (Ajustes → Servicios)",
+  },
+  rubroLabel: "Rubro",
+  rubroAyuda: "Tu rubro es tu categoría principal en Descubre.",
+  extrasTitulo: "También ofrecemos",
+  extrasAyuda: (p: { max: number }): string =>
+    `Elige hasta ${p.max} categorías más para que más clientes te encuentren.`,
+  extrasSugerencia:
+    "Marcamos las categorías que aparecen en tus servicios. Revísalas y guarda.",
+  sugerida: "Sugerida",
+  guardar: "Guardar",
+  // Aviso en Inicio cuando el negocio quiere aparecer pero falta algo.
+  recordatorio: {
+    texto: (p: { faltan: string }): string =>
+      `Tu negocio todavía no aparece en Descubre: te falta ${p.faltan}.`,
+    cta: "Completar",
+    faltan: {
+      imagen: "un logo o una foto de portada",
+      direccion: "una dirección",
+      zonas: "las comunas donde atiendes",
+      servicio: "un servicio activo",
+    },
+    y: "y",
   },
 } as const satisfies Trad;
 
