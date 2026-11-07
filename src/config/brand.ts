@@ -14,7 +14,7 @@ export type Brand = {
 export const brand: Brand = {
   name: "Ordena Calendar",
   tagline: "Tu agenda se llena sola.",
-  domain: null,
+  domain: "ordenagroup.cl",
   // WP-63 (D-043): demoföretaget som marknadssidan länkar till. Skapas och
   // rullas av `private.seed_demo('CL')`.
   demoSlug: "estudio-brisa",
