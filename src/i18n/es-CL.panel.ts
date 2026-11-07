@@ -3585,6 +3585,8 @@ export const planes = {
     full_reports: "Caja e informes completos",
     staff_accounts: "Cuentas para tu equipo",
     offers: "Ofertas en el marketplace",
+    // TODO_COPY (WP-87, D-073)
+    gift_cards: "Tarjetas de regalo",
     priority_support: "Soporte prioritario",
   },
   bloqueo: {
@@ -3599,6 +3601,8 @@ export const planes = {
       full_reports: "Mejora tu plan y mira tus números completos.",
       staff_accounts: "Mejora tu plan y dale una cuenta a tu equipo.",
       offers: "Mejora tu plan y vende tus servicios a clientes nuevos.",
+      // TODO_COPY (WP-87, D-073)
+      gift_cards: "Mejora tu plan y vende tarjetas de regalo en tu local.",
       priority_support: "Mejora tu plan y te atendemos primero.",
     },
     verPlanes: "Ver planes",

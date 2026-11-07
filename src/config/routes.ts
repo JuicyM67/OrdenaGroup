@@ -226,6 +226,7 @@ export type AppRouteId =
   | "appClientesResenas"
   | "appCaja"
   | "appCajaInformes"
+  | "appCajaTarjetas"
   | "appFlash"
   | "appOfertas"
   | "appAjustes"
@@ -279,6 +280,8 @@ const APP_ROUTES: Record<AppRouteId, string> = {
   appClientesUtskickNytt: "/app/clientes/utskick/nytt",
   appCaja: "/app/caja",
   appCajaInformes: "/app/caja/informes",
+  // WP-87 (D-073): Caja → Tarjetas de regalo (vender, usar, listado).
+  appCajaTarjetas: "/app/caja/tarjetas-regalo",
   appFlash: "/app/flash",
   // WP-70 (D-056): erbjudanderedigeraren.
   appOfertas: "/app/ofertas",
@@ -311,6 +314,12 @@ const APP_ROUTES: Record<AppRouteId, string> = {
 export function appHref(id: AppRouteId, param?: string): string {
   const path = APP_ROUTES[id];
   return param === undefined ? path : path.replace(/\[(?:id|token)\]/, param);
+}
+
+/** WP-87 (D-073): la tarjeta de regalo detrás de un link (`?t=<token>`),
+ * bajo la página del negocio (filsystemet `src/app/[slug]/tarjeta-regalo/tarjeta`). */
+export function tarjetaRegaloHref(slug: string): string {
+  return `/${slug}/tarjeta-regalo/tarjeta`;
 }
 
 function stripDynamicSegment(path: string): string {

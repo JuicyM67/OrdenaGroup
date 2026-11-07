@@ -33,6 +33,11 @@ vi.mock("@/server/bookings/confirm", () => ({
     (expireRequestsMock as (...a: unknown[]) => unknown)(...args),
 }));
 
+// WP-87 (D-073): tarjetas de regalo (utgång, persondata) före utkorgen.
+vi.mock("@/server/gift-cards", () => ({
+  runGiftCardSweep: async () => ({ expired: 0, cleared: 0 }),
+}));
+
 // WP-68 (S4): geokodningen ska köras EFTER utkorgen.
 vi.mock("@/server/geocoding", () => ({
   runGeocodeSweep: async () => {
@@ -109,6 +114,7 @@ describe("POST /api/cron/outbox", () => {
       expired: 0,
       waitlistExpired: 0,
       reviewRequests: 0,
+      giftCards: { expired: 0, cleared: 0 },
       geocoded: { ok: 0, notFound: 0, skipped: 0 },
     });
   });

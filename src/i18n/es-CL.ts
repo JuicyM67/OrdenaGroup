@@ -641,6 +641,8 @@ export { adminPanel } from "./es-CL.admin";
 export { widgets } from "./es-CL.widgets";
 // WP-89 (D-075): "Comparte tu link" (QR y guías por canal).
 export { compartir } from "./es-CL.compartir";
+// WP-87 (D-073): tarjetas de regalo (venta en el local).
+export { regalo } from "./es-CL.regalo";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).
 export {
