@@ -54,6 +54,10 @@ export const RESERVED_SLUGS = [
   // WP-67: kundkonton (CL /cuenta, SE /konto).
   "cuenta",
   "konto",
+  // WP-82 (D-067): publika widget-rutter.
+  "embed",
+  "widget",
+  "widgets",
 ] as const;
 
 // Samma nycklar som `negocio.rubros` (src/i18n/es-CL.ts). Hålls i synk manuellt (som

@@ -18,6 +18,7 @@ import {
   Clock,
   Gauge,
   Gift,
+  Globe,
   Image as ImageIcon,
   Lock,
   Scissors,
@@ -29,7 +30,7 @@ import type { ReactNode } from "react";
 
 import { strokeNav } from "@/components/ui/icons";
 import { AJUSTES_TAB_ROUTE_IDS, appHref } from "@/config/routes";
-import { ajustes, perfil, planes } from "@/i18n";
+import { ajustes, perfil, planes, widgets } from "@/i18n";
 
 export const AJUSTES_TAB_KEYS = [
   "negocio",
@@ -42,6 +43,7 @@ export const AJUSTES_TAB_KEYS = [
   "equipo",
   "plan",
   "privacidad",
+  "widgets",
 ] as const;
 
 export type AjustesTabKey = (typeof AJUSTES_TAB_KEYS)[number];
@@ -71,6 +73,7 @@ const AJUSTES_TAB_LABEL: Record<AjustesTabKey, string> = {
   equipo: ajustes.secciones.equipo,
   plan: planes.ajustes.titulo,
   privacidad: ajustes.secciones.privacidad,
+  widgets: widgets.panel.pestana,
 };
 
 const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
@@ -84,6 +87,7 @@ const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
   equipo: Users,
   plan: Gauge,
   privacidad: Shield,
+  widgets: Globe,
 };
 
 export function ajustesTabHref(key: AjustesTabKey): string {
@@ -104,6 +108,7 @@ export function ajustesTabVisible(
     case "reglas":
     case "horario":
     case "socios":
+    case "widgets":
       return access.perms.can_edit_settings;
     case "servicios":
     case "formulario":

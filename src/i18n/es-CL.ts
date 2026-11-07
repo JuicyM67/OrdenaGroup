@@ -611,6 +611,8 @@ export { cuenta } from "./es-CL.cuenta";
 export { ofertas } from "./es-CL.ofertas";
 // WP-80: panel de plataforma (administradores, facturación manual).
 export { adminPanel } from "./es-CL.admin";
+// WP-82 (D-067): widgets para el sitio web del negocio.
+export { widgets } from "./es-CL.widgets";
 
 // Textos de la app del negocio y mensajes: `es-CL.panel.ts` (JS-budget de `/[slug]`, D-039).
 export {
