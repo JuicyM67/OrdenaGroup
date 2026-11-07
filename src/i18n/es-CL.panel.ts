@@ -2586,7 +2586,8 @@ export const perfil = {
     appleMaps: "Apple Maps",
     mapaTitulo: (p: { direccion: string }): string =>
       `Mapa: ${p.direccion}. Abrir la ruta`,
-    mapaAtribucion: "© OpenStreetMap",
+    /** Sin el símbolo © (cuenta como emoji para `REGLAS_DE_TONO.emoji`). */
+    mapaAtribucion: "Mapa de OpenStreetMap",
     /** Pestañas de la versión mobile (`role="tablist"` bajo la portada). */
     tabs: {
       servicios: "Servicios",

@@ -122,6 +122,7 @@ describe("estructura (WP-03b)", () => {
 
 const MUESTRA_GENERICA_V2: Record<string, unknown> = {
   n: 3,
+  direccion: "Av. Providencia 1234, Providencia",
   /** Ya formateado (WP-24 arma `caja.marcarPagada.aPagar({ total })`), no
    * el número de pasos de `onboarding.paso({ total })`: mismo nombre de
    * parámetro en las dos funciones, un solo valor genérico posible. Ambos
