@@ -6,8 +6,8 @@ import { emailColors as c } from "./colors";
 
 /**
  * Byggstenar för HTML-mejl: tabellbaserad layout, inline-CSS, max 600 px.
- * Inga externa bilder: loggan är text/HTML (D-026, se `BrandLogo`-mönstret
- * i src/components/marketing/).
+ * Enda externa bilden är loggan (appikonen på den publika domänen, D-071);
+ * utan domän faller den tillbaka på den bildfria limecirkeln (D-026).
  *
  * Mörkt läge (WP-49): vi kör `color-scheme: light only` (meta +
  * `supported-color-schemes` + CSS), dvs mejlen ber uttryckligen klienten
@@ -59,14 +59,14 @@ export function caption(text: string): string {
  * som `button(..., "lime")`. `label` är redan översatt (`ns.codigo`). */
 export function codeLine(label: string, code: string): string {
   return `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:0 0 16px;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:4px 0 20px;">
       <tr>
-        <td style="padding:0 0 6px;font-family:${FONT_SANS};font-size:13px;color:${c.muted};">${escapeHtml(
+        <td style="padding:0 0 8px;font-family:${FONT_SANS};font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${c.muted};">${escapeHtml(
           label,
         )}</td>
       </tr>
       <tr>
-        <td align="center" bgcolor="${c.canvas}" style="background-color:${c.canvas};border:1px solid ${c.border};border-radius:12px;padding:12px 16px;font-family:${FONT_SANS};font-size:20px;font-weight:700;letter-spacing:4px;color:${c.ink};text-align:center;">${escapeHtml(
+        <td align="center" bgcolor="${c.lime}" style="background-color:${c.lime};border-radius:16px;padding:18px 16px;font-family:${FONT_DISPLAY};font-size:34px;line-height:1.1;font-weight:800;letter-spacing:10px;color:${c.onLimeSoft};text-align:center;">${escapeHtml(
           code,
         )}</td>
       </tr>
@@ -74,7 +74,7 @@ export function codeLine(label: string, code: string): string {
 }
 
 export function heading(text: string): string {
-  return `<p style="margin:0 0 16px;font-family:${FONT_DISPLAY};font-weight:800;font-size:24px;line-height:1.25;letter-spacing:-0.02em;color:${c.ink};">${escapeHtml(
+  return `<p style="margin:0 0 16px;font-family:${FONT_DISPLAY};font-weight:800;font-size:28px;line-height:1.2;letter-spacing:-0.02em;color:${c.ink};">${escapeHtml(
     text,
   )}</p>`;
 }
@@ -97,28 +97,30 @@ const FONT_DISPLAY =
 const FONT_SANS =
   "'Plus Jakarta Sans','Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
-/** Ordmärket, samma innehåll som `BrandLogo` (limecirkel + namn) men som
- * tabellbaserad HTML utan bilder.
- * Text på en explicit ljus botten (`bgcolor` + `background-color` på
- * cellen, inte bara på `<body>`) — det var just den okantade "Booking"-
- * texten (ingen egen bakgrund, ingen klass) som blev osynlig i mörkt läge
- * innan WP-49, se filkommentaren ovan. */
-function wordmarkHtml(logoSrc?: string): string {
-  // D-071: med `logoSrc` (appikonen på den publika domänen) visas den riktiga
-  // logotypen; utan den den bildfria limecirkeln som förut.
-  const mark = logoSrc
-    ? `<td style="width:36px;height:36px;vertical-align:middle;" width="36"><img src="${escapeHtml(
-        logoSrc,
-      )}" width="36" height="36" alt="${escapeHtml(
-        brand.name,
-      )}" style="display:block;width:36px;height:36px;border-radius:10px;border:0;" /></td>`
-    : null;
+/** Loggan i mejlen: appikonen på den publika domänen (D-071), annars den
+ * bildfria limecirkeln (D-026). */
+function logoSrc(): string | null {
+  return brand.domain ? `https://${brand.domain}/apple-icon` : null;
+}
+
+/** Sidhuvudet: ett mörkt band (samma `ink` som sajtens sidfot) med logga,
+ * namn och tagline. Mörk botten med ljus text är explicit på varje cell
+ * (`bgcolor` + `background-color`) — samma bulletproof-princip som knappen,
+ * se filkommentaren ovan. */
+function headerHtml(): string {
+  const src = logoSrc();
+  const mark = src
+    ? `<img src="${escapeHtml(src)}" width="32" height="32" alt="" style="display:block;width:32px;height:32px;border-radius:9px;border:0;" />`
+    : `<div style="width:32px;height:32px;border-radius:16px;background-color:${c.lime};font-family:${FONT_DISPLAY};font-weight:700;font-size:14px;line-height:32px;color:${c.onLimeSoft};text-align:center;">●</div>`;
   return `
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.canvas}">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="${c.ink}" style="background-color:${c.ink};">
       <tr>
-        ${mark ?? `<td bgcolor="${c.lime}" style="width:32px;height:32px;border-radius:16px;background-color:${c.lime};text-align:center;vertical-align:middle;font-family:${FONT_DISPLAY};font-weight:700;font-size:14px;line-height:32px;color:${c.onLimeSoft};" align="center">●</td>`}
-        <td bgcolor="${c.canvas}" style="background-color:${c.canvas};padding-left:10px;font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.ink};">${escapeHtml(
+        <td width="32" bgcolor="${c.ink}" style="width:32px;vertical-align:middle;background-color:${c.ink};">${mark}</td>
+        <td bgcolor="${c.ink}" style="padding-left:12px;vertical-align:middle;background-color:${c.ink};font-family:${FONT_DISPLAY};font-weight:700;font-size:18px;line-height:1.2;letter-spacing:-0.01em;color:${c.onDark};">${escapeHtml(
           brand.name,
+        )}</td>
+        <td align="right" class="hide-sm" bgcolor="${c.ink}" style="vertical-align:middle;background-color:${c.ink};font-family:${FONT_SANS};font-size:12px;font-weight:600;color:${c.lime};text-align:right;">${escapeHtml(
+          brand.tagline,
         )}</td>
       </tr>
     </table>`;
@@ -142,9 +144,9 @@ export function button(
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0 20px;">
       <tr>
-        <td style="border-radius:16px;background-color:${bg};" bgcolor="${bg}">
+        <td style="border-radius:999px;background-color:${bg};" bgcolor="${bg}">
           <a href="${escapeHtml(href)}" target="_blank" rel="noopener"
-            style="display:inline-block;padding:13px 24px;font-family:${FONT_SANS};font-weight:700;font-size:15px;line-height:1;color:${fg};background-color:${bg};text-decoration:none;border:none;border-radius:16px;">
+            style="display:inline-block;padding:16px 30px;font-family:${FONT_SANS};font-weight:700;font-size:15px;line-height:1;color:${fg};background-color:${bg};text-decoration:none;border:none;border-radius:999px;">
             ${escapeHtml(label)}
           </a>
         </td>
@@ -208,8 +210,6 @@ export type EmailLayoutInput = {
   readonly bodyText: string;
   readonly footerHtml: string;
   readonly footerText: string;
-  /** Absolut URL till logotypen i sidhuvudet (D-071); utelämnad = limecirkeln. */
-  readonly logoSrc?: string;
 };
 
 /** Företagsuppgifter ur brand.ts i sidfoten — bara riktiga värden, aldrig platshållare
@@ -221,6 +221,16 @@ function legalFooterHtml(): string {
   return `<p style="margin:8px 0 0;font-family:${FONT_SANS};font-size:12px;line-height:1.5;color:${c.subtle};">${escapeHtml(
     parts.join(" · "),
   )}</p>`;
+}
+
+/** Länk till sajten längst ner (bara när domänen finns). */
+function siteLinkHtml(): string {
+  if (!brand.domain) return "";
+  return `<p style="margin:12px 0 0;font-family:${FONT_SANS};font-size:12px;line-height:1.5;"><a href="https://${escapeHtml(
+    brand.domain,
+  )}" target="_blank" rel="noopener" style="color:${c.ink};font-weight:700;text-decoration:none;">${escapeHtml(
+    brand.domain,
+  )}</a></p>`;
 }
 
 /** Slår ihop header, innehållskort och footer till ett fullständigt
@@ -237,6 +247,7 @@ export function renderLayout(input: EmailLayoutInput): {
     <meta name="color-scheme" content="light only" />
     <meta name="supported-color-schemes" content="light only" />
     <title></title>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700;800&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet" />
     <style>
       :root { color-scheme: light only; supported-color-schemes: light only; }
       body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
@@ -245,7 +256,8 @@ export function renderLayout(input: EmailLayoutInput): {
       body { margin: 0; padding: 0; width: 100% !important; background-color: ${c.canvas}; }
       @media only screen and (max-width: 620px) {
         .container { width: 100% !important; }
-        .px { padding-left: 20px !important; padding-right: 20px !important; }
+        .px { padding-left: 24px !important; padding-right: 24px !important; }
+        .hide-sm { display: none !important; }
       }
     </style>
   </head>
@@ -255,21 +267,21 @@ export function renderLayout(input: EmailLayoutInput): {
     )}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:${c.canvas};" bgcolor="${c.canvas}">
       <tr>
-        <td align="center" style="padding:32px 16px;background-color:${c.canvas};" bgcolor="${c.canvas}">
+        <td align="center" style="padding:40px 16px;background-color:${c.canvas};" bgcolor="${c.canvas}">
           <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="container" style="width:600px;max-width:600px;background-color:${c.canvas};" bgcolor="${c.canvas}">
             <tr>
-              <td class="px" style="padding:0 8px 24px;background-color:${c.canvas};" bgcolor="${c.canvas}">${wordmarkHtml(input.logoSrc)}</td>
+              <td class="px" bgcolor="${c.ink}" style="background-color:${c.ink};border-radius:24px 24px 0 0;padding:22px 40px;">${headerHtml()}</td>
             </tr>
             <tr>
-              <td style="background-color:${c.lime};height:6px;line-height:6px;font-size:0;border-radius:24px 24px 0 0;" bgcolor="${c.lime}">&nbsp;</td>
+              <td style="background-color:${c.lime};height:4px;line-height:4px;font-size:0;" bgcolor="${c.lime}">&nbsp;</td>
             </tr>
             <tr>
-              <td class="px" style="background-color:${c.surface};border-radius:0 0 24px 24px;padding:32px;" bgcolor="${c.surface}">
+              <td class="px" style="background-color:${c.surface};border-radius:0 0 24px 24px;padding:40px 40px 36px;" bgcolor="${c.surface}">
                 ${input.bodyHtml}
               </td>
             </tr>
             <tr>
-              <td class="px" style="padding:24px 8px 0;background-color:${c.canvas};" bgcolor="${c.canvas}">${input.footerHtml}${legalFooterHtml()}</td>
+              <td class="px" align="center" style="padding:28px 40px 0;background-color:${c.canvas};text-align:center;" bgcolor="${c.canvas}">${input.footerHtml}${siteLinkHtml()}${legalFooterHtml()}</td>
             </tr>
           </table>
         </td>
@@ -286,7 +298,7 @@ export function footerHtml(lines: readonly string[]): string {
   return lines
     .map(
       (l) =>
-        `<p style="margin:0 0 4px;font-family:${FONT_SANS};font-size:12px;line-height:1.5;color:${c.muted};">${escapeHtml(
+        `<p style="margin:0 0 4px;font-family:${FONT_SANS};font-size:12px;line-height:1.6;color:${c.muted};text-align:center;">${escapeHtml(
           l,
         )}</p>`,
     )

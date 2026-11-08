@@ -74,8 +74,6 @@ function render(data: AccesoEmailData, ns: AccesoNs): RenderedEmail {
     bodyText,
     footerHtml: footerHtml(pie),
     footerText: pie.join("\n"),
-    // Appikonen på den publika domänen (D-071); utan domän limecirkeln.
-    logoSrc: brand.domain ? `https://${brand.domain}/apple-icon` : undefined,
   });
   return { subject: asunto, preheader: ns.preheader, html, text };
 }
