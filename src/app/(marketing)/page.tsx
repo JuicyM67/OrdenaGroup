@@ -16,7 +16,7 @@ import { Faq } from "@/components/marketing/home/faq";
 import { FlyttSection } from "@/components/marketing/home/flytt";
 import { HomeHero } from "@/components/marketing/home/hero";
 import { Para } from "@/components/marketing/home/para";
-import { Precios } from "@/components/marketing/home/precios";
+import { Beta } from "@/components/marketing/home/beta";
 import { Showcase } from "@/components/marketing/home/showcase";
 import { SiteFooter } from "@/components/marketing/site-footer";
 import { SiteHeader } from "@/components/marketing/site-header";
@@ -43,7 +43,7 @@ export default function LandingPage() {
         <Bento />
         <Como />
         <Para />
-        <Precios />
+        <Beta />
         <Faq />
         <CtaFinal />
       </main>
