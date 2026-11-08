@@ -26,7 +26,7 @@ test("renderar med rubrik, nav och CTA:er", async ({ page, isMobile }) => {
           .getByRole("link", { name: landing.nav.ctaCrearAgenda, exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("heading", { name: new RegExp(home.precios.tituloPre) }),
+    page.getByRole("heading", { name: new RegExp(home.beta.tituloPre) }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: home.faq.titulo }),
