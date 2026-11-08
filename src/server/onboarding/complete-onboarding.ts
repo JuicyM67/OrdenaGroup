@@ -9,8 +9,10 @@ import "server-only";
  * `userId` kommer från den verifierade sessionen i anroparens closure (page.tsx), aldrig
  * från klienten (samma mönster som /[slug]/actions.ts).
  */
+import { INVITE_ONLY_BETA } from "@/config/beta";
 import { marketConfig } from "@/config/market";
 import { LEGAL_VERSION } from "@/i18n/legal/types";
+import { isPlatformAdmin } from "@/server/admin/auth";
 import type { Queryable } from "@/server/db/pool";
 import { pgErrorCode } from "@/server/db/errors";
 import { withOwnerTx } from "@/server/db/tx";
@@ -22,6 +24,13 @@ import { onboardingInputSchema, type OnboardingInput } from "./schemas";
 
 export type OnboardingResult =
   { ok: true; businessId: string; slug: string } | { ok: false; code: string };
+
+/** Stängd beta (`INVITE_ONLY_BETA`, src/config/beta.ts): kontot har inget utkast från en
+ * inbjudan och är inte plattformsadmin, så inget nytt företag skapas. */
+export const BETA_INVITATION_REQUIRED = "beta.invitation_required";
+
+/** Kastas inne i transaktionen (rullar tillbaka allt) och blir `BETA_INVITATION_REQUIRED`. */
+class InvitationRequiredError extends Error {}
 
 function pgConstraint(e: unknown): string | undefined {
   if (typeof e !== "object" || e === null || !("constraint" in e)) {
@@ -159,6 +168,12 @@ export async function completeOnboarding(
   }
   const input = parsed.data;
 
+  // Stängd beta: bara plattformsadmins får skapa ett företag UTAN inbjudan (för tester).
+  // Läses före transaktionen (`platform_admins` nås bara med service_role); används bara
+  // i `create_business()`-grenen nedan — ett utkast från en inbjudan fylls alltid i.
+  const mayCreateBusiness =
+    !INVITE_ONLY_BETA || (await isPlatformAdmin(userId));
+
   try {
     return await withOwnerTx(userId, async (q) => {
       // F19/WP-36: si la persona ya tiene un negocio creado por
@@ -197,6 +212,7 @@ export async function completeOnboarding(
         if (upd.rowCount !== 1) throw new Error("draft_update_failed");
         businessId = draftId;
       } else {
+        if (!mayCreateBusiness) throw new InvitationRequiredError();
         // Tidszonen kommer från installationens marknadskonfig (D-025), inte
         // från klienten: `create_business()` tar emot den som en sjätte,
         // servergivna parameter (20260929100000_businesses_timezone_markets.sql).
@@ -257,6 +273,9 @@ export async function completeOnboarding(
       return { ok: true, businessId, slug: input.business.slug } as const;
     });
   } catch (e) {
+    if (e instanceof InvitationRequiredError) {
+      return { ok: false, code: BETA_INVITATION_REQUIRED };
+    }
     return { ok: false, code: mapDbError(e) };
   }
 }

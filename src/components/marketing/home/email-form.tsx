@@ -1,5 +1,6 @@
-// E-postfält + knapp "Skapa gratis konto" (hero och avslutande CTA, WP-71). Vanligt
-// GET-formulär mot /comenzar (WP-83) med e-posten som `?email=` — registreringen förifyller den.
+// E-postfält + knapp "Pedir invitación" (hero och avslutande CTA, WP-71). Vanligt
+// GET-formulär mot /comenzar (WP-83) med e-posten som `?email=` — under betan (src/config/
+// beta.ts) visar sidan hur man ber om en inbjudan och lägger adressen i mejlet.
 // Ingen klient-JS behövs.
 import { ArrowRight } from "lucide-react";
 

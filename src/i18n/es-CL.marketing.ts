@@ -23,8 +23,10 @@ import type { Trad } from "./index";
 // formatea con `src/lib/format/` (WP-04), igual que cualquier otro monto.
 // ---------------------------------------------------------------------------
 
-/** Mismo botón en el hero y en el cierre de la página (una sola fuente). */
-const LANDING_CTA_CREAR_GRATIS = "Crear mi agenda gratis";
+/** Mismo botón en el hero y en el cierre de la página (una sola fuente).
+ * Beta por invitación (decisión del dueño 2026-11-09, `src/config/beta.ts`):
+ * nadie crea su agenda solo, así que el botón pide una invitación. */
+const LANDING_CTA_INVITACION = "Pedir invitación";
 
 /** Mismo consejo que `inicio.tuLink.ayuda` (GUIA §4: mismo vocabulario para
  * el mismo concepto, en dos lugares distintos). */
@@ -43,7 +45,7 @@ export const landing = {
     precios: "Precios",
     preguntas: "Preguntas",
     entrar: "Entrar",
-    ctaCrearAgenda: "Crear mi agenda",
+    ctaCrearAgenda: LANDING_CTA_INVITACION,
   },
   hero: {
     /** Pequeña etiqueta sobre el título (rediseño del hero: tarjeta lima a
@@ -54,7 +56,7 @@ export const landing = {
     titulo: (p: { tagline: string }): string => p.tagline,
     subtitulo:
       "El sistema de reservas para barberías, peluquerías, estética y kinesiología. Tus clientes reservan solos con un link, sin llamadas ni mensajes uno a uno.",
-    ctaPrimario: LANDING_CTA_CREAR_GRATIS,
+    ctaPrimario: LANDING_CTA_INVITACION,
     ctaSecundario: "Prueba la demo",
     /** aria-label de la imagen de producto a la derecha del hero (rediseño,
      * sin `.dc.html` de referencia todavía). */
@@ -192,8 +194,8 @@ export const landing = {
   ctaFinal: {
     titulo: "¿Lista para dejar de perder horas?",
     texto:
-      "Crea tu cuenta gratis, sin tarjeta de crédito. Si quieres lista de espera y los demás extras, tienes 30 días de prueba en los planes pagados.",
-    boton: LANDING_CTA_CREAR_GRATIS,
+      "Estamos en beta por invitación: pide la tuya y te ayudamos a dejar tu agenda lista. Gratis mientras dure la beta, sin tarjeta de crédito.",
+    boton: LANDING_CTA_INVITACION,
   },
   footer: {
     texto: "El sistema de reservas para pymes chilenas.",
@@ -233,7 +235,7 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
       "Confirmaciones y recordatorios por correo",
       "Reseñas verificadas",
     ],
-    cta: "Elegir Gratis",
+    cta: LANDING_CTA_INVITACION,
   },
   {
     id: "emprende",
@@ -245,7 +247,7 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
       "Tu página de reservas sin nuestra marca",
       "Lista de espera",
     ],
-    cta: "Elegir Emprende",
+    cta: LANDING_CTA_INVITACION,
   },
   {
     id: "equipo",
@@ -259,7 +261,7 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
       "Caja e informes completos",
       "Cuentas para tu equipo con permisos",
     ],
-    cta: "Elegir Equipo",
+    cta: LANDING_CTA_INVITACION,
   },
   {
     id: "local",
@@ -270,7 +272,7 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
       "Todo lo de Equipo",
       "Soporte prioritario",
     ],
-    cta: "Elegir Local",
+    cta: LANDING_CTA_INVITACION,
   },
 ];
 
@@ -289,8 +291,8 @@ export const PLANES_LANDING: readonly PlanLanding[] = [
 // ---------------------------------------------------------------------------
 
 /** Mismo botón de conversión en todas las páginas del sitio (una sola
- * fuente, como `LANDING_CTA_CREAR_GRATIS` dentro de `landing`). */
-const SITIO_CTA = LANDING_CTA_CREAR_GRATIS;
+ * fuente, como `LANDING_CTA_INVITACION` dentro de `landing`). */
+const SITIO_CTA = LANDING_CTA_INVITACION;
 
 /** Mismo nombre de rubro en el submenú de navegación, el pie de página y el
  * índice de "Para quién" (GUIA §4). */
@@ -628,7 +630,7 @@ export const sitio = {
         item2: "Corte y barba",
         item3: "Arreglo de barba",
       },
-      cta: "Cámbiate gratis",
+      cta: SITIO_CTA,
     },
     /** Título de la sección con todas las funcionalidades en un vistazo
      * (bento grid) de la portada (WP-hemsida). No reemplaza
@@ -1651,8 +1653,8 @@ export const home = {
     texto:
       "Deja que tus clientes reserven a cualquier hora. Los recordatorios, las reseñas y las horas flash se hacen solos.",
     emailLabel: "Tu correo",
-    emailPlaceholder: "Tu correo electrónico",
-    cta: "Crear cuenta gratis",
+    emailPlaceholder: "Tu correo para la invitación",
+    cta: LANDING_CTA_INVITACION,
     marqueeAria: (p: { nombre: string }): string => `Esto incluye ${p.nombre}`,
     cardA: [
       {
@@ -1784,7 +1786,7 @@ export const home = {
         texto: "Tu nueva página de reservas está lista",
       },
     ],
-    cta: "Traer mi página gratis",
+    cta: LANDING_CTA_INVITACION,
     nota: "Sin contraseñas · Sin datos de clientes",
     ventana: (p: { nombre: string }): string => `Importar a ${p.nombre}`,
     pasoDe: (p: { n: number }): string => `Paso ${p.n} de 4`,
@@ -1970,6 +1972,17 @@ export const home = {
     cta: "Pedir una invitación",
     /** Asunto del correo que se abre con el botón (mailto a hola@). */
     asuntoCorreo: "Quiero una invitación a la beta",
+    /** Texto del correo, listo para completar. `email` llega del campo de la
+     * portada (vacío si no lo escribieron). */
+    cuerpoCorreo: (p: { email: string }): string =>
+      [
+        "Hola, quiero una invitación a la beta.",
+        "",
+        "Nombre del negocio:",
+        "Rubro:",
+        "Comuna:",
+        p.email ? `Mi correo: ${p.email}` : "Mi correo:",
+      ].join("\n"),
     nota: "Cupos limitados. Te respondemos por correo.",
   },
   precios: {
@@ -2029,7 +2042,7 @@ export const home = {
     tituloPre: "¿Listo para llenar",
     tituloMarca: "tu agenda?",
     texto:
-      "Crea tu página de reservas en cinco minutos – gratis para una persona, sin tarjeta.",
+      "Estamos sumando negocios de a poco, por invitación. Pide la tuya y te ayudamos a dejar tu página de reservas lista – gratis mientras dure la beta.",
   },
   footer: {
     producto: "Producto",
@@ -2040,7 +2053,7 @@ export const home = {
     flash: "Horas flash",
     ejemplo: "Demo",
     cuenta: "Cuenta",
-    crearCuenta: "Crear cuenta gratis",
+    crearCuenta: LANDING_CTA_INVITACION,
     omTitulo: (p: { nombre: string }): string => `Sobre ${p.nombre}`,
     omTexto:
       "Un sistema de reservas para peluquerías, barberías, estética y kinesiología. Tus clientes reservan solos con tu link, y las horas libres se llenan con lista de espera y horas flash.",

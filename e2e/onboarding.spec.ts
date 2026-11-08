@@ -2,8 +2,16 @@
 // (WP-51 lade till "Tu página" mellan Horario och Tu link) → bokningslänk. Egen, fräsch
 // session (ignorerar storageState-projektet i playwright.config.ts, som redan är inloggad
 // OCH onboardad) — den här specen gör hela flödet själv, från noll.
+//
+// Stängd beta (src/config/beta.ts): ett nytt konto utan inbjudan landar på /app/beta och
+// når inte onboarding. Specen kontrollerar det och tar sedan den riktiga vägen in — en
+// inbjudan från en plattformsadmin (`/app/bienvenida/[token]`, F19/WP-36) — innan
+// onboardingen fyller i det företag inbjudan skapade.
 import { expect, test } from "@playwright/test";
 
+import { INVITE_ONLY_BETA } from "../src/config/beta";
+import { acceso } from "../src/i18n/auth";
+import { createBusinessInvitation } from "./helpers/invitation";
 import { waitForConfirmLink } from "./helpers/mailpit";
 
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -24,6 +32,23 @@ test("login → onboarding → länk till bokningssidan", async ({
 
   const link = await waitForConfirmLink(email);
   await page.goto(link);
+
+  if (INVITE_ONLY_BETA) {
+    // Sin invitación: la página de la beta, y onboarding tampoco se abre directo.
+    await page.waitForURL("**/app/beta");
+    await expect(
+      page.getByRole("heading", { level: 1, name: acceso.beta.cardTitulo }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: acceso.beta.cta }),
+    ).toHaveAttribute("href", /^mailto:/);
+    await page.goto("/app/onboarding");
+    await expect(page).toHaveURL(/\/app\/beta$/);
+
+    // Con la invitación de un admin, el negocio se crea y sigue a onboarding.
+    const token = await createBusinessInvitation(email, "Barbería E2E");
+    await page.goto(`/app/bienvenida/${token}`);
+  }
   await page.waitForURL("**/app/onboarding");
 
   // Sesión visible (nav.cerrarSesion) — F1, WP-15.

@@ -2,11 +2,15 @@
 // tjänster → equipo → horario → din sida → plan → link.
 // Inloggning krävs redan av src/app/(app)/layout.tsx. Ägare som redan har ett företag
 // skickas till /app/inicio (onboarding är bara för kontot första gången).
+// Stängd beta (`INVITE_ONLY_BETA`, src/config/beta.ts): utan företag (inget utkast från en
+// inbjudan) och utan plattformsadmin → /app/beta. Servern spärrar också själva skapandet
+// (`completeOnboarding`), det här är bara vägen dit.
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { SessionBar } from "@/components/onboarding/session-bar";
+import { INVITE_ONLY_BETA } from "@/config/beta";
 import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -14,6 +18,7 @@ import {
   isOnboardingDraft,
 } from "@/server/onboarding/owner-business";
 import { onboarding } from "@/i18n";
+import { isPlatformAdmin } from "@/server/admin/auth";
 import { withServiceTx } from "@/server/db/tx";
 import { platformNames } from "@/server/import/platforms";
 import { loadPlanIn } from "@/server/plans/entitlements";
@@ -47,6 +52,9 @@ export default async function OnboardingPage() {
   // YA completo manda a /app/inicio.
   const business = await getOwnerBusiness(user.id);
   if (business && !isOnboardingDraft(business)) redirect(appHref("appInicio"));
+  if (!business && INVITE_ONLY_BETA && !(await isPlatformAdmin(user.id))) {
+    redirect(appHref("appBeta"));
+  }
 
   // WP-66 (D-035): bara när importen finns och inte är pausad (månadstaket).
   const importer =

@@ -1462,9 +1462,10 @@ export const acceso = {
     cardTitulo: "Entra a tu agenda",
     cardTexto:
       "Te enviamos un código y un link a tu correo: no hay contraseña que recordar.",
-    /** WP-83 (D-068): link a la página de registro (`SIGNUP_PATH`). TODO_COPY */
+    /** WP-83 (D-068): link a la página de registro (`SIGNUP_PATH`), que en la
+     * beta por invitación muestra cómo pedir una. */
     nuevoPregunta: "¿Primera vez acá?",
-    nuevoLink: "Crea tu agenda gratis",
+    nuevoLink: "Pide una invitación",
   },
   /** WP-83 (D-068): `/comenzar`, registro de un negocio nuevo. Mismo correo
    * (código + link) que `/login`; la cuenta se crea al entrar. TODO_COPY */
@@ -1485,6 +1486,31 @@ export const acceso = {
     cta: "Crear mi agenda",
     cuentaPregunta: "¿Ya tienes cuenta?",
     cuentaLink: "Entra",
+  },
+  /** Beta por invitación (decisión del dueño 2026-11-09, `src/config/beta.ts`):
+   * `/comenzar` y `/app/beta` (una cuenta sin negocio) muestran esto en vez del
+   * registro. El botón abre un correo a hola@ (`invitacionMailto`). */
+  beta: {
+    titulo: "Beta por invitación",
+    /** La última palabra va destacada (igual que `login.bienvenida`). */
+    bienvenida: "Abrimos de a poco, por invitación",
+    bienvenidaTexto:
+      "Estamos sumando negocios de Santiago uno a uno, para acompañar a cada uno y mejorar con lo que nos cuentan.",
+    etiqueta: "BETA POR INVITACIÓN",
+    cardTitulo: "Por ahora, entras con invitación",
+    cardTexto:
+      "Pídenos una y te escribimos apenas tengamos un cupo para tu negocio.",
+    puntos: {
+      gratis: "Gratis mientras dure la beta",
+      ayuda: "Te ayudamos a dejar tu agenda lista",
+      fundador: "Precio Fundador: la mitad para siempre",
+    },
+    cta: "Pedir una invitación",
+    nota: "Se abre tu correo con el mensaje listo para enviar.",
+    yaInvitado:
+      "¿Ya tienes una invitación? Abre el link que te enviamos por correo.",
+    cuentaPregunta: "¿Ya tienes cuenta?",
+    cuentaLink: "Entrar",
   },
   /** WP-83 (D-068): el código del correo se escribe acá (alternativa al
    * link). TODO_COPY */
@@ -1788,6 +1814,10 @@ export const onboarding = {
     sufijo: ".",
     error: "Debes aceptar los Términos y el Acuerdo de encargo para continuar.",
   },
+  /** Beta por invitación (`src/config/beta.ts`): el servidor no crea un negocio
+   * nuevo sin invitación (código `beta.invitation_required`). */
+  betaSinInvitacion:
+    "Por ahora solo se puede crear una agenda con invitación. Abre el link que te enviamos por correo o pide una invitación.",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------

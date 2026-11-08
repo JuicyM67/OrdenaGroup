@@ -128,7 +128,7 @@ export const compartir = {
     cta: {
       titulo: "¿Todavía no tienes tu link de reservas?",
       texto: "Crea tu agenda gratis y comparte tu link hoy mismo.",
-      boton: "Crear mi agenda",
+      boton: "Pedir invitación",
     },
   },
 } as const satisfies Trad;

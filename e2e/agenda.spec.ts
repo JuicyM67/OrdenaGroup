@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { SIN_NEGOCIO_URL } from "./helpers/invitation";
+
 // Agenda är en desktopskärm, minsta bredd 1280 px (docs/tasks/plans/WP-12.md §2
 // "Utanför scope": ingen mobilversion — Hoy/WP-14 är mobilvyn enligt F6).
 test.skip(
@@ -37,14 +39,14 @@ test.describe("Agenda — rutter", () => {
 
   // WP-21: /app/agenda visar riktig data (D-020s grind borttagen, D-024). Den delade
   // storageState-sessionen (playwright.config.ts) saknar företag, så den redirectas till
-  // onboarding, precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
+  // onboarding (under den stängda betan vidare till /app/beta), precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
   // innehåll (noindex, ?vista=&fecha=, en ägare MED företag) testas i e2e/owner-live.spec.ts,
   // som loggar in som den seedade ägaren i stället.
-  test("/app/agenda utan negocio → redirige a /app/onboarding", async ({
+  test("/app/agenda utan negocio → redirige a /app/onboarding (beta: /app/beta)", async ({
     page,
   }) => {
     await page.goto("/app/agenda");
-    await page.waitForURL("**/app/onboarding");
+    await page.waitForURL(SIN_NEGOCIO_URL);
   });
 });
 

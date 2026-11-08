@@ -18,10 +18,16 @@ export function AuthShell({
   variant = "login",
 }: {
   children: ReactNode;
-  /** WP-83 (D-068): `registro` = /comenzar (nytt företag), `login` = /login. */
-  variant?: "login" | "registro";
+  /** WP-83 (D-068): `registro` = /comenzar (nytt företag), `login` = /login.
+   * `beta` = /comenzar och /app/beta under den stängda betan (src/config/beta.ts). */
+  variant?: "login" | "registro" | "beta";
 }) {
-  const t = variant === "registro" ? acceso.registro : acceso.login;
+  const t =
+    variant === "registro"
+      ? acceso.registro
+      : variant === "beta"
+        ? acceso.beta
+        : acceso.login;
   return (
     <div className="relative isolate min-h-dvh overflow-hidden bg-canvas text-on-dark lg:bg-dark">
       <div className="absolute inset-x-0 top-0 -z-10 h-80 lg:inset-y-0 lg:h-auto">

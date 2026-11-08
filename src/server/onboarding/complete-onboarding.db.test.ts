@@ -1,4 +1,4 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 
 import { LEGAL_VERSION } from "@/i18n/legal/types";
 import {
@@ -9,6 +9,10 @@ import {
 } from "@/server/db/testing";
 
 import { completeOnboarding } from "./complete-onboarding";
+
+// Det här är själva onboardingen med öppen registrering. Den stängda betans spärr
+// (`INVITE_ONLY_BETA`, src/config/beta.ts) testas i complete-onboarding.beta.db.test.ts.
+vi.mock("@/config/beta", () => ({ INVITE_ONLY_BETA: false }));
 
 assertLocalDatabase();
 

@@ -4,8 +4,9 @@
 // negocio los ajusta en su propia lista de servicios.
 import type { PaginasCopy } from "./types";
 
-const CTA = "Crear mi agenda gratis";
-const CIERRE = "Sí, crear mi página";
+// Beta por invitación (src/config/beta.ts): los botones piden una invitación.
+const CTA = "Pedir invitación";
+const CIERRE = "Sí, quiero una invitación";
 
 export const rubros: PaginasCopy["rubros"] = {
   frisor: {
@@ -21,7 +22,7 @@ export const rubros: PaginasCopy["rubros"] = {
       marca: "peluquerías.",
       texto:
         "Servicios listos de corte, color y mechas. Tus clientes reservan solos, tú te dedicas a cortar.",
-      cta: "Crear mi peluquería gratis",
+      cta: CTA,
     },
     problemas: {
       pre: "El día a día en una peluquería,",

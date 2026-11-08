@@ -1,6 +1,6 @@
 // "Descubre växer" (WP-85, D-070): inforuta i stället för en egen flik. Förklarar
 // att katalogen fylls på, och länkar till att tipsa ett företag (kontakt) och till
-// registreringen ("Aparece aquí gratis" → /login, som övriga "Crear mi agenda"-knappar). Serverrenderad, ingen JS.
+// registreringen (`SIGNUP_PATH`, som under betan visar hur man ber om en inbjudan). Serverrenderad, ingen JS.
 import { ArrowRight, Sprout } from "lucide-react";
 import Link from "next/link";
 

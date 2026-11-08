@@ -3,6 +3,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { SIN_NEGOCIO_URL } from "./helpers/invitation";
+
 test.skip(
   ({ isMobile }) => isMobile,
   "Inicio är en desktop-skärm (F6); mobil är Hoy (WP-14), se planens §2",
@@ -68,13 +70,13 @@ test.describe("rutter", () => {
 
   // WP-21: /app/inicio visar riktig data (D-020s grind borttagen, D-024). Den delade
   // storageState-sessionen (playwright.config.ts) saknar företag, så den redirectas till
-  // onboarding, precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
+  // onboarding (under den stängda betan vidare till /app/beta), precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
   // innehåll (en ägare MED företag) testas i e2e/owner-live.spec.ts.
-  test("/app/inicio utan negocio → redirige a /app/onboarding", async ({
+  test("/app/inicio utan negocio → redirige a /app/onboarding (beta: /app/beta)", async ({
     page,
   }) => {
     await page.goto("/app/inicio");
-    await page.waitForURL("**/app/onboarding");
+    await page.waitForURL(SIN_NEGOCIO_URL);
   });
 });
 
