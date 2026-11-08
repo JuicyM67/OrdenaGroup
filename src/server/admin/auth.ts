@@ -24,7 +24,7 @@ async function currentUser(): Promise<{ id: string; email: string } | null> {
   return { id: user.id, email: user.email ?? "" };
 }
 
-async function isPlatformAdmin(userId: string): Promise<boolean> {
+export async function isPlatformAdmin(userId: string): Promise<boolean> {
   return withServiceTx(async (q) => {
     const r = await q.query(
       `select 1 from private.platform_admins where user_id = $1`,

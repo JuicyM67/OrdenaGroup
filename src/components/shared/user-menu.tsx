@@ -12,6 +12,7 @@
 import {
   ExternalLink,
   LogOut,
+  ShieldCheck,
   SlidersHorizontal,
   UserRound,
 } from "lucide-react";
@@ -29,6 +30,7 @@ import {
   type MyProfileActions,
   type MyProfileData,
 } from "./my-profile-dialog";
+import { useIsPlatformAdmin } from "./platform-admin-context";
 
 /** TODO_COPY (copywriter-es-cl): ingen sträng ännu för menyposten — samma
  * platshållare som `my-profile-dialog.tsx`, nämnt i rapporten. */
@@ -65,6 +67,7 @@ export function UserMenu({
   className,
 }: UserMenuProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
+  const isPlatformAdmin = useIsPlatformAdmin();
   const trigger =
     variant === "pill" ? (
       <UserPill
@@ -121,6 +124,16 @@ export function UserMenu({
           />
           {onboarding.listo.ctaVerPagina}
         </MenuLinkItem>
+        {isPlatformAdmin ? (
+          <MenuLinkItem href="/admin" prefetch={false}>
+            <ShieldCheck
+              aria-hidden="true"
+              className={ICON_CLASS}
+              strokeWidth={strokeCard}
+            />
+            {nav.panelAdmin}
+          </MenuLinkItem>
+        ) : null}
         <MenuFormItem action={onLogout ?? (() => {})}>
           <LogOut
             aria-hidden="true"

@@ -25,6 +25,7 @@ import { redirect } from "next/navigation";
 
 import { appHref, cuentaHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isPlatformAdmin } from "@/server/admin/auth";
 import { hasAccount } from "@/server/accounts/account";
 import {
   getOwnerBusiness,
@@ -85,6 +86,9 @@ export default async function AppIndexPage() {
   }
 
   const business = await getOwnerBusiness(user.id);
+  // En plattformsadmin utan eget företag (inbjuden via /admin/administradores)
+  // ska till adminpanelen, inte till onboarding.
+  if (!business && (await isPlatformAdmin(user.id))) redirect("/admin");
   // WP-67 (D-054, risk R1): en inloggad KONSUMENT utan företag ska inte
   // hamna i onboarding och av misstag skapa ett företag — hen skickas till
   // sitt kundkonto. Därifrån leder "¿Tienes un negocio?" direkt till
