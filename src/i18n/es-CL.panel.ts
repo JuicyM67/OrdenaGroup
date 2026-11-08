@@ -1253,6 +1253,8 @@ export const email = {
       ignorar:
         "Si no pediste este correo, puedes ignorarlo. No compartas este código con nadie.",
       expira: "El link y el código vencen en 15 minutos.",
+      motivo:
+        "Recibes este correo porque alguien pidió entrar con esta dirección.",
     },
     confirmation: {
       asunto: (p: { marca: string }): string =>
@@ -1265,6 +1267,8 @@ export const email = {
       ignorar:
         "Si no creaste esta cuenta, puedes ignorar este correo. No compartas este código con nadie.",
       expira: "El link y el código vencen en 15 minutos.",
+      motivo:
+        "Recibes este correo porque alguien creó una cuenta con esta dirección.",
     },
   },
   /** Línea que WP-16/25 agregan dentro de `reservaConfirmada.cuerpo` cuando

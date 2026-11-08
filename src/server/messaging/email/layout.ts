@@ -103,11 +103,20 @@ const FONT_SANS =
  * cellen, inte bara på `<body>`) — det var just den okantade "Booking"-
  * texten (ingen egen bakgrund, ingen klass) som blev osynlig i mörkt läge
  * innan WP-49, se filkommentaren ovan. */
-function wordmarkHtml(): string {
+function wordmarkHtml(logoSrc?: string): string {
+  // D-071: med `logoSrc` (appikonen på den publika domänen) visas den riktiga
+  // logotypen; utan den den bildfria limecirkeln som förut.
+  const mark = logoSrc
+    ? `<td style="width:36px;height:36px;vertical-align:middle;" width="36"><img src="${escapeHtml(
+        logoSrc,
+      )}" width="36" height="36" alt="${escapeHtml(
+        brand.name,
+      )}" style="display:block;width:36px;height:36px;border-radius:10px;border:0;" /></td>`
+    : null;
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${c.canvas}">
       <tr>
-        <td bgcolor="${c.lime}" style="width:32px;height:32px;border-radius:16px;background-color:${c.lime};text-align:center;vertical-align:middle;font-family:${FONT_DISPLAY};font-weight:700;font-size:14px;line-height:32px;color:${c.onLimeSoft};" align="center">●</td>
+        ${mark ?? `<td bgcolor="${c.lime}" style="width:32px;height:32px;border-radius:16px;background-color:${c.lime};text-align:center;vertical-align:middle;font-family:${FONT_DISPLAY};font-weight:700;font-size:14px;line-height:32px;color:${c.onLimeSoft};" align="center">●</td>`}
         <td bgcolor="${c.canvas}" style="background-color:${c.canvas};padding-left:10px;font-family:${FONT_DISPLAY};font-weight:700;font-size:19px;color:${c.ink};">${escapeHtml(
           brand.name,
         )}</td>
@@ -199,6 +208,8 @@ export type EmailLayoutInput = {
   readonly bodyText: string;
   readonly footerHtml: string;
   readonly footerText: string;
+  /** Absolut URL till logotypen i sidhuvudet (D-071); utelämnad = limecirkeln. */
+  readonly logoSrc?: string;
 };
 
 /** Företagsuppgifter ur brand.ts i sidfoten — bara riktiga värden, aldrig platshållare
@@ -247,7 +258,7 @@ export function renderLayout(input: EmailLayoutInput): {
         <td align="center" style="padding:32px 16px;background-color:${c.canvas};" bgcolor="${c.canvas}">
           <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" class="container" style="width:600px;max-width:600px;background-color:${c.canvas};" bgcolor="${c.canvas}">
             <tr>
-              <td class="px" style="padding:0 8px 24px;background-color:${c.canvas};" bgcolor="${c.canvas}">${wordmarkHtml()}</td>
+              <td class="px" style="padding:0 8px 24px;background-color:${c.canvas};" bgcolor="${c.canvas}">${wordmarkHtml(input.logoSrc)}</td>
             </tr>
             <tr>
               <td style="background-color:${c.lime};height:6px;line-height:6px;font-size:0;border-radius:24px 24px 0 0;" bgcolor="${c.lime}">&nbsp;</td>
