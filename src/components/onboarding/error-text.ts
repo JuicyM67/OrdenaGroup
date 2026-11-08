@@ -47,6 +47,7 @@ const KNOWN: Record<string, string> = {
   "hours.range_required": comun.algoSalioMal,
   "hours.weekday_duplicate": comun.algoSalioMal,
   "terms.not_accepted": onboarding.terminos.error,
+  "beta.invitation_required": onboarding.betaSinInvitacion,
   invalid_input: comun.algoSalioMal,
   unauthorized: comun.algoSalioMal,
   unknown: comun.algoSalioMal,

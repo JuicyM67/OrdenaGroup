@@ -7,8 +7,10 @@
 import { marketplaceEnabled } from "./marketplace";
 
 /** WP-83 (D-068): "Entrar" går till `LOGIN_PATH`, allt som skapar en ny agenda
- * ("Crear mi agenda", priskort, CTA) till `SIGNUP_PATH`. Båda använder samma
- * magiska länk/kod; ett nytt konto skapas när länken öppnas eller koden skrivs in. */
+ * ("Pedir invitación", priskort, CTA) till `SIGNUP_PATH`. Båda använder samma
+ * magiska länk/kod; ett nytt konto skapas när länken öppnas eller koden skrivs in.
+ * Under den stängda betan (`INVITE_ONLY_BETA`, src/config/beta.ts) visar
+ * `SIGNUP_PATH` i stället hur man ber om en inbjudan. */
 export const LOGIN_PATH = "/login";
 export const SIGNUP_PATH = "/comenzar";
 
@@ -248,6 +250,7 @@ export type AppRouteId =
   | "appInvitacion"
   | "appBienvenida"
   | "appOnboarding"
+  | "appBeta"
   | "baja"
   | "resena";
 
@@ -312,6 +315,8 @@ const APP_ROUTES: Record<AppRouteId, string> = {
   appInvitacion: "/app/invitacion/[token]",
   appBienvenida: "/app/bienvenida/[token]",
   appOnboarding: "/app/onboarding",
+  // Stängd beta (src/config/beta.ts): ett konto utan företag och utan inbjudan.
+  appBeta: "/app/beta",
   baja: "/baja/[token]",
   resena: "/resena/[token]",
 };

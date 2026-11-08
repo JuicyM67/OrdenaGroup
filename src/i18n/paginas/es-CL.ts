@@ -42,13 +42,13 @@ export const paginas: PaginasCopy = {
     },
     abrirMenu: "Abrir el menú",
     cerrarMenu: "Cerrar el menú",
-    crearGratis: "Crear mi agenda gratis",
+    crearGratis: "Pedir invitación",
     entrar: "Entrar",
   },
   comunes: {
     migas: "Migas de pan",
     inicio: "Inicio",
-    crearGratis: "Empieza gratis",
+    crearGratis: "Pedir invitación",
     verEjemplo: "Prueba la demo",
     faqEtiqueta: "PREGUNTAS",
     faqTitulo: "Bueno saber.",
@@ -63,7 +63,7 @@ export const paginas: PaginasCopy = {
       marca: "amigos?",
       texto:
         "Tu propia página de reservas en cinco minutos. Gratis para una persona.",
-      boton: "Sí, crear mi página",
+      boton: "Sí, quiero una invitación",
     },
   },
   indiceFunciones: {

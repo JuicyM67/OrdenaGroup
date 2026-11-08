@@ -6,14 +6,14 @@ import { Check, MessageCircle, Sparkles, type LucideIcon } from "lucide-react";
 
 import { Highlight } from "@/components/marketing/highlight";
 import { Button } from "@/components/ui/button";
-import { brand } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
+import { invitacionMailto } from "@/lib/invitacion";
 
 const t = copy.home.beta;
 
 // Betan är bara på inbjudan: knappen öppnar ett mejl till hola@ i stället för
 // registreringen.
-const invitacionHref = `mailto:${brand.domain ? `hola@${brand.domain}` : brand.legal.contactEmail}?subject=${encodeURIComponent(t.asuntoCorreo)}`;
+const invitacionHref = invitacionMailto();
 
 const ICONS: Record<string, LucideIcon> = {
   gratis: Check,

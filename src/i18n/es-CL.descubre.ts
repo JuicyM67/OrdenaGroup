@@ -161,7 +161,7 @@ export const descubre = {
     texto:
       "Todo el tiempo se suman negocios nuevos, así que pronto vas a ver más cerca de ti.",
     recomendar: "¿Falta tu negocio favorito? Recomiéndalo",
-    paraNegocios: "¿Tienes un negocio? Aparece aquí gratis",
+    paraNegocios: "¿Tienes un negocio? Pide una invitación",
   },
   flashLista: {
     titulo: "Horas flash hoy",

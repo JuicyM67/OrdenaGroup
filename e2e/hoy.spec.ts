@@ -1,6 +1,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
+import { SIN_NEGOCIO_URL } from "./helpers/invitation";
+
 // Se docs/tasks/plans/WP-14.md §5. Alla ?estado= som fixtures.ts känner till.
 const ESTADOS = [
   undefined,
@@ -49,13 +51,13 @@ test.describe("Hoy — routes", () => {
 
   // WP-21: /app/hoy visar riktig data (D-020s grind borttagen, D-024). Den delade
   // storageState-sessionen (playwright.config.ts) saknar företag, så den redirectas till
-  // onboarding, precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
+  // onboarding (under den stängda betan vidare till /app/beta), precis som /app (WP-15) — se e2e/onboarding.spec.ts. Ruttens riktiga
   // innehåll (h1, noindex, en ägare MED företag) testas i e2e/owner-live.spec.ts.
-  test("/app/hoy utan negocio → redirige a /app/onboarding", async ({
+  test("/app/hoy utan negocio → redirige a /app/onboarding (beta: /app/beta)", async ({
     page,
   }) => {
     await page.goto("/app/hoy");
-    await page.waitForURL("**/app/onboarding");
+    await page.waitForURL(SIN_NEGOCIO_URL);
   });
 });
 
@@ -271,5 +273,5 @@ test.describe("Hoy — axe", () => {
   }
   // "/app/hoy har inga axe-överträdelser": borttaget (WP-21) — samma skärm/komponent som
   // /design-lab/hoy ovan (redan täckt); den delade storageState-sessionen saknar företag,
-  // så /app/hoy redirectar till /app/onboarding (se "Hoy — routes").
+  // så /app/hoy redirectar till /app/onboarding eller /app/beta (se "Hoy — routes").
 });

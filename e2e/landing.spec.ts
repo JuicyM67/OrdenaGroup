@@ -4,8 +4,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 
+import { INVITE_ONLY_BETA } from "../src/config/beta";
 import { brand } from "../src/config/brand";
-import { paraClientes } from "../src/i18n";
+import { acceso, paraClientes } from "../src/i18n";
 import { home, landing } from "../src/i18n/es-CL.marketing";
 import { paginas } from "../src/i18n/paginas";
 
@@ -89,6 +90,37 @@ test("el formulario del hero lleva a /comenzar con el correo (WP-83)", async ({
     .first()
     .click();
   await navigated;
+});
+
+test.describe("beta por invitación: /comenzar (src/config/beta.ts)", () => {
+  // Utloggad: inloggade skickas vidare till /app.
+  test.use({ storageState: { cookies: [], origins: [] } });
+  test.skip(!INVITE_ONLY_BETA, "solo con la beta por invitación activa");
+
+  test("muestra la beta y el correo del hero va en el mailto", async ({
+    page,
+  }) => {
+    await page.goto("/comenzar?email=ana%40example.com");
+    await expect(
+      page.getByRole("heading", { level: 1, name: acceso.beta.cardTitulo }),
+    ).toBeVisible();
+    // Ningún formulario de registro.
+    await expect(page.getByRole("textbox")).toHaveCount(0);
+    const cta = page.getByRole("link", { name: acceso.beta.cta });
+    await expect(cta).toHaveAttribute("href", /^mailto:hola@/);
+    expect(await cta.getAttribute("href")).toContain(
+      encodeURIComponent("ana@example.com"),
+    );
+    await expect(
+      page.getByRole("link", { name: acceso.beta.cuentaLink, exact: true }),
+    ).toHaveAttribute("href", "/login");
+    const sinScroll = await page.evaluate(
+      () =>
+        document.documentElement.scrollWidth <=
+        document.documentElement.clientWidth,
+    );
+    expect(sinScroll).toBe(true);
+  });
 });
 
 test("360 px de ancho: sin scroll horizontal", async ({ page }) => {
