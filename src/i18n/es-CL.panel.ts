@@ -27,6 +27,7 @@ export const nav = {
   caja: "Caja",
   ajustes: "Ajustes",
   cerrarSesion: "Cerrar sesión",
+  panelAdmin: "Panel de admin",
   secciones: "Secciones",
   volverAlInicio: "Volver al inicio",
   buscar: "Buscar",

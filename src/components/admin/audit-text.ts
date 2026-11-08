@@ -21,7 +21,15 @@ export type AuditEntryLike = {
   readonly details: Record<string, unknown> | null;
 };
 
-export function auditActionText(action: string): string {
+/** Tar raden (eller bara nyckeln): `set_marketplace_hidden` blir "Ocultó
+ * de Descubre"/"Mostró en Descubre" efter `details.hidden`. */
+export function auditActionText(entry: string | AuditEntryLike): string {
+  const action = typeof entry === "string" ? entry : entry.action;
+  if (typeof entry !== "string" && action === "set_marketplace_hidden") {
+    const hidden = entry.details?.hidden;
+    if (hidden === true) return t.descubreOculto;
+    if (hidden === false) return t.descubreVisible;
+  }
   return ACCIONES[action] ?? action;
 }
 
@@ -79,6 +87,13 @@ function detailText(key: string, value: unknown): string {
 /** Detaljerna som en rad, "" om det inte finns något att visa. */
 export function auditDetailsText(entry: AuditEntryLike): string {
   const details = entry.details ?? {};
+  // `hidden` syns redan i åtgärdstexten ("Ocultó de Descubre").
+  if (
+    entry.action === "set_marketplace_hidden" &&
+    typeof details.hidden === "boolean"
+  ) {
+    return "";
+  }
   if (
     entry.action === "business_place" &&
     LUGAR.some((k) => typeof details[k] === "boolean")

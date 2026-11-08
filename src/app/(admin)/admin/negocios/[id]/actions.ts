@@ -18,6 +18,7 @@ import {
   freezeBusiness,
   sendLoginLink,
   setBillingMode,
+  setMarketplaceHidden,
   setPlan,
   unfreezeBusiness,
   type AdminActionResult,
@@ -79,6 +80,18 @@ export async function setBillingModeAction(
 ): Promise<AdminActionResult> {
   const admin = await requireAdminForAction();
   const result = await setBillingMode(admin.userId, businessId, mode, note);
+  await afterAction(businessId);
+  return result;
+}
+
+/** Döljer/visar företaget i Descubre (demo- och testföretag). */
+export async function setMarketplaceHiddenAction(
+  businessId: string,
+  hidden: boolean,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminForAction();
+  if (typeof hidden !== "boolean") return { ok: false, code: "invalid_input" };
+  const result = await setMarketplaceHidden(admin.userId, businessId, hidden);
   await afterAction(businessId);
   return result;
 }
