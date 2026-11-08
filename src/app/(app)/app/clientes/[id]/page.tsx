@@ -8,6 +8,7 @@ import { z } from "zod";
 
 import { logout } from "@/app/auth/actions";
 import { CustomerDetailScreen } from "@/components/customers/customer-detail-screen";
+import { CustomerPackagesCard } from "@/components/packages/customer-packages-card";
 import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getCurrentMember } from "@/server/onboarding/owner-business";
@@ -18,8 +19,13 @@ import {
   updateCustomerNotes,
 } from "@/server/owner/clientes";
 import { ownerNameParts } from "@/server/owner/shared";
+import { loadCustomerPackages } from "@/server/packages/packages";
 import { anonymizeCustomer, exportCustomer } from "@/server/privacy/customer";
 
+import {
+  sellPackageAction,
+  voidPackageSaleAction,
+} from "../../caja/package-actions";
 import {
   confirmMyPhotoUploadAction,
   createMyPhotoUploadAction,
@@ -67,6 +73,13 @@ export default async function ClienteDetallePage({
 
   const owner = ownerNameParts(user.email);
   const myProfile = await loadMyProfileAction();
+  // WP-86 (D-072): kundens paket.
+  const pkgs = await loadCustomerPackages(
+    user.id,
+    current.business.id,
+    parsedId.data,
+    new Date(),
+  );
 
   const onUpdateNotes = async (notes: string) => {
     "use server";
@@ -115,6 +128,11 @@ export default async function ClienteDetallePage({
     <CustomerDetailScreen
       customer={customer}
       canViewReports={current.view.perms.can_view_reports}
+      fichaHref={
+        current.view.perms.can_view_records
+          ? `${appHref("appClienteDetail", parsedId.data)}/ficha`
+          : undefined
+      }
       onLogout={logout}
       onUpdateNotes={onUpdateNotes}
       onExportCustomer={onExportCustomer}
@@ -123,6 +141,20 @@ export default async function ClienteDetallePage({
       onNotifyMember={onNotifyMember}
       ownerName={owner.name}
       publicPageHref={`/${current.business.slug}`}
+      packagesCard={
+        pkgs.packages.length > 0 || pkgs.canSell ? (
+          <CustomerPackagesCard
+            customer={{ id: customer.id, name: customer.name }}
+            packages={pkgs.packages}
+            canSell={pkgs.canSell}
+            canVoid={pkgs.canVoid}
+            showMoney={pkgs.showMoney}
+            templates={pkgs.templates}
+            sellActions={{ sell: sellPackageAction }}
+            onVoid={voidPackageSaleAction}
+          />
+        ) : undefined
+      }
       myProfile={myProfile ?? undefined}
       myProfileActions={
         myProfile

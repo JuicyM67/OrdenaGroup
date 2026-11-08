@@ -45,6 +45,14 @@ export const customerFormSchema = z.object({
    * aldrig på klienten. Formen (`unknown`) är avsiktligt lös här: det
    * riktiga schemat byggs av `buildAnswersSchema` per tjänst. */
   answers: z.record(z.string(), z.unknown()).optional().default({}),
+  /** WP-88 (D-074): kundens godkända consentimientos (mall + version). Servern
+   * (`checkInformedConsents`) jämför med tjänstens aktuella mallar och litar
+   * aldrig på klienten. Väntelistan skickar inga. */
+  informedConsents: z
+    .array(z.object({ templateId: z.guid(), version: z.string().max(64) }))
+    .max(20)
+    .optional()
+    .default([]),
 });
 
 /**

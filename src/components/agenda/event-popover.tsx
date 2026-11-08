@@ -10,6 +10,8 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { AnswersList } from "@/components/booking/answers-list";
 import { MarkPaidDialog } from "@/components/caja/mark-paid-dialog";
+import { BookingPackageActions } from "@/components/packages/booking-package-actions";
+import type { BookingPackageActions as PackageActions } from "@/components/packages/types";
 import {
   PAGADA_LABEL,
   type ManualPaymentMethod,
@@ -85,6 +87,9 @@ export type EventPopoverProps = {
   onUndoPayment?: (input: UndoPaymentInput) => Promise<UndoPaymentResult>;
   /** Metoderna "Marcar pagada" ska erbjuda (`MANUAL_METHODS`). `[]` i design lab. */
   manualMethods?: readonly ManualPaymentMethod[];
+  /** WP-86 (D-072): "Usar paquete"/"Devolver sesión" (samma behörighet som
+   * "Marcar pagada"). `undefined` döljer knapparna. */
+  packageActions?: PackageActions;
   trigger: ReactNode;
 };
 
@@ -106,6 +111,7 @@ export function EventPopover({
   onMarkPaid,
   onUndoPayment,
   manualMethods = [],
+  packageActions,
   trigger,
 }: EventPopoverProps) {
   const [confirming, setConfirming] = useState(false);
@@ -328,7 +334,19 @@ export function EventPopover({
             })()
           )}
 
-          {!booking.paymentId && onMarkPaid ? (
+          {booking.packageInfo &&
+          packageActions &&
+          !booking.paymentId &&
+          booking.status !== "cancelled" ? (
+            <BookingPackageActions
+              bookingId={booking.id}
+              info={booking.packageInfo}
+              noShow={booking.status === "no_show"}
+              actions={packageActions}
+            />
+          ) : null}
+
+          {!booking.paymentId && !booking.packageInfo?.use && onMarkPaid ? (
             <Button
               type="button"
               variant="secondary"

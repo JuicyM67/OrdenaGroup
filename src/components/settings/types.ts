@@ -79,7 +79,8 @@ export type AjustesPerm =
   | "can_edit_catalog"
   | "can_manage_team"
   | "can_view_reports"
-  | "can_edit_settings";
+  | "can_edit_settings"
+  | "can_view_records";
 
 export type AjustesMember = {
   role: "owner" | "staff" | "vendor" | "admin" | null;

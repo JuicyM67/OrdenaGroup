@@ -2004,8 +2004,6 @@ export const home = {
     omTitulo: (p: { nombre: string }): string => `Sobre ${p.nombre}`,
     omTexto:
       "Un sistema de reservas para peluquerías, barberías, estética y kinesiología. Tus clientes reservan solos con tu link, y las horas libres se llenan con lista de espera y horas flash.",
-    partnerEtiqueta: "PARTNER",
-    partnerTexto: "tarjeta de sellos digital para tus clientes frecuentes",
     pie: (p: { anio: number; nombre: string }): string =>
       `© ${p.anio} ${p.nombre}`,
   },

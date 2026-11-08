@@ -1,6 +1,7 @@
 // /admin/administradores (WP-80, D-061): lista, lägg till och ta bort
 // plattformsadmins. Kräver admin + aal2 som resten av /admin.
 import { AddAdminForm } from "@/components/admin/add-admin-form";
+import { formatAdminDate } from "@/components/admin/admin-dates";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { RemoveAdminButton } from "@/components/admin/remove-admin-button";
 import { adminPanel } from "@/i18n";
@@ -56,7 +57,7 @@ export default async function AdminAdministratorsPage() {
                           : t.mfaPendiente}
                     </td>
                     <td className="px-4 py-3 text-ink-soft">
-                      {new Date(a.createdAt).toLocaleDateString("es-CL")}
+                      {formatAdminDate(a.createdAt)}
                     </td>
                     <td className="px-4 py-3 text-right">
                       {self || admins.length <= 1 ? null : (

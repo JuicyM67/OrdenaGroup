@@ -65,6 +65,7 @@ export async function inviteStaffAction(input: {
     can_manage_team: boolean;
     can_view_reports: boolean;
     can_edit_settings: boolean;
+    can_view_records: boolean;
   };
 }): Promise<CreateInvitationResult> {
   const ctx = await currentOwner();

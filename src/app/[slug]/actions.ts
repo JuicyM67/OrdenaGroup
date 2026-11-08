@@ -36,6 +36,10 @@ import {
 import { pgErrorCode } from "@/server/db/errors";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
+import {
+  checkInformedConsents,
+  recordInformedConsents,
+} from "@/server/records/public-consent";
 import { systemClock } from "@/server/scheduling/clock";
 import { joinWaitlist as joinWaitlistServer } from "@/server/waitlist/join";
 
@@ -102,6 +106,17 @@ export async function createBooking(
   const business = await resolveBusinessBySlug(slug);
   if (!business) return { ok: false, code: "not_found" };
 
+  // WP-88 (D-074): tjänstens consentimientos måste vara godkända i aktuell
+  // version innan bokningen skapas (servern läser mallarna själv).
+  const consentCheck = await checkInformedConsents(
+    business.id,
+    parsed.data.serviceId,
+    parsed.data.informedConsents,
+  );
+  if (!consentCheck.ok) {
+    return { ok: false, code: "informed_consent_required" };
+  }
+
   const now = systemClock();
   const result = await createCustomerBooking({
     businessId: business.id,
@@ -143,6 +158,28 @@ export async function createBooking(
     // Utanför src/server (console.* är bara förbjudet där) — ingen persondata.
     console.error(
       "createBooking: kunde inte spara samtycket (bokningen lyckades ändå)",
+      {
+        businessId: business.id,
+        bookingId: result.value.id,
+        sqlstate: pgErrorCode(e),
+      },
+    );
+  }
+
+  // WP-88 (D-074): godkännandet loggas efter bokningen (samma mönster som
+  // samtycket ovan). Misslyckas det visas consentimientot som väntande på
+  // kundens länk `/r/[token]` och i fichan. Bara SQLSTATE loggas.
+  try {
+    await recordInformedConsents({
+      businessId: business.id,
+      customerId: result.value.customerId,
+      bookingId: result.value.id,
+      items: consentCheck.toRecord,
+      source: "booking",
+    });
+  } catch (e) {
+    console.error(
+      "createBooking: kunde inte logga consentimiento (bokningen lyckades ändå)",
       {
         businessId: business.id,
         bookingId: result.value.id,

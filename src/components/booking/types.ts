@@ -39,6 +39,9 @@ export interface BookingService {
   /** WP-72: vilka i teamet som utför tjänsten (`staff_services`), för
    * initialcirklarna på profilens tjänsterad. Frivilligt (saknas = inga). */
   readonly staffIds?: readonly string[];
+  /** WP-86 (D-072): tjänsten finns i ett publikt paket ("Disponible en pack
+   * de N sesiones · $X", köps i salongen). Frivilligt (saknas = inget). */
+  readonly packageOffer?: { readonly sessions: number; readonly priceClp: Clp };
 }
 
 /** Tjänstekategori (WP-40, D-031): egna rader i `service_categories`, bara
@@ -179,6 +182,20 @@ export interface BookingPageData {
   >;
   /** WP-41: profilen. Frivilligt (fixturer/tester utan profil). */
   readonly profile?: BookingProfile;
+  /** WP-88 (D-074): consentimientos informados som tjänsten kräver (aktiva
+   * mallar, bara med planfunktionen `records`). Frivilligt (fixturer). */
+  readonly informedConsentsByService?: Readonly<
+    Record<string, readonly PublicConsent[]>
+  >;
+}
+
+/** WP-88 (D-074): en consentimiento-mall som kunden ska läsa och godkänna.
+ * `version` = sha256 av titel + text (databasen räknar den). */
+export interface PublicConsent {
+  readonly templateId: string;
+  readonly title: string;
+  readonly body: string;
+  readonly version: string;
 }
 
 /** `BookingError` (`@/server/bookings/types`, WP-10) plus `network` (klientfel,
@@ -195,7 +212,9 @@ export type BookingServerErrorCode =
   | Exclude<BookingError, "forbidden">
   | "network"
   | "waitlist_duplicate"
-  | "rate_limited";
+  | "rate_limited"
+  /** WP-88 (D-074): falta aceptar el consentimiento informado del servicio. */
+  | "informed_consent_required";
 
 /** Kundens uppgifter i datasteget — vanlig typ (ingen Zod), så att
  * `customer-form.tsx`/`booking-screen.tsx` kan importera den utan att dra in

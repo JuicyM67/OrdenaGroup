@@ -18,7 +18,7 @@
 // meningar utan rubrik (fel 2).
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 
 import { AppShell } from "@/components/dashboard/app-shell";
 import { MainNav } from "@/components/dashboard/main-nav";
@@ -45,7 +45,7 @@ import { initialsOf } from "@/lib/format/initials";
 import { Menu, MenuButtonItem, MenuLinkItem } from "@/components/ui/menu";
 import { Textarea } from "@/components/ui/textarea";
 import { appHref } from "@/config/routes";
-import { ajustes, clientes, comun, estados, nav } from "@/i18n";
+import { ajustes, clientes, comun, estados, fichaAtencion, nav } from "@/i18n";
 import {
   APP_TZ,
   formatDate,
@@ -75,6 +75,8 @@ export type CustomerDetailScreenProps = {
   customer: CustomerDetail;
   /** WP-24 (D-034): döljer Caja i navigeringen. `undefined` visar den. */
   canViewReports?: boolean;
+  /** WP-88 (D-074): länk till fichan, bara med `can_view_records`. */
+  fichaHref?: string;
   onLogout?: () => void | Promise<void>;
   onUpdateNotes: (
     notes: string,
@@ -94,6 +96,9 @@ export type CustomerDetailScreenProps = {
   publicPageHref: string;
   myProfile?: MyProfileData;
   myProfileActions?: MyProfileActions;
+  /** WP-86 (D-072): kundens paket (`CustomerPackagesCard`), renderat av
+   * sidan. `undefined` döljer kortet. */
+  packagesCard?: ReactNode;
 };
 
 const STATUS_CHIP: Record<
@@ -194,6 +199,7 @@ function ConsentRow({
 export function CustomerDetailScreen({
   customer,
   canViewReports,
+  fichaHref,
   onLogout,
   onUpdateNotes,
   onExportCustomer,
@@ -204,6 +210,7 @@ export function CustomerDetailScreen({
   publicPageHref,
   myProfile,
   myProfileActions,
+  packagesCard,
 }: CustomerDetailScreenProps) {
   const router = useRouter();
   const [notes, setNotes] = useState(customer.notes ?? "");
@@ -417,6 +424,11 @@ export function CustomerDetailScreen({
               {clientes.ficha.ctaNuevaReserva}
             </Link>
           </Button>
+          {fichaHref ? (
+            <Button asChild variant="secondary" size="lg">
+              <Link href={fichaHref}>{fichaAtencion.ctaAbrir}</Link>
+            </Button>
+          ) : null}
           {phone ? (
             <Button
               type="button"
@@ -657,6 +669,10 @@ export function CustomerDetailScreen({
             ) : null}
           </div>
         </Card>
+
+        {packagesCard ? (
+          <div className="lg:col-span-2">{packagesCard}</div>
+        ) : null}
 
         <section className="flex flex-col gap-3 lg:col-span-2">
           <h2 className="text-15 font-bold text-ink">

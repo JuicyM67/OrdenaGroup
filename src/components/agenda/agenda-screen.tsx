@@ -29,6 +29,7 @@ import type {
   FlashStaff,
 } from "@/components/flash/types";
 import { OwnerMobileTabBar } from "@/components/mobile/owner-tab-bar";
+import type { BookingPackageActions } from "@/components/packages/types";
 import type {
   MyProfileActions,
   MyProfileData,
@@ -218,6 +219,9 @@ export type AgendaScreenProps = {
   onUndoPayment?: (input: UndoPaymentInput) => Promise<UndoPaymentResult>;
   /** Metoderna "Marcar pagada" ska erbjuda (`MANUAL_METHODS`). `[]` i design lab. */
   manualMethods?: readonly ManualPaymentMethod[];
+  /** WP-86 (D-072): "Usar paquete"/"Devolver sesión" i popovern (server
+   * actions). `undefined` döljer knapparna (design lab). */
+  packageActions?: BookingPackageActions;
   /** WP-23: "Ta bort" i väntelistkortet (server action, `removeWaitlistEntry`).
    * `undefined` i design lab — döljer knapparna. */
   onRemoveWaitlistEntry?: (entryId: string) => Promise<{ ok: boolean }>;
@@ -295,6 +299,7 @@ export function AgendaScreen({
   initialManualCustomer,
   onMarkPaid,
   onUndoPayment,
+  packageActions,
   manualMethods = [],
   onRemoveWaitlistEntry,
   flashStaff = [],
@@ -653,6 +658,22 @@ export function AgendaScreen({
             : undefined
         }
         manualMethods={manualMethods}
+        packageActions={
+          packageActions && canPayBooking
+            ? {
+                redeem: async (input) => {
+                  const result = await packageActions.redeem(input);
+                  if (result.ok) router.refresh();
+                  return result;
+                },
+                undo: async (input) => {
+                  const result = await packageActions.undo(input);
+                  if (result.ok) router.refresh();
+                  return result;
+                },
+              }
+            : undefined
+        }
         trigger={trigger}
       />
     );

@@ -44,6 +44,8 @@ import {
   flashPrice,
   loadActiveFlashSlotsIn,
 } from "@/server/flash/public";
+import { listPublicPackageOffersIn } from "@/server/packages/packages";
+import { loadServiceConsentsIn } from "@/server/records/public-consent";
 import { loadSnapshot } from "@/server/scheduling/load";
 import {
   ANY_STAFF,
@@ -371,6 +373,13 @@ export async function loadReservaPageData(
     staffIdsByService.set(r.service_id, list);
   }
 
+  // WP-86 (D-072): "Disponible en pack…" (bara publika, aktiva mallar).
+  const packageOffers = await listPublicPackageOffersIn(
+    q,
+    businessId,
+    biz.plan,
+  );
+
   const services: BookingService[] = serviceRows.rows.map((s, i) => ({
     id: s.id,
     name: s.name,
@@ -381,6 +390,14 @@ export async function loadReservaPageData(
     categoryId: s.category_id,
     description: s.description,
     staffIds: staffIdsByService.get(s.id) ?? [],
+    ...(packageOffers.has(s.id)
+      ? {
+          packageOffer: {
+            sessions: packageOffers.get(s.id)!.sessions,
+            priceClp: packageOffers.get(s.id)!.priceClp,
+          },
+        }
+      : {}),
   }));
   // WP-81: betyg per medarbetare — varje omdöme hör till en bokning, och
   // bokningen till en person (bara synliga omdömen, D-045).
@@ -510,6 +527,13 @@ export async function loadReservaPageData(
     }
   }
 
+  // WP-88 (D-074): consentimientos som tjänsterna kräver (tomt utan planen).
+  const informedConsentsByService = await loadServiceConsentsIn(
+    q,
+    businessId,
+    serviceRows.rows.map((s) => s.id),
+  );
+
   return {
     now: now.toISOString(),
     business,
@@ -518,6 +542,7 @@ export async function loadReservaPageData(
     availability: availability as BookingAvailability,
     categories,
     questionsByService,
+    informedConsentsByService,
     profile: {
       ...profileBase,
       nextAvailable: nextFree && {

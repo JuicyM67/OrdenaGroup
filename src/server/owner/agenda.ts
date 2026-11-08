@@ -29,6 +29,7 @@ import type { Queryable } from "@/server/db/pool";
 import { loadMember } from "@/server/db/permissions";
 import { withOwnerTx } from "@/server/db/tx";
 import { listFlashSlots } from "@/server/flash";
+import { listBookingPackageInfoIn } from "@/server/packages/packages";
 import { listWaitlist } from "@/server/waitlist";
 
 import { memberView, type MemberView } from "./member";
@@ -194,6 +195,14 @@ export async function loadOwnerAgendaWeekIn(
     bookingsRes.rows.map((b) => b.id),
   );
 
+  // WP-86 (D-072): "Usar paquete"/"Pagada con paquete" i detaljvyn.
+  const packageInfo = await listBookingPackageInfoIn(
+    q,
+    businessId,
+    bookingsRes.rows.map((b) => b.id),
+    now,
+  );
+
   const bookings: AgendaBooking[] = bookingsRes.rows.map((b) => {
     const priceClp = b.price_clp as Clp;
     // flashPct: procenttal räknat ur discount_clp/price_clp — ingen egen
@@ -225,6 +234,7 @@ export async function loadOwnerAgendaWeekIn(
       isMember: b.is_member,
       ...(flashPct !== undefined ? { flashPct } : {}),
       ...(answers && answers.length > 0 ? { answers } : {}),
+      ...(packageInfo.has(b.id) ? { packageInfo: packageInfo.get(b.id)! } : {}),
     };
   });
 

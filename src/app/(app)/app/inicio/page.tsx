@@ -8,13 +8,14 @@ import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth/actions";
 import { InicioScreen } from "@/components/dashboard/inicio-screen";
+import { ajustesTabVisible } from "@/components/settings/ajustes-tabs";
 import { DescubreReminder } from "@/components/settings/descubre-reminder";
 import { marketplaceEnabled } from "@/config/marketplace";
 import { appHref } from "@/config/routes";
 import { inicio } from "@/i18n";
 import { APP_TZ, toLocalDate } from "@/lib/format/dates";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getOwnerBusiness } from "@/server/onboarding/owner-business";
+import { getCurrentMember } from "@/server/onboarding/owner-business";
 import { markArrival, type ArrivalStatus } from "@/server/owner/arrival";
 import { loadOwnerInicio } from "@/server/owner/inicio";
 import { moveOwnerBooking } from "@/server/owner/manual-booking";
@@ -50,8 +51,9 @@ export default async function InicioPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const business = await getOwnerBusiness(user.id);
-  if (!business) redirect(appHref("appOnboarding"));
+  const current = await getCurrentMember(user.id);
+  if (!current) redirect(appHref("appOnboarding"));
+  const business = current.business;
 
   const now = new Date();
   const today = toLocalDate(now, APP_TZ);
@@ -132,7 +134,14 @@ export default async function InicioPage() {
   return (
     <InicioScreen
       data={data}
-      bookingLink={{ slug: business.slug, businessName: business.name }}
+      bookingLink={{
+        slug: business.slug,
+        businessName: business.name,
+        // WP-89 (D-075): länken till guiden bara för den som får se fliken.
+        guideHref: ajustesTabVisible("compartir", current.view)
+          ? appHref("appAjustesCompartir")
+          : undefined,
+      }}
       onArrival={onArrival}
       onMoveBooking={onMoveBooking}
       onLogout={logout}

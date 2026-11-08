@@ -10,7 +10,7 @@ import { Card } from "@/components/ui/card";
 import { IconButton } from "@/components/ui/icon-button";
 import { TextField } from "@/components/ui/text-field";
 import { hrefLegal } from "@/config/legal-routes";
-import { comun, reserva } from "@/i18n";
+import { comun, consentimientoInformado, reserva } from "@/i18n";
 // WP-40 (D-031): `validateAnswers` är uttryckligen klientsäker (se
 // filkommentaren i `booking-questions.ts`) trots att den drar in Zod — en
 // medveten avvikelse från qa-granskningens item 6 (som gäller
@@ -126,6 +126,20 @@ export function CustomerForm({
   );
   const [answerErrors, setAnswerErrors] = useState<Record<string, string>>({});
   const answerRefs = useRef<Record<string, HTMLElement | null>>({});
+
+  // WP-88 (D-074): consentimientos informados som tjänsten kräver — en egen
+  // obligatorisk ruta per mall, aldrig förkryssad. Inte i väntelistan (ingen
+  // bokning än; kunden godkänner på sin länk när tiden blir hens).
+  const informedConsents = isWaitlist
+    ? []
+    : (data.informedConsentsByService?.[service?.id ?? ""] ?? []);
+  const [acceptedConsents, setAcceptedConsents] = useState<
+    Record<string, boolean>
+  >({});
+  const [consentErrors, setConsentErrors] = useState<Record<string, boolean>>(
+    {},
+  );
+  const consentRefs = useRef<Record<string, HTMLInputElement | null>>({});
   function updateAnswer(questionId: string, value: QuestionAnswerValue) {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   }
@@ -196,6 +210,12 @@ export function CustomerForm({
       next.terms = fieldError({ field: "terms", kind: "required" });
     }
 
+    const missingConsents: Record<string, boolean> = {};
+    for (const c of informedConsents) {
+      if (!acceptedConsents[c.templateId]) missingConsents[c.templateId] = true;
+    }
+    setConsentErrors(missingConsents);
+
     if (Object.keys(next).length > 0) {
       setErrors(next);
       setAnswerErrors({});
@@ -223,6 +243,14 @@ export function CustomerForm({
       return;
     }
 
+    const firstMissing = informedConsents.find(
+      (c) => missingConsents[c.templateId],
+    );
+    if (firstMissing) {
+      consentRefs.current[firstMissing.templateId]?.focus();
+      return;
+    }
+
     submittingRef.current = true;
     setErrors({});
     setAnswerErrors({});
@@ -242,6 +270,7 @@ export function CustomerForm({
       staffId: selection.staffId,
       date: selection.date!,
       answers: answersPayload,
+      informedConsents: [] as { templateId: string; version: string }[],
     };
     if (isWaitlist) {
       onSubmitWaitlist({
@@ -254,6 +283,10 @@ export function CustomerForm({
         ...base,
         consentVersion: reserva.consentimientos.version,
         slotId: selection.slotId,
+        informedConsents: informedConsents.map((c) => ({
+          templateId: c.templateId,
+          version: c.version,
+        })),
       } as CustomerFormOutput);
     }
   }
@@ -415,6 +448,44 @@ export function CustomerForm({
         </div>
 
         <div className="flex flex-col gap-3">
+          {informedConsents.map((c) => (
+            <div key={c.templateId} className="flex flex-col gap-1.5">
+              <ConsentCheckbox
+                ref={(el) => {
+                  consentRefs.current[c.templateId] = el;
+                }}
+                checked={acceptedConsents[c.templateId] ?? false}
+                onChange={(checked) => {
+                  setAcceptedConsents((prev) => ({
+                    ...prev,
+                    [c.templateId]: checked,
+                  }));
+                  if (checked) {
+                    setConsentErrors((prev) => ({
+                      ...prev,
+                      [c.templateId]: false,
+                    }));
+                  }
+                }}
+                required
+                error={
+                  consentErrors[c.templateId]
+                    ? consentimientoInformado.requerido
+                    : undefined
+                }
+              >
+                {consentimientoInformado.acepto({ titulo: c.title })}
+              </ConsentCheckbox>
+              <details className="pl-7.5">
+                <summary className="cursor-pointer text-13 font-semibold text-ink underline underline-offset-2">
+                  {consentimientoInformado.ver}
+                </summary>
+                <p className="mt-2 max-h-60 overflow-y-auto border-l-2 border-line pl-3 text-13 leading-body whitespace-pre-line text-muted">
+                  {c.body}
+                </p>
+              </details>
+            </div>
+          ))}
           <ConsentCheckbox
             ref={termsRef}
             checked={terms}

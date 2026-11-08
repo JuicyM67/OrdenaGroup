@@ -1,5 +1,5 @@
-// /admin/nuevo: bjud in någon att skapa ett företag (F19/WP-36). Svensk
-// text.
+// /admin/nuevo: bjud in någon att skapa ett företag (F19/WP-36). Text via
+// `adminPanel` (es-CL).
 import { AdminShell } from "@/components/admin/admin-shell";
 import { InviteForm } from "@/components/admin/invite-form";
 import { adminPanel } from "@/i18n";

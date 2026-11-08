@@ -261,7 +261,7 @@ export function CustomersScreen({
                   selected={query.filter === f.key}
                   onClick={() => pushQuery({ filter: f.key })}
                 >
-                  {f.label} {counts[f.key]}
+                  {f.label}: {counts[f.key]}
                 </Pill>
               ))}
             </div>

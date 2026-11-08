@@ -22,6 +22,7 @@ function member(over: Partial<Member> = {}): Member {
       can_manage_team: false,
       can_view_reports: false,
       can_edit_settings: false,
+      can_view_records: false,
     },
     ...over,
   };
@@ -35,6 +36,7 @@ const ALL_PERMS: Perm[] = [
   "can_manage_team",
   "can_view_reports",
   "can_edit_settings",
+  "can_view_records",
 ];
 
 describe("hasPerm", () => {
