@@ -2,7 +2,8 @@
 // logga/initialer, pil till detaljsidan, namn, bransch · ort, ägarens e-post,
 // plan/status som chips och tre prickar för hur redo företaget är för Descubre
 // (bild, adress, tjänster). Hela kortet är en länk. Chile (WP-84, D-069): ingen
-// "synlig"-prick — kolumnerna för synlighet i katalogen finns inte här.
+// "synlig"-prick; ett företag som plattformen dolt i Descubre
+// (`marketplace_hidden`) får chipet "Oculto en Descubre".
 import { ArrowUpRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -126,6 +127,9 @@ export function AdminBusinessCard({
               <Chip tone="alert">
                 {t.quierePlan({ plan: planes.nombres[b.planRequested] })}
               </Chip>
+            ) : null}
+            {b.marketplaceHidden ? (
+              <Chip tone="neutral">{t.ocultoDescubre}</Chip>
             ) : null}
           </span>
         </div>

@@ -22,6 +22,10 @@ import {
 } from "@/config/billing-mode";
 import { getStorageAdminClient } from "@/server/db/pool";
 import { withServiceTx } from "@/server/db/tx";
+import {
+  missingForMarketplace,
+  type MissingPart,
+} from "@/server/marketplace/completeness";
 import { sendEmail } from "@/server/messaging/email/send";
 import { purgeBusiness } from "@/server/privacy/business";
 
@@ -53,6 +57,8 @@ export type BusinessListItem = {
     readonly lugar: boolean;
     readonly servicios: boolean;
   };
+  /** Plattformen har dolt företaget i Descubre (`marketplace_hidden`). */
+  readonly marketplaceHidden: boolean;
 };
 
 /**
@@ -108,10 +114,11 @@ export async function listBusinesses(
       has_image: boolean;
       has_place: boolean;
       has_services: boolean;
+      marketplace_hidden: boolean;
     }>(
       `select b.id, b.name, b.slug, b.plan, b.plan_override_until, b.status,
               b.billing_mode, b.deletion_requested_at, b.plan_requested, b.created_at,
-              b.category, b.comuna,
+              b.category, b.comuna, b.marketplace_hidden,
               coalesce(nullif(btrim(b.logo_url), ''), nullif(btrim(b.cover_url), '')) as image_url,
               (select m.user_id from public.memberships m
                 where m.business_id = b.id and m.role = 'owner'
@@ -150,6 +157,7 @@ export async function listBusinesses(
       lugar: row.has_place,
       servicios: row.has_services,
     },
+    marketplaceHidden: row.marketplace_hidden,
   }));
 
   const q = filter.q?.trim().toLowerCase();
@@ -199,6 +207,13 @@ export type BusinessDetail = {
   };
   readonly lastActivityAt: string | null;
   readonly members: readonly BusinessMember[];
+  /** Descubre (WP-85, D-070): ägarens val, plattformens döljning och vad
+   * profilen saknar (samma regel som den publika listningen). */
+  readonly marketplace: {
+    readonly listed: boolean;
+    readonly hidden: boolean;
+    readonly missing: readonly MissingPart[];
+  };
 };
 
 export async function getBusinessDetail(
@@ -221,10 +236,24 @@ export async function getBusinessDetail(
       plan_requested: BusinessPlan | null;
       plan_requested_at: string | null;
       created_at: string;
+      marketplace_listed: boolean;
+      marketplace_hidden: boolean;
+      logo_url: string | null;
+      cover_url: string | null;
+      address: string | null;
+      serves_at_customer: boolean;
+      service_area_count: number;
+      active_service_count: number;
     }>(
       `select b.id, b.name, b.slug, b.comuna, b.category, b.plan, b.plan_override_until,
               b.custom_limits, b.status, b.billing_mode, n.note as billing_note,
-              b.deletion_requested_at, b.plan_requested, b.plan_requested_at, b.created_at
+              b.deletion_requested_at, b.plan_requested, b.plan_requested_at, b.created_at,
+              b.marketplace_listed, b.marketplace_hidden,
+              b.logo_url, b.cover_url, b.address, b.serves_at_customer,
+              (select count(*)::int from public.business_service_areas a
+                where a.business_id = b.id) as service_area_count,
+              (select count(*)::int from public.services s
+                where s.business_id = b.id and s.active) as active_service_count
          from public.businesses b
          left join private.business_billing_notes n on n.business_id = b.id
         where b.id = $1`,
@@ -292,6 +321,18 @@ export async function getBusinessDetail(
       role: m.role,
       email: emails.get(m.user_id) ?? null,
     })),
+    marketplace: {
+      listed: data.business.marketplace_listed,
+      hidden: data.business.marketplace_hidden,
+      missing: missingForMarketplace({
+        logoUrl: data.business.logo_url,
+        coverUrl: data.business.cover_url,
+        address: data.business.address,
+        servesAtCustomer: data.business.serves_at_customer,
+        serviceAreaCount: data.business.service_area_count,
+        activeServiceCount: data.business.active_service_count,
+      }),
+    },
   };
 }
 
@@ -338,6 +379,33 @@ export async function setPlan(
         override_until: overrideUntil,
         ...(customLimits ? { custom_limits: customLimits } : {}),
       },
+    });
+    return { ok: true };
+  });
+}
+
+/**
+ * Döljer/visar företaget i Descubre på plattformsnivå (`marketplace_hidden`,
+ * WP-85/D-070) — t.ex. demo- och testföretag. Skilt från ägarens eget val
+ * (`marketplace_listed`), som lämnas orört.
+ */
+export async function setMarketplaceHidden(
+  adminUserId: string,
+  businessId: string,
+  hidden: boolean,
+): Promise<AdminActionResult> {
+  if (typeof hidden !== "boolean") return { ok: false, code: "invalid_input" };
+  return withServiceTx(async (q) => {
+    const r = await q.query(
+      `update public.businesses set marketplace_hidden = $2 where id = $1`,
+      [businessId, hidden],
+    );
+    if (!r.rowCount) return { ok: false, code: "not_found" };
+    await writeAuditLog(q, {
+      adminUserId,
+      action: "set_marketplace_hidden",
+      businessId,
+      details: { hidden },
     });
     return { ok: true };
   });
