@@ -49,7 +49,7 @@ const t = paginas.nav;
 // Länkens/triggerns "inre pill" vid hover — och, för triggerna, när den egna panelen är
 // öppen. Samma klass på länkar och triggers, så alla nav-punkter känns likadana.
 const navLinkClass =
-  "rounded-full px-3 py-1.75 text-14 font-semibold text-ink transition-colors duration-150 ease-out hover:bg-surface/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
+  "whitespace-nowrap rounded-full px-3 py-1.75 text-14 font-semibold text-ink transition-colors duration-150 ease-out hover:bg-surface/70 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
 
 const navLinkOpenClass = "bg-surface/70 shadow-popover";
 
@@ -102,7 +102,7 @@ export function SiteHeader({ className }: { className?: string }) {
 
         <NavigationMenu.Root
           aria-label={copy.nav.principal}
-          className="hidden lg:block"
+          className="hidden xl:block"
           delayDuration={150}
           skipDelayDuration={300}
           value={menuValue}
@@ -204,7 +204,7 @@ export function SiteHeader({ className }: { className?: string }) {
               <IconButton
                 label={t.abrirMenu}
                 tone="ghost"
-                className="hover:bg-surface/70 lg:hidden"
+                className="hover:bg-surface/70 xl:hidden"
               >
                 <Menu
                   aria-hidden="true"
