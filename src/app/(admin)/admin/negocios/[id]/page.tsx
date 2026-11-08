@@ -38,6 +38,7 @@ import {
   sendLoginLinkAction,
   setBillingModeAction,
   setBusinessPlaceAction,
+  setMarketplaceHiddenAction,
   setPlanAction,
   unfreezeAction,
 } from "./actions";
@@ -46,6 +47,25 @@ export const dynamic = "force-dynamic";
 
 const t = adminPanel.detalle;
 const ROLES: Readonly<Record<string, string>> = t.roles;
+
+/** Varför företaget syns/inte syns i Descubre (samma villkor som
+ * `src/server/marketplace/businesses.ts`, utom tidszon och demo-id). */
+function descubreStateText(b: {
+  status: "active" | "frozen";
+  deletionRequestedAt: string | null;
+  marketplace: {
+    listed: boolean;
+    hidden: boolean;
+    missing: readonly unknown[];
+  };
+}): string {
+  if (b.marketplace.hidden) return t.descubre.oculto;
+  if (!b.marketplace.listed) return t.descubre.noListado;
+  if (b.status === "frozen" || b.deletionRequestedAt)
+    return t.descubre.congelado;
+  if (b.marketplace.missing.length > 0) return t.descubre.incompleto;
+  return t.descubre.visible;
+}
 
 export default async function AdminBusinessDetailPage({
   params,
@@ -247,6 +267,40 @@ export default async function AdminBusinessDetailPage({
           </section>
 
           <section className="flex flex-col gap-3 rounded-card bg-surface p-6 fields-on-surface">
+            <h2 className="text-18 font-bold text-ink">{t.descubre.titulo}</h2>
+            <p className="text-13 text-ink-soft">
+              {descubreStateText(business)}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {business.marketplace.hidden ? (
+                <ConfirmActionButton
+                  label={t.descubre.mostrar.boton}
+                  title={t.descubre.mostrar.titulo}
+                  body={t.descubre.mostrar.texto}
+                  confirmLabel={t.descubre.mostrar.boton}
+                  action={setMarketplaceHiddenAction.bind(
+                    null,
+                    business.id,
+                    false,
+                  )}
+                />
+              ) : (
+                <ConfirmActionButton
+                  label={t.descubre.ocultar.boton}
+                  title={t.descubre.ocultar.titulo}
+                  body={t.descubre.ocultar.texto}
+                  confirmLabel={t.descubre.ocultar.boton}
+                  action={setMarketplaceHiddenAction.bind(
+                    null,
+                    business.id,
+                    true,
+                  )}
+                />
+              )}
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-3 rounded-card bg-surface p-6 fields-on-surface">
             <h2 className="text-18 font-bold text-ink">{t.plan}</h2>
             {business.planRequested &&
             business.planRequested !== business.plan ? (
@@ -300,7 +354,7 @@ export default async function AdminBusinessDetailPage({
                 return (
                   <li key={entry.id} className="text-12 text-ink-soft">
                     {formatAdminDateTime(entry.createdAt)} —{" "}
-                    {auditActionText(entry.action)}
+                    {auditActionText(entry)}
                     {details ? ` (${details})` : ""}
                   </li>
                 );

@@ -34,7 +34,7 @@ export default async function AdminActivityPage() {
                 >
                   <span className="text-ink">
                     {formatAdminDateTime(entry.createdAt)} —{" "}
-                    {auditActionText(entry.action)}
+                    {auditActionText(entry)}
                   </span>
                   {entry.businessId || details ? (
                     <span className="text-12 text-ink-soft">

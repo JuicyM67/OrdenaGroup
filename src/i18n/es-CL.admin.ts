@@ -37,6 +37,8 @@ export const adminPanel = {
     borrar: "Eliminación pedida",
     /** WP-83 (D-068): el dueño eligió un plan pagado al registrarse. */
     quierePlan: (p: { plan: string }): string => `Quiere ${p.plan}`,
+    /** La plataforma ocultó el negocio en Descubre (`marketplace_hidden`). */
+    ocultoDescubre: "Oculto en Descubre",
     vacio: "Ningún negocio coincide.",
     abrir: (p: { nombre: string }): string => `Abrir ${p.nombre}`,
     sinDueno: "Sin dueño",
@@ -89,6 +91,30 @@ export const adminPanel = {
       boton: "Deshacer eliminación",
       titulo: "¿Deshacer la eliminación?",
       texto: "La cuenta vuelve al estado que tenía antes.",
+    },
+    // Ocultar negocios de prueba o demo del catálogo Descubre
+    // (`marketplace_hidden`). El dueño no puede cambiarlo.
+    descubre: {
+      titulo: "Descubre",
+      visible: "Visible en Descubre.",
+      oculto:
+        "Oculto en Descubre. El dueño ve que su negocio está oculto y no puede cambiarlo.",
+      noListado: "El dueño eligió no aparecer en Descubre.",
+      incompleto:
+        "Todavía no aparece: al perfil le falta imagen, dirección o servicios.",
+      congelado: "No aparece mientras el negocio esté congelado.",
+      ocultar: {
+        boton: "Ocultar de Descubre",
+        titulo: "¿Ocultar el negocio de Descubre?",
+        texto:
+          "Deja de aparecer en el catálogo, aunque el dueño lo tenga activado. Su página de reservas sigue funcionando.",
+      },
+      mostrar: {
+        boton: "Mostrar en Descubre",
+        titulo: "¿Mostrar el negocio en Descubre?",
+        texto:
+          "Vuelve a aparecer en el catálogo si el dueño lo tiene activado y el perfil está completo.",
+      },
     },
     plan: "Plan",
     ultimaActividad: "Última actividad",
@@ -205,7 +231,11 @@ export const adminPanel = {
       import: "Importó datos de otro sistema",
       review_hide: "Ocultó una reseña",
       review_restore: "Restauró una reseña",
+      set_marketplace_hidden: "Cambió la visibilidad en Descubre",
     },
+    /** `set_marketplace_hidden` según `details.hidden`. */
+    descubreOculto: "Ocultó de Descubre",
+    descubreVisible: "Mostró en Descubre",
     /** Claves de `details`; una clave desconocida se muestra tal cual. */
     campos: {
       plan: "Plan",
