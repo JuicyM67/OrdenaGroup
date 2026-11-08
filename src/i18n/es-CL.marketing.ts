@@ -1932,6 +1932,44 @@ export const home = {
       { id: "makeup", label: "Maquillaje" },
     ],
   },
+  /** Beta abierta (2026-11): reemplaza la sección de precios de la portada
+   * mientras el producto está en beta. Los precios siguen en /precios. */
+  beta: {
+    etiqueta: "BETA ABIERTA",
+    tituloPre: "Gratis mientras ",
+    tituloMarca: "estemos en beta.",
+    texto:
+      "Estamos abriendo Ordena Calendar a los primeros negocios de Santiago. Durante la beta usas todas las funciones sin pagar nada, y nos ayudas a mejorarlo con tus comentarios.",
+    puntos: [
+      {
+        id: "gratis",
+        valor: "$0",
+        titulo: "Durante toda la beta",
+        texto: "Sin tarjeta de crédito y sin permanencia.",
+      },
+      {
+        id: "todo",
+        valor: "100%",
+        titulo: "Todas las funciones",
+        texto:
+          "Agenda, recordatorios, horas flash, caja, paquetes y tarjetas de regalo.",
+      },
+      {
+        id: "contacto",
+        valor: "1:1",
+        titulo: "Hablas con nosotros",
+        texto: "Te ayudamos a partir y escuchamos lo que necesita tu negocio.",
+      },
+    ],
+    fundador: {
+      valor: "½",
+      negrita: "Precio Fundador:",
+      texto:
+        "los negocios que se suman en la beta pagan la mitad para siempre cuando termine.",
+    },
+    cta: "Sumarme a la beta",
+    nota: "Te avisaremos con tiempo antes de que termine la beta.",
+  },
   precios: {
     etiqueta: "PRECIOS",
     tituloPre: "Precios simples.",
