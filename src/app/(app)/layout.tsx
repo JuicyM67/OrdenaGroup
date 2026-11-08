@@ -7,7 +7,9 @@
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { PlatformAdminProvider } from "@/components/shared/platform-admin-context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { isPlatformAdmin } from "@/server/admin/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,5 +19,9 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
-  return children;
+  // Länken "Panel de admin" i profilmenyn (bara för plattformsadmins).
+  const isAdmin = await isPlatformAdmin(user.id).catch(() => false);
+  return (
+    <PlatformAdminProvider isAdmin={isAdmin}>{children}</PlatformAdminProvider>
+  );
 }
