@@ -1935,11 +1935,11 @@ export const home = {
   /** Beta abierta (2026-11): reemplaza la sección de precios de la portada
    * mientras el producto está en beta. Los precios siguen en /precios. */
   beta: {
-    etiqueta: "BETA ABIERTA",
+    etiqueta: "BETA POR INVITACIÓN",
     tituloPre: "Gratis mientras ",
     tituloMarca: "estemos en beta.",
     texto:
-      "Estamos abriendo Ordena Calendar a los primeros negocios de Santiago. Durante la beta usas todas las funciones sin pagar nada, y nos ayudas a mejorarlo con tus comentarios.",
+      "Estamos abriendo la plataforma de a poco, solo por invitación, a negocios de Santiago. Si te invitamos, usas todas las funciones sin pagar nada durante la beta y nos ayudas a mejorarlo con tus comentarios.",
     puntos: [
       {
         id: "gratis",
@@ -1967,8 +1967,10 @@ export const home = {
       texto:
         "los negocios que se suman en la beta pagan la mitad para siempre cuando termine.",
     },
-    cta: "Sumarme a la beta",
-    nota: "Te avisaremos con tiempo antes de que termine la beta.",
+    cta: "Pedir una invitación",
+    /** Asunto del correo que se abre con el botón (mailto a hola@). */
+    asuntoCorreo: "Quiero una invitación a la beta",
+    nota: "Cupos limitados. Te respondemos por correo.",
   },
   precios: {
     etiqueta: "PRECIOS",

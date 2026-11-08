@@ -1,15 +1,19 @@
 // Sektion 7 under betan: ersätter prissektionen på startsidan (ägarens beslut
-// 2026-11-09 — priserna visas inte på startsidan medan produkten är i beta).
+// 2026-11-09 — priserna visas inte på startsidan medan produkten är i beta, och
+// betan är bara på inbjudan).
 // Behåller `id="precios"` så att befintliga ankarlänkar landar här.
 import { Check, MessageCircle, Sparkles, type LucideIcon } from "lucide-react";
-import Link from "next/link";
 
 import { Highlight } from "@/components/marketing/highlight";
 import { Button } from "@/components/ui/button";
-import { SIGNUP_PATH } from "@/config/routes";
+import { brand } from "@/config/brand";
 import { copy } from "@/i18n/marketing";
 
 const t = copy.home.beta;
+
+// Betan är bara på inbjudan: knappen öppnar ett mejl till hola@ i stället för
+// registreringen.
+const invitacionHref = `mailto:${brand.domain ? `hola@${brand.domain}` : brand.legal.contactEmail}?subject=${encodeURIComponent(t.asuntoCorreo)}`;
 
 const ICONS: Record<string, LucideIcon> = {
   gratis: Check,
@@ -89,7 +93,7 @@ export function Beta() {
             </div>
             <div className="flex flex-col items-start gap-2.5 lg:items-end">
               <Button asChild variant="accent" className="rounded-full">
-                <Link href={SIGNUP_PATH}>{t.cta}</Link>
+                <a href={invitacionHref}>{t.cta}</a>
               </Button>
               <span className="text-13 text-on-dark-muted">{t.nota}</span>
             </div>
