@@ -73,15 +73,14 @@ export const visita = {
       },
     },
     final: {
-      aria: "¿Seamos buddies?",
-      etiqueta: "Tu página · lista en 5 min",
+      aria: "¿Lo probamos en tu negocio?",
+      etiqueta: "Beta por invitación",
       live: "Live",
-      titulo: "¿Seamos buddies?",
+      titulo: "¿Lo probamos en tu negocio?",
       texto:
-        "Te armamos tu propia página de reservas en cinco minutos, o en dos si vienes de otro sistema. Gratis para una persona.",
-      corto:
-        "Tu propia página de reservas en cinco minutos. Gratis para una persona.",
-      cta: "Sí, crear mi página",
+        "Estamos sumando negocios a la beta de a poco. Pide tu invitación y te armamos tu propia página de reservas, gratis mientras dure la beta.",
+      corto: "Pide tu invitación a la beta y te armamos tu página de reservas.",
+      cta: "Pedir una invitación",
       seguir: "Seguir mirando",
       negocio: "Ver cómo se ve para ti como dueña o dueño",
     },
@@ -194,12 +193,12 @@ export const visita = {
       saltar: "Mirar por mi cuenta",
     },
     final: {
-      aria: "¿Seamos buddies?",
-      etiqueta: "Lista en 5 minutos",
-      titulo: "¿Seamos buddies?",
+      aria: "¿Lo probamos en tu negocio?",
+      etiqueta: "Beta por invitación",
+      titulo: "¿Lo probamos en tu negocio?",
       texto:
-        "Tu propia agenda en cinco minutos: gratis para una persona y sin tarjeta. Si ya tienes un sistema, te pasamos todo.",
-      cta: "Sí, crear mi agenda",
+        "Tu propia agenda, gratis mientras dure la beta. Pide tu invitación y, si ya tienes un sistema, te pasamos todo.",
+      cta: "Pedir una invitación",
       seguir: "Ver más",
     },
     meta: {
