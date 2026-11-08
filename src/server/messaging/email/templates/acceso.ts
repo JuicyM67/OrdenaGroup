@@ -7,6 +7,7 @@ import {
   button,
   caption,
   codeLine,
+  footerHtml,
   heading,
   paragraph,
   renderLayout,
@@ -38,6 +39,7 @@ type AccesoNs = {
   readonly texto: string;
   readonly cta: string;
   readonly codigo: string;
+  readonly motivo: string;
   readonly ignorar: string;
   readonly expira: string;
 };
@@ -65,12 +67,15 @@ function render(data: AccesoEmailData, ns: AccesoNs): RenderedEmail {
     ns.ignorar,
   ].join("\n\n");
 
+  const pie = [`${brand.name} · ${brand.tagline}`, ns.motivo];
   const { html, text } = renderLayout({
     preheader: ns.preheader,
     bodyHtml,
     bodyText,
-    footerHtml: "",
-    footerText: "",
+    footerHtml: footerHtml(pie),
+    footerText: pie.join("\n"),
+    // Appikonen på den publika domänen (D-071); utan domän limecirkeln.
+    logoSrc: brand.domain ? `https://${brand.domain}/apple-icon` : undefined,
   });
   return { subject: asunto, preheader: ns.preheader, html, text };
 }

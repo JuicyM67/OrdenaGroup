@@ -219,7 +219,7 @@ describe("plantillas de WhatsApp (Meta, fase 1)", () => {
     );
   });
 
-  it("las tres plantillas con botón URL están marcadas como pendientes de dominio (D-001)", () => {
+  it("las tres plantillas con botón URL ya tienen dominio (ordenagroup.cl, D-071)", () => {
     const conUrl = PLANTILLAS.filter((p) =>
       p.botones.some((b) => b.tipo === "URL"),
     );
@@ -229,7 +229,7 @@ describe("plantillas de WhatsApp (Meta, fase 1)", () => {
     for (const plantilla of conUrl) {
       for (const boton of plantilla.botones) {
         if (boton.tipo === "URL") {
-          expect(boton.dominioPendiente, plantilla.nombre).toBe(true);
+          expect(boton.dominioPendiente, plantilla.nombre).toBe(false);
         }
       }
     }
