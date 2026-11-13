@@ -82,7 +82,7 @@ export function getTerminosCL(entity: LegalEntity): LegalDoc {
         blocks: [
           list([
             "Usas la plataforma solo para administrar tu propio negocio de servicios con hora, no para revenderla ni ofrecerla a otros negocios.",
-            "No subes datos de salud ni otra información sensible de tus clientes en los campos de notas o preguntas del formulario: la plataforma no está diseñada para guardar ese tipo de datos.",
+            "Si registras datos de salud u otra información sensible de tus clientes, lo haces solo en la ficha y en los consentimientos informados, no en las notas ni en las preguntas del formulario de reserva.",
             "No intentas acceder a los datos de otro negocio ni a partes de la plataforma que no te correspondan.",
             "Los nombres de tus servicios y tus mensajes deben ser lícitos y no pueden violar los derechos de tus propios clientes.",
           ]),
@@ -98,6 +98,22 @@ export function getTerminosCL(entity: LegalEntity): LegalDoc {
           p(
             "Eres responsable de informar a tus clientes sobre cómo tratas sus datos, de pedirles los consentimientos que correspondan y de responder tú mismo sus solicitudes de acceso, rectificación o eliminación, con nuestra ayuda técnica cuando la necesites.",
           ),
+        ],
+      },
+      {
+        // WP-91 (D-077): fichas y conservación.
+        id: "fichas",
+        heading: "Fichas y datos de salud",
+        blocks: [
+          p(
+            "Si usas la ficha y los consentimientos informados, tú decides qué registras y eres responsable de esos datos, que pueden ser datos de salud. Si eres prestador de salud, la ley te exige conservar la ficha clínica de cada paciente por al menos 15 años (artículo 13 de la Ley 20.584). Esa obligación es tuya: la plataforma guarda tus fichas mientras tu cuenta esté activa, pero no reemplaza tu propio archivo.",
+          ),
+          list([
+            "Mientras tu cuenta esté activa, no borramos fichas ni consentimientos informados por plazos automáticos. Solo se eliminan si tú los eliminas o anonimizas al cliente.",
+            "Puedes descargar todas tus fichas y consentimientos cuando quieras desde Ajustes, en Privacidad y datos.",
+            "Antes de cerrar tu cuenta, descarga tus fichas y guárdalas por el plazo que te exija la ley. Pasados los 30 días desde el cierre se eliminan y no se pueden recuperar.",
+            "Si alguna vez dejamos de ofrecer la plataforma, te avisaremos con al menos 90 días de anticipación para que descargues tus datos.",
+          ]),
         ],
       },
       {
@@ -120,10 +136,11 @@ export function getTerminosCL(entity: LegalEntity): LegalDoc {
             "Puedes cerrar tu cuenta cuando quieras desde Ajustes.",
             "Al cerrarla, tu página de reservas deja de estar disponible de inmediato.",
             "Tienes 30 días desde el cierre para arrepentirte y recuperar tu cuenta tal como estaba.",
-            "Pasados esos 30 días sin que la reactives, tus datos y los de tus clientes se eliminan según nuestra política de privacidad y ya no se pueden recuperar.",
+            "Pasados esos 30 días sin que la reactives, tus datos y los de tus clientes se eliminan según nuestra política de privacidad y ya no se pueden recuperar, incluidas las fichas.",
+            "Durante esos 30 días puedes seguir descargando tus datos desde Ajustes.",
           ]),
           p(
-            "También podemos suspender o cerrar tu cuenta si incumples gravemente estos términos, avisándote primero salvo que la ley o la seguridad de otros usuarios exija actuar antes.",
+            "También podemos suspender o cerrar tu cuenta si incumples gravemente estos términos, avisándote primero salvo que la ley o la seguridad de otros usuarios exija actuar antes. Si la cerramos nosotros, tendrás igualmente 30 días para descargar tus datos antes de que se eliminen.",
           ),
         ],
       },
@@ -132,7 +149,7 @@ export function getTerminosCL(entity: LegalEntity): LegalDoc {
         heading: "Disponibilidad y cambios al servicio",
         blocks: [
           p(
-            "Hacemos lo posible para que la plataforma esté disponible de forma continua, pero puede haber mantenciones o fallas. Te avisamos con anticipación las mantenciones programadas cuando es posible. Podemos mejorar o cambiar funciones de la plataforma; si un cambio elimina algo importante de tu plan, te avisamos antes.",
+            "Hacemos lo posible para que la plataforma esté disponible de forma continua, pero puede haber mantenciones o fallas. Te avisamos con anticipación las mantenciones programadas cuando es posible. Podemos mejorar o cambiar funciones de la plataforma; si un cambio elimina algo importante de tu plan, te avisamos antes. Si dejamos de ofrecer la plataforma, te avisamos con al menos 90 días de anticipación para que descargues tus datos.",
           ),
         ],
       },

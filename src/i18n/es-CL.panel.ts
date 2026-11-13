@@ -2156,17 +2156,17 @@ export const ajustes = {
   privacidad: {
     exportarTitulo: "Exportar los datos de tu negocio",
     exportarAyuda:
-      "Descarga un archivo con la información de tu negocio, tus clientes y tus reservas.",
+      "Descarga un archivo con la información de tu negocio, tus clientes, tus reservas, las fichas y los consentimientos informados.",
     exportarCta: "Exportar datos",
     eliminarTitulo: "Eliminar tu cuenta",
     eliminarAyuda:
-      "Te recomendamos exportar tus datos antes de eliminar tu cuenta.",
+      "Exporta tus datos antes de eliminar tu cuenta. Si usas fichas, guárdalas por el plazo que te exija la ley (la ficha clínica, al menos 15 años): al eliminarse la cuenta se borran también.",
     eliminarCta: "Eliminar cuenta",
     eliminarDialogTitulo: "¿Eliminar tu cuenta?",
     /** `n` (no `dias`): mismo nombre genérico que el resto de `es-CL.ts`
      * para un conteo (`MUESTRA_GENERICA_V2` en `es-CL.v2.test.ts`). */
     eliminarDialogCuerpo: (p: { n: number }): string =>
-      `Tu página de reservas se desactiva de inmediato. Tienes ${p.n} días para arrepentirte; después, eliminamos todo de forma definitiva.`,
+      `Tu página de reservas se desactiva de inmediato. Tienes ${p.n} días para arrepentirte y para exportar tus datos; después, eliminamos todo de forma definitiva, incluidas las fichas.`,
     eliminarConfirmarSi: "Sí, eliminar cuenta",
     eliminarConfirmarNo: "No, mantener cuenta",
     /** Franja visible mientras `deletion_requested_at` esté seteado (planea
@@ -2377,7 +2377,7 @@ export const clientes = {
     exportadoOk: "Descargamos los datos del cliente.",
     confirmarTitulo: "¿Anonimizar este cliente?",
     confirmarCuerpo:
-      "Se eliminan su nombre, celular, correo y notas. Sus reservas y pagos se mantienen, sin esos datos. No se puede deshacer.",
+      "Se eliminan su nombre, celular, correo, notas y su ficha. Sus reservas y pagos se mantienen, sin esos datos. No se puede deshacer. Si debes conservar su ficha clínica, expórtala antes.",
     confirmarSi: "Sí, anonimizar",
     confirmarNo: "No, mantener",
     error: "No pudimos completar la acción. Inténtalo de nuevo.",
