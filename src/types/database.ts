@@ -2000,6 +2000,7 @@ export type Database = {
           created_at: string;
           role: Database["public"]["Enums"]["member_role"];
           staff_id: string | null;
+          support_until: string | null;
           updated_at: string;
           user_id: string;
         };
@@ -2016,6 +2017,7 @@ export type Database = {
           created_at?: string;
           role: Database["public"]["Enums"]["member_role"];
           staff_id?: string | null;
+          support_until?: string | null;
           updated_at?: string;
           user_id: string;
         };
@@ -2032,6 +2034,7 @@ export type Database = {
           created_at?: string;
           role?: Database["public"]["Enums"]["member_role"];
           staff_id?: string | null;
+          support_until?: string | null;
           updated_at?: string;
           user_id?: string;
         };

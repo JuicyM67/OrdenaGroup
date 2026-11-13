@@ -4,6 +4,21 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-076 · 2026-11-13 · Modo soporte: admin får ett tidsbegränsat medlemskap i företaget (WP-90; port av SE:s D-087/D-088)
+**Beslut:** "Abrir como soporte" på `/admin/negocios/[id]` ger adminens konto en `memberships`-rad med `role = 'staff'`, utan personalrad, med de sju vanliga behörighetsflaggorna och `support_until` (60 minuter), och öppnar `/app`. En banderoll i panelen visar "Modo soporte: [negocio], hasta HH:MM" med "Salir".
+**Varför:** ägaren (2026-11-13) vill ha samma supportläge som i Booking Buddy: admins ska kunna gå in i ett befintligt företags panel och konfigurera eller rätta saker åt kunden, inte bara titta. Panelens sidor och server actions utgår från den inloggades medlemskap och RLS, så ett medlemskap ger full återanvändning utan att någon skärm byggs om.
+**Konsekvens:**
+- **Stängt i supportläget** (rollen är inte `owner`): plan och fakturering, teamets medlemskap, export och radering, samtycken. Plan och fakturering sköts från adminpanelen.
+- **Skillnad mot SE: `can_view_records` sätts inte.** Fichas och consentimiento informado (D-074) kan innehålla hälsouppgifter (känsliga enligt Ley 21.719) och behövs inte för support. En trigger hindrar ägaren från att slå på flaggan, byta roll eller koppla raden till en personalrad; ägaren kan ta bort raden.
+- **Utgång i databasen:** `private.is_member`, `private.has_perm` och `private.member_staff_id` räknar inte en utgången supportrad; `loadMember` och `getCurrentMember` gör samma kontroll. Raden tas bort när admin avslutar och städas av retention-cronen (`private.purge_expired_support`).
+- **Bara via servern:** `private.start_support`/`end_support`/`purge_expired_support` (security definer, bara `service_role`); start kontrollerar `private.platform_admins` och kräver i appen tvåstegsverifiering (`requireAdminForAction`). Admin som redan är vanlig medlem får ingen supportrad (`already_member`). Ett företag åt gången.
+- **Spårbarhet:** `support_start`/`support_end` i `admin_audit_log` (bara id:n, sluttid och orsak), syns i Registro. Ändringar görs med adminens eget konto, aldrig som ägaren.
+- Supportrader räknas inte som personal (Inicio) och visas inte bland företagets konton i admin; teamlistan visar redan bara rader med personalrad.
+- **Avtalen:** Términos får avsnittet "Soporte en tu cuenta" (efter "Tu cuenta") och Encargo "Acceso de soporte" (efter "Confidencialidad"), med samma löften som SE:s D-088 utom att fichas nämns som stängda. `LEGAL_VERSION` ändras inte. Ägaren godkänner texten själv.
+- **Leverans i två PR:er:** migrationen först (körs av `deploy-staging.yml` vid merge), sedan koden. Annars frågar `getCurrentMember` efter en kolumn som inte finns och hela `/app` faller.
+
+---
+
 ### D-075 · 2026-11-07 · "Comparte tu link": bokningslänken, QR och guider för Instagram, Google m.fl. (WP-89)
 **Beslut:** ny flik **Ajustes → Comparte tu link** (`/app/ajustes/compartir`, efter Widgets, kräver `can_edit_settings` som Widgets, alla planer) med bokningslänken (kopiera, öppna), en **QR-kod** (`?utm_source=qr`) att ladda ner som PNG för disken/skyltfönstret och korta numrerade guider för **Instagram, Google (Perfil de Negocio/Maps), WhatsApp Business, Facebook och TikTok**, var och en med en egen länk `?utm_source=<kanal>` och (WhatsApp) ett färdigt meddelande för ett snabbsvar. Samma guider publikt på `/funcionalidades/comparte-tu-link` (egen sidfil, i sitemap, inte i menyn eller funktionsmallen).
 **Varför:** salongerna i Chile får kunderna via Instagram, Google Maps och WhatsApp; länken på Inicio sa bara "Pégalo en tu Instagram" utan hur.
