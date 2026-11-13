@@ -131,6 +131,20 @@ export const adminPanel = {
     guardar: "Guardar",
     guardando: "Guardando…",
   },
+  // WP-105 (D-079): modo soporte en el panel del negocio.
+  soporte: {
+    abrir: "Abrir como soporte",
+    ayuda:
+      "Entras al panel del negocio por 60 minutos y puedes cambiar lo mismo que una persona del equipo con todos los permisos. Plan, facturación, equipo, fichas y eliminación quedan cerrados. El inicio y el término quedan en el registro.",
+    banner: (p: { nombre: string; hora: string }): string =>
+      `Modo soporte: ${p.nombre}, hasta las ${p.hora}`,
+    salir: "Salir",
+    errores: {
+      already_member:
+        "Ya eres miembro de este negocio. Entra a su panel como siempre.",
+      not_found: "Este negocio ya no existe.",
+    },
+  },
   // Cambiar plan (y fecha de término opcional) en el detalle del negocio.
   plan: {
     plan: "Plan",
@@ -232,6 +246,8 @@ export const adminPanel = {
       review_hide: "Ocultó una reseña",
       review_restore: "Restauró una reseña",
       set_marketplace_hidden: "Cambió la visibilidad en Descubre",
+      support_start: "Entró como soporte",
+      support_end: "Salió del modo soporte",
     },
     /** `set_marketplace_hidden` según `details.hidden`. */
     descubreOculto: "Ocultó de Descubre",
@@ -251,6 +267,14 @@ export const adminPanel = {
       categories: "Categorías",
       profile: "Datos del perfil",
       hours: "Horario",
+      until: "Hasta",
+      reason: "Motivo",
+    },
+    /** WP-105: `support_end.details.reason`. */
+    motivosSoporte: {
+      ended: "Salió",
+      expired: "Se acabó el tiempo",
+      switched: "Abrió otro negocio",
     },
     modos: {
       app: "En la app",

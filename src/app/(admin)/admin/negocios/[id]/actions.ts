@@ -6,6 +6,7 @@
 // aal2 mellan sidladdning och knapptryck) och skriver sedan en rad i
 // `private.admin_audit_log` (se respektive `src/server/admin/*`-funktion).
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import type { ImportApplyResult } from "@/lib/validation/import";
 import { requireAdminForAction } from "@/server/admin/auth";
@@ -26,6 +27,7 @@ import {
   type BusinessPlan,
 } from "@/server/admin/businesses";
 import { adminApplyImport } from "@/server/admin/import";
+import { startSupport } from "@/server/admin/support";
 
 async function afterAction(businessId: string): Promise<void> {
   revalidatePath(`/admin/negocios/${businessId}`);
@@ -165,4 +167,15 @@ export async function changeEmailAction(
   );
   await afterAction(businessId);
   return result;
+}
+
+/** WP-105 (D-079): abrir el panel del negocio en modo soporte (60 minutos).
+ * Kräver tvåstegsverifiering som alla adminåtgärder. Fel visas på samma sida. */
+export async function startSupportAction(businessId: string): Promise<void> {
+  const admin = await requireAdminForAction();
+  const r = await startSupport(admin.userId, businessId);
+  if (!r.ok) {
+    redirect(`/admin/negocios/${businessId}?soporte=${r.code}`);
+  }
+  redirect("/app");
 }

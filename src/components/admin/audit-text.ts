@@ -4,11 +4,14 @@
 // som de är, så att en ny loggrad aldrig försvinner ur listan.
 import { adminPanel, planes } from "@/i18n";
 
+import { formatAdminDateTime } from "./admin-dates";
+
 const t = adminPanel.registro;
 const ACCIONES: Readonly<Record<string, string>> = t.acciones;
 const CAMPOS: Readonly<Record<string, string>> = t.campos;
 const MODOS: Readonly<Record<string, string>> = t.modos;
 const PLANES: Readonly<Record<string, string>> = planes.nombres;
+const MOTIVOS: Readonly<Record<string, string>> = t.motivosSoporte;
 
 /** Interna id:n som inte säger något i listan. */
 const OCULTAS = new Set(["invitation_id", "reviewId"]);
@@ -79,6 +82,15 @@ function detailText(key: string, value: unknown): string {
       return value === true ? t.cuentaNueva : t.cuentaExistente;
     case "slug":
       return `${label(key)}: /${valueText(value)}`;
+    // WP-105: modo soporte (`support_start.until`, `support_end.reason`).
+    case "until":
+      return typeof value === "string" && !Number.isNaN(Date.parse(value))
+        ? `${label(key)}: ${formatAdminDateTime(value)}`
+        : `${label(key)}: ${valueText(value)}`;
+    case "reason":
+      return typeof value === "string"
+        ? (MOTIVOS[value] ?? value)
+        : `${label(key)}: ${valueText(value)}`;
     default:
       return `${label(key)}: ${valueText(value)}`;
   }

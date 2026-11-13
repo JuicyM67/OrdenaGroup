@@ -273,8 +273,9 @@ export async function getBusinessDetail(
       [businessId],
     );
     const membersRes = await q.query<{ user_id: string; role: string }>(
+      // WP-105: supportrader (admins i modo soporte) är inte företagets konton.
       `select user_id, role from public.memberships
-        where business_id = $1 order by created_at`,
+        where business_id = $1 and support_until is null order by created_at`,
       [businessId],
     );
     const lastActivity = await q.query<{ last_at: string | null }>(

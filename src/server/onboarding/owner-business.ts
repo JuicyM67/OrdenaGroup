@@ -34,6 +34,8 @@ export type CurrentMember = {
   member: Member;
   /** Effektiva behörigheter för UI:t (dölja knappar/sektioner). */
   view: MemberView;
+  /** WP-105 (D-079): satt när en plattformsadmin är inne i modo soporte. */
+  support: { until: string } | null;
 };
 
 export async function getCurrentMember(
@@ -46,12 +48,16 @@ export async function getCurrentMember(
       name: string;
       comuna: string;
       category: string;
+      support_until: Date | string | null;
     }>(
-      `select b.id, b.slug, b.name, b.comuna, b.category
+      // WP-105 (D-079): ett aktivt supportmedlemskap väljs före adminens
+      // eget företag; ett utgånget räknas inte alls.
+      `select b.id, b.slug, b.name, b.comuna, b.category, m.support_until
          from public.memberships m
          join public.businesses b on b.id = m.business_id
         where m.user_id = $1
-        order by (m.role = 'owner') desc, m.created_at
+          and (m.support_until is null or m.support_until > now())
+        order by (m.support_until is not null) desc, (m.role = 'owner') desc, m.created_at
         limit 1`,
       [userId],
     );
@@ -69,6 +75,9 @@ export async function getCurrentMember(
       },
       member,
       view: memberView(member),
+      support: row.support_until
+        ? { until: new Date(row.support_until).toISOString() }
+        : null,
     };
   });
 }

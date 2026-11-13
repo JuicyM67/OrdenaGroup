@@ -49,6 +49,21 @@ export function getEncargoCL(entity: LegalEntity): LegalDoc {
         ],
       },
       {
+        // WP-105 (D-079): modo soporte.
+        id: "acceso-soporte",
+        heading: "Acceso de soporte",
+        blocks: [
+          p(
+            "Cuando el negocio pide ayuda, o cuando hay que corregir un error en su cuenta, una persona de nuestro equipo con una autorización especial puede abrir la cuenta como soporte. Esa persona accede a los mismos datos que una persona del equipo del negocio con todos los permisos, incluidos datos de los clientes del negocio, y los usa solo para dar la ayuda o corregir el error.",
+          ),
+          list([
+            "El acceso exige verificación en dos pasos, dura como máximo una hora cada vez y después termina solo.",
+            "El soporte no puede administrar el plan y la facturación, los miembros del equipo, los consentimientos, ni exportar o eliminar la cuenta, y no accede a las fichas de los clientes.",
+            "Cada vez que la cuenta se abre como soporte queda registrado quién fue, cuándo ocurrió y hasta cuándo duró el acceso. El negocio puede pedir esa información.",
+          ]),
+        ],
+      },
+      {
         id: "seguridad",
         heading: "Medidas de seguridad",
         blocks: [
