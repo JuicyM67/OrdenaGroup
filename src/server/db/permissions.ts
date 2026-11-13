@@ -82,7 +82,8 @@ export async function loadMember(
             can_edit_catalog, can_manage_team, can_view_reports, can_edit_settings,
             can_view_records
        from public.memberships
-      where business_id = $1 and user_id = $2`,
+      where business_id = $1 and user_id = $2
+        and (support_until is null or support_until > now())`,
     [businessId, userId],
   );
   const row = r.rows[0];

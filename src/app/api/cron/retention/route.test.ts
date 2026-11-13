@@ -80,6 +80,7 @@ describe("POST /api/cron/retention", () => {
       winbackBusinesses: 0,
       winbackQueued: 0,
       demoRolled: true,
+      purgedSupport: 0,
     });
   });
 });

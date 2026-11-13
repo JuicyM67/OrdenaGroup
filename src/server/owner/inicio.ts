@@ -291,7 +291,7 @@ async function loadGettingStarted(
   );
   const team = await countIn(
     q,
-    `select count(*)::text as n from public.memberships where business_id = $1 and role = 'staff'`,
+    `select count(*)::text as n from public.memberships where business_id = $1 and role = 'staff' and support_until is null`,
     [businessId],
   );
   const profileRes = await q.query<{ logo_url: string | null }>(
