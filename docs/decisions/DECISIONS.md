@@ -4,6 +4,20 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-077 · 2026-11-13 · Fichas: företaget ansvarar för att spara dem, plattformen raderar dem inte medan kontot är aktivt (WP-91)
+**Beslut:** ägaren (2026-11-13): skyldigheten att spara ficha clínica i minst 15 år (Ley 20.584, art. 13) ligger på företaget (prestador), inte på Ordena. Ordena är encargado och lämnar tillbaka uppgifterna genom exporten; efter att kontot avslutats raderas de.
+**Varför:** fichan (D-074) säljs till hälsonära branscher, men (1) `private.run_retention` anonymiserade kunder utan bokning på 24 månader och raderade då deras ficha, (2) Términos och Privacidad sa att plattformen inte är gjord för hälsodata, vilket motsade funktionen.
+**Konsekvens:**
+- **Lagringsjobbet** (migration `20261113020000_retention_keep_fichas.sql`): en kund med ficha (anteckning, ifyllt fast fält eller consentimiento informado) anonymiseras aldrig automatiskt. Kundens samtyckeslogg förblir kopplad och rensas inte heller efter 5 år. Ägarens egen anonymisering och kontoradering är oförändrade.
+- **Términos:** nytt avsnitt "Fichas y datos de salud" (efter "Tus clientes y protección de datos"): företaget ansvarar för datan och för 15-årskravet; plattformen raderar inte fichas automatiskt medan kontot är aktivt; export när som helst; exportera före stängning, allt raderas 30 dagar efter stängning; minst 90 dagars varsel om plattformen läggs ner. "Uso permitido": hälsodata bara i fichan och consentimientos, inte i anteckningar eller bokningsfrågor. "Duración y cierre": export möjlig under de 30 dagarna, även när vi stänger kontot.
+- **Encargo:** nytt avsnitt "Fichas y datos sensibles" (åtkomst bara med behörigheten, inte för support, aldrig i meddelanden eller loggar, ingen automatisk radering; 15-årskravet är företagets). "Eliminación": exporten under 30 dagar är återlämnandet; 90 dagars varsel vid nedläggning.
+- **Privacidad** (fortfarande utkast): fichan finns med bland uppgifterna; kunder med ficha anonymiseras inte automatiskt.
+- **Appen:** varningar om fichas i Ajustes → Privacidad (export, radering), vid anonymisering av en kund och i adminpanelens "Pedir eliminación"/"Borrar ahora" ("Borrar ahora" bara för testkonton eller på ägarens begäran).
+- `LEGAL_VERSION` ändras inte. Ägaren meddelar befintliga företag (stängd beta) om ändringen i Términos.
+- **Inte gjort (IDEAS):** läsbar export per patient (PDF), anteckningar som bara kan rättas med tillägg (inte tas bort), aviseringsflöde vid nedläggning.
+
+---
+
 ### D-076 · 2026-11-13 · Modo soporte: admin får ett tidsbegränsat medlemskap i företaget (WP-90; port av SE:s D-087/D-088)
 **Beslut:** "Abrir como soporte" på `/admin/negocios/[id]` ger adminens konto en `memberships`-rad med `role = 'staff'`, utan personalrad, med de sju vanliga behörighetsflaggorna och `support_until` (60 minuter), och öppnar `/app`. En banderoll i panelen visar "Modo soporte: [negocio], hasta HH:MM" med "Salir".
 **Varför:** ägaren (2026-11-13) vill ha samma supportläge som i Booking Buddy: admins ska kunna gå in i ett befintligt företags panel och konfigurera eller rätta saker åt kunden, inte bara titta. Panelens sidor och server actions utgår från den inloggades medlemskap och RLS, så ett medlemskap ger full återanvändning utan att någon skärm byggs om.

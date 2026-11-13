@@ -85,7 +85,7 @@ export const adminPanel = {
       boton: "Pedir eliminación",
       titulo: "¿Pedir la eliminación del negocio?",
       texto:
-        "La página de reservas se cierra altiro. El negocio se borra para siempre en 30 días, salvo que deshagas la eliminación antes.",
+        "La página de reservas se cierra altiro. El negocio se borra para siempre en 30 días, incluidas sus fichas, salvo que deshagas la eliminación antes. Avísale al dueño que puede exportar sus datos durante ese plazo.",
     },
     deshacerEliminacion: {
       boton: "Deshacer eliminación",
@@ -329,7 +329,7 @@ export const adminPanel = {
     boton: "Borrar ahora",
     titulo: "Borrar el negocio altiro",
     texto:
-      "Se borra todo para siempre: reservas, clientes, servicios, equipo, imágenes y la cuenta del dueño (si no pertenece a otro negocio). No se puede deshacer.",
+      "Se borra todo para siempre: reservas, clientes, fichas, servicios, equipo, imágenes y la cuenta del dueño (si no pertenece a otro negocio). No se puede deshacer. Úsalo solo con cuentas de prueba o si el dueño lo pidió; si no, usa Pedir eliminación para darle 30 días.",
     confirmar: (p: { slug: string }): string =>
       `Escribe ${p.slug} para confirmar`,
     borrar: "Borrar para siempre",

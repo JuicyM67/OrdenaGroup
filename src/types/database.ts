@@ -1376,6 +1376,9 @@ export type Database = {
           created_at: string;
           customer_id: string;
           id: string;
+          void_reason: string | null;
+          voided_at: string | null;
+          voided_by: string | null;
         };
         Insert: {
           author_staff_id?: string | null;
@@ -1386,6 +1389,9 @@ export type Database = {
           created_at?: string;
           customer_id: string;
           id?: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
         };
         Update: {
           author_staff_id?: string | null;
@@ -1396,6 +1402,9 @@ export type Database = {
           created_at?: string;
           customer_id?: string;
           id?: string;
+          void_reason?: string | null;
+          voided_at?: string | null;
+          voided_by?: string | null;
         };
         Relationships: [
           {

@@ -40,6 +40,25 @@ export function getEncargoCL(entity: LegalEntity): LegalDoc {
         ],
       },
       {
+        // WP-91 (D-077): fichas y datos sensibles.
+        id: "datos-sensibles",
+        heading: "Fichas y datos sensibles",
+        blocks: [
+          p(
+            "El negocio decide si usa la ficha y los consentimientos informados, y qué registra en ellos. Esos datos pueden ser datos de salud, que la Ley 21.719 considera datos sensibles. Los tratamos solo para guardarlos y mostrarlos al negocio:",
+          ),
+          list([
+            "Solo los ven el dueño y las personas del equipo a las que el negocio les da el permiso de ver fichas.",
+            "Nuestro acceso de soporte no incluye las fichas.",
+            "No los enviamos en mensajes por correo ni WhatsApp y no aparecen en nuestros registros técnicos.",
+            "Mientras la cuenta esté activa, no los eliminamos por plazos automáticos de conservación.",
+          ]),
+          p(
+            "Las obligaciones legales del negocio sobre la ficha clínica, como conservarla por al menos 15 años (Ley 20.584), son del negocio. Este encargo no incluye guardar datos después de que la cuenta se cierra.",
+          ),
+        ],
+      },
+      {
         id: "confidencialidad",
         heading: "Confidencialidad",
         blocks: [
@@ -98,6 +117,9 @@ export function getEncargoCL(entity: LegalEntity): LegalDoc {
         blocks: [
           p(
             "Cuando el negocio cierra su cuenta, sus datos y los de sus clientes se tratan según los plazos de la Política de Privacidad: el cierre deja la página de reservas fuera de línea de inmediato, y los datos se eliminan 30 días después si el negocio no reactiva su cuenta.",
+          ),
+          p(
+            "Durante esos 30 días el negocio puede descargar todos sus datos, incluidas las fichas y los consentimientos, desde Ajustes. Con esa descarga devolvemos los datos al negocio; después los eliminamos. Si dejamos de ofrecer la plataforma, avisamos al negocio con al menos 90 días de anticipación.",
           ),
         ],
       },
