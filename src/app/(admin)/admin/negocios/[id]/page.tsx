@@ -3,7 +3,7 @@
 // WP-84 (D-069): omgjord layout (port av SE WP-90/91/93/94) — "Rubro y
 // ubicación", importen åt företaget och "Borrar ahora". Facturación manual,
 // planöverstyrning och medlemmarnas åtgärder ligger kvar.
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, LifeBuoy } from "lucide-react";
 import { notFound } from "next/navigation";
 
 import { formatAdminDateTime } from "@/components/admin/admin-dates";
@@ -40,6 +40,7 @@ import {
   setBusinessPlaceAction,
   setMarketplaceHiddenAction,
   setPlanAction,
+  startSupportAction,
   unfreezeAction,
 } from "./actions";
 
@@ -69,11 +70,19 @@ function descubreStateText(b: {
 
 export default async function AdminBusinessDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ soporte?: string }>;
 }) {
   await requireAdminPage();
   const { id } = await params;
+  // WP-90: fel från "Abrir como soporte" (whitelist, ingen fri text).
+  const supportError = (await searchParams).soporte;
+  const supportErrorText =
+    supportError === "already_member" || supportError === "not_found"
+      ? adminPanel.soporte.errores[supportError]
+      : null;
 
   const [business, log, place] = await Promise.all([
     getBusinessDetail(id),
@@ -192,6 +201,35 @@ export default async function AdminBusinessDetailPage({
           </section>
         </div>
         <div className="flex flex-col gap-6">
+          {/* WP-90 (D-076): modo soporte en el panel del negocio. */}
+          <section className="flex flex-col gap-3 rounded-card bg-surface p-6">
+            <h2 className="text-18 font-bold text-ink">
+              {adminPanel.soporte.abrir}
+            </h2>
+            <p className="text-13 text-ink-soft">{adminPanel.soporte.ayuda}</p>
+            {supportErrorText ? (
+              <p
+                role="alert"
+                className="rounded-tile bg-alert-bg px-4 py-3 text-13 font-semibold text-alert-fg"
+              >
+                {supportErrorText}
+              </p>
+            ) : null}
+            <form action={startSupportAction.bind(null, business.id)}>
+              <button
+                type="submit"
+                className="flex h-11 items-center gap-2 rounded-full bg-ink px-5 text-14 font-bold text-on-dark hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                <LifeBuoy
+                  aria-hidden="true"
+                  className="size-4"
+                  strokeWidth={2}
+                />
+                {adminPanel.soporte.abrir}
+              </button>
+            </form>
+          </section>
+
           <section className="grid grid-cols-3 gap-3">
             <div className="rounded-card bg-surface p-6">
               <p className="text-22 font-bold text-ink">

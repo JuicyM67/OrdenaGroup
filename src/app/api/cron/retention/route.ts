@@ -124,6 +124,21 @@ async function rollDemoSafely(): Promise<{ demoRolled: boolean }> {
   }
 }
 
+/** WP-90 (D-076): ta bort utgångna supportmedlemskap. Databasen godkänner
+ * dem redan inte efter tidsgränsen; det här är bara städning. */
+async function purgeExpiredSupportSafely(): Promise<{
+  purgedSupport: number;
+}> {
+  try {
+    const r = await withServiceTx((q) =>
+      q.query<{ n: number }>(`select private.purge_expired_support() as n`),
+    );
+    return { purgedSupport: r.rows[0]?.n ?? 0 };
+  } catch {
+    return { purgedSupport: 0 };
+  }
+}
+
 async function handle(request: NextRequest): Promise<NextResponse> {
   if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -132,7 +147,14 @@ async function handle(request: NextRequest): Promise<NextResponse> {
   const businesses = await purgeOverdueBusinesses();
   const winback = await runWinbackSafely();
   const demo = await rollDemoSafely();
-  const result = { ...retention, ...businesses, ...winback, ...demo };
+  const support = await purgeExpiredSupportSafely();
+  const result = {
+    ...retention,
+    ...businesses,
+    ...winback,
+    ...demo,
+    ...support,
+  };
   // Bara räknare (regel 8: ingen persondata i loggar).
   console.log("retention: pass klart", result);
   return NextResponse.json(result);

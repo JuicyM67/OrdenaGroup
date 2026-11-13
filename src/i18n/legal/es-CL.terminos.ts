@@ -9,7 +9,7 @@
  *
  * El Acuerdo de Encargo de Tratamiento de Datos (`./es-CL.encargo.ts`,
  * slug `encargo`) es un anexo de este documento: misma fuerza, distinta
- * página por simplicidad de navegación (ver §11, "Anexo").
+ * página por simplicidad de navegación (ver la última sección, "Anexo").
  */
 import { LEGAL_VERSION, list, p, type LegalDoc } from "./types";
 import type { LegalEntity } from "./entity";
@@ -57,6 +57,22 @@ export function getTerminosCL(entity: LegalEntity): LegalDoc {
             "La información que nos das al crear tu cuenta debe ser real y estar actualizada.",
             "Eres responsable de mantener en secreto tu acceso y de todo lo que ocurra en tu cuenta.",
             "Puedes agregar personas a tu equipo con distintos niveles de acceso; eres responsable de a quién le das ese acceso.",
+          ]),
+        ],
+      },
+      {
+        // WP-90 (D-076): modo soporte.
+        id: "soporte",
+        heading: "Soporte en tu cuenta",
+        blocks: [
+          p(
+            "Cuando nos pides ayuda, o cuando necesitamos corregir un error que afecta tu cuenta, una persona de nuestro equipo de soporte puede abrir tu cuenta y hacer el cambio por ti, por ejemplo en tus servicios, horarios, reservas o datos de clientes.",
+          ),
+          list([
+            "Solo pueden abrir una cuenta como soporte personas de nuestro equipo con una autorización especial y verificación en dos pasos.",
+            "El acceso dura como máximo una hora cada vez y después termina solo.",
+            "El soporte puede hacer lo mismo que una persona de tu equipo con todos los permisos, pero no lo que solo tú como dueño puedes hacer: tu plan y facturación, quién forma parte de tu equipo, los consentimientos, y exportar o eliminar la cuenta. Tampoco puede ver las fichas de tus clientes.",
+            "Cada vez que alguien abre tu cuenta como soporte queda registrado quién fue, cuándo ocurrió y hasta cuándo duró el acceso. Puedes pedirnos esa información.",
           ]),
         ],
       },
