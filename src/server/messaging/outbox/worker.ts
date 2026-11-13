@@ -1344,6 +1344,45 @@ async function processInviteeRow(
   return "sent";
 }
 
+/** WP-91 (D-077): `avisoCierre` — al dueño, la plataforma dejará de
+ * funcionar (Términos: al menos 90 días antes). Sin reserva; lo encola
+ * `scripts/notify-shutdown.ts`. `payload.fecha` llega ya formateada. Cada
+ * dueño recibe su envío con su propia clave de idempotencia. */
+async function processShutdownNoticeRow(
+  row: ClaimedRow,
+): Promise<"sent" | "cancelled"> {
+  const fecha = typeof row.payload.fecha === "string" ? row.payload.fecha : "";
+  if (!fecha) throw new OutboxSendError("invalid_payload");
+  const negocio = await withServiceTx(async (q) => {
+    const r = await q.query<{ name: string }>(
+      `select name from public.businesses where id = $1`,
+      [row.businessId],
+    );
+    return r.rows[0]?.name;
+  });
+  const emails = negocio ? await ownerEmailsFor(row.businessId) : [];
+  if (!negocio || emails.length === 0) {
+    await finalizeCancelled(row);
+    return "cancelled";
+  }
+  const ids: string[] = [];
+  for (const [i, to] of emails.entries()) {
+    const r = await sendEmail({
+      to,
+      template: "avisoCierre",
+      data: {
+        negocio,
+        fecha,
+        exportarUrl: `${appUrl()}${appHref("appAjustesPrivacidad")}`,
+      },
+      idempotencyKey: `${row.dedupeKey}:o${i}`,
+    });
+    ids.push(r.id);
+  }
+  await finalizeSent(row, ids.join(","));
+  return "sent";
+}
+
 async function processMemberWelcomeRow(
   row: ClaimedRow,
 ): Promise<"sent" | "cancelled"> {
@@ -1573,6 +1612,9 @@ async function processRow(
     }
     if (row.template === "bienvenidaMiembro") {
       return await processMemberWelcomeRow(row);
+    }
+    if (row.template === "avisoCierre") {
+      return await processShutdownNoticeRow(row);
     }
     if (row.template === "campanaMarketing") {
       return await processCampaignRow(row);

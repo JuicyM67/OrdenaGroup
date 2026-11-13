@@ -31,6 +31,7 @@ import { createSigningToken, SIGNING_LINK_TTL_MS } from "./public-consent";
 
 const FIELD_MAX = 1000;
 const ENTRY_MAX = 4000;
+const VOID_REASON_MAX = 500;
 
 type Denied = Exclude<FichaMutationResult, { ok: true }>;
 
@@ -132,13 +133,21 @@ export async function loadFicha(
       booking_id: string | null;
       service_name: string | null;
       booking_start: Date | null;
+      voided_at: Date | null;
+      void_reason: string | null;
+      voider_name: string | null;
     }>(
       `select e.id, e.body, e.created_at, e.author_user_id,
               st.name as author_name, e.booking_id,
-              sv.name as service_name, lower(bk.period) as booking_start
+              sv.name as service_name, lower(bk.period) as booking_start,
+              e.voided_at, e.void_reason, vst.name as voider_name
          from public.customer_record_entries e
          left join public.staff st
            on st.business_id = e.business_id and st.id = e.author_staff_id
+         left join public.memberships vm
+           on vm.business_id = e.business_id and vm.user_id = e.voided_by
+         left join public.staff vst
+           on vst.business_id = vm.business_id and vst.id = vm.staff_id
          left join public.bookings bk
            on bk.business_id = e.business_id and bk.id = e.booking_id
          left join public.services sv
@@ -193,7 +202,17 @@ export async function loadFicha(
           body: e.body,
           createdAt: e.created_at.toISOString(),
           authorName: e.author_name,
-          canDelete: isOwner || e.author_user_id === userId,
+          // WP-91 (D-077): annulleras i stället för att tas bort.
+          canVoid:
+            e.voided_at === null && (isOwner || e.author_user_id === userId),
+          voided:
+            e.voided_at && e.void_reason
+              ? {
+                  at: e.voided_at.toISOString(),
+                  reason: e.void_reason,
+                  byName: e.voider_name,
+                }
+              : null,
           booking:
             e.booking_id && e.service_name && e.booking_start
               ? {
@@ -340,25 +359,43 @@ export async function addRecordEntry(
   });
 }
 
-export async function deleteRecordEntry(
+const voidSchema = z.strictObject({
+  entryId: z.guid(),
+  reason: z.string().trim().min(1).max(VOID_REASON_MAX),
+});
+
+/**
+ * WP-91 (D-077): annullerar en anteckning. Texten finns kvar och visas
+ * överstruken med orsaken; en ficha clínica ska inte kunna tömmas i
+ * efterhand. Bara författaren eller ägaren (RLS-policyn "void
+ * customer_record_entries"), och bara en gång.
+ */
+export async function markRecordEntryVoided(
   userId: string,
   businessId: string,
   customerId: string,
-  entryId: string,
+  raw: unknown,
 ): Promise<FichaMutationResult> {
-  if (!z.guid().safeParse(entryId).success) {
-    return { ok: false, code: "invalid_input" };
-  }
+  const parsed = voidSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, code: "invalid_input" };
   return withOwnerTx(userId, async (q) => {
     const member = await loadMember(q, userId, businessId);
     const denied = denial(member);
     if (denied) return denied;
-    // RLS: bara författaren eller ägaren (policyn "delete customer_record_entries").
     const r = await q.query(
-      `delete from public.customer_record_entries
+      `update public.customer_record_entries
+          set voided_at = now(), voided_by = $4, void_reason = $5
         where business_id = $1 and customer_id = $2 and id = $3
-          and (author_user_id = $4 or $5)`,
-      [businessId, customerId, entryId, userId, member?.role === "owner"],
+          and voided_at is null
+          and (author_user_id = $4 or $6)`,
+      [
+        businessId,
+        customerId,
+        parsed.data.entryId,
+        userId,
+        parsed.data.reason,
+        member?.role === "owner",
+      ],
     );
     return r.rowCount ? { ok: true } : { ok: false, code: "not_found" };
   });

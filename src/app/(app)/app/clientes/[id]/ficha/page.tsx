@@ -18,10 +18,11 @@ import { ownerNameParts } from "@/server/owner/shared";
 import {
   addRecordEntry,
   createSigningLink,
-  deleteRecordEntry,
+  markRecordEntryVoided,
   loadFicha,
   saveRecordFields,
 } from "@/server/records/ficha";
+import { exportFichasHtml } from "@/server/records/export";
 import { systemClock } from "@/server/scheduling/clock";
 
 import {
@@ -80,10 +81,21 @@ export default async function FichaPage({
       "use server";
       return addRecordEntry(userId, businessId, customerId, input);
     },
-    deleteEntry: async (entryId) => {
+    voidEntry: async (input) => {
       "use server";
-      return deleteRecordEntry(userId, businessId, customerId, entryId);
+      return markRecordEntryVoided(userId, businessId, customerId, input);
     },
+    ...(current.view.role === "owner"
+      ? {
+          exportFicha: async () => {
+            "use server";
+            const r = await exportFichasHtml(userId, businessId, customerId);
+            return r.ok
+              ? { ok: true as const, filename: r.filename, html: r.html }
+              : { ok: false as const, code: r.code };
+          },
+        }
+      : {}),
     createSigningLink: async (input) => {
       "use server";
       return createSigningLink(

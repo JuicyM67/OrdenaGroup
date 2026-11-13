@@ -63,11 +63,17 @@ export const fichaAtencion = {
     reserva: "Reserva (opcional)",
     sinReserva: "Sin reserva",
     ctaAgregar: "Agregar nota",
-    ctaEliminar: "Eliminar",
-    eliminarTitulo: "¿Eliminar esta nota?",
-    eliminarCuerpo: "La nota se borra para siempre.",
-    eliminarSi: "Sí, eliminar",
-    eliminarNo: "No, mantener",
+    /** WP-91 (D-077): una nota no se borra, se anula con un motivo. */
+    ctaAnular: "Anular",
+    anularAyuda:
+      "La nota no se borra: queda tachada, con el motivo, la fecha y quién la anuló. Si hay que corregir algo, agrega una nota nueva.",
+    anularMotivo: "Motivo",
+    anularPlaceholder: "Ej: la escribí en la ficha equivocada",
+    anularSi: "Anular nota",
+    anularNo: "Cancelar",
+    anularVacio: "Escribe el motivo.",
+    anulada: (p: { fecha: string; autor: string; motivo: string }): string =>
+      `Anulada el ${p.fecha} por ${p.autor}. Motivo: ${p.motivo}`,
     autorDesconocido: "Equipo del negocio",
     porAutor: (p: { autor: string }): string => `Por ${p.autor}`,
     demasiadoLarga: "La nota puede tener hasta 4000 caracteres.",
@@ -142,5 +148,54 @@ export const fichaAtencion = {
     errorTitulo: "Escribe un título de hasta 120 caracteres.",
     errorTexto: "Escribe el texto del consentimiento.",
     errorLimite: "Llegaste al máximo de 30 consentimientos.",
+  },
+  /** WP-91 (D-077): archivo descargable (HTML para guardar o imprimir como
+   * PDF) con las fichas, para que el negocio cumpla su obligación de
+   * conservarlas. */
+  archivo: {
+    titulo: (p: { negocio: string }): string => `Fichas de ${p.negocio}`,
+    generado: (p: { fecha: string; n: number }): string =>
+      `Generado el ${p.fecha} · ${p.n === 1 ? "1 cliente" : `${p.n} clientes`}`,
+    aviso: (p: { marca: string }): string =>
+      `Este archivo es una copia de las fichas y los consentimientos informados registrados en ${p.marca}. Guárdalo en un lugar seguro: si eres prestador de salud, debes conservar la ficha clínica por al menos 15 años (Ley 20.584). Para guardarlo como PDF, ábrelo en tu navegador y elige Imprimir y luego Guardar como PDF.`,
+    vacio: "No hay fichas para descargar.",
+    sinNombre: "Cliente sin nombre",
+    clienteDesde: (p: { fecha: string }): string =>
+      `Cliente desde el ${p.fecha}`,
+    datos: "Datos de la ficha",
+    campos: {
+      allergies: "Alergias",
+      contraindications: "Contraindicaciones",
+      observations: "Observaciones",
+    },
+    notas: "Notas de atención",
+    sinNotas: "Sin notas.",
+    consentimientos: "Consentimientos informados",
+    sinConsentimientos: "Sin consentimientos firmados.",
+    sinTitulo: "Consentimiento",
+    equipo: "Equipo del negocio",
+    por: (p: { autor: string }): string => `Por ${p.autor}`,
+    anulada: (p: { fecha: string; autor: string; motivo: string }): string =>
+      `Anulada el ${p.fecha} por ${p.autor}. Motivo: ${p.motivo}`,
+    consentimiento: (p: {
+      titulo: string;
+      fecha: string;
+      origen: string;
+      version: string;
+    }): string =>
+      `${p.titulo} · aceptado el ${p.fecha} ${p.origen} · versión ${p.version}`,
+    origen: {
+      booking: "al reservar",
+      manage_link: "desde su link de reserva",
+      in_person: "en el local",
+    },
+    /** Botones en Ajustes → Privacidad y en la ficha de un cliente. */
+    ctaTodas: "Descargar todas las fichas",
+    ctaTodasAyuda:
+      "Un archivo que puedes abrir en cualquier navegador y guardar como PDF, con las notas, los datos y los consentimientos de cada cliente. Guárdalo por el plazo que te exija la ley.",
+    ctaUna: "Descargar ficha",
+    descargando: "Preparando…",
+    descargada: "Descargamos el archivo.",
+    error: "No pudimos preparar el archivo. Inténtalo de nuevo.",
   },
 } as const satisfies Trad;

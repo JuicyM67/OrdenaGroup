@@ -22,11 +22,11 @@ import { OwnerPageHeader } from "@/components/shared/owner-page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { IconButton } from "@/components/ui/icon-button";
 import { strokeArrow } from "@/components/ui/icons";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { downloadText } from "@/components/settings/privacy-section";
 import { appHref } from "@/config/routes";
 import { comun, fichaAtencion } from "@/i18n";
 import {
@@ -136,6 +136,9 @@ export function FichaScreen({
           />
           {fichaAtencion.aviso}
         </p>
+        {actions.exportFicha ? (
+          <ExportFichaButton exportFicha={actions.exportFicha} />
+        ) : null}
       </div>
 
       {!data.canWrite && planNotice ? planNotice : null}
@@ -373,6 +376,51 @@ function ConsentsCard({
   );
 }
 
+/** WP-91 (D-077): descarga la ficha de este cliente (HTML legible). */
+function ExportFichaButton({
+  exportFicha,
+}: {
+  exportFicha: NonNullable<FichaActions["exportFicha"]>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function run() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await exportFicha();
+      if (r.ok) downloadText(r.filename, r.html, "text/html;charset=utf-8");
+      else setError(fichaAtencion.archivo.error);
+    } catch {
+      setError(fichaAtencion.archivo.error);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div className="mt-2 flex flex-col gap-1">
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="self-start"
+        disabled={busy}
+        onClick={() => void run()}
+      >
+        {busy
+          ? fichaAtencion.archivo.descargando
+          : fichaAtencion.archivo.ctaUna}
+      </Button>
+      {error ? (
+        <p role="alert" className="text-13 text-ink">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function EntriesCard({
   data,
   actions,
@@ -385,7 +433,10 @@ function EntriesCard({
   const [bookingId, setBookingId] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  // WP-91 (D-077): anular en línea (motivo obligatorio), nunca borrar.
+  const [voidId, setVoidId] = useState<string | null>(null);
+  const [voidReason, setVoidReason] = useState("");
+  const [voidBusy, setVoidBusy] = useState(false);
 
   async function add() {
     if (busy) return;
@@ -414,12 +465,24 @@ function EntriesCard({
     }
   }
 
-  async function confirmDelete() {
-    if (!deleteId) return;
-    const r = await actions.deleteEntry(deleteId);
-    setDeleteId(null);
-    if (r.ok) router.refresh();
-    else setError(errorText(r));
+  async function confirmVoid() {
+    if (!voidId || voidBusy) return;
+    const reason = voidReason.trim();
+    if (!reason) {
+      setError(fichaAtencion.notas.anularVacio);
+      return;
+    }
+    setVoidBusy(true);
+    const r = await actions.voidEntry({ entryId: voidId, reason });
+    setVoidBusy(false);
+    if (r.ok) {
+      setVoidId(null);
+      setVoidReason("");
+      setError(null);
+      router.refresh();
+    } else {
+      setError(errorText(r));
+    }
   }
 
   return (
@@ -502,38 +565,83 @@ function EntriesCard({
                   {bookingLabel(e.booking)}
                 </Chip>
               ) : null}
-              <p className="text-14 leading-body whitespace-pre-line text-ink">
+              <p
+                className={
+                  e.voided
+                    ? "text-14 leading-body whitespace-pre-line text-muted line-through"
+                    : "text-14 leading-body whitespace-pre-line text-ink"
+                }
+              >
                 {e.body}
               </p>
-              {e.canDelete ? (
+              {e.voided ? (
+                <p className="text-13 text-muted">
+                  {fichaAtencion.notas.anulada({
+                    fecha: dateLabel(e.voided.at),
+                    autor:
+                      e.voided.byName ?? fichaAtencion.notas.autorDesconocido,
+                    motivo: e.voided.reason,
+                  })}
+                </p>
+              ) : null}
+              {e.canVoid && voidId !== e.id ? (
                 <Button
                   type="button"
                   variant="secondary"
                   size="xs"
                   className="self-start"
                   onClick={() => {
-                    setDeleteId(e.id);
+                    setVoidId(e.id);
+                    setVoidReason("");
+                    setError(null);
                   }}
                 >
-                  {fichaAtencion.notas.ctaEliminar}
+                  {fichaAtencion.notas.ctaAnular}
                 </Button>
+              ) : null}
+              {voidId === e.id ? (
+                <div className="flex flex-col gap-2 rounded-tile bg-canvas p-3">
+                  <p className="text-13 text-ink">
+                    {fichaAtencion.notas.anularAyuda}
+                  </p>
+                  <Textarea
+                    label={fichaAtencion.notas.anularMotivo}
+                    placeholder={fichaAtencion.notas.anularPlaceholder}
+                    maxLength={500}
+                    rows={2}
+                    value={voidReason}
+                    onChange={(ev) => {
+                      setVoidReason(ev.target.value);
+                    }}
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="xs"
+                      disabled={voidBusy}
+                      onClick={() => void confirmVoid()}
+                    >
+                      {fichaAtencion.notas.anularSi}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="xs"
+                      onClick={() => {
+                        setVoidId(null);
+                        setVoidReason("");
+                      }}
+                    >
+                      {fichaAtencion.notas.anularNo}
+                    </Button>
+                  </div>
+                </div>
               ) : null}
             </li>
           ))}
         </ul>
       )}
-
-      <ConfirmDialog
-        open={deleteId !== null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteId(null);
-        }}
-        title={fichaAtencion.notas.eliminarTitulo}
-        body={fichaAtencion.notas.eliminarCuerpo}
-        confirmLabel={fichaAtencion.notas.eliminarSi}
-        cancelLabel={fichaAtencion.notas.eliminarNo}
-        onConfirm={confirmDelete}
-      />
     </Card>
   );
 }

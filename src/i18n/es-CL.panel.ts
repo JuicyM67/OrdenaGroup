@@ -1012,6 +1012,21 @@ export const email = {
       `Te invitamos a crear la agenda de ${p.negocio}. Haz clic en el botón para aceptarla y empezar.`,
     cta: "Aceptar invitación",
   },
+  /** WP-91 (D-077): aviso a cada dueño si la plataforma deja de funcionar
+   * (Términos: al menos 90 días antes). Lo encola `npm run notify:shutdown`. */
+  avisoCierre: {
+    asunto: (p: { marca: string }): string =>
+      `${p.marca} dejará de funcionar: descarga tus datos`,
+    preheader: "Tienes tiempo para descargar tus datos y tus fichas.",
+    titulo: "Descarga tus datos a tiempo",
+    texto: (p: { marca: string; negocio: string; fecha: string }): string =>
+      `${p.marca} dejará de funcionar el ${p.fecha}. Hasta esa fecha, la agenda de ${p.negocio} sigue funcionando como siempre.`,
+    exportar:
+      "Antes de esa fecha, descarga tus datos desde Ajustes, en Privacidad y datos: el archivo con todos tus datos y el archivo con tus fichas. Después de esa fecha se eliminan y no se pueden recuperar.",
+    fichas:
+      "Si eres prestador de salud, guarda tus fichas por el plazo que exige la ley (la ficha clínica, al menos 15 años). Esa obligación es tuya.",
+    cta: "Descargar mis datos",
+  },
   /** Al dueño, cuando un cliente reserva por su cuenta desde `/[slug]`. */
   nuevaReservaDueno: {
     asunto: (p: { cliente: string; fecha: string }): string =>
