@@ -14,7 +14,9 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 - **Privacidad** (fortfarande utkast): fichan finns med bland uppgifterna; kunder med ficha anonymiseras inte automatiskt.
 - **Appen:** varningar om fichas i Ajustes → Privacidad (export, radering), vid anonymisering av en kund och i adminpanelens "Pedir eliminación"/"Borrar ahora" ("Borrar ahora" bara för testkonton eller på ägarens begäran).
 - `LEGAL_VERSION` ändras inte. Ägaren meddelar befintliga företag (stängd beta) om ändringen i Términos.
-- **Inte gjort (IDEAS):** läsbar export per patient (PDF), anteckningar som bara kan rättas med tillägg (inte tas bort), aviseringsflöde vid nedläggning.
+- **Läsbar export:** fristående HTML (öppnas i valfri webbläsare, "Imprimir → Guardar como PDF") med datafält, anteckningar (även annullerade) och consentimientos med full text per version. Alla fichas i Ajustes → Privacidad, en patient i fichan. Bara ägaren (`src/server/records/export.ts`).
+- **Anteckningar annulleras, tas aldrig bort:** migrationer `20261113030000` (voided_at/voided_by/void_reason, policy) och `20261113040000` (delete-policyn och delete-granten borta). Författaren eller ägaren annullerar en gång med en orsak; texten finns kvar överstruken. Texten kan aldrig ändras. Anonymisering och kontoradering raderar som förut.
+- **Nedläggningsvarsel:** `npm run notify:shutdown -- <AAAA-MM-DD>` köar mejlet `avisoCierre` till varje ägare via outboxen; vägrar datum närmare än 90 dagar och fjärrdatabas utan `--confirm-remote`. Körs bara av en människa.
 
 ---
 

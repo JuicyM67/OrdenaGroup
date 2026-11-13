@@ -11,7 +11,7 @@ import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ajustes } from "@/i18n";
+import { ajustes, fichaAtencion } from "@/i18n";
 import { APP_TZ, formatDate } from "@/lib/format/dates";
 
 import { ajustesErrorText } from "./error-text";
@@ -25,7 +25,24 @@ export type PrivacyActions = {
   >;
   requestDeletion: () => Promise<{ ok: true } | { ok: false; code: string }>;
   cancelDeletion: () => Promise<{ ok: true } | { ok: false; code: string }>;
+  /** WP-91 (D-077): todas las fichas como archivo legible (HTML). */
+  exportFichas: () => Promise<
+    { ok: true; filename: string; html: string } | { ok: false; code: string }
+  >;
 };
+
+/** WP-91: descarga un texto como archivo (HTML de las fichas). */
+export function downloadText(filename: string, text: string, type: string) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
 
 function downloadJson(filename: string, data: unknown) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -54,6 +71,7 @@ export function PrivacySection({
     initialDeletionRequestedAt,
   );
   const [exporting, setExporting] = useState(false);
+  const [exportingFichas, setExportingFichas] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
@@ -72,6 +90,24 @@ export function PrivacySection({
       setError(ajustesErrorText("unknown"));
     } finally {
       setExporting(false);
+    }
+  }
+
+  async function handleExportFichas() {
+    if (exportingFichas) return;
+    setExportingFichas(true);
+    setError(undefined);
+    try {
+      const result = await actions.exportFichas();
+      if (result.ok) {
+        downloadText(result.filename, result.html, "text/html;charset=utf-8");
+      } else {
+        setError(ajustesErrorText(result.code));
+      }
+    } catch {
+      setError(ajustesErrorText("unknown"));
+    } finally {
+      setExportingFichas(false);
     }
   }
 
@@ -127,6 +163,27 @@ export function PrivacySection({
           className="self-start"
         >
           {ajustes.privacidad.exportarCta}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <p className="text-14 font-semibold text-ink">
+          {fichaAtencion.archivo.ctaTodas}
+        </p>
+        <p className="text-13 text-muted">
+          {fichaAtencion.archivo.ctaTodasAyuda}
+        </p>
+        <Button
+          type="button"
+          variant="secondary"
+          size="lg"
+          disabled={exportingFichas}
+          onClick={() => void handleExportFichas()}
+          className="self-start"
+        >
+          {exportingFichas
+            ? fichaAtencion.archivo.descargando
+            : fichaAtencion.archivo.ctaTodas}
         </Button>
       </div>
 

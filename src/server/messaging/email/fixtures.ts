@@ -222,5 +222,10 @@ export function emailFixtures(): {
         "https://app.example.com/barberia-norte/tarjeta-regalo/tarjeta?t=def",
       direccion: b.direccion,
     },
+    avisoCierre: {
+      negocio: b.negocio,
+      fecha: "15 de febrero de 2027",
+      exportarUrl: "https://app.example.com/app/ajustes/privacidad",
+    },
   };
 }

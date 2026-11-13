@@ -15,6 +15,7 @@ import {
   type DeletionStatusResult,
 } from "@/server/privacy/business";
 import type { MutationResult } from "@/server/privacy/types";
+import { exportFichasHtml } from "@/server/records/export";
 
 async function currentOwner(): Promise<
   { userId: string; businessId: string } | { ok: false; code: "unauthorized" }
@@ -43,6 +44,16 @@ export async function exportBusinessAction(): Promise<
   const owner = await currentOwner();
   if ("ok" in owner) return owner;
   return exportBusiness(owner.userId, owner.businessId);
+}
+
+/** WP-91 (D-077): todas las fichas como archivo legible (HTML). */
+export async function exportFichasAction(): Promise<
+  { ok: true; filename: string; html: string } | { ok: false; code: string }
+> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return owner;
+  const r = await exportFichasHtml(owner.userId, owner.businessId, null);
+  return r.ok ? { ok: true, filename: r.filename, html: r.html } : r;
 }
 
 export async function requestBusinessDeletionAction(): Promise<MutationResult> {

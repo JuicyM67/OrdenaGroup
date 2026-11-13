@@ -6,7 +6,7 @@
 -- behörighet ser inget innehåll), planspärren och anonymiseringstriggern.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(43);
 \ir _helpers.psql
 
 update public.businesses set plan = 'emprende'
@@ -165,14 +165,29 @@ select throws_ok(
   $$ insert into public.customer_record_entries (business_id, customer_id, body, author_user_id)
      values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001', 'x', '11111111-1111-1111-1111-111111111111') $$,
   '42501', null, 'man kan inte skriva i någon annans namn');
-delete from public.customer_record_entries where id = 'aaaaaaaa-6000-0000-0000-000000000001';
+-- WP-91 (D-077): anteckningar annulleras, de tas aldrig bort.
+update public.customer_record_entries
+   set voided_at = now(), voided_by = '33333333-3333-3333-3333-333333333333', void_reason = 'x'
+ where id = 'aaaaaaaa-6000-0000-0000-000000000001';
 select is(
-  (select count(*)::int from public.customer_record_entries where id = 'aaaaaaaa-6000-0000-0000-000000000001'),
-  1, 'personal kan inte ta bort någon annans anteckning');
-delete from public.customer_record_entries where id = 'aaaaaaaa-6000-0000-0000-000000000002';
+  (select count(*)::int from public.customer_record_entries
+    where id = 'aaaaaaaa-6000-0000-0000-000000000001' and voided_at is null),
+  1, 'personal kan inte annullera någon annans anteckning');
+select throws_ok(
+  $$ delete from public.customer_record_entries where id = 'aaaaaaaa-6000-0000-0000-000000000002' $$,
+  '42501', null, 'ingen kan ta bort en anteckning');
+select lives_ok(
+  $$ update public.customer_record_entries
+        set voided_at = now(), voided_by = '33333333-3333-3333-3333-333333333333', void_reason = 'Fel ficha'
+      where id = 'aaaaaaaa-6000-0000-0000-000000000002' $$,
+  'personal annullerar sin egen anteckning');
 select is(
-  (select count(*)::int from public.customer_record_entries where id = 'aaaaaaaa-6000-0000-0000-000000000002'),
-  0, 'personal tar bort sin egen anteckning');
+  (select body from public.customer_record_entries where id = 'aaaaaaaa-6000-0000-0000-000000000002'),
+  'Evolución', 'texten finns kvar efter annulleringen');
+select throws_ok(
+  $$ update public.customer_record_entries set body = 'ändrad'
+      where id = 'aaaaaaaa-6000-0000-0000-000000000002' $$,
+  '42501', null, 'texten kan inte ändras');
 
 -- Som ägare B (annat företag).
 select set_config('request.jwt.claims', json_build_object('sub', '22222222-2222-2222-2222-222222222222', 'role', 'authenticated')::text, true);
@@ -205,7 +220,7 @@ select throws_ok(
   $$ insert into public.customer_record_entries (business_id, customer_id, body, author_user_id)
      values ('aaaaaaaa-0000-0000-0000-000000000001', 'aaaaaaaa-3000-0000-0000-000000000001', 'x', '11111111-1111-1111-1111-111111111111') $$,
   '42501', null, 'utan planfunktionen kan man inte skriva');
-select is((select count(*)::int from public.customer_record_entries), 1, 'efter nedgradering finns datan kvar');
+select is((select count(*)::int from public.customer_record_entries), 2, 'efter nedgradering finns datan kvar (annullerade anteckningar räknas)');
 
 -- 39-40. Anonymisering raderar fichan.
 reset role;

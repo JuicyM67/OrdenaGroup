@@ -33,7 +33,15 @@ export type FichaEntry = {
   /** ISO UTC. */
   createdAt: string;
   authorName: string | null;
-  canDelete: boolean;
+  /** WP-91 (D-077): författaren eller ägaren kan annullera (en gång). */
+  canVoid: boolean;
+  /** Annullerad: texten finns kvar och visas överstruken. */
+  voided: {
+    /** ISO UTC. */
+    at: string;
+    reason: string;
+    byName: string | null;
+  } | null;
   booking: FichaBookingOption | null;
 };
 
@@ -90,11 +98,18 @@ export type FichaActions = {
     body: string;
     bookingId: string | null;
   }) => Promise<FichaMutationResult>;
-  deleteEntry: (entryId: string) => Promise<FichaMutationResult>;
+  voidEntry: (input: {
+    entryId: string;
+    reason: string;
+  }) => Promise<FichaMutationResult>;
   createSigningLink: (input: {
     templateId: string;
     bookingId: string | null;
   }) => Promise<SigningLinkResult>;
+  /** WP-91 (D-077): solo el dueño — la ficha de este cliente como archivo. */
+  exportFicha?: () => Promise<
+    { ok: true; filename: string; html: string } | { ok: false; code: string }
+  >;
 };
 
 // Ajustes → Ficha ---------------------------------------------------------------

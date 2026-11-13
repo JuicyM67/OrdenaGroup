@@ -18,6 +18,7 @@ import {
 import {
   cancelBusinessDeletionAction,
   exportBusinessAction,
+  exportFichasAction,
   loadPrivacyStatusAction,
   requestBusinessDeletionAction,
 } from "../privacy-actions";
@@ -57,6 +58,7 @@ export default async function AjustesPrivacidadPage() {
         deletionRequestedAt={deletionRequestedAt}
         actions={{
           exportBusiness: exportBusinessAction,
+          exportFichas: exportFichasAction,
           requestDeletion: requestBusinessDeletionAction,
           cancelDeletion: cancelBusinessDeletionAction,
         }}

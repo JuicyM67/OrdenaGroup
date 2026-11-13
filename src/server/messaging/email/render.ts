@@ -67,6 +67,10 @@ import {
   type TarjetaRegaloCompradorData,
   type TarjetaRegaloDestinatarioData,
 } from "./templates/tarjeta-regalo";
+import {
+  avisoCierreEmail,
+  type AvisoCierreData,
+} from "./templates/aviso-cierre";
 import type { EmailKind, RenderedEmail } from "./types";
 
 /** En mall = { data, kind (`EMAIL_FROM_BOOKING`/`EMAIL_FROM_ACCOUNT`) }. */
@@ -111,6 +115,8 @@ export type EmailTemplateMap = {
    * tarjeta a quien la recibe. */
   readonly tarjetaRegaloComprador: TarjetaRegaloCompradorData;
   readonly tarjetaRegaloDestinatario: TarjetaRegaloDestinatarioData;
+  /** WP-91 (D-077): al dueño, la plataforma dejará de funcionar. */
+  readonly avisoCierre: AvisoCierreData;
 };
 
 export type EmailTemplateName = keyof EmailTemplateMap;
@@ -148,6 +154,7 @@ export const EMAIL_TEMPLATE_KIND: Record<EmailTemplateName, EmailKind> = {
   clienteQuiereCambiar: "booking",
   tarjetaRegaloComprador: "booking",
   tarjetaRegaloDestinatario: "booking",
+  avisoCierre: "account",
 };
 
 export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
@@ -178,6 +185,7 @@ export const EMAIL_TEMPLATE_NAMES: readonly EmailTemplateName[] = [
   "clienteQuiereCambiar",
   "tarjetaRegaloComprador",
   "tarjetaRegaloDestinatario",
+  "avisoCierre",
 ];
 
 /** Renderar en mall: `{ subject, preheader, html, text }`, redo för
@@ -243,6 +251,8 @@ export function renderEmail<T extends EmailTemplateName>(
       return tarjetaRegaloDestinatarioEmail(
         data as TarjetaRegaloDestinatarioData,
       );
+    case "avisoCierre":
+      return avisoCierreEmail(data as AvisoCierreData);
     /* c8 ignore next 2 */
     default:
       throw new Error(`renderEmail: mall desconocida "${String(template)}"`);
