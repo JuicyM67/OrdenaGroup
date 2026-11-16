@@ -22,6 +22,10 @@ export type ConfirmDialogProps = {
   cancelLabel: string;
   /** Kastar aldrig: fel hanteras av anroparen (samma kontrakt som `CancelDialog`). */
   onConfirm: () => Promise<void>;
+  /** WP-92: t.ex. tills admin skrivit slugen. */
+  confirmDisabled?: boolean;
+  /** WP-92: fält under texten (beskrivningen är ett `<p>`). */
+  children?: ReactNode;
 };
 
 export function ConfirmDialog({
@@ -32,6 +36,8 @@ export function ConfirmDialog({
   confirmLabel,
   cancelLabel,
   onConfirm,
+  confirmDisabled = false,
+  children,
 }: ConfirmDialogProps) {
   const descriptionId = useId();
   const [submitting, setSubmitting] = useState(false);
@@ -67,6 +73,7 @@ export function ConfirmDialog({
             <Dialog.Description id={descriptionId} className="text-14 text-ink">
               {body}
             </Dialog.Description>
+            {children}
 
             <div className="mt-1 flex justify-end gap-3">
               <Button
@@ -81,7 +88,7 @@ export function ConfirmDialog({
                 type="button"
                 variant="primary"
                 size="lg"
-                disabled={submitting}
+                disabled={submitting || confirmDisabled}
                 onClick={() => {
                   void handleConfirm();
                 }}

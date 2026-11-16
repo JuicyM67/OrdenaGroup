@@ -42,6 +42,10 @@ export const adminPanel = {
     vacio: "Ningún negocio coincide.",
     abrir: (p: { nombre: string }): string => `Abrir ${p.nombre}`,
     sinDueno: "Sin dueño",
+    /** WP-92: el dueño nunca entró (la invitación no se activó). */
+    sinActivar: "Sin activar",
+    /** WP-92: botón de borrar en la tarjeta. */
+    borrarNegocio: (p: { nombre: string }): string => `Borrar ${p.nombre}`,
     descubre: "Descubre",
     listo: "Listo",
     faltan: (p: { n: number }): string =>

@@ -59,6 +59,8 @@ export type BusinessListItem = {
   };
   /** Plattformen har dolt företaget i Descubre (`marketplace_hidden`). */
   readonly marketplaceHidden: boolean;
+  /** WP-92: ägaren har aldrig loggat in (inbjudan inte aktiverad). */
+  readonly ownerNotActivated: boolean;
 };
 
 /**
@@ -69,8 +71,19 @@ export type BusinessListItem = {
  * företag är ändå liten i den här fasen (en handfull pilotkunder).
  */
 export async function emailsByUserId(): Promise<Map<string, string>> {
-  const client = getStorageAdminClient();
   const map = new Map<string, string>();
+  for (const [id, u] of await authUsersById()) {
+    if (u.email) map.set(id, u.email);
+  }
+  return map;
+}
+
+/** WP-92: samma paginering, plus om användaren någonsin loggat in. */
+async function authUsersById(): Promise<
+  Map<string, { email: string | null; signedIn: boolean }>
+> {
+  const client = getStorageAdminClient();
+  const map = new Map<string, { email: string | null; signedIn: boolean }>();
   for (let page = 1; page <= 10; page += 1) {
     const { data, error } = await client.auth.admin.listUsers({
       page,
@@ -78,7 +91,7 @@ export async function emailsByUserId(): Promise<Map<string, string>> {
     });
     if (error || !data) break;
     for (const u of data.users) {
-      if (u.email) map.set(u.id, u.email);
+      map.set(u.id, { email: u.email ?? null, signedIn: !!u.last_sign_in_at });
     }
     if (data.users.length < 1000) break;
   }
@@ -90,6 +103,8 @@ export type ListBusinessesFilter = {
   plan?: BusinessPlan;
   status?: BusinessStatus;
   billingMode?: BillingMode;
+  /** WP-92: bara företag vars ägare aldrig loggat in. */
+  notActivated?: boolean;
 };
 
 export async function listBusinesses(
@@ -133,7 +148,7 @@ export async function listBusinesses(
     return r.rows;
   });
 
-  const emails = await emailsByUserId();
+  const users = await authUsersById();
 
   const items: BusinessListItem[] = rows.map((row) => ({
     id: row.id,
@@ -146,7 +161,7 @@ export async function listBusinesses(
     deletionRequestedAt: row.deletion_requested_at,
     planRequested: row.plan_requested,
     ownerEmail: row.owner_user_id
-      ? (emails.get(row.owner_user_id) ?? null)
+      ? (users.get(row.owner_user_id)?.email ?? null)
       : null,
     createdAt: row.created_at,
     category: row.category,
@@ -158,10 +173,14 @@ export async function listBusinesses(
       servicios: row.has_services,
     },
     marketplaceHidden: row.marketplace_hidden,
+    ownerNotActivated:
+      row.owner_user_id !== null &&
+      users.get(row.owner_user_id)?.signedIn === false,
   }));
 
   const q = filter.q?.trim().toLowerCase();
   return items.filter((item) => {
+    if (filter.notActivated && !item.ownerNotActivated) return false;
     if (filter.plan && item.plan !== filter.plan) return false;
     if (filter.status && item.status !== filter.status) return false;
     if (filter.billingMode && item.billingMode !== filter.billingMode)
