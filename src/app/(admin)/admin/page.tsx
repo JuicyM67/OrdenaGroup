@@ -17,6 +17,8 @@ import {
   type BusinessStatus,
 } from "@/server/admin/businesses";
 
+import { deleteNowAction } from "./negocios/[id]/actions";
+
 export const dynamic = "force-dynamic";
 
 const t = adminPanel.lista;
@@ -76,6 +78,8 @@ export default async function AdminBusinessesPage({
   const sp = await searchParams;
   const plan = PLANS.find((p) => p === sp.plan);
   const status = STATUSES.find((s) => s === sp.status);
+  // WP-92: "Sin activar" = ägaren har aldrig loggat in.
+  const notActivated = sp.status === "sin_activar";
   // WP-80 (D-061): filtret "Todos / Facturación manual".
   const billingMode = sp.facturacion === "manual" ? "manual" : undefined;
   const businesses = await listBusinesses({
@@ -83,6 +87,7 @@ export default async function AdminBusinessesPage({
     plan,
     status,
     billingMode,
+    notActivated,
   });
 
   return (
@@ -120,10 +125,15 @@ export default async function AdminBusinessesPage({
               </option>
             ))}
           </PillSelect>
-          <PillSelect name="status" label={t.status} value={status ?? ""}>
+          <PillSelect
+            name="status"
+            label={t.status}
+            value={notActivated ? "sin_activar" : (status ?? "")}
+          >
             <option value="">{`${t.status}: ${t.todos}`}</option>
             <option value="active">{t.activo}</option>
             <option value="frozen">{t.congelado}</option>
+            <option value="sin_activar">{t.sinActivar}</option>
           </PillSelect>
           <PillSelect
             name="facturacion"
@@ -150,7 +160,10 @@ export default async function AdminBusinessesPage({
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
           {businesses.map((b) => (
             <li key={b.id}>
-              <AdminBusinessCard business={b} />
+              <AdminBusinessCard
+                business={b}
+                deleteAction={deleteNowAction.bind(null, b.id)}
+              />
             </li>
           ))}
         </ul>

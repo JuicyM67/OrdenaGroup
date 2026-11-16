@@ -15,6 +15,9 @@ import { adminPanel, negocio, planes } from "@/i18n";
 import { isOwnImageUrl } from "@/lib/media/storage-url";
 import type { BusinessListItem } from "@/server/admin/businesses";
 
+import { CardDeleteButton } from "./card-delete-button";
+import type { AdminActionResult } from "./confirm-action-button";
+
 const t = adminPanel.lista;
 
 const POINTS = ["imagen", "lugar", "servicios"] as const;
@@ -52,8 +55,11 @@ function Chip({
 
 export function AdminBusinessCard({
   business: b,
+  deleteAction,
 }: {
   business: BusinessListItem;
+  /** WP-92: `deleteNowAction` bunden till företaget (slug som bekräftelse). */
+  deleteAction: (confirmSlug: string) => Promise<AdminActionResult>;
 }) {
   const category = categoryForRubro(b.category);
   const ui = CATEGORY_UI[category];
@@ -64,100 +70,109 @@ export function AdminBusinessCard({
   const missing = POINTS.filter((p) => !b.readiness[p]).length;
   const image = b.imageUrl && isOwnImageUrl(b.imageUrl) ? b.imageUrl : null;
 
+  // WP-92: papperskorgen ligger bredvid länken (inte i den — ingen knapp i <a>).
   return (
-    <Link
-      href={`/admin/negocios/${b.id}`}
-      aria-label={t.abrir({ nombre: b.name })}
-      className="group flex h-full flex-col gap-4 rounded-card bg-surface p-5 transition-transform duration-150 ease-out hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <span
-          aria-hidden="true"
-          className={cn(
-            "relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-18 font-semibold text-ink",
-            image ? "bg-canvas" : ui.tone,
-          )}
-        >
-          {image ? (
-            <Image
-              src={image}
-              alt=""
-              fill
-              sizes="56px"
-              className="object-cover"
-              unoptimized={image.endsWith(".svg")}
-            />
-          ) : (
-            initials(b.name) || <ui.icon className="size-6" strokeWidth={2} />
-          )}
-        </span>
-        <span
-          aria-hidden="true"
-          className="flex size-10 items-center justify-center rounded-full border border-border text-ink transition-colors duration-150 ease-out group-hover:bg-ink group-hover:text-lime"
-        >
-          <ArrowUpRight className="size-4.5" strokeWidth={2} />
-        </span>
-      </div>
-
-      <div className="flex min-w-0 flex-col gap-0.5">
-        <h2 className="truncate text-18 font-bold text-ink">{b.name}</h2>
-        <p className="truncate text-13 text-muted">
-          {[rubro, place].filter(Boolean).join(" · ")}
-        </p>
-        <p className="truncate text-13 text-ink-soft">
-          {b.ownerEmail ?? t.sinDueno}
-        </p>
-      </div>
-
-      <div className="mt-auto flex items-end justify-between gap-3 border-t border-border pt-4">
-        <div className="flex flex-col gap-1.5">
-          <span className="text-12 text-muted">{t.plan}</span>
-          <span className="flex flex-wrap gap-1.5">
-            <Chip tone="neutral">{planes.nombres[b.plan]}</Chip>
-            {b.billingMode === "manual" ? (
-              <Chip tone="ink">{adminPanel.facturacion.etiqueta}</Chip>
-            ) : null}
-            {b.status === "frozen" ? (
-              <Chip tone="alert">{t.congelado}</Chip>
-            ) : null}
-            {b.deletionRequestedAt ? (
-              <Chip tone="alert">{t.borrar}</Chip>
-            ) : null}
-            {b.planRequested && b.planRequested !== b.plan ? (
-              <Chip tone="alert">
-                {t.quierePlan({ plan: planes.nombres[b.planRequested] })}
-              </Chip>
-            ) : null}
-            {b.marketplaceHidden ? (
-              <Chip tone="neutral">{t.ocultoDescubre}</Chip>
-            ) : null}
-          </span>
-        </div>
-        <div className="flex flex-col items-end gap-1.5">
-          <span className="text-12 text-muted">
-            {missing === 0 ? t.listo : t.faltan({ n: missing })}
+    <div className="relative h-full transition-transform duration-150 ease-out hover:-translate-y-0.5">
+      <Link
+        href={`/admin/negocios/${b.id}`}
+        aria-label={t.abrir({ nombre: b.name })}
+        className="group flex h-full flex-col gap-4 rounded-card bg-surface p-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <span
+            aria-hidden="true"
+            className={cn(
+              "relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-full font-display text-18 font-semibold text-ink",
+              image ? "bg-canvas" : ui.tone,
+            )}
+          >
+            {image ? (
+              <Image
+                src={image}
+                alt=""
+                fill
+                sizes="56px"
+                className="object-cover"
+                unoptimized={image.endsWith(".svg")}
+              />
+            ) : (
+              initials(b.name) || <ui.icon className="size-6" strokeWidth={2} />
+            )}
           </span>
           <span
-            className="flex gap-1"
-            aria-label={`${t.descubre}: ${POINTS.map(
-              (p) =>
-                `${t.puntos[p]} ${b.readiness[p] ? t.puntoOk : t.puntoFalta}`,
-            ).join(", ")}`}
-            role="img"
+            aria-hidden="true"
+            className="flex size-10 items-center justify-center rounded-full border border-border text-ink transition-colors duration-150 ease-out group-hover:bg-ink group-hover:text-lime"
           >
-            {POINTS.map((p) => (
-              <span
-                key={p}
-                title={t.puntos[p]}
-                className={cn(
-                  "size-3.5 rounded-full",
-                  b.readiness[p] ? "bg-lime ring-1 ring-ink/15" : "bg-border",
-                )}
-              />
-            ))}
+            <ArrowUpRight className="size-4.5" strokeWidth={2} />
           </span>
         </div>
+
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h2 className="truncate text-18 font-bold text-ink">{b.name}</h2>
+          <p className="truncate text-13 text-muted">
+            {[rubro, place].filter(Boolean).join(" · ")}
+          </p>
+          <p className="truncate text-13 text-ink-soft">
+            {b.ownerEmail ?? t.sinDueno}
+          </p>
+        </div>
+
+        <div className="mt-auto flex items-end justify-between gap-3 border-t border-border pt-4">
+          <div className="flex flex-col gap-1.5">
+            <span className="text-12 text-muted">{t.plan}</span>
+            <span className="flex flex-wrap gap-1.5">
+              <Chip tone="neutral">{planes.nombres[b.plan]}</Chip>
+              {b.billingMode === "manual" ? (
+                <Chip tone="ink">{adminPanel.facturacion.etiqueta}</Chip>
+              ) : null}
+              {b.ownerNotActivated ? (
+                <Chip tone="alert">{t.sinActivar}</Chip>
+              ) : null}
+              {b.status === "frozen" ? (
+                <Chip tone="alert">{t.congelado}</Chip>
+              ) : null}
+              {b.deletionRequestedAt ? (
+                <Chip tone="alert">{t.borrar}</Chip>
+              ) : null}
+              {b.planRequested && b.planRequested !== b.plan ? (
+                <Chip tone="alert">
+                  {t.quierePlan({ plan: planes.nombres[b.planRequested] })}
+                </Chip>
+              ) : null}
+              {b.marketplaceHidden ? (
+                <Chip tone="neutral">{t.ocultoDescubre}</Chip>
+              ) : null}
+            </span>
+          </div>
+          <div className="flex flex-col items-end gap-1.5">
+            <span className="text-12 text-muted">
+              {missing === 0 ? t.listo : t.faltan({ n: missing })}
+            </span>
+            <span
+              className="flex gap-1"
+              aria-label={`${t.descubre}: ${POINTS.map(
+                (p) =>
+                  `${t.puntos[p]} ${b.readiness[p] ? t.puntoOk : t.puntoFalta}`,
+              ).join(", ")}`}
+              role="img"
+            >
+              {POINTS.map((p) => (
+                <span
+                  key={p}
+                  title={t.puntos[p]}
+                  className={cn(
+                    "size-3.5 rounded-full",
+                    b.readiness[p] ? "bg-lime ring-1 ring-ink/15" : "bg-border",
+                  )}
+                />
+              ))}
+            </span>
+          </div>
+        </div>
+      </Link>
+      <div className="absolute top-5.5 right-17">
+        <CardDeleteButton name={b.name} slug={b.slug} action={deleteAction} />
       </div>
-    </Link>
+    </div>
   );
 }
