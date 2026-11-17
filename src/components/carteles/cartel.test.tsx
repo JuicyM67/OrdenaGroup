@@ -1,47 +1,109 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { ajustesTabVisible } from "@/components/settings/ajustes-tabs";
 import { brand } from "@/config/brand";
 import { carteles, cuenta } from "@/i18n";
+import {
+  defaultSignDesign,
+  type SignDesign,
+} from "@/lib/share/carteles-design";
 
-import { Cartel } from "./cartel";
+import { Cartel, cartelThemeClass } from "./cartel";
 import { CartelPapel } from "./cartel-papel";
 
+// next/font fungerar bara i Next; här räcker klassnamnen.
+vi.mock("./fonts", () => ({ CARTEL_FONT_VARIABLES: "font-vars" }));
+
 const business = { name: "Barbería Norte", logoUrl: null };
+const reservasLink = "https://ordenagroup.cl/barberia-norte?utm_source=cartel";
+const cuentaLink = "https://ordenagroup.cl/cuenta/ingresar?utm_source=cartel";
+const displayUrl = "ordenagroup.cl/barberia-norte";
+
+function reservas(patch: Partial<SignDesign> = {}) {
+  return render(
+    <Cartel
+      kind="reservas"
+      design={{ ...defaultSignDesign("reservas"), ...patch }}
+      business={business}
+      link={reservasLink}
+      displayUrl={displayUrl}
+    />,
+  );
+}
 
 describe("Cartel", () => {
-  it("reservas: nombre, título, QR, dirección y la esquina de la marca", () => {
-    const { container } = render(
-      <Cartel
-        kind="reservas"
-        estilo="claro"
-        business={business}
-        link="https://ordenagroup.cl/barberia-norte?utm_source=cartel"
-        displayUrl="ordenagroup.cl/barberia-norte"
-      />,
-    );
+  it("reservas por defecto: nombre, iniciales, título, QR, dirección y esquina", () => {
+    const { container } = reservas();
     expect(screen.getByText("Barbería Norte")).toBeInTheDocument();
     expect(screen.getByText("BN")).toBeInTheDocument();
     expect(screen.getByText(carteles.hoja.reservasTitulo)).toBeInTheDocument();
-    expect(
-      screen.getByText("ordenagroup.cl/barberia-norte"),
-    ).toBeInTheDocument();
+    expect(screen.getByText(carteles.hoja.reservasTexto)).toBeInTheDocument();
+    expect(screen.getByText(displayUrl)).toBeInTheDocument();
     const qr = screen.getByRole("img", { name: carteles.hoja.qrAlt });
     expect(qr.querySelector("path")?.getAttribute("d")).toMatch(/^M\d/);
     const esquina = screen.getByText(brand.name).closest("p");
     expect(esquina?.textContent).toContain(carteles.hoja.esquina);
-    expect(container.firstElementChild?.className).toContain("bg-surface");
+    expect(container.firstElementChild?.className).toContain(
+      "cartel-paleta-claro",
+    );
   });
 
-  it("cuenta: beneficios de la cuenta y el nombre del negocio", () => {
+  it("textos propios reemplazan a los sugeridos; sin logo no hay iniciales", () => {
+    reservas({
+      titulo: "Agenda tu cita",
+      subtitulo: "Uñas y pestañas",
+      mostrarLogo: false,
+    });
+    expect(screen.getByText("Agenda tu cita")).toBeInTheDocument();
+    expect(screen.getByText("Uñas y pestañas")).toBeInTheDocument();
+    expect(screen.queryByText(carteles.hoja.reservasTitulo)).toBeNull();
+    expect(screen.queryByText("BN")).toBeNull();
+    expect(screen.getByText("Barbería Norte")).toBeInTheDocument();
+  });
+
+  it.each(["clasico", "centrado", "marco", "foto"] as const)(
+    "plantilla %s: QR, nombre y esquina siempre",
+    (layout) => {
+      reservas({ layout });
+      expect(
+        screen.getByRole("img", { name: carteles.hoja.qrAlt }),
+      ).toBeInTheDocument();
+      expect(screen.getByText("Barbería Norte")).toBeInTheDocument();
+      expect(screen.getByText(brand.name)).toBeInTheDocument();
+    },
+  );
+
+  it("paleta, tipografía y grosor van como clases", () => {
+    const { container } = reservas({
+      paleta: "negro-oro",
+      fuente: "elegante",
+      grosor: "fino",
+    });
+    const cls = container.firstElementChild?.className ?? "";
+    expect(cls).toContain("cartel-paleta-negro-oro");
+    expect(cls).toContain("cartel-fuente-elegante");
+    expect(cls).toContain("cartel-grosor-fino");
+  });
+
+  it("manuscrita tiene un solo grosor", () => {
+    expect(
+      cartelThemeClass({
+        paleta: "rosa",
+        fuente: "manuscrita",
+        grosor: "fino",
+      }),
+    ).toContain("cartel-grosor-normal");
+  });
+
+  it("cuenta: beneficios y nombre del negocio, sin la dirección", () => {
     render(
       <Cartel
         kind="cuenta"
-        estilo="oscuro"
+        design={{ ...defaultSignDesign("cuenta"), paleta: "oscuro" }}
         business={business}
-        link="https://ordenagroup.cl/cuenta/ingresar?utm_source=cartel"
-        displayUrl="ordenagroup.cl/barberia-norte"
+        link={cuentaLink}
+        displayUrl={displayUrl}
       />,
     );
     expect(screen.getByText(carteles.hoja.cuentaTitulo)).toBeInTheDocument();
@@ -53,7 +115,7 @@ describe("Cartel", () => {
     expect(
       screen.getByText(cuenta.ingresar.beneficios.gestionar),
     ).toBeInTheDocument();
-    expect(screen.queryByText("ordenagroup.cl/barberia-norte")).toBeNull();
+    expect(screen.queryByText(displayUrl)).toBeNull();
   });
 
   it("A6 · 4 por hoja: cuatro carteles en una hoja A4", () => {
@@ -61,10 +123,10 @@ describe("Cartel", () => {
       <CartelPapel
         size="a6x4"
         kind="cuenta"
-        estilo="lima"
+        design={defaultSignDesign("cuenta")}
         business={business}
-        link="https://ordenagroup.cl/cuenta/ingresar?utm_source=cartel"
-        displayUrl="ordenagroup.cl/barberia-norte"
+        link={cuentaLink}
+        displayUrl={displayUrl}
       />,
     );
     expect(container.firstElementChild?.className).toContain("cartel-papel-a4");

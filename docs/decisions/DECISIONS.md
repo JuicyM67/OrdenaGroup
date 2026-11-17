@@ -4,6 +4,33 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-080 · 2026-11-18 · Skylteditor: kurerade val, designen sparas på företaget (WP-96)
+**Beslut:** ägaren (2026-11-17): skyltarna i Ajustes → QR (D-079) får en enkel editor. Salongen kan välja:
+- **plantilla:** Clásico, Centrado, Marco, Banda;
+- **tipografía:** Moderna (Bricolage + Jakarta), Fina (Jost), Elegante (Cormorant Garamond + Jost), Clásica (Playfair Display + Jakarta), Manuscrita (Great Vibes + Jost), Redonda (Quicksand);
+- **grosor:** Fino, Normal, Marcado (inte för Manuscrita, som bara har en vikt);
+- **färgpalett** bland tio: Claro, Oscuro, Lima, Nude, Rosa empolvado, Salvia, Marfil y oro, Negro y oro, Lavanda, Cielo;
+- **egen rubrik** (≤ 40 tecken) och **egen text** (≤ 90 tecken);
+- **logga** av/på;
+- **storlek**.
+
+**Varför:** skönhetssalonger vill ha skyltar som passar deras stil, till exempel tunnare eller elegantare typsnitt och mjukare färger.
+
+**Konsekvens:**
+- **Bara kurerade värden, ingen fri färg** (ägarens val). Paletterna är tokens (`--sign-*` i `src/styles/tokens.css`, Claro/Oscuro/Lima använder appens). Ett enhetstest garanterar minst 4.5:1 för text och dämpad text mot bakgrunden och för text på accentfärgen. QR-koden är alltid mörk på vit eller ljus panel, och hörnfliken, adressen och mini-skyltens fördelslista går inte att ändra.
+- **Sparas på företaget:** `businesses.sign_designs jsonb` (migration 20261118010000) = `{ v: 1, reservas?, cuenta? }`.
+  - Kolumngrant plus befintlig RLS "owners update", alltså `can_edit_settings`, samma mönster som `record_fields`.
+  - Databasen garanterar bara formen (objekt, ≤ 8000 byte). Servern validerar strikt med Zod (whitelists, inga extra fält, längdgränser, och styrtecken och radbrytningar rensas).
+  - Läsningen är tolerant: ett okänt värde ger standardvärdet för just det fältet, så sparad data aldrig kan krascha sidan.
+  - Standarddesignen är exakt WP-95:s skylt.
+  - pgTAP `147_sign_designs`.
+- **"Descargar PDF" sparar först** och öppnar sedan utskriftssidan, som läser den sparade designen. `?tamano=`/`?estilo=` från WP-95-länkar överstyr fortfarande. En skylt som redan skrivits ut ändras förstås inte.
+- **Typsnitten** laddas med `next/font/google` (självhostade, SIL OFL) i `src/components/carteles/fonts.ts`, som bara importeras av skyltarna.
+- **Bakgrunder** (mönster och företagets egna omslags- och galleribilder, utan ny uppladdning) kommer i ett eget steg (WP-96b). `fondo` är redan en del av modellen (`{ tipo: "liso" }`).
+- Ingen `*.dc.html`-referens. Visuell avvikelse accepteras som i D-075 och D-079.
+
+---
+
 ### D-079 · 2026-11-17 · Fliken "QR": utskrivbara skyltar för bokning och kundkonto, nedladdning via utskrift → PDF (WP-95)
 **Beslut:** ägaren (2026-11-17): ny flik **Ajustes → QR** (`/app/ajustes/qr`, efter "Comparte tu link", `can_edit_settings`, alla planer) med två skyltar att skriva ut:
 - **Bokningsskylt:** QR till `/<slug>` i A3, A4 eller A5.

@@ -1,4 +1,4 @@
-/* Carteles para imprimir (WP-95, D-079). En och samma layout per skylt i alla storlekar:
+/* Carteles para imprimir (WP-95, D-079; editorn WP-96, D-080). En och samma layout per skylt i alla storlekar:
    arket är en container och alla mått anges i `cqw` (procent av arkets bredd). A3, A4, A5
    och A6 har samma proportioner (1 : √2), så skylten blir en exakt uppskalning. Färgerna är
    vanliga token-klasser (bg-lime, text-ink …) i komponenterna, inga värden här. */
@@ -9,6 +9,9 @@
   container-type: inline-size;
   position: relative;
   overflow: hidden;
+  background-color: var(--cartel-fondo);
+  color: var(--cartel-texto);
+  font-family: var(--cartel-cuerpo-font);
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -51,15 +54,24 @@
   font-size: 4.6cqw;
   line-height: 1.15;
 }
+@utility cartel-logo-lg {
+  width: 22cqw;
+  height: 22cqw;
+  font-size: 8.5cqw;
+}
 @utility cartel-titulo {
-  font-size: 10.5cqw;
-  line-height: 1;
-  letter-spacing: -0.02em;
+  font-family: var(--cartel-titulo-font);
+  font-weight: var(--cartel-peso);
+  font-size: calc(10.5cqw * var(--cartel-escala));
+  line-height: 1.02;
+  letter-spacing: var(--cartel-tracking);
 }
 @utility cartel-titulo-sm {
-  font-size: 9cqw;
-  line-height: 1.02;
-  letter-spacing: -0.02em;
+  font-family: var(--cartel-titulo-font);
+  font-weight: var(--cartel-peso);
+  font-size: calc(9cqw * var(--cartel-escala));
+  line-height: 1.05;
+  letter-spacing: var(--cartel-tracking);
 }
 @utility cartel-texto {
   font-size: 3.6cqw;
@@ -103,4 +115,229 @@
   line-height: 1.25;
   padding: 1.8cqw 4cqw 1.8cqw 3.6cqw;
   border-top-left-radius: 3.6cqw;
+}
+
+/* ---------- Paletter (WP-96). Värdena är tokens (src/styles/tokens.css). ---------- */
+@utility cartel-paleta-claro {
+  --cartel-fondo: var(--color-surface);
+  --cartel-texto: var(--color-ink);
+  --cartel-suave: var(--color-muted);
+  --cartel-acento: var(--color-lime);
+  --cartel-sobre-acento: var(--color-ink);
+  --cartel-linea: var(--color-ink);
+  --cartel-panel: var(--color-canvas);
+}
+@utility cartel-paleta-oscuro {
+  --cartel-fondo: var(--color-dark);
+  --cartel-texto: var(--color-on-dark);
+  --cartel-suave: var(--color-on-dark-soft);
+  --cartel-acento: var(--color-lime);
+  --cartel-sobre-acento: var(--color-ink);
+  --cartel-linea: var(--color-lime);
+  --cartel-panel: var(--color-surface);
+}
+@utility cartel-paleta-lima {
+  --cartel-fondo: var(--color-lime);
+  --cartel-texto: var(--color-ink);
+  --cartel-suave: var(--color-on-lime-soft);
+  --cartel-acento: var(--color-ink);
+  --cartel-sobre-acento: var(--color-lime);
+  --cartel-linea: var(--color-ink);
+  --cartel-panel: var(--color-surface);
+}
+@utility cartel-paleta-nude {
+  --cartel-fondo: var(--sign-nude-fondo);
+  --cartel-texto: var(--sign-nude-texto);
+  --cartel-suave: var(--sign-nude-suave);
+  --cartel-acento: var(--sign-nude-acento);
+  --cartel-sobre-acento: var(--sign-nude-sobre-acento);
+  --cartel-linea: var(--sign-nude-acento);
+  --cartel-panel: var(--color-surface);
+}
+@utility cartel-paleta-rosa {
+  --cartel-fondo: var(--sign-rosa-fondo);
+  --cartel-texto: var(--sign-rosa-texto);
+  --cartel-suave: var(--sign-rosa-suave);
+  --cartel-acento: var(--sign-rosa-acento);
+  --cartel-sobre-acento: var(--sign-rosa-sobre-acento);
+  --cartel-linea: var(--sign-rosa-acento);
+  --cartel-panel: var(--color-surface);
+}
+@utility cartel-paleta-salvia {
+  --cartel-fondo: var(--sign-salvia-fondo);
+  --cartel-texto: var(--sign-salvia-texto);
+  --cartel-suave: var(--sign-salvia-suave);
+  --cartel-acento: var(--sign-salvia-acento);
+  --cartel-sobre-acento: var(--sign-salvia-sobre-acento);
+  --cartel-linea: var(--sign-salvia-acento);
+  --cartel-panel: var(--color-surface);
+}
+@utility cartel-paleta-marfil {
+  --cartel-fondo: var(--sign-marfil-fondo);
+  --cartel-texto: var(--sign-marfil-texto);
+  --cartel-suave: var(--sign-marfil-suave);
+  --cartel-acento: var(--sign-marfil-acento);
+  --cartel-sobre-acento: var(--sign-marfil-sobre-acento);
+  --cartel-linea: var(--sign-marfil-acento);
+  --cartel-panel: var(--color-surface);
+}
+@utility cartel-paleta-negro-oro {
+  --cartel-fondo: var(--sign-negro-oro-fondo);
+  --cartel-texto: var(--sign-negro-oro-texto);
+  --cartel-suave: var(--sign-negro-oro-suave);
+  --cartel-acento: var(--sign-negro-oro-acento);
+  --cartel-sobre-acento: var(--sign-negro-oro-sobre-acento);
+  --cartel-linea: var(--sign-negro-oro-acento);
+  --cartel-panel: var(--color-surface);
+}
+@utility cartel-paleta-lavanda {
+  --cartel-fondo: var(--sign-lavanda-fondo);
+  --cartel-texto: var(--sign-lavanda-texto);
+  --cartel-suave: var(--sign-lavanda-suave);
+  --cartel-acento: var(--sign-lavanda-acento);
+  --cartel-sobre-acento: var(--sign-lavanda-sobre-acento);
+  --cartel-linea: var(--sign-lavanda-acento);
+  --cartel-panel: var(--color-surface);
+}
+@utility cartel-paleta-cielo {
+  --cartel-fondo: var(--sign-cielo-fondo);
+  --cartel-texto: var(--sign-cielo-texto);
+  --cartel-suave: var(--sign-cielo-suave);
+  --cartel-acento: var(--sign-cielo-acento);
+  --cartel-sobre-acento: var(--sign-cielo-sobre-acento);
+  --cartel-linea: var(--sign-cielo-acento);
+  --cartel-panel: var(--color-surface);
+}
+
+/* Färgroller i skylten. */
+@utility cartel-suave {
+  color: var(--cartel-suave);
+}
+@utility cartel-acento {
+  background-color: var(--cartel-acento);
+  color: var(--cartel-sobre-acento);
+}
+/* Hörnfliken: texten- och bakgrundsfärgen byter plats (alltid hög kontrast). */
+@utility cartel-invertido {
+  background-color: var(--cartel-texto);
+  color: var(--cartel-fondo);
+}
+@utility cartel-panel {
+  background-color: var(--cartel-panel);
+}
+
+/* ---------- Typsnitt (src/components/carteles/fonts.ts) ---------- */
+@utility cartel-fuente-moderna {
+  --cartel-titulo-font: var(--font-display);
+  --cartel-cuerpo-font: var(--font-sans);
+  --cartel-peso-fino: 300;
+  --cartel-peso-normal: 600;
+  --cartel-peso-marcado: 800;
+  --cartel-escala: 1;
+  --cartel-tracking: -0.02em;
+}
+@utility cartel-fuente-fina {
+  --cartel-titulo-font: var(--font-cartel-jost), var(--font-sans);
+  --cartel-cuerpo-font: var(--font-cartel-jost), var(--font-sans);
+  --cartel-peso-fino: 200;
+  --cartel-peso-normal: 300;
+  --cartel-peso-marcado: 500;
+  --cartel-escala: 1;
+  --cartel-tracking: 0;
+}
+@utility cartel-fuente-elegante {
+  --cartel-titulo-font: var(--font-cartel-cormorant), serif;
+  --cartel-cuerpo-font: var(--font-cartel-jost), var(--font-sans);
+  --cartel-peso-fino: 300;
+  --cartel-peso-normal: 500;
+  --cartel-peso-marcado: 700;
+  --cartel-escala: 1.12;
+  --cartel-tracking: 0;
+}
+@utility cartel-fuente-clasica {
+  --cartel-titulo-font: var(--font-cartel-playfair), serif;
+  --cartel-cuerpo-font: var(--font-sans);
+  --cartel-peso-fino: 400;
+  --cartel-peso-normal: 600;
+  --cartel-peso-marcado: 800;
+  --cartel-escala: 0.96;
+  --cartel-tracking: -0.01em;
+}
+@utility cartel-fuente-manuscrita {
+  --cartel-titulo-font: var(--font-cartel-great-vibes), cursive;
+  --cartel-cuerpo-font: var(--font-cartel-jost), var(--font-sans);
+  --cartel-peso-fino: 400;
+  --cartel-peso-normal: 400;
+  --cartel-peso-marcado: 400;
+  --cartel-escala: 1.2;
+  --cartel-tracking: 0;
+}
+@utility cartel-fuente-redonda {
+  --cartel-titulo-font: var(--font-cartel-quicksand), var(--font-sans);
+  --cartel-cuerpo-font: var(--font-cartel-quicksand), var(--font-sans);
+  --cartel-peso-fino: 400;
+  --cartel-peso-normal: 600;
+  --cartel-peso-marcado: 700;
+  --cartel-escala: 1;
+  --cartel-tracking: -0.01em;
+}
+@utility cartel-grosor-fino {
+  --cartel-peso: var(--cartel-peso-fino);
+}
+@utility cartel-grosor-normal {
+  --cartel-peso: var(--cartel-peso-normal);
+}
+@utility cartel-grosor-marcado {
+  --cartel-peso: var(--cartel-peso-marcado);
+}
+
+/* ---------- Layouter ---------- */
+/* Centrado: tunn linje under rubriken. */
+@utility cartel-divisor {
+  width: 12cqw;
+  height: 0.4cqw;
+  background-color: var(--cartel-linea);
+}
+/* Marco: dubbel tunn ram innanför kanten. */
+@utility cartel-marco {
+  position: absolute;
+  inset: 4cqw;
+  border: 0.35cqw solid var(--cartel-linea);
+  border-radius: 2.5cqw;
+  outline: 0.15cqw solid var(--cartel-linea);
+  outline-offset: -1.6cqw;
+  pointer-events: none;
+}
+@utility cartel-pad-marco {
+  padding: 10cqw 11cqw 11cqw;
+}
+/* Foto: band överst (accentfärg i 96a; mönster/foto i 96b). */
+@utility cartel-banda {
+  height: 28%;
+}
+@utility cartel-pad-x {
+  padding-inline: 7cqw;
+}
+
+/* ---------- Editorn (WP-96): prover i typsnitts- och färgväljaren ---------- */
+@utility cartel-muestra-fuente {
+  font-family: var(--cartel-titulo-font);
+  font-weight: var(--cartel-peso-normal);
+  letter-spacing: var(--cartel-tracking);
+}
+@utility cartel-muestra-color {
+  background-image: linear-gradient(
+    135deg,
+    var(--cartel-fondo) 0 55%,
+    var(--cartel-acento) 55% 100%
+  );
+}
+/* Banda: mini-skyltens QR är mindre och innehållet lämnar plats för hörnfliken. */
+@utility cartel-qr-xs {
+  width: 34cqw;
+  padding: 2.2cqw;
+  border-radius: 3.4cqw;
+}
+@utility cartel-pb-esquina {
+  padding-bottom: 10cqw;
 }

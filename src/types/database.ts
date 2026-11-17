@@ -569,6 +569,7 @@ export type Database = {
           record_fields: string[];
           review_requests_enabled: boolean;
           serves_at_customer: boolean;
+          sign_designs: NonNullable<Json>;
           slot_interval_minutes: number;
           slug: string;
           status: Database["public"]["Enums"]["business_status"];
@@ -630,6 +631,7 @@ export type Database = {
           record_fields?: string[];
           review_requests_enabled?: boolean;
           serves_at_customer?: boolean;
+          sign_designs?: NonNullable<Json>;
           slot_interval_minutes?: number;
           slug: string;
           status?: Database["public"]["Enums"]["business_status"];
@@ -691,6 +693,7 @@ export type Database = {
           record_fields?: string[];
           review_requests_enabled?: boolean;
           serves_at_customer?: boolean;
+          sign_designs?: NonNullable<Json>;
           slot_interval_minutes?: number;
           slug?: string;
           status?: Database["public"]["Enums"]["business_status"];

@@ -1,6 +1,7 @@
 /**
  * Pestaña "QR" de Ajustes (WP-95, D-079): carteles para imprimir. Un cartel de
  * reservas (A3, A4, A5) y un mini cartel para que los clientes creen su cuenta.
+ * WP-96 (D-080): editor con plantillas, tipografías, colores y textos propios.
  * El nombre del producto y el dominio llegan como `marca`/`dominio` (desde
  * `brand`), nunca se escriben acá.
  * TODO_COPY: revisión de copywriter-es-cl.
@@ -11,7 +12,7 @@ export const carteles = {
   pestana: "QR",
   titulo: "Carteles con tu QR",
   intro:
-    "Imprime un cartel para el mesón o la vitrina. Tus clientes escanean el código con la cámara del celular y reservan en segundos.",
+    "Diseña tu cartel para el mesón o la vitrina: elige plantilla, tipografía, colores y textos. Tus clientes escanean el código con la cámara del celular.",
   reservas: {
     titulo: "Cartel de reservas",
     ayuda: "Lleva directo a tu página de reservas.",
@@ -23,7 +24,58 @@ export const carteles = {
   },
   opciones: {
     tamano: "Tamaño",
-    estilo: "Estilo",
+  },
+  editor: {
+    carteles: "Cartel",
+    plantilla: "Plantilla",
+    tipografia: "Tipografía",
+    grosor: "Grosor",
+    colores: "Colores",
+    textos: "Textos",
+    titulo: "Título",
+    subtitulo: "Texto",
+    contador: (p: { n: number; max: number }): string => `${p.n}/${p.max}`,
+    usarSugerido: "Usar texto sugerido",
+    mostrarLogo: "Mostrar logo",
+    guardar: "Guardar diseño",
+    guardando: "Guardando…",
+    guardado: "Diseño guardado",
+    sinGuardar: "Cambios sin guardar",
+    restablecer: "Volver al diseño original",
+    error: "No pudimos guardar el diseño. Intenta de nuevo.",
+    sinPermiso: "No tienes permiso para cambiar los carteles.",
+    muestra: "Aa",
+  },
+  plantillas: {
+    clasico: "Clásico",
+    centrado: "Centrado",
+    marco: "Marco",
+    foto: "Banda",
+  },
+  fuentes: {
+    moderna: "Moderna",
+    fina: "Fina",
+    elegante: "Elegante",
+    clasica: "Clásica",
+    manuscrita: "Manuscrita",
+    redonda: "Redonda",
+  },
+  grosores: {
+    fino: "Fino",
+    normal: "Normal",
+    marcado: "Marcado",
+  },
+  paletas: {
+    claro: "Claro",
+    oscuro: "Oscuro",
+    lima: "Lima",
+    nude: "Nude",
+    rosa: "Rosa empolvado",
+    salvia: "Salvia",
+    marfil: "Marfil y oro",
+    "negro-oro": "Negro y oro",
+    lavanda: "Lavanda",
+    cielo: "Cielo",
   },
   tamanos: {
     a3: "A3",
@@ -31,15 +83,10 @@ export const carteles = {
     a5: "A5",
     a6x4: "A6 · 4 por hoja A4",
   },
-  estilos: {
-    claro: "Claro",
-    oscuro: "Oscuro",
-    lima: "Lima",
-  },
   vistaPrevia: "Vista previa",
   descargar: "Descargar PDF",
   ayudaPdf:
-    'Se abre la ventana de impresión: elige "Guardar como PDF" o imprime directo. Usa tamaño real y sin márgenes.',
+    'Guardamos tu diseño y se abre la ventana de impresión: elige "Guardar como PDF" o imprime directo, en tamaño real y sin márgenes.',
   imprimir: {
     titulo: "Tu cartel",
     boton: "Imprimir o guardar como PDF",
