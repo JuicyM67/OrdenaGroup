@@ -35,7 +35,26 @@ describe("validateSignDesign", () => {
   });
 
   it.each([
+    { tipo: "liso" },
+    { tipo: "patron", patron: "arcos" },
+    { tipo: "foto", foto: "portada" },
+    { tipo: "foto", foto: "0b6f3c1e-5d2a-4c8b-9e7f-1a2b3c4d5e6f" },
+  ])("acepta el fondo %j", (fondo) => {
+    const r = validateSignDesign("reservas", {
+      ...defaultSignDesign("reservas"),
+      fondo,
+    });
+    expect(r.ok && r.design.fondo).toEqual(fondo);
+  });
+
+  it.each([
     ["valor desconocido", { paleta: "fucsia" }],
+    ["patrón desconocido", { fondo: { tipo: "patron", patron: "cebra" } }],
+    [
+      "foto como URL",
+      { fondo: { tipo: "foto", foto: "https://malo.example/x.jpg" } },
+    ],
+    ["fondo con campo extra", { fondo: { tipo: "liso", color: "#000" } }],
     ["campo extra", { color: "#ff00ff" }],
     ["título largo", { titulo: "a".repeat(41) }],
     ["subtítulo largo", { subtitulo: "a".repeat(91) }],

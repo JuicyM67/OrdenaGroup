@@ -2,15 +2,22 @@
 
 // Fliken "QR" i Ajustes (WP-95, D-079; editorn WP-96, D-080): en enkel editor för två
 // skyltar, bokningsskylten och mini-skylten "Crea tu cuenta". Man väljer plantilla,
-// typsnitt (och grosor), färgpalett, egna texter, logga av/på och storlek; förhandsvisningen
+// typsnitt (och grosor), färgpalett, bakgrund (mönster eller egna foton, WP-96b), egna
+// texter, logga av/på och storlek; förhandsvisningen
 // är samma komponent som utskriften (`Cartel`, mått i cqw). Designen sparas på företaget
 // ("Guardar diseño"). "Descargar PDF" sparar först och öppnar sedan utskriftssidan. Bara
 // kurerade värden (whitelists), inga fria färger. Ingen *.dc.html-referens; formspråket är
 // Ajustes vita kort, som "Comparte tu link".
 import { Download, Save } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { useId, useState, useTransition, type ReactNode } from "react";
 
-import { Cartel, cartelThemeClass } from "@/components/carteles/cartel";
+import {
+  Cartel,
+  CartelPattern,
+  cartelThemeClass,
+} from "@/components/carteles/cartel";
 import { CARTEL_FONT_VARIABLES } from "@/components/carteles/fonts";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -35,11 +42,14 @@ import {
   SIGN_FONTS_SINGLE_WEIGHT,
   SIGN_LAYOUTS,
   SIGN_PALETTES,
+  SIGN_PATTERNS,
   SIGN_SUBTITLE_MAX,
   SIGN_TITLE_MAX,
   SIGN_WEIGHTS,
   defaultSignDesign,
+  SIGN_COVER_PHOTO,
   sameSignDesign,
+  type SignBackground,
   type SignDesign,
   type SignDesigns,
 } from "@/lib/share/carteles-design";
@@ -63,6 +73,38 @@ const KIND_TITLE: Record<CartelKind, string> = {
   reservas: t.reservas.titulo,
   cuenta: t.cuenta.titulo,
 };
+
+function sameBackground(a: SignBackground, b: SignBackground): boolean {
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+/** Mönsterruta: nedre vänstra hörnet av en tre gånger större skylt, där bågar och blad
+ * syns och toningen är som starkast. */
+function BackgroundSwatch({
+  design,
+  fondo,
+}: {
+  design: SignDesign;
+  fondo: SignBackground;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "relative block size-12 overflow-hidden rounded-chip",
+        cartelThemeClass(design),
+      )}
+    >
+      <span className="absolute bottom-0 left-0 block w-36">
+        <span className="cartel-hoja block cartel-aspecto w-full">
+          {fondo.tipo === "patron" ? (
+            <CartelPattern pattern={fondo.patron} />
+          ) : null}
+        </span>
+      </span>
+    </span>
+  );
+}
 
 const LINK_BUTTON =
   "text-13 font-semibold text-ink underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink disabled:opacity-40";
@@ -393,6 +435,90 @@ export function CartelesSection({
               </Choice>
             ))}
           </Group>
+
+          <Group label={e.fondo}>
+            {[
+              { fondo: { tipo: "liso" } as SignBackground, label: e.fondoLiso },
+              ...SIGN_PATTERNS.map((patron) => ({
+                fondo: { tipo: "patron", patron } as SignBackground,
+                label: t.patrones[patron],
+              })),
+            ].map(({ fondo, label }) => (
+              <Choice
+                key={label}
+                selected={sameBackground(design.fondo, fondo)}
+                label={label}
+                onClick={() => {
+                  update({ fondo });
+                }}
+                className="flex w-18 flex-col items-center gap-1.5 rounded-control bg-surface p-1.5"
+              >
+                <BackgroundSwatch design={design} fondo={fondo} />
+                <span className="text-12 font-semibold text-ink">{label}</span>
+              </Choice>
+            ))}
+          </Group>
+
+          <div className="flex flex-col gap-2.5">
+            {business.fotos.length > 0 ? (
+              <>
+                <Group label={e.fondoFotos}>
+                  {business.fotos.map((foto, i) => {
+                    const fondo: SignBackground = {
+                      tipo: "foto",
+                      foto: foto.id,
+                    };
+                    const label =
+                      foto.id === SIGN_COVER_PHOTO
+                        ? e.fotoPortada
+                        : e.fotoGaleria({
+                            n:
+                              business.fotos[0]?.id === SIGN_COVER_PHOTO
+                                ? i
+                                : i + 1,
+                          });
+                    return (
+                      <Choice
+                        key={foto.id}
+                        selected={sameBackground(design.fondo, fondo)}
+                        label={label}
+                        onClick={() => {
+                          update({ fondo });
+                        }}
+                        className="rounded-control p-1"
+                      >
+                        <span className="relative block size-12 overflow-hidden rounded-chip">
+                          <Image
+                            src={foto.url}
+                            alt=""
+                            fill
+                            sizes="48px"
+                            unoptimized
+                            className="object-cover"
+                          />
+                        </span>
+                      </Choice>
+                    );
+                  })}
+                </Group>
+                {design.fondo.tipo === "foto" ? (
+                  <p className="text-13 leading-body text-muted">
+                    {e.ayudaFoto}
+                  </p>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-13 leading-body text-muted">
+                {e.sinFotos}{" "}
+                <Link
+                  href={appHref("appAjustesPerfil")}
+                  className={LINK_BUTTON}
+                >
+                  {e.irAPerfil}
+                </Link>
+              </p>
+            )}
+          </div>
 
           <div className="flex flex-col gap-4">
             <span className="text-13 font-semibold text-muted">{e.textos}</span>

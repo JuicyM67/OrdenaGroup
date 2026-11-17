@@ -15,7 +15,7 @@ import { CartelPapel } from "./cartel-papel";
 // next/font fungerar bara i Next; här räcker klassnamnen.
 vi.mock("./fonts", () => ({ CARTEL_FONT_VARIABLES: "font-vars" }));
 
-const business = { name: "Barbería Norte", logoUrl: null };
+const business = { name: "Barbería Norte", logoUrl: null, fotos: [] };
 const reservasLink = "https://ordenagroup.cl/barberia-norte?utm_source=cartel";
 const cuentaLink = "https://ordenagroup.cl/cuenta/ingresar?utm_source=cartel";
 const displayUrl = "ordenagroup.cl/barberia-norte";
@@ -133,6 +133,66 @@ describe("Cartel", () => {
     expect(
       screen.getAllByRole("img", { name: carteles.hoja.qrAlt }),
     ).toHaveLength(4);
+  });
+});
+
+describe("Cartel: fondos (WP-96b)", () => {
+  const foto = { id: "portada", url: "https://x.test/portada.jpg" };
+
+  function withPhotos(patch: Partial<SignDesign>) {
+    return render(
+      <Cartel
+        kind="reservas"
+        design={{ ...defaultSignDesign("reservas"), ...patch }}
+        business={{ ...business, fotos: [foto] }}
+        link={reservasLink}
+        displayUrl={displayUrl}
+      />,
+    );
+  }
+
+  it("un patrón se dibuja detrás del contenido", () => {
+    const { container } = reservas({
+      fondo: { tipo: "patron", patron: "puntos" },
+    });
+    expect(container.querySelector(".cartel-patron-puntos")).not.toBeNull();
+  });
+
+  it("en Banda el patrón va en la banda con los colores sobre el acento", () => {
+    const { container } = reservas({
+      layout: "foto",
+      fondo: { tipo: "patron", patron: "rayas" },
+    });
+    const p = container.querySelector(".cartel-patron-rayas");
+    expect(p?.className).toContain("cartel-patron-en-banda");
+  });
+
+  it("con foto, el contenido va sobre un recuadro", () => {
+    const { container } = withPhotos({
+      fondo: { tipo: "foto", foto: "portada" },
+    });
+    expect(container.querySelector("img")?.getAttribute("src")).toBe(foto.url);
+    const panel = container.querySelector(".cartel-sobre-foto");
+    expect(panel?.textContent).toContain(carteles.hoja.reservasTitulo);
+  });
+
+  it("en Banda el foto va en la banda y el nombre en una bricka", () => {
+    const { container } = withPhotos({
+      layout: "foto",
+      fondo: { tipo: "foto", foto: "portada" },
+    });
+    expect(container.querySelector(".cartel-sobre-foto")).toBeNull();
+    expect(container.querySelector(".cartel-bricka")?.textContent).toContain(
+      "Barbería Norte",
+    );
+  });
+
+  it("si la foto ya no existe, el fondo es liso", () => {
+    const { container } = reservas({
+      fondo: { tipo: "foto", foto: "0b6f3c1e-5d2a-4c8b-9e7f-1a2b3c4d5e6f" },
+    });
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.querySelector(".cartel-sobre-foto")).toBeNull();
   });
 });
 

@@ -14,10 +14,12 @@ import {
   SIGN_FONTS,
   SIGN_LAYOUTS,
   SIGN_PALETTES,
+  SIGN_PATTERNS,
   SIGN_SUBTITLE_MAX,
   SIGN_TITLE_MAX,
   SIGN_WEIGHTS,
   cleanSignText,
+  isSignPhotoId,
   type SignDesign,
 } from "@/lib/share/carteles-design";
 
@@ -37,6 +39,19 @@ function signText(max: number) {
     });
 }
 
+const backgroundSchema = z.discriminatedUnion("tipo", [
+  z.object({ tipo: z.literal("liso") }).strict(),
+  z
+    .object({ tipo: z.literal("patron"), patron: z.enum(SIGN_PATTERNS) })
+    .strict(),
+  z
+    .object({
+      tipo: z.literal("foto"),
+      foto: z.string().refine(isSignPhotoId),
+    })
+    .strict(),
+]);
+
 function designSchema(kind: CartelKind) {
   return z
     .object({
@@ -44,7 +59,7 @@ function designSchema(kind: CartelKind) {
       fuente: z.enum(SIGN_FONTS),
       grosor: z.enum(SIGN_WEIGHTS),
       paleta: z.enum(SIGN_PALETTES),
-      fondo: z.object({ tipo: z.literal("liso") }).strict(),
+      fondo: backgroundSchema,
       titulo: signText(SIGN_TITLE_MAX),
       subtitulo: signText(SIGN_SUBTITLE_MAX),
       mostrarLogo: z.boolean(),
