@@ -2,7 +2,6 @@
 
 // "Nuevo negocio": bjuder in någon via e-post (F19/WP-36). Text via
 // `adminPanel.invitar`.
-import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -27,7 +26,6 @@ export type InviteFormProps = {
 };
 
 export function InviteForm({ onSubmit }: InviteFormProps) {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [plan, setPlan] = useState<InviteBusinessInput["plan"]>("free");
@@ -54,8 +52,11 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
     });
     if (result.ok) {
       // WP-93 (D-078): företaget finns redan — admin landar i det och kan
-      // öppna det som soporte eller skicka om inbjudan därifrån.
-      router.push(`/admin/negocios/${result.businessId}`);
+      // öppna det som soporte eller skicka om inbjudan därifrån. Full
+      // sidladdning: en klientnavigering direkt efter server-actionen gav
+      // "No se pudo cargar la página" i drift (2026-11-17).
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- medvetet full sidladdning, se ovan
+      window.location.assign(`/admin/negocios/${result.businessId}`);
     } else {
       setPending(false);
       setError(result.code);
