@@ -3374,6 +3374,10 @@ export type Database = {
     Functions: {
       accept_business_invitation: { Args: { token: string }; Returns: string };
       accept_invitation: { Args: { token: string }; Returns: string };
+      accept_pending_business_invitation: {
+        Args: Record<PropertyKey, never>;
+        Returns: string;
+      };
       create_business: {
         Args: {
           category: string;
