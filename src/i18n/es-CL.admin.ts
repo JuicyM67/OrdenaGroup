@@ -160,6 +160,15 @@ export const adminPanel = {
     guardar: "Guardar plan",
     guardando: "Guardando…",
   },
+  // WP-93: error inesperado en /admin (src/app/(admin)/admin/error.tsx). TODO_COPY
+  errorPagina: {
+    titulo: "No pudimos mostrar esta página",
+    texto:
+      "Algo falló al cargarla. Intenta de nuevo o vuelve a la lista de negocios.",
+    reintentar: "Intentar de nuevo",
+    volver: "Volver a negocios",
+    codigo: (p: { codigo: string }): string => `Código: ${p.codigo}`,
+  },
   // WP-93 (D-078): invitación pendiente en /admin/negocios/[id]. TODO_COPY
   invitacion: {
     titulo: "Invitación",
