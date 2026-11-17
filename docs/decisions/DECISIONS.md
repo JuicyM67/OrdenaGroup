@@ -4,6 +4,26 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-079 · 2026-11-17 · Fliken "QR": utskrivbara skyltar för bokning och kundkonto, nedladdning via utskrift → PDF (WP-95)
+**Beslut:** ägaren (2026-11-17): ny flik **Ajustes → QR** (`/app/ajustes/qr`, efter "Comparte tu link", `can_edit_settings`, alla planer) med två skyltar att skriva ut:
+- **Bokningsskylt:** QR till `/<slug>` i A3, A4 eller A5.
+- **Mini-skylt "Crea tu cuenta":** QR till `/cuenta/ingresar` (kundkonton, D-054), fyra A6 per A4-ark med skärlinjer eller en per A5.
+
+Båda finns i tre stilar (Claro, Oscuro, Lima) och har en flik i nedre högra hörnet med varumärket, "Crea tu cuenta hoy" och domänen.
+
+**Varför:** företagen vill ha färdiga skyltar till disken och skyltfönstret, inte bara en QR-PNG (D-075). Kundkonton gör att kunden ser och avbokar sina tider själv.
+
+**Konsekvens:**
+- **Ingen recensionsskylt.** Recensioner är verifierade (D-045): bara efter en genomförd bokning, via den personliga länken i mejlet eller kontot. En öppen QR-kod skulle bryta mot det, och insamlingen finns redan.
+- **Nedladdning = webbläsarens utskrift.** "Descargar PDF" öppnar `/app/ajustes/qr/imprimir?cartel=&tamano=&estilo=`, som visar arket i verklig storlek med `@page { size; margin: 0 }` och öppnar utskriftsdialogen. Där väljer man "Guardar como PDF" eller skrivaren. Inget PDF-bibliotek läggs till, skylten blir identisk med förhandsvisningen och QR-koden är vektor, alltså skarp även i A3. Query-parametrarna går genom en whitelist (`parseCartelOptions`), och okända värden ger standardvärdena.
+- **Skalning:** en layout per skylt. Alla mått är i `cqw` (`src/styles/carteles.css`). A-formaten har samma proportioner, så A3, A4, A5 och A6 är exakta uppskalningar av varandra. Färgerna är vanliga token-klasser och QR-koden är alltid mörk på vitt.
+- **Ingen `*.dc.html`-referens.** Formspråket är appens (Bricolage, lime-accent, rundade kort). Visuell avvikelse accepteras som i D-075, och ingen ny referens tas.
+- **Länkarna** får `utm_source=cartel`. Parametern läses inte, som D-075:s `qr`. Adressen kommer från `siteOrigin()`, så redan utskrivna skyltar pekar på den adress som gällde vid utskriften.
+- Loggan visas bara om den ligger i företagets egen bucketmapp, annars visas initialer. Supportbanderollen (D-076) skrivs inte ut.
+- Inga migrationer, ingen ny tabell, inget sparas.
+
+---
+
 ### D-078 · 2026-11-17 · Inbjudan skapar företaget direkt; den inbjudna accepterar med sin verifierade e-post (WP-93)
 **Beslut:** ägaren (2026-11-17): flödet i stängd beta (`INVITE_ONLY_BETA`, src/config/beta.ts) är "be om inbjudan → admin bjuder in → kunden skapar konto och blir ägare → konfigurerar själv eller inte alls". Admin ska kunna öppna företaget direkt efter inbjudan (för att hjälpa till), inte först när kunden loggat in.
 **Varför:** (1) företaget skapades först vid accepten, så admin hade inget att öppna; (2) accepten hängde på en cookie i samma webbläsare som inbjudningssidan — öppnades inloggningslänken i mejlappen eller på en annan enhet hamnade den inbjudna på /app/beta ("bara på inbjudan") och kom inte in.

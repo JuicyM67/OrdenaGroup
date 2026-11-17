@@ -18,7 +18,7 @@ export function SupportBanner({
   return (
     <div
       role="status"
-      className="fixed inset-x-4 bottom-24 z-50 mx-auto flex max-w-xl items-center gap-3 rounded-full bg-ink py-2 pr-2 pl-4 text-14 text-on-dark shadow-soft lg:bottom-6"
+      className="fixed inset-x-4 bottom-24 z-50 mx-auto flex max-w-xl items-center gap-3 rounded-full bg-ink py-2 pr-2 pl-4 text-14 text-on-dark shadow-soft lg:bottom-6 print:hidden"
     >
       <LifeBuoy
         aria-hidden="true"

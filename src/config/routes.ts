@@ -244,6 +244,8 @@ export type AppRouteId =
   | "appAjustesPlan"
   | "appAjustesWidgets"
   | "appAjustesCompartir"
+  | "appAjustesQr"
+  | "appAjustesQrImprimir"
   | "appAjustesPaquetes"
   | "appAjustesFicha"
   | "appSolicitud"
@@ -270,6 +272,7 @@ export const AJUSTES_TAB_ROUTE_IDS = {
   plan: "appAjustesPlan",
   widgets: "appAjustesWidgets",
   compartir: "appAjustesCompartir",
+  qr: "appAjustesQr",
   paquetes: "appAjustesPaquetes",
   ficha: "appAjustesFicha",
 } as const satisfies Record<string, AppRouteId>;
@@ -307,6 +310,9 @@ const APP_ROUTES: Record<AppRouteId, string> = {
   appAjustesWidgets: "/app/ajustes/widgets",
   // WP-89 (D-075): bokningslänken, QR och guider per kanal.
   appAjustesCompartir: "/app/ajustes/compartir",
+  // WP-95 (D-079): carteles con QR para imprimir.
+  appAjustesQr: "/app/ajustes/qr",
+  appAjustesQrImprimir: "/app/ajustes/qr/imprimir",
   // WP-86 (D-072): paketmallar.
   appAjustesPaquetes: "/app/ajustes/paquetes",
   // WP-88 (D-074): ficha de atención y consentimientos.

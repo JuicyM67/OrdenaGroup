@@ -1,0 +1,106 @@
+/* Carteles para imprimir (WP-95, D-079). En och samma layout per skylt i alla storlekar:
+   arket är en container och alla mått anges i `cqw` (procent av arkets bredd). A3, A4, A5
+   och A6 har samma proportioner (1 : √2), så skylten blir en exakt uppskalning. Färgerna är
+   vanliga token-klasser (bg-lime, text-ink …) i komponenterna, inga värden här. */
+
+/* Ett ark (eller en A6-ruta i "4 por hoja"). Fyller sin förälder: pappret vid utskrift,
+   `cartel-aspecto` i förhandsvisningen. */
+@utility cartel-hoja {
+  container-type: inline-size;
+  position: relative;
+  overflow: hidden;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Förhandsvisningen i Ajustes: A-formatets proportioner. */
+@utility cartel-aspecto {
+  aspect-ratio: 1 / 1.4142;
+}
+
+/* Pappret på utskriftssidan, i verklig storlek. Höjden 0,2 mm kortare så att avrundning
+   aldrig skjuter ut en tom andra sida. */
+@utility cartel-papel-a3 {
+  width: 297mm;
+  height: 419.8mm;
+}
+@utility cartel-papel-a4 {
+  width: 210mm;
+  height: 296.8mm;
+}
+@utility cartel-papel-a5 {
+  width: 148mm;
+  height: 209.8mm;
+}
+
+@utility cartel-pad {
+  padding: 7cqw;
+}
+@utility cartel-gap {
+  gap: 4cqw;
+}
+@utility cartel-gap-sm {
+  gap: 2.2cqw;
+}
+@utility cartel-logo {
+  width: 13cqw;
+  height: 13cqw;
+  font-size: 5cqw;
+}
+@utility cartel-negocio {
+  font-size: 4.6cqw;
+  line-height: 1.15;
+}
+@utility cartel-titulo {
+  font-size: 10.5cqw;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+@utility cartel-titulo-sm {
+  font-size: 9cqw;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+@utility cartel-texto {
+  font-size: 3.6cqw;
+  line-height: 1.35;
+}
+@utility cartel-eyebrow {
+  font-size: 3.4cqw;
+  line-height: 1.3;
+}
+@utility cartel-qr {
+  width: 54cqw;
+  padding: 3.2cqw;
+  border-radius: 5cqw;
+}
+@utility cartel-qr-sm {
+  width: 42cqw;
+  padding: 2.6cqw;
+  border-radius: 4cqw;
+}
+@utility cartel-url {
+  font-size: 3.8cqw;
+  line-height: 1.2;
+}
+@utility cartel-lista {
+  font-size: 4.1cqw;
+  line-height: 1.25;
+  gap: 2.2cqw;
+}
+@utility cartel-check {
+  width: 5.6cqw;
+  height: 5.6cqw;
+}
+@utility cartel-check-icono {
+  width: 3.4cqw;
+  height: 3.4cqw;
+}
+
+/* Fliken i nedre högra hörnet (varumärket och "Crea tu cuenta hoy"). */
+@utility cartel-esquina {
+  font-size: 2.3cqw;
+  line-height: 1.25;
+  padding: 1.8cqw 4cqw 1.8cqw 3.6cqw;
+  border-top-left-radius: 3.6cqw;
+}
