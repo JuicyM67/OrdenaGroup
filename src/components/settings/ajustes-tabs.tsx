@@ -23,6 +23,7 @@ import {
   Image as ImageIcon,
   Lock,
   Package,
+  QrCode,
   Scissors,
   Share2,
   Shield,
@@ -35,6 +36,7 @@ import { strokeNav } from "@/components/ui/icons";
 import { AJUSTES_TAB_ROUTE_IDS, appHref } from "@/config/routes";
 import {
   ajustes,
+  carteles,
   compartir,
   fichaAtencion,
   paquetes,
@@ -58,6 +60,8 @@ export const AJUSTES_TAB_KEYS = [
   "privacidad",
   "widgets",
   "compartir",
+  // WP-95 (D-079)
+  "qr",
   "ficha",
 ] as const;
 
@@ -91,6 +95,7 @@ const AJUSTES_TAB_LABEL: Record<AjustesTabKey, string> = {
   privacidad: ajustes.secciones.privacidad,
   widgets: widgets.panel.pestana,
   compartir: compartir.pestana,
+  qr: carteles.pestana,
   ficha: fichaAtencion.ajustes.pestana,
 };
 
@@ -108,6 +113,7 @@ const AJUSTES_TAB_ICON: Record<AjustesTabKey, LucideIcon> = {
   privacidad: Shield,
   widgets: Globe,
   compartir: Share2,
+  qr: QrCode,
   ficha: ClipboardCheck,
 };
 
@@ -131,6 +137,7 @@ export function ajustesTabVisible(
     case "socios":
     case "widgets":
     case "compartir":
+    case "qr":
     case "ficha":
       return access.perms.can_edit_settings;
     case "servicios":

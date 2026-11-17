@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "../styles/tokens.css";
+@import "../styles/carteles.css";
 
 /* Låter komponenter på mörk yta (data-surface="dark", se card.tsx) växla fokusring och
    textfärg utan egna props, t.ex. `on-dark:text-on-dark on-dark:focus-visible:outline-lime`. */
