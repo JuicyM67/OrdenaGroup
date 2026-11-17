@@ -61,6 +61,11 @@ export type BusinessListItem = {
   readonly marketplaceHidden: boolean;
   /** WP-92: ägaren har aldrig loggat in (inbjudan inte aktiverad). */
   readonly ownerNotActivated: boolean;
+  /** WP-93 (D-078): inbjudan som ingen accepterat än (företaget utan ägare). */
+  readonly invitation: {
+    readonly email: string;
+    readonly expired: boolean;
+  } | null;
 };
 
 /**
@@ -130,6 +135,8 @@ export async function listBusinesses(
       has_place: boolean;
       has_services: boolean;
       marketplace_hidden: boolean;
+      invited_email: string | null;
+      invitation_expired: boolean | null;
     }>(
       `select b.id, b.name, b.slug, b.plan, b.plan_override_until, b.status,
               b.billing_mode, b.deletion_requested_at, b.plan_requested, b.created_at,
@@ -141,8 +148,15 @@ export async function listBusinesses(
               (coalesce(btrim(b.logo_url), '') <> '' or coalesce(btrim(b.cover_url), '') <> '') as has_image,
               coalesce(btrim(b.address), '') <> '' as has_place,
               exists (select 1 from public.services s
-                       where s.business_id = b.id and s.active) as has_services
+                       where s.business_id = b.id and s.active) as has_services,
+              i.email as invited_email,
+              i.expires_at < now() as invitation_expired
          from public.businesses b
+         left join lateral (
+           select inv.email, inv.expires_at from private.business_invitations inv
+            where inv.business_id = b.id and inv.accepted_at is null
+            order by inv.created_at desc limit 1
+         ) i on true
         order by b.created_at desc`,
     );
     return r.rows;
@@ -176,11 +190,15 @@ export async function listBusinesses(
     ownerNotActivated:
       row.owner_user_id !== null &&
       users.get(row.owner_user_id)?.signedIn === false,
+    invitation: row.invited_email
+      ? { email: row.invited_email, expired: row.invitation_expired === true }
+      : null,
   }));
 
   const q = filter.q?.trim().toLowerCase();
   return items.filter((item) => {
-    if (filter.notActivated && !item.ownerNotActivated) return false;
+    if (filter.notActivated && !item.ownerNotActivated && !item.invitation)
+      return false;
     if (filter.plan && item.plan !== filter.plan) return false;
     if (filter.status && item.status !== filter.status) return false;
     if (filter.billingMode && item.billingMode !== filter.billingMode)
@@ -189,7 +207,8 @@ export async function listBusinesses(
     return (
       item.name.toLowerCase().includes(q) ||
       item.slug.toLowerCase().includes(q) ||
-      (item.ownerEmail?.toLowerCase().includes(q) ?? false)
+      (item.ownerEmail?.toLowerCase().includes(q) ?? false) ||
+      (item.invitation?.email.toLowerCase().includes(q) ?? false)
     );
   });
 }

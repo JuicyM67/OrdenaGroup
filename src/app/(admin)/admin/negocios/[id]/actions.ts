@@ -27,6 +27,7 @@ import {
   type BusinessPlan,
 } from "@/server/admin/businesses";
 import { adminApplyImport } from "@/server/admin/import";
+import { resendInvitation } from "@/server/admin/invite";
 import { startSupport } from "@/server/admin/support";
 
 async function afterAction(businessId: string): Promise<void> {
@@ -94,6 +95,16 @@ export async function setMarketplaceHiddenAction(
   const admin = await requireAdminForAction();
   if (typeof hidden !== "boolean") return { ok: false, code: "invalid_input" };
   const result = await setMarketplaceHidden(admin.userId, businessId, hidden);
+  await afterAction(businessId);
+  return result;
+}
+
+/** WP-93 (D-078): ny länk till den inbjudna (ny token, 7 dagar). */
+export async function resendInvitationAction(
+  businessId: string,
+): Promise<AdminActionResult> {
+  const admin = await requireAdminForAction();
+  const result = await resendInvitation(admin.userId, businessId);
   await afterAction(businessId);
   return result;
 }

@@ -37,7 +37,6 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
   const [note, setNote] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -53,36 +52,14 @@ export function InviteForm({ onSubmit }: InviteFormProps) {
       billingMode: manual ? "manual" : "app",
       billingNote: note.trim() ? note : null,
     });
-    setPending(false);
     if (result.ok) {
-      setDone(true);
-      router.refresh();
+      // WP-93 (D-078): företaget finns redan — admin landar i det och kan
+      // öppna det som soporte eller skicka om inbjudan därifrån.
+      router.push(`/admin/negocios/${result.businessId}`);
     } else {
+      setPending(false);
       setError(result.code);
     }
-  }
-
-  if (done) {
-    return (
-      <p className="text-14 text-ink">
-        {t.enviada({ correo: email })}{" "}
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            setDone(false);
-            setEmail("");
-            setBusinessName("");
-            setUntil("");
-            setManual(false);
-            setNote("");
-          }}
-        >
-          {t.otra}
-        </Button>
-      </p>
-    );
   }
 
   return (

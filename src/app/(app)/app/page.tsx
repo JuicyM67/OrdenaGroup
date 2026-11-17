@@ -24,6 +24,12 @@
 // Stängd beta (`INVITE_ONLY_BETA`, src/config/beta.ts): ett konto utan företag (och utan
 // en inbjudan som just accepterades ovan) som varken är plattformsadmin eller kundkonto
 // skickas till /app/beta i stället för onboarding.
+//
+// WP-93 (D-078): ett konto utan företag accepterar först en väntande inbjudan till sin
+// bekräftade e-post (`acceptPendingInvitation`) — cookien ovan behövs inte längre för
+// att komma in, den finns kvar för länkar som skickades före WP-93. En plattformsadmin
+// i modo soporte går alltid till panelen, aldrig till ägarens onboarding (även om
+// företaget fortfarande är ett utkast från en inbjudan).
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -33,11 +39,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isPlatformAdmin } from "@/server/admin/auth";
 import { hasAccount } from "@/server/accounts/account";
 import {
-  getOwnerBusiness,
+  getCurrentMember,
   isOnboardingDraft,
 } from "@/server/onboarding/owner-business";
 import {
   acceptInvitation,
+  acceptPendingInvitation,
   INVITE_COOKIE_NAME,
 } from "@/server/onboarding/invitation";
 
@@ -90,7 +97,11 @@ export default async function AppIndexPage() {
     redirect(appHref("appSolicitud", pendingSolicitud));
   }
 
-  const business = await getOwnerBusiness(user.id);
+  let current = await getCurrentMember(user.id);
+  if (!current && (await acceptPendingInvitation(user.id))) {
+    current = await getCurrentMember(user.id);
+  }
+  const business = current?.business ?? null;
   // En plattformsadmin utan eget företag (inbjuden via /admin/administradores)
   // ska till adminpanelen, inte till onboarding.
   if (!business && (await isPlatformAdmin(user.id))) redirect("/admin");
@@ -100,6 +111,7 @@ export default async function AppIndexPage() {
   // onboarding (`appHref("appOnboarding")`), inte hit.
   if (!business && (await hasAccount(user.id))) redirect(cuentaHref("cuenta"));
   if (!business && INVITE_ONLY_BETA) redirect(appHref("appBeta"));
+  if (current?.support) redirect(appHref("appInicio"));
   if (!business || isOnboardingDraft(business))
     redirect(appHref("appOnboarding"));
   redirect(appHref("appInicio"));

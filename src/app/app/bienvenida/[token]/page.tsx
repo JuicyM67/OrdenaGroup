@@ -5,16 +5,22 @@
 // aquí después (ver actions.ts). Logueado → acepta la invitación al tiro y
 // sigue a onboarding (que detecta el negocio ya creado con comuna/category
 // en blanco, ver src/server/onboarding/owner-business.ts).
+//
+// WP-93 (D-078): la aceptación ya no depende de esta página ni de la cookie —
+// `/app` acepta la invitación pendiente del correo confirmado. Logueado con
+// OTRO correo (p. ej. el admin probando el link) → aviso + "Cerrar sesión".
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
-import { appHref } from "@/config/routes";
+import { logout } from "@/app/auth/actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { invitacionNegocio } from "@/i18n/auth";
+import { nav } from "@/i18n";
 import {
   acceptInvitation,
   getInvitationPreview,
 } from "@/server/onboarding/invitation";
+import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 
 import { sendInvitationMagicLink } from "./actions";
 import { invitationErrorText } from "./error-text";
@@ -27,14 +33,35 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-function ErrorScreen({ code }: { code: string }) {
+function ErrorScreen({
+  code,
+  sessionEmail,
+}: {
+  code: string;
+  /** WP-93: sesión abierta con otro correo → aviso y "Cerrar sesión". */
+  sessionEmail?: string;
+}) {
   return (
     <main className="flex min-h-dvh items-center justify-center bg-canvas px-4 py-10">
       <div className="flex w-full max-w-sm flex-col gap-3 rounded-card bg-surface p-8">
         <h1 className="text-22 font-bold tracking-title text-ink">
           {invitacionNegocio.titulo}
         </h1>
-        <p className="text-15 text-ink-soft">{invitationErrorText(code)}</p>
+        <p className="text-15 text-ink-soft">
+          {sessionEmail !== undefined
+            ? invitacionNegocio.sesionOtra({ email: sessionEmail })
+            : invitationErrorText(code)}
+        </p>
+        {sessionEmail !== undefined ? (
+          <form action={logout}>
+            <button
+              type="submit"
+              className="text-14 font-semibold text-ink underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              {nav.cerrarSesion}
+            </button>
+          </form>
+        ) : null}
       </div>
     </main>
   );
@@ -54,7 +81,13 @@ export default async function BienvenidaInvitacionPage({
 
   if (user) {
     const result = await acceptInvitation(user.id, token);
-    if (result.ok) redirect(appHref("appOnboarding"));
+    // `/app` decide: onboarding si el negocio sigue en borrador, si no el panel.
+    if (result.ok) redirect("/app");
+    if (result.code === "email_mismatch") {
+      return <ErrorScreen code={result.code} sessionEmail={user.email ?? ""} />;
+    }
+    // Ya aceptada (p. ej. al entrar por /app): con negocio, al panel.
+    if (await getOwnerBusiness(user.id)) redirect("/app");
     return <ErrorScreen code={result.code} />;
   }
 

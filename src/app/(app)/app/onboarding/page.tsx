@@ -14,7 +14,7 @@ import { INVITE_ONLY_BETA } from "@/config/beta";
 import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
-  getOwnerBusiness,
+  getCurrentMember,
   isOnboardingDraft,
 } from "@/server/onboarding/owner-business";
 import { onboarding } from "@/i18n";
@@ -50,7 +50,11 @@ export default async function OnboardingPage() {
   // F19/WP-36: un negocio creado por una invitación de admin (`comuna`/
   // `category` en blanco) todavía necesita pasar por acá — solo un negocio
   // YA completo manda a /app/inicio.
-  const business = await getOwnerBusiness(user.id);
+  // WP-93 (D-078): modo soporte → panelen. Onboardingen är ägarens; för en admin
+  // skulle den skapa ett NYTT företag (`completeOnboarding` letar bara ägarutkast).
+  const current = await getCurrentMember(user.id);
+  const business = current?.business ?? null;
+  if (current?.support) redirect(appHref("appInicio"));
   if (business && !isOnboardingDraft(business)) redirect(appHref("appInicio"));
   if (!business && INVITE_ONLY_BETA && !(await isPlatformAdmin(user.id))) {
     redirect(appHref("appBeta"));

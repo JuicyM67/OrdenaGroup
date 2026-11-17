@@ -81,3 +81,23 @@ export async function acceptInvitation(
     return { ok: false, code: "unknown" };
   }
 }
+
+/** WP-93 (D-078): accepterar den senaste giltiga inbjudan till den inloggades
+ * BEKRÄFTADE e-post, utan token eller cookie (inloggningslänken kan öppnas i
+ * en annan webbläsare än inbjudningssidan). Företagets id, eller null om det
+ * inte finns någon inbjudan. Fel → null (personen hamnar där hen annars hade
+ * hamnat, t.ex. /app/beta). */
+export async function acceptPendingInvitation(
+  userId: string,
+): Promise<string | null> {
+  try {
+    return await withOwnerTx(userId, async (q) => {
+      const r = await q.query<{ id: string | null }>(
+        `select public.accept_pending_business_invitation() as id`,
+      );
+      return r.rows[0]?.id ?? null;
+    });
+  } catch {
+    return null;
+  }
+}
