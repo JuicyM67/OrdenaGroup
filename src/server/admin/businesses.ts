@@ -103,6 +103,12 @@ async function authUsersById(): Promise<
   return map;
 }
 
+/** `pg` ger timestamptz som `Date`; klientkomponenter (PlanForm) får en ISO-sträng. */
+function isoOrNull(value: Date | string | null): string | null {
+  if (value === null) return null;
+  return new Date(value).toISOString();
+}
+
 export type ListBusinessesFilter = {
   q?: string;
   plan?: BusinessPlan;
@@ -121,7 +127,7 @@ export async function listBusinesses(
       name: string;
       slug: string;
       plan: BusinessPlan;
-      plan_override_until: string | null;
+      plan_override_until: Date | string | null;
       status: BusinessStatus;
       billing_mode: string;
       deletion_requested_at: string | null;
@@ -146,7 +152,12 @@ export async function listBusinesses(
                 where m.business_id = b.id and m.role = 'owner'
                 order by m.created_at limit 1) as owner_user_id,
               (coalesce(btrim(b.logo_url), '') <> '' or coalesce(btrim(b.cover_url), '') <> '') as has_image,
-              coalesce(btrim(b.address), '') <> '' as has_place,
+              -- Samma villkor som Descubre (missingForMarketplace): hos kunden
+              -- räcker ett serviceområde, annars krävs en adress.
+              (case when b.serves_at_customer
+                    then exists (select 1 from public.business_service_areas sa
+                                  where sa.business_id = b.id)
+                    else coalesce(btrim(b.address), '') <> '' end) as has_place,
               exists (select 1 from public.services s
                        where s.business_id = b.id and s.active) as has_services,
               i.email as invited_email,
@@ -169,7 +180,7 @@ export async function listBusinesses(
     name: row.name,
     slug: row.slug,
     plan: row.plan,
-    planOverrideUntil: row.plan_override_until,
+    planOverrideUntil: isoOrNull(row.plan_override_until),
     status: row.status,
     billingMode: row.billing_mode === "manual" ? "manual" : "app",
     deletionRequestedAt: row.deletion_requested_at,
@@ -265,7 +276,7 @@ export async function getBusinessDetail(
       comuna: string;
       category: string;
       plan: BusinessPlan;
-      plan_override_until: string | null;
+      plan_override_until: Date | string | null;
       custom_limits: unknown;
       status: BusinessStatus;
       billing_mode: string;
@@ -340,7 +351,7 @@ export async function getBusinessDetail(
     comuna: data.business.comuna,
     category: data.business.category,
     plan: data.business.plan,
-    planOverrideUntil: data.business.plan_override_until,
+    planOverrideUntil: isoOrNull(data.business.plan_override_until),
     customLimits: parseCustomLimits(data.business.custom_limits),
     status: data.business.status,
     billingMode: data.business.billing_mode === "manual" ? "manual" : "app",
