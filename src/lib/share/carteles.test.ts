@@ -4,48 +4,50 @@ import {
   CARTEL_PAGE_SIZE,
   cartelDisplayUrl,
   cartelLink,
-  cartelQuery,
-  parseCartelOptions,
+  cartelPrintQuery,
+  parseCartelPrintParams,
 } from "./carteles";
 
-describe("parseCartelOptions", () => {
-  it("sin parámetros: cartel de reservas A4 claro", () => {
-    expect(parseCartelOptions({})).toEqual({
+describe("parseCartelPrintParams", () => {
+  it("sin parámetros: cartel de reservas, sin cambios de tamaño ni estilo", () => {
+    expect(parseCartelPrintParams({})).toEqual({
       kind: "reservas",
-      size: "a4",
-      style: "claro",
+      size: null,
+      style: null,
     });
   });
 
   it("acepta valores de la lista", () => {
     expect(
-      parseCartelOptions({ cartel: "cuenta", tamano: "a5", estilo: "lima" }),
+      parseCartelPrintParams({
+        cartel: "cuenta",
+        tamano: "a5",
+        estilo: "lima",
+      }),
     ).toEqual({ kind: "cuenta", size: "a5", style: "lima" });
   });
 
-  it("valores desconocidos vuelven al valor por defecto", () => {
+  it("valores desconocidos se ignoran", () => {
     expect(
-      parseCartelOptions({
+      parseCartelPrintParams({
         cartel: "resenas",
         tamano: "carta",
         estilo: "<script>",
       }),
-    ).toEqual({ kind: "reservas", size: "a4", style: "claro" });
+    ).toEqual({ kind: "reservas", size: null, style: null });
   });
 
-  it("un tamaño que no existe para el cartel usa el del cartel", () => {
+  it("un tamaño que no existe para el cartel se ignora", () => {
     expect(
-      parseCartelOptions({ cartel: "reservas", tamano: "a6x4" }).size,
-    ).toBe("a4");
-    expect(parseCartelOptions({ cartel: "cuenta", tamano: "a3" }).size).toBe(
-      "a6x4",
-    );
+      parseCartelPrintParams({ cartel: "reservas", tamano: "a6x4" }).size,
+    ).toBeNull();
+    expect(
+      parseCartelPrintParams({ cartel: "cuenta", tamano: "a3" }).size,
+    ).toBeNull();
   });
 
-  it("ida y vuelta por la query", () => {
-    const o = { kind: "cuenta", size: "a6x4", style: "oscuro" } as const;
-    const params = Object.fromEntries(new URLSearchParams(cartelQuery(o)));
-    expect(parseCartelOptions(params)).toEqual(o);
+  it("la query de impresión solo lleva el cartel", () => {
+    expect(cartelPrintQuery("cuenta")).toBe("cartel=cuenta");
   });
 
   it("4 por hoja se imprime en A4", () => {

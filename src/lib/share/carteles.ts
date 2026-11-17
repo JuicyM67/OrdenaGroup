@@ -58,10 +58,12 @@ export type CartelBusiness = {
   logoUrl: string | null;
 };
 
-export type CartelOptions = {
+/** Utskriftssidans query. WP-96: designen (även storleken) kommer från det som sparats;
+ * `tamano`/`estilo` är frivilliga överstyrningar (länkar från WP-95). */
+export type CartelPrintParams = {
   kind: CartelKind;
-  size: CartelSize;
-  style: CartelStyle;
+  size: CartelSize | null;
+  style: CartelStyle | null;
 };
 
 function pick<T extends string>(
@@ -74,25 +76,22 @@ function pick<T extends string>(
     : undefined;
 }
 
-/** Utskriftssidans query (`?cartel=&tamano=&estilo=`). Okända värden ger standardvärdet;
- * en storlek som inte finns för skylten (t.ex. reservas + a6x4) ger skyltens standard. */
-export function parseCartelOptions(params: {
+/** `?cartel=&tamano=&estilo=` genom whitelists. Okänd skylt = reservas; okänd eller för
+ * skylten ogiltig storlek/stil (t.ex. reservas + a6x4) = ingen överstyrning. */
+export function parseCartelPrintParams(params: {
   cartel?: unknown;
   tamano?: unknown;
   estilo?: unknown;
-}): CartelOptions {
+}): CartelPrintParams {
   const kind = pick(CARTEL_KINDS, params.cartel) ?? "reservas";
-  const sizes = CARTEL_SIZES_FOR[kind];
-  const size = pick(sizes, params.tamano) ?? sizes[0]!;
-  const style = pick(CARTEL_STYLES, params.estilo) ?? "claro";
-  return { kind, size, style };
+  return {
+    kind,
+    size: pick(CARTEL_SIZES_FOR[kind], params.tamano) ?? null,
+    style: pick(CARTEL_STYLES, params.estilo) ?? null,
+  };
 }
 
-/** Query-strängen för utskriftssidan. */
-export function cartelQuery(o: CartelOptions): string {
-  return new URLSearchParams({
-    cartel: o.kind,
-    tamano: o.size,
-    estilo: o.style,
-  }).toString();
+/** Utskriftssidans adress för en skylt (designen läses från det sparade). */
+export function cartelPrintQuery(kind: CartelKind): string {
+  return new URLSearchParams({ cartel: kind }).toString();
 }

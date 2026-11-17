@@ -1,6 +1,6 @@
-// /app/ajustes/qr (WP-95, D-079): skyltar med QR att skriva ut — bokningsskylten och
-// mini-skylten "Crea tu cuenta". Samma behörighet som "Comparte tu link"
-// (`can_edit_settings`, `ajustesTabVisible`), alla planer. Inget sparas.
+// /app/ajustes/qr (WP-95/96, D-079/D-080): skylteditorn — bokningsskylten och
+// mini-skylten "Crea tu cuenta", med sparad design per företag. Samma behörighet som "Comparte tu link"
+// (`can_edit_settings`, `ajustesTabVisible`), alla planer.
 import type { Metadata } from "next";
 
 import { logout } from "@/app/auth/actions";
@@ -8,7 +8,7 @@ import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { CartelesSection } from "@/components/settings/carteles-section";
 import { siteOrigin } from "@/config/site-url";
 import { nav } from "@/i18n";
-import { loadCartelBusiness } from "@/server/owner/carteles";
+import { loadCartelData } from "@/server/owner/carteles";
 
 import { requireAjustesTab } from "../access";
 import {
@@ -17,6 +17,8 @@ import {
   declineCancelRequestAction,
   declineRequestAction,
 } from "../actions";
+
+import { saveSignDesignAction } from "./actions";
 
 export const metadata: Metadata = {
   title: nav.ajustes,
@@ -28,7 +30,7 @@ export const dynamic = "force-dynamic";
 export default async function AjustesQrPage() {
   const ctx = await requireAjustesTab("qr");
   const { business } = ctx.current;
-  const cartelBusiness = await loadCartelBusiness(ctx.userId, business.id);
+  const data = await loadCartelData(ctx.userId, business.id);
 
   return (
     <AjustesShell
@@ -50,8 +52,10 @@ export default async function AjustesQrPage() {
           link": redan utskrivna skyltar pekar på adressen som gällde vid utskriften. */}
       <CartelesSection
         slug={business.slug}
-        business={cartelBusiness}
+        business={data.business}
         origin={siteOrigin()}
+        designs={data.designs}
+        onSave={saveSignDesignAction}
       />
     </AjustesShell>
   );

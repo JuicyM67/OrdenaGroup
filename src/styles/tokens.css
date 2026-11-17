@@ -838,6 +838,46 @@
   --staff-4: #F5DEC0;
   --staff-5: #BFE3D0;
   --staff-6: #EEF6C4;
+
+  /* Skyltpaletter (WP-96, D-080): bara på de utskrivbara skyltarna i Ajustes → QR.
+     fondo/texto/suave/acento/sobre-acento. Kontrast ≥ 4.5:1 för texto och suave mot fondo
+     och sobre-acento mot acento (testas i src/lib/share/carteles-design.test.ts). Claro,
+     oscuro och lima använder appens egna tokens (src/styles/carteles.css). */
+  --sign-nude-fondo: #F3E6DA;
+  --sign-nude-texto: #3B2A20;
+  --sign-nude-suave: #6A5142;
+  --sign-nude-acento: #C9A27E;
+  --sign-nude-sobre-acento: #2B1D14;
+  --sign-rosa-fondo: #F6E1E1;
+  --sign-rosa-texto: #4A2630;
+  --sign-rosa-suave: #764654;
+  --sign-rosa-acento: #D9A0A8;
+  --sign-rosa-sobre-acento: #3A1A22;
+  --sign-salvia-fondo: #E3EAE0;
+  --sign-salvia-texto: #263326;
+  --sign-salvia-suave: #4A5C4B;
+  --sign-salvia-acento: #9DB59A;
+  --sign-salvia-sobre-acento: #1E2A1E;
+  --sign-marfil-fondo: #FBF7EF;
+  --sign-marfil-texto: #2B2620;
+  --sign-marfil-suave: #675E51;
+  --sign-marfil-acento: #B8955A;
+  --sign-marfil-sobre-acento: #221D17;
+  --sign-negro-oro-fondo: #141414;
+  --sign-negro-oro-texto: #F5EFE3;
+  --sign-negro-oro-suave: #CFC6B4;
+  --sign-negro-oro-acento: #C9A86A;
+  --sign-negro-oro-sobre-acento: #141414;
+  --sign-lavanda-fondo: #ECE6F7;
+  --sign-lavanda-texto: #2E2A3D;
+  --sign-lavanda-suave: #57506D;
+  --sign-lavanda-acento: #B9A7E8;
+  --sign-lavanda-sobre-acento: #231F33;
+  --sign-cielo-fondo: #E3EEF5;
+  --sign-cielo-texto: #1F2F3A;
+  --sign-cielo-suave: #4A5F6E;
+  --sign-cielo-acento: #9CC3DC;
+  --sign-cielo-sobre-acento: #172530;
 }
 
 @utility font-display-tight {
