@@ -4,6 +4,17 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-078 · 2026-11-17 · Inbjudan skapar företaget direkt; den inbjudna accepterar med sin verifierade e-post (WP-93)
+**Beslut:** ägaren (2026-11-17): flödet i stängd beta (`INVITE_ONLY_BETA`, src/config/beta.ts) är "be om inbjudan → admin bjuder in → kunden skapar konto och blir ägare → konfigurerar själv eller inte alls". Admin ska kunna öppna företaget direkt efter inbjudan (för att hjälpa till), inte först när kunden loggat in.
+**Varför:** (1) företaget skapades först vid accepten, så admin hade inget att öppna; (2) accepten hängde på en cookie i samma webbläsare som inbjudningssidan — öppnades inloggningslänken i mejlappen eller på en annan enhet hamnade den inbjudna på /app/beta ("bara på inbjudan") och kom inte in.
+**Konsekvens:**
+- Migration `20261117010000_business_invitation_creates_business.sql`: `private.create_invitation_business` skapar utkastet (comuna/category tomma) när inbjudan skickas; `public.accept_pending_business_invitation()` accepterar den senaste giltiga inbjudan till den inloggades **bekräftade** e-post (ingen token behövs); `accept_business_invitation(token)` gör samma sak via token. Gamla inbjudningar utan företag skapar det vid accepten som förut.
+- FK `business_invitations.business_id` → `on delete cascade` (ett företag från en accepterad inbjudan gick inte att radera; ett raderat utkast ska inte återuppstå via inbjudan).
+- /admin: ett inbjudet företag utan ägare syns i listan med inbjudans e-post och chipet "Invitación pendiente", kan öppnas i modo soporte och få rubro/comuna av admin. "Reenviar invitación" ger en ny länk (7 dagar).
+- Ett utkast som admin gett rubro/comuna är inte längre ett utkast: ägaren landar i panelen, inte i onboarding.
+
+---
+
 ### D-077 · 2026-11-13 · Fichas: företaget ansvarar för att spara dem, plattformen raderar dem inte medan kontot är aktivt (WP-91)
 **Beslut:** ägaren (2026-11-13): skyldigheten att spara ficha clínica i minst 15 år (Ley 20.584, art. 13) ligger på företaget (prestador), inte på Ordena. Ordena är encargado och lämnar tillbaka uppgifterna genom exporten; efter att kontot avslutats raderas de.
 **Varför:** fichan (D-074) säljs till hälsonära branscher, men (1) `private.run_retention` anonymiserade kunder utan bokning på 24 månader och raderade då deras ficha, (2) Términos och Privacidad sa att plattformen inte är gjord för hälsodata, vilket motsade funktionen.
