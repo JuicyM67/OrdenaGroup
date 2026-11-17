@@ -125,7 +125,7 @@ select is(
     where n.nspname = 'public'
       and has_function_privilege('authenticated', p.oid, 'execute')
   ),
-  array['accept_business_invitation', 'accept_invitation', 'create_business', 'customer_stats', 'report_breakdown', 'report_summary', 'report_weekly'],
+  array['accept_business_invitation', 'accept_invitation', 'accept_pending_business_invitation', 'create_business', 'customer_stats', 'report_breakdown', 'report_summary', 'report_weekly'],
   'authenticated får bara köra de avsedda public-funktionerna'
 );
 
