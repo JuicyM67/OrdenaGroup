@@ -44,6 +44,9 @@ export const adminPanel = {
     sinDueno: "Sin dueño",
     /** WP-92: el dueño nunca entró (la invitación no se activó). */
     sinActivar: "Sin activar",
+    /** WP-93: el negocio nació de una invitación que nadie ha aceptado. TODO_COPY */
+    invitacionPendiente: "Invitación pendiente",
+    invitacionVencida: "Invitación vencida",
     /** WP-92: botón de borrar en la tarjeta. */
     borrarNegocio: (p: { nombre: string }): string => `Borrar ${p.nombre}`,
     descubre: "Descubre",
@@ -157,6 +160,19 @@ export const adminPanel = {
     guardar: "Guardar plan",
     guardando: "Guardando…",
   },
+  // WP-93 (D-078): invitación pendiente en /admin/negocios/[id]. TODO_COPY
+  invitacion: {
+    titulo: "Invitación",
+    pendiente: (p: { correo: string; fecha: string }): string =>
+      `Enviada a ${p.correo}. Vence el ${p.fecha}.`,
+    vencida: (p: { correo: string }): string =>
+      `La invitación a ${p.correo} venció. Envía un link nuevo.`,
+    ayuda:
+      "El dueño entra con ese correo cuando quiera. Mientras tanto puedes abrir el negocio como soporte y dejarlo configurado.",
+    reenviar: "Reenviar invitación",
+    reenviando: "Enviando…",
+    reenviada: "Listo, enviamos un link nuevo. Vale 7 días.",
+  },
   // /admin/nuevo: invitar a alguien a crear un negocio.
   invitar: {
     nombre: "Nombre del negocio",
@@ -186,6 +202,7 @@ export const adminPanel = {
     already_requested: "La eliminación ya estaba pedida.",
     not_requested: "No hay una eliminación pedida.",
     onboarding_draft: "El negocio todavía no termina su configuración inicial.",
+    email_failed: "No pudimos enviar el correo. Intenta de nuevo.",
     generate_link_failed: "No pudimos crear el enlace. Intenta de nuevo.",
     send_failed: "No pudimos enviar el correo. Intenta de nuevo.",
     update_failed:
@@ -243,6 +260,7 @@ export const adminPanel = {
       send_login_link: "Envió un enlace para entrar",
       change_email: "Cambió el correo de una cuenta",
       invite_business: "Invitó a un negocio nuevo",
+      resend_invitation: "Reenvió la invitación",
       add_admin: "Agregó un administrador",
       remove_admin: "Quitó a un administrador",
       business_place: "Cambió rubro y ubicación",
@@ -325,8 +343,9 @@ export const adminPanel = {
     guardar: "Guardar",
     guardado: "Guardado.",
     error: "No pudimos guardar. Revisa los campos.",
+    /** WP-93: borrador de una invitación — el admin puede completarlo. TODO_COPY */
     borrador:
-      "El negocio todavía no termina su configuración inicial. El dueño completa estos datos (y puede importar) al terminarla.",
+      "El negocio todavía no termina su configuración inicial. Si completas rubro y comuna, el dueño entra directo a su panel; si no, los completa él al entrar.",
   },
   // WP-84: borrar un negocio altiro (cuentas de prueba, duplicados).
   borrar: {

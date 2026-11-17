@@ -25,6 +25,7 @@ import { requireAdminPage } from "@/server/admin/auth";
 import { getAdminBusinessPlace } from "@/server/admin/business-place";
 import { getBusinessDetail } from "@/server/admin/businesses";
 import { adminExistingNames } from "@/server/admin/import";
+import { getPendingInvitation } from "@/server/admin/invite";
 import { platformNames } from "@/server/import/platforms";
 import { isImportEnabled } from "@/server/import/runs";
 
@@ -35,6 +36,7 @@ import {
   deleteNowAction,
   freezeAction,
   requestDeletionAction,
+  resendInvitationAction,
   sendLoginLinkAction,
   setBillingModeAction,
   setBusinessPlaceAction,
@@ -84,10 +86,11 @@ export default async function AdminBusinessDetailPage({
       ? adminPanel.soporte.errores[supportError]
       : null;
 
-  const [business, log, place] = await Promise.all([
+  const [business, log, place, invitation] = await Promise.all([
     getBusinessDetail(id),
     listAuditLog({ businessId: id }),
     getAdminBusinessPlace(id),
+    getPendingInvitation(id),
   ]);
   if (!business || !place) notFound();
   const existing = await adminExistingNames(id);
@@ -133,16 +136,16 @@ export default async function AdminBusinessDetailPage({
             <h2 className="text-18 font-bold text-ink">
               {adminPanel.ubicacion.titulo}
             </h2>
+            {/* WP-93 (D-078): admin får fylla i utkastet åt ägaren. */}
             {place.draft ? (
               <p className="text-13 text-ink-soft">
                 {adminPanel.ubicacion.borrador}
               </p>
-            ) : (
-              <AdminPlaceForm
-                value={place}
-                onSubmit={setBusinessPlaceAction.bind(null, business.id)}
-              />
-            )}
+            ) : null}
+            <AdminPlaceForm
+              value={place}
+              onSubmit={setBusinessPlaceAction.bind(null, business.id)}
+            />
           </section>
 
           {isImportEnabled() && !place.draft ? (
@@ -166,6 +169,41 @@ export default async function AdminBusinessDetailPage({
                   staff: existing.staff.length,
                 }}
               />
+            </section>
+          ) : null}
+
+          {/* WP-93 (D-078): inbjudan som ingen accepterat än. */}
+          {invitation ? (
+            <section className="flex flex-col gap-3 rounded-card bg-surface p-6">
+              <h2 className="text-18 font-bold text-ink">
+                {adminPanel.invitacion.titulo}
+              </h2>
+              <p
+                className={
+                  invitation.expired
+                    ? "text-14 font-semibold text-alert"
+                    : "text-14 text-ink"
+                }
+              >
+                {invitation.expired
+                  ? adminPanel.invitacion.vencida({ correo: invitation.email })
+                  : adminPanel.invitacion.pendiente({
+                      correo: invitation.email,
+                      fecha: formatAdminDateTime(invitation.expiresAt),
+                    })}
+              </p>
+              <p className="text-13 text-ink-soft">
+                {adminPanel.invitacion.ayuda}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <ConfirmActionButton
+                  label={adminPanel.invitacion.reenviar}
+                  title={adminPanel.invitacion.reenviar}
+                  body={invitation.email}
+                  confirmLabel={adminPanel.invitacion.reenviar}
+                  action={resendInvitationAction.bind(null, business.id)}
+                />
+              </div>
             </section>
           ) : null}
 

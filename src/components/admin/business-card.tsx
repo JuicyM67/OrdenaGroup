@@ -113,7 +113,7 @@ export function AdminBusinessCard({
             {[rubro, place].filter(Boolean).join(" · ")}
           </p>
           <p className="truncate text-13 text-ink-soft">
-            {b.ownerEmail ?? t.sinDueno}
+            {b.ownerEmail ?? b.invitation?.email ?? t.sinDueno}
           </p>
         </div>
 
@@ -127,6 +127,14 @@ export function AdminBusinessCard({
               ) : null}
               {b.ownerNotActivated ? (
                 <Chip tone="alert">{t.sinActivar}</Chip>
+              ) : null}
+              {/* WP-93: företaget väntar på att den inbjudna loggar in. */}
+              {b.invitation && !b.ownerEmail ? (
+                <Chip tone={b.invitation.expired ? "alert" : "lime"}>
+                  {b.invitation.expired
+                    ? t.invitacionVencida
+                    : t.invitacionPendiente}
+                </Chip>
               ) : null}
               {b.status === "frozen" ? (
                 <Chip tone="alert">{t.congelado}</Chip>

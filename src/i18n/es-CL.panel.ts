@@ -1585,7 +1585,10 @@ export const invitacionNegocio = {
   continuarCta: "Continuar con mi correo",
   enviando: "Enviando…",
   enviado: (p: { email: string }): string =>
-    `Te enviamos un link a ${p.email}. Ábrelo para continuar.`,
+    `Te enviamos un link a ${p.email}. Ábrelo para continuar, sirve desde cualquier navegador o celular.`,
+  /** WP-93: hay una sesión abierta con otro correo. TODO_COPY */
+  sesionOtra: (p: { email: string }): string =>
+    `Estás conectado como ${p.email}. Esta invitación es para otro correo: cierra sesión y entra con el correo de la invitación.`,
   errores: {
     not_found: "No encontramos esa invitación.",
     accepted: "Esa invitación ya se usó.",

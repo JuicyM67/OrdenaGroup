@@ -21,7 +21,7 @@ export type AdminBusinessPlace = {
   address: string;
   /** Företaget från en admin-inbjudan som ägaren inte har gjort klart
    * (`isOnboardingDraft`: comuna och category tomma). Onboardingen fyller i
-   * fälten — admin rör dem inte under tiden. */
+   * fälten, eller admin (WP-93, D-078) när kunden vill ha hjälp. */
   draft: boolean;
 };
 
@@ -76,9 +76,8 @@ export async function setAdminBusinessPlace(
     );
     const prev = before.rows[0];
     if (!prev) return { ok: false, code: "not_found" };
-    if (prev.comuna === "" && prev.category === "") {
-      return { ok: false, code: "onboarding_draft" };
-    }
+    // WP-93 (D-078): admin får fylla i ett utkast (hjälp åt kunden). Då är
+    // det inte längre ett utkast och ägaren hoppar över onboardingen.
     const address = input.address === "" ? null : input.address;
     await q.query(
       `update public.businesses

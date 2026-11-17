@@ -13,6 +13,7 @@ import { appHref } from "@/config/routes";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { acceso } from "@/i18n/auth";
 import { isPlatformAdmin } from "@/server/admin/auth";
+import { acceptPendingInvitation } from "@/server/onboarding/invitation";
 import { getOwnerBusiness } from "@/server/onboarding/owner-business";
 
 export const metadata: Metadata = {
@@ -34,6 +35,8 @@ export default async function BetaPage() {
   if ((await getOwnerBusiness(user.id)) || (await isPlatformAdmin(user.id))) {
     redirect("/app");
   }
+  // WP-93 (D-078): en inbjudan till kontots e-post som väntar → in direkt.
+  if (await acceptPendingInvitation(user.id)) redirect("/app");
 
   return (
     <AuthShell variant="beta">
