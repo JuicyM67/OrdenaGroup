@@ -154,7 +154,11 @@ export async function resendInvitation(
 ): Promise<{ ok: true } | { ok: false; code: string }> {
   const { token, hash } = createInvitationToken();
   const row = await withServiceTx(async (q) => {
-    const r = await q.query<{ id: string; email: string; business_name: string }>(
+    const r = await q.query<{
+      id: string;
+      email: string;
+      business_name: string;
+    }>(
       `update private.business_invitations
           set token_hash = $2, expires_at = now() + interval '7 days'
         where id = (select id from private.business_invitations

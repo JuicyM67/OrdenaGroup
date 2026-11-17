@@ -62,7 +62,10 @@ export type BusinessListItem = {
   /** WP-92: ägaren har aldrig loggat in (inbjudan inte aktiverad). */
   readonly ownerNotActivated: boolean;
   /** WP-93 (D-078): inbjudan som ingen accepterat än (företaget utan ägare). */
-  readonly invitation: { readonly email: string; readonly expired: boolean } | null;
+  readonly invitation: {
+    readonly email: string;
+    readonly expired: boolean;
+  } | null;
 };
 
 /**
