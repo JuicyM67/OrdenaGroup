@@ -20,7 +20,7 @@ import { mediaPathFromUrl } from "@/server/bookings/media";
 // (`src/server/bookings/row.ts`, scheduling-engineer) använder för
 // `businesses.cancel_approval` — importerad i stället för en egen kopia.
 import { toCancelApproval } from "@/server/bookings/row";
-import { loadMember } from "@/server/db/permissions";
+import { hasPerm, loadMember } from "@/server/db/permissions";
 import {
   canAddActiveServiceIn,
   requireFeatureIn,
@@ -743,6 +743,21 @@ export async function createService(
       }
       const id = await insertServiceIn(q, businessId, input);
       if (!id) return { ok: false, code: "unauthorized" };
+      // WP-94: en ny tjänst utan personal går inte att boka (ingen utför den),
+      // och tjänsteformuläret har inget personalval — kopplingen fanns bara
+      // under Equipo. Som i onboardingen: all aktiv personal utför den; den som
+      // inte ska avmarkeras under Equipo. Bara med `can_manage_team` (RLS på
+      // staff_services), annars skapas tjänsten som förut.
+      const member = await loadMember(q, userId, businessId);
+      if (hasPerm(member, "can_manage_team")) {
+        await q.query(
+          `insert into public.staff_services (business_id, staff_id, service_id)
+           select $1, st.id, $2 from public.staff st
+            where st.business_id = $1 and st.active
+           on conflict do nothing`,
+          [businessId, id],
+        );
+      }
       return { ok: true, id };
     });
   } catch (e) {
