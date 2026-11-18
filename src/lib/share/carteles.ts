@@ -53,9 +53,15 @@ export function cartelDisplayUrl(origin: string, slug: string): string {
 }
 
 /** Företaget på skylten. Loggan är redan kontrollerad (bara egen bucket), annars initialer. */
+/** En av företagets egna bilder som kan bli skyltens bakgrund (WP-96b): omslaget
+ * (`id` = "portada") eller en galleribild (`business_images.id`). */
+export type CartelPhoto = { id: string; url: string };
+
 export type CartelBusiness = {
   name: string;
   logoUrl: string | null;
+  /** Omslaget först, sedan galleriet i ägarens ordning. Tom lista = inga bilder. */
+  fotos: readonly CartelPhoto[];
 };
 
 /** Utskriftssidans query. WP-96: designen (även storleken) kommer från det som sparats;

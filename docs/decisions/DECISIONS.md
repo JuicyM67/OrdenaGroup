@@ -26,7 +26,10 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
   - pgTAP `147_sign_designs`.
 - **"Descargar PDF" sparar först** och öppnar sedan utskriftssidan, som läser den sparade designen. `?tamano=`/`?estilo=` från WP-95-länkar överstyr fortfarande. En skylt som redan skrivits ut ändras förstås inte.
 - **Typsnitten** laddas med `next/font/google` (självhostade, SIL OFL) i `src/components/carteles/fonts.ts`, som bara importeras av skyltarna.
-- **Bakgrunder** (mönster och företagets egna omslags- och galleribilder, utan ny uppladdning) kommer i ett eget steg (WP-96b). `fondo` är redan en del av modellen (`{ tipo: "liso" }`).
+- **Bakgrunder (WP-96b):** `fondo` är `liso`, `patron` eller `foto`.
+  - **Mönster:** Degradado, Puntos, Rayas, Arcos, Ondas, Hojas. De ritas i CSS (`src/styles/carteles.css`, inga externa bilder) med palettens färger, så de följer vald palett. Täta mönster är svaga och bågar och blad ligger bara i hörnen, så texten går att läsa. I Banda ligger mönstret i bandet.
+  - **Egna foton:** bara företagets omslag och galleribilder som redan finns (Ajustes → Perfil), ingen ny uppladdning. Fotot sparas som id (`"portada"` eller `business_images.id`), aldrig som URL. Servern kontrollerar vid sparandet att bilden finns hos företaget. Bilderna filtreras som på den publika sidan. En bild som tagits bort ger slät bakgrund.
+  - **Läsbarhet med foto:** i Clásico, Centrado och Marco fyller fotot arket och innehållet ligger på en panel i palettens fondfärg (panelen är en egen container, så skylten skalas ner exakt). I Banda ligger fotot i bandet och namnet på en bricka. Kontrasttestet gäller alltså fortfarande.
 - Ingen `*.dc.html`-referens. Visuell avvikelse accepteras som i D-075 och D-079.
 
 ---

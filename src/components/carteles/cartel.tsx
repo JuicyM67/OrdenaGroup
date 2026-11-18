@@ -1,9 +1,11 @@
 // Carteles para imprimir (WP-95, D-079; editorn WP-96, D-080): bokningsskylten och
 // mini-skylten "Crea tu cuenta" efter en sparad design (layout, palett, typsnitt, vikt,
-// egna texter, logga). Inga hooks: renderas både i editorns förhandsvisning (klient) och på
+// egna texter, logga, bakgrund). Inga hooks: renderas både i editorns förhandsvisning (klient) och på
 // utskriftssidan (server). Alla mått i `cqw` och alla färger/typsnitt via variabler i
 // src/styles/carteles.css, så samma layout skalar exakt mellan A3, A4, A5 och A6. QR-koden
-// är alltid mörk på vit/ljus panel. Ingen *.dc.html-referens finns.
+// är alltid mörk på vit/ljus panel. Bakgrund (WP-96b): mönster i palettens färger, eller ett
+// av företagets egna foton; med foto ligger innehållet på en panel (eller, i Banda, fotot i
+// bandet), så texten alltid går att läsa. Ingen *.dc.html-referens finns.
 import { Check } from "lucide-react";
 import Image from "next/image";
 import type { ReactNode } from "react";
@@ -14,10 +16,12 @@ import { carteles, cuenta } from "@/i18n";
 import type { CartelBusiness, CartelKind } from "@/lib/share/carteles";
 import {
   SIGN_FONTS_SINGLE_WEIGHT,
+  signPhotoUrl,
   type SignDesign,
   type SignFont,
   type SignLayout,
   type SignPalette,
+  type SignPattern,
   type SignWeight,
 } from "@/lib/share/carteles-design";
 import { QR_QUIET_ZONE, qrModules, qrPath } from "@/lib/share/qr";
@@ -53,6 +57,49 @@ const WEIGHT_CLASS: Record<SignWeight, string> = {
   normal: "cartel-grosor-normal",
   marcado: "cartel-grosor-marcado",
 };
+
+const PATTERN_CLASS: Record<SignPattern, string> = {
+  degradado: "cartel-patron-degradado",
+  puntos: "cartel-patron-puntos",
+  rayas: "cartel-patron-rayas",
+  arcos: "cartel-patron-arcos",
+  ondas: "cartel-patron-ondas",
+  hojas: "cartel-patron-hojas",
+};
+
+/** Mönsterlagret (också för editorns mönsterrutor). `inBand` = färgerna ovanpå accenten. */
+export function CartelPattern({
+  pattern,
+  inBand = false,
+}: {
+  pattern: SignPattern;
+  inBand?: boolean;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "cartel-patron",
+        inBand && "cartel-patron-en-banda",
+        PATTERN_CLASS[pattern],
+      )}
+    />
+  );
+}
+
+/** Ett foto som fyller sin förälder (som måste vara positionerad). */
+function PhotoFill({ url }: { url: string }) {
+  return (
+    <Image
+      src={url}
+      alt=""
+      fill
+      sizes="(min-width: 1024px) 1200px, 100vw"
+      unoptimized
+      className="object-cover"
+    />
+  );
+}
 
 /** Klasserna för palett, typsnitt och vikt (också för editorns typsnittschips). */
 export function cartelThemeClass(design: {
@@ -167,7 +214,10 @@ function Logo({
 
 type Slots = {
   centered: boolean;
+  /** Banda: mindre rubrik och QR (bandet tar höjd). */
   compact: boolean;
+  /** Marco: mindre QR (ramen tar plats), rubriken som vanligt. */
+  framed: boolean;
 };
 
 function Heading({
@@ -254,7 +304,10 @@ function ReservasBody({
           {design.subtitulo ?? t.reservasTexto}
         </p>
       </div>
-      <QrCode link={link} className={compact ? "cartel-qr-sm" : "cartel-qr"} />
+      <QrCode
+        link={link}
+        className={compact || slots.framed ? "cartel-qr-sm" : "cartel-qr"}
+      />
       <p className="text-center cartel-url">
         <span className="cartel-suave">{t.oEntra} </span>
         <b className="font-bold break-all" translate="no">
@@ -342,17 +395,32 @@ function CuentaBody({
 function Frame({
   layout,
   band,
+  pattern,
+  photoUrl,
   children,
 }: {
   layout: SignLayout;
   band: ReactNode;
+  pattern: SignPattern | null;
+  photoUrl: string | null;
   children: ReactNode;
 }) {
   if (layout === "foto") {
     return (
       <div className="flex h-full flex-col">
-        <div className="flex cartel-banda shrink-0 flex-col items-center justify-center cartel-gap-sm cartel-acento cartel-pad-x text-center">
-          {band}
+        <div className="relative flex cartel-banda shrink-0 flex-col items-center justify-center cartel-gap-sm overflow-hidden cartel-acento cartel-pad-x text-center">
+          {photoUrl ? <PhotoFill url={photoUrl} /> : null}
+          {!photoUrl && pattern ? (
+            <CartelPattern pattern={pattern} inBand />
+          ) : null}
+          <div
+            className={cn(
+              "relative flex flex-col items-center cartel-gap-sm",
+              photoUrl && "cartel-bricka",
+            )}
+          >
+            {band}
+          </div>
         </div>
         <div className="flex min-h-0 flex-1 flex-col cartel-pad cartel-pb-esquina">
           {children}
@@ -360,18 +428,32 @@ function Frame({
       </div>
     );
   }
-  if (layout === "marco") {
-    return (
+  const content =
+    layout === "marco" ? (
       <>
         <span aria-hidden="true" className="cartel-marco" />
-        <div className="flex h-full flex-col cartel-gap cartel-pad-marco">
+        <div className="relative flex h-full flex-col cartel-gap cartel-pad-marco">
           {children}
         </div>
+      </>
+    ) : (
+      <div className="relative flex h-full flex-col cartel-gap cartel-pad">
+        {children}
+      </div>
+    );
+  if (photoUrl) {
+    return (
+      <>
+        <PhotoFill url={photoUrl} />
+        <div className="cartel-sobre-foto">{content}</div>
       </>
     );
   }
   return (
-    <div className="flex h-full flex-col cartel-gap cartel-pad">{children}</div>
+    <>
+      {pattern ? <CartelPattern pattern={pattern} /> : null}
+      {content}
+    </>
   );
 }
 
@@ -385,19 +467,27 @@ export function Cartel({
 }: CartelProps) {
   const { layout } = design;
   const centered = layout !== "clasico";
-  const slots: Slots = { centered, compact: layout === "foto" };
+  const slots: Slots = {
+    centered,
+    compact: layout === "foto",
+    framed: layout === "marco",
+  };
   const showLogo = design.mostrarLogo;
+  const photoUrl = signPhotoUrl(design.fondo, business.fotos);
+  const pattern = design.fondo.tipo === "patron" ? design.fondo.patron : null;
 
   const band = (
     <>
-      {showLogo ? <Logo business={business} large onAccent /> : null}
+      {showLogo ? (
+        <Logo business={business} large onAccent={!photoUrl} />
+      ) : null}
       <p className="cartel-negocio font-bold break-words">{business.name}</p>
     </>
   );
 
   return (
     <div className={cn("cartel-hoja h-full w-full", cartelThemeClass(design))}>
-      <Frame layout={layout} band={band}>
+      <Frame layout={layout} band={band} pattern={pattern} photoUrl={photoUrl}>
         {layout !== "foto" && kind === "reservas" ? (
           <BusinessHeader
             business={business}

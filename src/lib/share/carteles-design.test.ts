@@ -10,6 +10,7 @@ import {
   parseSignDesign,
   parseSignDesigns,
   sameSignDesign,
+  signPhotoUrl,
 } from "./carteles-design";
 
 describe("parseSignDesigns", () => {
@@ -59,6 +60,46 @@ describe("parseSignDesigns", () => {
   it("corta los textos al máximo", () => {
     const d = parseSignDesign("reservas", { titulo: "a".repeat(100) });
     expect(d.titulo).toHaveLength(40);
+  });
+});
+
+describe("fondo (WP-96b)", () => {
+  const ID = "0b6f3c1e-5d2a-4c8b-9e7f-1a2b3c4d5e6f";
+
+  it.each([
+    [
+      { tipo: "patron", patron: "hojas" },
+      { tipo: "patron", patron: "hojas" },
+    ],
+    [
+      { tipo: "foto", foto: "portada" },
+      { tipo: "foto", foto: "portada" },
+    ],
+    [
+      { tipo: "foto", foto: ID },
+      { tipo: "foto", foto: ID },
+    ],
+    [{ tipo: "patron", patron: "cebra" }, { tipo: "liso" }],
+    [{ tipo: "patron" }, { tipo: "liso" }],
+    [{ tipo: "foto", foto: "../otro/x.jpg" }, { tipo: "liso" }],
+    [{ tipo: "foto", foto: ID.toUpperCase() }, { tipo: "liso" }],
+    ["patron", { tipo: "liso" }],
+  ])("lee %j como %j", (fondo, expected) => {
+    expect(parseSignDesign("reservas", { fondo }).fondo).toEqual(expected);
+  });
+
+  it("el foto se busca entre las fotos del negocio; si ya no está, no hay foto", () => {
+    const fotos = [
+      { id: "portada", url: "https://x/portada.jpg" },
+      { id: ID, url: "https://x/galeria.jpg" },
+    ];
+    expect(signPhotoUrl({ tipo: "foto", foto: ID }, fotos)).toBe(
+      "https://x/galeria.jpg",
+    );
+    expect(signPhotoUrl({ tipo: "foto", foto: "portada" }, [])).toBeNull();
+    expect(
+      signPhotoUrl({ tipo: "patron", patron: "puntos" }, fotos),
+    ).toBeNull();
   });
 });
 

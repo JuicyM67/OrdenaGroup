@@ -1,7 +1,7 @@
 /**
  * Pestaña "QR" de Ajustes (WP-95, D-079): carteles para imprimir. Un cartel de
  * reservas (A3, A4, A5) y un mini cartel para que los clientes creen su cuenta.
- * WP-96 (D-080): editor con plantillas, tipografías, colores y textos propios.
+ * WP-96 (D-080): editor con plantillas, tipografías, colores, fondos y textos propios.
  * El nombre del producto y el dominio llegan como `marca`/`dominio` (desde
  * `brand`), nunca se escriben acá.
  * TODO_COPY: revisión de copywriter-es-cl.
@@ -12,7 +12,7 @@ export const carteles = {
   pestana: "QR",
   titulo: "Carteles con tu QR",
   intro:
-    "Diseña tu cartel para el mesón o la vitrina: elige plantilla, tipografía, colores y textos. Tus clientes escanean el código con la cámara del celular.",
+    "Diseña tu cartel para el mesón o la vitrina: elige plantilla, tipografía, colores, fondo y textos. Tus clientes escanean el código con la cámara del celular.",
   reservas: {
     titulo: "Cartel de reservas",
     ayuda: "Lleva directo a tu página de reservas.",
@@ -31,6 +31,15 @@ export const carteles = {
     tipografia: "Tipografía",
     grosor: "Grosor",
     colores: "Colores",
+    fondo: "Fondo",
+    fondoLiso: "Liso",
+    fondoFotos: "Tus fotos",
+    fotoPortada: "Portada",
+    fotoGaleria: (p: { n: number }): string => `Foto ${p.n}`,
+    sinFotos: "Sube una portada o fotos en Perfil y úsalas de fondo.",
+    irAPerfil: "Ir a Perfil",
+    ayudaFoto:
+      "Con foto, el texto va sobre un recuadro para que se lea bien. Usa fotos grandes y nítidas.",
     textos: "Textos",
     titulo: "Título",
     subtitulo: "Texto",
@@ -59,6 +68,14 @@ export const carteles = {
     clasica: "Clásica",
     manuscrita: "Manuscrita",
     redonda: "Redonda",
+  },
+  patrones: {
+    degradado: "Degradado",
+    puntos: "Puntos",
+    rayas: "Rayas",
+    arcos: "Arcos",
+    ondas: "Ondas",
+    hojas: "Hojas",
   },
   grosores: {
     fino: "Fino",

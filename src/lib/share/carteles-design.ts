@@ -7,6 +7,7 @@ import {
   CARTEL_KINDS,
   CARTEL_SIZES_FOR,
   type CartelKind,
+  type CartelPhoto,
   type CartelSize,
   type CartelStyle,
 } from "./carteles";
@@ -50,7 +51,36 @@ export type SignPalette = (typeof SIGN_PALETTES)[number];
 export const SIGN_TITLE_MAX = 40;
 export const SIGN_SUBTITLE_MAX = 90;
 
-export type SignBackground = { tipo: "liso" };
+/** Mönster (WP-96b): ritas i CSS med palettens färger, så de följer vald palett. */
+export const SIGN_PATTERNS = [
+  "degradado",
+  "puntos",
+  "rayas",
+  "arcos",
+  "ondas",
+  "hojas",
+] as const;
+export type SignPattern = (typeof SIGN_PATTERNS)[number];
+
+/** Omslagsbilden som bakgrund. Galleribilder anges med sitt `business_images.id`. */
+export const SIGN_COVER_PHOTO = "portada";
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** "portada" eller ett uuid (gemener, som Postgres skriver dem). */
+export function isSignPhotoId(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    (value === SIGN_COVER_PHOTO || UUID_RE.test(value))
+  );
+}
+
+/** Fotot sparas som id, aldrig som URL; adressen slås upp bland företagets egna bilder. */
+export type SignBackground =
+  | { tipo: "liso" }
+  | { tipo: "patron"; patron: SignPattern }
+  | { tipo: "foto"; foto: string };
 
 export type SignDesign = {
   layout: SignLayout;
@@ -113,9 +143,30 @@ export function cleanSignText(value: unknown, max: number): string | null {
   return Array.from(text).slice(0, max).join("");
 }
 
-/** 96a: bara slät bakgrund. Mönster och foton kommer i 96b. */
-function parseBackground(): SignBackground {
+/** Bakgrunden ur sparad data; allt okänt blir slät bakgrund. */
+function parseBackground(value: unknown): SignBackground {
+  if (!isRecord(value)) return { tipo: "liso" };
+  if (
+    value.tipo === "patron" &&
+    typeof value.patron === "string" &&
+    (SIGN_PATTERNS as readonly string[]).includes(value.patron)
+  ) {
+    return { tipo: "patron", patron: value.patron as SignPattern };
+  }
+  if (value.tipo === "foto" && isSignPhotoId(value.foto)) {
+    return { tipo: "foto", foto: value.foto };
+  }
   return { tipo: "liso" };
+}
+
+/** Bakgrundsfotots adress, eller `null` om bakgrunden inte är ett foto eller om bilden
+ * inte längre finns bland företagets bilder (då ritas skylten med slät bakgrund). */
+export function signPhotoUrl(
+  fondo: SignBackground,
+  fotos: readonly CartelPhoto[],
+): string | null {
+  if (fondo.tipo !== "foto") return null;
+  return fotos.find((f) => f.id === fondo.foto)?.url ?? null;
 }
 
 /** En skylts design ur sparad data, fält för fält med standardvärden. */
@@ -127,7 +178,7 @@ export function parseSignDesign(kind: CartelKind, value: unknown): SignDesign {
     fuente: pick(SIGN_FONTS, value.fuente, d.fuente),
     grosor: pick(SIGN_WEIGHTS, value.grosor, d.grosor),
     paleta: pick(SIGN_PALETTES, value.paleta, d.paleta),
-    fondo: parseBackground(),
+    fondo: parseBackground(value.fondo),
     titulo: cleanSignText(value.titulo, SIGN_TITLE_MAX),
     subtitulo: cleanSignText(value.subtitulo, SIGN_SUBTITLE_MAX),
     mostrarLogo:
