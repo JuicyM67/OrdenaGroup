@@ -18,6 +18,7 @@ import {
 import { comun, formulario, reserva } from "@/i18n";
 
 import { TourLoader } from "@/components/tour/tour-loader";
+import { Button } from "@/components/ui/button";
 
 // WP-82: stäng-knappen (och därmed meddelandeprotokollet med Zod) hör bara till dialogläget
 // och får inte väga i `/[slug]`s JS-budget (D-039): egen chunk som bara hämtas där.
@@ -52,9 +53,11 @@ import { staffOfferingService } from "./staff-for-service";
 import { StaffPicker } from "./staff-picker";
 import { barPrice, findDay, summaryText } from "./summary";
 import { TimeSlotGrid } from "./time-slot-grid";
+import { TimeSlotGroups } from "./time-slot-groups";
 import type {
   BookingActionResult,
   BookingPageData,
+  BookingSlot,
   CustomerContact,
   StaffSelection,
 } from "./types";
@@ -100,6 +103,13 @@ export interface BookingScreenProps {
   offerNotice?: ReactNode;
   submitBooking: (input: CustomerFormOutput) => Promise<BookingActionResult>;
   joinWaitlist: (input: WaitlistFormOutput) => Promise<BookingActionResult>;
+  /** WP-97 (D-081): alla dagens tider ("Ver todas las horas"), server action
+   * med `slug` bundet på servern. `null` = gick inte. Saknas = ingen knapp. */
+  loadAllSlots?: (input: {
+    serviceId: string;
+    staffId: string;
+    date: string;
+  }) => Promise<readonly BookingSlot[] | null>;
   /** Bara till design lab (`?estado=`): förvalt tillstånd i stället för det tomma. */
   initialState?: BookingFlowState;
   /** WP-30: `/{slug}?flash=<id>` — förvald tjänst/profesional/dag/tid,
@@ -133,6 +143,7 @@ export function BookingScreen({
   data,
   submitBooking,
   joinWaitlist,
+  loadAllSlots,
   initialState,
   initialSelection,
   loadingHorarios,
@@ -180,6 +191,17 @@ export function BookingScreen({
   // samma nivå som `contact`) — filtret gäller bara steg 1, tjänstevalet
   // (`selection.serviceId`) i flödesreducern rörs inte av bytet.
   const [categoryId, setCategoryId] = useState<string>(ALL_CATEGORY_ID);
+
+  // WP-97 (D-081): dagar där kunden tryckt "Ver todas las horas", per
+  // tjänst|profesional|dag. Ersätter dagens 12 tider i hela flödet (val,
+  // pris, sammanfattning) så att en tid utanför de 12 går att boka.
+  const [allSlots, setAllSlots] = useState<
+    Record<string, readonly BookingSlot[]>
+  >({});
+  const [allSlotsStatus, setAllSlotsStatus] = useState<{
+    key: string;
+    status: "loading" | "error";
+  } | null>(null);
   const tabs = categoryTabs(data.categories ?? [], data.services);
   const visibleServices =
     tabs.length > 0
@@ -301,7 +323,42 @@ export function BookingScreen({
   }
 
   const { selection } = state;
-  const day = findDay(data, selection, selection.date);
+  const baseDay = findDay(data, selection, selection.date);
+  const dayKey =
+    selection.serviceId && selection.date
+      ? `${selection.serviceId}|${selection.staffId}|${selection.date}`
+      : null;
+  const expandedSlots = dayKey ? allSlots[dayKey] : undefined;
+  const day =
+    baseDay && baseDay.state === "open" && expandedSlots
+      ? { ...baseDay, slots: expandedSlots, hasMore: false }
+      : baseDay;
+  const dayStatusForAll =
+    allSlotsStatus && allSlotsStatus.key === dayKey
+      ? allSlotsStatus.status
+      : null;
+
+  async function showAllSlots() {
+    if (!loadAllSlots || !dayKey || !selection.serviceId || !selection.date)
+      return;
+    const key = dayKey;
+    setAllSlotsStatus({ key, status: "loading" });
+    try {
+      const slots = await loadAllSlots({
+        serviceId: selection.serviceId,
+        staffId: selection.staffId,
+        date: selection.date,
+      });
+      if (!slots || slots.length === 0) {
+        setAllSlotsStatus({ key, status: "error" });
+        return;
+      }
+      setAllSlots((prev) => ({ ...prev, [key]: slots }));
+      setAllSlotsStatus(null);
+    } catch {
+      setAllSlotsStatus({ key, status: "error" });
+    }
+  }
   // WP-73 (D-048): utan väntelista i planen visas bara "dagen är full".
   const waitlistOn = data.business.waitlist !== false;
   const dayIsFull = day?.state === "full" && waitlistOn;
@@ -619,6 +676,14 @@ export function BookingScreen({
                       <p className="text-14 text-muted">
                         {reserva.vacios.sinHorariosEseDia}
                       </p>
+                    ) : expandedSlots ? (
+                      <TimeSlotGroups
+                        slots={visibleSlots}
+                        selectedSlotId={selection.slotId}
+                        onSelect={(slotId) => {
+                          dispatch({ type: "select_slot", slotId });
+                        }}
+                      />
                     ) : (
                       <TimeSlotGrid
                         slots={visibleSlots}
@@ -628,6 +693,27 @@ export function BookingScreen({
                         }}
                       />
                     )}
+                    {loadAllSlots && day.hasMore && !expandedSlots ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="lg"
+                        disabled={dayStatusForAll === "loading" || isOffline}
+                        aria-busy={dayStatusForAll === "loading"}
+                        onClick={() => {
+                          void showAllSlots();
+                        }}
+                      >
+                        {dayStatusForAll === "loading"
+                          ? reserva.todasLasHoras.cargando
+                          : reserva.todasLasHoras.ver}
+                      </Button>
+                    ) : null}
+                    {dayStatusForAll === "error" ? (
+                      <p role="alert" className="text-13 text-muted">
+                        {reserva.todasLasHoras.error}
+                      </p>
+                    ) : null}
                   </>
                 )
               ) : null}

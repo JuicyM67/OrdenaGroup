@@ -83,6 +83,9 @@ export interface DayAvailability {
   readonly state: "open" | "full";
   readonly hasFlash: boolean;
   readonly slots: readonly BookingSlot[];
+  /** WP-97 (D-081): dagen har fler lediga tider än `slots` (gallrade till
+   * 12) — visar "Ver todas las horas". Saknas = alla tider är med. */
+  readonly hasMore?: boolean;
 }
 
 export interface BookingBusiness {

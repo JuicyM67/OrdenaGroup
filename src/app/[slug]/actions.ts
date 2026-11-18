@@ -28,12 +28,15 @@ import {
   claimBookingForAccount,
   linkAccountRows,
 } from "@/server/accounts/account";
+import type { BookingSlot } from "@/components/booking/types";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
+import { loadAllDaySlotsIn } from "@/server/bookings/page-data";
 import {
   createCustomerBooking,
   saveBookingConsent,
 } from "@/server/bookings/submit";
 import { pgErrorCode } from "@/server/db/errors";
+import { withServiceTx } from "@/server/db/tx";
 import { getClientIp, hitRateLimit } from "@/server/db/rate-limit";
 import { kickOutbox } from "@/server/messaging/outbox";
 import {
@@ -263,4 +266,35 @@ export async function joinWaitlist(
     ok: false,
     code: r.code === "not_full" ? "slot_taken" : r.code,
   };
+}
+
+/** WP-97: "Ver todas las horas" — högst så här många hämtningar per IP och
+ * fönster (läsning, men varje anrop räknar en hel dag i motorn). */
+const DAY_SLOTS_IP_WINDOW_SECONDS = 10 * 60;
+const DAY_SLOTS_IP_MAX = 60;
+
+/**
+ * WP-97 (D-081): alla lediga tider för en dag (tjänst + profesional), när
+ * kunden trycker "Ver todas las horas". `slug` binds på servern (closuren i
+ * `page.tsx`/embed). `null` = gick inte (för många anrop, okänt företag);
+ * klienten behåller då de 12 och visar ett fel.
+ */
+export async function loadDaySlots(
+  slug: string,
+  input: unknown,
+): Promise<BookingSlot[] | null> {
+  const ip = await getClientIp();
+  const ipAllowed = await hitRateLimit({
+    scope: "day-slots:ip",
+    subject: ip,
+    windowSeconds: DAY_SLOTS_IP_WINDOW_SECONDS,
+    max: DAY_SLOTS_IP_MAX,
+  });
+  if (!ipAllowed) return null;
+  const business = await resolveBusinessBySlug(slug);
+  if (!business) return null;
+  const now = systemClock();
+  return withServiceTx((q) =>
+    loadAllDaySlotsIn(q, { businessId: business.id, request: input, now }),
+  );
 }

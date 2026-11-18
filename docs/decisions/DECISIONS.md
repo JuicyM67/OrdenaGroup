@@ -4,6 +4,20 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-081 · 2026-11-18 · Kunden kan se alla dagens tider: "Ver todas las horas" (WP-97)
+**Beslut:** ägaren (2026-11-18), efter salongens pilottest: kundsidan visar fortfarande högst 12 tider per dag först (R8), men under dem finns knappen **"Ver todas las horas"** när dagen har fler lediga tider. Knappen hämtar alla tider för den tjänsten, profesionalen och dagen, grupperade i Mañana (före 12), Tarde (12–17) och Noche (från 18).
+
+**Varför:** de 12 utvalda tiderna är jämnt utspridda över dagen och ser därför ojämna ut (10:30, 11:15, 12:00, 12:45 …). Kunden tror att 12:15 är upptagen fast den är ledig. Att i stället skicka alla tider med sidan direkt blir för tungt: sidan laddar 21 dagar × alla tjänster × alla profesionales i förväg (WP-20), och alla tider ger ungefär tre gånger mer data, ännu mer med intervallet 5 eller 10 minuter.
+
+**Konsekvens:**
+- `DayAvailability.hasMore` talar om att dagen har fler tider än de som visas. Knappen syns bara då.
+- Server action `loadDaySlots` (`src/app/[slug]/actions.ts`) med `slug` bundet i closuren på `/[slug]` och `/embed/[slug]/reserva`. Strikt indata (`availableSlotsRequestSchema`), bara dagar inom sidans fönster, rate limit 60 per IP och 10 minuter (`day-slots:ip`).
+- Samma regler som de 12: kundvy (förvarning, horisont), bara aktiva tjänster och personal, flashpris på flashtiderna (`customerDaySlots` i `page-data.ts` används av båda).
+- Den hämtade listan ersätter dagens 12 i hela flödet (val, pris, sammanfattning) och ligger kvar om kunden byter dag och kommer tillbaka. Bokningen räknas om på servern som vanligt (`createBooking` godtar alla kandidater, inte bara de 12).
+- Ägaren ser fortfarande alla tider i agendan. Ingen migration.
+
+---
+
 ### D-080 · 2026-11-18 · Skylteditor: kurerade val, designen sparas på företaget (WP-96)
 **Beslut:** ägaren (2026-11-17): skyltarna i Ajustes → QR (D-079) får en enkel editor. Salongen kan välja:
 - **plantilla:** Clásico, Centrado, Marco, Banda;

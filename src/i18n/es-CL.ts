@@ -394,6 +394,16 @@ export const reserva = {
     negocioNoDisponible: "Este negocio no está recibiendo reservas por ahora.",
     paginaNoExiste: "No encontramos esta página de reservas.",
   },
+  /** WP-97 (D-081): bajo las 12 horas del día, el botón que muestra todas,
+   * agrupadas por parte del día. */
+  todasLasHoras: {
+    ver: "Ver todas las horas",
+    cargando: "Cargando horas…",
+    error: "No pudimos cargar todas las horas. Inténtalo de nuevo.",
+    manana: "Mañana",
+    tarde: "Tarde",
+    noche: "Noche",
+  },
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
