@@ -5,6 +5,7 @@ import { negocio } from "@/i18n";
 
 import type {
   BookingAvailability,
+  BookingSlot,
   BookingBusiness,
   BookingPageData,
   BookingProfile,
@@ -43,10 +44,12 @@ import {
   flashForSlot,
   flashPrice,
   loadActiveFlashSlotsIn,
+  type PublicFlashSlot,
 } from "@/server/flash/public";
 import { listPublicPackageOffersIn } from "@/server/packages/packages";
 import { loadServiceConsentsIn } from "@/server/records/public-consent";
 import { loadSnapshot } from "@/server/scheduling/load";
+import { availableSlotsRequestSchema } from "@/server/scheduling/schemas";
 import {
   ANY_STAFF,
   type DayInput,
@@ -492,34 +495,20 @@ export async function loadReservaPageData(
             continue;
           }
 
-          const all = allSlotsForDay(dayInput);
-          const picked = new Map<number, Candidate>(
-            pickSlots(all, CUSTOMER_SLOT_LIMIT).map((c) => [c.start, c]),
+          const { slots, hasFlash, hasMore } = customerDaySlots(
+            dayInput,
+            flashes,
+            service.id,
+            loaded.value.priceClp,
+            CUSTOMER_SLOT_LIMIT,
           );
-          for (const c of all) {
-            if (flashForSlot(flashes, c, service.id)) picked.set(c.start, c);
-          }
-          const price = loaded.value.priceClp;
-          let hasFlash = false;
-          const slots = [...picked.values()]
-            .sort((a, b) => a.start - b.start)
-            .map((c) => {
-              const s = toAvailableSlot(c, loaded.value.snapshot);
-              const flash = flashForSlot(flashes, c, service.id);
-              // Instanten är själva id:t (unikt inom den här dagens lista):
-              // samma sträng skickas rakt igenom som `createBooking`s `start`.
-              if (!flash)
-                return { id: s.start, start: s.start, priceClp: price };
-              hasFlash = true;
-              return {
-                id: s.start,
-                start: s.start,
-                priceClp: flashPrice(price, flash.discountPct),
-                originalPriceClp: price,
-                discountPct: flash.discountPct,
-              };
-            });
-          days.push({ date, state: "open", hasFlash, slots });
+          days.push({
+            date,
+            state: "open",
+            hasFlash,
+            slots,
+            ...(hasMore ? { hasMore: true } : {}),
+          });
         }
         byStaff[staffChoice] = days;
       }
@@ -551,4 +540,88 @@ export async function loadReservaPageData(
       },
     },
   };
+}
+
+/**
+ * En dags tider för kunden (WP-97, D-081). Med `limit` gallras de till
+ * `limit` (R8) och flashtiderna läggs till efteråt (gallras aldrig bort);
+ * `hasMore` = dagen har fler lediga tider än de som visas. Utan `limit`
+ * kommer alla ("Ver todas las horas").
+ */
+export function customerDaySlots(
+  dayInput: DayInput,
+  flashes: readonly PublicFlashSlot[],
+  serviceId: string,
+  priceClp: number,
+  limit?: number,
+): { slots: BookingSlot[]; hasFlash: boolean; hasMore: boolean } {
+  const all = allSlotsForDay(dayInput);
+  const picked = new Map<number, Candidate>(
+    (limit === undefined ? all : pickSlots(all, limit)).map((c) => [
+      c.start,
+      c,
+    ]),
+  );
+  for (const c of all) {
+    if (flashForSlot(flashes, c, serviceId)) picked.set(c.start, c);
+  }
+  let hasFlash = false;
+  const slots = [...picked.values()]
+    .sort((a, b) => a.start - b.start)
+    .map((c): BookingSlot => {
+      const s = toAvailableSlot(c, dayInput.snapshot);
+      const flash = flashForSlot(flashes, c, serviceId);
+      // Instanten är själva id:t (unikt inom den här dagens lista):
+      // samma sträng skickas rakt igenom som `createBooking`s `start`.
+      if (!flash) return { id: s.start, start: s.start, priceClp };
+      hasFlash = true;
+      return {
+        id: s.start,
+        start: s.start,
+        priceClp: flashPrice(priceClp, flash.discountPct),
+        originalPriceClp: priceClp,
+        discountPct: flash.discountPct,
+      };
+    });
+  return { slots, hasFlash, hasMore: all.length > slots.length };
+}
+
+/**
+ * WP-97 (D-081): alla kundens tider för en dag, för knappen "Ver todas las
+ * horas". Samma regler som sidans 12 (kundvy: förvarning, horisont, bara
+ * aktiva tjänster och personal), men ingen gallring. Bara dagar inom sidans
+ * fönster (`RANGE_DAYS`). Ogiltig indata eller en dag utan tider ger `[]`.
+ */
+export async function loadAllDaySlotsIn(
+  q: Queryable,
+  params: { businessId: string; request: unknown; now: Date },
+): Promise<BookingSlot[]> {
+  const p = availableSlotsRequestSchema.safeParse(params.request);
+  if (!p.success) return [];
+  const { serviceId, staffId, date } = p.data;
+  const from = toLocalDate(params.now, APP_TZ);
+  if (date < from || date > addLocalDays(from, RANGE_DAYS - 1)) return [];
+
+  const loaded = await loadSnapshot(q, {
+    businessId: params.businessId,
+    serviceId,
+    range: { from: date, to: date },
+  });
+  if (!loaded.ok || !loaded.value.businessActive) return [];
+  if (!staffOffersService(loaded.value, staffId)) return [];
+
+  const dayInput: DayInput = {
+    snapshot: loaded.value.snapshot,
+    date,
+    staff: staffId,
+    audience: "customer",
+    now: params.now,
+  };
+  const flashes = await loadActiveFlashSlotsIn(
+    q,
+    params.businessId,
+    params.now,
+  );
+  return customerDaySlots(dayInput, flashes, serviceId, loaded.value.priceClp)
+    .slots;
 }

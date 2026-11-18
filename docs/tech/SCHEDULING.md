@@ -15,7 +15,7 @@ slots    = starttider i varje fritt fönster där start + behov ≤ fönstrets s
 
 **Rutnät:**
 - Starttider läggs på `slot_interval_minutes` (default 15) räknat från fönstrets start, så att tider linjerar ("10:00, 10:15 …").
-- Visa inte fler än ca 12 tider per dag på kundsidan. Välj jämnt fördelade och föredra tider som inte lämnar luckor kortare än företagets kortaste tjänst ("tight packing").
+- Visa inte fler än ca 12 tider per dag på kundsidan. Välj jämnt fördelade och föredra tider som inte lämnar luckor kortare än företagets kortaste tjänst ("tight packing"). Har dagen fler tider visas knappen "Ver todas las horas", som hämtar alla dagens tider grupperade i mañana/tarde/noche (WP-97, D-081).
 
 **"Cualquiera":** unionen av alla profesionales som utför tjänsten. Vid bokning tilldelas den med minst bokningar den dagen (tiebreak: sort, sedan id).
 
@@ -47,7 +47,7 @@ Varje funktion tar två argument, `(request, ctx)`:
   En ogiltig kontext är ett programmeringsfel och kastar `TypeError`.
 - Allt annat härleds på servern:
   - `audience` följer aktören: kund ger kundvy, ägare ger ägarvy.
-  - Kunden får alltid högst 12 tider, och ägaren alla.
+  - Kunden får högst 12 tider i sidans data, och ägaren alla. "Ver todas las horas" (`loadDaySlots`, D-081) ger kunden alla tider för en enskild dag.
   - `source` är `web` för kund och `manual` för ägare. Servern kan sätta `ctx.source = "waitlist"` (WP-23).
   - `cancelBooking` har inget `by`; det följer aktören.
 

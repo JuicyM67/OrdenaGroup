@@ -11,13 +11,16 @@ import type {
   CustomerFormOutput,
   WaitlistFormOutput,
 } from "@/components/booking/form-schema";
-import type { BookingActionResult } from "@/components/booking/types";
+import type {
+  BookingActionResult,
+  BookingSlot,
+} from "@/components/booking/types";
 import { EmbeddedBookingFrame } from "@/components/widgets/embedded-booking-frame";
 import {
   parseWidgetParams,
   WIDGET_SLUG_PATTERN,
 } from "@/lib/validation/widgets";
-import { createBooking, joinWaitlist } from "@/app/[slug]/actions";
+import { createBooking, joinWaitlist, loadDaySlots } from "@/app/[slug]/actions";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { loadReservaPageData } from "@/server/bookings/page-data";
 import { withServiceTx } from "@/server/db/tx";
@@ -62,6 +65,11 @@ export default async function EmbedReservaPage({
     "use server";
     return joinWaitlist(slug, input);
   }
+  // WP-97 (D-081): "Ver todas las horas", samma bindning av `slug`.
+  async function loadAllSlots(input: unknown): Promise<BookingSlot[] | null> {
+    "use server";
+    return loadDaySlots(slug, input);
+  }
 
   return (
     <EmbeddedBookingFrame theme={theme} dialog={dialog}>
@@ -69,6 +77,7 @@ export default async function EmbedReservaPage({
         data={data}
         submitBooking={submitBooking}
         joinWaitlist={submitWaitlist}
+        loadAllSlots={loadAllSlots}
         embedded={dialog ? "dialog" : "inline"}
       />
     </EmbeddedBookingFrame>

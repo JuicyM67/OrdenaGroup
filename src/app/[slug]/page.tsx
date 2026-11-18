@@ -15,7 +15,10 @@ import type {
   CustomerFormOutput,
   WaitlistFormOutput,
 } from "@/components/booking/form-schema";
-import type { BookingActionResult } from "@/components/booking/types";
+import type {
+  BookingActionResult,
+  BookingSlot,
+} from "@/components/booking/types";
 import { brand } from "@/config/brand";
 import { href } from "@/config/routes";
 import { planes, regalo, reserva } from "@/i18n";
@@ -46,7 +49,7 @@ import { withServiceTx } from "@/server/db/tx";
 import { businessShowsGiftCards } from "@/server/gift-cards";
 import { systemClock } from "@/server/scheduling/clock";
 
-import { createBooking, joinWaitlist } from "./actions";
+import { createBooking, joinWaitlist, loadDaySlots } from "./actions";
 
 // VERCEL_ENV/databasen måste läsas per request (samma skäl som tidigare:
 // design-lab/layout.tsx), och tillgängligheten ändras minut för minut.
@@ -215,6 +218,11 @@ export default async function ReservaPage({
     "use server";
     return joinWaitlist(slug, input);
   }
+  // WP-97 (D-081): "Ver todas las horas", samma bindning av `slug`.
+  async function loadAllSlots(input: unknown): Promise<BookingSlot[] | null> {
+    "use server";
+    return loadDaySlots(slug, input);
+  }
 
   // WP-51/D-032: ikonerna renderas här på servern och skickas in som färdigt
   // innehåll, så de kostar ingen JS i bokningsflödets klientbunt.
@@ -298,6 +306,7 @@ export default async function ReservaPage({
         initialSelection={initialSelection}
         submitBooking={submitBooking}
         joinWaitlist={submitWaitlist}
+        loadAllSlots={loadAllSlots}
         initialMobileTab={reviews && reviewsExpanded ? "resenas" : undefined}
         initialContact={
           account
