@@ -20,7 +20,11 @@ import {
   parseWidgetParams,
   WIDGET_SLUG_PATTERN,
 } from "@/lib/validation/widgets";
-import { createBooking, joinWaitlist, loadDaySlots } from "@/app/[slug]/actions";
+import {
+  createBooking,
+  joinWaitlist,
+  loadDaySlots,
+} from "@/app/[slug]/actions";
 import { resolveBusinessBySlug } from "@/server/bookings/business";
 import { loadReservaPageData } from "@/server/bookings/page-data";
 import { withServiceTx } from "@/server/db/tx";
