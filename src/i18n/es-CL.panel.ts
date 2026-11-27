@@ -42,6 +42,8 @@ export const nav = {
   /** WP-47: aria-label del menú desplegable de la cuenta (UserPill/avatar
    * móvil), no un texto visible. */
   menuUsuario: (p: { nombre: string }): string => `Menú de ${p.nombre}`,
+  /** WP-98 (D-082): título de la lista de negocios en el menú (cuenta con varios). */
+  tusNegocios: "Tus negocios",
 } as const satisfies Trad;
 
 // ---------------------------------------------------------------------------
@@ -1009,7 +1011,7 @@ export const email = {
     preheader: "Acepta la invitación y arma tu agenda en minutos.",
     titulo: "Tienes una invitación",
     texto: (p: { negocio: string }): string =>
-      `Te invitamos a crear la agenda de ${p.negocio}. Haz clic en el botón para aceptarla y empezar.`,
+      `Te invitamos a crear la agenda de ${p.negocio}. Haz clic en el botón para aceptarla y empezar. Si ya tienes cuenta, entra con este mismo correo: el negocio aparece junto a los que ya tienes.`,
     cta: "Aceptar invitación",
   },
   /** WP-91 (D-077): aviso a cada dueño si la plataforma deja de funcionar

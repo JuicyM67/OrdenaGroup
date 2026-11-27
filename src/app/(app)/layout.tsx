@@ -6,15 +6,24 @@
 // (samma regel som design-lab/layout.tsx).
 //
 // WP-90 (D-076): en plattformsadmin i modo soporte får en banderoll med "Salir".
+// WP-98 (D-082): ett konto med flera företag får en väljare i profilmenyn.
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { SupportBanner } from "@/components/admin/support-banner";
+import {
+  BusinessSwitcherProvider,
+  type SwitcherBusiness,
+} from "@/components/shared/business-switcher-context";
 import { PlatformAdminProvider } from "@/components/shared/platform-admin-context";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isPlatformAdmin } from "@/server/admin/auth";
-import { getCurrentMember } from "@/server/onboarding/owner-business";
+import {
+  getCurrentMember,
+  listMyBusinesses,
+} from "@/server/onboarding/owner-business";
 
+import { switchBusinessAction } from "./business-actions";
 import { endSupportAction } from "./support-actions";
 
 export const dynamic = "force-dynamic";
@@ -27,11 +36,25 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
   if (!user) redirect("/login");
   // Länken "Panel de admin" i profilmenyn (bara för plattformsadmins).
   const isAdmin = await isPlatformAdmin(user.id).catch(() => false);
-  // Bara en plattformsadmin kan ha en supportrad; övriga slipper frågan.
-  const current = isAdmin ? await getCurrentMember(user.id) : null;
+  const mine = await listMyBusinesses(user.id).catch(() => []);
+  // Bara en plattformsadmin kan ha en supportrad, och bara den som har flera
+  // företag behöver veta vilket som är aktivt; övriga slipper frågan.
+  const current =
+    isAdmin || mine.length > 1 ? await getCurrentMember(user.id) : null;
+  const switcher: SwitcherBusiness[] =
+    mine.length > 1
+      ? mine.map((b) => ({
+          id: b.id,
+          name: b.name,
+          active: !current?.support && current?.business.id === b.id,
+          select: switchBusinessAction.bind(null, b.id),
+        }))
+      : [];
   return (
     <PlatformAdminProvider isAdmin={isAdmin}>
-      {children}
+      <BusinessSwitcherProvider businesses={switcher}>
+        {children}
+      </BusinessSwitcherProvider>
       {current?.support ? (
         <SupportBanner
           businessName={current.business.name}

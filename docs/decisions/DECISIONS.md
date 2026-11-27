@@ -4,6 +4,32 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-083 · 2026-11-27 · Ägaren bekräftar företagets position på kartan (WP-98c)
+**Beslut:** ägaren (2026-11-27), efter en salong i La Florida vars karta och "Ver ruta" visade fel plats: i Ajustes → Tu negocio → "Ubicación en el mapa" kan ägaren dra nålen (eller trycka på kartan) och "Confirmar ubicación". Vägbeskrivningen ("Ver ruta", Apple Maps) går till adresstexten, och till koordinaten bara när ägaren har bekräftat den (WP-98a).
+
+**Varför:** OSM/Nominatim (D-055) saknar husnummer på många gator i Chile. "Santa Amalia 582, La Florida" blev mitten av ett annat segment av en flera km lång gata, och vägbeskrivningen ledde kunden dit. Google/Apple har husnummer, men Googles geokodning kostar och får inte visas på en OSM-karta.
+
+**Konsekvens:**
+- Bekräftad position: `lat/lng` + `geocode_status = 'manual'` (fanns redan i check-villkoret). Svepet tar bara `pending`. Ändrad adress eller kommun ⇒ `pending` igen (befintlig trigger), och ägaren uppmanas bekräfta igen.
+- Behörighet `can_edit_settings` kontrolleras i ägarens transaktion. Skrivningen görs av servern (service role), eftersom `authenticated` saknar grant på lat/lng (D-055). Bara punkter inom Chiles ungefärliga gränser accepteras.
+- `area_name/area_slug` ändras inte av en manuell position (en adress som OSM inte hittade alls har därför ingen ort i Descubre). Ingen migration.
+
+---
+
+### D-082 · 2026-11-27 · Ett konto kan ha flera företag (WP-98)
+**Beslut:** ägaren (2026-11-27): en ägare med flera lokaler har ett enda konto och väljer salong i profilmenyn ("Tus negocios"). Varje salong är fortfarande ett eget företag med egen kalender, personal, kunder och **egen plan och betalning (per lokal, D-009)**. Ingen samlad vy över alla salonger, bara byte mellan dem. Under betan lägger bara en plattformsadmin till en salong till: "Nuevo negocio" i /admin med ägarens befintliga e-post (WP-93-inbjudan). Efter betan ska registreringen fråga om man har en eller flera lokaler och säga att man betalar per lokal (inte byggt än).
+
+**Varför:** datamodellen tillät redan flera `memberships` per konto (`primary key (business_id, user_id)`) och all behörighet är per företag, men `getCurrentMember` valde alltid det äldsta ägarskapet och en väntande inbjudan accepterades bara av konton utan företag. Ett konto per salong betydde flera inloggningar för samma person.
+
+**Konsekvens:**
+- Cookien `active_business` (httpOnly, sätts bara av servern) är bara en önskan: `getCurrentMember` kräver fortfarande kontots eget medlemskap. Ordning: aktivt supportmedlemskap (D-076) → eget utkast från en inbjudan (ska sättas upp först) → valt företag → ägarskap före personal → äldst.
+- `/app` accepterar alltid en väntande admin-inbjudan till kontots bekräftade e-post (inte bara för konton utan företag). Det nya utkastet går till onboarding och blir aktivt när onboardingen är klar.
+- Väljaren visas bara för konton med fler än ett företag (även personal som jobbar i två salonger). Supportrader räknas inte.
+- Inbjudningsmejlet säger att den som redan har konto loggar in med samma e-post.
+- Ingen migration.
+
+---
+
 ### D-081 · 2026-11-18 · Kunden kan se alla dagens tider: "Ver todas las horas" (WP-97)
 **Beslut:** ägaren (2026-11-18), efter salongens pilottest: kundsidan visar fortfarande högst 12 tider per dag först (R8), men under dem finns knappen **"Ver todas las horas"** när dagen har fler lediga tider. Knappen hämtar alla tider för den tjänsten, profesionalen och dagen, grupperade i Mañana (före 12), Tarde (12–17) och Noche (från 18).
 
