@@ -4,6 +4,20 @@ Nya beslut läggs till överst. Format: datum, beslut, varför, konsekvens. Änd
 
 ---
 
+### D-082 · 2026-11-27 · Ett konto kan ha flera företag (WP-98)
+**Beslut:** ägaren (2026-11-27): en ägare med flera lokaler har ett enda konto och väljer salong i profilmenyn ("Tus negocios"). Varje salong är fortfarande ett eget företag med egen kalender, personal, kunder och **egen plan och betalning (per lokal, D-009)**. Ingen samlad vy över alla salonger, bara byte mellan dem. Under betan lägger bara en plattformsadmin till en salong till: "Nuevo negocio" i /admin med ägarens befintliga e-post (WP-93-inbjudan). Efter betan ska registreringen fråga om man har en eller flera lokaler och säga att man betalar per lokal (inte byggt än).
+
+**Varför:** datamodellen tillät redan flera `memberships` per konto (`primary key (business_id, user_id)`) och all behörighet är per företag, men `getCurrentMember` valde alltid det äldsta ägarskapet och en väntande inbjudan accepterades bara av konton utan företag. Ett konto per salong betydde flera inloggningar för samma person.
+
+**Konsekvens:**
+- Cookien `active_business` (httpOnly, sätts bara av servern) är bara en önskan: `getCurrentMember` kräver fortfarande kontots eget medlemskap. Ordning: aktivt supportmedlemskap (D-076) → eget utkast från en inbjudan (ska sättas upp först) → valt företag → ägarskap före personal → äldst.
+- `/app` accepterar alltid en väntande admin-inbjudan till kontots bekräftade e-post (inte bara för konton utan företag). Det nya utkastet går till onboarding och blir aktivt när onboardingen är klar.
+- Väljaren visas bara för konton med fler än ett företag (även personal som jobbar i två salonger). Supportrader räknas inte.
+- Inbjudningsmejlet säger att den som redan har konto loggar in med samma e-post.
+- Ingen migration.
+
+---
+
 ### D-081 · 2026-11-18 · Kunden kan se alla dagens tider: "Ver todas las horas" (WP-97)
 **Beslut:** ägaren (2026-11-18), efter salongens pilottest: kundsidan visar fortfarande högst 12 tider per dag först (R8), men under dem finns knappen **"Ver todas las horas"** när dagen har fler lediga tider. Knappen hämtar alla tider för den tjänsten, profesionalen och dagen, grupperade i Mañana (före 12), Tarde (12–17) och Noche (från 18).
 

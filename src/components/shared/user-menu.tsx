@@ -10,10 +10,12 @@
 // direkt, samma motiv som main-nav.tsx (undviker `roleIcons`-indexering med
 // `noUncheckedIndexedAccess`).
 import {
+  Check,
   ExternalLink,
   LogOut,
   ShieldCheck,
   SlidersHorizontal,
+  Store,
   UserRound,
 } from "lucide-react";
 import { useState } from "react";
@@ -30,6 +32,7 @@ import {
   type MyProfileActions,
   type MyProfileData,
 } from "./my-profile-dialog";
+import { useMyBusinesses } from "./business-switcher-context";
 import { useIsPlatformAdmin } from "./platform-admin-context";
 
 /** TODO_COPY (copywriter-es-cl): ingen sträng ännu för menyposten — samma
@@ -68,6 +71,8 @@ export function UserMenu({
 }: UserMenuProps) {
   const [profileDialogOpen, setProfileDialogOpen] = useState(false);
   const isPlatformAdmin = useIsPlatformAdmin();
+  // WP-98 (D-082): bara när kontot har flera företag.
+  const businesses = useMyBusinesses();
   const trigger =
     variant === "pill" ? (
       <UserPill
@@ -89,6 +94,39 @@ export function UserMenu({
   return (
     <>
       <Menu trigger={trigger} label={nav.menuUsuario({ nombre: name })}>
+        {businesses.length > 1 ? (
+          <>
+            <p className="px-3 pt-1.5 pb-0.5 text-12 font-semibold text-muted">
+              {nav.tusNegocios}
+            </p>
+            {businesses.map((b) =>
+              b.active ? (
+                <p
+                  key={b.id}
+                  aria-current="true"
+                  className="flex h-11 items-center gap-2.5 px-3 text-14 font-semibold text-ink"
+                >
+                  <Check
+                    aria-hidden="true"
+                    className="size-4 shrink-0 text-ink"
+                    strokeWidth={strokeCard}
+                  />
+                  <span className="truncate">{b.name}</span>
+                </p>
+              ) : (
+                <MenuFormItem key={b.id} action={b.select}>
+                  <Store
+                    aria-hidden="true"
+                    className={ICON_CLASS}
+                    strokeWidth={strokeCard}
+                  />
+                  <span className="truncate">{b.name}</span>
+                </MenuFormItem>
+              ),
+            )}
+            <hr className="my-1 border-border" />
+          </>
+        ) : null}
         {myProfile && myProfileActions ? (
           <MenuButtonItem onClick={() => setProfileDialogOpen(true)}>
             <UserRound

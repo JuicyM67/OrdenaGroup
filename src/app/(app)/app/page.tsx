@@ -97,10 +97,11 @@ export default async function AppIndexPage() {
     redirect(appHref("appSolicitud", pendingSolicitud));
   }
 
-  let current = await getCurrentMember(user.id);
-  if (!current && (await acceptPendingInvitation(user.id))) {
-    current = await getCurrentMember(user.id);
-  }
+  // WP-98 (D-082): även ett konto som redan har företag tar emot en väntande
+  // inbjudan (ägare med flera lokaler). Det nya utkastet väljs sedan av
+  // `getCurrentMember` och går till onboarding.
+  await acceptPendingInvitation(user.id);
+  const current = await getCurrentMember(user.id);
   const business = current?.business ?? null;
   // En plattformsadmin utan eget företag (inbjuden via /admin/administradores)
   // ska till adminpanelen, inte till onboarding.
