@@ -131,27 +131,40 @@ export function hoursRows(
   return rows;
 }
 
+/** Adressen som skickas till Google/Apple Maps: med landet, så att en kommun
+ * som "La Florida" inte tolkas som en ort i ett annat land. */
+function mapsQuery(address: string): string {
+  return /chile\s*$/i.test(address) ? address : `${address}, Chile`;
+}
+
 /** `https://www.google.com/maps/search/?api=1&query=<adress>` (plan WP-41: ingen
  * inbäddad karta i v1). */
 export function mapsUrl(address: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery(address))}`;
 }
 
-/** WP-81: vägbeskrivning till företaget (Google Maps väljer färdsätt själv). */
+/** WP-81: vägbeskrivning till företaget (Google Maps väljer färdsätt själv).
+ * WP-98a: alltid på adressen — Google/Apple har husnummer i Chile, vår
+ * geokodning (OSM) ofta bara gatan. `exactGeo` skickas bara för en position
+ * som ägaren själv har bekräftat. */
 export function directionsUrl(
   address: string,
-  geo?: { lat: number; lng: number } | null,
+  exactGeo?: { lat: number; lng: number } | null,
 ): string {
-  const dest = geo ? `${geo.lat},${geo.lng}` : address;
+  const dest = exactGeo
+    ? `${exactGeo.lat},${exactGeo.lng}`
+    : mapsQuery(address);
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
 }
 
 /** WP-81: samma vägbeskrivning i Apple Maps. */
 export function appleMapsUrl(
   address: string,
-  geo?: { lat: number; lng: number } | null,
+  exactGeo?: { lat: number; lng: number } | null,
 ): string {
-  const dest = geo ? `${geo.lat},${geo.lng}` : address;
+  const dest = exactGeo
+    ? `${exactGeo.lat},${exactGeo.lng}`
+    : mapsQuery(address);
   return `https://maps.apple.com/?daddr=${encodeURIComponent(dest)}`;
 }
 
