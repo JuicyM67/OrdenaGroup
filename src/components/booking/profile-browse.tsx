@@ -91,7 +91,11 @@ export function ProfileBrowse({
   const infoPanel = (
     <div className="flex flex-col gap-3.5">
       <HoursCard profile={profile} />
-      <MapCard address={profile.address} geo={profile.geo} />
+      <MapCard
+        address={profile.address}
+        geo={profile.geo}
+        geoConfirmed={profile.geoConfirmed}
+      />
       <ContactCard
         phone={profile.phone}
         hasSocial={hasSocial}
@@ -193,7 +197,11 @@ export function ProfileBrowse({
               services={data.services}
             />
             <HoursCard profile={profile} />
-            <MapCard address={profile.address} geo={profile.geo} />
+            <MapCard
+              address={profile.address}
+              geo={profile.geo}
+              geoConfirmed={profile.geoConfirmed}
+            />
             <ContactCard
               phone={profile.phone}
               hasSocial={hasSocial}

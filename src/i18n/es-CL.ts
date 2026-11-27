@@ -685,6 +685,7 @@ export {
   horarios,
   ajustes,
   descubreAjustes,
+  ubicacionAjustes,
   clientes,
   campanas,
   CAJA_METODOS_MANUALES,
