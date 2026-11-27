@@ -133,7 +133,7 @@ function MapPreview({
         strokeWidth={1.5}
       />
       <a
-        href={directionsUrl(address, geo)}
+        href={directionsUrl(address)}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={perfil.publico.mapaTitulo({ direccion: address })}
@@ -178,7 +178,7 @@ export function MapCard({
       </a>
       <div className="flex flex-wrap items-center gap-3">
         <a
-          href={directionsUrl(address, geo)}
+          href={directionsUrl(address)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex h-10 items-center rounded-full bg-ink px-4 text-13 font-bold text-on-dark hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
@@ -186,7 +186,7 @@ export function MapCard({
           {perfil.publico.indicaciones}
         </a>
         <a
-          href={appleMapsUrl(address, geo)}
+          href={appleMapsUrl(address)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex h-10 items-center rounded-full border border-border bg-surface px-4 text-13 font-bold text-ink hover:bg-field focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
