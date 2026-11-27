@@ -126,6 +126,8 @@ type BusinessRow = {
   /** WP-81: geokodad position (D-055) för kartan under "Cómo llegar". */
   lat: string | null;
   lng: string | null;
+  /** WP-98c (D-083): 'manual' = ägaren har bekräftat positionen på kartan. */
+  geocode_status: string;
   phone: string | null;
   /** WP-45 (D-033): av → CTA:n/bekräftelsen visar "Enviar solicitud" i
    * stället för "Confirmar reserva" (ui-engineer, se createBooking i
@@ -260,7 +262,7 @@ export async function loadReservaPageData(
   const bizRes = await q.query<BusinessRow>(
     `select name, comuna, category, status::text as status, cancel_window_hours,
             about, cover_url, logo_url, instagram, tiktok, facebook, address,
-            lat::text as lat, lng::text as lng, phone,
+            lat::text as lat, lng::text as lng, geocode_status, phone,
             auto_confirm_bookings, plan::text as plan
        from public.businesses where id = $1`,
     [businessId],
@@ -288,6 +290,7 @@ export async function loadReservaPageData(
       biz.lat !== null && biz.lng !== null
         ? { lat: Number(biz.lat), lng: Number(biz.lng) }
         : null,
+    geoConfirmed: biz.geocode_status === "manual",
     phone: biz.phone,
     gallery,
     hours: hours.rows as readonly BookingProfileHours[],

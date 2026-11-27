@@ -94,9 +94,12 @@ export function HoursCard({ profile }: { profile: BookingProfile }) {
 function MapPreview({
   address,
   geo,
+  exact,
 }: {
   address: string;
   geo: { lat: number; lng: number };
+  /** WP-98c (D-083): ägaren har bekräftat positionen. */
+  exact: boolean;
 }) {
   const map = osmTileMap(geo);
   return (
@@ -133,7 +136,7 @@ function MapPreview({
         strokeWidth={1.5}
       />
       <a
-        href={directionsUrl(address)}
+        href={directionsUrl(address, exact ? geo : null)}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={perfil.publico.mapaTitulo({ direccion: address })}
@@ -157,17 +160,23 @@ function MapPreview({
 export function MapCard({
   address,
   geo,
+  geoConfirmed = false,
 }: {
   address: string | null;
   geo?: { lat: number; lng: number } | null;
+  /** WP-98c (D-083): positionen är bekräftad av ägaren. */
+  geoConfirmed?: boolean;
 }) {
   if (!address) return null;
+  const exactGeo = geoConfirmed ? geo : null;
   return (
     <Card radius="tile" padding="lg" className="flex flex-col gap-3">
       <p className="text-15 font-bold text-ink">
         {perfil.publico.secciones.comoLlegar}
       </p>
-      {geo ? <MapPreview address={address} geo={geo} /> : null}
+      {geo ? (
+        <MapPreview address={address} geo={geo} exact={geoConfirmed} />
+      ) : null}
       <a
         href={mapsUrl(address)}
         target="_blank"
@@ -178,7 +187,7 @@ export function MapCard({
       </a>
       <div className="flex flex-wrap items-center gap-3">
         <a
-          href={directionsUrl(address)}
+          href={directionsUrl(address, exactGeo)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex h-10 items-center rounded-full bg-ink px-4 text-13 font-bold text-on-dark hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
@@ -186,7 +195,7 @@ export function MapCard({
           {perfil.publico.indicaciones}
         </a>
         <a
-          href={appleMapsUrl(address)}
+          href={appleMapsUrl(address, exactGeo)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex h-10 items-center rounded-full border border-border bg-surface px-4 text-13 font-bold text-ink hover:bg-field focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"

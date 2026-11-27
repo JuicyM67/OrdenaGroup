@@ -2010,6 +2010,33 @@ export const horarios = {
 } as const satisfies Trad;
 
 // WP-85 (D-070): Ajustes → Tu negocio → "Descubre".
+/** WP-98c (D-083): Ajustes → Tu negocio → "Ubicación en el mapa". El dueño
+ * confirma o mueve el punto; la geocodificación automática (OSM) a veces solo
+ * encuentra la calle, no el número. */
+export const ubicacionAjustes = {
+  titulo: "Ubicación en el mapa",
+  intro:
+    "Es el punto que ven tus clientes en tu página y en Descubre. Si no está justo en tu local, arrástralo o toca el mapa donde corresponde.",
+  estado: {
+    manual: "Confirmaste esta ubicación.",
+    ok: "Ubicamos tu dirección automáticamente. Revisa que el punto esté en tu local.",
+    pending:
+      "Estamos ubicando tu dirección. Mientras tanto, puedes marcarla tú.",
+    not_found:
+      "No encontramos tu dirección en el mapa. Marca tu local tocando el mapa.",
+  },
+  sinDireccion:
+    "Agrega la dirección de tu local más arriba para poder marcarla en el mapa.",
+  guardar: "Confirmar ubicación",
+  cargando: "Cargando mapa…",
+  errorMapa: "No pudimos cargar el mapa. Inténtalo de nuevo más tarde.",
+  marcador: "Ubicación de tu local",
+  errores: {
+    invalid: "Ese punto queda fuera de Chile. Muévelo hasta tu local.",
+    no_address: "Primero guarda la dirección de tu local.",
+  },
+} as const;
+
 export const descubreAjustes = {
   titulo: "Descubre",
   intro:

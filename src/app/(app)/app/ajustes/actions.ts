@@ -31,6 +31,7 @@ import {
 } from "@/server/owner/requests";
 import { setReviewRequestsEnabled } from "@/server/reviews/owner";
 import { updateDescubreSettings } from "@/server/owner/descubre";
+import { saveBusinessLocation } from "@/server/owner/location";
 
 async function currentOwner(): Promise<
   { userId: string; businessId: string } | { ok: false; code: "unauthorized" }
@@ -62,6 +63,15 @@ export async function updateBusinessSettingsAction(
   const owner = await currentOwner();
   if ("ok" in owner) return owner;
   return updateBusinessSettings(owner.userId, owner.businessId, input);
+}
+
+/** WP-98c (D-083): Ajustes → Tu negocio → "Ubicación en el mapa". */
+export async function saveBusinessLocationAction(
+  input: unknown,
+): Promise<MutationResult> {
+  const owner = await currentOwner();
+  if ("ok" in owner) return owner;
+  return saveBusinessLocation(owner.userId, owner.businessId, input);
 }
 
 /** WP-85 (D-070): Ajustes → Tu negocio → "Descubre". */

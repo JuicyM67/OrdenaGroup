@@ -142,6 +142,9 @@ export interface BookingProfile {
   /** WP-81: geokodad position (D-055) — kartan under "Cómo llegar". Frivillig
    * (saknas/`null` = ingen karta, bara adress och vägbeskrivning). */
   readonly geo?: { readonly lat: number; readonly lng: number } | null;
+  /** WP-98c (D-083): ägaren har bekräftat `geo` på kartan — då leder
+   * vägbeskrivningen till koordinaten i stället för adressen. */
+  readonly geoConfirmed?: boolean;
   /** E.164. */
   readonly phone: string | null;
   /** Galleriets publika URL:er i ägarens ordning (max 12). */

@@ -16,6 +16,7 @@ import {
   planes,
   profesionales,
   servicios,
+  ubicacionAjustes,
   validacion,
 } from "@/i18n";
 import type { PhoneError } from "@/lib/format/phone";
@@ -48,6 +49,9 @@ const KNOWN: Record<string, string> = {
   "business.address_empty": validacion.requerido,
   "business.service_areas_max": negocio.campos.zonasMax({ max: 30 }),
   "descubre.too_many_categories": descubreAjustes.extrasAyuda({ max: 6 }),
+  // WP-98c (D-083): ubicación confirmada en el mapa.
+  "location.invalid": ubicacionAjustes.errores.invalid,
+  "location.no_address": ubicacionAjustes.errores.no_address,
   "business.min_notice_invalid": comun.algoSalioMal,
   "business.max_days_ahead_invalid": comun.algoSalioMal,
   "business.cancel_window_invalid": comun.algoSalioMal,

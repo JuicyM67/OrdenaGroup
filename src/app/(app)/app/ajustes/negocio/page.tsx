@@ -9,6 +9,7 @@ import { AjustesShell } from "@/components/settings/ajustes-shell";
 import { BusinessSection } from "@/components/settings/business-section";
 import { ImportSection } from "@/components/settings/import-section";
 import { DescubreSection } from "@/components/settings/descubre-section";
+import { LocationSection } from "@/components/settings/location-section";
 import { marketplaceEnabled } from "@/config/marketplace";
 import { nav } from "@/i18n";
 import { platformNames } from "@/server/import/platforms";
@@ -16,6 +17,7 @@ import { isImportEnabled, isImportPaused } from "@/server/import/runs";
 import { loadAjustesBusiness } from "@/server/owner/ajustes";
 import { loadPlanUsage } from "@/server/plans/entitlements";
 import { loadDescubreSettings } from "@/server/owner/descubre";
+import { loadBusinessLocation } from "@/server/owner/location";
 
 import { requireAjustesTab } from "../access";
 import { applyImportAction } from "../import-actions";
@@ -24,6 +26,7 @@ import {
   confirmRequestAction,
   declineCancelRequestAction,
   declineRequestAction,
+  saveBusinessLocationAction,
   updateBusinessSettingsAction,
   updateDescubreSettingsAction,
 } from "../actions";
@@ -46,6 +49,11 @@ export default async function AjustesNegocioPage() {
   const descubreSettings = marketplaceEnabled()
     ? await loadDescubreSettings(ctx.userId, ctx.current.business.id)
     : null;
+  // WP-98c (D-083): bekräfta positionen på kartan.
+  const location = await loadBusinessLocation(
+    ctx.userId,
+    ctx.current.business.id,
+  );
   const showImport =
     ctx.current.member.role === "owner" &&
     isImportEnabled() &&
@@ -87,6 +95,10 @@ export default async function AjustesNegocioPage() {
         <BusinessSection
           business={business}
           action={updateBusinessSettingsAction}
+        />
+        <LocationSection
+          location={location}
+          action={saveBusinessLocationAction}
         />
         {descubreSettings ? (
           <DescubreSection
