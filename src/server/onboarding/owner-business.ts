@@ -163,6 +163,25 @@ export async function isMyBusiness(
   });
 }
 
+/** WP-98 (D-082): sant om företaget är kontots eget utkast från en
+ * admin-inbjudan (ägare, onboarding inte klar) — `/app/activar/[id]`. */
+export async function isMyDraftBusiness(
+  userId: string,
+  businessId: string,
+): Promise<boolean> {
+  if (!UUID_RE.test(businessId)) return false;
+  return withOwnerTx(userId, async (q) => {
+    const r = await q.query(
+      `select 1 from public.memberships m
+         join public.businesses b on b.id = m.business_id
+        where m.user_id = $1 and m.business_id = $2 and m.role = 'owner'
+          and m.support_until is null and b.comuna = '' and b.category = ''`,
+      [userId, businessId],
+    );
+    return r.rows.length > 0;
+  });
+}
+
 /** Bakåtkompatibelt: bara företaget (vilken roll som helst). */
 export async function getOwnerBusiness(
   userId: string,

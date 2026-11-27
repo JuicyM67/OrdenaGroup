@@ -5,10 +5,7 @@
 // räcker en vanlig "use server"-export: det finns inget "fritt" värde som slug att binda,
 // completeOnboarding() hämtar alltid en färsk, verifierad userId).
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import {
-  getCurrentMember,
-  setActiveBusinessCookie,
-} from "@/server/onboarding/owner-business";
+import { getCurrentMember } from "@/server/onboarding/owner-business";
 import {
   completeOnboarding,
   type OnboardingResult,
@@ -32,10 +29,11 @@ export async function submitOnboarding(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, code: "unauthorized" };
-  const result = await completeOnboarding(user.id, input);
-  // WP-98 (D-082): företaget som just sattes upp blir det aktiva.
-  if (result.ok) await setActiveBusinessCookie(result.businessId);
-  return result;
+  // WP-98 (D-082): ingen cookie här — en cookie som sätts i en server action
+  // renderar om onboardingsidan, som då skickar till Inicio mitt i flödet.
+  // Det nya företaget görs aktivt redan när inbjudan accepteras
+  // (`/app/activar/[id]`).
+  return completeOnboarding(user.id, input);
 }
 
 // ---------------------------------------------------------------------------
