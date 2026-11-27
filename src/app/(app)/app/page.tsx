@@ -84,7 +84,8 @@ export default async function AppIndexPage() {
     // Route Handler kan det). Ligger kvar tills den går ut av sig själv (20
     // min) — ett omförsök inom fönstret ger bara "used_or_expired"
     // (idempotent) och fortsätter till det vanliga flödet nedan.
-    if (result.ok) redirect(appHref("appOnboarding"));
+    // WP-98 (D-082): via /app/activar så att det nya företaget blir aktivt.
+    if (result.ok) redirect(`/app/activar/${result.businessId}`);
   }
 
   const pendingSolicitud = store.get("pending_solicitud")?.value;
@@ -100,7 +101,8 @@ export default async function AppIndexPage() {
   // WP-98 (D-082): även ett konto som redan har företag tar emot en väntande
   // inbjudan (ägare med flera lokaler). Det nya utkastet väljs sedan av
   // `getCurrentMember` och går till onboarding.
-  await acceptPendingInvitation(user.id);
+  const acceptedId = await acceptPendingInvitation(user.id);
+  if (acceptedId) redirect(`/app/activar/${acceptedId}`);
   const current = await getCurrentMember(user.id);
   const business = current?.business ?? null;
   // En plattformsadmin utan eget företag (inbjuden via /admin/administradores)

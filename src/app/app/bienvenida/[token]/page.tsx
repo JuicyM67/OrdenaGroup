@@ -82,7 +82,8 @@ export default async function BienvenidaInvitacionPage({
   if (user) {
     const result = await acceptInvitation(user.id, token);
     // `/app` decide: onboarding si el negocio sigue en borrador, si no el panel.
-    if (result.ok) redirect("/app");
+    // WP-98 (D-082): det nya företaget blir aktivt (ägare med flera lokaler).
+    if (result.ok) redirect(`/app/activar/${result.businessId}`);
     if (result.code === "email_mismatch") {
       return <ErrorScreen code={result.code} sessionEmail={user.email ?? ""} />;
     }
